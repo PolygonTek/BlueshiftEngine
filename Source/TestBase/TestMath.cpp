@@ -810,6 +810,12 @@ static void TestPolynomialSolvers() {
     static_assert(BE1::AbsMax3(-4, -2, 3) == 4);
     static_assert(BE1::AbsMin4(-4, -2, 3, -1) == 1);
     static_assert(BE1::AbsMax4(-4, -2, 3, -1) == 4);
+    static_assert(std::is_same<decltype(BE1::Math::Abs(-1)), int>::value);
+    static_assert(std::is_same<decltype(BE1::Math::Abs(-1.0f)), float>::value);
+    static_assert(std::is_same<decltype(BE1::Math::Abs(-1.0)), double>::value);
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::Abs(-1.25f) == 1.25f);
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::Abs(-1.25) == 1.25);
 
     float x1 = 7.0f;
     float x2 = 8.0f;
@@ -1104,25 +1110,25 @@ static void TestEigenAnalysis() {
 
     BE1::EigenPair3 powerResult;
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver3::PowerIteration(diagonal, BE1::Vec3::one, powerResult, 32, 1e-5f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(powerResult.eigenValue - 5.0f) <= epsilon);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(powerResult.eigenVector.x) >= 1.0f - epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(powerResult.eigenValue - 5.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(powerResult.eigenVector.x) >= 1.0f - epsilon);
 
     BE1::EigenPair3 inversePowerResult;
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver3::InversePowerIteration(
         diagonal, 0.0f, BE1::Vec3::one, inversePowerResult, 32, 1e-5f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(inversePowerResult.eigenValue - 1.0f) <= epsilon);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(inversePowerResult.eigenVector.z) >= 1.0f - epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(inversePowerResult.eigenValue - 1.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(inversePowerResult.eigenVector.z) >= 1.0f - epsilon);
 
     BE1::EigenPair3 rayleighResult;
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver3::RayleighQuotientIteration(
         diagonal, BE1::Vec3(0.05f, 1.0f, 0.1f), rayleighResult, 8, 1e-5f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(rayleighResult.eigenValue - 3.0f) <= epsilon);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(rayleighResult.eigenVector.y) >= 1.0f - epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(rayleighResult.eigenValue - 3.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(rayleighResult.eigenVector.y) >= 1.0f - epsilon);
 
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver3::RayleighQuotientIteration(
         diagonal, BE1::Vec3(1.0f, 0.0f, 0.0f), rayleighResult, 8, 1e-5f));
     VERIFY_EIGEN_ANALYSIS(rayleighResult.numIterations == 0);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(rayleighResult.eigenValue - 5.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(rayleighResult.eigenValue - 5.0f) <= epsilon);
 
     BE1::Mat4 diagonal4(
         BE1::Vec4(7.0f, 0.0f, 0.0f, 0.0f),
@@ -1132,14 +1138,14 @@ static void TestEigenAnalysis() {
 
     BE1::EigenPair4 powerResult4;
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver4::PowerIteration(diagonal4, BE1::Vec4::one, powerResult4, 48, 1e-5f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(powerResult4.eigenValue - 7.0f) <= epsilon);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(powerResult4.eigenVector.x) >= 1.0f - epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(powerResult4.eigenValue - 7.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(powerResult4.eigenVector.x) >= 1.0f - epsilon);
 
     BE1::EigenPair4 inversePowerResult4;
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver4::InversePowerIteration(
         diagonal4, 0.0f, BE1::Vec4::one, inversePowerResult4, 32, 1e-5f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(inversePowerResult4.eigenValue - 1.0f) <= epsilon);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(inversePowerResult4.eigenVector.w) >= 1.0f - epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(inversePowerResult4.eigenValue - 1.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(inversePowerResult4.eigenVector.w) >= 1.0f - epsilon);
 
     const BE1::Mat4 pivoted4(
         BE1::Vec4(0.0f, 1.0f, 0.0f, 0.0f),
@@ -1148,13 +1154,13 @@ static void TestEigenAnalysis() {
         BE1::Vec4(0.0f, 0.0f, 0.0f, 3.0f));
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver4::InversePowerIteration(
         pivoted4, 0.25f, BE1::Vec4::one, inversePowerResult4, 32, 1e-5f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(inversePowerResult4.eigenValue - 1.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(inversePowerResult4.eigenValue - 1.0f) <= epsilon);
 
     BE1::EigenPair4 rayleighResult4;
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver4::RayleighQuotientIteration(
         diagonal4, BE1::Vec4(0.02f, 1.0f, 0.1f, 0.03f), rayleighResult4, 8, 1e-5f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(rayleighResult4.eigenValue - 4.0f) <= epsilon);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(rayleighResult4.eigenVector.y) >= 1.0f - epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(rayleighResult4.eigenValue - 4.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(rayleighResult4.eigenVector.y) >= 1.0f - epsilon);
 
     BE1::EigenPair4 unchangedResult4 = rayleighResult4;
     VERIFY_EIGEN_ANALYSIS(!BE1::EigenSolver4::RayleighQuotientIteration(
@@ -1232,7 +1238,7 @@ static void TestEigenAnalysis() {
         BE1::Vec3(0.0f, 0.0f, 2.0f));
     VERIFY_EIGEN_ANALYSIS(BE1::EigenSolver3::InversePowerIteration(
         pivoted, 0.25f, BE1::Vec3(1.0f, 2.0f, 1.0f), inversePowerResult, 32, 1e-5f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(inversePowerResult.eigenValue - 1.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(inversePowerResult.eigenValue - 1.0f) <= epsilon);
 }
 
 template <typename MatrixType>
@@ -1252,7 +1258,7 @@ static void TestMatrixConditionAndPseudoInverse() {
     const BE1::Mat2 diagonal2(4.0f, 0.0f, 0.0f, 2.0f);
     float condition2 = -1.0f;
     VERIFY_EIGEN_ANALYSIS(diagonal2.ConditionNumber(condition2));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition2 - 2.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(condition2 - 2.0f) <= epsilon);
 
     BE1::Mat2 pseudoInverse2;
     VERIFY_EIGEN_ANALYSIS(diagonal2.PseudoInverse(pseudoInverse2));
@@ -1275,7 +1281,7 @@ static void TestMatrixConditionAndPseudoInverse() {
     VERIFY_EIGEN_ANALYSIS(threshold2.ConditionNumber(condition2, 1e-4f));
     VERIFY_EIGEN_ANALYSIS(BE1::Math::IsInf(condition2));
     VERIFY_EIGEN_ANALYSIS(threshold2.ConditionNumber(condition2, 1e-6f));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition2 - 1e5f) <= 20.0f);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(condition2 - 1e5f) <= 20.0f);
 
     const BE1::Mat3 diagonal3(
         BE1::Vec3(6.0f, 0.0f, 0.0f),
@@ -1283,9 +1289,9 @@ static void TestMatrixConditionAndPseudoInverse() {
         BE1::Vec3(0.0f, 0.0f, 2.0f));
     float condition3 = -1.0f;
     VERIFY_EIGEN_ANALYSIS(diagonal3.ConditionNumber(condition3));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition3 - 3.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(condition3 - 3.0f) <= epsilon);
     VERIFY_EIGEN_ANALYSIS((diagonal3 * 10000.0f).ConditionNumber(condition3));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition3 - 3.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(condition3 - 3.0f) <= epsilon);
 
     BE1::Mat3 pseudoInverse3;
     VERIFY_EIGEN_ANALYSIS(diagonal3.PseudoInverse(pseudoInverse3));
@@ -1310,7 +1316,7 @@ static void TestMatrixConditionAndPseudoInverse() {
         BE1::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
     float condition4 = -1.0f;
     VERIFY_EIGEN_ANALYSIS(diagonal4.ConditionNumber(condition4));
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(condition4 - 8.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(condition4 - 8.0f) <= epsilon);
 
     BE1::Mat4 pseudoInverse4;
     VERIFY_EIGEN_ANALYSIS(diagonal4.PseudoInverse(pseudoInverse4));
@@ -1499,7 +1505,7 @@ static void TestCovarianceAndPrincipalComponents() {
     VERIFY_EIGEN_ANALYSIS(covarianceA.Mean().Equals(BE1::Vec3::zero, epsilon));
 
     BE1::Mat3 covariance = covarianceA.PopulationCovariance();
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(covariance[0][0] - 1.0f) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(covariance[0][0] - 1.0f) <= epsilon);
 
     BE1::CovarianceAccumulator2 covariance2A;
     covariance2A.AddPoint(BE1::Vec2(-1.0f, -2.0f));
@@ -1548,13 +1554,13 @@ static void TestCovarianceAndPrincipalComponents() {
     VERIFY_EIGEN_ANALYSIS(unchangedComponents2.axes.Equals(principalComponents2.axes));
     VERIFY_EIGEN_ANALYSIS(unchangedComponents2.rank == principalComponents2.rank);
 
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(covariance[1][1]) <= epsilon);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(covariance[2][2]) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(covariance[1][1]) <= epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(covariance[2][2]) <= epsilon);
 
     BE1::PrincipalComponents3 principalComponents;
     VERIFY_EIGEN_ANALYSIS(principalComponents.SetFromCovariance(covariance));
     VERIFY_EIGEN_ANALYSIS(principalComponents.rank == 1);
-    VERIFY_EIGEN_ANALYSIS(BE1::Math::Fabs(principalComponents.axes[0].x) >= 1.0f - epsilon);
+    VERIFY_EIGEN_ANALYSIS(BE1::Math::Abs(principalComponents.axes[0].x) >= 1.0f - epsilon);
 }
 
 static void TestMatrixDecomposition() {
@@ -1721,9 +1727,9 @@ static void TestBestFit() {
 
     BE1::Plane plane;
     VERIFY_BEST_FIT(BE1::BestFitPlane(planePoints, 6, plane));
-    VERIFY_BEST_FIT(BE1::Math::Fabs(plane.normal.Dot(expectedPlaneNormal)) >= 1.0f - epsilon);
+    VERIFY_BEST_FIT(BE1::Math::Abs(plane.normal.Dot(expectedPlaneNormal)) >= 1.0f - epsilon);
     for (int i = 0; i < 6; i++) {
-        VERIFY_BEST_FIT(BE1::Math::Fabs(plane.Distance(planePoints[i])) <= epsilon);
+        VERIFY_BEST_FIT(BE1::Math::Abs(plane.Distance(planePoints[i])) <= epsilon);
     }
 
     const BE1::Vec3 collinearPoints[] = {

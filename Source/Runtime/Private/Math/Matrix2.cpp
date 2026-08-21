@@ -92,7 +92,7 @@ bool Mat2::InverseSelf() {
 
     det = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
 
-    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(det) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 
@@ -219,8 +219,8 @@ bool Mat2::EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float 
     float halfDifference = 0.5f * diagonal0 - 0.5f * diagonal1;
 
     // Compute hypot(halfDifference, offDiagonal) without squaring unscaled values.
-    float absHalfDifference = Math::Fabs(halfDifference);
-    float absOffDiagonal = Math::Fabs(offDiagonal);
+    float absHalfDifference = Math::Abs(halfDifference);
+    float absOffDiagonal = Math::Abs(offDiagonal);
     float scale = absHalfDifference > absOffDiagonal ? absHalfDifference : absOffDiagonal;
     float radius = 0.0f;
     if (scale > 0.0f) {
@@ -241,8 +241,8 @@ bool Mat2::EigenDecomposeSymmetric(Vec2 &eigenValues, Mat2 &eigenVectors, float 
         // Select the form that avoids cancellation when constructing the major eigenvector.
         Vec2 majorVector = halfDifference >= 0.0f ? Vec2(radius + halfDifference, offDiagonal) : Vec2(offDiagonal, radius - halfDifference);
 
-        float absX = Math::Fabs(majorVector.x);
-        float absY = Math::Fabs(majorVector.y);
+        float absX = Math::Abs(majorVector.x);
+        float absY = Math::Abs(majorVector.y);
         float vectorScale = absX > absY ? absX : absY;
         if (vectorScale == 0.0f || !Math::IsFinite(vectorScale)) {
             return false;

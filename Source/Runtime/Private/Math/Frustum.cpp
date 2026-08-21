@@ -97,11 +97,11 @@ bool Frustum::CullPoint(const Vec3 &point) const {
     }
 
     float scale = p.x * invFar;
-    if (Math::Fabs(p.y) > dLeft * scale) {
+    if (Math::Abs(p.y) > dLeft * scale) {
         return true;
     }
 
-    if (Math::Fabs(p.z) > dUp * scale) {
+    if (Math::Abs(p.z) > dUp * scale) {
         return true;
     }
 
@@ -115,9 +115,9 @@ bool Frustum::CullPoint(const Vec3 &point) const {
 bool Frustum::CullLocalOBB(const Vec3 &localOrigin, const Vec3 &extents, const Mat3 &localAxis) const {
     // near plane
     float d1 = dNear - localOrigin.x;
-    float d2 = Math::Fabs(extents[0] * localAxis[0][0]) + 
-               Math::Fabs(extents[1] * localAxis[1][0]) + 
-               Math::Fabs(extents[2] * localAxis[2][0]);
+    float d2 = Math::Abs(extents[0] * localAxis[0][0]) +
+               Math::Abs(extents[1] * localAxis[1][0]) +
+               Math::Abs(extents[2] * localAxis[2][0]);
     if (d1 - d2 > 0.0f) {
         return true;
     }
@@ -140,9 +140,9 @@ bool Frustum::CullLocalOBB(const Vec3 &localOrigin, const Vec3 &extents, const M
 
     // test left/right planes
     d1 = dFar * testOrigin.y - dLeft * testOrigin.x;
-    d2 = Math::Fabs(extents[0] * (dFar * testAxis[0][1] - dLeft * testAxis[0][0])) + 
-         Math::Fabs(extents[1] * (dFar * testAxis[1][1] - dLeft * testAxis[1][0])) + 
-         Math::Fabs(extents[2] * (dFar * testAxis[2][1] - dLeft * testAxis[2][0]));
+    d2 = Math::Abs(extents[0] * (dFar * testAxis[0][1] - dLeft * testAxis[0][0])) +
+         Math::Abs(extents[1] * (dFar * testAxis[1][1] - dLeft * testAxis[1][0])) +
+         Math::Abs(extents[2] * (dFar * testAxis[2][1] - dLeft * testAxis[2][0]));
     if (d1 - d2 > 0.0f) {
         return true;
     }
@@ -156,9 +156,9 @@ bool Frustum::CullLocalOBB(const Vec3 &localOrigin, const Vec3 &extents, const M
 
     // test up/down planes
     d1 = dFar * testOrigin.z - dUp * testOrigin.x;
-    d2 = Math::Fabs(extents[0] * (dFar * testAxis[0][2] - dUp * testAxis[0][0])) + 
-         Math::Fabs(extents[1] * (dFar * testAxis[1][2] - dUp * testAxis[1][0])) + 
-         Math::Fabs(extents[2] * (dFar * testAxis[2][2] - dUp * testAxis[2][0]));
+    d2 = Math::Abs(extents[0] * (dFar * testAxis[0][2] - dUp * testAxis[0][0])) +
+         Math::Abs(extents[1] * (dFar * testAxis[1][2] - dUp * testAxis[1][0])) +
+         Math::Abs(extents[2] * (dFar * testAxis[2][2] - dUp * testAxis[2][0]));
     if (d1 - d2 > 0.0f) {
         return true;
     }
@@ -210,7 +210,7 @@ bool Frustum::CullAABB(const AABB &bounds) const {
     const float sideSign = localY < 0.0f ? -dFar : dFar;
     const simd4f sidePlane = axis1 * set1_ps(sideSign) - axis0 * set1_ps(dLeft);
     const float sideRadius = x_ps(dot4_ps(abs_ps(sidePlane), extents));
-    if (dFar * Math::Fabs(localY) - dLeft * localX - sideRadius > 0.0f) {
+    if (dFar * Math::Abs(localY) - dLeft * localX - sideRadius > 0.0f) {
         return true;
     }
 
@@ -218,7 +218,7 @@ bool Frustum::CullAABB(const AABB &bounds) const {
     const float upSign = localZ < 0.0f ? -dFar : dFar;
     const simd4f upPlane = axis2 * set1_ps(upSign) - axis0 * set1_ps(dUp);
     const float upRadius = x_ps(dot4_ps(abs_ps(upPlane), extents));
-    return dFar * Math::Fabs(localZ) - dUp * localX - upRadius > 0.0f;
+    return dFar * Math::Abs(localZ) - dUp * localX - upRadius > 0.0f;
 #else
     Vec3 center = (bounds[0] + bounds[1]) * 0.5f;
     Vec3 extents = bounds[1] - center;
@@ -265,7 +265,7 @@ bool Frustum::CullSphere(const Sphere &sphere) const {
     float sFar = dFar * dFar;
 
     // test left/right planes
-    float d = dFar * Math::Fabs(center.y) - dLeft * center.x;
+    float d = dFar * Math::Abs(center.y) - dLeft * center.x;
     if (d > 0) {
         if (d * d > rs * (sFar + dLeft * dLeft)) {
             return true;
@@ -273,7 +273,7 @@ bool Frustum::CullSphere(const Sphere &sphere) const {
     }
 
     // test up/down planes
-    d = dFar * Math::Fabs(center.z) - dUp * center.x;
+    d = dFar * Math::Abs(center.z) - dUp * center.x;
     if (d > 0) {
         if ((d * d) > rs * (sFar + dUp * dUp)) {
             return true;
@@ -396,10 +396,10 @@ bool Frustum::CullLocalWinding(const Vec3 *points, const int numPoints, int *poi
             pCull = 2;
         }
 
-        if (Math::Fabs(p.y) > p.x * leftScale) {
+        if (Math::Abs(p.y) > p.x * leftScale) {
             pCull |= 4 << IEEE_FLT_SIGNBITSET(p.y);
         }
-        if (Math::Fabs(p.z) > p.x * upScale) {
+        if (Math::Abs(p.z) > p.x * upScale) {
             pCull |= 16 << IEEE_FLT_SIGNBITSET(p.z);
         }
         
@@ -495,8 +495,8 @@ bool Frustum::LocalLineIntersection(const Vec3 &start, const Vec3 &end) const {
             d2 = dNear - end.x;
             if (IEEE_FLT_SIGNBITSET(d1) ^ IEEE_FLT_SIGNBITSET(d2)) {
                 f = d1 / (d1 - d2);
-                if (Math::Fabs(start.y + f * dir.y) <= dNear * leftScale) {
-                    if (Math::Fabs(start.z + f * dir.z) <= dNear * upScale) {
+                if (Math::Abs(start.y + f * dir.y) <= dNear * leftScale) {
+                    if (Math::Abs(start.z + f * dir.z) <= dNear * upScale) {
                         return true;
                     }
                 }
@@ -511,8 +511,8 @@ bool Frustum::LocalLineIntersection(const Vec3 &start, const Vec3 &end) const {
         d2 = end.x - dFar;
         if (IEEE_FLT_SIGNBITSET(d1) ^ IEEE_FLT_SIGNBITSET(d2)) {
             f = d1 / (d1 - d2);
-            if (Math::Fabs(start.y + f * dir.y) <= dFar * leftScale) {
-                if (Math::Fabs(start.z + f * dir.z) <= dFar * upScale) {
+            if (Math::Abs(start.y + f * dir.y) <= dFar * leftScale) {
+                if (Math::Abs(start.z + f * dir.z) <= dFar * upScale) {
                     return true;
                 }
             }
@@ -533,7 +533,7 @@ bool Frustum::LocalLineIntersection(const Vec3 &start, const Vec3 &end) const {
             f = d1 / (d1 - d2);
             x = start.x + f * dir.x;
             if (x >= dNear && x <= dFar) {
-                if (Math::Fabs(start.z + f * dir.z) <= x * upScale) {
+                if (Math::Abs(start.z + f * dir.z) <= x * upScale) {
                     return true;
                 }
             }
@@ -549,7 +549,7 @@ bool Frustum::LocalLineIntersection(const Vec3 &start, const Vec3 &end) const {
             f = d1 / (d1 - d2);
             x = start.x + f * dir.x;
             if (x >= dNear && x <= dFar) {
-                if (Math::Fabs(start.z + f * dir.z) <= x * upScale) {
+                if (Math::Abs(start.z + f * dir.z) <= x * upScale) {
                     return true;
                 }
             }
@@ -570,7 +570,7 @@ bool Frustum::LocalLineIntersection(const Vec3 &start, const Vec3 &end) const {
             f = d1 / (d1 - d2);
             x = start.x + f * dir.x;
             if (x >= dNear && x <= dFar) {
-                if (Math::Fabs(start.y + f * dir.y) <= x * leftScale) {
+                if (Math::Abs(start.y + f * dir.y) <= x * leftScale) {
                     return true;
                 }
             }
@@ -586,7 +586,7 @@ bool Frustum::LocalLineIntersection(const Vec3 &start, const Vec3 &end) const {
             f = d1 / (d1 - d2);
             x = start.x + f * dir.x;
             if (x >= dNear && x <= dFar) {
-                if (Math::Fabs(start.y + f * dir.y) <= x * leftScale) {
+                if (Math::Abs(start.y + f * dir.y) <= x * leftScale) {
                     return true;
                 }
             }
@@ -615,8 +615,8 @@ bool Frustum::LocalRayIntersection(const Vec3 &start, const Vec3 &dir, float &sc
         d2 = dNear - end.x;
         if (d1 != d2) {
             f = d1 / (d1 - d2);
-            if (Math::Fabs(start.y + f * dir.y) <= dNear * leftScale) {
-                if (Math::Fabs(start.z + f * dir.z) <= dNear * upScale) {
+            if (Math::Abs(start.y + f * dir.y) <= dNear * leftScale) {
+                if (Math::Abs(start.z + f * dir.z) <= dNear * upScale) {
                     if (f < scale1) scale1 = f;
                     if (f > scale2) scale2 = f;
                 }
@@ -630,8 +630,8 @@ bool Frustum::LocalRayIntersection(const Vec3 &start, const Vec3 &dir, float &sc
     d2 = end.x - dFar;
     if (d1 != d2) {
         f = d1 / (d1 - d2);
-        if (Math::Fabs(start.y + f * dir.y) <= dFar * leftScale) {
-            if (Math::Fabs(start.z + f * dir.z) <= dFar * upScale) {
+        if (Math::Abs(start.y + f * dir.y) <= dFar * leftScale) {
+            if (Math::Abs(start.z + f * dir.z) <= dFar * upScale) {
                 if (f < scale1) scale1 = f;
                 if (f > scale2) scale2 = f;
             }
@@ -651,7 +651,7 @@ bool Frustum::LocalRayIntersection(const Vec3 &start, const Vec3 &dir, float &sc
         f = d1 / (d1 - d2);
         x = start.x + f * dir.x;
         if (x >= dNear && x <= dFar) {
-            if (Math::Fabs(start.z + f * dir.z) <= x * upScale) {
+            if (Math::Abs(start.z + f * dir.z) <= x * upScale) {
                 if (f < scale1) scale1 = f;
                 if (f > scale2) scale2 = f;
             }
@@ -666,7 +666,7 @@ bool Frustum::LocalRayIntersection(const Vec3 &start, const Vec3 &dir, float &sc
         f = d1 / (d1 - d2);
         x = start.x + f * dir.x;
         if (x >= dNear && x <= dFar) {
-            if (Math::Fabs(start.z + f * dir.z) <= x * upScale) {
+            if (Math::Abs(start.z + f * dir.z) <= x * upScale) {
                 if (f < scale1) scale1 = f;
                 if (f > scale2) scale2 = f;
             }
@@ -686,7 +686,7 @@ bool Frustum::LocalRayIntersection(const Vec3 &start, const Vec3 &dir, float &sc
         f = d1 / (d1 - d2);
         x = start.x + f * dir.x;
         if (x >= dNear && x <= dFar) {
-            if (Math::Fabs(start.y + f * dir.y) <= x * leftScale) {
+            if (Math::Abs(start.y + f * dir.y) <= x * leftScale) {
                 if (f < scale1) scale1 = f;
                 if (f > scale2) scale2 = f;
             }
@@ -701,7 +701,7 @@ bool Frustum::LocalRayIntersection(const Vec3 &start, const Vec3 &dir, float &sc
         f = d1 / (d1 - d2);
         x = start.x + f * dir.x;
         if (x >= dNear && x <= dFar) {
-            if (Math::Fabs(start.y + f * dir.y) <= x * leftScale) {
+            if (Math::Abs(start.y + f * dir.y) <= x * leftScale) {
                 if (f < scale1) scale1 = f;
                 if (f > scale2) scale2 = f;
             }
@@ -865,15 +865,15 @@ bool Frustum::IsIntersectSphere(const Sphere &sphere) const {
 
     if (p.x <= dNear) {
         scale = dNear * invFar;
-        dir.y = Math::Fabs(p.y) - dLeft * scale;
-        dir.z = Math::Fabs(p.z) - dUp * scale;
+        dir.y = Math::Abs(p.y) - dLeft * scale;
+        dir.z = Math::Abs(p.z) - dUp * scale;
     } else if (p.x >= dFar) {
-        dir.y = Math::Fabs(p.y) - dLeft;
-        dir.z = Math::Fabs(p.z) - dUp;
+        dir.y = Math::Abs(p.y) - dLeft;
+        dir.z = Math::Abs(p.z) - dUp;
     } else {
         scale = p.x * invFar;
-        dir.y = Math::Fabs(p.y) - dLeft * scale;
-        dir.z = Math::Fabs(p.z) - dUp * scale;
+        dir.y = Math::Abs(p.y) - dLeft * scale;
+        dir.z = Math::Abs(p.z) - dUp * scale;
     }
 
     if (dir.y > 0.0f) {
@@ -1039,9 +1039,9 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
     }
     
     bestAxis = 0;
-    bestValue = Math::Fabs(box.Axis()[0].Dot(dir));
+    bestValue = Math::Abs(box.Axis()[0].Dot(dir));
     for (i = 1; i < 3; i++) {
-        value = Math::Fabs(box.Axis()[i].Dot(dir));
+        value = Math::Abs(box.Axis()[i].Dot(dir));
         if (value * box.Extents()[bestAxis] * box.Extents()[bestAxis] < bestValue * box.Extents()[i] * box.Extents()[i]) {
             bestValue = value;
             bestAxis = i;
@@ -1099,8 +1099,8 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
     this->origin = projectionOrigin;
     this->dNear = points[minX].x;
     this->dFar = dFar;
-    this->dLeft = Max(Math::Fabs(points[minY].y / points[minY].x), Math::Fabs(points[maxY].y / points[maxY].x)) * dFar;
-    this->dUp = Max(Math::Fabs(points[minZ].z / points[minZ].x), Math::Fabs(points[maxZ].z / points[maxZ].x)) * dFar;
+    this->dLeft = AbsMax(points[minY].y / points[minY].x, points[maxY].y / points[maxY].x) * dFar;
+    this->dUp = AbsMax(points[minZ].z / points[minZ].x, points[maxZ].z / points[maxZ].x) * dFar;
     this->invFar = 1.0f / dFar;
 
 #elif 1
@@ -1140,8 +1140,8 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
     this->origin = projectionOrigin;
     this->dNear = b[0][0];
     this->dFar = dFar;
-    this->dLeft = Max(Math::Fabs(b[0][1]), Math::Fabs(b[1][1])) * dFar;
-    this->dUp = Max(Math::Fabs(b[0][2]), Math::Fabs(b[1][2])) * dFar;
+    this->dLeft = AbsMax(b[0][1], b[1][1]) * dFar;
+    this->dUp = AbsMax(b[0][2], b[1][2]) * dFar;
     this->invFar = 1.0f / dFar;
 
 #else
@@ -1154,9 +1154,9 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
     axis[2].Cross(axis[0], axis[1]);
 
     for (i = 0; i < 3; i++) {
-        dist[i] = Math::Fabs(box.Extents()[0] * (axis[i] * box.Axis()[0])) + 
-                  Math::Fabs(box.Extents()[1] * (axis[i] * box.Axis()[1])) +
-                  Math::Fabs(box.Extents()[2] * (axis[i] * box.Axis()[2]));
+        dist[i] = Math::Abs(box.Extents()[0] * (axis[i] * box.Axis()[0])) +
+                  Math::Abs(box.Extents()[1] * (axis[i] * box.Axis()[1])) +
+                  Math::Abs(box.Extents()[2] * (axis[i] * box.Axis()[2]));
     }
 
     dist[0] = axis[0] * (box.Center() - projectionOrigin) - dist[0];
@@ -1497,7 +1497,7 @@ void Frustum::AddLocalLineToProjectionBoundsSetCull(const Vec3 &start, const Vec
             p.x = start.x + f * dir.x;
             if (p.x > 0.0f) {
                 p.z = start.z + f * dir.z;
-                if (Math::Fabs(p.z) <= p.x * upScale) {
+                if (Math::Abs(p.z) <= p.x * upScale) {
                     p.y = 1.0f;
                     p.z = p.z * dFar / (p.x * dUp);
                     bounds.AddPoint(p);
@@ -1517,7 +1517,7 @@ void Frustum::AddLocalLineToProjectionBoundsSetCull(const Vec3 &start, const Vec
             p.x = start.x + f * dir.x;
             if (p.x > 0.0f) {
                 p.z = start.z + f * dir.z;
-                if (Math::Fabs(p.z) <= p.x * upScale) {
+                if (Math::Abs(p.z) <= p.x * upScale) {
                     p.y = -1.0f;
                     p.z = p.z * dFar / (p.x * dUp);
                     bounds.AddPoint(p);
@@ -1542,7 +1542,7 @@ void Frustum::AddLocalLineToProjectionBoundsSetCull(const Vec3 &start, const Vec
             p.x = start.x + f * dir.x;
             if (p.x > 0.0f) {
                 p.y = start.y + f * dir.y;
-                if (Math::Fabs(p.y) <= p.x * leftScale) {
+                if (Math::Abs(p.y) <= p.x * leftScale) {
                     p.y = p.y * dFar / (p.x * dLeft);
                     p.z = 1.0f;
                     bounds.AddPoint(p);
@@ -1562,7 +1562,7 @@ void Frustum::AddLocalLineToProjectionBoundsSetCull(const Vec3 &start, const Vec
             p.x = start.x + f * dir.x;
             if (p.x > 0.0f) {
                 p.y = start.y + f * dir.y;
-                if (Math::Fabs(p.y) <= p.x * leftScale) {
+                if (Math::Abs(p.y) <= p.x * leftScale) {
                     p.y = p.y * dFar / (p.x * dLeft);
                     p.z = -1.0f;
                     bounds.AddPoint(p);
@@ -1628,7 +1628,7 @@ void Frustum::AddLocalLineToProjectionBoundsUseCull(const Vec3 &start, const Vec
                     p.x = start.x + f * dir.x;
                     if (p.x > 0.0f) {
                         p.z = start.z + f * dir.z;
-                        if (Math::Fabs(p.z) <= p.x * upScale) {
+                        if (Math::Abs(p.z) <= p.x * upScale) {
                             p.y = 1.0f;
                             p.z = p.z * dFar / (p.x * dUp);
                             bounds.AddPoint(p);
@@ -1648,7 +1648,7 @@ void Frustum::AddLocalLineToProjectionBoundsUseCull(const Vec3 &start, const Vec
                     p.x = start.x + f * dir.x;
                     if (p.x > 0.0f) {
                         p.z = start.z + f * dir.z;
-                        if (Math::Fabs(p.z ) <= p.x * upScale) {
+                        if (Math::Abs(p.z ) <= p.x * upScale) {
                             p.y = -1.0f;
                             p.z = p.z * dFar / (p.x * dUp);
                             bounds.AddPoint(p);
@@ -1675,7 +1675,7 @@ void Frustum::AddLocalLineToProjectionBoundsUseCull(const Vec3 &start, const Vec
                     p.x = start.x + f * dir.x;
                     if (p.x > 0.0f) {
                         p.y = start.y + f * dir.y;
-                        if (Math::Fabs(p.y) <= p.x * leftScale) {
+                        if (Math::Abs(p.y) <= p.x * leftScale) {
                             p.y = p.y * dFar / (p.x * dLeft);
                             p.z = 1.0f;
                             bounds.AddPoint(p);
@@ -1695,7 +1695,7 @@ void Frustum::AddLocalLineToProjectionBoundsUseCull(const Vec3 &start, const Vec
                     p.x = start.x + f * dir.x;
                     if (p.x > 0.0f) {
                         p.y = start.y + f * dir.y;
-                        if (Math::Fabs(p.y) <= p.x * leftScale) {
+                        if (Math::Abs(p.y) <= p.x * leftScale) {
                             p.y = p.y * dFar / (p.x * dLeft);
                             p.z = -1.0f;
                             bounds.AddPoint(p);
@@ -2082,7 +2082,7 @@ bool Frustum::ClipLine(const Vec3 localPoints[8], const Vec3 points[8], int star
             f = d1 / (d1 - d2);
             x = localStart.x + f * localDir.x;
             if (x >= 0.0f) {
-                if (Math::Fabs(localStart.z + f * localDir.z) <= x * upScale) {
+                if (Math::Abs(localStart.z + f * localDir.z) <= x * upScale) {
                     if (f < scale1) { scale1 = f; startClip = 0; }
                     if (f > scale2) { scale2 = f; endClip = 0; }
                 }
@@ -2100,7 +2100,7 @@ bool Frustum::ClipLine(const Vec3 localPoints[8], const Vec3 points[8], int star
             f = d1 / (d1 - d2);
             x = localStart.x + f * localDir.x;
             if (x >= 0.0f) {
-                if (Math::Fabs(localStart.z + f * localDir.z) <= x * upScale) {
+                if (Math::Abs(localStart.z + f * localDir.z) <= x * upScale) {
                     if (f < scale1) { scale1 = f; startClip = 1; }
                     if (f > scale2) { scale2 = f; endClip = 1; }
                 }
@@ -2123,7 +2123,7 @@ bool Frustum::ClipLine(const Vec3 localPoints[8], const Vec3 points[8], int star
             f = d1 / (d1 - d2);
             x = localStart.x + f * localDir.x;
             if (x >= 0.0f) {
-                if (Math::Fabs(localStart.y + f * localDir.y) <= x * leftScale) {
+                if (Math::Abs(localStart.y + f * localDir.y) <= x * leftScale) {
                     if (f < scale1) { scale1 = f; startClip = 2; }
                     if (f > scale2) { scale2 = f; endClip = 2; }
                 }
@@ -2141,7 +2141,7 @@ bool Frustum::ClipLine(const Vec3 localPoints[8], const Vec3 points[8], int star
             f = d1 / (d1 - d2);
             x = localStart.x + f * localDir.x;
             if (x >= 0.0f) {
-                if (Math::Fabs(localStart.y + f * localDir.y) <= x * leftScale) {
+                if (Math::Abs(localStart.y + f * localDir.y) <= x * leftScale) {
                     if (f < scale1) { scale1 = f; startClip = 3; }
                     if (f > scale2) { scale2 = f; endClip = 3; }
                 }
@@ -2277,10 +2277,10 @@ bool Frustum::ClippedProjectionBounds(const Frustum &frustum, const OBB &clipBox
                 boxPointCull[i] = 1|2|4|8;
             } else {
                 boxPointCull[i] = 0;
-                if (Math::Fabs(p.y) > p.x * leftScale) {
+                if (Math::Abs(p.y) > p.x * leftScale) {
                     boxPointCull[i] |= 1 << IEEE_FLT_SIGNBITSET(p.y);
                 }
-                if (Math::Fabs(p.z) > p.x * upScale) {
+                if (Math::Abs(p.z) > p.x * upScale) {
                     boxPointCull[i] |= 4 << IEEE_FLT_SIGNBITSET(p.z);
                 }
             }

@@ -226,7 +226,7 @@ BE_INLINE float Curve<T>::GetTimeForLength(const float length, const float epsil
     float t = (times[index + 1] - times[index]) * len0 / len1;
     for (int i = 0; i < 32; i++) {
         float diff = RombergIntegral(times[index], times[index] + t, 5) - len0;
-        if (Math::Fabs(diff) <= epsilon) {
+        if (Math::Abs(diff) <= epsilon) {
             return times[index] + t;
         }
         t -= diff / GetSpeed(times[index] + t);

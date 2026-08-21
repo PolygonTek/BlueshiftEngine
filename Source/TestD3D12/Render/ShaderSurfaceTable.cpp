@@ -138,8 +138,8 @@ void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderS
     const float scaleXSqr = worldMatrix[0][0] * worldMatrix[0][0] + worldMatrix[1][0] * worldMatrix[1][0] + worldMatrix[2][0] * worldMatrix[2][0];
     const float scaleYSqr = worldMatrix[0][1] * worldMatrix[0][1] + worldMatrix[1][1] * worldMatrix[1][1] + worldMatrix[2][1] * worldMatrix[2][1];
     const float scaleZSqr = worldMatrix[0][2] * worldMatrix[0][2] + worldMatrix[1][2] * worldMatrix[1][2] + worldMatrix[2][2] * worldMatrix[2][2];
-    const float minScaleSqr = BE1::Min(scaleXSqr, BE1::Min(scaleYSqr, scaleZSqr));
-    const float maxScaleSqr = BE1::Max(scaleXSqr, BE1::Max(scaleYSqr, scaleZSqr));
+    const float minScaleSqr = BE1::Min3(scaleXSqr, scaleYSqr, scaleZSqr);
+    const float maxScaleSqr = BE1::Max3(scaleXSqr, scaleYSqr, scaleZSqr);
     const bool nonUniformScale = maxScaleSqr - minScaleSqr > maxScaleSqr * MATRIX_EPSILON;
     */
 

@@ -458,13 +458,13 @@ BE_INLINE bool Color3::Equals(const Color3 &rhs) const {
 }
 
 BE_INLINE bool Color3::Equals(const Color3 &rhs, const float epsilon) const {
-    if (Math::Fabs(r - rhs.r) > epsilon) {
+    if (Math::Abs(r - rhs.r) > epsilon) {
         return false;
     }
-    if (Math::Fabs(g - rhs.g) > epsilon) {
+    if (Math::Abs(g - rhs.g) > epsilon) {
         return false;
     }
-    if (Math::Fabs(b - rhs.b) > epsilon) {
+    if (Math::Abs(b - rhs.b) > epsilon) {
         return false;
     }
     return true;

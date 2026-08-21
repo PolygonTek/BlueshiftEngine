@@ -1033,7 +1033,7 @@ bool Mat4::InverseSelf() {
 
     const float trace = x_ps(dot4_ps(adjugateA_B, shuffle_ps<0, 2, 1, 3>(adjugateD_C)));
     const double determinant = (double)determinantA * determinantD + (double)determinantB * determinantC - trace;
-    if (Math::Fabs(determinant) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(determinant) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 
@@ -1068,7 +1068,7 @@ bool Mat4::InverseSelf() {
 
     double det = (-det3_201_123 * mat[3][0] + det3_201_023 * mat[3][1] - det3_201_013 * mat[3][2] + det3_201_012 * mat[3][3]);
 
-    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(det) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 
@@ -1233,7 +1233,7 @@ bool Mat4::InverseSelf() {
     // r0 = m0.Inverse();
     det = mat[0*4+0] * mat[1*4+1] - mat[0*4+1] * mat[1*4+0];
 
-    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(det) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 
@@ -1265,7 +1265,7 @@ bool Mat4::InverseSelf() {
     // r3.InverseSelf();
     det = r3[0][0] * r3[1][1] - r3[0][1] * r3[1][0];
 
-    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(det) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 
@@ -1792,11 +1792,11 @@ bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float 
     for (int iteration = 0; iteration < maxIterations; iteration++) {
         int p = 0;
         int q = 1;
-        float maxOffDiagonal = Math::Fabs(matrix[p][q]);
+        float maxOffDiagonal = Math::Abs(matrix[p][q]);
 
         for (int row = 0; row < 3; row++) {
             for (int column = row + 1; column < 4; column++) {
-                float offDiagonal = Math::Fabs(matrix[row][column]);
+                float offDiagonal = Math::Abs(matrix[row][column]);
                 if (offDiagonal > maxOffDiagonal) {
                     maxOffDiagonal = offDiagonal;
                     p = row;
@@ -1811,7 +1811,7 @@ bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float 
 
         float matrixScale = maxOffDiagonal;
         for (int i = 0; i < 4; i++) {
-            float diagonal = Math::Fabs(matrix[i][i]);
+            float diagonal = Math::Abs(matrix[i][i]);
             if (!Math::IsFinite(diagonal)) {
                 return false;
             }
@@ -1835,7 +1835,7 @@ bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float 
         float matrixScale = 0.0f;
 
         for (int row = 0; row < 4; row++) {
-            float diagonal = Math::Fabs(matrix[row][row]);
+            float diagonal = Math::Abs(matrix[row][row]);
             if (!Math::IsFinite(diagonal)) {
                 return false;
             }
@@ -1844,7 +1844,7 @@ bool Mat4::EigenDecomposeSymmetric(Vec4 &eigenValues, Mat4 &eigenVectors, float 
             }
 
             for (int column = row + 1; column < 4; column++) {
-                float offDiagonal = Math::Fabs(matrix[row][column]);
+                float offDiagonal = Math::Abs(matrix[row][column]);
                 if (!Math::IsFinite(offDiagonal)) {
                     return false;
                 }

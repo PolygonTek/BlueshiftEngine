@@ -228,9 +228,9 @@ BE_INLINE OBB::OBB(const AABB &inAabb, const Mat3x4 &inTransform) {
     // This preserves scale and also encloses affine shear from transform hierarchies.
     for (int i = 0; i < 3; i++) {
         extents[i] =
-            Math::Fabs(localExtents[0] * transformAxis[0].Dot(axis[i])) +
-            Math::Fabs(localExtents[1] * transformAxis[1].Dot(axis[i])) +
-            Math::Fabs(localExtents[2] * transformAxis[2].Dot(axis[i]));
+            Math::Abs(localExtents[0] * transformAxis[0].Dot(axis[i])) +
+            Math::Abs(localExtents[1] * transformAxis[1].Dot(axis[i])) +
+            Math::Abs(localExtents[2] * transformAxis[2].Dot(axis[i]));
     }
 }
 
@@ -306,9 +306,9 @@ BE_INLINE OBB &OBB::RotateSelf(const Mat3 &rotation) {
 
 BE_INLINE bool OBB::IsContainPoint(const Vec3 &p) const {
     Vec3 lp = p - center;
-    if (Math::Fabs(lp.Dot(axis[0])) > extents[0] || 
-        Math::Fabs(lp.Dot(axis[1])) > extents[1] || 
-        Math::Fabs(lp.Dot(axis[2])) > extents[2]) {
+    if (Math::Abs(lp.Dot(axis[0])) > extents[0] ||
+        Math::Abs(lp.Dot(axis[1])) > extents[1] ||
+        Math::Abs(lp.Dot(axis[2])) > extents[2]) {
         return false;
     }
     return true;
@@ -316,9 +316,9 @@ BE_INLINE bool OBB::IsContainPoint(const Vec3 &p) const {
 
 BE_INLINE void OBB::ProjectOnAxis(const Vec3 &inAxis, float &outMin, float &outMax) const {
     float d1 = inAxis.Dot(center);
-    float d2 = Math::Fabs(extents[0] * axis[0].Dot(inAxis)) +
-               Math::Fabs(extents[1] * axis[1].Dot(inAxis)) +
-               Math::Fabs(extents[2] * axis[2].Dot(inAxis));
+    float d2 = Math::Abs(extents[0] * axis[0].Dot(inAxis)) +
+               Math::Abs(extents[1] * axis[1].Dot(inAxis)) +
+               Math::Abs(extents[2] * axis[2].Dot(inAxis));
     outMin = d1 - d2;
     outMax = d1 + d2;
 }
@@ -326,9 +326,9 @@ BE_INLINE void OBB::ProjectOnAxis(const Vec3 &inAxis, float &outMin, float &outM
 BE_INLINE void OBB::ProjectOnAxis(const Mat3 &inAxis, AABB &outMinMaxs) const {
     for (int i = 0; i < 3; i++) {
         float d1 = inAxis[i].Dot(center);
-        float d2 = Math::Fabs(extents[0] * axis[0].Dot(inAxis[i])) +
-                   Math::Fabs(extents[1] * axis[1].Dot(inAxis[i])) +
-                   Math::Fabs(extents[2] * axis[2].Dot(inAxis[i]));
+        float d2 = Math::Abs(extents[0] * axis[0].Dot(inAxis[i])) +
+                   Math::Abs(extents[1] * axis[1].Dot(inAxis[i])) +
+                   Math::Abs(extents[2] * axis[2].Dot(inAxis[i]));
         outMinMaxs[0][i] = d1 - d2;
         outMinMaxs[1][i] = d1 + d2;
     }

@@ -24,7 +24,7 @@ template <int N>
 static BE_FORCE_INLINE float TrailingColumnNorm(const float matrix[N][N], int firstRow, int column) {
     float scale = 0.0f;
     for (int row = firstRow; row < N; row++) {
-        float absValue = Math::Fabs(matrix[row][column]);
+        float absValue = Math::Abs(matrix[row][column]);
         if (absValue > scale) {
             scale = absValue;
         }
@@ -58,7 +58,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
                 return false;
             }
 
-            float absValue = Math::Fabs(value);
+            float absValue = Math::Abs(value);
             if (absValue > matrixScale) {
                 matrixScale = absValue;
             }
@@ -125,7 +125,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
             // v^T * v and its reciprocal stay representable for tiny trailing columns.
             float vScale = 0.0f;
             for (int row = k; row < N; row++) {
-                float absValue = Math::Fabs(v[row]);
+                float absValue = Math::Abs(v[row]);
                 if (absValue > vScale) {
                     vScale = absValue;
                 }
@@ -191,7 +191,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
 
     float maxDiagonal = 0.0f;
     for (int i = 0; i < N; i++) {
-        float diagonal = Math::Fabs(r[i][i]);
+        float diagonal = Math::Abs(r[i][i]);
         if (diagonal > maxDiagonal) {
             maxDiagonal = diagonal;
         }
@@ -200,7 +200,7 @@ static bool Decompose(const float input[N][N], float outputQ[N][N], float output
     int rank = 0;
     float rankThreshold = tolerance * maxDiagonal;
     for (int i = 0; i < N; i++) {
-        if (Math::Fabs(r[i][i]) > rankThreshold) {
+        if (Math::Abs(r[i][i]) > rankThreshold) {
             rank++;
         }
     }

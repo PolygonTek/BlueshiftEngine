@@ -53,7 +53,7 @@ static bool FactorizeArray(const float input[N][N], Factor<N> &factor, float tol
                 return false;
             }
 
-            float absValue = Math::Fabs(value);
+            float absValue = Math::Abs(value);
             if (absValue > matrixScale) {
                 matrixScale = absValue;
             }
@@ -74,10 +74,10 @@ static bool FactorizeArray(const float input[N][N], Factor<N> &factor, float tol
 
     for (int column = 0; column < N; column++) {
         int pivotRow = column;
-        float pivotAbs = Math::Fabs(result.matrix[column][column]);
+        float pivotAbs = Math::Abs(result.matrix[column][column]);
 
         for (int row = column + 1; row < N; row++) {
-            float candidateAbs = Math::Fabs(result.matrix[row][column]);
+            float candidateAbs = Math::Abs(result.matrix[row][column]);
             if (candidateAbs > pivotAbs) {
                 pivotAbs = candidateAbs;
                 pivotRow = row;

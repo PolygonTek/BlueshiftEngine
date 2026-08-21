@@ -139,7 +139,7 @@ BE_INLINE uint32_t PackedTangentFrame::ReplaceBiTangentSign(uint32_t packed, flo
 
 BE_INLINE Vec3 PackedTangentFrame::BuildBaseTangent(const Vec3 &normal) {
     Vec3 baseTangent;
-    if (Math::Fabs(normal.x) > Math::Fabs(normal.z)) {
+    if (Math::Abs(normal.x) > Math::Abs(normal.z)) {
         baseTangent.Set(-normal.y, normal.x, 0.0f);
     } else {
         baseTangent.Set(0.0f, -normal.z, normal.y);
@@ -150,7 +150,7 @@ BE_INLINE Vec3 PackedTangentFrame::BuildBaseTangent(const Vec3 &normal) {
 
 #ifdef PACKED_TANGENT_FRAME_DIAMOND_ENCODING
 BE_INLINE float PackedTangentFrame::EncodeDiamond(const Vec2 &direction) {
-    const float l1Norm = Math::Fabs(direction.x) + Math::Fabs(direction.y);
+    const float l1Norm = Math::Abs(direction.x) + Math::Abs(direction.y);
     if (l1Norm <= 1e-20f) {
         return 0.0f;
     }
@@ -173,7 +173,7 @@ BE_INLINE Vec2 PackedTangentFrame::DecodeDiamond(float encoded) {
 
     const float diamondSign = diamond >= 0.5f ? 1.0f : -1.0f;
     const float x = -diamondSign * 4.0f * diamond + 1.0f + diamondSign * 2.0f;
-    const float y = diamondSign * (1.0f - Math::Fabs(x));
+    const float y = diamondSign * (1.0f - Math::Abs(x));
     const float invLength = Math::InvSqrt(x * x + y * y);
     return Vec2(x * invLength, y * invLength);
 }

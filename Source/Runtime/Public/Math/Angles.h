@@ -248,13 +248,13 @@ BE_INLINE Angles &Angles::operator/=(float a) {
 }
 
 BE_INLINE bool Angles::Equals(const Angles &a, const float epsilon) const {
-    if (Math::Fabs(x - a.x) > epsilon) {
+    if (Math::Abs(x - a.x) > epsilon) {
         return false;
     }
-    if (Math::Fabs(y - a.y) > epsilon) {
+    if (Math::Abs(y - a.y) > epsilon) {
         return false;
     }
-    if (Math::Fabs(z - a.z) > epsilon) {
+    if (Math::Abs(z - a.z) > epsilon) {
         return false;
     }
     return true;

@@ -35,7 +35,7 @@ static BE_FORCE_INLINE Coefficients ComputeSymmetric(float diagonalP, float diag
     // The half-scaled numerator avoids overflowing the equivalent
     // (diagonalQ - diagonalP) / (2 * offDiagonal) expression.
     float tau = (0.5f * diagonalQ - 0.5f * diagonalP) / offDiagonal;
-    float absTau = Math::Fabs(tau);
+    float absTau = Math::Abs(tau);
     float sign = tau >= 0.0f ? 1.0f : -1.0f;
     float t;
 

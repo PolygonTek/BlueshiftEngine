@@ -34,7 +34,7 @@ static bool Decompose(const float input[N][N], float outputLower[N][N], float to
                 return false;
             }
 
-            float absValue = Math::Fabs(value);
+            float absValue = Math::Abs(value);
             if (absValue > matrixScale) {
                 matrixScale = absValue;
             }
@@ -48,7 +48,7 @@ static bool Decompose(const float input[N][N], float outputLower[N][N], float to
     for (int row = 1; row < N; row++) {
         for (int column = 0; column < row; column++) {
             float difference = input[row][column] - input[column][row];
-            if (!Math::IsFinite(difference) || Math::Fabs(difference) > tolerance) {
+            if (!Math::IsFinite(difference) || Math::Abs(difference) > tolerance) {
                 return false;
             }
         }

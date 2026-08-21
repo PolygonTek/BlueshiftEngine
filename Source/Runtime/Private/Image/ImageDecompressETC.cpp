@@ -1165,7 +1165,7 @@ static void DecodeEAC_RG11ToRGBA32F(const byte *src, const int width, const int 
                             y = y * 2.0f - 1.0f;
                         }
 
-                        fdata[4 * i + 2] = Math::Sqrt(Math::Fabs(1.0f - x * x - y * y));
+                        fdata[4 * i + 2] = Math::Sqrt(Math::Abs(1.0f - x * x - y * y));
                     }
                 }
 

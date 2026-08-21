@@ -180,7 +180,7 @@ static void R_DeriveTangentsWithoutNormals(BE1::VertexGenericLit *verts, const i
 
         // area sign bit
         const float area = baST[0] * caST[1] - baST[1] * caST[0]; // determinant
-        if (BE1::Math::Fabs(area) < 1e-20f) {
+        if (BE1::Math::Abs(area) < 1e-20f) {
             triangleTangents[triIndex] = BE1::Vec3::zero;
             triangleBitangents[triIndex] = BE1::Vec3::zero;
             continue;

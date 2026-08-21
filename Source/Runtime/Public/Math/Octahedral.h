@@ -42,7 +42,7 @@ private:
 };
 
 BE_INLINE Vec2 Octahedral::Encode(const Vec3 &unitVector) {
-    const float invL1Norm = 1.0f / (Math::Fabs(unitVector.x) + Math::Fabs(unitVector.y) + Math::Fabs(unitVector.z));
+    const float invL1Norm = 1.0f / (Math::Abs(unitVector.x) + Math::Abs(unitVector.y) + Math::Abs(unitVector.z));
     const float x = unitVector.x * invL1Norm;
     const float y = unitVector.y * invL1Norm;
 
@@ -50,12 +50,12 @@ BE_INLINE Vec2 Octahedral::Encode(const Vec3 &unitVector) {
         return Vec2(x, y);
     }
 
-    return Vec2((1.0f - Math::Fabs(y)) * SignNotZero(x),
-                (1.0f - Math::Fabs(x)) * SignNotZero(y));
+    return Vec2((1.0f - Math::Abs(y)) * SignNotZero(x),
+                (1.0f - Math::Abs(x)) * SignNotZero(y));
 }
 
 BE_INLINE Vec3 Octahedral::Decode(const Vec2 &encoded) {
-    Vec3 unitVector(encoded.x, encoded.y, 1.0f - Math::Fabs(encoded.x) - Math::Fabs(encoded.y));
+    Vec3 unitVector(encoded.x, encoded.y, 1.0f - Math::Abs(encoded.x) - Math::Abs(encoded.y));
     const float fold = unitVector.z < 0.0f ? -unitVector.z : 0.0f;
 
     unitVector.x += unitVector.x >= 0.0f ? -fold : fold;

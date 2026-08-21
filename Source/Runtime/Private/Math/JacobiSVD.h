@@ -50,7 +50,7 @@ static bool ColumnsAreOrthogonal(const float matrix[N][N], float tolerance) {
             }
 
             float threshold = tolerance * Math::Sqrt(alpha * beta);
-            if (Math::Fabs(gamma) > threshold) {
+            if (Math::Abs(gamma) > threshold) {
                 return false;
             }
         }
@@ -126,7 +126,7 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
             if (!Math::IsFinite(value)) {
                 return false;
             }
-            float absValue = Math::Fabs(value);
+            float absValue = Math::Abs(value);
             if (absValue > matrixScale) {
                 matrixScale = absValue;
             }
@@ -169,7 +169,7 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
                         continue;
                     }
 
-                    if (Math::Fabs(gamma) <= threshold || gamma == 0.0f) {
+                    if (Math::Abs(gamma) <= threshold || gamma == 0.0f) {
                         continue;
                     }
 
@@ -247,7 +247,7 @@ static bool Decompose(const float input[N][N], float outputU[N][N], float output
         float maxAbsValue = 0.0f;
         for (int row = 0; row < N; row++) {
             leftVectors[row][column] = working[row][column] * inverseSingularValue;
-            float absValue = Math::Fabs(leftVectors[row][column]);
+            float absValue = Math::Abs(leftVectors[row][column]);
             if (absValue > maxAbsValue) {
                 maxAbsValue = absValue;
                 maxAbsIndex = row;

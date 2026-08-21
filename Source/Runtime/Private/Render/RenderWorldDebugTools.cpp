@@ -158,7 +158,7 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
         return;
     }
 
-    int numSteps = Min((int)Math::Ceil((Math::Fabs(deltaAngle / 7.5f))), 96);
+    int numSteps = Min((int)Math::Ceil((Math::Abs(deltaAngle / 7.5f))), 96);
     float theta1 = DEG2RAD(angle1);
     float theta2 = DEG2RAD(angle2);
     float delta = theta2 - theta1;

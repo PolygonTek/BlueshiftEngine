@@ -176,7 +176,7 @@ static void BuildMipMap2D(T *dst, const T *src, int width, int height, int numCo
                         CoverageAccumulator p3 = MipMapSample(src[yOff + xOff]) * a3;
                         *dst++ = (p0 + p1 + p2 + p3) / alphaSum;
                     } else {
-                        *dst++ = Max(a0, Max(a1, Max(a2, a3)));
+                        *dst++ = Max4(a0, a1, a2, a3);
                     }
                 } else {
                     Accumulator p0 = MipMapSample(src[0]);
@@ -244,7 +244,7 @@ static void BuildMipMap3D(T *dst, const T *src, int width, int height, int depth
                             CoverageAccumulator p7 = MipMapSample(src[zOff + yOff + xOff]) * a7;
                             *dst++ = (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / alphaSum;
                         } else {
-                            *dst++ = Max(a0, Max(a1, Max(a2, Max(a3, Max(a4, Max(a5, Max(a6, a7)))))));
+                            *dst++ = Max(Max4(a0, a1, a2, a3), Max4(a4, a5, a6, a7));
                         }
                     } else {
                         Accumulator p0 = MipMapSample(src[0]);
@@ -347,7 +347,7 @@ static void BuildMipMap2DWithGamma(byte *dst, const byte *src, int width, int he
                         float p3 = gammaToLinear[src[yOff + xOff]] * a3;
                         *dst++ = Math::Ftob(255.0f * linearToGamma((p0 + p1 + p2 + p3) / alphaSum));
                     } else {
-                        *dst++ = Max(a0, Max(a1, Max(a2, a3)));
+                        *dst++ = Max4(a0, a1, a2, a3);
                     }
                 } else {
                     if (i != alphaComponentIndex) {
@@ -415,7 +415,7 @@ static void BuildMipMap3DWithGamma(byte *dst, const byte *src, int width, int he
                             float p7 = gammaToLinear[src[zOff + yOff + xOff]] * a7;
                             *dst++ = Math::Ftob(255.0f * linearToGamma((p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / alphaSum));
                         } else {
-                            *dst++ = Max(a0, Max(a1, Max(a2, Max(a3, Max(a4, Max(a5, Max(a6, a7)))))));
+                            *dst++ = Max(Max4(a0, a1, a2, a3), Max4(a4, a5, a6, a7));
                         }
                     } else {
                         if (i != alphaComponentIndex) {

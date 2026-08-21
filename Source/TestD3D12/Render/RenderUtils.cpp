@@ -169,7 +169,7 @@ void TangentsFromTriangle(const BE1::Vec3 &p0, const BE1::Vec3 &p1, const BE1::V
     const float dv2 = uv2[1] - uv0[1];
 
     const float det = du1 * dv2 - du2 * dv1;
-    if (BE1::Math::Fabs(det) <= kEpsilon) {
+    if (BE1::Math::Abs(det) <= kEpsilon) {
         SetFallbackTangents(normal, tangent, bitangent, handedness);
         return;
     }

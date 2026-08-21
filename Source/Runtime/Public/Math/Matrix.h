@@ -52,7 +52,7 @@ template <typename Matrix>
 BE_INLINE bool IsMatrixSymmetric(const Matrix &mat, const float epsilon = MATRIX_EPSILON) {
     for (int i = 1; i < Matrix::Rows; i++) {
         for (int j = 0; j < i; j++) {
-            if (Math::Fabs(mat[i][j] - mat[j][i]) > epsilon) {
+            if (Math::Abs(mat[i][j] - mat[j][i]) > epsilon) {
                 return false;
             }
         }
@@ -64,7 +64,7 @@ template <typename Matrix>
 BE_INLINE bool IsMatrixDiagonal(const Matrix &mat, const float epsilon = MATRIX_EPSILON) {
     for (int i = 0; i < Matrix::Rows; i++) {
         for (int j = 0; j < Matrix::Cols; j++) {
-            if (i != j && Math::Fabs(mat[i][j]) > epsilon) {
+            if (i != j && Math::Abs(mat[i][j]) > epsilon) {
                 return false;
             }
         }

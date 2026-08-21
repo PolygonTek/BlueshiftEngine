@@ -55,8 +55,8 @@ static float GetUnitRadiusToPixelsScale(const VisCamera *visCamera) {
     const BE1::Vec4 rightClipOffset = visCamera->viewProjMatrix * BE1::Vec4(cameraRightDir, 0.0f);
     const BE1::Vec4 upClipOffset = visCamera->viewProjMatrix * BE1::Vec4(cameraUpDir, 0.0f);
 
-    const float radiusToPixelsX = BE1::Math::Fabs(rightClipOffset.x) * static_cast<float>(visCamera->renderWidth) * 0.5f;
-    const float radiusToPixelsY = BE1::Math::Fabs(upClipOffset.y) * static_cast<float>(visCamera->renderHeight) * 0.5f;
+    const float radiusToPixelsX = BE1::Math::Abs(rightClipOffset.x) * static_cast<float>(visCamera->renderWidth) * 0.5f;
+    const float radiusToPixelsY = BE1::Math::Abs(upClipOffset.y) * static_cast<float>(visCamera->renderHeight) * 0.5f;
 
     return BE1::Max(radiusToPixelsX, radiusToPixelsY);
 }
@@ -142,7 +142,7 @@ static void WriteDebugBoxDirLight(DebugDrawVertex *&vertexPtr, const VisLight *v
 
 static void WriteDebugSpotLight(DebugDrawVertex *&vertexPtr, const VisLight *visLight, uint32_t color) {
     const float zNear = BE1::Max(visLight->zNear, MinDebugLightSize);
-    const float zFar = BE1::Max(BE1::Max(visLight->size[0], MinDebugLightSize), zNear + MinDebugLightSize);
+    const float zFar = BE1::Max3(visLight->size[0], MinDebugLightSize, zNear + MinDebugLightSize);
     const float left = BE1::Max(visLight->size[1], MinDebugLightSize);
     const float up = BE1::Max(visLight->size[2], MinDebugLightSize);
 

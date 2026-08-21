@@ -39,8 +39,7 @@ void LuaVM::RegisterMath(LuaCpp::Module &module) {
     _Math["log10"].SetFunc(static_cast<float (*)(float)>(&Math::Log10));
     _Math["pow"].SetFunc(static_cast<float (*)(float, float)>(&Math::Pow));
     _Math["is_power_of_two"].SetFunc(IsPowerOfTwo);
-    _Math["abs"].SetFunc(Math::Abs);
-    _Math["fabs"].SetFunc(Math::Fabs);
+    _Math["abs"].SetFunc(static_cast<double (*)(double)>(&Math::Abs));
     _Math["floor"].SetFunc(Math::Floor);
     _Math["ceil"].SetFunc(Math::Ceil);
     _Math["round"].SetFunc(Math::Round);

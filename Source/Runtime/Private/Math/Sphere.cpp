@@ -49,7 +49,7 @@ bool Sphere::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) 
     }
 
     // 아래 투영식과 교차 거리는 ray.dir 이 단위 벡터인 것을 전제로 한다.
-    assert(Math::Fabs(ray.dir.LengthSqr() - 1.0f) <= 1e-4f);
+    assert(Math::Abs(ray.dir.LengthSqr() - 1.0f) <= 1e-4f);
 
     // m 은 광선 원점에서 구 중심으로 향하는 벡터이고,
     // b 는 구 중심까지 광선 방향으로 투영한 부호 있는 거리다.

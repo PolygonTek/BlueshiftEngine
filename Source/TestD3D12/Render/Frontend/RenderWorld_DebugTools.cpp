@@ -481,7 +481,7 @@ void RenderWorld::DrawDebugArc(const BE1::Vec3 &origin, const BE1::Vec3 &right, 
         return;
     }
 
-    uint32_t numSegments = static_cast<uint32_t>(BE1::Math::Ceil(BE1::Math::Fabs(deltaAngle) / 7.5f));
+    uint32_t numSegments = static_cast<uint32_t>(BE1::Math::Ceil(BE1::Math::Abs(deltaAngle) / 7.5f));
     numSegments = numSegments < 1 ? 1 : (numSegments > 96 ? 96 : numSegments);
 
     const float startAngle = angle1 * (BE1::Math::Pi / 180.0f);

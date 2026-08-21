@@ -336,7 +336,7 @@ BE_INLINE T Hermite<T>::Evaluate(float t) const {
     const Key &k1 = keys[index + 1];
 
     // early out for constant tangent mode
-    if (Math::Fabs(k0.outSlope) >= 100 || Math::Fabs(k1.inSlope) >= 100) {
+    if (Math::Abs(k0.outSlope) >= 100 || Math::Abs(k1.inSlope) >= 100) {
         return k0.point;
     }
 
@@ -369,7 +369,7 @@ BE_INLINE T Hermite<T>::EvaluateDerivative(float t) const {
     const Key &k1 = keys[index + 1];
 
     // early out for constant tangent mode
-    if (Math::Fabs(k0.outSlope) >= 100 || Math::Fabs(k1.inSlope) >= 100) {
+    if (Math::Abs(k0.outSlope) >= 100 || Math::Abs(k1.inSlope) >= 100) {
         return T(0);
     }
 
@@ -403,7 +403,7 @@ BE_INLINE T Hermite<T>::EvaluateSecondDerivative(float t) const {
     const Key &k1 = keys[index + 1];
 
     // early out for constant tangent mode
-    if (Math::Fabs(k0.outSlope) >= 100 || Math::Fabs(k1.inSlope) >= 100) {
+    if (Math::Abs(k0.outSlope) >= 100 || Math::Abs(k1.inSlope) >= 100) {
         return T(0);
     }
 
@@ -437,7 +437,7 @@ BE_INLINE T Hermite<T>::IntegrateSegment(float t) const {
     const Key &k1 = keys[index + 1];
 
     // early out for constant tangent mode
-    if (Math::Fabs(k0.outSlope) >= 100 || Math::Fabs(k1.inSlope) >= 100) {
+    if (Math::Abs(k0.outSlope) >= 100 || Math::Abs(k1.inSlope) >= 100) {
         return (t - k0.time) * k0.point;
     }
    

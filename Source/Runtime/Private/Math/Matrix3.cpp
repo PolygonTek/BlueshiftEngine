@@ -47,7 +47,7 @@ bool Mat3::InverseSelf() {
 
     det = mat[0][0] * inverse[0][0] + mat[0][1] * inverse[1][0] + mat[0][2] * inverse[2][0];
 
-    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(det) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 
@@ -135,7 +135,7 @@ bool Mat3::InverseSelf() {
     // r0 = m0.Inverse();   // 2x2
     det = mat[0*3+0] * mat[1*3+1] - mat[0*3+1] * mat[1*3+0];
 
-    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(det) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 
@@ -157,7 +157,7 @@ bool Mat3::InverseSelf() {
     r3 = r2[0] - mat[2*3+2];
 
     // r3.InverseSelf();
-    if (Math::Fabs(r3) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(r3) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 
@@ -290,16 +290,16 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
     for (int iteration = 0; iteration < maxIterations; iteration++) {
         int p = 0;
         int q = 1;
-        float maxOffDiagonal = Math::Fabs(matrix[0][1]);
+        float maxOffDiagonal = Math::Abs(matrix[0][1]);
 
-        float offDiagonal = Math::Fabs(matrix[0][2]);
+        float offDiagonal = Math::Abs(matrix[0][2]);
         if (offDiagonal > maxOffDiagonal) {
             p = 0;
             q = 2;
             maxOffDiagonal = offDiagonal;
         }
 
-        offDiagonal = Math::Fabs(matrix[1][2]);
+        offDiagonal = Math::Abs(matrix[1][2]);
         if (offDiagonal > maxOffDiagonal) {
             p = 1;
             q = 2;
@@ -312,7 +312,7 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
 
         float matrixScale = maxOffDiagonal;
         for (int i = 0; i < 3; i++) {
-            float diagonal = Math::Fabs(matrix[i][i]);
+            float diagonal = Math::Abs(matrix[i][i]);
             if (!Math::IsFinite(diagonal)) {
                 return false;
             }
@@ -332,19 +332,19 @@ bool Mat3::EigenDecomposeSymmetric(Vec3 &eigenValues, Mat3 &eigenVectors, float 
     }
 
     if (!converged) {
-        float maxOffDiagonal = Math::Fabs(matrix[0][1]);
-        float offDiagonal = Math::Fabs(matrix[0][2]);
+        float maxOffDiagonal = Math::Abs(matrix[0][1]);
+        float offDiagonal = Math::Abs(matrix[0][2]);
         if (offDiagonal > maxOffDiagonal) {
             maxOffDiagonal = offDiagonal;
         }
-        offDiagonal = Math::Fabs(matrix[1][2]);
+        offDiagonal = Math::Abs(matrix[1][2]);
         if (offDiagonal > maxOffDiagonal) {
             maxOffDiagonal = offDiagonal;
         }
 
         float matrixScale = maxOffDiagonal;
         for (int i = 0; i < 3; i++) {
-            float diagonal = Math::Fabs(matrix[i][i]);
+            float diagonal = Math::Abs(matrix[i][i]);
             if (!Math::IsFinite(diagonal)) {
                 return false;
             }
@@ -442,7 +442,7 @@ static void MatrixNorms(const Mat3 &matrix, float &oneNorm, float &infinityNorm)
 
     for (int column = 0; column < 3; column++) {
         for (int row = 0; row < 3; row++) {
-            float absValue = Math::Fabs(matrix[column][row]);
+            float absValue = Math::Abs(matrix[column][row]);
             columnSums[column] += absValue;
             rowSums[row] += absValue;
         }
@@ -456,7 +456,7 @@ static float MaxAbsDifference(const Mat3 &a, const Mat3 &b) {
     float maxDifference = 0.0f;
     for (int column = 0; column < 3; column++) {
         for (int row = 0; row < 3; row++) {
-            maxDifference = Max(maxDifference, Math::Fabs(a[column][row] - b[column][row]));
+            maxDifference = Max(maxDifference, Math::Abs(a[column][row] - b[column][row]));
         }
     }
     return maxDifference;
@@ -1597,7 +1597,7 @@ Rotation Mat3::ToRotation() const {
     r.angle = Math::ACos(q.w);
 
     // angle is zero, axis can be anything
-    if (Math::Fabs(r.angle) < 1e-10f) {
+    if (Math::Abs(r.angle) < 1e-10f) {
         r.vec.Set(0.0f, 0.0f, 1.0f);
         r.angle = 0.0f;
     } else {
@@ -1711,7 +1711,7 @@ bool Mat3::SetFromLookAt(const Vec3 &viewDir, const Vec3 &up) {
         return false;
     }
     mat[2] = mat[0].Cross(mat[1]);
-    if (Math::Fabs(mat[2].LengthSqr() - 1.0f) > VECTOR_EPSILON) {
+    if (Math::Abs(mat[2].LengthSqr() - 1.0f) > VECTOR_EPSILON) {
         return false;
     }
     return true;

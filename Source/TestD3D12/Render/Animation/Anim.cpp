@@ -1213,9 +1213,9 @@ static float CompareJointsQ(const BE1::JointPose *joints1, const BE1::JointPose 
 
         // NOTE: w 값을 양수로 유지하기 위해 -1 을 곱한 xyz 를 고려해야 한다. 
         // 오차값이 실제보다 더 작게 나올 수도 있지만, 일단은 이렇게..
-        maxDeltaQ = BE1::Max(maxDeltaQ, BE1::Math::Fabs(BE1::Math::Fabs(joint1Ptr->q.x) - BE1::Math::Fabs(joint2Ptr->q.x)));
-        maxDeltaQ = BE1::Max(maxDeltaQ, BE1::Math::Fabs(BE1::Math::Fabs(joint1Ptr->q.y) - BE1::Math::Fabs(joint2Ptr->q.y)));
-        maxDeltaQ = BE1::Max(maxDeltaQ, BE1::Math::Fabs(BE1::Math::Fabs(joint1Ptr->q.z) - BE1::Math::Fabs(joint2Ptr->q.z)));
+        maxDeltaQ = BE1::Max(maxDeltaQ, BE1::Math::Abs(BE1::Math::Abs(joint1Ptr->q.x) - BE1::Math::Abs(joint2Ptr->q.x)));
+        maxDeltaQ = BE1::Max(maxDeltaQ, BE1::Math::Abs(BE1::Math::Abs(joint1Ptr->q.y) - BE1::Math::Abs(joint2Ptr->q.y)));
+        maxDeltaQ = BE1::Max(maxDeltaQ, BE1::Math::Abs(BE1::Math::Abs(joint1Ptr->q.z) - BE1::Math::Abs(joint2Ptr->q.z)));
     }
 
     return maxDeltaQ;

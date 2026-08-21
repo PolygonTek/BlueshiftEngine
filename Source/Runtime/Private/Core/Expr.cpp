@@ -230,7 +230,7 @@ void ExprChunk::EvaluateStack() {
                 g_constantRegisters[a] = -g_constantRegisters[a];
                 break;
             case OpCode_Abs:
-                g_constantRegisters[a] = Math::Fabs(g_constantRegisters[a]);
+                g_constantRegisters[a] = Math::Abs(g_constantRegisters[a]);
                 break;
             case OpCode_Floor:
                 g_constantRegisters[a] = Math::Floor(g_constantRegisters[a]);
@@ -729,7 +729,7 @@ void ExprChunk::Evaluate(const float localParms[MAX_EXPR_LOCALPARMS], float *out
             SetValue(instruction.dest, -GetValue(instruction.src0));
             break;
         case OpCode_Abs:
-            SetValue(instruction.dest, Math::Fabs(GetValue(instruction.src0)));
+            SetValue(instruction.dest, Math::Abs(GetValue(instruction.src0)));
             break;
         case OpCode_Floor:
             SetValue(instruction.dest, Math::Floor(GetValue(instruction.src0)));

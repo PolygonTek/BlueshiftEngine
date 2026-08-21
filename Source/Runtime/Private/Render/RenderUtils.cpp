@@ -143,7 +143,7 @@ void R_TangentsFromTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, cons
 
     float div;
     float det = ds1 * dt2 - ds2 * dt1;
-    if (Math::Fabs(det) < 0.0001f) {
+    if (Math::Abs(det) < 0.0001f) {
         div = 1.0f;
     } else {
         div = 1.0f / det;

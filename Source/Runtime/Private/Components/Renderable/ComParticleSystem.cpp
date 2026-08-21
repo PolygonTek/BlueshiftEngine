@@ -542,7 +542,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTSize)) {
             trail->size = particle->initialSize * stage->sizeOverLifetimeModule.size.Evaluate(particle->randomSize, trailFrac);
         } else if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::SizeBySpeed)) {
-            float l = Math::Fabs(stage->sizeBySpeedModule.speedRange[1] - stage->sizeBySpeedModule.speedRange[0]);
+            float l = Math::Abs(stage->sizeBySpeedModule.speedRange[1] - stage->sizeBySpeedModule.speedRange[0]);
             float speedFrac = (UnitToMeter(trailSpeed) - stage->sizeBySpeedModule.speedRange[0]) / l;
             trail->size = particle->initialSize * stage->sizeBySpeedModule.size.Evaluate(particle->randomSize, speedFrac);
         } else {
@@ -565,7 +565,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             float angularVelocity = stage->rotationOverLifetimeModule.rotation.Evaluate(particle->randomAngularVelocity, trailFrac);
             trail->angle = particle->initialAngle + MILLI2SEC(trailAge) * angularVelocity;
         } else if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::RotationBySpeed)) {
-            float l = Math::Fabs(stage->rotationBySpeedModule.speedRange[1] - stage->rotationBySpeedModule.speedRange[0]);
+            float l = Math::Abs(stage->rotationBySpeedModule.speedRange[1] - stage->rotationBySpeedModule.speedRange[0]);
             float speedFrac = (UnitToMeter(trailSpeed) - stage->rotationBySpeedModule.speedRange[0]) / l;
             float angularVelocity = stage->rotationBySpeedModule.rotation.Evaluate(particle->randomSize, speedFrac);
             trail->angle = particle->initialAngle + MILLI2SEC(trailAge) * angularVelocity; 

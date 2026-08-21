@@ -73,8 +73,8 @@ public:
     Vec4 &&             operator-() && { x = -x; y = -y; z = -z; w = -w; return std::move(*this); }
 
                         /// return Vec4(|x|, |y|, |z|, |w|)
-    Vec4                Abs() const & { return Vec4(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z), Math::Fabs(w)); }
-    Vec4 &&             Abs() && { x = Math::Fabs(x); y = Math::Fabs(y); z = Math::Fabs(z); w = Math::Fabs(w); return std::move(*this); }
+    Vec4                Abs() const & { return Vec4(Math::Abs(x), Math::Abs(y), Math::Abs(z), Math::Abs(w)); }
+    Vec4 &&             Abs() && { x = Math::Abs(x); y = Math::Abs(y); z = Math::Abs(z); w = Math::Abs(w); return std::move(*this); }
 
                         /// Adds a vector to this vector.
     Vec4                Add(const Vec4 &v) const & { return *this + v; }
@@ -214,13 +214,13 @@ public:
     static Vec4         FromScalar(float s) { return Vec4(s, s, s, s); }
 
                         /// Get the minimum component of a vector
-    float               MinComponent() const { return Min(Min(x, y), Min(z, w)); }
+    float               MinComponent() const { return Min4(x, y, z, w); }
                         /// Get the maximum component of a vector
-    float               MaxComponent() const { return Max(Max(x, y), Max(z, w)); }
+    float               MaxComponent() const { return Max4(x, y, z, w); }
                         /// Get the minimum absolute component of a vector
-    float               MinAbsComponent() const { return Min(Min(Math::Fabs(x), Math::Fabs(y)), Min(Math::Fabs(z), Math::Fabs(w))); }
+    float               MinAbsComponent() const { return AbsMin4(x, y, z, w); }
                         /// Get the maximum absolute component of a vector
-    float               MaxAbsComponent() const { return Max(Max(Math::Fabs(x), Math::Fabs(y)), Max(Math::Fabs(z), Math::Fabs(w))); }
+    float               MaxAbsComponent() const { return AbsMax4(x, y, z, w); }
 
                         /// Computes the length of this vector.
     float               Length() const;
@@ -404,16 +404,16 @@ BE_INLINE bool Vec4::Equals(const Vec4 &a) const {
 }
 
 BE_INLINE bool Vec4::Equals(const Vec4 &a, const float epsilon) const {
-    if (Math::Fabs(x - a.x) > epsilon) {
+    if (Math::Abs(x - a.x) > epsilon) {
         return false;
     }
-    if (Math::Fabs(y - a.y) > epsilon) {
+    if (Math::Abs(y - a.y) > epsilon) {
         return false;
     }
-    if (Math::Fabs(z - a.z) > epsilon) {
+    if (Math::Abs(z - a.z) > epsilon) {
         return false;
     }
-    if (Math::Fabs(w - a.w) > epsilon) {
+    if (Math::Abs(w - a.w) > epsilon) {
         return false;
     }
     return true;
@@ -530,7 +530,7 @@ BE_INLINE float Vec4::Dot(const Vec4 &a) const {
 }
 
 BE_INLINE float Vec4::AbsDot(const Vec4 &a) const {
-    return Math::Fabs(x * a.x) + Math::Fabs(y * a.y) + Math::Fabs(z * a.z) + Math::Fabs(w * a.w);
+    return Math::Abs(x * a.x) + Math::Abs(y * a.y) + Math::Abs(z * a.z) + Math::Abs(w * a.w);
 }
 
 BE_INLINE void Vec4::SetFromLerp(const Vec4 &v1, const Vec4 &v2, const float t) {

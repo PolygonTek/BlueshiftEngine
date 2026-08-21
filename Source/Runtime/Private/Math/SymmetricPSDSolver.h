@@ -99,7 +99,7 @@ static bool Solve(const MatrixType &matrix, const VectorType &rightHandSide, Vec
 
     float eigenvalueScale = 0.0f;
     for (int i = 0; i < N; i++) {
-        eigenvalueScale = Max(eigenvalueScale, Math::Fabs(eigenValues[i]));
+        eigenvalueScale = Max(eigenvalueScale, Math::Abs(eigenValues[i]));
     }
     // Reject materially negative eigenvalues. Values within the relative zero
     // threshold are treated as null-space directions for the minimum-norm solution.

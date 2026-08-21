@@ -215,8 +215,8 @@ void RenderCamera::CalcConvolutionBloomKernelParams(const BE1::Image &kernelImag
     const float texelSizeX = 1.0f / static_cast<float>(width);
     const float texelSizeY = 1.0f / static_cast<float>(height);
 
-    const float kernelExtentX = BE1::Max(BE1::Math::Fabs(minX), BE1::Math::Fabs(maxX)) + texelSizeX;
-    const float kernelExtentY = BE1::Max(BE1::Math::Fabs(minY), BE1::Math::Fabs(maxY)) + texelSizeY;
+    const float kernelExtentX = BE1::AbsMax(minX, maxX) + texelSizeX;
+    const float kernelExtentY = BE1::AbsMax(minY, maxY) + texelSizeY;
 
     // normalized extents 를 계산한다.
     outNormalizedKernelExtents = BE1::Vec2(BE1::Min(kernelExtentX, 1.0f), BE1::Min(kernelExtentY, 1.0f));
@@ -318,8 +318,8 @@ BE1::Vec2 RenderCamera::CalcNormalizedKernelExtents() const {
     float rotationCos;
     BE1::Math::SinCos(DEG2RAD(fftBloomKernelRotation), rotationSin, rotationCos);
 
-    const float absCos = BE1::Math::Fabs(rotationCos);
-    const float absSin = BE1::Math::Fabs(rotationSin);
+    const float absCos = BE1::Math::Abs(rotationCos);
+    const float absSin = BE1::Math::Abs(rotationSin);
 
     // 외부에서 임의로 입력한 커널의 회전과 스케일이 고려된 normalized kernel extent 계산하기
     BE1::Vec2 normalizedKernelExtents = fftBloomKernelNormalizedExtents;

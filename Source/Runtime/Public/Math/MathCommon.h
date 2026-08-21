@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <limits>
 
 #include "Platform/Intrinsics.h"
@@ -390,7 +391,9 @@ public:
                                 /// Returns the absolute value of the integer value (for reference only). Requires x != INT_MIN.
     static int                  Abs(int x);
                                 /// Returns the absolute value of the floating point value.
-    static float                Fabs(float f);
+    static float                Abs(float f);
+                                /// Returns the absolute value of the double-precision floating point value.
+    static double               Abs(double d);
 
                                 /// Returns the largest integer that is less than or equal to the given value.
     static float                Floor(float f);
@@ -987,17 +990,12 @@ BE_INLINE int Math::Abs(int x) {
     return x < 0 ? -x : x;
 }
 
-BE_INLINE float Math::Fabs(float f) { 
-#if 0
-    if (f >= 0) {
-        return f;
-    }
-    return -f;
-#else
-    uint32_t tmp = *reinterpret_cast<uint32_t *>(&f);
-    tmp &= 0x7FFFFFFF;
-    return *reinterpret_cast<float *>(&tmp);
-#endif
+BE_INLINE float Math::Abs(float f) {
+    return std::abs(f);
+}
+
+BE_INLINE double Math::Abs(double d) {
+    return std::abs(d);
 }
 
 BE_INLINE float Math::Floor(float f) {

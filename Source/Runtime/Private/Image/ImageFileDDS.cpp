@@ -807,7 +807,7 @@ int32_t Image::ComputeFirstMipForMaxDimension(int32_t width, int32_t height, int
         int mipHeight = BE1::Max(1, height >> mipLevel);
         int mipDepth = BE1::Max(1, depth >> mipLevel);
 
-        int mipMaxDimension = BE1::Max(mipWidth, BE1::Max(mipHeight, mipDepth));
+        int mipMaxDimension = BE1::Max3(mipWidth, mipHeight, mipDepth);
         if (mipMaxDimension <= maxDimension) {
             return mipLevel;
         }

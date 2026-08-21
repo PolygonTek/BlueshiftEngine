@@ -69,8 +69,8 @@ public:
     Vec2 &&             operator-() && { x = -x; y = -y; return std::move(*this); }
 
                         /// Returns Vec2(|x|, |y|)
-    Vec2                Abs() const & { return Vec2(Math::Fabs(x), Math::Fabs(y)); }
-    Vec2 &&             Abs() && { x = Math::Fabs(x); y = Math::Fabs(y); return std::move(*this); }
+    Vec2                Abs() const & { return Vec2(Math::Abs(x), Math::Abs(y)); }
+    Vec2 &&             Abs() && { x = Math::Abs(x); y = Math::Abs(y); return std::move(*this); }
 
                         /// Adds a vector to this vector.
     Vec2                Add(const Vec2 &v) const & { return *this + v; }
@@ -214,17 +214,17 @@ public:
                         /// Get the maximum component of a vector.
     float               MaxComponent() const { return Max(x, y); }
                         /// Get the minimum absolute component of a vector.
-    float               MinAbsComponent() const { return Min(Math::Fabs(x), Math::Fabs(y)); }
+    float               MinAbsComponent() const { return AbsMin(x, y); }
                         /// Get the maximum absolute component of a vector.
-    float               MaxAbsComponent() const { return Max(Math::Fabs(x), Math::Fabs(y)); }
+    float               MaxAbsComponent() const { return AbsMax(x, y); }
                         /// Get the minimum component index of a vector.
     int                 MinComponentIndex() const { return MinIndex(x, y); }
                         /// Get the maximum component index of a vector.
     int                 MaxComponentIndex() const { return MaxIndex(x, y); }
                         /// Get the minimum absolute component index of a vector.
-    int                 MinAbsComponentIndex() const { return MinIndex(Math::Fabs(x), Math::Fabs(y)); }
+    int                 MinAbsComponentIndex() const { return MinIndex(Math::Abs(x), Math::Abs(y)); }
                         /// Get the maximum absolute component index of a vector.
-    int                 MaxAbsComponentIndex() const { return MaxIndex(Math::Fabs(x), Math::Fabs(y)); }
+    int                 MaxAbsComponentIndex() const { return MaxIndex(Math::Abs(x), Math::Abs(y)); }
 
                         /// Performs a 2D swizzled access to this vector.
     Vec2                xx() const { return Vec2(x, x); }
@@ -423,10 +423,10 @@ BE_INLINE bool Vec2::Equals(const Vec2 &a) const {
 }
 
 BE_INLINE bool Vec2::Equals(const Vec2 &a, const float epsilon) const {
-    if (Math::Fabs(x - a.x) > epsilon) {
+    if (Math::Abs(x - a.x) > epsilon) {
         return false;
     }
-    if (Math::Fabs(y - a.y) > epsilon) {
+    if (Math::Abs(y - a.y) > epsilon) {
         return false;
     }
     return true;
@@ -544,7 +544,7 @@ BE_INLINE float Vec2::Dot(const Vec2 &a) const {
 }
 
 BE_INLINE float Vec2::AbsDot(const Vec2 &a) const {
-    return Math::Fabs(x * a.x) + Math::Fabs(y * a.y);
+    return Math::Abs(x * a.x) + Math::Abs(y * a.y);
 }
 
 BE_INLINE float Vec2::Cross(const Vec2 &a) const {

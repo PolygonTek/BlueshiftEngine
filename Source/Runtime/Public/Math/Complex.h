@@ -172,7 +172,7 @@ BE_INLINE Complex &Complex::operator*=(const Complex &rhs) {
 
 BE_INLINE Complex &Complex::operator/=(const Complex &rhs) {
     float s, t;
-    if (Math::Fabs(rhs.re) >= Math::Fabs(rhs.im)) {
+    if (Math::Abs(rhs.re) >= Math::Abs(rhs.im)) {
         s = rhs.im / rhs.re;
         t = 1.0f / (rhs.re + s * rhs.im);
         *this = Complex((re + s * im) * t, (im - s * re) * t);
@@ -225,7 +225,7 @@ BE_INLINE Complex Complex::operator*(const Complex &rhs) const {
 
 BE_INLINE Complex Complex::operator/(const Complex &rhs) const {
     float s, t;
-    if (Math::Fabs(rhs.re) >= Math::Fabs(rhs.im)) {
+    if (Math::Abs(rhs.re) >= Math::Abs(rhs.im)) {
         s = rhs.im / rhs.re;
         t = 1.0f / (rhs.re + s * rhs.im);
         return Complex((re + s * im) * t, (im - s * re) * t);
@@ -267,7 +267,7 @@ BE_INLINE Complex operator*(const float lhs, const Complex &rhs) {
 
 BE_INLINE Complex operator/(const float lhs, const Complex &rhs) {
     float s, t;
-    if (Math::Fabs(rhs.re) >= Math::Fabs(rhs.im)) {
+    if (Math::Abs(rhs.re) >= Math::Abs(rhs.im)) {
         s = rhs.im / rhs.re;
         t = lhs / (rhs.re + s * rhs.im);
         return Complex(t, - s * t);
@@ -292,7 +292,7 @@ BE_INLINE Complex Complex::Conjugate() const {
 
 BE_INLINE Complex Complex::Reciprocal() const {
     float s, t;
-    if (Math::Fabs(re) >= Math::Fabs(im)) {
+    if (Math::Abs(re) >= Math::Abs(im)) {
         s = im / re;
         t = 1.0f / (re + s * im);
         return Complex(t, - s * t);
@@ -309,8 +309,8 @@ BE_INLINE Complex Complex::Sqrt() const {
     }
     
     float w;
-    float x = Math::Fabs(re);
-    float y = Math::Fabs(im);
+    float x = Math::Abs(re);
+    float y = Math::Abs(im);
     
     if (x >= y) {
         w = y / x;
@@ -333,8 +333,8 @@ BE_INLINE Complex Complex::Sqrt() const {
 
 BE_INLINE float Complex::Abs() const {
     float t;
-    float x = Math::Fabs(re);
-    float y = Math::Fabs(im);
+    float x = Math::Abs(re);
+    float y = Math::Abs(im);
     
     if (x == 0.0f) {
         return y;
@@ -354,10 +354,10 @@ BE_INLINE bool Complex::Equals(const Complex &a) const {
 }
 
 BE_INLINE bool Complex::Equals(const Complex &a, const float epsilon) const {
-    if (Math::Fabs(re - a.re) > epsilon) {
+    if (Math::Abs(re - a.re) > epsilon) {
         return false;
     }
-    if (Math::Fabs(im - a.im) > epsilon) {
+    if (Math::Abs(im - a.im) > epsilon) {
         return false;
     }
     return true;

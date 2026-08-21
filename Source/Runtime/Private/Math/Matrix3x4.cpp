@@ -889,7 +889,7 @@ bool Mat3x4::InverseSelf() {
     // 4x4 determinant assuming last row is [0, 0, 0, 1]
     double det = det3_201_012;
 
-    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+    if (Math::Abs(det) < MATRIX_INVERSE_EPSILON) {
         return false;
     }
 

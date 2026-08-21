@@ -451,19 +451,19 @@ BE_INLINE bool Mat2::IsIdentity(const float epsilon) const {
 }
 
 BE_INLINE bool Mat2::IsUpperTriangular(const float epsilon) const {
-    return (Math::Fabs(mat[1][0]) <= epsilon);
+    return (Math::Abs(mat[1][0]) <= epsilon);
 }
 
 BE_INLINE bool Mat2::IsLowerTriangular(const float epsilon) const {
-    return (Math::Fabs(mat[0][1]) <= epsilon);
+    return (Math::Abs(mat[0][1]) <= epsilon);
 }
 
 BE_INLINE bool Mat2::IsSymmetric(const float epsilon) const {
-    return (Math::Fabs(mat[0][1] - mat[1][0]) <= epsilon);
+    return (Math::Abs(mat[0][1] - mat[1][0]) <= epsilon);
 }
 
 BE_INLINE bool Mat2::IsDiagonal(const float epsilon) const {
-    if (Math::Fabs(mat[0][1]) > epsilon || Math::Fabs(mat[1][0]) > epsilon) {
+    if (Math::Abs(mat[0][1]) > epsilon || Math::Abs(mat[1][0]) > epsilon) {
         return false;
     }
     return true;

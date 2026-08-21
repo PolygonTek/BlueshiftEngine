@@ -238,8 +238,8 @@ static void TestNEONPrimitives() {
 
 static void VerifyFloatArrayResults(const char *operation, const float *expected, const float *actual, const int count) {
     for (int i = 0; i < count; i++) {
-        const float tolerance = 1e-5f * (1.0f + BE1::Math::Fabs(expected[i]));
-        const bool equal = expected[i] == actual[i] || BE1::Math::Fabs(expected[i] - actual[i]) <= tolerance;
+        const float tolerance = 1e-5f * (1.0f + BE1::Math::Abs(expected[i]));
+        const bool equal = expected[i] == actual[i] || BE1::Math::Abs(expected[i] - actual[i]) <= tolerance;
         if (!equal) {
             std::fprintf(stderr, "SIMD %s verification failed at index %d: expected %g, actual %g\n", operation, i, expected[i], actual[i]);
             BE_FATALERROR("SIMD %s verification failed at index %d: expected %g, actual %g\n", operation, i, expected[i], actual[i]);
@@ -249,8 +249,8 @@ static void VerifyFloatArrayResults(const char *operation, const float *expected
 }
 
 static void VerifyFloatResult(const char *operation, const float expected, const float actual) {
-    const float tolerance = 1e-5f * (1.0f + BE1::Math::Fabs(expected));
-    const bool equal = expected == actual || BE1::Math::Fabs(expected - actual) <= tolerance;
+    const float tolerance = 1e-5f * (1.0f + BE1::Math::Abs(expected));
+    const bool equal = expected == actual || BE1::Math::Abs(expected - actual) <= tolerance;
     if (!equal) {
         std::fprintf(stderr, "SIMD %s verification failed: expected %g, actual %g\n", operation, expected, actual);
         BE_FATALERROR("SIMD %s verification failed: expected %g, actual %g\n", operation, expected, actual);

@@ -526,7 +526,7 @@ Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &direction, float &u, f
         break;
     }
 
-    const float ama = Math::Fabs(majorAxis);
+    const float ama = Math::Abs(majorAxis);
     u = (signedU / ama + 1.0f) * 0.5f;
     v = (signedV / ama + 1.0f) * 0.5f;
 

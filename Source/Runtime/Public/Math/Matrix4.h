@@ -186,13 +186,13 @@ public:
     bool                IsAffine(const float epsilon = MATRIX_EPSILON) const;
 
                         /// Returns the minimum component.
-    float               MinComponent() const { return Min(Min(mat[0].MinComponent(), mat[1].MinComponent()), Min(mat[2].MinComponent(), mat[3].MinComponent())); }
+    float               MinComponent() const { return Min4(mat[0].MinComponent(), mat[1].MinComponent(), mat[2].MinComponent(), mat[3].MinComponent()); }
                         /// Returns the maximum component.
-    float               MaxComponent() const { return Max(Max(mat[0].MaxComponent(), mat[1].MaxComponent()), Max(mat[2].MaxComponent(), mat[3].MaxComponent())); }
+    float               MaxComponent() const { return Max4(mat[0].MaxComponent(), mat[1].MaxComponent(), mat[2].MaxComponent(), mat[3].MaxComponent()); }
                         /// Returns the minimum absolute component.
-    float               MinAbsComponent() const { return Min(Min(mat[0].MinAbsComponent(), mat[1].MinAbsComponent()), Min(mat[2].MinAbsComponent(), mat[3].MinAbsComponent())); }
+    float               MinAbsComponent() const { return Min4(mat[0].MinAbsComponent(), mat[1].MinAbsComponent(), mat[2].MinAbsComponent(), mat[3].MinAbsComponent()); }
                         /// Returns the maximum absolute component.
-    float               MaxAbsComponent() const { return Max(Max(mat[0].MaxAbsComponent(), mat[1].MaxAbsComponent()), Max(mat[2].MaxAbsComponent(), mat[3].MaxAbsComponent())); }
+    float               MaxAbsComponent() const { return Max4(mat[0].MaxAbsComponent(), mat[1].MaxAbsComponent(), mat[2].MaxAbsComponent(), mat[3].MaxAbsComponent()); }
 
                         /// Returns the squared Frobenius norm of this matrix.
     float               FrobeniusNormSqr() const;
@@ -567,7 +567,7 @@ BE_INLINE bool Mat4::Equals(const Mat4 &a, const float epsilon) const {
     const float *ptr2 = reinterpret_cast<const float *>(a.mat);
 
     for (int i = 0; i < Rows * Cols; i++) {
-        if (Math::Fabs(ptr1[i] - ptr2[i]) > epsilon) {
+        if (Math::Abs(ptr1[i] - ptr2[i]) > epsilon) {
             return false;
         }
     }
@@ -593,27 +593,27 @@ BE_INLINE bool Mat4::IsIdentity(const float epsilon) const {
 }
 
 BE_INLINE bool Mat4::IsUpperTriangular(const float epsilon) const {
-    return (Math::Fabs(mat[1][0]) <= epsilon) &&
-           (Math::Fabs(mat[2][0]) <= epsilon) &&
-           (Math::Fabs(mat[2][1]) <= epsilon) &&
-           (Math::Fabs(mat[3][0]) <= epsilon) &&
-           (Math::Fabs(mat[3][1]) <= epsilon) &&
-           (Math::Fabs(mat[3][2]) <= epsilon);
+    return (Math::Abs(mat[1][0]) <= epsilon) &&
+           (Math::Abs(mat[2][0]) <= epsilon) &&
+           (Math::Abs(mat[2][1]) <= epsilon) &&
+           (Math::Abs(mat[3][0]) <= epsilon) &&
+           (Math::Abs(mat[3][1]) <= epsilon) &&
+           (Math::Abs(mat[3][2]) <= epsilon);
 }
 
 BE_INLINE bool Mat4::IsLowerTriangular(const float epsilon) const {
-    return (Math::Fabs(mat[0][1]) <= epsilon) &&
-           (Math::Fabs(mat[0][2]) <= epsilon) &&
-           (Math::Fabs(mat[0][3]) <= epsilon) &&
-           (Math::Fabs(mat[1][2]) <= epsilon) &&
-           (Math::Fabs(mat[1][3]) <= epsilon) &&
-           (Math::Fabs(mat[2][3]) <= epsilon);
+    return (Math::Abs(mat[0][1]) <= epsilon) &&
+           (Math::Abs(mat[0][2]) <= epsilon) &&
+           (Math::Abs(mat[0][3]) <= epsilon) &&
+           (Math::Abs(mat[1][2]) <= epsilon) &&
+           (Math::Abs(mat[1][3]) <= epsilon) &&
+           (Math::Abs(mat[2][3]) <= epsilon);
 }
 
 BE_INLINE bool Mat4::IsSymmetric(const float epsilon) const {
     for (int i = 1; i < Rows; i++) {
         for (int j = 0; j < i; j++) {
-            if (Math::Fabs(mat[i][j] - mat[j][i]) > epsilon) {
+            if (Math::Abs(mat[i][j] - mat[j][i]) > epsilon) {
                 return false;
             }
         }
@@ -624,7 +624,7 @@ BE_INLINE bool Mat4::IsSymmetric(const float epsilon) const {
 BE_INLINE bool Mat4::IsDiagonal(const float epsilon) const {
     for (int i = 0; i < Rows; i++) {
         for (int j = 0; j < Cols; j++) {
-            if (i != j && Math::Fabs(mat[i][j]) > epsilon) {
+            if (i != j && Math::Abs(mat[i][j]) > epsilon) {
                 return false;
             }
         }
@@ -633,14 +633,14 @@ BE_INLINE bool Mat4::IsDiagonal(const float epsilon) const {
 }
 
 BE_INLINE bool Mat4::IsSingular(const float epsilon) const {
-    return Math::Fabs(Determinant()) > epsilon ? false : true;
+    return Math::Abs(Determinant()) > epsilon ? false : true;
 }
 
 BE_INLINE bool Mat4::IsAffine(const float epsilon) const {
-    if (Math::Fabs(mat[3][0]) > epsilon || 
-        Math::Fabs(mat[3][1]) > epsilon || 
-        Math::Fabs(mat[3][2]) > epsilon || 
-        Math::Fabs(mat[3][3] - 1.0f) > epsilon) {
+    if (Math::Abs(mat[3][0]) > epsilon ||
+        Math::Abs(mat[3][1]) > epsilon ||
+        Math::Abs(mat[3][2]) > epsilon ||
+        Math::Abs(mat[3][3] - 1.0f) > epsilon) {
         return false;
     }
     return true;

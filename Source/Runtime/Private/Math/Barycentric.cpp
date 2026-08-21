@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 
 Vec2 Barycentric::LineSegment1D(float p0, float p1, float p) {
     float v1 = p1 - p0;
-    if (Math::Fabs(v1) < VECTOR_EPSILON) {
+    if (Math::Abs(v1) < VECTOR_EPSILON) {
         return Vec2(1, 0);
     }
     float c1 = (p - p0) / v1;
@@ -39,7 +39,7 @@ Vec2 Barycentric::LineSegment2D(const Vec2 &p0, const Vec2 &p1, const Vec2 &p) {
     Vec2 v1 = p1 - p0;
     float c1;
 
-    if (Math::Fabs(v1.x) >= Math::Fabs(v1.y)) {
+    if (Math::Abs(v1.x) >= Math::Abs(v1.y)) {
         c1 = (p.x - p0.x) / v1.x;
     } else {
         c1 = (p.y - p0.y) / v1.y;
@@ -52,7 +52,7 @@ Vec3 Barycentric::Triangle2D(const Vec2 &p0, const Vec2 &p1, const Vec2 &p2, con
     Vec2 v2 = p2 - p0;
     float det = v1[0] * v2[1] - v1[1] * v2[0];
 
-    if (Math::Fabs(det) < VECTOR_EPSILON) {
+    if (Math::Abs(det) < VECTOR_EPSILON) {
         return Vec3(1, 0, 0);
     }
     float invDet = 1.0f / det;
@@ -79,9 +79,9 @@ Vec3 Barycentric::Triangle3D(const Vec3 &p0, const Vec3 &p1, const Vec3 &p2, con
     float w = 1.0f - u - v;
 #else
     // Absolute components for determining projection plane.
-    float amx = Math::Fabs(m.x);
-    float amy = Math::Fabs(m.y);
-    float amz = Math::Fabs(m.z);
+    float amx = Math::Abs(m.x);
+    float amy = Math::Abs(m.y);
+    float amz = Math::Abs(m.z);
 
     // Nominators and one-over-denominator for u and v ratios.
     float nu, nv, ood;

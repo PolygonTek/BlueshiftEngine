@@ -418,16 +418,16 @@ BE_INLINE bool Quat::Equals(const Quat &a) const {
 }
 
 BE_INLINE bool Quat::Equals(const Quat &a, const float epsilon) const {
-    if (Math::Fabs(x - a.x) > epsilon) {
+    if (Math::Abs(x - a.x) > epsilon) {
         return false;
     }
-    if (Math::Fabs(y - a.y) > epsilon) {
+    if (Math::Abs(y - a.y) > epsilon) {
         return false;
     }
-    if (Math::Fabs(z - a.z) > epsilon) {
+    if (Math::Abs(z - a.z) > epsilon) {
         return false;
     }
-    if (Math::Fabs(w - a.w) > epsilon) {
+    if (Math::Abs(w - a.w) > epsilon) {
         return false;
     }
     return true;
@@ -437,7 +437,7 @@ BE_INLINE float Quat::CalcW() const {
     // x*x + y*y + z*z = sin^2(theta/2)
     // 1 - sin^2(theta/2) = cos^2(theta/2)
     // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1.
-    return Math::Sqrt(Math::Fabs(1.0f - (x * x + y * y + z * z)));
+    return Math::Sqrt(Math::Abs(1.0f - (x * x + y * y + z * z)));
 }
 
 BE_INLINE Vec3 Quat::Axis() const {
@@ -478,7 +478,7 @@ BE_INLINE Quat &Quat::Normalize() {
 }
 
 BE_INLINE bool Quat::IsNormalized(float epsilonSqr) const {
-    return Math::Fabs(LengthSqr() - 1.0f) < epsilonSqr;
+    return Math::Abs(LengthSqr() - 1.0f) < epsilonSqr;
 }
 
 BE_INLINE bool Quat::IsIdentity(const float epsilon) const {

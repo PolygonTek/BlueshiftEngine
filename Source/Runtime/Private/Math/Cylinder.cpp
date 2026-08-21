@@ -41,7 +41,7 @@ bool Cylinder::IntersectRay(const Ray &ray, float *hitDist) const {
     float k = m.Dot(m) - radius * radius;
     float c = dd * k - md * md;
     // Test if ray runs parallel to cylinder axis
-    if (Math::Fabs(a) < 0.000001f) {
+    if (Math::Abs(a) < 0.000001f) {
         if (c > 0) {
             // 'a' and thus the ray lie outside cylinder
             return false;
@@ -141,7 +141,7 @@ bool Cylinder::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     float k = m.Dot(m) - radius * radius;
     float c = dd * k - md * md;
     // Test if segment runs parallel to cylinder axis
-    if (Math::Fabs(a) < FLT_EPSILON) {
+    if (Math::Abs(a) < FLT_EPSILON) {
         if (c > 0) {
             // 'a' and thus the segment lie outside cylinder
             return false;

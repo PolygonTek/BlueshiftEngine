@@ -122,7 +122,7 @@ BE_INLINE bool Sphere::Equals(const Sphere &a) const {
 }
 
 BE_INLINE bool Sphere::Equals(const Sphere &a, const float epsilon) const {
-    return (center.Equals(a.center, epsilon) && Math::Fabs(radius - a.radius) <= epsilon);
+    return (center.Equals(a.center, epsilon) && Math::Abs(radius - a.radius) <= epsilon);
 }
 
 BE_INLINE bool Sphere::IsContainPoint(const Vec3 &p) const {

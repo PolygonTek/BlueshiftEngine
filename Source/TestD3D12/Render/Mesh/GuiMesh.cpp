@@ -165,8 +165,8 @@ void GuiMesh::DrawSlicedPic(RHI::FrameThreadData *frameThreadData, float x, floa
         dstBorderScaleY = h / dstBorderHeight;
     }
 
-    const float sourceWidth = BE1::Math::Fabs(s2 - s1) * imageWidth;
-    const float sourceHeight = BE1::Math::Fabs(t2 - t1) * imageHeight;
+    const float sourceWidth = BE1::Math::Abs(s2 - s1) * imageWidth;
+    const float sourceHeight = BE1::Math::Abs(t2 - t1) * imageHeight;
 
     float srcBorderScaleX = 1.0f;
     if (dstBorderWidth > sourceWidth) {

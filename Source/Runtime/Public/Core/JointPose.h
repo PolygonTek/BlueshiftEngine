@@ -146,7 +146,7 @@ BE_INLINE Quat CompressedJointPose::ToQuat() const {
     quat.y = ShortToQuat(q[1]);
     quat.z = ShortToQuat(q[2]);
     // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1.
-    quat.w = Math::Sqrt(Math::Fabs(1.0f - (quat.x * quat.x + quat.y * quat.y + quat.z * quat.z)));
+    quat.w = Math::Sqrt(Math::Abs(1.0f - (quat.x * quat.x + quat.y * quat.y + quat.z * quat.z)));
     return quat;
 }
 

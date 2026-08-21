@@ -48,7 +48,7 @@ bool Triangle::IntersectRay(const Ray &ray, float *hitDist) const {
     float d = -ray.dir.Dot(n);
 
     // If d <= 0, ray is lies in plane of triangle, so exit early.
-    if (Math::Fabs(d) < 1e-6f) {
+    if (Math::Abs(d) < 1e-6f) {
         return false;
     }
 

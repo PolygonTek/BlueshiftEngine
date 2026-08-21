@@ -443,16 +443,16 @@ BE_INLINE bool Color4::Equals(const Color4 &c) const {
 }
 
 BE_INLINE bool Color4::Equals(const Color4 &c, const float epsilon) const {
-    if (Math::Fabs(r - c.r) > epsilon) {
+    if (Math::Abs(r - c.r) > epsilon) {
         return false;
     }
-    if (Math::Fabs(g - c.g) > epsilon) {
+    if (Math::Abs(g - c.g) > epsilon) {
         return false;
     }
-    if (Math::Fabs(b - c.b) > epsilon) {
+    if (Math::Abs(b - c.b) > epsilon) {
         return false;
     }
-    if (Math::Fabs(a - c.a) > epsilon) {
+    if (Math::Abs(a - c.a) > epsilon) {
         return false;
     }
     return true;

@@ -73,8 +73,8 @@ public:
     Vec3 &&             operator-() && { x = -x; y = -y; z = -z; return std::move(*this); }
 
                         /// Returns Vec3(|x|, |y|, |z|)
-    Vec3                Abs() const & { return Vec3(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
-    Vec3 &&             Abs() && { x = Math::Fabs(x); y = Math::Fabs(y); z = Math::Fabs(z); return std::move(*this); }
+    Vec3                Abs() const & { return Vec3(Math::Abs(x), Math::Abs(y), Math::Abs(z)); }
+    Vec3 &&             Abs() && { x = Math::Abs(x); y = Math::Abs(y); z = Math::Abs(z); return std::move(*this); }
 
                         /// Adds a vector to this vector.
     Vec3                Add(const Vec3 &v) const & { return *this + v; }
@@ -218,17 +218,17 @@ public:
                         /// Get the maximum component of a vector
     float               MaxComponent() const { return Max3(x, y, z); }
                         /// Get the minimum absolute component of a vector
-    float               MinAbsComponent() const { return Min3(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
+    float               MinAbsComponent() const { return AbsMin3(x, y, z); }
                         /// Get the maximum absolute component of a vector
-    float               MaxAbsComponent() const { return Max3(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
+    float               MaxAbsComponent() const { return AbsMax3(x, y, z); }
                         /// Get the minimum component index of a vector
     int                 MinComponentIndex() const { return Min3Index(x, y, z); }
                         /// Get the maximum component index of a vector
     int                 MaxComponentIndex() const { return Max3Index(x, y, z); }
                         /// Get the minimum absolute component index of a vector
-    int                 MinAbsComponentIndex() const { return Min3Index(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
+    int                 MinAbsComponentIndex() const { return Min3Index(Math::Abs(x), Math::Abs(y), Math::Abs(z)); }
                         /// Get the maximum absolute component index of a vector
-    int                 MaxAbsComponentIndex() const { return Max3Index(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
+    int                 MaxAbsComponentIndex() const { return Max3Index(Math::Abs(x), Math::Abs(y), Math::Abs(z)); }
 
                         /// Performs a 2D swizzled access to this vector.
     Vec2                xx() const { return Vec2(x, x); }
@@ -529,13 +529,13 @@ BE_INLINE bool Vec3::Equals(const Vec3 &a) const {
 }
 
 BE_INLINE bool Vec3::Equals(const Vec3 &a, const float epsilon) const {
-    if (Math::Fabs(x - a.x) > epsilon) {
+    if (Math::Abs(x - a.x) > epsilon) {
         return false;
     }
-    if (Math::Fabs(y - a.y) > epsilon) {
+    if (Math::Abs(y - a.y) > epsilon) {
         return false;
     }
-    if (Math::Fabs(z - a.z) > epsilon) {
+    if (Math::Abs(z - a.z) > epsilon) {
         return false;
     }
     return true;
@@ -544,15 +544,15 @@ BE_INLINE bool Vec3::Equals(const Vec3 &a, const float epsilon) const {
 BE_INLINE bool Vec3::FixDenormals() {
     bool denormal = false;
 
-    if (Math::Fabs(x) < 1e-30f) {
+    if (Math::Abs(x) < 1e-30f) {
         x = 0.0f;
         denormal = true;
     }
-    if (Math::Fabs(y) < 1e-30f) {
+    if (Math::Abs(y) < 1e-30f) {
         y = 0.0f;
         denormal = true;
     }
-    if (Math::Fabs(z) < 1e-30f) {
+    if (Math::Abs(z) < 1e-30f) {
         z = 0.0f;
         denormal = true;
     }
@@ -684,7 +684,7 @@ BE_INLINE float Vec3::Dot(const Vec3 &a) const {
 }
 
 BE_INLINE float Vec3::AbsDot(const Vec3 &a) const {
-    return Math::Fabs(x * a.x) + Math::Fabs(y * a.y) + Math::Fabs(z * a.z);
+    return Math::Abs(x * a.x) + Math::Abs(y * a.y) + Math::Abs(z * a.z);
 }
 
 BE_INLINE Vec3 Vec3::Cross(const Vec3 &a) const {
@@ -840,7 +840,7 @@ BE_INLINE void Vec3::OrthogonalBasis(Vec3 &left, Vec3 &up) const {
 
     // Suppose this vector to forward vector
     // If length of the vector that projected to x-y plane are greater than 0.7, compute basis vectors with z-rotation
-    if (Math::Fabs(z) < 0.7f) {
+    if (Math::Abs(z) < 0.7f) {
         l = x * x + y * y;
         s = Math::InvSqrt(l);
         left[0] = -y * s;

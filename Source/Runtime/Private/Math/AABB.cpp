@@ -24,8 +24,8 @@ const AABB AABB::zero(Vec3::zero, Vec3::zero);
 float AABB::OuterRadius() const {
     float total = 0.0f;
     for (int i = 0; i < 3; i++) {
-        float b0 = (float)Math::Fabs(b[0][i]);
-        float b1 = (float)Math::Fabs(b[1][i]);
+        float b0 = (float)Math::Abs(b[0][i]);
+        float b1 = (float)Math::Abs(b[1][i]);
         float bmax = Max(b0, b1);
         total += bmax * bmax;
     }
@@ -35,8 +35,8 @@ float AABB::OuterRadius() const {
 float AABB::OuterRadius(const Vec3 &center) const {
     float total = 0.0f;
     for (int i = 0; i < 3; i++) {
-        float b0 = (float)Math::Fabs(center[i] - b[0][i]);
-        float b1 = (float)Math::Fabs(b[1][i] - center[i]);
+        float b0 = (float)Math::Abs(center[i] - b[0][i]);
+        float b1 = (float)Math::Abs(b[1][i] - center[i]);
         float bmax = Max(b0, b1);
         total += bmax * bmax;
     }
@@ -47,8 +47,8 @@ float AABB::InnerRadius() const {
     float bmin = FLT_MAX;
     Vec3 center = Center();
     for (int i = 0; i < 3; i++) {
-        float b0 = (float)Math::Fabs(center[i] - b[0][i]);
-        float b1 = (float)Math::Fabs(b[1][i] - center[i]);
+        float b0 = (float)Math::Abs(center[i] - b[0][i]);
+        float b1 = (float)Math::Abs(b[1][i] - center[i]);
         bmin = Min3(bmin, b0, b1);
     }
     return bmin;
@@ -153,20 +153,20 @@ bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 m = start + end - b[0] - b[1];
 
     // X 축 투영 거리 비교
-    float adx = Math::Fabs(d.x);
-    if (Math::Fabs(m.x) > e.x + adx) {
+    float adx = Math::Abs(d.x);
+    if (Math::Abs(m.x) > e.x + adx) {
         return false;
     }
 
     // Y 축 투영 거리 비교
-    float ady = Math::Fabs(d.y);
-    if (Math::Fabs(m.y) > e.y + ady) {
+    float ady = Math::Abs(d.y);
+    if (Math::Abs(m.y) > e.y + ady) {
         return false;
     }
     
     // Z 축 투영 거리 비교
-    float adz = Math::Fabs(d.z);
-    if (Math::Fabs(m.z) > e.z + adz) {
+    float adz = Math::Abs(d.z);
+    if (Math::Abs(m.z) > e.z + adz) {
         return false;
     }
 
@@ -177,15 +177,15 @@ bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     // 선분의 방향과 AABB 의 축들과의 외적한 축들에 대해서 검사
     //Vec3 cross = m.Cross(d);
 
-    if (Math::Fabs(m.y * d.z - m.z * d.y) > e.y * adz + e.z * ady) {
+    if (Math::Abs(m.y * d.z - m.z * d.y) > e.y * adz + e.z * ady) {
         return false;
     }
 
-    if (Math::Fabs(m.z * d.x - m.x * d.z) > e.x * adz + e.z * adx) {
+    if (Math::Abs(m.z * d.x - m.x * d.z) > e.x * adz + e.z * adx) {
         return false;
     }
     
-    if (Math::Fabs(m.x * d.y - m.y * d.x) > e.x * ady + e.y * adx) {
+    if (Math::Abs(m.x * d.y - m.y * d.x) > e.x * ady + e.y * adx) {
         return false;
     }
 
@@ -197,11 +197,11 @@ bool AABB::IsIntersectPlane(const Plane &plane) const {
     Vec3 extents = b[1] - center;
 
     // Compute the projection interval radius of the AABB onto L(t) = aabb.center + t * plane.normal;
-    float r = extents[0] * Math::Fabs(plane.normal[0]) + extents[1] * Math::Fabs(plane.normal[1]) + extents[2] * Math::Fabs(plane.normal[2]);
+    float r = extents[0] * Math::Abs(plane.normal[0]) + extents[1] * Math::Abs(plane.normal[1]) + extents[2] * Math::Abs(plane.normal[2]);
     // Compute the distance of the box center from plane.
     float s = plane.Distance(center);
 
-    return Math::Fabs(s) <= r;
+    return Math::Abs(s) <= r;
 }
 
 bool AABB::IsIntersectOBB(const OBB &obb, float epsilon) const {
@@ -218,7 +218,7 @@ bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) co
 
     // For all three slabs.
     for (int i = 0; i < 3; i++) {
-        if (Math::Fabs(ray.dir[i]) < 0.000001f) {
+        if (Math::Abs(ray.dir[i]) < 0.000001f) {
             // Ray is parallel to slab. No hit if origin not within slab.
             if (ray.origin[i] < b[0][i] || ray.origin[i] > b[1][i]) {
                 return false;
@@ -321,9 +321,9 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Ma
     Vec3 rotatedExtents;
     for (int i = 0; i < 3; i++) {
         rotatedExtents[i] = 
-            Math::Fabs(extents[0] * axis[0][i]) + 
-            Math::Fabs(extents[1] * axis[1][i]) + 
-            Math::Fabs(extents[2] * axis[2][i]);
+            Math::Abs(extents[0] * axis[0][i]) +
+            Math::Abs(extents[1] * axis[1][i]) +
+            Math::Abs(extents[2] * axis[2][i]);
     }
 
     center = axis * center + origin;
@@ -376,9 +376,9 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
     Vec3 rotatedExtents;
     for (int i = 0; i < 3; i++) {
         rotatedExtents[i] =
-            Math::Fabs(extents[0] * transform[i][0]) +
-            Math::Fabs(extents[1] * transform[i][1]) +
-            Math::Fabs(extents[2] * transform[i][2]);
+            Math::Abs(extents[0] * transform[i][0]) +
+            Math::Abs(extents[1] * transform[i][1]) +
+            Math::Abs(extents[2] * transform[i][2]);
     }
 
     center = transform.TransformPos(center);
@@ -405,9 +405,9 @@ void AABB::ProjectOnAxis(const Vec3 &transformOrigin, const Mat3 &transformAxis,
     center = transformAxis * center + transformOrigin;
 
     float d1 = axis.Dot(center);
-    float d2 = Math::Fabs(extents[0] * transformAxis[0].Dot(axis)) +
-               Math::Fabs(extents[1] * transformAxis[1].Dot(axis)) +
-               Math::Fabs(extents[2] * transformAxis[2].Dot(axis));
+    float d2 = Math::Abs(extents[0] * transformAxis[0].Dot(axis)) +
+               Math::Abs(extents[1] * transformAxis[1].Dot(axis)) +
+               Math::Abs(extents[2] * transformAxis[2].Dot(axis));
 
     min = d1 - d2;
     max = d1 + d2;
@@ -454,7 +454,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a00.
     // a00 = cross(x, f0) = (0, -f0.z, f0.y)
     // r = e.x * abs(dot(x, a00)) + e.y * abs(dot(y, a00)) + e.z * abs(dot(z, a00))
-    r = e.y * Math::Fabs(f0.z) + e.z * Math::Fabs(f0.y);
+    r = e.y * Math::Abs(f0.z) + e.z * Math::Abs(f0.y);
     // dot(a00, v0) = dot(a00, v1)
     p0 = -v0.y * v1.z + v0.z * v1.y;
     // dot(a00, v2)
@@ -467,7 +467,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a01.
     // a01 = cross(x, f1) = (0, -f1.z, f1.y)
     // r = e.x * abs(dot(x, a01)) + e.y * abs(dot(y, a01)) + e.z * abs(dot(z, a01))
-    r = e.y * Math::Fabs(f1.z) + e.z * Math::Fabs(f1.y);
+    r = e.y * Math::Abs(f1.z) + e.z * Math::Abs(f1.y);
     // dot(a01, v0)
     p0 = -v0.y * (v2.z - v1.z) + v0.z * (v2.y - v1.y);
     // dot(a01, v1) = dot(a01, v2)
@@ -480,7 +480,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a02.
     // a02 = cross(x, f2) = (0, -f2.z, f2.y)
     // r = e.x * abs(dot(x, a02)) + e.y * abs(dot(y, a02)) + e.z * abs(dot(z, a02))
-    r = e.y * Math::Fabs(f2.z) + e.z * Math::Fabs(f2.y);
+    r = e.y * Math::Abs(f2.z) + e.z * Math::Abs(f2.y);
     // dot(a02, v0) = dot(a02, v2)
     p0 = -v0.z * v2.y + v0.y * v2.z;
     // dot(a02, v1)
@@ -493,7 +493,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a10.
     // a10 = cross(y, f0) = (f0.z, 0, -f0.x)
     // r = e.x * abs(dot(x, a10)) + e.y * abs(dot(y, a10)) + e.z * abs(dot(z, a10))
-    r = e.x * Math::Fabs(f0.z) + e.z * Math::Fabs(f0.x);
+    r = e.x * Math::Abs(f0.z) + e.z * Math::Abs(f0.x);
     // dot(a10, v0) = dot(v10, v1)
     p0 = v0.x * v1.z - v0.z * v1.x;
     // dot(a10, v2)
@@ -506,7 +506,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a11.
     // a11 = cross(y, f1) = (f1.z, 0, -f1.x)
     // r = e.x * abs(dot(x, a11)) + e.y * abs(dot(y, a11)) + e.z * abs(dot(z, a11))
-    r = e.x * Math::Fabs(f1.z) + e.z * Math::Fabs(f1.x);
+    r = e.x * Math::Abs(f1.z) + e.z * Math::Abs(f1.x);
     // dot(a11, v0)
     p0 = v0.x * (v2.z - v1.z) - v0.z * (v2.x - v1.x);
     // dot(a11, v1) = dot(a11, v2)
@@ -519,7 +519,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a12.
     // a12 = cross(y, f2) = (f2.z, 0, -f2.x)
     // r = e.x * abs(dot(x, a12)) + e.y * abs(dot(y, a12)) + e.z * abs(dot(z, a12))
-    r = e.x * Math::Fabs(f2.z) + e.z * Math::Fabs(f2.x);
+    r = e.x * Math::Abs(f2.z) + e.z * Math::Abs(f2.x);
     // dot(a12, v0) = dot(a12, v2)
     p0 = -v0.x * v2.z + v0.z * v2.x;
     // dot(a12, v1)
@@ -532,7 +532,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a20.
     // a20 = cross(z, f0) = (-f0.y, f0.x, 0)
     // r = e.x * abs(dot(x, a20)) + e.y * abs(dot(y, a20)) + e.z * abs(dot(z, a20))
-    r = e.x * Math::Fabs(f0.y) + e.y * Math::Fabs(f0.x);
+    r = e.x * Math::Abs(f0.y) + e.y * Math::Abs(f0.x);
     // dot(a20, v0) = dot(v20, v1)
     p0 = -v0.x * v1.y + v0.y * v1.x;
     // dot(a20, v2)
@@ -545,7 +545,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a21.
     // a21 = cross(z, f1) = (-f1.y, f1.x, 0)
     // r = e.x * abs(dot(x, a21)) + e.y * abs(dot(y, a21)) + e.z * abs(dot(z, a21))
-    r = e.x * Math::Fabs(f1.y) + e.y * Math::Fabs(f1.x);
+    r = e.x * Math::Abs(f1.y) + e.y * Math::Abs(f1.x);
     // dot(a21, v0)
     p0 = -v0.x * (v2.y - v1.y) + v0.y * (v2.x - v1.x);
     // dot(a21, v1) = dot(a21, v2)
@@ -558,7 +558,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // Compare in axis a22.
     // a22 = cross(z, f2) = (-f2.y, f2.x, 0)
     // r = e.x * abs(dot(x, a22)) + e.y * abs(dot(y, a22)) + e.z * abs(dot(z, a22))
-    r = e.x * Math::Fabs(f2.y) + e.y * Math::Fabs(f2.x);
+    r = e.x * Math::Abs(f2.y) + e.y * Math::Abs(f2.x);
     // dot(a22, v0) = dot(a22, v2)
     p0 = v0.x * v2.y - v0.y * v2.x;
     // dot(a22, v1)
@@ -585,7 +585,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
 
     // Compare in the normal axis of the triangle.
     Vec3 n = f0.Cross(f1);
-    return Math::Fabs(n.Dot(v0)) <= e.AbsDot(n);
+    return Math::Abs(n.Dot(v0)) <= e.AbsDot(n);
 }
 
 BE_NAMESPACE_END

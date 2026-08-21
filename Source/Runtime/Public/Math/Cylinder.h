@@ -85,7 +85,7 @@ BE_INLINE bool Cylinder::Equals(const Cylinder &other) const {
 }
 
 BE_INLINE bool Cylinder::Equals(const Cylinder &other, const float epsilon) const {
-    return (p[0].Equals(other.p[0], epsilon) && p[1].Equals(other.p[1], epsilon) && Math::Fabs(radius - other.radius) <= epsilon);
+    return (p[0].Equals(other.p[0], epsilon) && p[1].Equals(other.p[1], epsilon) && Math::Abs(radius - other.radius) <= epsilon);
 }
 
 BE_NAMESPACE_END

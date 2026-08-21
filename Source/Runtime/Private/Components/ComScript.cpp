@@ -316,7 +316,7 @@ void ComScript::InitScriptFields() {
 
                 Rangef range(minimum, maximum, step);
                 if (step == 0.0f) {
-                    range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
+                    range.step = Math::Abs((range.maxValue - range.minValue) / 100.0f);
                 }
 
                 auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
@@ -409,7 +409,7 @@ void ComScript::InitScriptFields() {
 
                 Rangef range(minimum, maximum, step);
                 if (step == 0.0f) {
-                    range.step = Math::Fabs((range.maxValue - range.minValue) / 100.0f);
+                    range.step = Math::Abs((range.maxValue - range.minValue) / 100.0f);
                 }
 
                 auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), 

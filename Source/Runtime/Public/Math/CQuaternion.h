@@ -120,13 +120,13 @@ BE_INLINE bool CQuat::Equals(const CQuat &a) const {
 }
 
 BE_INLINE bool CQuat::Equals(const CQuat &a, const float epsilon) const {
-    if (Math::Fabs(x - a.x) > epsilon) {
+    if (Math::Abs(x - a.x) > epsilon) {
         return false;
     }    
-    if (Math::Fabs(y - a.y) > epsilon) {
+    if (Math::Abs(y - a.y) > epsilon) {
         return false;
     }    
-    if (Math::Fabs(z - a.z) > epsilon) {
+    if (Math::Abs(z - a.z) > epsilon) {
         return false;
     }
     return true;
@@ -134,7 +134,7 @@ BE_INLINE bool CQuat::Equals(const CQuat &a, const float epsilon) const {
 
 BE_INLINE Quat CQuat::ToQuat() const {
     // take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1
-    return Quat(x, y, z, Math::Sqrt(Math::Fabs(1.0f - (x * x + y * y + z * z))));
+    return Quat(x, y, z, Math::Sqrt(Math::Abs(1.0f - (x * x + y * y + z * z))));
 }
 
 BE_INLINE const char *CQuat::ToString(int precision) const {
@@ -143,15 +143,15 @@ BE_INLINE const char *CQuat::ToString(int precision) const {
 
 BE_INLINE bool CQuat::FixDenormals() {
     bool denormal = false;
-    if (Math::Fabs(x) < 1e-30f) {
+    if (Math::Abs(x) < 1e-30f) {
         x = 0.0f;
         denormal = true;
     }
-    if (Math::Fabs(y) < 1e-30f) {
+    if (Math::Abs(y) < 1e-30f) {
         y = 0.0f;
         denormal = true;
     }
-    if (Math::Fabs(z) < 1e-30f) {
+    if (Math::Abs(z) < 1e-30f) {
         z = 0.0f;
         denormal = true;
     }

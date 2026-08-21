@@ -343,8 +343,8 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
 
         float a = RAD2DEG(animLayer->GetNodeBlendSpaceVector(node->children[indexA]).ToVec2().ToAngle());
         float b = RAD2DEG(animLayer->GetNodeBlendSpaceVector(node->children[indexB]).ToVec2().ToAngle());
-        float invDA = 1.0f / Math::Fabs(Math::AngleDelta(a, b));
-        float wA = Math::Fabs(Math::AngleDelta(b, currentAngle)) * invDA;
+        float invDA = 1.0f / Math::Abs(Math::AngleDelta(a, b));
+        float wA = Math::Abs(Math::AngleDelta(b, currentAngle)) * invDA;
 
         weights[indexA] = wA;
         weights[indexB] = 1.0f - wA;
@@ -379,7 +379,7 @@ void AnimBlendTree::ComputeChildrenAngleWeights(const Animator *animator, float 
     for (int i = 0; i < node->children.Count(); i++) {
         BlendNodePoint blendNodePoint;
         blendNodePoint.childIndex = i;
-        blendNodePoint.deltaAngle = Math::Fabs(Math::AngleDelta(currentAngle, animLayer->GetNodeBlendSpaceVector(node->children[i])[0]));
+        blendNodePoint.deltaAngle = Math::Abs(Math::AngleDelta(currentAngle, animLayer->GetNodeBlendSpaceVector(node->children[i])[0]));
         samplePoints.Append(blendNodePoint);
     }
 
@@ -401,8 +401,8 @@ void AnimBlendTree::ComputeChildrenAngleWeights(const Animator *animator, float 
 
         float a = animLayer->GetNodeBlendSpaceVector(node->children[indexA])[0];
         float b = animLayer->GetNodeBlendSpaceVector(node->children[indexB])[0];
-        float invDA = 1.0f / Math::Fabs(Math::AngleDelta(a, b));
-        float wA = Math::Fabs(Math::AngleDelta(b, currentAngle)) * invDA;
+        float invDA = 1.0f / Math::Abs(Math::AngleDelta(a, b));
+        float wA = Math::Abs(Math::AngleDelta(b, currentAngle)) * invDA;
 
         weights[indexA] = wA;
         weights[indexB] = 1.0f - wA;
