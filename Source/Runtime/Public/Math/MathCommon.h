@@ -470,6 +470,20 @@ public:
                                 /// Returns a smooth Hermite transition from 0 to 1 as x moves from edge0 to edge1.
                                 /// Returns 0 when x <= edge0 and 1 when x >= edge1. Requires edge0 < edge1.
     static float                SmoothStep(float edge0, float edge1, float x);
+
+                                /// Solves a*x^2 + b*x + c = 0 for its distinct real roots.
+                                /// Roots are sorted in ascending order. Numerically insignificant leading
+                                /// coefficients fall back to the corresponding lower-degree equation.
+                                /// On failure or when no real root exists, the output parameters are left unchanged.
+                                /// @return The number of distinct real roots, from zero to two.
+    static int                  SolveRealQuadratic(float a, float b, float c, float &x1, float &x2, float tolerance = 1e-6f);
+
+                                /// Solves a*x^3 + b*x^2 + c*x + d = 0 for its distinct real roots.
+                                /// Roots are sorted in ascending order. Numerically insignificant leading
+                                /// coefficients fall back to the corresponding lower-degree equation.
+                                /// On failure, the output parameters are left unchanged.
+                                /// @return The number of distinct real roots, from zero to three.
+    static int                  SolveRealCubic(float a, float b, float c, float d, float &x1, float &x2, float &x3, float tolerance = 1e-6f);
 };
 
 BE_INLINE bool Math::IsInf(float f) {

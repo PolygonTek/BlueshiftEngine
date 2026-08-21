@@ -782,6 +782,116 @@ static void TestSquareRootContract() {
 
 #undef VERIFY_SQUARE_ROOT_CONTRACT
 
+#define VERIFY_POLYNOMIAL_SOLVER(expression) VerifyMathTest((expression), __func__, __LINE__)
+
+static bool PolynomialRootEquals(float value, float expected, float tolerance = 1e-5f) {
+    const float scale = std::max(1e-6f, std::abs(expected));
+    return std::abs(value - expected) <= tolerance * scale;
+}
+
+static bool CubicResidualIsSmall(float a, float b, float c, float d, float root, float tolerance = 1e-5f) {
+    const double x = root;
+    const double residual = ((static_cast<double>(a) * x + b) * x + c) * x + d;
+    const double scale = std::abs(static_cast<double>(a) * x * x * x) +
+        std::abs(static_cast<double>(b) * x * x) + std::abs(static_cast<double>(c) * x) + std::abs(d);
+    return std::abs(residual) <= tolerance * std::max(1.0, scale);
+}
+
+static void TestPolynomialSolvers() {
+    static_assert(BE1::Min4(4, 1, 3, 2) == 1);
+    static_assert(BE1::Max4(4, 1, 3, 2) == 4);
+    static_assert(BE1::Min4Index(4, 1, 3, 2) == 1);
+    static_assert(BE1::Max4Index(4, 1, 3, 2) == 0);
+    static_assert(BE1::Min4Index(3, 1, 1, 2) == 2);
+    static_assert(BE1::Max4Index(3, 4, 4, 2) == 2);
+    static_assert(BE1::AbsMin(-4, 2) == 2);
+    static_assert(BE1::AbsMax(-4, 2) == 4);
+    static_assert(BE1::AbsMin3(-4, -2, 3) == 2);
+    static_assert(BE1::AbsMax3(-4, -2, 3) == 4);
+    static_assert(BE1::AbsMin4(-4, -2, 3, -1) == 1);
+    static_assert(BE1::AbsMax4(-4, -2, 3, -1) == 4);
+
+    float x1 = 7.0f;
+    float x2 = 8.0f;
+    float x3 = 9.0f;
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1.0f, -5.0f, 6.0f, x1, x2) == 2);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 2.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 3.0f));
+
+    x2 = 8.0f;
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1.0f, 2.0f, 1.0f, x1, x2) == 1);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, -1.0f));
+    VERIFY_POLYNOMIAL_SOLVER(x2 == 8.0f);
+
+    x1 = 7.0f;
+    x2 = 8.0f;
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1.0f, 0.0f, 1.0f, x1, x2) == 0);
+    VERIFY_POLYNOMIAL_SOLVER(x1 == 7.0f && x2 == 8.0f);
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(0.0f, 2.0f, -4.0f, x1, x2) == 1);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 2.0f));
+
+    x1 = 7.0f;
+    x2 = 8.0f;
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1e-20f, -5e-20f, 6e-20f, x1, x2) == 2);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 2.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 3.0f));
+
+    // 근의 공식을 float로 직접 계산하면 catastrophic cancellation으로 작은 근을 잃는다.
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1.0f, -10000.0f, 1.0f, x1, x2) == 2);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 0.0001f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 10000.0f));
+
+    x1 = 7.0f;
+    x2 = 8.0f;
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(0.0f, 0.0f, 1.0f, x1, x2) == 0);
+    VERIFY_POLYNOMIAL_SOLVER(x1 == 7.0f && x2 == 8.0f);
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1.0f, 0.0f, -1.0f, x1, x2, 0.0f) == 0);
+    VERIFY_POLYNOMIAL_SOLVER(x1 == 7.0f && x2 == 8.0f);
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealCubic(1.0f, -6.0f, 11.0f, -6.0f, x1, x2, x3) == 3);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 1.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 2.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x3, 3.0f));
+
+    x2 = 8.0f;
+    x3 = 9.0f;
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealCubic(1.0f, -3.0f, 3.0f, -1.0f, x1, x2, x3) == 1);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 1.0f));
+    VERIFY_POLYNOMIAL_SOLVER(x2 == 8.0f && x3 == 9.0f);
+
+    x3 = 9.0f;
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealCubic(1.0f, 0.0f, -3.0f, 2.0f, x1, x2, x3) == 2);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, -2.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 1.0f));
+    VERIFY_POLYNOMIAL_SOLVER(x3 == 9.0f);
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealCubic(1.0f, 0.0f, 1.0f, 1.0f, x1, x2, x3) == 1);
+    VERIFY_POLYNOMIAL_SOLVER(CubicResidualIsSmall(1.0f, 0.0f, 1.0f, 1.0f, x1));
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealCubic(1.0f, 0.0f, 100000.0f, -1.0f, x1, x2, x3) == 1);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 0.00001f));
+    VERIFY_POLYNOMIAL_SOLVER(CubicResidualIsSmall(1.0f, 0.0f, 100000.0f, -1.0f, x1));
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealCubic(0.0f, 1.0f, -5.0f, 6.0f, x1, x2, x3) == 2);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 2.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 3.0f));
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealCubic(1e-20f, -6e-20f, 11e-20f, -6e-20f, x1, x2, x3) == 3);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 1.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 2.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x3, 3.0f));
+
+    x1 = 7.0f;
+    x2 = 8.0f;
+    x3 = 9.0f;
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealCubic(INFINITY, 0.0f, 0.0f, 0.0f, x1, x2, x3) == 0);
+    VERIFY_POLYNOMIAL_SOLVER(x1 == 7.0f && x2 == 8.0f && x3 == 9.0f);
+}
+
+#undef VERIFY_POLYNOMIAL_SOLVER
+
 #define VERIFY_RANDOM(expression) VerifyMathTest((expression), __func__, __LINE__)
 
 static void TestRandom() {
@@ -1675,6 +1785,7 @@ static void TestRotationConversions() {
 
 void Test::TestMath() {
     TestSquareRootContract();
+    TestPolynomialSolvers();
     TestIntegerLog2();
     TestRandom();
     TestFloatToIntegerConversions();

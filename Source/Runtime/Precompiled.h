@@ -746,15 +746,14 @@ constexpr T Min(const T &x, const T &y) { return (x < y) ? x : y; }
 template <typename T>
 [[nodiscard]]
 constexpr T Max(const T &x, const T &y) { return (x > y) ? x : y; }
-
-/// Returns the smaller index of two values.
+/// Returns the smaller absolute value of two values.
 template <typename T>
 [[nodiscard]]
-constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
-/// Returns the larger index of two values.
+constexpr T AbsMin(const T &x, const T &y) { return Min((x < T(0)) ? -x : x, (y < T(0)) ? -y : y); }
+/// Returns the larger absolute value of two values.
 template <typename T>
 [[nodiscard]]
-constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
+constexpr T AbsMax(const T &x, const T &y) { return Max((x < T(0)) ? -x : x, (y < T(0)) ? -y : y); }
 
 /// Returns the smaller of three values.
 template <typename T>
@@ -768,7 +767,40 @@ constexpr T Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z)
 template <typename T>
 [[nodiscard]]
 constexpr T Median(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? Max(y, z) : x) : ((y > z) ? Max(x, z) : y); }
+/// Returns the smallest absolute value of three values.
+template <typename T>
+[[nodiscard]]
+constexpr T AbsMin3(const T &x, const T &y, const T &z) { return AbsMin(AbsMin(x, y), z); }
+/// Returns the largest absolute value of three values.
+template <typename T>
+[[nodiscard]]
+constexpr T AbsMax3(const T &x, const T &y, const T &z) { return AbsMax(AbsMax(x, y), z); }
 
+/// Returns the smaller of four values.
+template <typename T>
+[[nodiscard]]
+constexpr T Min4(const T &x, const T &y, const T &z, const T &w) { return Min(Min(x, y), Min(z, w)); }
+/// Returns the larger of four values.
+template <typename T>
+[[nodiscard]]
+constexpr T Max4(const T &x, const T &y, const T &z, const T &w) { return Max(Max(x, y), Max(z, w)); }
+/// Returns the smallest absolute value of four values.
+template <typename T>
+[[nodiscard]]
+constexpr T AbsMin4(const T &x, const T &y, const T &z, const T &w) { return AbsMin(AbsMin(x, y), AbsMin(z, w)); }
+/// Returns the largest absolute value of four values.
+template <typename T>
+[[nodiscard]]
+constexpr T AbsMax4(const T &x, const T &y, const T &z, const T &w) { return AbsMax(AbsMax(x, y), AbsMax(z, w)); }
+
+/// Returns the smaller index of two values.
+template <typename T>
+[[nodiscard]]
+constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
+/// Returns the larger index of two values.
+template <typename T>
+[[nodiscard]]
+constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
 /// Returns the smaller index of three values.
 template <typename T>
 [[nodiscard]]
@@ -781,6 +813,14 @@ constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? (
 template <typename T>
 [[nodiscard]]
 constexpr int MedianIndex(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? MaxIndex(y, z) : 0) : ((y > z) ? MaxIndex(x, z) : 1); }
+/// Returns the smaller index of four values.
+template <typename T>
+[[nodiscard]]
+constexpr int Min4Index(const T &x, const T &y, const T &z, const T &w) { return (x < y) ? ((x < z) ? ((x < w) ? 0 : 3) : ((z < w) ? 2 : 3)) : ((y < z) ? ((y < w) ? 1 : 3) : ((z < w) ? 2 : 3)); }
+/// Returns the larger index of four values.
+template <typename T>
+[[nodiscard]]
+constexpr int Max4Index(const T &x, const T &y, const T &z, const T &w) { return (x > y) ? ((x > z) ? ((x > w) ? 0 : 3) : ((z > w) ? 2 : 3)) : ((y > z) ? ((y > w) ? 1 : 3) : ((z > w) ? 2 : 3)); }
 
 /// Swaps two values.
 template <typename T> 
