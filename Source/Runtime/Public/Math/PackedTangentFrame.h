@@ -27,10 +27,10 @@ BE_NAMESPACE_BEGIN
     PACKED_TANGENT_FRAME_DIAMOND_ENCODING is defined, or an angle otherwise.
     The final bit stores the tangent-frame handedness.
 
-     31              22 21           11 10            0
-    +------------------+---------------+---------------+
-    | S | Tangent 9bit |  Oct Y 11bit  |  Oct X 11bit  |
-    +------------------+---------------+---------------+
+     31                   22 21           11 10            0
+    +-----------------------+---------------+---------------+
+    | S 1bit | Tangent 9bit |  Oct Y 11bit  |  Oct X 11bit  |
+    +-----------------------+---------------+---------------+
 
 -------------------------------------------------------------------------------
 */
