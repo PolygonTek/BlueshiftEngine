@@ -843,6 +843,19 @@ static void TestPolynomialSolvers() {
     VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 0.0001f));
     VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 10000.0f));
 
+    // 작은 최고차항도 멀리 떨어진 유효한 근을 만들 수 있으므로 선형식으로 강등하지 않는다.
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1.0f, -4000.0f, 3999999.0f, x1, x2) == 2);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 1999.0f));
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x2, 2001.0f));
+
+    x1 = 7.0f;
+    x2 = 8.0f;
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1.0f, 2.0f, 1.0000001f, x1, x2) == 0);
+    VERIFY_POLYNOMIAL_SOLVER(x1 == 7.0f && x2 == 8.0f);
+
+    VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(1.0f, -2.0f, 0.9999999f, x1, x2, 1e-3f) == 1);
+    VERIFY_POLYNOMIAL_SOLVER(PolynomialRootEquals(x1, 1.0f));
+
     x1 = 7.0f;
     x2 = 8.0f;
     VERIFY_POLYNOMIAL_SOLVER(BE1::Math::SolveRealQuadratic(0.0f, 0.0f, 1.0f, x1, x2) == 0);
@@ -891,6 +904,35 @@ static void TestPolynomialSolvers() {
 }
 
 #undef VERIFY_POLYNOMIAL_SOLVER
+
+#define VERIFY_SPHERE_INTERSECTION(expression) VerifyMathTest((expression), __func__, __LINE__)
+
+static void TestSphereIntersections() {
+    const BE1::Sphere sphere(BE1::Vec3(0.0f, 0.0f, 0.0f), 1.0f);
+
+    VERIFY_SPHERE_INTERSECTION(sphere.IsIntersectLine(BE1::Vec3(-2.0f, 0.0f, 0.0f), BE1::Vec3(2.0f, 0.0f, 0.0f)));
+    VERIFY_SPHERE_INTERSECTION(!sphere.IsIntersectLine(BE1::Vec3(-2.0f, 2.0f, 0.0f), BE1::Vec3(2.0f, 2.0f, 0.0f)));
+    VERIFY_SPHERE_INTERSECTION(sphere.IsIntersectLine(BE1::Vec3(0.5f, 0.0f, 0.0f), BE1::Vec3(0.5f, 0.0f, 0.0f)));
+    VERIFY_SPHERE_INTERSECTION(!sphere.IsIntersectLine(BE1::Vec3(2.0f, 0.0f, 0.0f), BE1::Vec3(2.0f, 0.0f, 0.0f)));
+
+    const BE1::Ray ray(BE1::Vec3(0.0f, 0.0f, 0.0f), BE1::Vec3(1.0f, 0.0f, 0.0f));
+    const BE1::Sphere farSphere(BE1::Vec3(100000.0f, 0.0f, 0.0f), 1.0f);
+    float hitDistMin = -1.0f;
+    float hitDistMax = -1.0f;
+    VERIFY_SPHERE_INTERSECTION(farSphere.IntersectRay(ray, &hitDistMin, &hitDistMax));
+    VERIFY_SPHERE_INTERSECTION(PolynomialRootEquals(hitDistMin, 99999.0f));
+    VERIFY_SPHERE_INTERSECTION(PolynomialRootEquals(hitDistMax, 100001.0f));
+
+    const BE1::Sphere farTangentSphere(BE1::Vec3(100000.0f, 1.0f, 0.0f), 1.0f);
+    VERIFY_SPHERE_INTERSECTION(farTangentSphere.IntersectRay(ray, &hitDistMin, &hitDistMax));
+    VERIFY_SPHERE_INTERSECTION(PolynomialRootEquals(hitDistMin, 100000.0f));
+    VERIFY_SPHERE_INTERSECTION(PolynomialRootEquals(hitDistMax, 100000.0f));
+
+    const BE1::Sphere farMissSphere(BE1::Vec3(100000.0f, 2.0f, 0.0f), 1.0f);
+    VERIFY_SPHERE_INTERSECTION(!farMissSphere.IntersectRay(ray, nullptr, nullptr));
+}
+
+#undef VERIFY_SPHERE_INTERSECTION
 
 #define VERIFY_RANDOM(expression) VerifyMathTest((expression), __func__, __LINE__)
 
@@ -1786,6 +1828,7 @@ static void TestRotationConversions() {
 void Test::TestMath() {
     TestSquareRootContract();
     TestPolynomialSolvers();
+    TestSphereIntersections();
     TestIntegerLog2();
     TestRandom();
     TestFloatToIntegerConversions();

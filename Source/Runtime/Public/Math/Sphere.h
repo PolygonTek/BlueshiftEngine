@@ -86,6 +86,7 @@ public:
                     /// Intersects a ray with this sphere.
                     /// Returns false if there is no intersection.
                     /// If the ray starts inside the sphere, hitDistMin is zero.
+                    /// Requires the ray direction to be normalized.
     bool            IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
     float           IntersectRay(const Ray &ray) const;
 

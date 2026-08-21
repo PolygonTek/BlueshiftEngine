@@ -43,29 +43,40 @@ bool Sphere::IsIntersectAABB(const AABB &aabb) const {
 }
 
 bool Sphere::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
+    // 음수 반지름은 유효한 구를 나타내지 않는다.
     if (radius < 0.0f) {
         return false;
     }
 
-    Vec3 m = center - ray.origin;
-    float b = m.Dot(ray.dir); // omit multiplying by 2.
-    float c = m.Dot(m) - radius * radius;
-    
+    // 아래 투영식과 교차 거리는 ray.dir 이 단위 벡터인 것을 전제로 한다.
+    assert(Math::Fabs(ray.dir.LengthSqr() - 1.0f) <= 1e-4f);
+
+    // m 은 광선 원점에서 구 중심으로 향하는 벡터이고,
+    // b 는 구 중심까지 광선 방향으로 투영한 부호 있는 거리다.
+    const Vec3 m = center - ray.origin;
+    const float b = m.Dot(ray.dir); // 이차방정식의 선형항에서 2 배를 생략한 값.
+    const float c = m.Dot(m) - radius * radius;
+
+    // 광선 원점이 구 밖에 있고 구 중심이 광선 반대편에 있으면 교차할 수 없다.
     if (b < 0 && c > 0) {
         return false;
     }
 
-    // determinant = (b^2 - 4ac) / 4
-    float discr = b * b - c; 
-    // No intersection occured if determinant is less than 0.
+    // 판별식은 반지름 제곱에서 광선과 구 중심 사이의 최단거리 제곱을 뺀 값이다.
+    // b*b-c 와 수학적으로 같지만, 큰 제곱값끼리 빼지 않아 원거리에서 더 안정적이다.
+    const Vec3 perpendicular = m - b * ray.dir;
+    const float discr = radius * radius - perpendicular.LengthSqr();
+    // 음수이면 광선이 구를 지나지 않는다.
     if (discr < 0.0f) {
         return false;
     }
 
     if (hitDistMin || hitDistMax) {
+        // q 는 광선 방향으로 측정한 교차 구간의 반길이다.
         float q = Math::Sqrt(discr);
 
         if (hitDistMin) {
+            // 광선 원점이 구 내부에 있으면 진입 거리는 0 이다.
             *hitDistMin = Max(b - q, 0.0f);
         }
         if (hitDistMax) {
@@ -85,33 +96,24 @@ float Sphere::IntersectRay(const Ray &ray) const {
 }
 
 bool Sphere::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
-    Vec3 m = start - center;
-    float c = m.Dot(m) - radius * radius;
-    // If there is definitely at least one real root, there must be an intersection.
-    if (c <= 0) {
-        return true;
-    }
-
-    Vec3 d = end - start;
-    float l = d.Length();
-    float b = m.Dot(d) / l;
-    // Exit if line's origin outside sphere (c > 0) and line pointing away from sphere (b > 0).
-    if (b > 0) {
-        return false;
-    }
-    
-    float discr = b * b - c;
-    // A negative discriminant corresponds to ray missing sphere.
-    if (discr < 0) {
+    // 음수 반지름은 유효한 구를 나타내지 않는다.
+    if (radius < 0.0f) {
         return false;
     }
 
-    float t = b - Math::Sqrt(discr);
-    if (t > l) {
-        return false;
+    const Vec3 segment = end - start;
+    const float segmentLengthSquared = segment.LengthSqr();
+
+    // 구 중심을 선분에 투영한 비율을 [0, 1] 로 제한하면 최근접점이 선분 안에 놓인다.
+    // 길이가 0 인 선분은 fraction 을 0 으로 유지하여 start 한 점으로 처리한다.
+    float fraction = 0.0f;
+    if (segmentLengthSquared > 0.0f) {
+        fraction = Clamp01((center - start).Dot(segment) / segmentLengthSquared);
     }
 
-    return true;
+    // 제곱거리를 비교하여 불필요한 제곱근 계산을 피한다.
+    const Vec3 closestPoint = start + fraction * segment;
+    return closestPoint.DistanceSqr(center) <= radius * radius;
 }
 
 AABB Sphere::ToAABB() const {
