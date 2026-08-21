@@ -554,6 +554,7 @@ void App::RenderScene() {
     float aspectRatio = (float)w / h;
 
     RenderCamera::Desc cameraDesc;
+    //cameraDesc.flags |= RenderCamera::Flag::ForceSyncPassPSOBuild;
     cameraDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
     cameraDesc.infiniteZFar = true;
     cameraDesc.clearMethod = RenderCamera::ClearMethod::Skybox;

@@ -33,18 +33,21 @@ uint64_t GraphicsPipelineDesc::GenerateInputLayoutHash(const RHI::InputLayout *i
 
 uint64_t GraphicsPipelineDesc::GeneratePipelineDescHash() const {
     struct PipelineDescHashData {
-        uint64_t    inputLayoutHash = 0;
-        uint64_t    renderDestHash = 0;
-        uint8_t     rasterizerStateType = 0;
-        uint8_t     depthStencilStateType = 0;
-        uint8_t     blendStateType = 0;
-        uint8_t     primitiveTopology = 0;
-        uint32_t    sampleMask = 0;
-        uint8_t     depthBiasOverride = 0;
-        float       constantDepthBias = 0;
-        float       depthBiasClamp = 0;
-        float       slopeScaledDepthBias = 0;
+        uint64_t    inputLayoutHash;
+        uint64_t    renderDestHash;
+        uint8_t     rasterizerStateType;
+        uint8_t     depthStencilStateType;
+        uint8_t     blendStateType;
+        uint8_t     primitiveTopology;
+        uint32_t    sampleMask;
+        uint8_t     depthBiasOverride;
+        float       constantDepthBias;
+        float       depthBiasClamp;
+        float       slopeScaledDepthBias;
     } hashData = {};
+
+    // CityHash64 hashes the entire object representation, including padding.
+    memset(&hashData, 0, sizeof(hashData));
 
     hashData.inputLayoutHash = GenerateInputLayoutHash(inputLayout);
     hashData.renderDestHash = renderDest.GetHash();
