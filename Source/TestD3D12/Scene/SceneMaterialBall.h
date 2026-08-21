@@ -49,6 +49,6 @@ private:
     float                       directionalLightElevation = 55.0f;
     float                       environmentLightRotation = 0.0f;
     bool                        indirectLightingEnabled = true;
-    bool                        directionalLightEnabled = true;
+    bool                        directionalLightEnabled = false;
     bool                        environmentLightAdded = false;
 };

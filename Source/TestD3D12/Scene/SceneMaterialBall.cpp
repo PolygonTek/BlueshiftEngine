@@ -36,7 +36,7 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld) {
     app.SetCameraDistance(5.0f);
 
     indirectLightingEnabled = true;
-    directionalLightEnabled = true;
+    directionalLightEnabled = false;
 
     testMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/materialBall.material");
     litShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Lit");
@@ -59,22 +59,6 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld) {
     directionalLight.linearColor = BE1::Color3::white;
     directionalLight.intensity = 2.0f;
     UpdateDirectionalLightDirection();
-
-    RenderLight::Desc renderLightDesc;
-    renderLightDesc.type = directionalLight.type;
-    renderLightDesc.flags = directionalLight.flags;
-    renderLightDesc.layer = directionalLight.layer;
-    renderLightDesc.origin = directionalLight.origin;
-    renderLightDesc.axis = directionalLight.axis;
-    renderLightDesc.size = directionalLight.size;
-    renderLightDesc.zNear = directionalLight.zNear;
-    renderLightDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
-    renderLightDesc.linearColor = directionalLight.linearColor;
-    renderLightDesc.intensity = directionalLight.intensity;
-    renderLightDesc.fallOffExponent = directionalLight.fallOffExponent;
-    renderLightDesc.shadowOffsetFactor = directionalLight.shadowOffsetFactor;
-    renderLightDesc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
-    directionalLight.renderLightHandle = renderWorld->AddRenderLight(renderLightDesc);
 
     EnvironmentLight::Desc environmentLightDesc;
     environmentLightAdded = renderWorld->AddEnvironmentLight(environmentLightDesc);
