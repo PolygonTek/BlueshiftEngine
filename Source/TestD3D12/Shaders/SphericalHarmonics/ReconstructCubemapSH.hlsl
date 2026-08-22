@@ -1,3 +1,4 @@
+#include "../ShaderInterop.h"
 #include "../Common.hlsli"
 #include "../Cubemap.hlsli"
 #include "SphericalHarmonics.hlsli"

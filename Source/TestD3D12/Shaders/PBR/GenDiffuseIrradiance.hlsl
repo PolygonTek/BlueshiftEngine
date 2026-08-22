@@ -1,3 +1,4 @@
+#include "../ShaderInterop.h"
 #include "IBLIntegration.hlsli"
 #include "../Cubemap.hlsli"
 

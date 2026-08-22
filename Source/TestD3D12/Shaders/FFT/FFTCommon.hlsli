@@ -3,14 +3,6 @@
 
 #include "../Common.hlsli"
 
-float2 ComplexMul(float2 a, float2 b) {
-    return float2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
-}
-
-float2 ComplexConj(float2 a) {
-    return float2(a.x, -a.y);
-}
-
 // twiddle factor W, W^2, W^3 계산
 void GetRadix4Twiddles(uint k, float invN, float sign, out float2 w1, out float2 w2, out float2 w3) {
     float s;

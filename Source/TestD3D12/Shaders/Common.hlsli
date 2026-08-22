@@ -18,8 +18,6 @@
 #define SQRT2           1.41421356237309504880
 #define GOLDEN_RATIO    1.6180339887
 
-#include "ShaderInterop.h"
-
 #ifndef half
 #define half min16float
 #define half2 min16float2
@@ -40,6 +38,14 @@ inline float Pow4(float value) {
 inline float Pow5(float value) {
     const float valueSquared = value * value;
     return valueSquared * valueSquared * value;
+}
+
+inline float2 ComplexMul(float2 a, float2 b) {
+    return float2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+inline float2 ComplexConj(float2 a) {
+    return float2(a.x, -a.y);
 }
 
 #define ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)," \
@@ -115,17 +121,6 @@ inline float ComputeTextureLod(in uint2 textureSize, in float2 dFdx_uv, in float
         lengthMinor = determinant / lengthMajor;
     }
     return log2(lengthMinor);
-}
-
-inline void WriteMipmapFeedback(RWBuffer<uint> feedbackBuffer, in uint materialIndex, in float2 dFdx_uv, in float2 dFdy_uv) {
-    const float lod = ComputeTextureLod(TextureStreamingFeedbackResolution, dFdx_uv, dFdy_uv);
-    const uint clampedLod = (uint)clamp(lod, 0.0f, (float)TextureStreamingFeedbackMaxLOD);
-    const uint resolution = TextureStreamingFeedbackResolution >> clampedLod;
-    const uint resolutionMask = WaveActiveBitOr(resolution);
-
-    if (WaveIsFirstLane()) {
-        InterlockedOr(feedbackBuffer[materialIndex], resolutionMask);
-    }
 }
 
 // Reconstructs world-space position from depth buffer

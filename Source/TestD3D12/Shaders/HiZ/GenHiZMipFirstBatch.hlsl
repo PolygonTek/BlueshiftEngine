@@ -1,3 +1,4 @@
+#include "../ShaderInterop.h"
 #include "../Common.hlsli"
 
 #ifndef GEN_HIZ_DEPTH_MSAA

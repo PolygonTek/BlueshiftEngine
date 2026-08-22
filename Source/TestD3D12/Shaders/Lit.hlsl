@@ -1,4 +1,5 @@
 #include "SurfaceDrawCommon.hlsli"
+#include "TextureStreamingFeedback.hlsli"
 #include "Lighting/LightCullingCommon.hlsli"
 #include "Lighting/LightCullingDebug.hlsli"
 #include "Lighting/ForwardLighting.hlsli"
