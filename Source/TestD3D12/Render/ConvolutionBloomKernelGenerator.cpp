@@ -169,7 +169,7 @@ bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandLi
     }
 
     // aperture 버퍼에 FFT 를 적용하여 회절 (diffraction) 패턴을 만든다. (apertureSpectrumBuffer 에 출력)
-    if (!renderSystem->GetGpuFFT().DispatchFFTComplex2D(commandList, frameThreadData, apertureSpatialBuffer, apertureSpectrumBuffer, workBuffer, fftSizeEnum, 1)) {
+    if (!renderSystem->GetGpuFFT().DispatchFFTComplex2D(commandList, apertureSpatialBuffer, apertureSpectrumBuffer, workBuffer, fftSizeEnum, 1)) {
         return false;
     }
 

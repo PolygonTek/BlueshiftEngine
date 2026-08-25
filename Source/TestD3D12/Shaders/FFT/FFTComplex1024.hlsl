@@ -1,13 +1,20 @@
 #include "../ShaderInterop.h"
 #include "FFTCommon.hlsli"
 
-#define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0)"
+#ifndef FFT_INVERSE
+    #error FFT_INVERSE must be defined to 0 or 1.
+#endif
 
-cbuffer FFTStageCB : register(b0) {
-    FFTStageParams fftParams;
-}
+#if FFT_INVERSE
+static const float FFTSign = 1.0f;
+static const float FFTScale = 1.0f / 1024.0f;
+#else
+static const float FFTSign = -1.0f;
+static const float FFTScale = 1.0f;
+#endif
+
+#define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
+    "DescriptorTable(SRV(t0), UAV(u0))"
 
 // 1024 개의 복소수 FFT 데이터가 연속으로 배치된 입력 버퍼
 StructuredBuffer<float2> inputBuffer : register(t0);
@@ -18,15 +25,15 @@ RWStructuredBuffer<float2> outputBuffer : register(u0);
 groupshared float2 fftStageBuffer0[1024];
 groupshared float2 fftStageBuffer1[1024];
 
-void RunRadix8Stage0_Buffer0To1(uint butterflyIndex) {
-    float2 a0 = fftStageBuffer0[butterflyIndex];
-    float2 a1 = fftStageBuffer0[butterflyIndex + 128u];
-    float2 a2 = fftStageBuffer0[butterflyIndex + 256u];
-    float2 a3 = fftStageBuffer0[butterflyIndex + 384u];
-    float2 a4 = fftStageBuffer0[butterflyIndex + 512u];
-    float2 a5 = fftStageBuffer0[butterflyIndex + 640u];
-    float2 a6 = fftStageBuffer0[butterflyIndex + 768u];
-    float2 a7 = fftStageBuffer0[butterflyIndex + 896u];
+void RunRadix8Stage0_InputToBuffer1(uint butterflyIndex, uint bufferBase) {
+    float2 a0 = inputBuffer[bufferBase + butterflyIndex];
+    float2 a1 = inputBuffer[bufferBase + butterflyIndex + 128u];
+    float2 a2 = inputBuffer[bufferBase + butterflyIndex + 256u];
+    float2 a3 = inputBuffer[bufferBase + butterflyIndex + 384u];
+    float2 a4 = inputBuffer[bufferBase + butterflyIndex + 512u];
+    float2 a5 = inputBuffer[bufferBase + butterflyIndex + 640u];
+    float2 a6 = inputBuffer[bufferBase + butterflyIndex + 768u];
+    float2 a7 = inputBuffer[bufferBase + butterflyIndex + 896u];
 
     float2 stageOutput0;
     float2 stageOutput1;
@@ -36,7 +43,7 @@ void RunRadix8Stage0_Buffer0To1(uint butterflyIndex) {
     float2 stageOutput5;
     float2 stageOutput6;
     float2 stageOutput7;
-    Radix8Butterfly(a0, a1, a2, a3, a4, a5, a6, a7, fftParams.sign, stageOutput0, stageOutput1, stageOutput2, stageOutput3, stageOutput4, stageOutput5, stageOutput6, stageOutput7);
+    Radix8Butterfly(a0, a1, a2, a3, a4, a5, a6, a7, FFTSign, stageOutput0, stageOutput1, stageOutput2, stageOutput3, stageOutput4, stageOutput5, stageOutput6, stageOutput7);
 
     fftStageBuffer1[butterflyIndex] = stageOutput0;
     fftStageBuffer1[butterflyIndex + 128u] = stageOutput1;
@@ -60,7 +67,7 @@ void RunRadix8Stage1_Buffer1To0(uint butterflyIndex) {
     float2 w5;
     float2 w6;
     float2 w7;
-    GetRadix8Twiddles(twiddleIndex, 1.0f / 64.0f, fftParams.sign, w1, w2, w3, w4, w5, w6, w7);
+    GetRadix8Twiddles(twiddleIndex, 1.0f / 64.0f, FFTSign, w1, w2, w3, w4, w5, w6, w7);
 
     float2 a0 = fftStageBuffer1[inputIndex0];
     float2 a1 = ComplexMul(w1, fftStageBuffer1[inputIndex0 + 16u]);
@@ -79,7 +86,7 @@ void RunRadix8Stage1_Buffer1To0(uint butterflyIndex) {
     float2 stageOutput5;
     float2 stageOutput6;
     float2 stageOutput7;
-    Radix8Butterfly(a0, a1, a2, a3, a4, a5, a6, a7, fftParams.sign, stageOutput0, stageOutput1, stageOutput2, stageOutput3, stageOutput4, stageOutput5, stageOutput6, stageOutput7);
+    Radix8Butterfly(a0, a1, a2, a3, a4, a5, a6, a7, FFTSign, stageOutput0, stageOutput1, stageOutput2, stageOutput3, stageOutput4, stageOutput5, stageOutput6, stageOutput7);
 
     fftStageBuffer0[butterflyIndex] = stageOutput0;
     fftStageBuffer0[butterflyIndex + 128u] = stageOutput1;
@@ -103,7 +110,7 @@ void RunRadix8Stage2_Buffer0To1(uint butterflyIndex) {
     float2 w5;
     float2 w6;
     float2 w7;
-    GetRadix8Twiddles(twiddleIndex, 1.0f / 512.0f, fftParams.sign, w1, w2, w3, w4, w5, w6, w7);
+    GetRadix8Twiddles(twiddleIndex, 1.0f / 512.0f, FFTSign, w1, w2, w3, w4, w5, w6, w7);
 
     float2 a0 = fftStageBuffer0[inputIndex0];
     float2 a1 = ComplexMul(w1, fftStageBuffer0[inputIndex0 + 2u]);
@@ -122,7 +129,7 @@ void RunRadix8Stage2_Buffer0To1(uint butterflyIndex) {
     float2 stageOutput5;
     float2 stageOutput6;
     float2 stageOutput7;
-    Radix8Butterfly(a0, a1, a2, a3, a4, a5, a6, a7, fftParams.sign, stageOutput0, stageOutput1, stageOutput2, stageOutput3, stageOutput4, stageOutput5, stageOutput6, stageOutput7);
+    Radix8Butterfly(a0, a1, a2, a3, a4, a5, a6, a7, FFTSign, stageOutput0, stageOutput1, stageOutput2, stageOutput3, stageOutput4, stageOutput5, stageOutput6, stageOutput7);
 
     fftStageBuffer1[butterflyIndex] = stageOutput0;
     fftStageBuffer1[butterflyIndex + 128u] = stageOutput1;
@@ -137,14 +144,14 @@ void RunRadix8Stage2_Buffer0To1(uint butterflyIndex) {
 void GetFinalRadix2Twiddles(uint k, out float2 wk, out float2 wk128, out float2 wk256, out float2 wk384) {
     float s;
     float c;
-    sincos(fftParams.sign * TWO_PI * float(k) / 1024.0f, s, c);
+    sincos(FFTSign * TWO_PI * float(k) / 1024.0f, s, c);
 
     wk = float2(c, s);
 
     float halfSqrt2 = 0.5f * SQRT2;
-    wk128 = ComplexMul(wk, float2(halfSqrt2, fftParams.sign * halfSqrt2));
-    wk256 = ComplexMul(wk, float2(0.0f, fftParams.sign));
-    wk384 = ComplexMul(wk, float2(-halfSqrt2, fftParams.sign * halfSqrt2));
+    wk128 = ComplexMul(wk, float2(halfSqrt2, FFTSign * halfSqrt2));
+    wk256 = ComplexMul(wk, float2(0.0f, FFTSign));
+    wk384 = ComplexMul(wk, float2(-halfSqrt2, FFTSign * halfSqrt2));
 }
 
 void RunFinalRadix2Butterfly(uint butterflyIndex, uint bufferBase, float2 twiddle) {
@@ -155,8 +162,8 @@ void RunFinalRadix2Butterfly(uint butterflyIndex, uint bufferBase, float2 twiddl
     float2 b = ComplexMul(twiddle, fftStageBuffer1[inputIndex0 + 1u]);
 
     // 역변환의 마지막 스테이지에서 정규화를 한다 (정변환은 scale = 1, 역변환은 scale = 1/1024)
-    outputBuffer[outputIndex0] = (a + b) * fftParams.scale;
-    outputBuffer[outputIndex0 + 512u] = (a - b) * fftParams.scale;
+    outputBuffer[outputIndex0] = (a + b) * FFTScale;
+    outputBuffer[outputIndex0 + 512u] = (a - b) * FFTScale;
 }
 
 void RunRadix2Stage3_Buffer1ToOutput(uint butterflyIndex, uint bufferBase) {
@@ -179,18 +186,7 @@ void CSMain(uint3 groupThreadId : SV_GroupThreadID, uint3 groupId : SV_GroupID) 
     uint butterflyIndex = groupThreadId.x;
     uint bufferBase = groupId.x << 10;
 
-    fftStageBuffer0[butterflyIndex] = inputBuffer[bufferBase + butterflyIndex];
-    fftStageBuffer0[butterflyIndex + 128u] = inputBuffer[bufferBase + butterflyIndex + 128u];
-    fftStageBuffer0[butterflyIndex + 256u] = inputBuffer[bufferBase + butterflyIndex + 256u];
-    fftStageBuffer0[butterflyIndex + 384u] = inputBuffer[bufferBase + butterflyIndex + 384u];
-    fftStageBuffer0[butterflyIndex + 512u] = inputBuffer[bufferBase + butterflyIndex + 512u];
-    fftStageBuffer0[butterflyIndex + 640u] = inputBuffer[bufferBase + butterflyIndex + 640u];
-    fftStageBuffer0[butterflyIndex + 768u] = inputBuffer[bufferBase + butterflyIndex + 768u];
-    fftStageBuffer0[butterflyIndex + 896u] = inputBuffer[bufferBase + butterflyIndex + 896u];
-
-    GroupMemoryBarrierWithGroupSync();
-
-    RunRadix8Stage0_Buffer0To1(butterflyIndex);
+    RunRadix8Stage0_InputToBuffer1(butterflyIndex, bufferBase);
     GroupMemoryBarrierWithGroupSync();
 
     RunRadix8Stage1_Buffer1To0(butterflyIndex);

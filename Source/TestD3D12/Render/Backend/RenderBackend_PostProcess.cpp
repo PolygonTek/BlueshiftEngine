@@ -832,7 +832,7 @@ bool RenderBackend::DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::B
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomFFT);
 
-    return renderSystem->gpuFFT.DispatchFFTDualReal2D(mainCommandList, frameData->GetThreadData(0), inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, fftSizeEnum, PlaneCount);
+    return renderSystem->gpuFFT.DispatchFFTDualReal2D(mainCommandList, inputBuffer, outputBuffer, currentVisCamera->fftBloomWorkBuffer, fftSizeEnum, PlaneCount);
 }
 
 bool RenderBackend::DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) {
@@ -845,7 +845,7 @@ bool RenderBackend::DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomIFFT);
 
-    return renderSystem->gpuFFT.DispatchIFFTDualReal2D(mainCommandList, frameData->GetThreadData(0), inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, fftSizeEnum, PlaneCount);
+    return renderSystem->gpuFFT.DispatchIFFTDualReal2D(mainCommandList, inputBuffer, outputBuffer, currentVisCamera->fftBloomScreenSpectrumBuffer, fftSizeEnum, PlaneCount);
 }
 
 bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom) {
