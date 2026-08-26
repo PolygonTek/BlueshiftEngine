@@ -464,7 +464,115 @@ bool GpuFFT::DispatchIFFTComplex1D(RHI::CommandList *commandList, RHI::Buffer *i
     return true;
 }
 
-bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
+bool GpuFFT::DispatchComplexFFT2D(RHI::CommandList *commandList, RHI::PipelineState *fftPso, RHI::PipelineState *transposePso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftSize, uint32_t planeCount, Complex2DDataLayout inputLayout, Complex2DDataLayout outputLayout) {
+    const uint32_t FFTBlockCount = fftSize * planeCount;
+    const uint32_t TransposeTileCount = fftSize / TransposeComplexTileSize;
+    auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
+        RHI::renderer->SetPSO(commandList, pso);
+        RHI::renderer->SetBuffer(commandList, 0, false, input);
+        RHI::renderer->SetBuffer(commandList, 0, true, output);
+        RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
+    };
+
+    // Normal -> Normal or Transposed -> Transposed
+    // 입출력 레이아웃이 같으면 transpose 를 두번 수행하여 원래 레이아웃으로 되돌린다.
+    if (inputLayout == outputLayout) {
+        RHI::Buffer *firstStageOutput = workBuffer;
+        if (!DispatchFFTComplexFused(commandList, fftPso, inputBuffer, firstStageOutput, FFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined)) {
+            return false;
+        }
+
+        RHI::Buffer *firstTransposeOutput = outputBuffer;
+        RHI::GPUBarrier firstTransposeBarriers[] = {
+            RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+            RHI::Renderer::MakeBufferBarrier(firstStageOutput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+            RHI::Renderer::MakeBufferBarrier(firstTransposeOutput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
+        };
+        RHI::renderer->Barrier(commandList, firstTransposeBarriers, COUNT_OF(firstTransposeBarriers));
+        dispatchBufferPSO(transposePso, firstStageOutput, firstTransposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
+
+        RHI::Buffer *secondStageOutput = workBuffer;
+        if (!DispatchFFTComplexFused(commandList, fftPso, firstTransposeOutput, secondStageOutput, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute)) {
+            return false;
+        }
+
+        RHI::Buffer *secondTransposeOutput = outputBuffer;
+        RHI::GPUBarrier secondTransposeBarriers[] = {
+            RHI::Renderer::MakeBufferBarrier(secondStageOutput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+            RHI::Renderer::MakeBufferBarrier(secondTransposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess)
+        };
+        RHI::renderer->Barrier(commandList, secondTransposeBarriers, COUNT_OF(secondTransposeBarriers));
+        dispatchBufferPSO(transposePso, secondStageOutput, secondTransposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
+
+        RHI::GPUBarrier endBarriers[] = {
+            RHI::Renderer::MakeBufferBarrier(secondStageOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+            RHI::Renderer::MakeBufferBarrier(secondTransposeOutput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
+        };
+        RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+        return true;
+    }
+
+    // Normal -> Transposed
+    if (inputLayout == Complex2DDataLayout::Normal) {
+        // 가로 FFT/IFFT 스테이지
+        RHI::Buffer *firstStageOutput = outputBuffer;
+        if (!DispatchFFTComplexFused(commandList, fftPso, inputBuffer, firstStageOutput, FFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined)) {
+            return false;
+        }
+
+        // transpose
+        RHI::Buffer *transposeOutput = workBuffer;
+        RHI::GPUBarrier transposeBarriers[] = {
+            RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+            RHI::Renderer::MakeBufferBarrier(firstStageOutput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+            RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
+        };
+        RHI::renderer->Barrier(commandList, transposeBarriers, COUNT_OF(transposeBarriers));
+        dispatchBufferPSO(transposePso, firstStageOutput, transposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
+
+        // 세로 FFT/IFFT 스테이지. 결과는 transposed 레이아웃이다.
+        if (!DispatchFFTComplexFused(commandList, fftPso, transposeOutput, outputBuffer, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute)) {
+            return false;
+        }
+
+        RHI::GPUBarrier endBarriers[] = {
+            RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+            RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
+        };
+        RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+        return true;
+    }
+
+    // Transposed -> Normal
+    // 세로 FFT/IFFT 스테이지
+    RHI::Buffer *firstStageOutput = workBuffer;
+    if (!DispatchFFTComplexFused(commandList, fftPso, inputBuffer, firstStageOutput, FFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined)) {
+        return false;
+    }
+
+    RHI::Buffer *transposeOutput = inputBuffer;
+    RHI::GPUBarrier transposeBarriers[] = {
+        RHI::Renderer::MakeBufferBarrier(firstStageOutput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess)
+    };
+    RHI::renderer->Barrier(commandList, transposeBarriers, COUNT_OF(transposeBarriers));
+    dispatchBufferPSO(transposePso, firstStageOutput, transposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
+
+    // 가로 FFT/IFFT 스테이지. 결과는 일반 레이아웃이다.
+    if (!DispatchFFTComplexFused(commandList, fftPso, transposeOutput, outputBuffer, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)) {
+        return false;
+    }
+
+    RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeBufferBarrier(firstStageOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
+    };
+    RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+    return true;
+}
+
+bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount, Complex2DDataLayout inputLayout, Complex2DDataLayout outputLayout) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTComplex2D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -480,46 +588,10 @@ bool GpuFFT::DispatchFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *in
         return false;
     }
 
-    const uint32_t FFTBlockCount = entry.fftSize * planeCount;
-    const uint32_t TransposeTileCount = entry.fftSize / TransposeComplexTileSize;
-    auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
-        RHI::renderer->SetPSO(commandList, pso);
-        RHI::renderer->SetBuffer(commandList, 0, false, input);
-        RHI::renderer->SetBuffer(commandList, 0, true, output);
-        RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
-    };
-
-    // 가로 FFT 스테이지
-    RHI::Buffer *stageInput = outputBuffer;
-    if (!DispatchFFTComplexFused(commandList, fftPso, inputBuffer, stageInput, FFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined)) {
-        return false;
-    }
-
-    // transpose
-    RHI::Buffer *transposeOutput = workBuffer;
-    RHI::GPUBarrier transposeBarriers[] = {
-        RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
-    };
-    RHI::renderer->Barrier(commandList, transposeBarriers, COUNT_OF(transposeBarriers));
-    dispatchBufferPSO(transposePso, stageInput, transposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
-
-    // 세로 FFT 스테이지
-    if (!DispatchFFTComplexFused(commandList, fftPso, transposeOutput, outputBuffer, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute)) {
-        return false;
-    }
-
-    RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
-    };
-    RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
-
-    return true;
+    return DispatchComplexFFT2D(commandList, fftPso, transposePso, inputBuffer, outputBuffer, workBuffer, entry.fftSize, planeCount, inputLayout, outputLayout);
 }
 
-bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount) {
+bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount, Complex2DDataLayout inputLayout, Complex2DDataLayout outputLayout) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchIFFTComplex2D");
 
     const uint32_t fftSizeIndex = static_cast<uint32_t>(fftSize);
@@ -529,49 +601,13 @@ bool GpuFFT::DispatchIFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *i
     }
 
     const FFTDispatchEntry &entry = fftDispatchTable[fftSizeIndex];
-    RHI::PipelineState *fftPso = ShaderPipeline::GetReadyPSO(entry.ifftComplexPipeline);
+    RHI::PipelineState *ifftPso = ShaderPipeline::GetReadyPSO(entry.ifftComplexPipeline);
     RHI::PipelineState *transposePso = ShaderPipeline::GetReadyPSO(entry.transposeComplexPipeline);
-    if (!fftPso || !transposePso) {
+    if (!ifftPso || !transposePso) {
         return false;
     }
 
-    const uint32_t FFTBlockCount = entry.fftSize * planeCount;
-    const uint32_t TransposeTileCount = entry.fftSize / TransposeComplexTileSize;
-    auto dispatchBufferPSO = [&](RHI::PipelineState *pso, RHI::Buffer *input, RHI::Buffer *output, uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1) {
-        RHI::renderer->SetPSO(commandList, pso);
-        RHI::renderer->SetBuffer(commandList, 0, false, input);
-        RHI::renderer->SetBuffer(commandList, 0, true, output);
-        RHI::renderer->Dispatch(commandList, groupCountX, groupCountY, groupCountZ);
-    };
-
-    // 가로 IFFT 스테이지
-    RHI::Buffer *stageInput = workBuffer;
-    if (!DispatchFFTComplexFused(commandList, fftPso, inputBuffer, stageInput, FFTBlockCount, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::Undefined)) {
-        return false;
-    }
-
-    // transpose
-    RHI::Buffer *transposeOutput = inputBuffer;
-    RHI::GPUBarrier transposeBarriers[] = {
-        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess)
-    };
-    RHI::renderer->Barrier(commandList, transposeBarriers, COUNT_OF(transposeBarriers));
-    dispatchBufferPSO(transposePso, stageInput, transposeOutput, TransposeTileCount, TransposeTileCount, planeCount);
-
-    // 세로 IFFT 스테이지
-    if (!DispatchFFTComplexFused(commandList, fftPso, transposeOutput, outputBuffer, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)) {
-        return false;
-    }
-
-    RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeBufferBarrier(stageInput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(transposeOutput, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(outputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::Undefined)
-    };
-    RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
-
-    return true;
+    return DispatchComplexFFT2D(commandList, ifftPso, transposePso, inputBuffer, outputBuffer, workBuffer, entry.fftSize, planeCount, inputLayout, outputLayout);
 }
 
 bool GpuFFT::DispatchFFTReal1D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount) {

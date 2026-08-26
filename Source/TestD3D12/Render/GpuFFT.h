@@ -46,8 +46,10 @@ class ShaderTemplate;
       - 1D 함수는 fftBlockCount 개의 독립적인 FFT/IFFT 를 수행한다.
 
     * 2D FFT:
-      - Forward 2D FFT 는 한 번만 transpose 하여 transposed 상태로 리턴한다.
-      - Inverse 2D FFT 는 입력이 transposed 상태라고 가정한다.
+      - Complex FFT/IFFT 는 Complex2DDataLayout 으로 입력과 출력의 layout 을 각각 지정한다.
+      - Complex FFT/IFFT 는 입출력 layout 이 다르면 한 번, 같으면 두 번 transpose 한다.
+      - Real/Dual-real Forward 2D FFT 는 한 번만 transpose 하여 transposed 상태로 리턴한다.
+      - Real/Dual-real Inverse 2D FFT 는 입력이 transposed 상태라고 가정한다.
       - 2D 함수는 planeCount 개의 독립적인 2D FFT/IFFT 를 수행한다.
       - plane 은 planeCount 개만큼 버퍼에 연속 배치되며, transpose 도 plane 별로 독립적으로 수행한다.
 
@@ -56,12 +58,17 @@ class ShaderTemplate;
 
 class GpuFFT {
 public:
-    enum class FFTSize : uint32_t {
+    enum class FFTSize : uint8_t {
         FFT256,
         FFT512,
         FFT1024,
         FFT2048,
         Count
+    };
+
+    enum class Complex2DDataLayout : uint8_t {
+        Normal,
+        Transposed
     };
 
     void                        Init();
@@ -80,11 +87,11 @@ public:
                                 // inverse fftSize-point complex buffers -> fftSize-point complex buffers (256/512/1024/2048)
     bool                        DispatchIFFTComplex1D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount);
 
-                                // fftSize x fftSize complex planes -> transposed fftSize x fftSize complex planes (256/512/1024/2048)
-    bool                        DispatchFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount);
+                                // fftSize x fftSize complex planes 변환 (256/512/1024/2048), 입력과 출력의 layout 을 각각 지정한다.
+    bool                        DispatchFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount, Complex2DDataLayout inputLayout, Complex2DDataLayout outputLayout);
 
-                                // transposed fftSize x fftSize complex planes -> fftSize x fftSize complex planes (256/512/1024/2048)
-    bool                        DispatchIFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount);
+                                // inverse fftSize x fftSize complex planes 변환 (256/512/1024/2048), 입력과 출력의 layout 을 각각 지정한다.
+    bool                        DispatchIFFTComplex2D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, FFTSize fftSize, uint32_t planeCount, Complex2DDataLayout inputLayout, Complex2DDataLayout outputLayout);
 
                                 // fftSize-point real buffers -> fftSize/2-point packed complex buffers (512/1024/2048)
     bool                        DispatchFFTReal1D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount);
@@ -123,6 +130,7 @@ private:
     RHI::Buffer *               CreateRealFFTTwiddleBuffer(uint32_t fftSize);
 
     bool                        DispatchFFTComplexFused(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState outputBufferState);
+    bool                        DispatchComplexFFT2D(RHI::CommandList *commandList, RHI::PipelineState *fftPso, RHI::PipelineState *transposePso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftSize, uint32_t planeCount, Complex2DDataLayout inputLayout, Complex2DDataLayout outputLayout);
     bool                        DispatchFFTRealFused(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *twiddleBuffer, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
     bool                        DispatchIFFTRealFused(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *twiddleBuffer, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, RHI::Buffer *workBuffer, uint32_t fftBlockCount, RHI::GPUResourceState inputBufferState, RHI::GPUResourceState workBufferState);
     bool                        DispatchFFTDualRealFused(RHI::CommandList *commandList, RHI::PipelineState *pso, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t fftBlockCount, RHI::Buffer **resultBuffer);
