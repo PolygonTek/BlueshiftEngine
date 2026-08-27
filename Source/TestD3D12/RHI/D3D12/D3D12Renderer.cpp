@@ -444,6 +444,20 @@ void D3D12Renderer::InitGenMipmapsPSO() {
 
     // 2D 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
     {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DFloat1.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps2DFloat1PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DUNorm1.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps2DUNorm1PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
         RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DFloat4.hlsl", "CSMain"));
         if (cs) {
             genMipmaps2DFloat4PSO = CreateComputePSO(cs);
@@ -457,7 +471,50 @@ void D3D12Renderer::InitGenMipmapsPSO() {
             DestroyShader(cs, true);
         }
     }
+    // 2D texture array 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DArrayFloat1.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps2DArrayFloat1PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DArrayUNorm1.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps2DArrayUNorm1PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DArrayFloat4.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps2DArrayFloat4PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip2DArrayUNorm4.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps2DArrayUNorm4PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
     // 큐브맵 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeFloat1.hlsl", "CSMain"));
+        if (cs) {
+            genMipmapsCubeFloat1PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeUNorm1.hlsl", "CSMain"));
+        if (cs) {
+            genMipmapsCubeUNorm1PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
     {
         RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMipCubeFloat4.hlsl", "CSMain"));
         if (cs) {
@@ -473,6 +530,20 @@ void D3D12Renderer::InitGenMipmapsPSO() {
         }
     }
     // 3D 텍스쳐 용 밉맵 생성 컴퓨트 셰이더 PSO 생성
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DFloat1.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps3DFloat1PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
+    {
+        RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DUNorm1.hlsl", "CSMain"));
+        if (cs) {
+            genMipmaps3DUNorm1PSO = CreateComputePSO(cs);
+            DestroyShader(cs, true);
+        }
+    }
     {
         RHI::Shader *cs = static_cast<RHI::Shader *>(CreateShaderFromFile(shaderModel, RHI::ShaderStage::Compute, "Source/TestD3D12/Shaders/GenMip/GenMip3DFloat4.hlsl", "CSMain"));
         if (cs) {
@@ -490,6 +561,14 @@ void D3D12Renderer::InitGenMipmapsPSO() {
 }
 
 void D3D12Renderer::FreeGenMipmapsPSO() {
+    if (genMipmaps2DFloat1PSO) {
+        DestroyPSO(genMipmaps2DFloat1PSO, true);
+        genMipmaps2DFloat1PSO = nullptr;
+    }
+    if (genMipmaps2DUNorm1PSO) {
+        DestroyPSO(genMipmaps2DUNorm1PSO, true);
+        genMipmaps2DUNorm1PSO = nullptr;
+    }
     if (genMipmaps2DFloat4PSO) {
         DestroyPSO(genMipmaps2DFloat4PSO, true);
         genMipmaps2DFloat4PSO = nullptr;
@@ -498,6 +577,30 @@ void D3D12Renderer::FreeGenMipmapsPSO() {
         DestroyPSO(genMipmaps2DUNorm4PSO, true);
         genMipmaps2DUNorm4PSO = nullptr;
     }
+    if (genMipmaps2DArrayFloat1PSO) {
+        DestroyPSO(genMipmaps2DArrayFloat1PSO, true);
+        genMipmaps2DArrayFloat1PSO = nullptr;
+    }
+    if (genMipmaps2DArrayUNorm1PSO) {
+        DestroyPSO(genMipmaps2DArrayUNorm1PSO, true);
+        genMipmaps2DArrayUNorm1PSO = nullptr;
+    }
+    if (genMipmaps2DArrayFloat4PSO) {
+        DestroyPSO(genMipmaps2DArrayFloat4PSO, true);
+        genMipmaps2DArrayFloat4PSO = nullptr;
+    }
+    if (genMipmaps2DArrayUNorm4PSO) {
+        DestroyPSO(genMipmaps2DArrayUNorm4PSO, true);
+        genMipmaps2DArrayUNorm4PSO = nullptr;
+    }
+    if (genMipmapsCubeFloat1PSO) {
+        DestroyPSO(genMipmapsCubeFloat1PSO, true);
+        genMipmapsCubeFloat1PSO = nullptr;
+    }
+    if (genMipmapsCubeUNorm1PSO) {
+        DestroyPSO(genMipmapsCubeUNorm1PSO, true);
+        genMipmapsCubeUNorm1PSO = nullptr;
+    }
     if (genMipmapsCubeFloat4PSO) {
         DestroyPSO(genMipmapsCubeFloat4PSO, true);
         genMipmapsCubeFloat4PSO = nullptr;
@@ -505,6 +608,14 @@ void D3D12Renderer::FreeGenMipmapsPSO() {
     if (genMipmapsCubeUNorm4PSO) {
         DestroyPSO(genMipmapsCubeUNorm4PSO, true);
         genMipmapsCubeUNorm4PSO = nullptr;
+    }
+    if (genMipmaps3DFloat1PSO) {
+        DestroyPSO(genMipmaps3DFloat1PSO, true);
+        genMipmaps3DFloat1PSO = nullptr;
+    }
+    if (genMipmaps3DUNorm1PSO) {
+        DestroyPSO(genMipmaps3DUNorm1PSO, true);
+        genMipmaps3DUNorm1PSO = nullptr;
     }
     if (genMipmaps3DFloat4PSO) {
         DestroyPSO(genMipmaps3DFloat4PSO, true);
@@ -2811,6 +2922,7 @@ BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) co
 bool D3D12Renderer::CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::Image::Format imageFormat, int arraySize) const {
     switch (textureType) {
     case RHI::TextureType::Texture2D:
+    case RHI::TextureType::Texture2DArray:
     case RHI::TextureType::Texture3D:
         break;
     case RHI::TextureType::TextureCube:
@@ -2831,8 +2943,9 @@ bool D3D12Renderer::CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::I
         return false;
     }
 
-    // 현재 D3D12 mip generation compute shader 는 Float4 / UNorm4 및 R11G11B10 float 텍스쳐를 지원한다.
-    if (BE1::Image::NumComponents(imageFormat) != 4 && !isR11G11B10Float) {
+    // 현재 D3D12 mip generation compute shader 는 Float1 / UNorm1, Float4 / UNorm4 및 R11G11B10 float 텍스쳐를 지원한다.
+    const int componentCount = BE1::Image::NumComponents(imageFormat);
+    if (componentCount != 1 && componentCount != 4 && !isR11G11B10Float) {
         return false;
     }
 

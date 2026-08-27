@@ -367,10 +367,20 @@ public:
     BE1::Mutex                          resourceRequestMutex;
     BE1::Array<D3D12ResourceRequest>    resourceRequests;
 
+    RHI::PipelineState *                genMipmaps2DFloat1PSO = nullptr;
+    RHI::PipelineState *                genMipmaps2DUNorm1PSO = nullptr;
     RHI::PipelineState *                genMipmaps2DFloat4PSO = nullptr;
     RHI::PipelineState *                genMipmaps2DUNorm4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps2DArrayFloat1PSO = nullptr;
+    RHI::PipelineState *                genMipmaps2DArrayUNorm1PSO = nullptr;
+    RHI::PipelineState *                genMipmaps2DArrayFloat4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps2DArrayUNorm4PSO = nullptr;
+    RHI::PipelineState *                genMipmapsCubeFloat1PSO = nullptr;
+    RHI::PipelineState *                genMipmapsCubeUNorm1PSO = nullptr;
     RHI::PipelineState *                genMipmapsCubeFloat4PSO = nullptr;
     RHI::PipelineState *                genMipmapsCubeUNorm4PSO = nullptr;
+    RHI::PipelineState *                genMipmaps3DFloat1PSO = nullptr;
+    RHI::PipelineState *                genMipmaps3DUNorm1PSO = nullptr;
     RHI::PipelineState *                genMipmaps3DFloat4PSO = nullptr;
     RHI::PipelineState *                genMipmaps3DUNorm4PSO = nullptr;
 };

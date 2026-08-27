@@ -1669,8 +1669,8 @@ bool D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, D3D12Texture
         CreateView(texture, RHI::ViewType::UAV);
     }
 
-    RHI::ViewID *srvMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount() * texture->GetArraySize());
-    RHI::ViewID *uavMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount() * texture->GetArraySize());
+    RHI::ViewID *srvMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount());
+    RHI::ViewID *uavMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount());
 
     // Mip Level 별로 필요한 임시 SRV/UAV 를 생성
     const int mipLevelCount = texture->GetMipLevelCount();
@@ -1723,7 +1723,8 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         // 생성 대상 sub-mip 만 discard 해서 이미 기록된 mip 0 은 보존한다.
         const uint32_t mipCountToDiscard = numMipmaps - 1;
         const uint32_t arraySize = _texture->GetArraySize();
-        const uint32_t sliceCount = _texture->type == RHI::TextureType::TextureCube && arraySize == 6 ? 6 : 1;
+        const bool hasArraySlices = (_texture->type == RHI::TextureType::TextureCube && arraySize == 6) || _texture->type == RHI::TextureType::Texture2DArray;
+        const uint32_t sliceCount = hasArraySlices ? arraySize : 1;
         const uint32_t barrierCount = mipCountToDiscard * sliceCount;
         RHI::GPUBarrier *discardStartBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * barrierCount);
 
@@ -1757,11 +1758,16 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         mipGenParams.flags |= MipGenOptionBitPreserveCoverage;
     }
 
+    const bool isSingleComponent = BE1::Image::NumComponents(_texture->srcFormat) == 1;
+    const bool isFloatFormat = BE1::Image::IsFloatFormat(_texture->srcFormat);
+
     if (_texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) {
-        // TODO: Texture2DArray, CubemapArray 도 지원해야 함.
+        // TODO: CubemapArray 도 지원해야 함.
         if (_texture->type == RHI::TextureType::TextureCube && _texture->textureDesc.DepthOrArraySize == 6) {
             // Cubemap
-            SetPSO(commandList, BE1::Image::IsFloatFormat(_texture->srcFormat) ? genMipmapsCubeFloat4PSO : genMipmapsCubeUNorm4PSO);
+            SetPSO(commandList, isSingleComponent ?
+                (isFloatFormat ? genMipmapsCubeFloat1PSO : genMipmapsCubeUNorm1PSO) :
+                (isFloatFormat ? genMipmapsCubeFloat4PSO : genMipmapsCubeUNorm4PSO));
 
             for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
                 uint32_t destMipLevel = mipLevel + 1;
@@ -1809,8 +1815,21 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
                 Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
             }
         } else {
-            // 2D
-            SetPSO(commandList, BE1::Image::IsFloatFormat(_texture->srcFormat) ? genMipmaps2DFloat4PSO : genMipmaps2DUNorm4PSO);
+            // 2D / 2D texture array
+            const bool isTextureArray = _texture->type == RHI::TextureType::Texture2DArray;
+            if (isTextureArray) {
+                SetPSO(commandList, isSingleComponent ?
+                    (isFloatFormat ? genMipmaps2DArrayFloat1PSO : genMipmaps2DArrayUNorm1PSO) :
+                    (isFloatFormat ? genMipmaps2DArrayFloat4PSO : genMipmaps2DArrayUNorm4PSO));
+            } else {
+                SetPSO(commandList, isSingleComponent ?
+                    (isFloatFormat ? genMipmaps2DFloat1PSO : genMipmaps2DUNorm1PSO) :
+                    (isFloatFormat ? genMipmaps2DFloat4PSO : genMipmaps2DUNorm4PSO));
+            }
+
+            const uint32_t sliceCount = isTextureArray ? _texture->GetArraySize() : 1;
+            RHI::GPUBarrier *startBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * sliceCount);
+            RHI::GPUBarrier *endBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * sliceCount);
 
             for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
                 uint32_t destMipLevel = mipLevel + 1;
@@ -1819,7 +1838,7 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
 
                 mipGenParams.dstSize.x = destW;
                 mipGenParams.dstSize.y = destH;
-                mipGenParams.dstSize.z = 0;
+                mipGenParams.dstSize.z = sliceCount;
                 mipGenParams.dstSizeRcp.x = 1.0f / destW;
                 mipGenParams.dstSizeRcp.y = 1.0f / destH;
                 mipGenParams.dstSizeRcp.z = 0;
@@ -1834,22 +1853,24 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
                 // Set input texture (SRV)
                 SetTexture(commandList, 0, false, texture, srvMipViewIDs[mipLevel]);
 
-                RHI::GPUBarrier startBarriers[] = {
-                    RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, 0, destMipLevel)
-                };
-                Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
+                for (uint32_t slice = 0; slice < sliceCount; ++slice) {
+                    startBarriers[slice] = RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, slice, destMipLevel);
+                }
+                Barrier(commandList, startBarriers, sliceCount);
 
-                Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
+                Dispatch(commandList, threadGroupCountX, threadGroupCountY, sliceCount);
 
-                RHI::GPUBarrier endBarriers[] = {
-                    RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, 0, destMipLevel)
-                };
-                Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+                for (uint32_t slice = 0; slice < sliceCount; ++slice) {
+                    endBarriers[slice] = RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, slice, destMipLevel);
+                }
+                Barrier(commandList, endBarriers, sliceCount);
             }
         }
     } else if (_texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D) {
         // 3D
-        SetPSO(commandList, BE1::Image::IsFloatFormat(_texture->srcFormat) ? genMipmaps3DFloat4PSO : genMipmaps3DUNorm4PSO);
+        SetPSO(commandList, isSingleComponent ?
+            (isFloatFormat ? genMipmaps3DFloat1PSO : genMipmaps3DUNorm1PSO) :
+            (isFloatFormat ? genMipmaps3DFloat4PSO : genMipmaps3DUNorm4PSO));
 
         for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
             uint32_t destMipLevel = mipLevel + 1;
