@@ -1172,7 +1172,7 @@ void RenderBackend::DrawGpuOcean() {
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::OceanPass);
     if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, oceanSettings)) {
-        RecordDrawStats(1, indexCount / 3, 0, 0);
+        RecordDrawStats(1, indexCount / 3 * GpuOcean::GetSurfaceGridInstanceCount(oceanSettings), 0, 0);
     }
 }
 

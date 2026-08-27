@@ -67,17 +67,20 @@ float3 SampleOceanReflection(float3 reflectionDir, float roughness) {
 }
 
 [RootSignature(OCEAN_ROOT_SIGNATURE)]
-PSInput VSMain(uint vertexID : SV_VertexID) {
+PSInput VSMain(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) {
     PSInput result;
 
     const uint gridX = vertexID % OceanSurfaceGridResolution;
     const uint gridY = vertexID / OceanSurfaceGridResolution;
     const float gridHalfExtent = float(OceanSurfaceGridResolution - 1u) * 0.5f;
     const float2 gridPosition = float2(gridX, gridY) - gridHalfExtent;
+    const uint gridTileCountPerAxis = oceanSurfaceParams.gridTileCountPerAxis;
+    const float2 tilePosition = float2(instanceID % gridTileCountPerAxis, instanceID / gridTileCountPerAxis) - float(gridTileCountPerAxis - 1u) * 0.5f;
+    const float2 tiledGridPosition = gridPosition + tilePosition * float(OceanSurfaceGridResolution - 1u);
 
     // 카메라 이동 시 grid 를 한 vertex 간격으로만 이동시켜 정점 위치의 연속성을 유지한다.
     const float2 snappedCameraPosition = floor(cameraConstants.cameraOrigin.xy / oceanSurfaceParams.gridSpacing + 0.5f) * oceanSurfaceParams.gridSpacing;
-    const float2 samplePositionXY = snappedCameraPosition + gridPosition * oceanSurfaceParams.gridSpacing;
+    const float2 samplePositionXY = snappedCameraPosition + tiledGridPosition * oceanSurfaceParams.gridSpacing;
     const float3 displacement = SampleOceanDisplacement(samplePositionXY);
     const float3 worldPosition = float3(samplePositionXY + displacement.xy, oceanSurfaceParams.surfaceHeight + displacement.z);
     const float4 worldPosition4 = float4(worldPosition, 1.0f);
@@ -130,27 +133,28 @@ CameraPassPSOutput PSMain(PSInput input) {
     const float normalLengthSquared = dot(unnormalizedNormal, unnormalizedNormal);
     const float3 normal = normalLengthSquared > 0.0f ? unnormalizedNormal * rsqrt(normalLengthSquared) : float3(0.0f, 0.0f, 1.0f);
 
-    const float3 viewDir = normalize(cameraConstants.cameraOrigin - input.worldPosition);
-    const float NdotV = saturate(dot(normal, viewDir));
+    const float3 V = normalize(cameraConstants.cameraOrigin - input.worldPosition);
+    const float NdotV = saturate(dot(normal, V));
     const float fresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - NdotV);
 
-    const float3 reflectionDir = reflect(-viewDir, normal);
+    const float3 reflectionDir = reflect(-V, normal);
     const float3 reflection = SampleOceanReflection(reflectionDir, oceanSurfaceParams.roughness);
     const float3 waterBodyColor = oceanSurfaceParams.waterColor * lerp(0.35f, 1.0f, NdotV);
     float3 color = lerp(waterBodyColor, reflection, fresnel);
 
     if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0u) {
-        const float3 lightDir = -frameConstants.directionalLight.direction;
-        const float NdotL = saturate(dot(normal, lightDir));
+        const float3 L = -frameConstants.directionalLight.direction;
+        const float NdotL = saturate(dot(normal, L));
         
         if (NdotL > 0.0f) {
-            const float3 halfDir = normalize(lightDir + viewDir);
+            const float3 H = normalize(L + V);
             const float roughnessSquared = max(oceanSurfaceParams.roughness * oceanSurfaceParams.roughness, 0.0004f);
             const float specularPower = max(2.0f / roughnessSquared - 2.0f, 1.0f);
             const float specularNormalization = (specularPower + 2.0f) * (0.125f * INV_PI);
-            const float specular = pow(saturate(dot(normal, halfDir)), specularPower) * specularNormalization;
-            const float halfDotView = saturate(dot(halfDir, viewDir));
-            const float sunFresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - halfDotView);
+            const float NdotH = saturate(dot(normal, H));
+            const float specular = pow(NdotH, specularPower) * specularNormalization;
+            const float VdotH = saturate(dot(V, H));
+            const float sunFresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - VdotH);
             
             color += frameConstants.directionalLight.lightColor * NdotL * (oceanSurfaceParams.waterColor * 0.02f + specular * sunFresnel);
         }

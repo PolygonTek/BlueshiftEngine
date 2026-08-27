@@ -790,6 +790,13 @@ void App::BuildImGuiOverlay() {
                 oceanSettingsChanged = true;
             }
 
+            int surfaceGridTileCountPerAxis = static_cast<int>(oceanSettings.surfaceGridTileCountPerAxis);
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::SliderInt("Surface grid tiles per axis", &surfaceGridTileCountPerAxis, 1, GpuOcean::MaxSurfaceGridTileCountPerAxis)) {
+                oceanSettings.surfaceGridTileCountPerAxis = static_cast<uint32_t>(surfaceGridTileCountPerAxis);
+                oceanSettingsChanged = true;
+            }
+
             ImGui::SetNextItemWidth(itemWidth);
             if (ImGui::SliderFloat("Surface roughness", &oceanSettings.surfaceRoughness, 0.02f, 1.0f, "%.3f")) {
                 oceanSettingsChanged = true;

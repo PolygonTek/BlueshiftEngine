@@ -428,10 +428,11 @@ struct OceanSurfaceParams {
     float waveAmplitude;
     float3 waterColor;
     float fresnelF0;
+    uint gridTileCountPerAxis;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanSurfaceParams) == 48, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanSurfaceParams) == 52, "OceanSurfaceParams must match the HLSL constant-buffer layout");
 #endif
 
 struct ShaderLightCullingParams {

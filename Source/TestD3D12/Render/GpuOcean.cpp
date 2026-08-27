@@ -206,6 +206,7 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
 
     if (static_cast<uint32_t>(newSettings.fftSize) >= static_cast<uint32_t>(GpuFFT::FFTSize::Count) ||
         !BE1::Math::IsFinite(newSettings.surfaceHeight) || !BE1::Math::IsFinite(newSettings.surfaceGridSpacing) || newSettings.surfaceGridSpacing <= 0.0f ||
+        newSettings.surfaceGridTileCountPerAxis == 0 || newSettings.surfaceGridTileCountPerAxis > MaxSurfaceGridTileCountPerAxis ||
         !BE1::Math::IsFinite(newSettings.surfaceRoughness) || newSettings.surfaceRoughness < 0.02f || newSettings.surfaceRoughness > 1.0f ||
         !BE1::Math::IsFinite(newSettings.waveAmplitude) || newSettings.waveAmplitude < 0.0f ||
         !BE1::Math::IsFinite(newSettings.foamThreshold) || !BE1::Math::IsFinite(newSettings.foamGain) || newSettings.foamGain < 0.0f ||
@@ -832,6 +833,7 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     params.waterColor = float3(0.005f, 0.045f, 0.065f);
     params.fresnelF0 = 0.02f;
     params.waveAmplitude = renderSettings.waveAmplitude;
+    params.gridTileCountPerAxis = renderSettings.surfaceGridTileCountPerAxis;
 
     RHI::ConstantBuffer *surfaceConstantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
     if (!surfaceConstantBuffer) {
@@ -847,6 +849,6 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     RHI::renderer->SetTexture(commandList, 0, false, fieldTextureArray);
     RHI::renderer->SetTexture(commandList, 1, false, foamHistoryTextureArray);
 
-    RHI::renderer->DrawIndexed(commandList, SurfaceGridIndexCount, 0, 0);
+    RHI::renderer->DrawIndexedInstanced(commandList, SurfaceGridIndexCount, GetSurfaceGridInstanceCount(renderSettings), 0, 0, 0);
     return true;
 }

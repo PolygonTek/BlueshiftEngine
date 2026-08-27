@@ -40,6 +40,7 @@ public:
     static constexpr uint32_t       FieldTextureSliceCount = 2 * CascadeCount;
     static constexpr uint32_t       SurfaceGridResolution = 256;
     static constexpr uint32_t       SurfaceGridIndexCount = (SurfaceGridResolution - 1) * (SurfaceGridResolution - 1) * 6;
+    static constexpr uint32_t       MaxSurfaceGridTileCountPerAxis = 16;
 
     enum class SpectrumModel : uint8_t {
         Phillips,
@@ -78,6 +79,7 @@ public:
         bool                        enabled = true;
         float                       surfaceHeight = 0.0f;
         float                       surfaceGridSpacing = 2.0f;
+        uint32_t                    surfaceGridTileCountPerAxis = 3;
         float                       surfaceRoughness = 0.08f;
 
         float                       waveAmplitude = 1.0f;       ///< linear scale applied to the final displacement and derivatives
@@ -116,6 +118,7 @@ public:
 
     const SharedPtr<ShaderTemplate> &GetSurfaceShaderTemplate() const { return surfaceShaderTemplate; }
     uint32_t                        GetSurfaceGridIndexCount() const { return surfaceGridIndexBuffer ? SurfaceGridIndexCount : 0; }
+    static uint32_t                 GetSurfaceGridInstanceCount(const Settings &settings) { return settings.surfaceGridTileCountPerAxis * settings.surfaceGridTileCountPerAxis; }
 
                                     /// 주어진 index 의 cascade 설정을 얻는다.
     const CascadeDesc *             GetCascadeDesc(uint32_t cascadeIndex) const { return cascadeIndex < CascadeCount ? &settings.cascades[cascadeIndex] : nullptr; }
@@ -130,7 +133,7 @@ public:
                                     /// enabled 가 false 이면 기존 리소스와 출력은 유지하고 시뮬레이션을 진행하지 않는다.
     bool                            Update(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const Settings &newSettings, float deltaTime);
 
-                                    /// 현재 cascade 출력으로 카메라 중심의 단일 수면 grid 를 렌더링한다.
+                                    /// 현재 cascade 출력으로 카메라 중심의 NxN 수면 grid tile 을 렌더링한다.
     bool                            DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
                                         const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const Settings &renderSettings) const;
 
