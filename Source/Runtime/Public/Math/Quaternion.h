@@ -206,7 +206,7 @@ public:
     static Quat         FromRotationZYX(float ez, float ey, float ex) { return (FromRotationZ(ez) * FromRotationY(ey) * FromRotationX(ex)).Normalize(); }
 
     static Quat         FromRotationXYX(float ex2, float ey, float ex1) { return (FromRotationX(ex2) * FromRotationY(ey) * FromRotationX(ex1)).Normalize(); }
-    static Quat         FromRotationXZX(float ex2, float ez, float ex1) { return (FromRotationX(ex2) * FromRotationZ(ez) * FromRotationZ(ex1)).Normalize(); }
+    static Quat         FromRotationXZX(float ex2, float ez, float ex1) { return (FromRotationX(ex2) * FromRotationZ(ez) * FromRotationX(ex1)).Normalize(); }
     static Quat         FromRotationYXY(float ey2, float ex, float ey1) { return (FromRotationY(ey2) * FromRotationX(ex) * FromRotationY(ey1)).Normalize(); }
     static Quat         FromRotationYZY(float ey2, float ez, float ey1) { return (FromRotationY(ey2) * FromRotationZ(ez) * FromRotationY(ey1)).Normalize(); }
     static Quat         FromRotationZXZ(float ez2, float ex, float ez1) { return (FromRotationZ(ez2) * FromRotationX(ex) * FromRotationZ(ez1)).Normalize(); }

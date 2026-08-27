@@ -682,8 +682,7 @@ BE_INLINE Vec3 Mat4::TransformPos(const Vec3 &pos) const {
     float hw = result.w;
     if (hw == 0.0f) {
         ret.Set(0.0f, 0.0f, 0.0f);
-    }
-    if (hw != 1.0f) {
+    } else if (hw != 1.0f) {
         ret /= hw;
     }
     return ret;
