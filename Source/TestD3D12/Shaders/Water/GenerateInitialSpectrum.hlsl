@@ -94,33 +94,35 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     initialSpectrum.GetDimensions(spectrumWidth, spectrumHeight, spectrumSliceCount);
 
     uint2 pq = dispatchThreadId.xy;
-    if (any(pq >= uint2(spectrumWidth, spectrumWidth))) {
+    uint cascadeIndex = dispatchThreadId.z;
+    if (cascadeIndex >= min(spectrumSliceCount, OceanCascadeCount) || any(pq >= uint2(spectrumWidth, spectrumHeight))) {
         return;
     }
 
-    const uint3 outputCoord = uint3(pq, spectrumParams.cascadeIndex);
+    OceanInitialSpectrumCascadeParams cascadeParams = spectrumParams.cascadeParams[cascadeIndex];
+    const uint3 outputCoord = uint3(pq, cascadeIndex);
 
-    float2 waveVector1 = GetWaveVector(pq, spectrumWidth, spectrumParams.patchSize);
+    float2 waveVector1 = GetWaveVector(pq, spectrumWidth, cascadeParams.patchSize);
 
     // cascade 가 담당하는 방사형 파수 대역 [minWaveNumber, maxWaveNumber) 밖의 성분을 제거한다.
     float waveNumberSquared = dot(waveVector1, waveVector1);
-    float minWaveNumberSquared = spectrumParams.minWaveNumber * spectrumParams.minWaveNumber;
-    float maxWaveNumberSquared = spectrumParams.maxWaveNumber * spectrumParams.maxWaveNumber;
+    float minWaveNumberSquared = cascadeParams.minWaveNumber * cascadeParams.minWaveNumber;
+    float maxWaveNumberSquared = cascadeParams.maxWaveNumber * cascadeParams.maxWaveNumber;
     if (waveNumberSquared < minWaveNumberSquared || waveNumberSquared >= maxWaveNumberSquared) {
         initialSpectrum[outputCoord] = 0.0f;
         return;
     }
 
     uint2 npq = GetNegatedBinIndex(pq, spectrumWidth);
-    float2 waveVector2 = GetWaveVector(npq, spectrumWidth, spectrumParams.patchSize);
+    float2 waveVector2 = GetWaveVector(npq, spectrumWidth, cascadeParams.patchSize);
 
-    float2 xi1 = GaussianRandom(pq, spectrumParams.randomSeed);
-    float2 xi2 = GaussianRandom(npq, spectrumParams.randomSeed);
+    float2 xi1 = GaussianRandom(pq, cascadeParams.randomSeed);
+    float2 xi2 = GaussianRandom(npq, cascadeParams.randomSeed);
 
     float p1 = ComputeSpectrumDensity(waveVector1);
     float p2 = ComputeSpectrumDensity(waveVector2);
 
-    float deltaK = TWO_PI / spectrumParams.patchSize;
+    float deltaK = TWO_PI / cascadeParams.patchSize;
     float amplitudeScale = deltaK * INV_SQRT2;
 
     float2 h0 = xi1 * sqrt(p1) * amplitudeScale;

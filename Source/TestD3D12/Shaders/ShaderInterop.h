@@ -351,28 +351,34 @@ struct FFTStageParams {
     uint padding1;
 };
 
-struct OceanPhillipsInitialSpectrumParams {
+struct OceanInitialSpectrumCascadeParams {
     uint randomSeed;
-    float spectrumScale;
     float patchSize;
+    float minWaveNumber;
+    float maxWaveNumber;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanInitialSpectrumCascadeParams) == 16, "OceanInitialSpectrumCascadeParams must match the HLSL constant-buffer layout");
+#endif
+
+struct OceanPhillipsInitialSpectrumParams {
+    float spectrumScale;
     float windSpeed;
     float2 windDirection;
     float gravity;
     float smallWaveDamping;
     float oppositeWaveDamping;
-    float minWaveNumber;
-    float maxWaveNumber;
-    uint cascadeIndex;
+    float padding0;
+    OceanInitialSpectrumCascadeParams cascadeParams[OceanCascadeCount];
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanPhillipsInitialSpectrumParams) == 48, "OceanPhillipsInitialSpectrumParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanPhillipsInitialSpectrumParams) == 80, "OceanPhillipsInitialSpectrumParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanTMAInitialSpectrumParams {
-    uint randomSeed;
     float spectrumScale;
-    float patchSize;
     float windSpeed;
     float2 windDirection;
     float gravity;
@@ -381,14 +387,12 @@ struct OceanTMAInitialSpectrumParams {
     float peakOmega;
     float depth;
     float swell;
-    float minWaveNumber;
-    float maxWaveNumber;
-    uint cascadeIndex;
-    float padding0;
+    float2 padding0;
+    OceanInitialSpectrumCascadeParams cascadeParams[OceanCascadeCount];
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanTMAInitialSpectrumParams) == 64, "OceanTMAInitialSpectrumParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanTMAInitialSpectrumParams) == 96, "OceanTMAInitialSpectrumParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanTimeSpectrumParams {

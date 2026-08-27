@@ -327,8 +327,7 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
 }
 
 bool GpuOcean::HasResources() const {
-    return timeSpectrumBuffer && ifftWorkBuffer && spatialFieldsBuffer &&
-        initialSpectrumTextureArray && fieldTextureArray && foamHistoryTextureArray;
+    return timeSpectrumBuffer && ifftWorkBuffer && spatialFieldsBuffer && initialSpectrumTextureArray && fieldTextureArray && foamHistoryTextureArray;
 }
 
 static RHI::Buffer *CreateOceanStructuredBuffer(const char *debugName, uint64_t elementCount) {
@@ -496,9 +495,11 @@ static bool NormalizeWindDirection(float2 &windDirection) {
 }
 
 template <typename Params>
-static bool DispatchGenerateInitialSpectrum(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const SharedPtr<ShaderPipeline> &pipeline, const Params &params, RHI::Texture *outputTextureArray, RHI::ViewID outputUAV) {
-    if (params.cascadeIndex >= OceanCascadeCount ||
-        !outputTextureArray || outputTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready || !outputUAV.IsValid() ||
+static bool DispatchGenerateInitialSpectra(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const SharedPtr<ShaderPipeline> &pipeline, const Params &params, RHI::Texture *outputTextureArray, RHI::ViewID outputUAV) {
+    static_assert(GpuOcean::CascadeCount == OceanCascadeCount);
+    static_assert((sizeof(Params) & 15u) == 0, "Initial spectrum parameters must match the HLSL constant-buffer layout");
+
+    if (!outputTextureArray || outputTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready || !outputUAV.IsValid() ||
         outputTextureArray->type != RHI::TextureType::Texture2DArray || outputTextureArray->GetArraySize() != OceanCascadeCount) {
         return false;
     }
@@ -520,7 +521,7 @@ static bool DispatchGenerateInitialSpectrum(RHI::CommandList *commandList, RHI::
         return false;
     }
 
-    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(Params), &params);
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
     if (!constantBuffer) {
         return false;
     }
@@ -531,44 +532,11 @@ static bool DispatchGenerateInitialSpectrum(RHI::CommandList *commandList, RHI::
 
     const uint32_t threadGroupCountX = BE1::DivCeil(spectrumWidth, OceanInitialSpectrumBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(spectrumHeight, OceanInitialSpectrumBlockSizeY);
-    RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
+    RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, GpuOcean::CascadeCount);
     return true;
 }
 
-bool GpuOcean::GenerateInitialSpectrumPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &params, RHI::Texture *outputTextureArray, RHI::ViewID outputUAV) {
-    PROFILER_CPU_SCOPED_EVENT("GpuOcean::GenerateInitialSpectrumPhillips");
-
-    if (params.spectrumScale < 0.0f || params.patchSize <= 0.0f || params.windSpeed <= 0.0f || params.gravity <= 0.0f || params.smallWaveDamping < 0.0f ||
-        params.minWaveNumber < 0.0f || params.maxWaveNumber <= params.minWaveNumber) {
-        return false;
-    }
-
-    OceanPhillipsInitialSpectrumParams normalizedParams = params;
-    if (!NormalizeWindDirection(normalizedParams.windDirection)) {
-        return false;
-    }
-
-    return DispatchGenerateInitialSpectrum(commandList, frameThreadData, generatePhillipsInitialSpectrumPipeline, normalizedParams, outputTextureArray, outputUAV);
-}
-
-bool GpuOcean::GenerateInitialSpectrumTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &params, RHI::Texture *outputTextureArray, RHI::ViewID outputUAV) {
-    PROFILER_CPU_SCOPED_EVENT("GpuOcean::GenerateInitialSpectrumTMA");
-
-    if (params.spectrumScale < 0.0f || params.patchSize <= 0.0f || params.windSpeed <= 0.0f || params.gravity <= 0.0f || params.smallWaveDamping < 0.0f ||
-        params.alpha <= 0.0f || params.peakOmega <= 0.0f || params.depth <= 0.0f ||
-        params.minWaveNumber < 0.0f || params.maxWaveNumber <= params.minWaveNumber) {
-        return false;
-    }
-
-    OceanTMAInitialSpectrumParams normalizedParams = params;
-    if (!NormalizeWindDirection(normalizedParams.windDirection)) {
-        return false;
-    }
-
-    return DispatchGenerateInitialSpectrum(commandList, frameThreadData, generateTMAInitialSpectrumPipeline, normalizedParams, outputTextureArray, outputUAV);
-}
-
-bool GpuOcean::GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &baseParams) {
+bool GpuOcean::GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &commonParams) {
     PROFILER_CPU_SCOPED_EVENT("GpuOcean::GenerateInitialSpectraPhillips");
 
     if (!EnsureResources() || initialSpectrumTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready) {
@@ -578,28 +546,31 @@ bool GpuOcean::GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI
     initialSpectraReady = false;
     cascadeOutputsReady = false;
 
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(initialSpectrumTextureArray,
-        RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    OceanPhillipsInitialSpectrumParams params = commonParams;
+    if (params.spectrumScale < 0.0f || params.windSpeed <= 0.0f || params.gravity <= 0.0f || params.smallWaveDamping < 0.0f ||
+        !NormalizeWindDirection(params.windDirection)) {
+        return false;
+    }
 
-    bool generationSucceeded = true;
     for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
         const CascadeDesc &cascadeDesc = settings.cascades[cascadeIndex];
 
-        OceanPhillipsInitialSpectrumParams params = baseParams;
-        params.randomSeed = cascadeDesc.randomSeed;
-        params.patchSize = cascadeDesc.patchSize;
-        params.minWaveNumber = cascadeDesc.minWaveNumber;
-        params.maxWaveNumber = cascadeDesc.maxWaveNumber;
-        params.cascadeIndex = cascadeIndex;
+        OceanInitialSpectrumCascadeParams &cascadeParams = params.cascadeParams[cascadeIndex];
+        cascadeParams.randomSeed = cascadeDesc.randomSeed;
+        cascadeParams.patchSize = cascadeDesc.patchSize;
+        cascadeParams.minWaveNumber = cascadeDesc.minWaveNumber;
+        cascadeParams.maxWaveNumber = cascadeDesc.maxWaveNumber;
 
-        if (!GenerateInitialSpectrumPhillips(commandList, frameThreadData, params, initialSpectrumTextureArray)) {
-            generationSucceeded = false;
-            break;
+        if (cascadeParams.patchSize <= 0.0f || cascadeParams.minWaveNumber < 0.0f || cascadeParams.maxWaveNumber <= cascadeParams.minWaveNumber) {
+            return false;
         }
     }
 
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(initialSpectrumTextureArray,
-        RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute));
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(initialSpectrumTextureArray, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+
+    const bool generationSucceeded = DispatchGenerateInitialSpectra(commandList, frameThreadData, generatePhillipsInitialSpectrumPipeline, params, initialSpectrumTextureArray, RHI::ViewID::PrimaryID);
+
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(initialSpectrumTextureArray, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute));
     if (!generationSucceeded) {
         return false;
     }
@@ -608,7 +579,7 @@ bool GpuOcean::GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI
     return true;
 }
 
-bool GpuOcean::GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &baseParams) {
+bool GpuOcean::GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &commonParams) {
     PROFILER_CPU_SCOPED_EVENT("GpuOcean::GenerateInitialSpectraTMA");
 
     if (!EnsureResources() || initialSpectrumTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready) {
@@ -618,28 +589,31 @@ bool GpuOcean::GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::Fra
     initialSpectraReady = false;
     cascadeOutputsReady = false;
 
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(initialSpectrumTextureArray,
-        RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    OceanTMAInitialSpectrumParams params = commonParams;
+    if (params.spectrumScale < 0.0f || params.windSpeed <= 0.0f || params.gravity <= 0.0f || params.smallWaveDamping < 0.0f ||
+        params.alpha <= 0.0f || params.peakOmega <= 0.0f || params.depth <= 0.0f || !NormalizeWindDirection(params.windDirection)) {
+        return false;
+    }
 
-    bool generationSucceeded = true;
     for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
         const CascadeDesc &cascadeDesc = settings.cascades[cascadeIndex];
 
-        OceanTMAInitialSpectrumParams params = baseParams;
-        params.randomSeed = cascadeDesc.randomSeed;
-        params.patchSize = cascadeDesc.patchSize;
-        params.minWaveNumber = cascadeDesc.minWaveNumber;
-        params.maxWaveNumber = cascadeDesc.maxWaveNumber;
-        params.cascadeIndex = cascadeIndex;
+        OceanInitialSpectrumCascadeParams &cascadeParams = params.cascadeParams[cascadeIndex];
+        cascadeParams.randomSeed = cascadeDesc.randomSeed;
+        cascadeParams.patchSize = cascadeDesc.patchSize;
+        cascadeParams.minWaveNumber = cascadeDesc.minWaveNumber;
+        cascadeParams.maxWaveNumber = cascadeDesc.maxWaveNumber;
 
-        if (!GenerateInitialSpectrumTMA(commandList, frameThreadData, params, initialSpectrumTextureArray)) {
-            generationSucceeded = false;
-            break;
+        if (cascadeParams.patchSize <= 0.0f || cascadeParams.minWaveNumber < 0.0f || cascadeParams.maxWaveNumber <= cascadeParams.minWaveNumber) {
+            return false;
         }
     }
 
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(initialSpectrumTextureArray,
-        RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute));
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(initialSpectrumTextureArray, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+
+    const bool generationSucceeded = DispatchGenerateInitialSpectra(commandList, frameThreadData, generateTMAInitialSpectrumPipeline, params, initialSpectrumTextureArray, RHI::ViewID::PrimaryID);
+
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(initialSpectrumTextureArray, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute));
     if (!generationSucceeded) {
         return false;
     }

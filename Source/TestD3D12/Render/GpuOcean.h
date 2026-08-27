@@ -149,19 +149,11 @@ private:
                                     /// 각 cascade 별로 displacement, derivative, foam history texture 를 업데이트한다.
     bool                            UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &baseParams, const OceanResolveFieldsParams &resolveParams);
 
-                                    /// Phillips spectrum 으로 초기 스펙트럼을 생성한다.
-                                    /// outputTextureArray 는 짝수 정사각형 크기의 RGBA16F/RGBA32F 2D texture array 여야 한다.
-                                    /// outputUAV 는 모든 cascade slice 의 mip 0 을 포함해야 하며, texture array 는 호출 전후 UnorderedAccess 상태이다.
-    bool                            GenerateInitialSpectrumPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &params, RHI::Texture *outputTextureArray, RHI::ViewID outputUAV = RHI::ViewID::PrimaryID);
-                                    /// Phillips spectrum 으로 모든 cascade 의 초기 스펙트럼을 생성한다.
-    bool                            GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &baseParams);
+                                    /// Phillips spectrum 으로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
+    bool                            GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &commonParams);
 
-                                    /// TMA spectrum 과 Hasselmann directional spread 로 초기 스펙트럼을 생성한다.
-                                    /// outputTextureArray 는 짝수 정사각형 크기의 RGBA16F/RGBA32F 2D texture array 여야 한다.
-                                    /// outputUAV 는 모든 cascade slice 의 mip 0 을 포함해야 하며, texture array 는 호출 전후 UnorderedAccess 상태이다.
-    bool                            GenerateInitialSpectrumTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &params, RHI::Texture *outputTextureArray, RHI::ViewID outputUAV = RHI::ViewID::PrimaryID);
-                                    /// TMA spectrum 과 Hasselmann directional spread 로 모든 cascade 의 초기 스펙트럼을 생성한다.
-    bool                            GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &baseParams);
+                                    /// TMA spectrum 과 Hasselmann directional spread 로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
+    bool                            GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &commonParams);
 
                                     /// 초기 스펙트럼을 시간에 따라 진화시키고 IFFT 입력용 complex spectrum 을 생성한다.
                                     /// initialSpectrumTextureArray 는 짝수 정사각형 크기의 RGBA16F/RGBA32F 2D texture array 여야 한다.
