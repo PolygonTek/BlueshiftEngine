@@ -1032,50 +1032,48 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             // NOTE: 하나의 디스크립터 테이블 내에서는 Sampler or CBV/SRV/UAV 타입의 디스크립터들만 존재할 수 있다.
             D3D12DescriptorTablePool *descriptorTablePool = descriptorTable.pDescriptorRanges[0].RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER ? samDescriptorTablePool : resDescriptorTablePool;
 
-            D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorTableStart;
-            D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTableStart;
-
-            // 풀에서 연속된 디스크립터 테이블을 할당
-            if (!descriptorTablePool->AllocRange(numDescriptors, &cpuDescriptorTableStart, &gpuDescriptorTableStart)) {
-                return;
-            }
-
-            // 디스크립터 테이블 내에서의 디스크립터 오프셋
-            int tableOffset = 0;
+            D3D12_CPU_DESCRIPTOR_HANDLE srcCpuDescriptorHandles[D3D12RootBindingData::MaxDescriptorsInDescriptorTable];
+            UINT tableOffset = 0;
 
             // 필요한 디스크립터들을 바인딩 용 디스크립터 테이블에 복사한다.
             // 디스크립터 테이블들은 항상 새로 할당하므로, 동기화 이슈는 없다.
-            // NOTE: 만약 디스크립터 테이블의 일부만 세팅한다면, 이전에 남아있던 테이블의 내용이 이어질 수 있음에 주의해야 한다.
+            // source 디스크립터들은 서로 연속하지 않을 수 있으므로 각각 크기가 1 인 source range 로 구성한다.
+            // NOTE: 만약 디스크립터 테이블의 일부만 세팅한다면, 이전에 남아있던 테이블의 내용이 이어질 수 있음을 주의해야 한다.
             for (int rangeIndex = 0; rangeIndex < descriptorTable.NumDescriptorRanges; ++rangeIndex) {
                 const D3D12_DESCRIPTOR_RANGE1 &descriptorRange = descriptorTable.pDescriptorRanges[rangeIndex];
                 if (descriptorRange.RegisterSpace != 0) {
                     continue;
                 }
 
-                assert(tableOffset < COUNT_OF(rootBindingData->descriptorTableHandles[rootParameterIndex]));
+                assert(tableOffset + descriptorRange.NumDescriptors <= COUNT_OF(rootBindingData->descriptorTableHandles[rootParameterIndex]));
 
-                const D3D12_CPU_DESCRIPTOR_HANDLE &srcCpuDescriptorHandle = rootBindingData->descriptorTableHandles[rootParameterIndex][tableOffset];
-                CD3DX12_CPU_DESCRIPTOR_HANDLE destCpuDescriptorHandle(cpuDescriptorTableStart, tableOffset, descriptorTablePool->GetDescriptorHandleSize());
+                for (UINT descriptorIndex = 0; descriptorIndex < descriptorRange.NumDescriptors; ++descriptorIndex) {
+                    const D3D12_CPU_DESCRIPTOR_HANDLE &srcCpuDescriptorHandle = rootBindingData->descriptorTableHandles[rootParameterIndex][tableOffset];
+                    if (srcCpuDescriptorHandle.ptr == 0) {
+                        BE_ERRLOG("D3D12Renderer::BindRootParameters: Descriptor table contains an invalid descriptor handle\n");
+                        return;
+                    }
 
-                // CopyDescriptorsSimple 함수는 원본 디스크립터와 대상 디스크립터 핸들이 모두 CPU 핸들이어야 한다.
-                // source 디스크립터는 스테이징 용도로서 항상 non shader-visible 힙에 존재해야 한다.
-                // destination 이 shader-visible 힙이면, 그 결과는 이후 내부적으로 GPU 가 참조 가능한 형태로 준비된다.
-                switch (descriptorRange.RangeType) {
-                case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
-                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destCpuDescriptorHandle, srcCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                    break;
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                    device->CopyDescriptorsSimple(descriptorRange.NumDescriptors, destCpuDescriptorHandle, srcCpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-                    break;
-                default:
-                    BE_ERRLOG("Invalid descriptor range type: 0x%x\n", descriptorRange.RangeType);
-                    break;
+                    srcCpuDescriptorHandles[tableOffset] = srcCpuDescriptorHandle;
+                    ++tableOffset;
                 }
-
-                tableOffset += descriptorRange.NumDescriptors;
             }
+
+            assert(tableOffset == numDescriptors);
+
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorTableStart;
+            D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTableStart;
+
+            // 유효한 source 디스크립터들을 확인한 뒤, 풀에서 연속된 디스크립터 테이블을 할당한다.
+            if (!descriptorTablePool->AllocRange(numDescriptors, &cpuDescriptorTableStart, &gpuDescriptorTableStart)) {
+                return;
+            }
+
+            // source 디스크립터는 스테이징 용도로서 항상 non shader-visible 힙에 존재해야 한다.
+            // destination 이 shader-visible 힙이면, 그 결과는 이후 내부적으로 GPU 가 참조 가능한 형태로 준비된다.
+            const UINT destDescriptorRangeSize = numDescriptors;
+            const D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = descriptorTable.pDescriptorRanges[0].RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER ? D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER : D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+            device->CopyDescriptors(1, &cpuDescriptorTableStart, &destDescriptorRangeSize, numDescriptors, srcCpuDescriptorHandles, nullptr, descriptorHeapType);
 
             // 루트 파라미터에 디스크립터 테이블을 세팅한다.
             if (isGraphicsPSO) {
