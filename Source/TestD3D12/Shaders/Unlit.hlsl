@@ -62,7 +62,7 @@ PSInput VSMain(VSInput input) {
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-SurfacePSOutput PSMain(PSInput input) {
+CameraPassPSOutput PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
 
@@ -71,7 +71,7 @@ SurfacePSOutput PSMain(PSInput input) {
     }
 
     float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, input.texCoord);
-    SurfacePSOutput result;
+    CameraPassPSOutput result;
     result.color = textureColor * shaderMaterial.GetBaseColorFactor() * input.color;
 #ifdef OUTPUT_NORMAL
     result.normal = EncodeOctahedralNormal(normalize(input.worldNormal));

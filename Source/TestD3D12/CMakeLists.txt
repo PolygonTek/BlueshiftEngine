@@ -160,6 +160,8 @@ set(SRC_FILES
     Render/RenderWork/RenderWorkQueue.cpp
     Render/GpuFFT.h
     Render/GpuFFT.cpp
+    Render/GpuOcean.h
+    Render/GpuOcean.cpp
     Render/GpuSphericalHarmonics.h
     Render/GpuSphericalHarmonics.cpp
     Render/ShaderPacking.h

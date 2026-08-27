@@ -3,6 +3,7 @@
 
 #include "Common.hlsli"
 #include "CommonBindless.hlsli"
+#include "CameraPassOutputCommon.hlsli"
 #include "PackedTangentFrame.hlsli"
 
 #define ROOT_SIGNATURE_SURFACE_DRAW_RESOURCES \
@@ -99,38 +100,5 @@ float4 TransformSurfaceTangent(float4 localTangent, row_major float3x4 worldMatr
 
     return float4(worldTangent, handedness);
 }
-
-float2 EncodeOctahedralNormal(float3 normal) {
-    normal /= abs(normal.x) + abs(normal.y) + abs(normal.z);
-
-    if (normal.z < 0.0) {
-        const float2 signNotZero = float2(normal.x >= 0.0 ? 1.0 : -1.0, normal.y >= 0.0 ? 1.0 : -1.0);
-        normal.xy = (1.0 - abs(normal.yx)) * signNotZero;
-    }
-    return normal.xy;
-}
-
-float2 CalcVelocity(float4 currentClipPosition, float4 prevClipPosition) {
-    float2 currentNDC = currentClipPosition.xy / currentClipPosition.w;
-    float2 prevNDC = prevClipPosition.xy / prevClipPosition.w;
-
-    float2 currentUV = float2(currentNDC.x * 0.5 + 0.5, 0.5 - currentNDC.y * 0.5);
-    float2 prevUV = float2(prevNDC.x * 0.5 + 0.5, 0.5 - prevNDC.y * 0.5);
-    return currentUV - prevUV;
-}
-
-struct SurfacePSOutput {
-    float4 color : SV_Target0;
-#ifdef OUTPUT_NORMAL
-    float2 normal : SV_Target1;
-#endif
-#ifdef OUTPUT_VELOCITY
-    #ifdef OUTPUT_NORMAL
-    float2 velocity : SV_Target2;
-    #else
-    float2 velocity : SV_Target1;
-    #endif
-#endif
-};
 
 #endif // __SURFACE_DRAW_COMMON_HLSLI__

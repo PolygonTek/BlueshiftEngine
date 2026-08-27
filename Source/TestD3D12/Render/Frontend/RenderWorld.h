@@ -216,6 +216,7 @@ private:
     void                        BuildDebugDraw(RenderFrameData *frameData, VisCamera *visCamera);
     const DebugDrawData *       BuildDebugDrawData(RenderFrameData *frameData);
     void                        PrepareDebugDrawPipelines(VisCamera *visCamera);
+    void                        PrepareOceanSurfacePipeline(const RenderFrameData *frameData, VisCamera *visCamera);
 
     void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);

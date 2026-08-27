@@ -16,6 +16,7 @@
 
 #include "Core/Allocator.h"
 #include "RHI/RHI.h"
+#include "GpuOcean.h"
 #include "Render/Frontend/RenderLight.h"
 #include "ShaderLightCullingTable.h"
 #include "ShaderLightTable.h"
@@ -236,6 +237,9 @@ public:
     uint32_t                        GetFrameCount() const { return frameCount; }
     void                            SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount);
 
+    const GpuOcean::Settings &      GetOceanSettings() const { return oceanSettings; }
+    void                            SetOceanSettings(const GpuOcean::Settings &settings) { oceanSettings = settings; }
+
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
 
@@ -328,6 +332,7 @@ private:
     float                           elapsedTime = 0.0f;
     float                           elapsedPrevTime = 0.0f;
     uint32_t                        frameCount = 0;
+    GpuOcean::Settings              oceanSettings;
 
     bool                            statEnabled = false;
 

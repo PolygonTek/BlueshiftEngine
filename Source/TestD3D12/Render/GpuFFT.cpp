@@ -408,6 +408,23 @@ bool GpuFFT::GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSizeEnum) 
     return false;
 }
 
+uint32_t GpuFFT::GetGpuFFTSizeValue(GpuFFT::FFTSize fftSizeEnum) {
+    switch (fftSizeEnum) {
+    case GpuFFT::FFTSize::FFT256:
+        return 256u;
+    case GpuFFT::FFTSize::FFT512:
+        return 512u;
+    case GpuFFT::FFTSize::FFT1024:
+        return 1024u;
+    case GpuFFT::FFTSize::FFT2048:
+        return 2048u;
+    default:
+        assert(false);
+        return 0u;
+    }
+    return 0u;
+}
+
 bool GpuFFT::DispatchFFTComplex1D(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, FFTSize fftSize, uint32_t fftBlockCount) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchFFTComplex1D");
 

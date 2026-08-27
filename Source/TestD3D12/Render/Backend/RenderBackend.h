@@ -84,10 +84,12 @@ private:
     void                            ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor);
     void                            ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
     void                            ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
-    void                            ExecuteDrawCamera3DMainPass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction, bool skipDepthPrepasses);
+    void                            ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
+    void                            ExecuteDrawCamera3DPostOpaquePass();
 
-    void                            DrawCamera3D(bool skipDepthPrepasses);
     void                            DrawCamera3DDepthPrepass();
+    void                            DrawCamera3DScenePass();
+    void                            DrawCamera3DPostOpaquePass();
     void                            DrawCamera2D();
 
     void                            PostProcessAndBlitToOutput(bool surfaceOutputsReady);
@@ -97,6 +99,7 @@ private:
 
     void                            DrawGenericPass(const RenderPass *renderPass);
     void                            DrawSkyPass(const RenderPass *renderPass);
+    void                            DrawGpuOcean();
     void                            DrawGuiPass(const RenderPass *renderPass);
     void                            DrawDebugLights();
     void                            DrawDebugPrimitives();

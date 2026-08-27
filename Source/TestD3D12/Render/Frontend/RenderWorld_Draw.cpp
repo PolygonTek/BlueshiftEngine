@@ -441,6 +441,9 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     // 렌더 패스를 구성한다.
     renderPassBuilder.BuildMain(frameData, visCamera);
 
+    // Post-Opaque 단계에서 그릴 ocean surface pipeline 을 준비한다.
+    PrepareOceanSurfacePipeline(frameData, visCamera);
+
     // 카메라의 debug draw 데이터를 구성한다.
     BuildDebugDraw(frameData, visCamera);
 
@@ -448,6 +451,39 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     frameData->CmdDrawCamera(visCamera);
 
     viewCount++;
+}
+
+void RenderWorld::PrepareOceanSurfacePipeline(const RenderFrameData *frameData, VisCamera *visCamera) {
+    const GpuOcean::Settings &oceanSettings = frameData->GetOceanSettings();
+    if (!oceanSettings.enabled || BE1::HasFlag(visCamera->flags, RenderCamera::Flag::StaticOnly)) {
+        return;
+    }
+
+    const SharedPtr<ShaderTemplate> &shaderTemplate = renderSystem->GetGpuOcean().GetSurfaceShaderTemplate();
+    if (!shaderTemplate) {
+        return;
+    }
+
+    ShaderFeatureSet featureSet;
+    if (visCamera->needNormalOutput) {
+        featureSet.EnableFeature(ShaderFeature::OutputNormal);
+    }
+    if (visCamera->needVelocityOutput) {
+        featureSet.EnableFeature(ShaderFeature::OutputVelocity);
+    }
+
+    GraphicsPipelineDesc graphicsPipelineDesc;
+    graphicsPipelineDesc.inputLayout = nullptr;
+    graphicsPipelineDesc.rasterizerStateType = RHI::RasterizerStateType::SolidFrontSided;
+    graphicsPipelineDesc.depthStencilStateType = visCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::LEqualWrite;
+    graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
+    graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, visCamera->needNormalOutput, visCamera->needVelocityOutput);
+
+    const ShaderPermutationKey permutationKey = shaderTemplate->RegisterPermutation({}, featureSet);
+    const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
+    const SharedPtr<ShaderPipeline> shaderPipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplate, permutationKey, graphicsPipelineDesc, allowAsyncPSOBuild);
+    visCamera->oceanSurfacePSO = ShaderPipeline::GetReadyPSO(shaderPipeline);
 }
 
 VisLight *RenderWorld::RegisterVisLight(RenderFrameData *frameData, RenderLight *renderLight) {

@@ -61,6 +61,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     gpuFFT.Init();
 
+    gpuOcean.Init();
+
     gpuSphericalHarmonics.Init();
 
     iblBaker.Init();
@@ -125,6 +127,8 @@ void RenderSystem::Shutdown() {
 
     gpuSphericalHarmonics.Shutdown();
 
+    gpuOcean.Shutdown();
+
     gpuFFT.Shutdown();
 
     shaderPipelineCache.ClearAllPipelines();
@@ -166,6 +170,7 @@ void RenderSystem::UpdateFrame() {
     fontManager.UpdateFrame();
 
     gpuFFT.UpdatePipelineBuildState();
+    gpuOcean.UpdatePipelineBuildState();
     gpuSphericalHarmonics.UpdatePipelineBuildState();
     iblBaker.UpdatePipelineBuildState();
     convolutionBloomKernelGenerator.UpdatePipelineBuildState();
@@ -178,6 +183,12 @@ void RenderSystem::UpdateFrame() {
             materialManager.ApplyStreamingFeedback(feedbackData, capacity);
         });
     }
+}
+
+void RenderSystem::SetOceanSettings(const GpuOcean::Settings &settings) {
+    assert(BE1::Engine::IsInMainThread());
+
+    oceanSettings = settings;
 }
 
 RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {

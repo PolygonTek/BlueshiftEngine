@@ -93,7 +93,7 @@ PSInput VSMain(VSInput input) {
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-SurfacePSOutput PSMain(PSInput input) {
+CameraPassPSOutput PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
 
@@ -149,7 +149,7 @@ SurfacePSOutput PSMain(PSInput input) {
     ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, materialSampler);
 #endif
 
-    SurfacePSOutput result;
+    CameraPassPSOutput result;
     result.color = baseColor;
 #ifdef OUTPUT_NORMAL
     result.normal = EncodeOctahedralNormal(shading.normal);

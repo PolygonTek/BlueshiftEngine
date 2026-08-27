@@ -125,6 +125,17 @@ static const uint ShaderCameraFlagUseSpecularAA = 1u << 3;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
+static const uint OceanInitialSpectrumBlockSizeX = 8;
+static const uint OceanInitialSpectrumBlockSizeY = 8;
+static const uint OceanTimeSpectrumBlockSizeX = 8;
+static const uint OceanTimeSpectrumBlockSizeY = 8;
+static const uint OceanResolveFieldsBlockSizeX = 8;
+static const uint OceanResolveFieldsBlockSizeY = 8;
+
+static const uint OceanSpectrumComplexPlaneCount = 4;
+static const uint OceanCascadeCount = 3;
+static const uint OceanSurfaceGridResolution = 256;
+
 static const uint FFTRadix2_256StageCount = 8;
 static const uint FFTRadix2_256ButterflyCount = 256 / 2;
 static const uint FFTRadix2_256BlockSize = FFTRadix2_256ButterflyCount;
@@ -339,6 +350,89 @@ struct FFTStageParams {
     uint padding0;
     uint padding1;
 };
+
+struct OceanPhillipsInitialSpectrumParams {
+    uint randomSeed;
+    float spectrumScale;
+    float patchSize;
+    float windSpeed;
+    float2 windDirection;
+    float gravity;
+    float smallWaveDamping;
+    float oppositeWaveDamping;
+    float minWaveNumber;
+    float maxWaveNumber;
+    uint cascadeIndex;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanPhillipsInitialSpectrumParams) == 48, "OceanPhillipsInitialSpectrumParams must match the HLSL constant-buffer layout");
+#endif
+
+struct OceanTMAInitialSpectrumParams {
+    uint randomSeed;
+    float spectrumScale;
+    float patchSize;
+    float windSpeed;
+    float2 windDirection;
+    float gravity;
+    float smallWaveDamping;
+    float alpha;
+    float peakOmega;
+    float depth;
+    float swell;
+    float minWaveNumber;
+    float maxWaveNumber;
+    uint cascadeIndex;
+    float padding0;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanTMAInitialSpectrumParams) == 64, "OceanTMAInitialSpectrumParams must match the HLSL constant-buffer layout");
+#endif
+
+struct OceanTimeSpectrumParams {
+    float time;
+    float gravity;
+    float depth;
+    float choppiness;
+    float patchSize;
+    uint cascadeIndex;
+    float2 padding0;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanTimeSpectrumParams) == 32, "OceanTimeSpectrumParams must match the HLSL constant-buffer layout");
+#endif
+
+struct OceanResolveFieldsParams {
+    float deltaTime;
+    float waveAmplitude;
+    float foamThreshold;
+    float foamGain;
+    float foamDecayRate;
+    float foamAddRate;
+    uint resetFoamHistory;
+    uint cascadeIndex;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanResolveFieldsParams) == 32, "OceanResolveFieldsParams must match the HLSL constant-buffer layout");
+#endif
+
+struct OceanSurfaceParams {
+    float4 cascadePatchSizes;
+    float gridSpacing;
+    float surfaceHeight;
+    float roughness;
+    float waveAmplitude;
+    float3 waterColor;
+    float fresnelF0;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanSurfaceParams) == 48, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+#endif
 
 struct ShaderLightCullingParams {
     uint numLocalLights;

@@ -34,6 +34,7 @@ public:
         DepthPrepass,
         OpaquePass,
         SkyPass,
+        OceanPass,
         TransparentPass,
         GuiPass,
         LightCulling,
