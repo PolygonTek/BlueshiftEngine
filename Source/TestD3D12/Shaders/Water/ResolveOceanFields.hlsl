@@ -13,7 +13,7 @@ cbuffer OceanResolveFieldsCB : register(b0) {
 StructuredBuffer<float2> spatialFields : register(t0);
 
 // cascade c 의 displacement 는 2*c, derivative 는 2*c+1 slice 에 저장한다.
-RWTexture2DArray<float4> outputFieldMap : register(u0);
+RWTexture2DArray<float4> fieldMap : register(u0);
 RWTexture2DArray<float> foamHistoryMap : register(u1);
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
@@ -22,7 +22,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint fieldWidth;
     uint fieldHeight;
     uint fieldSliceCount;
-    outputFieldMap.GetDimensions(fieldWidth, fieldHeight, fieldSliceCount);
+    fieldMap.GetDimensions(fieldWidth, fieldHeight, fieldSliceCount);
 
     uint2 transposedCoord = dispatchThreadId.xy;
     if (transposedCoord.x >= fieldWidth || transposedCoord.y >= fieldWidth) {
@@ -48,8 +48,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // Cascade 합성 단계에서 모든 field 를 더한 뒤 최종 normal 과 Jacobian 을 계산할 수 있도록 원본 값을 보존한다.
     // displacement: (Dx, Dy, Dz, Dxdy), derivative: (Dzdx, Dzdy, Dxdx, Dydy)
     const uint displacementSlice = 2u * resolveParams.cascadeIndex;
-    outputFieldMap[uint3(coord, displacementSlice)] = float4(Dx_Dy, Dz_Dxdy);
-    outputFieldMap[uint3(coord, displacementSlice + 1u)] = float4(Dzdx_Dzdy, Dxdx_Dydy);
+    fieldMap[uint3(coord, displacementSlice)] = float4(Dx_Dy, Dz_Dxdy);
+    fieldMap[uint3(coord, displacementSlice + 1u)] = float4(Dzdx_Dzdy, Dxdx_Dydy);
 
     const float displacementX_dy = Dz_Dxdy.y * resolveParams.waveAmplitude;
     const float displacementX_dx = Dxdx_Dydy.x * resolveParams.waveAmplitude;

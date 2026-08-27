@@ -124,7 +124,7 @@ public:
     bool                            AreCascadeOutputsReady() const { return cascadeOutputsReady; }
 
                                     /// 짝수 slice 에 displacement, 홀수 slice 에 derivative 를 저장하는 field texture array 를 얻는다.
-    const RHI::Texture *            GetDisplacementAndDerivativeTextureArray() const { return displacementAndDerivativeTextureArray; }
+    const RHI::Texture *            GetFieldTextureArray() const { return fieldTextureArray; }
 
                                     /// 설정 변경을 적용하고 모든 cascade 의 출력 field 를 갱신한다.
                                     /// enabled 가 false 이면 기존 리소스와 출력은 유지하고 시뮬레이션을 진행하지 않는다.
@@ -192,9 +192,14 @@ private:
     RHI::Buffer *                   timeSpectrumBuffer = nullptr;   // (개별 캐스캐이드 계산에 임시로 사용됨) 시간에 따라 진화된 complex spectrum 을 저장하는 structured buffer
     RHI::Buffer *                   ifftWorkBuffer = nullptr;       // (개별 캐스캐이드 계산에 임시로 사용됨) IFFT 를 위한 work buffer
     RHI::Buffer *                   spatialFieldsBuffer = nullptr;  // (개별 캐스캐이드 계산에 임시로 사용됨) IFFT 결과를 저장하는 structured buffer
+
     RHI::Texture *                  initialSpectrumTextureArray = nullptr; // slice per cascade, RG: h0(k), BA: conj(h0(-k))
-    RHI::Texture *                  displacementAndDerivativeTextureArray = nullptr; // even slices: displacement, odd slices: derivative
+    RHI::Texture *                  fieldTextureArray = nullptr; // even slices: displacement, odd slices: derivative
     RHI::Texture *                  foamHistoryTextureArray = nullptr; // slice per cascade, R: temporally accumulated foam
+    BE1::Array<RHI::ViewID>         fieldMipSRVs;
+    BE1::Array<RHI::ViewID>         fieldMipUAVs;
+    BE1::Array<RHI::ViewID>         foamMipSRVs;
+    BE1::Array<RHI::ViewID>         foamMipUAVs;
 
     RHI::IndexBuffer *              surfaceGridIndexBuffer = nullptr;
 

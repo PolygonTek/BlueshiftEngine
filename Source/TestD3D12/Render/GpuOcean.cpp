@@ -327,7 +327,7 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
 
 bool GpuOcean::HasResources() const {
     return timeSpectrumBuffer && ifftWorkBuffer && spatialFieldsBuffer &&
-        initialSpectrumTextureArray && displacementAndDerivativeTextureArray && foamHistoryTextureArray;
+        initialSpectrumTextureArray && fieldTextureArray && foamHistoryTextureArray;
 }
 
 static RHI::Buffer *CreateOceanStructuredBuffer(const char *debugName, uint64_t elementCount) {
@@ -355,13 +355,12 @@ static RHI::Buffer *CreateOceanStructuredBuffer(const char *debugName, uint64_t 
     return buffer;
 }
 
-static RHI::Texture *CreateOceanTexture(const char *debugName, uint32_t size, BE1::Image::Format format, uint32_t arraySize = 1,
-    RHI::GPUResourceState initialState = RHI::GPUResourceState::ShaderResource) {
+static RHI::Texture *CreateOceanTexture(const char *debugName, uint32_t size, BE1::Image::Format format, uint32_t arraySize, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->InitFromMemory(size, size, 1, arraySize, 1, format, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
 
     const RHI::TextureType textureType = arraySize > 1 ? RHI::TextureType::Texture2DArray : RHI::TextureType::Texture2D;
-    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, initialState);
+    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, mipInitMode, {}, 1, initialState);
     if (!texture) {
         BE_WARNLOG("GpuOcean::EnsureResources: failed to create %s\n", debugName);
         return nullptr;
@@ -369,6 +368,23 @@ static RHI::Texture *CreateOceanTexture(const char *debugName, uint32_t size, BE
 
     RHI::renderer->SetName(texture, debugName);
     return texture;
+}
+
+static bool CreateOceanMipViews(const char *debugName, RHI::Texture *texture, BE1::Array<RHI::ViewID> &outMipSRVs, BE1::Array<RHI::ViewID> &outMipUAVs) {
+    const uint32_t mipLevelCount = texture->GetMipLevelCount();
+    outMipSRVs.SetCount(mipLevelCount);
+    outMipUAVs.SetCount(mipLevelCount);
+
+    for (uint32_t mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
+        outMipSRVs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
+        outMipUAVs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
+        if (!outMipSRVs[mipLevel].IsValid() || !outMipUAVs[mipLevel].IsValid()) {
+            BE_WARNLOG("GpuOcean::EnsureResources: failed to create %s mip %u views\n", debugName, mipLevel);
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool GpuOcean::EnsureResources() {
@@ -398,22 +414,28 @@ bool GpuOcean::EnsureResources() {
     const BE1::Image::Format foamHistoryFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16_FLOAT);
 
     // 각 cascade 의 initial spectrum 을 동일한 index 의 slice 에 저장하며 compute SRV 상태로 유지한다.
-    initialSpectrumTextureArray = CreateOceanTexture("GpuOcean::initialSpectrumTextureArray", spectrumSize, initialSpectrumFormat, CascadeCount, RHI::GPUResourceState::ShaderResourceCompute);
+    initialSpectrumTextureArray = CreateOceanTexture("GpuOcean::initialSpectrumTextureArray", spectrumSize, initialSpectrumFormat, CascadeCount, RHI::TextureMipInitMode::FromImage, RHI::GPUResourceState::ShaderResourceCompute);
     if (!initialSpectrumTextureArray) {
         DestroyResources();
         return false;
     }
 
     // 각 cascade 의 displacement 와 derivative 를 연속한 두 slice 에 저장한다.
-    displacementAndDerivativeTextureArray = CreateOceanTexture("GpuOcean::displacementAndDerivativeTextureArray", spectrumSize, outputFieldFormat, FieldTextureSliceCount);
-    if (!displacementAndDerivativeTextureArray) {
+    fieldTextureArray = CreateOceanTexture("GpuOcean::fieldTextureArray", spectrumSize, outputFieldFormat, FieldTextureSliceCount, RHI::TextureMipInitMode::AllocateEmpty, RHI::GPUResourceState::ShaderResource);
+    if (!fieldTextureArray) {
         DestroyResources();
         return false;
     }
 
     // 각 cascade 의 foam history 를 동일한 index 의 slice 에 저장한다.
-    foamHistoryTextureArray = CreateOceanTexture("GpuOcean::foamHistoryTextureArray", spectrumSize, foamHistoryFormat, CascadeCount);
+    foamHistoryTextureArray = CreateOceanTexture("GpuOcean::foamHistoryTextureArray", spectrumSize, foamHistoryFormat, CascadeCount, RHI::TextureMipInitMode::AllocateEmpty, RHI::GPUResourceState::ShaderResource);
     if (!foamHistoryTextureArray) {
+        DestroyResources();
+        return false;
+    }
+
+    if (!CreateOceanMipViews("fieldTextureArray", fieldTextureArray, fieldMipSRVs, fieldMipUAVs) ||
+        !CreateOceanMipViews("foamHistoryTextureArray", foamHistoryTextureArray, foamMipSRVs, foamMipUAVs)) {
         DestroyResources();
         return false;
     }
@@ -428,15 +450,19 @@ void GpuOcean::DestroyResources() {
         RHI::renderer->DestroyTexture(initialSpectrumTextureArray);
         initialSpectrumTextureArray = nullptr;
     }
-
-    if (displacementAndDerivativeTextureArray) {
-        RHI::renderer->DestroyTexture(displacementAndDerivativeTextureArray);
-        displacementAndDerivativeTextureArray = nullptr;
+    if (fieldTextureArray) {
+        RHI::renderer->DestroyTexture(fieldTextureArray);
+        fieldTextureArray = nullptr;
     }
     if (foamHistoryTextureArray) {
         RHI::renderer->DestroyTexture(foamHistoryTextureArray);
         foamHistoryTextureArray = nullptr;
     }
+
+    fieldMipSRVs.Clear();
+    fieldMipUAVs.Clear();
+    foamMipSRVs.Clear();
+    foamMipUAVs.Clear();
 
     if (timeSpectrumBuffer) {
         RHI::renderer->DestroyBuffer(timeSpectrumBuffer);
@@ -767,10 +793,14 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
         }
 
         // 공간 영역 field 를 texture array 의 현재 cascade slice 로 변환한다.
-        if (!ResolveOceanFields(commandList, resolveConstantBuffer, cascadeIndex, spatialFieldsBuffer, displacementAndDerivativeTextureArray, foamHistoryTextureArray)) {
+        if (!ResolveOceanFields(commandList, resolveConstantBuffer, cascadeIndex, spatialFieldsBuffer, fieldTextureArray, foamHistoryTextureArray)) {
             return false;
         }
     }
+
+    // 모든 cascade 의 mip 0 이 준비된 뒤 surface filtering 에 사용할 하위 mip 들을 갱신한다.
+    RHI::renderer->GenerateMipChain(commandList, fieldTextureArray, fieldMipSRVs.Ptr(), fieldMipUAVs.Ptr(), false);
+    RHI::renderer->GenerateMipChain(commandList, foamHistoryTextureArray, foamMipSRVs.Ptr(), foamMipUAVs.Ptr(), false);
 
     cascadeOutputsReady = true;
     foamHistoryResetPending = false;
@@ -785,7 +815,7 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
         return false;
     }
 
-    if (!displacementAndDerivativeTextureArray || displacementAndDerivativeTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready ||
+    if (!fieldTextureArray || fieldTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready ||
         !foamHistoryTextureArray || foamHistoryTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready) {
         return false;
     }
@@ -814,7 +844,7 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 2, surfaceConstantBuffer);
 
-    RHI::renderer->SetTexture(commandList, 0, false, displacementAndDerivativeTextureArray);
+    RHI::renderer->SetTexture(commandList, 0, false, fieldTextureArray);
     RHI::renderer->SetTexture(commandList, 1, false, foamHistoryTextureArray);
 
     RHI::renderer->DrawIndexed(commandList, SurfaceGridIndexCount, 0, 0);
