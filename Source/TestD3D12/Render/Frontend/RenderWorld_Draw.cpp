@@ -294,6 +294,12 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->projectionDepthA = renderCamera->projMatrix[2][2];
     visCamera->projectionDepthB = renderCamera->projMatrix[2][3];
     visCamera->projectionOrthogonal = renderCamera->desc.orthogonal;
+    visCamera->projectionInfiniteZFar = renderCamera->desc.infiniteZFar;
+    if (visCamera->projectionOrthogonal) {
+        visCamera->viewBox = renderCamera->GetBox();
+    } else {
+        visCamera->viewFrustum = renderCamera->GetFrustum();
+    }
 
     if (visCamera->projectionPolicy.IsZNegativeOneToOne()) {
         visCamera->ndcDepthScale = 2.0f;
@@ -474,7 +480,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(const RenderFrameData *frameData, 
 
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = nullptr;
-    graphicsPipelineDesc.rasterizerStateType = RHI::RasterizerStateType::SolidFrontSided;
+    graphicsPipelineDesc.rasterizerStateType = oceanSettings.surfaceWireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidFrontSided;
     graphicsPipelineDesc.depthStencilStateType = visCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::LEqualWrite;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
@@ -1321,6 +1327,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->projectionDepthA = visCamera->viewProjMatrix[2][2];
     visCamera->projectionDepthB = visCamera->viewProjMatrix[2][3];
     visCamera->projectionOrthogonal = true;
+    visCamera->projectionInfiniteZFar = false;
 
     if (visCamera->projectionPolicy.IsZNegativeOneToOne()) {
         visCamera->ndcDepthScale = 2.0f;

@@ -15,10 +15,18 @@
 #pragma once
 
 #include "GpuFFT.h"
+#include "Math/Color3.h"
 #include "Math/Vector2.h"
+#include "Math/Vector3.h"
+
+namespace BE1 {
+    class Frustum;
+    class OBB;
+}
 
 class ShaderPipeline;
 class ShaderTemplate;
+class Texture;
 struct OceanPhillipsInitialSpectrumParams;
 struct OceanTMAInitialSpectrumParams;
 struct OceanTimeSpectrumParams;
@@ -40,11 +48,26 @@ public:
     static constexpr uint32_t       FieldTextureSliceCount = 2 * CascadeCount;
     static constexpr uint32_t       SurfaceGridResolution = 256;
     static constexpr uint32_t       SurfaceGridIndexCount = (SurfaceGridResolution - 1) * (SurfaceGridResolution - 1) * 6;
-    static constexpr uint32_t       MaxSurfaceGridTileCountPerAxis = 16;
+    static constexpr uint32_t       SurfaceGridLodCount = 3;
+    static constexpr uint32_t       MaxSurfaceGridTileCountPerAxis = 32;
+
+    struct SurfaceDrawStats {
+        uint32_t                    drawCount = 0;
+        uint64_t                    triangleCount = 0;
+        uint32_t                    instanceBufferAllocCount = 0;
+        uint32_t                    instanceBufferUploadBytes = 0;
+    };
+
+    struct SurfaceView {
+        BE1::Vec3                   origin = BE1::Vec3::origin;
+        const BE1::Frustum *        frustum = nullptr;
+        const BE1::OBB *            box = nullptr;
+        bool                        infiniteZFar = false;
+    };
 
     enum class SpectrumModel : uint8_t {
-        Phillips,
-        TMA
+        Phillips,                   ///< Phillips spectrum
+        TMA                         ///< TMA spectrum + Hasselmann/isotropic directional spread (+swell parameter)
     };
 
     struct PhillipsSpectrumSettings {
@@ -57,11 +80,11 @@ public:
 
     struct TMASpectrumSettings {
         float                       spectrumScale = 1.0f;       ///< model-specific power spectrum scale
-        float                       alpha = 0.0081f;            ///< JONSWAP 스펙트럼의 무차원 에너지 계수
-        float                       peakOmega = 0.8f;           ///< 스펙트럼 에너지가 최대가 되는 peak 각주파수 (rad/s)
-        float                       swell = 0.0f;               ///< 저주파 파동의 진행 방향 집중도를 높이는 swell 계수 [0, 1]
+        float                       fetch = 250000.0f;          ///< 바람이 수면 위를 같은 방향으로 불어온 거리 (m). alpha 와 peakOmega 계산에 사용한다.
+        float                       swell = 0.8f;               ///< 저주파 파동의 진행 방향 집중도를 높이는 swell 계수 [0, 1]
+        float                       spread = 0.2f;              ///< Hasselmann 분포에 섞는 등방 분포의 비율 [0, 1]. 1이면 완전한 등방 분포다.
 
-        bool                        operator==(const TMASpectrumSettings &rhs) const { return spectrumScale == rhs.spectrumScale && alpha == rhs.alpha && peakOmega == rhs.peakOmega && swell == rhs.swell; }
+        bool                        operator==(const TMASpectrumSettings &rhs) const { return spectrumScale == rhs.spectrumScale && fetch == rhs.fetch && swell == rhs.swell && spread == rhs.spread; }
         bool                        operator!=(const TMASpectrumSettings &rhs) const { return !(*this == rhs); }
     };
 
@@ -75,34 +98,74 @@ public:
         bool                        operator!=(const CascadeDesc &rhs) const { return !(*this == rhs); }
     };
 
+    struct CascadeSettings {
+        float                       updateRate = 60.0f;         ///< 캐스캐이드 field 갱신 빈도 (Hz). simulation time 을 기준으로 스케줄링한다.
+        float                       foamThreshold = 0.5f;       ///< Jacobian 이 이 값보다 작을 때 foam 생성을 시작한다.
+        float                       foamGenerationRate = 1.0f;  ///< Jacobian 압축량을 foam history 생성률로 변환하는 배율 (1/s)
+        float                       foamHalfLife = 1.0f;        ///< 생성된 foam history 가 절반으로 감소하는 시간 (s)
+    };
+
     struct Settings {
         bool                        enabled = true;
         float                       surfaceHeight = 0.0f;
-        float                       surfaceGridSpacing = 2.0f;
-        uint32_t                    surfaceGridTileCountPerAxis = 3;
+        float                       surfaceGridSpacing = 1.0f;
+        uint32_t                    surfaceGridTileCountPerAxis = 16;
+        bool                        surfaceWireframe = false;
+        bool                        surfaceFrustumCulling = true;
+        float                       surfaceMaxDisplacement = 32.0f; ///< CPU tile culling bounds 를 모든 축으로 확장하는 최대 수면 변위 (m)
         float                       surfaceRoughness = 0.08f;
+        float                       surfaceNormalMapSize = 8.0f; ///< detail normal map 이 world-space 에서 한 번 반복되는 크기 (m)
+        float                       surfaceNormalStrength = 0.35f;
+        float                       surfaceNormalScrollSpeedScale = 0.025f; ///< windSpeed 에 곱해 detail normal map 의 이동 속도를 정하는 배율
+        BE1::Color3                 surfaceWaterColor = BE1::Color3(0.061f, 0.215f, 0.271f); ///< sRGB water body color
+        BE1::Color3                 surfaceFoamColor = BE1::Color3(0.955f, 0.978f, 1.0f); ///< sRGB foam color
+        float                       surfaceFoamDetailMapSize = 16.0f; ///< foam detail map 이 world-space 에서 한 번 반복되는 크기 (m)
+        float                       surfaceFoamDetailStrength = 1.0f; ///< foam history mask 에 foam detail map 을 적용하는 강도 [0, 1]
+        float                       surfaceFresnelF0 = 0.02f;
+        float                       surfaceCascadeFadeScale = 20.0f; ///< cascade patch size 에 곱해 거리 기반 fade 구간을 정하는 배율
 
-        float                       waveAmplitude = 1.0f;       ///< linear scale applied to the final displacement and derivatives
+        GpuFFT::FFTSize             fftSize = GpuFFT::FFTSize::FFT512;
+        float                       displacementScale = 1.0f;   ///< linear scale applied to the final displacement and derivatives
+        float                       choppiness = 1.0f;          ///< horizontal displacement 배율. 클수록 파봉이 날카로워지지만 surface folding 이 발생할 수 있다.
+        float                       timeScale = 1.0f;
+
         SpectrumModel               spectrumModel = SpectrumModel::TMA;
         PhillipsSpectrumSettings    phillips;
         TMASpectrumSettings         tma;
-        GpuFFT::FFTSize             fftSize = GpuFFT::FFTSize::FFT256;
-        float                       cascadeBeta = 0.5f;         ///< high frequency boundary ratio
-        CascadeDesc                 cascades[CascadeCount];
-
-        BE1::Vec2                   windDirection = BE1::Vec2(1.0f, 0.0f);
-        float                       windSpeed = 10.0f;          ///< 풍속 (m/s). Phillips 의 장파장 억제와 TMA 의 방향 분포 계산에 사용한다.
-        float                       gravity = 9.8f;             ///< 스펙트럼과 분산 관계 계산에 사용하는 중력 가속도 (m/s^2)
-        float                       depth = 100.0f;             ///< 유한 수심 분산 관계와 TMA 수심 보정에 사용하는 수심 (m)
+        BE1::Vec2                   windDirection = BE1::Vec2(1.0f, 0.0f); ///< 바람이 불어오는 방향
+        float                       windSpeed = 20.0f;          ///< 해수면 위 10m 풍속 U10 (m/s). Phillips 와 TMA 의 fetch 기반 스펙트럼 및 방향 분포 계산에 사용한다.
+        float                       gravity = 9.81f;            ///< 스펙트럼과 분산 관계 계산에 사용하는 중력 가속도 (m/s^2)
+        float                       depth = 20.0f;              ///< 유한 수심 분산 관계와 TMA 수심 보정에 사용하는 수심 (m)
         float                       smallWaveDamping = 0.01f;   ///< 짧은 파장을 exp(-k^2 * damping^2) 로 감쇠하는 길이 척도
-        float                       choppiness = 1.0f;          ///< horizontal displacement 배율. 클수록 파봉이 날카로워지지만 surface folding 이 발생할 수 있다.
-        float                       foamThreshold = 0.8f;       ///< Jacobian 이 이 값보다 작을 때 foam 생성을 시작한다.
-        float                       foamGain = 2.0f;            ///< Jacobian 압축량을 새 foam 양으로 변환하는 배율
-        float                       foamDecayRate = 0.5f;       ///< foam history 의 지수 감쇠율 (1/s)
-        float                       foamAddRate = 1.0f;         ///< new foam 의 선형 생성률 (1/s)
-        float                       timeScale = 1.0f;
 
-        Settings() { InitCascades(1024.0f, 0.5f); }
+        CascadeDesc                 cascades[CascadeCount];
+        CascadeSettings             cascadeSettings[CascadeCount]; ///< cascades 와 같은 index 를 사용하는 spectrum 재생성 비의존 설정
+        float                       cascadeBeta = 0.5f;         ///< high frequency boundary ratio
+
+        bool                        foamEnabled = true;         ///< foam 생성, history 갱신 및 surface 합성을 활성화한다.
+
+        Settings() {
+            for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
+                cascades[cascadeIndex].randomSeed = 123 * (cascadeIndex + 1);
+            }
+            InitCascades(1024.0f, 0.5f);
+
+            cascadeSettings[0].updateRate = 30.0f;
+            cascadeSettings[0].foamThreshold = 0.8f;
+            cascadeSettings[0].foamGenerationRate = 4.0f;
+            cascadeSettings[0].foamHalfLife = 1.0f;
+
+            cascadeSettings[1].updateRate = 45.0f;
+            cascadeSettings[1].foamThreshold = 0.55f;
+            cascadeSettings[1].foamGenerationRate = 1.0f;
+            cascadeSettings[1].foamHalfLife = 0.4f;
+
+            // 가장 짧은 파장 cascade 는 기본적으로 새 foam 을 만들지 않고 기존 history 만 감쇠시킨다.
+            cascadeSettings[2].updateRate = 60.0f;
+            cascadeSettings[2].foamThreshold = 0.4f;
+            cascadeSettings[2].foamGenerationRate = 0.0f;
+            cascadeSettings[2].foamHalfLife = 0.2f;
+        }
 
                                     /// 가장 큰 patch size 와 고주파 경계 비율로 각 cascade 의 patch size 와 파수 범위를 자동 초기화한다.
         void                        InitCascades(float largestPatchSize, float beta);
@@ -118,10 +181,10 @@ public:
 
     const SharedPtr<ShaderTemplate> &GetSurfaceShaderTemplate() const { return surfaceShaderTemplate; }
     uint32_t                        GetSurfaceGridIndexCount() const { return surfaceGridIndexBuffer ? SurfaceGridIndexCount : 0; }
-    static uint32_t                 GetSurfaceGridInstanceCount(const Settings &settings) { return settings.surfaceGridTileCountPerAxis * settings.surfaceGridTileCountPerAxis; }
 
                                     /// 주어진 index 의 cascade 설정을 얻는다.
     const CascadeDesc *             GetCascadeDesc(uint32_t cascadeIndex) const { return cascadeIndex < CascadeCount ? &settings.cascades[cascadeIndex] : nullptr; }
+    const CascadeSettings *         GetCascadeSettings(uint32_t cascadeIndex) const { return cascadeIndex < CascadeCount ? &settings.cascadeSettings[cascadeIndex] : nullptr; }
 
                                     /// 현재 모든 cascade 의 출력 field (displacement/derivative textures) 가 준비되었는지 여부를 리턴한다.
     bool                            AreCascadeOutputsReady() const { return cascadeOutputsReady; }
@@ -133,16 +196,23 @@ public:
                                     /// enabled 가 false 이면 기존 리소스와 출력은 유지하고 시뮬레이션을 진행하지 않는다.
     bool                            Update(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const Settings &newSettings, float deltaTime);
 
-                                    /// 현재 cascade 출력으로 카메라 중심의 NxN 수면 grid tile 을 렌더링한다.
+                                    /// 현재 cascade 출력으로 카메라 중심의 NxN 수면 grid 중 view volume 에 보이는 tile 을 렌더링한다.
     bool                            DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
-                                        const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const Settings &renderSettings) const;
+                                        const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const Settings &renderSettings, const SurfaceView &surfaceView,
+                                        SurfaceDrawStats *drawStats = nullptr) const;
 
 private:
+    struct SurfaceGridLodRange {
+        uint32_t                    firstIndex = 0;
+        uint32_t                    indexCount = 0;
+    };
+
     bool                            HasResources() const;
     bool                            EnsureResources();
     void                            DestroyResources();
     bool                            CreateSurfaceGrid();
     void                            DestroySurfaceGrid();
+    void                            ResetCascadeUpdateSchedule();
 
     bool                            InitialSpectrumSettingsEqual(const Settings &lhs, const Settings &rhs) const;
 
@@ -152,7 +222,7 @@ private:
                                     /// Phillips spectrum 으로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
     bool                            GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &commonParams);
 
-                                    /// TMA spectrum 과 Hasselmann directional spread 로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
+                                    /// TMA spectrum 과 Hasselmann/isotropic directional spread 혼합으로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
     bool                            GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &commonParams);
 
                                     /// 초기 스펙트럼을 시간에 따라 진화시키고 IFFT 입력용 complex spectrum 을 생성한다.
@@ -176,6 +246,8 @@ private:
     SharedPtr<ShaderTemplate>       generateTimeSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       resolveOceanFieldsShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceShaderTemplate;
+    SharedPtr<Texture>              foamDetailTexture;
+    SharedPtr<Texture>              waterDetailNormalTexture;
 
     SharedPtr<ShaderPipeline>       generatePhillipsInitialSpectrumPipeline;
     SharedPtr<ShaderPipeline>       generateTMAInitialSpectrumPipeline;
@@ -188,17 +260,23 @@ private:
     RHI::Buffer *                   ifftWorkBuffer = nullptr;       // (개별 캐스캐이드 계산에 임시로 사용됨) IFFT 를 위한 work buffer
     RHI::Buffer *                   spatialFieldsBuffer = nullptr;  // (개별 캐스캐이드 계산에 임시로 사용됨) IFFT 결과를 저장하는 structured buffer
 
-    RHI::Texture *                  initialSpectrumTextureArray = nullptr; // slice per cascade, RG: h0(k), BA: conj(h0(-k))
-    RHI::Texture *                  fieldTextureArray = nullptr; // even slices: displacement, odd slices: derivative
-    RHI::Texture *                  foamHistoryTextureArray = nullptr; // slice per cascade, R: temporally accumulated foam
+    RHI::Texture *                  initialSpectrumTextureArray = nullptr;  // slice per cascade, RG: h0(k), BA: conj(h0(-k))
+    RHI::Texture *                  fieldTextureArray = nullptr;            // even slices: displacement, odd slices: derivative
+    RHI::Texture *                  foamHistoryTextureArray = nullptr;      // slice per cascade, R: temporally accumulated foam
+
     BE1::Array<RHI::ViewID>         fieldMipSRVs;
     BE1::Array<RHI::ViewID>         fieldMipUAVs;
     BE1::Array<RHI::ViewID>         foamMipSRVs;
     BE1::Array<RHI::ViewID>         foamMipUAVs;
 
     RHI::IndexBuffer *              surfaceGridIndexBuffer = nullptr;
+    SurfaceGridLodRange             surfaceGridLodRanges[SurfaceGridLodCount] = {};
 
     float                           simulationTime = 0.0f;
+    float                           cascadeLastUpdateTimes[CascadeCount] = {};
+    float                           cascadeNextUpdateTimes[CascadeCount] = {};
+    float                           cascadeScheduledUpdateRates[CascadeCount] = {};
+    uint32_t                        cascadeUpdateInitializedMask = 0u;
 
     bool                            cascadeResourcesDirty = true;
     bool                            initialSpectraReady = false;

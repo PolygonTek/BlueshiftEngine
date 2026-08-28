@@ -32,14 +32,7 @@ RWTexture2DArray<float4> initialSpectrum : register(u0);
 
 float ComputeSpectrumDensity(float2 waveVector) {
 #if OCEAN_SPECTRUM_MODEL == OCEAN_SPECTRUM_MODEL_PHILLIPS
-    return PhillipsSpectrum(
-        waveVector,
-        spectrumParams.windDirection,
-        spectrumParams.windSpeed,
-        spectrumParams.gravity,
-        spectrumParams.spectrumScale,
-        spectrumParams.smallWaveDamping,
-        spectrumParams.oppositeWaveDamping);
+    return PhillipsSpectrum(waveVector, spectrumParams.windDirection, spectrumParams.windSpeed, spectrumParams.gravity, spectrumParams.spectrumScale, spectrumParams.smallWaveDamping, spectrumParams.oppositeWaveDamping);
 #elif OCEAN_SPECTRUM_MODEL == OCEAN_SPECTRUM_MODEL_TMA
     float waveNumberSquared = dot(waveVector, waveVector);
     if (waveNumberSquared <= 0.0f) {
@@ -53,19 +46,11 @@ float ComputeSpectrumDensity(float2 waveVector) {
     float cosTheta = dot(waveDirection, spectrumParams.windDirection);
 
     float spectrumDensity = spectrumParams.spectrumScale;
-    spectrumDensity *= TMASpectrum(
-        dispersion.x,
-        spectrumParams.peakOmega,
-        spectrumParams.alpha,
-        spectrumParams.gravity,
-        spectrumParams.depth);
-    spectrumDensity *= HasselmannDirectionalSpreadWithSwell(
-        dispersion.x,
-        spectrumParams.peakOmega,
-        spectrumParams.windSpeed,
-        spectrumParams.gravity,
-        cosTheta,
-        spectrumParams.swell);
+    spectrumDensity *= TMASpectrum(dispersion.x, spectrumParams.peakOmega, spectrumParams.alpha, spectrumParams.gravity, spectrumParams.depth);
+    float directionalSpread = HasselmannDirectionalSpreadWithSwell(dispersion.x, spectrumParams.peakOmega, spectrumParams.windSpeed, spectrumParams.gravity, cosTheta, spectrumParams.swell);
+    // spread = 0 은 Hasselmann 분포, 1 은 모든 방향이 동일한 등방 분포다.
+    directionalSpread = lerp(directionalSpread, INV_TWO_PI, spectrumParams.spread);
+    spectrumDensity *= directionalSpread;
     spectrumDensity *= dispersion.y * inverseWaveNumber;
 
     float dampingLengthSquared = spectrumParams.smallWaveDamping * spectrumParams.smallWaveDamping;

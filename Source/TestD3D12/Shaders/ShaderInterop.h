@@ -135,6 +135,9 @@ static const uint OceanResolveFieldsBlockSizeY = 8;
 static const uint OceanSpectrumComplexPlaneCount = 4;
 static const uint OceanCascadeCount = 3;
 static const uint OceanSurfaceGridResolution = 256;
+static const uint OceanSurfaceGridLodCount = 3;
+static const uint OceanFoamOptionBitEnabled = 1u << 0;
+static const uint OceanFoamOptionBitResetHistory = 1u << 1;
 
 static const uint FFTRadix2_256StageCount = 8;
 static const uint FFTRadix2_256ButterflyCount = 256 / 2;
@@ -387,7 +390,8 @@ struct OceanTMAInitialSpectrumParams {
     float peakOmega;
     float depth;
     float swell;
-    float2 padding0;
+    float spread;
+    float padding0;
     OceanInitialSpectrumCascadeParams cascadeParams[OceanCascadeCount];
 };
 
@@ -411,13 +415,13 @@ static_assert(sizeof(OceanTimeSpectrumParams) == 32, "OceanTimeSpectrumParams mu
 
 struct OceanResolveFieldsParams {
     float deltaTime;
-    float waveAmplitude;
+    float displacementScale;
     float foamThreshold;
-    float foamGain;
+    float foamGenerationRate;
     float foamDecayRate;
-    float foamAddRate;
-    uint resetFoamHistory;
+    uint foamOptions;
     uint cascadeIndex;
+    float padding0;
 };
 
 #ifdef __cplusplus
@@ -426,17 +430,36 @@ static_assert(sizeof(OceanResolveFieldsParams) == 32, "OceanResolveFieldsParams 
 
 struct OceanSurfaceParams {
     float4 cascadePatchSizes;
+    float4 cascadeVertexMipLevels;
     float gridSpacing;
     float surfaceHeight;
     float roughness;
-    float waveAmplitude;
+    float displacementScale;
     float3 waterColor;
     float fresnelF0;
-    uint gridTileCountPerAxis;
+    float3 foamColor;
+    float cascadeFadeScale;
+    float gridSnapSpacing;
+    uint foamOptions;
+    float foamDetailMapSize;
+    float foamDetailStrength;
+    float normalMapSize;
+    float normalStrength;
+    float2 normalMapUVOffset;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanSurfaceParams) == 52, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanSurfaceParams) == 112, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+#endif
+
+struct OceanSurfaceTileInstance {
+    float2 tilePosition;
+    uint lodLevel;
+    uint packedNeighborLodLevels;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanSurfaceTileInstance) == 16, "OceanSurfaceTileInstance must match the HLSL structured-buffer layout");
 #endif
 
 struct ShaderLightCullingParams {

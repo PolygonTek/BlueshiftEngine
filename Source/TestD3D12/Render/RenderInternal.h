@@ -132,6 +132,8 @@ struct VisCamera {
 
     BE1::Vec3                   origin = BE1::Vec3::origin; // View origin in world space
     BE1::Mat3                   axis = BE1::Mat3::identity; // View axis [FORWARD, LEFT, UP] in world space
+    BE1::Frustum                viewFrustum;                // Perspective view culling volume
+    BE1::OBB                    viewBox;                    // Orthographic view culling volume
 
     BE1::Mat3                   environmentLightAxis = BE1::Mat3::identity;
     BE1::Color3                 environmentLightColor = BE1::Color3::white;
@@ -182,6 +184,7 @@ struct VisCamera {
     float                       projectionDepthA = 0.0f;
     float                       projectionDepthB = 0.0f;
     bool                        projectionOrthogonal = false;
+    bool                        projectionInfiniteZFar = false;
     float                       ndcDepthScale = 1.0f;
     float                       ndcDepthBias = 0.0f;
     RenderCamera::Flag          flags = RenderCamera::Flag::None;

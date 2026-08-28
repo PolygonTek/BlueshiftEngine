@@ -51,20 +51,22 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     fieldMap[uint3(coord, displacementSlice)] = float4(Dx_Dy, Dz_Dxdy);
     fieldMap[uint3(coord, displacementSlice + 1u)] = float4(Dzdx_Dzdy, Dxdx_Dydy);
 
-    const float displacementX_dy = Dz_Dxdy.y * resolveParams.waveAmplitude;
-    const float displacementX_dx = Dxdx_Dydy.x * resolveParams.waveAmplitude;
-    const float displacementY_dy = Dxdx_Dydy.y * resolveParams.waveAmplitude;
+    if ((resolveParams.foamOptions & OceanFoamOptionBitEnabled) != 0u) {
+        const float displacementX_dy = Dz_Dxdy.y * resolveParams.displacementScale;
+        const float displacementX_dx = Dxdx_Dydy.x * resolveParams.displacementScale;
+        const float displacementY_dy = Dxdx_Dydy.y * resolveParams.displacementScale;
 
-    const float J = (1.0f + displacementX_dx) * (1.0f + displacementY_dy) - displacementX_dy * displacementX_dy;
+        const float J = (1.0f + displacementX_dx) * (1.0f + displacementY_dy) - displacementX_dy * displacementX_dy;
 
-    // 수평 변위의 Jacobian 이 작아질수록 파면이 압축되므로 foam 을 생성한다.
-    const float newFoam = saturate((resolveParams.foamThreshold - J) * resolveParams.foamGain);
-    const uint3 foamCoord = uint3(coord, resolveParams.cascadeIndex);
-    const float prevFoam = resolveParams.resetFoamHistory != 0u ? 0.0f : foamHistoryMap[foamCoord];
-    const float foamDecay = exp(-resolveParams.foamDecayRate * resolveParams.deltaTime);
-    const float foamAddScale = resolveParams.foamDecayRate > 1e-6f
-        ? resolveParams.foamAddRate * (1.0f - foamDecay) / resolveParams.foamDecayRate
-        : resolveParams.foamAddRate * resolveParams.deltaTime;
-    
-    foamHistoryMap[foamCoord] = saturate(prevFoam * foamDecay + newFoam * foamAddScale);
+        // 수평 변위의 Jacobian 이 작아질수록 파면이 압축되므로 foam source 를 생성한다.
+        const float foamSourceRate = max(resolveParams.foamThreshold - J, 0.0f) * resolveParams.foamGenerationRate;
+        const uint3 foamCoord = uint3(coord, resolveParams.cascadeIndex);
+        const float prevFoam = (resolveParams.foamOptions & OceanFoamOptionBitResetHistory) != 0u ? 0.0f : foamHistoryMap[foamCoord];
+        const float foamDecay = exp(-resolveParams.foamDecayRate * resolveParams.deltaTime);
+        const float foamIntegrationScale = resolveParams.foamDecayRate > 1e-6f
+            ? (1.0f - foamDecay) / resolveParams.foamDecayRate
+            : resolveParams.deltaTime;
+
+        foamHistoryMap[foamCoord] = saturate(prevFoam * foamDecay + foamSourceRate * foamIntegrationScale);
+    }
 }

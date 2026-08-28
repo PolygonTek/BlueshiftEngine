@@ -1165,14 +1165,23 @@ void RenderBackend::DrawGpuOcean() {
     }
 
     GpuOcean &gpuOcean = renderSystem->GetGpuOcean();
-    const uint32_t indexCount = gpuOcean.GetSurfaceGridIndexCount();
-    if (!gpuOcean.AreCascadeOutputsReady() || indexCount == 0) {
+    if (!gpuOcean.AreCascadeOutputsReady() || gpuOcean.GetSurfaceGridIndexCount() == 0) {
         return;
     }
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::OceanPass);
-    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, oceanSettings)) {
-        RecordDrawStats(1, indexCount / 3 * GpuOcean::GetSurfaceGridInstanceCount(oceanSettings), 0, 0);
+    GpuOcean::SurfaceView surfaceView;
+    surfaceView.origin = currentVisCamera->origin;
+    surfaceView.infiniteZFar = currentVisCamera->projectionInfiniteZFar;
+    if (currentVisCamera->projectionOrthogonal) {
+        surfaceView.box = &currentVisCamera->viewBox;
+    } else {
+        surfaceView.frustum = &currentVisCamera->viewFrustum;
+    }
+
+    GpuOcean::SurfaceDrawStats drawStats;
+    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, oceanSettings, surfaceView, &drawStats)) {
+        RecordDrawStats(drawStats.drawCount, drawStats.triangleCount, drawStats.instanceBufferAllocCount, drawStats.instanceBufferUploadBytes);
     }
 }
 

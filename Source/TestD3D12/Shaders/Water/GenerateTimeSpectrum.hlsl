@@ -50,8 +50,9 @@ OceanFieldSpectra ComputeOceanFieldSpectra(uint2 pq, uint spectrumSize) {
     // 시간에 따라 진화하는 높이 스펙트럼을 계산한다.
     // h̃(k, t) = h̃0(k) * exp(i * ω * t) + conj(h̃0(-k)) * exp(-i * ω * t)
     float4 h0 = initialSpectrum.Load(int4(pq, spectrumParams.cascadeIndex, 0));
-    float2 exponent = float2(cosPhase, sinPhase);
-    float2 h = ComplexMul(h0.xy, exponent) + ComplexMul(h0.zw, float2(exponent.x, -exponent.y));
+    float2 exponentPos = float2(cosPhase, sinPhase);
+    float2 exponentNeg = float2(cosPhase, -sinPhase);
+    float2 h = ComplexMul(h0.xy, exponentPos) + ComplexMul(h0.zw, exponentNeg);
     float2 ih = float2(-h.y, h.x);
 
     // 높이 스펙트럼 h 는 켤레 대칭이므로 주파수 반전에서 자기 자신인 DC, Nyquist bin 은 허수부가 0 이다.
@@ -63,12 +64,14 @@ OceanFieldSpectra ComputeOceanFieldSpectra(uint2 pq, uint spectrumSize) {
         pq.y == 0u ? 0.0f : waveVector.y);
 
     // IFFT 에서 필요한 8개의 실수 field spectrum 을 계산한다.
-    spectra.displacementX = -ih * (spectrumParams.choppiness * oddWaveVector.x * invK);
-    spectra.displacementY = -ih * (spectrumParams.choppiness * oddWaveVector.y * invK);
+    // C >= 0, x' = x + D convention 에서 +i 를 사용해야 파봉이 수평으로 압축된다.
+    spectra.displacementX = ih * (spectrumParams.choppiness * oddWaveVector.x * invK);
+    spectra.displacementY = ih * (spectrumParams.choppiness * oddWaveVector.y * invK);
     spectra.displacementZ = h;
-    spectra.displacementX_dx = h * (spectrumParams.choppiness * waveVector.x * waveVector.x * invK);
-    spectra.displacementY_dy = h * (spectrumParams.choppiness * waveVector.y * waveVector.y * invK);
-    spectra.displacementX_dy = h * (spectrumParams.choppiness * oddWaveVector.x * oddWaveVector.y * invK);
+    // ∂Dj/∂xl = i kl (+i C kj / |k|) h = -C kj kl / |k| h
+    spectra.displacementX_dx = -h * (spectrumParams.choppiness * waveVector.x * waveVector.x * invK);
+    spectra.displacementY_dy = -h * (spectrumParams.choppiness * waveVector.y * waveVector.y * invK);
+    spectra.displacementX_dy = -h * (spectrumParams.choppiness * oddWaveVector.x * oddWaveVector.y * invK);
     spectra.displacementZ_dx = ih * oddWaveVector.x;
     spectra.displacementZ_dy = ih * oddWaveVector.y;
     return spectra;
