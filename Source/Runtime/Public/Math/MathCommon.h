@@ -182,6 +182,7 @@ public:
     static constexpr float      InvPi = 1.0f / Pi;                      ///< 1 / pi
     static constexpr float      InvTwoPi = 1.0f / TwoPi;                ///< 1 / 2pi
     static constexpr float      E = 2.7182818f;                         ///< e
+    static constexpr float      Ln2 = 0.69314718f;                      ///< ln( 2 )
     static constexpr float      GoldenRatio = 1.6180340f;               ///< golden ratio
 
     static constexpr double     DoubleBigNumber = 1e300;                ///< huge finite double which should be larger than any valid number used
@@ -192,6 +193,7 @@ public:
     static constexpr double     DoubleInvPi = 1.0 / DoublePi;           ///< double-precision 1 / pi
     static constexpr double     DoubleInvTwoPi = 1.0 / DoubleTwoPi;     ///< double-precision 1 / 2pi
     static constexpr double     DoubleE = 2.718281828459045;            ///< double-precision e
+    static constexpr double     DoubleLn2 = 0.6931471805599453;         ///< double-precision ln( 2 )
     static constexpr double     DoubleGoldenRatio = 1.618033988749895;  ///< double-precision golden ratio
 
     static constexpr float      SqrtTwo = 1.4142136f;                   ///< sqrt( 2 )
@@ -846,7 +848,7 @@ BE_INLINE float Math::ExpFast(float f) {
     const int exponent = *reinterpret_cast<const int *>(&biased) - 0x4b400000;
     const float exponentFloat = biased - 12582912.0f;
 
-    const float x = f - exponentFloat * 0.6931471805599453f;
+    const float x = f - exponentFloat * Ln2;
     const float polynomial = (((0.1656684234f * x + 0.5049632642f) * x + 1.0001641858f) * x + 0.9999280735f);
     const int exponentBits = (exponent + IEEE_FLT_EXPONENT_BIAS) << IEEE_FLT_MANTISSA_BITS;
     const float scale = *reinterpret_cast<const float *>(&exponentBits);
@@ -880,7 +882,7 @@ BE_INLINE float Math::LogFast(float f) {
     const float y = *reinterpret_cast<float *>(&i) * SqrtTwo - 1.0f;
     // Cubic minimax trades a small amount of accuracy for one fewer multiply-add step.
     float result = (((0.31024916f * y - 0.52746093f) * y + 1.00204391f) * y + 0.34697788f);
-    result += 0.693147180559945f * static_cast<float>(exponent);
+    result += Ln2 * static_cast<float>(exponent);
     return result;
 }
 
