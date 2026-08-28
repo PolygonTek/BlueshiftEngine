@@ -59,6 +59,7 @@ void GpuOcean::Settings::InitCascades(float largestPatchSize, float beta) {
 void GpuOcean::Init() {
     simulationTime = 0.0f;
     ResetCascadeUpdateSchedule();
+    foamHistoryMayContainFoamMask = 0u;
     pipelinesReady = false;
     pipelineBuildFailed = false;
 
@@ -543,6 +544,7 @@ void GpuOcean::DestroyResources() {
     initialSpectraReady = false;
     cascadeOutputsReady = false;
     foamHistoryResetPending = true;
+    foamHistoryMayContainFoamMask = 0u;
     ResetCascadeUpdateSchedule();
 }
 
@@ -791,6 +793,24 @@ bool GpuOcean::ResolveOceanFields(RHI::CommandList *commandList, const RHI::Cons
     return true;
 }
 
+static void GenerateOceanCascadeMipRanges(RHI::CommandList *commandList, RHI::Texture *texture, const RHI::ViewID *mipSRVs, const RHI::ViewID *mipUAVs, uint32_t cascadeMask, uint32_t slicesPerCascade) {
+    uint32_t cascadeIndex = 0;
+    while (cascadeIndex < GpuOcean::CascadeCount) {
+        if ((cascadeMask & (1u << cascadeIndex)) == 0u) {
+            ++cascadeIndex;
+            continue;
+        }
+
+        const uint32_t firstCascade = cascadeIndex;
+        do {
+            ++cascadeIndex;
+        } while (cascadeIndex < GpuOcean::CascadeCount && (cascadeMask & (1u << cascadeIndex)) != 0u);
+
+        const uint32_t cascadeRangeCount = cascadeIndex - firstCascade;
+        RHI::renderer->GenerateMipChain(commandList, texture, mipSRVs, mipUAVs, false, slicesPerCascade * firstCascade, slicesPerCascade * cascadeRangeCount);
+    }
+}
+
 bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &baseParams, const OceanResolveFieldsParams &resolveParams) {
     PROFILER_CPU_SCOPED_EVENT("GpuOcean::UpdateCascades");
 
@@ -804,6 +824,10 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
 
     cascadeOutputsReady = false;
     uint32_t updatedCascadeMask = 0u;
+    uint32_t updatedFoamCascadeMask = 0u;
+    if (resetFoamHistory) {
+        foamHistoryMayContainFoamMask = 0u;
+    }
 
     for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
         const CascadeSettings &cascadeSettings = settings.cascadeSettings[cascadeIndex];
@@ -822,6 +846,9 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
 
         const uint32_t cascadeBit = 1u << cascadeIndex;
         const bool hasPreviousUpdate = (cascadeUpdateInitializedMask & cascadeBit) != 0u;
+        // 한 번 source 가 활성화된 cascade 는 generation rate 가 0 이 되어도 reset 전까지 history 감쇠를 계속한다.
+        const bool updateFoamHistory = foamEnabled &&
+            (resetFoamHistory || cascadeSettings.foamGenerationRate > 0.0f || (foamHistoryMayContainFoamMask & cascadeBit) != 0u);
         const float cascadeDeltaTime = resetFoamHistory || !hasPreviousUpdate
             ? resolveParams.deltaTime
             : BE1::Max(baseParams.time - cascadeLastUpdateTimes[cascadeIndex], 0.0f);
@@ -844,9 +871,13 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
 
         OceanResolveFieldsParams cascadeResolveParams = resolveParams;
         cascadeResolveParams.deltaTime = cascadeDeltaTime;
-        cascadeResolveParams.foamThreshold = cascadeSettings.foamThreshold;
-        cascadeResolveParams.foamGenerationRate = cascadeSettings.foamGenerationRate;
-        cascadeResolveParams.foamDecayRate = 0.6931471805599453f / cascadeSettings.foamHalfLife;
+        if (updateFoamHistory) {
+            cascadeResolveParams.foamThreshold = cascadeSettings.foamThreshold;
+            cascadeResolveParams.foamGenerationRate = cascadeSettings.foamGenerationRate;
+            cascadeResolveParams.foamDecayRate = BE1::Math::Ln2 / cascadeSettings.foamHalfLife;
+        } else {
+            cascadeResolveParams.foamOptions &= ~OceanFoamOptionBitEnabled;
+        }
         cascadeResolveParams.cascadeIndex = cascadeIndex;
         RHI::ConstantBuffer *resolveConstantBuffer = frameThreadData->AllocConstant(sizeof(cascadeResolveParams), &cascadeResolveParams);
         if (!resolveConstantBuffer) {
@@ -869,27 +900,20 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
         }
         cascadeUpdateInitializedMask |= cascadeBit;
         updatedCascadeMask |= cascadeBit;
+        if (updateFoamHistory) {
+            updatedFoamCascadeMask |= cascadeBit;
+            if (cascadeSettings.foamGenerationRate > 0.0f) {
+                foamHistoryMayContainFoamMask |= cascadeBit;
+            }
+        }
     }
 
     if (updatedCascadeMask != 0u) {
         // 인접한 cascade 들을 하나의 texture array slice 범위로 묶어서 mip dispatch 횟수를 줄인다.
-        uint32_t cascadeIndex = 0;
-        while (cascadeIndex < CascadeCount) {
-            if ((updatedCascadeMask & (1u << cascadeIndex)) == 0u) {
-                ++cascadeIndex;
-                continue;
-            }
+        GenerateOceanCascadeMipRanges(commandList, fieldTextureArray, fieldMipSRVs.Ptr(), fieldMipUAVs.Ptr(), updatedCascadeMask, 2u);
 
-            const uint32_t firstCascade = cascadeIndex;
-            do {
-                ++cascadeIndex;
-            } while (cascadeIndex < CascadeCount && (updatedCascadeMask & (1u << cascadeIndex)) != 0u);
-
-            const uint32_t cascadeRangeCount = cascadeIndex - firstCascade;
-            RHI::renderer->GenerateMipChain(commandList, fieldTextureArray, fieldMipSRVs.Ptr(), fieldMipUAVs.Ptr(), false, 2u * firstCascade, 2u * cascadeRangeCount);
-            if (foamEnabled) {
-                RHI::renderer->GenerateMipChain(commandList, foamHistoryTextureArray, foamMipSRVs.Ptr(), foamMipUAVs.Ptr(), false, firstCascade, cascadeRangeCount);
-            }
+        if (updatedFoamCascadeMask != 0u) {
+            GenerateOceanCascadeMipRanges(commandList, foamHistoryTextureArray, foamMipSRVs.Ptr(), foamMipUAVs.Ptr(), updatedFoamCascadeMask, 1u);
         }
 
         if (foamEnabled) {

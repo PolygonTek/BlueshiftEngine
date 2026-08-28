@@ -277,6 +277,7 @@ private:
     float                           cascadeNextUpdateTimes[CascadeCount] = {};
     float                           cascadeScheduledUpdateRates[CascadeCount] = {};
     uint32_t                        cascadeUpdateInitializedMask = 0u;
+    uint32_t                        foamHistoryMayContainFoamMask = 0u; ///< reset 이후 foam source 가 생성될 수 있었던 cascade mask
 
     bool                            cascadeResourcesDirty = true;
     bool                            initialSpectraReady = false;
