@@ -1680,7 +1680,7 @@ bool D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, D3D12Texture
     }
 
     // 컴퓨트 쉐이더를 이용해서 밉맵 생성
-    GenerateMipChain(commandList, texture, srvMipSubresourceIDs, uavMipSubresourceIDs, true);
+    GenerateMipChain(commandList, texture, srvMipSubresourceIDs, uavMipSubresourceIDs, true, 0, UINT32_MAX);
 
     // 임시 SRV/UAV 삭제
     for (int mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
@@ -1695,7 +1695,7 @@ bool D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, D3D12Texture
     return true;
 }
 
-void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::Texture *texture, const RHI::ViewID *srvMipViewIDs, const RHI::ViewID *uavMipViewIDs, bool preserveCoverage) {
+void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::Texture *texture, const RHI::ViewID *srvMipViewIDs, const RHI::ViewID *uavMipViewIDs, bool preserveCoverage, uint32_t firstSlice, uint32_t sliceCount) {
     const D3D12Texture *_texture = static_cast<const D3D12Texture *>(texture);
     uint32_t numMipmaps = _texture->textureDesc.MipLevels;
     if (numMipmaps <= 1) {
@@ -1716,6 +1716,31 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         return;
     }
 
+    // Texture2DArray 는 [firstSlice, firstSlice + sliceCount) 범위만 생성할 수 있다.
+    // sliceCount 가 UINT32_MAX 이면 firstSlice 부터 마지막 slice 까지를 의미한다.
+    // 전달하는 mip view 들은 slice 0 부터 요청 범위의 마지막 slice 까지를 포함해야 한다.
+    const bool isTexture2DArray = _texture->type == RHI::TextureType::Texture2DArray;
+    const bool isTextureCube = _texture->type == RHI::TextureType::TextureCube && _texture->GetArraySize() == 6;
+    const uint32_t textureSliceCount = isTexture2DArray || isTextureCube ? _texture->GetArraySize() : 1;
+    if (firstSlice >= textureSliceCount) {
+        BE_WARNLOG("D3D12Renderer::GenerateMipChain: first slice is out of range\n");
+        return;
+    }
+
+    if (sliceCount == UINT32_MAX) {
+        sliceCount = textureSliceCount - firstSlice;
+    }
+
+    if (sliceCount == 0 || sliceCount > textureSliceCount - firstSlice) {
+        BE_WARNLOG("D3D12Renderer::GenerateMipChain: slice range is out of range\n");
+        return;
+    }
+
+    if (!isTexture2DArray && (firstSlice != 0 || sliceCount != textureSliceCount)) {
+        BE_WARNLOG("D3D12Renderer::GenerateMipChain: partial slice ranges are supported only for Texture2DArray\n");
+        return;
+    }
+
     RHI::GPUResourceState destinationMipInitialState = _texture->defaultState;
 
     if (BE1::HasFlag(_texture->flags, RHI::TextureFlag::RenderTarget)) {
@@ -1723,13 +1748,15 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         // 생성 대상 sub-mip 만 discard 해서 이미 기록된 mip 0 은 보존한다.
         const uint32_t mipCountToDiscard = numMipmaps - 1;
         const uint32_t arraySize = _texture->GetArraySize();
-        const bool hasArraySlices = (_texture->type == RHI::TextureType::TextureCube && arraySize == 6) || _texture->type == RHI::TextureType::Texture2DArray;
-        const uint32_t sliceCount = hasArraySlices ? arraySize : 1;
-        const uint32_t barrierCount = mipCountToDiscard * sliceCount;
+        const bool hasArraySlices = isTextureCube || isTexture2DArray;
+        const uint32_t discardFirstSlice = hasArraySlices ? firstSlice : 0;
+        const uint32_t discardSliceCount = hasArraySlices ? sliceCount : 1;
+        const uint32_t barrierCount = mipCountToDiscard * discardSliceCount;
         RHI::GPUBarrier *discardStartBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * barrierCount);
 
         uint32_t barrierIndex = 0;
-        for (uint32_t slice = 0; slice < sliceCount; ++slice) {
+        for (uint32_t relativeSlice = 0; relativeSlice < discardSliceCount; ++relativeSlice) {
+            const uint32_t slice = discardFirstSlice + relativeSlice;
             for (uint32_t mipLevel = 1; mipLevel < numMipmaps; ++mipLevel) {
                 discardStartBarriers[barrierIndex++] = RHI::Renderer::MakeTextureBarrier(texture, _texture->defaultState, RHI::GPUResourceState::RenderTarget, slice, mipLevel);
             }
@@ -1737,7 +1764,8 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         Barrier(commandList, discardStartBarriers, barrierCount);
 
         D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-        for (uint32_t slice = 0; slice < sliceCount; ++slice) {
+        for (uint32_t relativeSlice = 0; relativeSlice < discardSliceCount; ++relativeSlice) {
+            const uint32_t slice = discardFirstSlice + relativeSlice;
             D3D12_DISCARD_REGION discardRegion = {};
             discardRegion.FirstSubresource = D3D12CalcSubresource(1, slice, 0, numMipmaps, arraySize);
             discardRegion.NumSubresources = mipCountToDiscard;
@@ -1747,8 +1775,8 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         destinationMipInitialState = RHI::GPUResourceState::RenderTarget;
     }
 
-    MipGenParams mipGenParams;
-    mipGenParams.flags = 0;
+    MipGenParams mipGenParams = {};
+    mipGenParams.firstSlice = 0;
 
     if (_texture->srcSRGB) {
         mipGenParams.flags |= MipGenOptionBitSRGB;
@@ -1816,7 +1844,7 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
             }
         } else {
             // 2D / 2D texture array
-            const bool isTextureArray = _texture->type == RHI::TextureType::Texture2DArray;
+            const bool isTextureArray = isTexture2DArray;
             if (isTextureArray) {
                 SetPSO(commandList, isSingleComponent ?
                     (isFloatFormat ? genMipmaps2DArrayFloat1PSO : genMipmaps2DArrayUNorm1PSO) :
@@ -1827,9 +1855,10 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
                     (isFloatFormat ? genMipmaps2DFloat4PSO : genMipmaps2DUNorm4PSO));
             }
 
-            const uint32_t sliceCount = isTextureArray ? _texture->GetArraySize() : 1;
-            RHI::GPUBarrier *startBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * sliceCount);
-            RHI::GPUBarrier *endBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * sliceCount);
+            const uint32_t dispatchFirstSlice = isTextureArray ? firstSlice : 0;
+            const uint32_t dispatchSliceCount = isTextureArray ? sliceCount : 1;
+            RHI::GPUBarrier *startBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * dispatchSliceCount);
+            RHI::GPUBarrier *endBarriers = (RHI::GPUBarrier *)_alloca(sizeof(RHI::GPUBarrier) * dispatchSliceCount);
 
             for (uint32_t mipLevel = 0; mipLevel < numMipmaps - 1; ++mipLevel) {
                 uint32_t destMipLevel = mipLevel + 1;
@@ -1838,7 +1867,8 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
 
                 mipGenParams.dstSize.x = destW;
                 mipGenParams.dstSize.y = destH;
-                mipGenParams.dstSize.z = sliceCount;
+                mipGenParams.dstSize.z = dispatchSliceCount;
+                mipGenParams.firstSlice = dispatchFirstSlice;
                 mipGenParams.dstSizeRcp.x = 1.0f / destW;
                 mipGenParams.dstSizeRcp.y = 1.0f / destH;
                 mipGenParams.dstSizeRcp.z = 0;
@@ -1853,17 +1883,19 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
                 // Set input texture (SRV)
                 SetTexture(commandList, 0, false, texture, srvMipViewIDs[mipLevel]);
 
-                for (uint32_t slice = 0; slice < sliceCount; ++slice) {
-                    startBarriers[slice] = RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, slice, destMipLevel);
+                for (uint32_t relativeSlice = 0; relativeSlice < dispatchSliceCount; ++relativeSlice) {
+                    const uint32_t slice = dispatchFirstSlice + relativeSlice;
+                    startBarriers[relativeSlice] = RHI::Renderer::MakeTextureBarrier(texture, destinationMipInitialState, RHI::GPUResourceState::UnorderedAccess, slice, destMipLevel);
                 }
-                Barrier(commandList, startBarriers, sliceCount);
+                Barrier(commandList, startBarriers, dispatchSliceCount);
 
-                Dispatch(commandList, threadGroupCountX, threadGroupCountY, sliceCount);
+                Dispatch(commandList, threadGroupCountX, threadGroupCountY, dispatchSliceCount);
 
-                for (uint32_t slice = 0; slice < sliceCount; ++slice) {
-                    endBarriers[slice] = RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, slice, destMipLevel);
+                for (uint32_t relativeSlice = 0; relativeSlice < dispatchSliceCount; ++relativeSlice) {
+                    const uint32_t slice = dispatchFirstSlice + relativeSlice;
+                    endBarriers[relativeSlice] = RHI::Renderer::MakeTextureBarrier(texture, RHI::GPUResourceState::UnorderedAccess, _texture->defaultState, slice, destMipLevel);
                 }
-                Barrier(commandList, endBarriers, sliceCount);
+                Barrier(commandList, endBarriers, dispatchSliceCount);
             }
         }
     } else if (_texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D) {

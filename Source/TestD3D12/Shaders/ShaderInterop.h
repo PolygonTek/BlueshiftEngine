@@ -158,7 +158,7 @@ static const uint TransposeComplexTileSize = 16;
 
 struct MipGenParams {
     uint3 dstSize;
-    uint padding;
+    uint firstSlice;
     float3 dstSizeRcp;
     uint flags;
 };

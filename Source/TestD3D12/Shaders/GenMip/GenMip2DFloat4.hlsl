@@ -52,6 +52,11 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         return;
     }
 
+#ifdef MIP_TEXTURE_ARRAY
+    // dispatch 의 z 는 요청한 범위 안의 상대 index 이므로 실제 texture array slice 로 변환한다.
+    dstCoord.z += mipGenParams.firstSlice;
+#endif
+
     // 상위 Mip 레벨에서의 픽셀의 평균값을 계산한다.
 #if MIP_OUTPUT_COMPONENT_COUNT == 1
 #ifdef GEN_MIP_WITH_GATHER
