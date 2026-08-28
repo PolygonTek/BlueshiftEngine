@@ -803,7 +803,7 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
     const bool forceAllCascades = !cascadeOutputsReady || resetFoamHistory;
 
     cascadeOutputsReady = false;
-    bool anyCascadeUpdated = false;
+    uint32_t updatedCascadeMask = 0u;
 
     for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
         const CascadeSettings &cascadeSettings = settings.cascadeSettings[cascadeIndex];
@@ -868,15 +868,31 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
             cascadeNextUpdateTimes[cascadeIndex] = previousDeadline + elapsedPeriods * updatePeriod;
         }
         cascadeUpdateInitializedMask |= cascadeBit;
-        anyCascadeUpdated = true;
+        updatedCascadeMask |= cascadeBit;
     }
 
-    if (anyCascadeUpdated) {
-        // 갱신된 mip 0 을 surface filtering 에 사용할 수 있도록 하위 mip 들을 갱신한다.
-        // 현재 mip view 는 전체 texture array 를 포함하므로 한 cascade 만 바뀐 경우에도 모든 slice 를 처리한다.
-        RHI::renderer->GenerateMipChain(commandList, fieldTextureArray, fieldMipSRVs.Ptr(), fieldMipUAVs.Ptr(), false);
+    if (updatedCascadeMask != 0u) {
+        // 인접한 cascade 들을 하나의 texture array slice 범위로 묶어서 mip dispatch 횟수를 줄인다.
+        uint32_t cascadeIndex = 0;
+        while (cascadeIndex < CascadeCount) {
+            if ((updatedCascadeMask & (1u << cascadeIndex)) == 0u) {
+                ++cascadeIndex;
+                continue;
+            }
+
+            const uint32_t firstCascade = cascadeIndex;
+            do {
+                ++cascadeIndex;
+            } while (cascadeIndex < CascadeCount && (updatedCascadeMask & (1u << cascadeIndex)) != 0u);
+
+            const uint32_t cascadeRangeCount = cascadeIndex - firstCascade;
+            RHI::renderer->GenerateMipChain(commandList, fieldTextureArray, fieldMipSRVs.Ptr(), fieldMipUAVs.Ptr(), false, 2u * firstCascade, 2u * cascadeRangeCount);
+            if (foamEnabled) {
+                RHI::renderer->GenerateMipChain(commandList, foamHistoryTextureArray, foamMipSRVs.Ptr(), foamMipUAVs.Ptr(), false, firstCascade, cascadeRangeCount);
+            }
+        }
+
         if (foamEnabled) {
-            RHI::renderer->GenerateMipChain(commandList, foamHistoryTextureArray, foamMipSRVs.Ptr(), foamMipUAVs.Ptr(), false);
             foamHistoryResetPending = false;
         }
     }

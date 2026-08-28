@@ -71,27 +71,27 @@ public:
     };
 
     struct PhillipsSpectrumSettings {
-        float                       spectrumScale = 0.001f;     ///< model-specific power spectrum scale
-        float                       oppositeWaveDamping = 0.07f;///< 역풍 방향 파동에 적용하는 감쇠 배율 [0, 1]. 1이면 감쇠하지 않고 0 이면 완전히 제거한다.
+        float                       spectrumScale = 0.001f;         ///< model-specific power spectrum scale
+        float                       oppositeWaveDamping = 0.07f;    ///< 역풍 방향 파동에 적용하는 감쇠 배율 [0, 1]. 1이면 감쇠하지 않고 0 이면 완전히 제거한다.
 
         bool                        operator==(const PhillipsSpectrumSettings &rhs) const { return spectrumScale == rhs.spectrumScale && oppositeWaveDamping == rhs.oppositeWaveDamping; }
         bool                        operator!=(const PhillipsSpectrumSettings &rhs) const { return !(*this == rhs); }
     };
 
     struct TMASpectrumSettings {
-        float                       spectrumScale = 1.0f;       ///< model-specific power spectrum scale
-        float                       fetch = 250000.0f;          ///< 바람이 수면 위를 같은 방향으로 불어온 거리 (m). alpha 와 peakOmega 계산에 사용한다.
-        float                       swell = 0.8f;               ///< 저주파 파동의 진행 방향 집중도를 높이는 swell 계수 [0, 1]
-        float                       spread = 0.2f;              ///< Hasselmann 분포에 섞는 등방 분포의 비율 [0, 1]. 1이면 완전한 등방 분포다.
+        float                       spectrumScale = 1.0f;           ///< model-specific power spectrum scale
+        float                       fetch = 250000.0f;              ///< 바람이 수면 위를 같은 방향으로 불어온 거리 (m). alpha 와 peakOmega 계산에 사용한다.
+        float                       swell = 0.8f;                   ///< 저주파 파동의 진행 방향 집중도를 높이는 swell 계수 [0, 1]
+        float                       spread = 0.2f;                  ///< Hasselmann 분포에 섞는 등방 분포의 비율 [0, 1]. 1이면 완전한 등방 분포다.
 
         bool                        operator==(const TMASpectrumSettings &rhs) const { return spectrumScale == rhs.spectrumScale && fetch == rhs.fetch && swell == rhs.swell && spread == rhs.spread; }
         bool                        operator!=(const TMASpectrumSettings &rhs) const { return !(*this == rhs); }
     };
 
     struct CascadeDesc {
-        float                       patchSize = 0.0f;           ///< L
-        float                       minWaveNumber = 0.0f;       ///< inclusive lower bound on |k|
-        float                       maxWaveNumber = 0.0f;       ///< exclusive upper bound on |k|
+        float                       patchSize = 0.0f;               ///< L
+        float                       minWaveNumber = 0.0f;           ///< inclusive lower bound on |k|
+        float                       maxWaveNumber = 0.0f;           ///< exclusive upper bound on |k|
         uint32_t                    randomSeed = 0;
 
         bool                        operator==(const CascadeDesc &rhs) const { return patchSize == rhs.patchSize && minWaveNumber == rhs.minWaveNumber && maxWaveNumber == rhs.maxWaveNumber && randomSeed == rhs.randomSeed; }
@@ -99,10 +99,10 @@ public:
     };
 
     struct CascadeSettings {
-        float                       updateRate = 60.0f;         ///< 캐스캐이드 field 갱신 빈도 (Hz). simulation time 을 기준으로 스케줄링한다.
-        float                       foamThreshold = 0.5f;       ///< Jacobian 이 이 값보다 작을 때 foam 생성을 시작한다.
-        float                       foamGenerationRate = 1.0f;  ///< Jacobian 압축량을 foam history 생성률로 변환하는 배율 (1/s)
-        float                       foamHalfLife = 1.0f;        ///< 생성된 foam history 가 절반으로 감소하는 시간 (s)
+        float                       updateRate = 60.0f;             ///< 캐스캐이드 field 갱신 빈도 (Hz). simulation time 을 기준으로 스케줄링한다.
+        float                       foamThreshold = 0.5f;           ///< Jacobian 이 이 값보다 작을 때 foam 생성을 시작한다.
+        float                       foamGenerationRate = 1.0f;      ///< Jacobian 압축량을 foam history 생성률로 변환하는 배율 (1/s)
+        float                       foamHalfLife = 1.0f;            ///< 생성된 foam history 가 절반으로 감소하는 시간 (s)
     };
 
     struct Settings {
@@ -114,7 +114,7 @@ public:
         bool                        surfaceFrustumCulling = true;
         float                       surfaceMaxDisplacement = 32.0f; ///< CPU tile culling bounds 를 모든 축으로 확장하는 최대 수면 변위 (m)
         float                       surfaceRoughness = 0.08f;
-        float                       surfaceNormalMapSize = 8.0f; ///< detail normal map 이 world-space 에서 한 번 반복되는 크기 (m)
+        float                       surfaceNormalMapSize = 8.0f;    ///< detail normal map 이 world-space 에서 한 번 반복되는 크기 (m)
         float                       surfaceNormalStrength = 0.35f;
         float                       surfaceNormalScrollSpeedScale = 0.025f; ///< windSpeed 에 곱해 detail normal map 의 이동 속도를 정하는 배율
         BE1::Color3                 surfaceWaterColor = BE1::Color3(0.061f, 0.215f, 0.271f); ///< sRGB water body color
@@ -125,24 +125,24 @@ public:
         float                       surfaceCascadeFadeScale = 20.0f; ///< cascade patch size 에 곱해 거리 기반 fade 구간을 정하는 배율
 
         GpuFFT::FFTSize             fftSize = GpuFFT::FFTSize::FFT512;
-        float                       displacementScale = 1.0f;   ///< linear scale applied to the final displacement and derivatives
-        float                       choppiness = 1.0f;          ///< horizontal displacement 배율. 클수록 파봉이 날카로워지지만 surface folding 이 발생할 수 있다.
+        float                       displacementScale = 1.0f;       ///< linear scale applied to the final displacement and derivatives
+        float                       choppiness = 1.0f;              ///< horizontal displacement 배율. 클수록 파봉이 날카로워지지만 surface folding 이 발생할 수 있다.
         float                       timeScale = 1.0f;
 
         SpectrumModel               spectrumModel = SpectrumModel::TMA;
         PhillipsSpectrumSettings    phillips;
         TMASpectrumSettings         tma;
         BE1::Vec2                   windDirection = BE1::Vec2(1.0f, 0.0f); ///< 바람이 불어오는 방향
-        float                       windSpeed = 20.0f;          ///< 해수면 위 10m 풍속 U10 (m/s). Phillips 와 TMA 의 fetch 기반 스펙트럼 및 방향 분포 계산에 사용한다.
-        float                       gravity = 9.81f;            ///< 스펙트럼과 분산 관계 계산에 사용하는 중력 가속도 (m/s^2)
-        float                       depth = 20.0f;              ///< 유한 수심 분산 관계와 TMA 수심 보정에 사용하는 수심 (m)
-        float                       smallWaveDamping = 0.01f;   ///< 짧은 파장을 exp(-k^2 * damping^2) 로 감쇠하는 길이 척도
+        float                       windSpeed = 20.0f;              ///< 해수면 위 10m 풍속 U10 (m/s). Phillips 와 TMA 의 fetch 기반 스펙트럼 및 방향 분포 계산에 사용한다.
+        float                       gravity = 9.81f;                ///< 스펙트럼과 분산 관계 계산에 사용하는 중력 가속도 (m/s^2)
+        float                       depth = 20.0f;                  ///< 유한 수심 분산 관계와 TMA 수심 보정에 사용하는 수심 (m)
+        float                       smallWaveDamping = 0.01f;       ///< 짧은 파장을 exp(-k^2 * damping^2) 로 감쇠하는 길이 척도
 
         CascadeDesc                 cascades[CascadeCount];
-        CascadeSettings             cascadeSettings[CascadeCount]; ///< cascades 와 같은 index 를 사용하는 spectrum 재생성 비의존 설정
-        float                       cascadeBeta = 0.5f;         ///< high frequency boundary ratio
+        CascadeSettings             cascadeSettings[CascadeCount];  ///< cascades 와 같은 index 를 사용하는 spectrum 재생성 비의존 설정
+        float                       cascadeBeta = 0.5f;             ///< high frequency boundary ratio
 
-        bool                        foamEnabled = true;         ///< foam 생성, history 갱신 및 surface 합성을 활성화한다.
+        bool                        foamEnabled = true;             ///< foam 생성, history 갱신 및 surface 합성을 활성화한다.
 
         Settings() {
             for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
@@ -153,7 +153,7 @@ public:
             cascadeSettings[0].updateRate = 30.0f;
             cascadeSettings[0].foamThreshold = 0.8f;
             cascadeSettings[0].foamGenerationRate = 4.0f;
-            cascadeSettings[0].foamHalfLife = 1.0f;
+            cascadeSettings[0].foamHalfLife = 0.75f;
 
             cascadeSettings[1].updateRate = 45.0f;
             cascadeSettings[1].foamThreshold = 0.55f;
