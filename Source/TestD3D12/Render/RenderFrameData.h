@@ -126,6 +126,12 @@ struct PendingImGuiOverlay {
 ---------------------------------------------------------------------------------------------------
 */
 
+struct VisOceanSurface {
+    GpuOcean::SimulationSettings    simulationSettings;
+    GpuOcean::SurfaceSettings       surfaceSettings;
+    uint64_t                        settingsRevision = 0;
+};
+
 class RenderFrameData {
     friend class RenderSystem;
     friend class RenderContext;
@@ -237,9 +243,8 @@ public:
     uint32_t                        GetFrameCount() const { return frameCount; }
     void                            SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount);
 
-    const GpuOcean::Settings &      GetOceanSettings() const { return oceanSettings; }
-    uint64_t                        GetOceanSettingsRevision() const { return oceanSettingsRevision; }
-    void                            SetOceanSettings(const GpuOcean::Settings &settings, uint64_t revision) { oceanSettings = settings; oceanSettingsRevision = revision; }
+    const VisOceanSurface *         GetVisOceanSurface() const { return hasVisOceanSurface ? &visOceanSurface : nullptr; }
+    void                            RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision);
 
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
@@ -333,8 +338,8 @@ private:
     float                           elapsedTime = 0.0f;
     float                           elapsedPrevTime = 0.0f;
     uint32_t                        frameCount = 0;
-    GpuOcean::Settings              oceanSettings;
-    uint64_t                        oceanSettingsRevision = 0;
+    VisOceanSurface                 visOceanSurface;
+    bool                            hasVisOceanSurface = false;
 
     bool                            statEnabled = false;
 

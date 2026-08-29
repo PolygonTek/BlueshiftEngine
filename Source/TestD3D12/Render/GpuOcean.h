@@ -172,14 +172,6 @@ public:
         bool                        IsValid() const;
     };
 
-    struct Settings {
-        bool                        enabled = true;
-        SimulationSettings          simulation;
-        SurfaceSettings             surface;
-
-        bool                        IsValid() const { return simulation.IsValid() && surface.IsValid(); }
-    };
-
     void                            Init();
     void                            Shutdown();
 

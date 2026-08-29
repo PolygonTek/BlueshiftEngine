@@ -353,13 +353,10 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     }
 
     // 메인 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
-    const GpuOcean::Settings &oceanSettings = frameData->GetOceanSettings();
-    if (swapChainOutputEnabled && currentContext == renderSystem->mainRenderContext) {
-        renderSystem->gpuOcean.ApplySimulationSettings(oceanSettings.simulation, frameData->GetOceanSettingsRevision());
-
-        if (oceanSettings.enabled) {
-            renderSystem->gpuOcean.Update(mainCommandList, frameData->GetThreadData(0), frameData->GetFrameTime());
-        }
+    const VisOceanSurface *visOceanSurface = frameData->GetVisOceanSurface();
+    if (visOceanSurface && swapChainOutputEnabled && currentContext == renderSystem->mainRenderContext) {
+        renderSystem->gpuOcean.ApplySimulationSettings(visOceanSurface->simulationSettings, visOceanSurface->settingsRevision);
+        renderSystem->gpuOcean.Update(mainCommandList, frameData->GetThreadData(0), frameData->GetFrameTime());
     }
 
     if (swapChainOutputEnabled) {
@@ -1164,8 +1161,8 @@ void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
 void RenderBackend::DrawGpuOcean() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGpuOcean");
 
-    const GpuOcean::Settings &oceanSettings = frameData->GetOceanSettings();
-    if (!oceanSettings.enabled || BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::StaticOnly) || !currentVisCamera->oceanSurfacePSO) {
+    const VisOceanSurface *visOceanSurface = frameData->GetVisOceanSurface();
+    if (!visOceanSurface || BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::StaticOnly) || !currentVisCamera->oceanSurfacePSO) {
         return;
     }
 
@@ -1185,7 +1182,7 @@ void RenderBackend::DrawGpuOcean() {
     }
 
     GpuOcean::SurfaceDrawStats drawStats;
-    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, oceanSettings.surface, surfaceView, &drawStats)) {
+    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, visOceanSurface->surfaceSettings, surfaceView, &drawStats)) {
         RecordDrawStats(drawStats.drawCount, drawStats.triangleCount, drawStats.instanceBufferAllocCount, drawStats.instanceBufferUploadBytes);
     }
 }

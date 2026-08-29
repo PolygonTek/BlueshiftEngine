@@ -1,0 +1,429 @@
+// Copyright(c) 2017 POLYGONTEK
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "Precompiled.h"
+#include "App.h"
+#include "Render/Frontend/EnvironmentLight.h"
+#include "Render/Frontend/RenderWorld.h"
+#include "Render/Material/MaterialManager.h"
+#include "Scene/SceneOcean.h"
+
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
+
+void SceneOcean::Init(RenderWorld *renderWorld) {
+    this->renderWorld = renderWorld;
+
+    renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
+
+    app.SetCameraDistance(300.0f);
+
+    oceanAdded = renderWorld->AddOceanSurface(oceanDesc);
+
+    directionalLight.type = RenderLight::Type::Directional;
+    directionalLight.flags = RenderLight::Flag::None;
+    directionalLight.linearColor = BE1::Color3::white;
+    directionalLight.intensity = 2.0f;
+    UpdateDirectionalLightDirection();
+
+    RenderLight::Desc directionalLightDesc;
+    directionalLightDesc.type = directionalLight.type;
+    directionalLightDesc.flags = directionalLight.flags;
+    directionalLightDesc.layer = directionalLight.layer;
+    directionalLightDesc.origin = directionalLight.origin;
+    directionalLightDesc.axis = directionalLight.axis;
+    directionalLightDesc.size = directionalLight.size;
+    directionalLightDesc.zNear = directionalLight.zNear;
+    directionalLightDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+    directionalLightDesc.linearColor = directionalLight.linearColor;
+    directionalLightDesc.intensity = directionalLight.intensity;
+    directionalLightDesc.fallOffExponent = directionalLight.fallOffExponent;
+    directionalLightDesc.shadowOffsetFactor = directionalLight.shadowOffsetFactor;
+    directionalLightDesc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
+    directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLightDesc);
+
+    EnvironmentLight::Desc environmentLightDesc;
+    environmentLightAdded = renderWorld->AddEnvironmentLight(environmentLightDesc);
+    if (environmentLightAdded) {
+        renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
+    }
+}
+
+void SceneOcean::Shutdown() {
+    if (!renderWorld) {
+        return;
+    }
+
+    if (directionalLight.renderLightHandle >= 0) {
+        renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
+        directionalLight.renderLightHandle = -1;
+    }
+
+    if (environmentLightAdded) {
+        renderWorld->RemoveEnvironmentLight();
+        environmentLightAdded = false;
+    }
+
+    if (oceanAdded) {
+        renderWorld->RemoveOceanSurface();
+        oceanAdded = false;
+    }
+
+    renderWorld = nullptr;
+}
+
+void SceneOcean::Update(uint64_t elapsedUsec) {
+    PROFILER_CPU_SCOPED_EVENT("SceneOcean::Update");
+}
+
+void SceneOcean::UpdateDirectionalLightDirection() {
+    // UI 에서는 태양이 있는 방향을 나타내지만 axis[0] 은 빛이 진행하는 방향이다.
+    directionalLight.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
+}
+
+#ifdef ENABLE_IMGUI
+void SceneOcean::BuildImGui() {
+    const OceanSurface *oceanSurface = renderWorld->GetOceanSurface();
+    if (!oceanSurface) {
+        return;
+    }
+
+    const float fontSize = ImGui::GetFontSize();
+    const auto roundedCollapsingHeader = [fontSize](const char *label) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, fontSize * 0.25f);
+        const bool isOpen = ImGui::CollapsingHeader(label);
+        ImGui::PopStyleVar();
+        return isOpen;
+    };
+
+    OceanSurface::Desc oceanSettings = oceanSurface->GetDesc();
+    GpuOcean::SimulationSettings &simulationSettings = oceanSettings.simulation;
+    GpuOcean::SurfaceSettings &surfaceSettings = oceanSettings.surface;
+    bool oceanSettingsChanged = false;
+    bool oceanCascadeSettingsChanged = false;
+    const float itemWidth = fontSize * 12.0f;
+
+    ImGui::TextUnformatted("Ocean");
+
+    static const char *fftSizeNames[] = { "256", "512", "1024", "2048" };
+    int fftSizeIndex = static_cast<int>(simulationSettings.fftSize);
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::Combo("FFT size", &fftSizeIndex, fftSizeNames, COUNT_OF(fftSizeNames))) {
+        simulationSettings.fftSize = static_cast<GpuFFT::FFTSize>(fftSizeIndex);
+        simulationSettings.InitCascades(simulationSettings.cascades[0].patchSize, simulationSettings.cascadeBeta);
+        oceanSettingsChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::DragFloat("Displacement scale", &simulationSettings.displacementScale, 0.01f, 0.0f, 10.0f, "%.3f")) {
+        simulationSettings.displacementScale = BE1::Max(simulationSettings.displacementScale, 0.0f);
+        oceanSettingsChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Choppiness", &simulationSettings.choppiness, 0.0f, 5.0f, "%.3f")) {
+        oceanSettingsChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Time scale", &simulationSettings.timeScale, 0.0f, 4.0f, "%.3f")) {
+        oceanSettingsChanged = true;
+    }
+
+    if (roundedCollapsingHeader("Spectrum##OceanSpectrumHeader")) {
+        static const char *spectrumModelNames[] = { "Phillips", "TMA" };
+        int spectrumModelIndex = static_cast<int>(simulationSettings.spectrumModel);
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::Combo("Spectrum model", &spectrumModelIndex, spectrumModelNames, COUNT_OF(spectrumModelNames))) {
+            simulationSettings.spectrumModel = static_cast<GpuOcean::SpectrumModel>(spectrumModelIndex);
+            oceanSettingsChanged = true;
+        }
+
+        if (simulationSettings.spectrumModel == GpuOcean::SpectrumModel::Phillips) {
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::DragFloat("Spectrum scale", &simulationSettings.phillips.spectrumScale, 0.00001f, 0.0f, 0.01f, "%.6f")) {
+                simulationSettings.phillips.spectrumScale = BE1::Max(simulationSettings.phillips.spectrumScale, 0.0f);
+                oceanSettingsChanged = true;
+            }
+
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::SliderFloat("Opposite wave damping", &simulationSettings.phillips.oppositeWaveDamping, 0.0f, 1.0f, "%.3f")) {
+                oceanSettingsChanged = true;
+            }
+        } else {
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::DragFloat("Spectrum scale", &simulationSettings.tma.spectrumScale, 0.01f, 0.0f, 100.0f, "%.4f")) {
+                simulationSettings.tma.spectrumScale = BE1::Max(simulationSettings.tma.spectrumScale, 0.0f);
+                oceanSettingsChanged = true;
+            }
+
+            float fetchKilometers = simulationSettings.tma.fetch * 0.001f;
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::DragFloat("Fetch", &fetchKilometers, 1.0f, 0.1f, 1000.0f, "%.1f km")) {
+                simulationSettings.tma.fetch = BE1::Max(fetchKilometers, 0.1f) * 1000.0f;
+                oceanSettingsChanged = true;
+            }
+
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::SliderFloat("Swell", &simulationSettings.tma.swell, 0.0f, 1.0f, "%.3f")) {
+                oceanSettingsChanged = true;
+            }
+
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::SliderFloat("Isotropic spread", &simulationSettings.tma.spread, 0.0f, 1.0f, "%.3f")) {
+                oceanSettingsChanged = true;
+            }
+        }
+
+        float windDirectionDegrees = simulationSettings.windDirection.ToAngle() * BE1::Math::MulRadianToDegree;
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Wind direction (from)", &windDirectionDegrees, -180.0f, 180.0f, "%.1f deg")) {
+            simulationSettings.windDirection.SetFromAngle(windDirectionDegrees * BE1::Math::MulDegreeToRadian);
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Wind speed", &simulationSettings.windSpeed, 0.1f, 60.0f, "%.2f m/s")) {
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Gravity", &simulationSettings.gravity, 1.0f, 20.0f, "%.2f m/s^2")) {
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Depth", &simulationSettings.depth, 1.0f, 0.01f, 10000.0f, "%.2f m")) {
+            simulationSettings.depth = BE1::Max(simulationSettings.depth, 0.01f);
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Small wave damping", &simulationSettings.smallWaveDamping, 0.0f, 0.5f, "%.4f m")) {
+            oceanSettingsChanged = true;
+        }
+    }
+
+    if (roundedCollapsingHeader("Cascades##OceanCascadesHeader")) {
+        float largestCascadePatchSize = simulationSettings.cascades[0].patchSize;
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Largest cascade patch size", &largestCascadePatchSize, 1.0f, 0.01f, 100000.0f, "%.2f m")) {
+            largestCascadePatchSize = BE1::Max(largestCascadePatchSize, 0.01f);
+            oceanCascadeSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Cascade beta", &simulationSettings.cascadeBeta, 0.01f, 1.0f, "%.3f")) {
+            oceanCascadeSettingsChanged = true;
+        }
+
+        if (oceanCascadeSettingsChanged) {
+            simulationSettings.InitCascades(largestCascadePatchSize, simulationSettings.cascadeBeta);
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Cascade fade scale", &surfaceSettings.cascadeFadeScale, 0.1f, 0.01f, 100.0f, "%.2f")) {
+            surfaceSettings.cascadeFadeScale = BE1::Max(surfaceSettings.cascadeFadeScale, 0.01f);
+            oceanSettingsChanged = true;
+        }
+
+        const uint32_t seedStep = 1u;
+        const uint32_t seedFastStep = 100u;
+        for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+            ImGui::PushID(static_cast<int>(cascadeIndex));
+            GpuOcean::CascadeDesc &cascadeDesc = simulationSettings.cascades[cascadeIndex];
+            if (ImGui::TreeNodeEx("CascadeSettings", ImGuiTreeNodeFlags_DefaultOpen, "Cascade %u (%.2f m)", cascadeIndex, cascadeDesc.patchSize)) {
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::InputScalar("Random seed", ImGuiDataType_U32, &cascadeDesc.randomSeed, &seedStep, &seedFastStep, "%u")) {
+                    oceanSettingsChanged = true;
+                }
+
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::DragFloat("Update rate", &simulationSettings.cascadeSettings[cascadeIndex].updateRate, 0.5f, 1.0f, 240.0f, "%.1f Hz")) {
+                    simulationSettings.cascadeSettings[cascadeIndex].updateRate = BE1::Max(simulationSettings.cascadeSettings[cascadeIndex].updateRate, 1.0f);
+                    oceanSettingsChanged = true;
+                }
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+    }
+
+    if (roundedCollapsingHeader("Surface##OceanSurfaceHeader")) {
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Surface height", &surfaceSettings.height, 0.1f, -10000.0f, 10000.0f, "%.2f m")) {
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Surface grid spacing", &surfaceSettings.gridSpacing, 0.05f, 0.01f, 100.0f, "%.2f m")) {
+            surfaceSettings.gridSpacing = BE1::Max(surfaceSettings.gridSpacing, 0.01f);
+            oceanSettingsChanged = true;
+        }
+
+        int surfaceGridTileCountPerAxis = static_cast<int>(surfaceSettings.gridTileCountPerAxis);
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderInt("Surface grid tiles per axis", &surfaceGridTileCountPerAxis, 1, GpuOcean::MaxSurfaceGridTileCountPerAxis)) {
+            surfaceSettings.gridTileCountPerAxis = static_cast<uint32_t>(surfaceGridTileCountPerAxis);
+            oceanSettingsChanged = true;
+        }
+
+        oceanSettingsChanged |= ImGui::Checkbox("Wireframe", &surfaceSettings.wireframe);
+        oceanSettingsChanged |= ImGui::Checkbox("Surface frustum culling", &surfaceSettings.frustumCulling);
+
+        ImGui::BeginDisabled(!surfaceSettings.frustumCulling);
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Surface max displacement", &surfaceSettings.maxDisplacement, 0.1f, 0.0f, 1000.0f, "%.2f m")) {
+            surfaceSettings.maxDisplacement = BE1::Max(surfaceSettings.maxDisplacement, 0.0f);
+            oceanSettingsChanged = true;
+        }
+        ImGui::EndDisabled();
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Surface roughness", &surfaceSettings.roughness, 0.02f, 1.0f, "%.3f")) {
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Normal map size", &surfaceSettings.normalMapSize, 0.1f, 0.01f, 1000.0f, "%.2f m")) {
+            surfaceSettings.normalMapSize = BE1::Max(surfaceSettings.normalMapSize, 0.01f);
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Normal strength", &surfaceSettings.normalStrength, 0.0f, 1.0f, "%.3f")) {
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Normal scroll speed scale", &surfaceSettings.normalScrollSpeedScale, 0.001f, 0.0f, 1.0f, "%.3f")) {
+            surfaceSettings.normalScrollSpeedScale = BE1::Max(surfaceSettings.normalScrollSpeedScale, 0.0f);
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::ColorEdit3("Water color", surfaceSettings.waterColor.Ptr(), ImGuiColorEditFlags_Float)) {
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::ColorEdit3("Scatter color", surfaceSettings.scatterColor.Ptr(), ImGuiColorEditFlags_Float)) {
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Scatter height", &surfaceSettings.scatterHeight, 0.05f, 0.01f, 1000.0f, "%.2f m")) {
+            surfaceSettings.scatterHeight = BE1::Max(surfaceSettings.scatterHeight, 0.01f);
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Fresnel F0", &surfaceSettings.fresnelF0, 0.0f, 1.0f, "%.3f")) {
+            oceanSettingsChanged = true;
+        }
+    }
+
+    if (roundedCollapsingHeader("Foam##OceanFoamHeader")) {
+        oceanSettingsChanged |= ImGui::Checkbox("Enabled##OceanFoamEnabled", &simulationSettings.foamEnabled);
+
+        ImGui::BeginDisabled(!simulationSettings.foamEnabled);
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::ColorEdit3("Foam color", surfaceSettings.foamColor.Ptr(), ImGuiColorEditFlags_Float)) {
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Detail map size", &surfaceSettings.foamDetailMapSize, 0.1f, 0.01f, 1000.0f, "%.2f m")) {
+            surfaceSettings.foamDetailMapSize = BE1::Max(surfaceSettings.foamDetailMapSize, 0.01f);
+            oceanSettingsChanged = true;
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Detail strength", &surfaceSettings.foamDetailStrength, 0.0f, 1.0f, "%.3f")) {
+            oceanSettingsChanged = true;
+        }
+
+        for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+            ImGui::PushID(static_cast<int>(cascadeIndex));
+            const GpuOcean::CascadeDesc &cascadeDesc = simulationSettings.cascades[cascadeIndex];
+            GpuOcean::CascadeSettings &cascadeSettings = simulationSettings.cascadeSettings[cascadeIndex];
+            if (ImGui::TreeNodeEx("FoamCascadeSettings", ImGuiTreeNodeFlags_DefaultOpen, "Cascade %u (%.2f m)", cascadeIndex, cascadeDesc.patchSize)) {
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::SliderFloat("Threshold", &cascadeSettings.foamThreshold, -1.0f, 1.0f, "%.3f")) {
+                    oceanSettingsChanged = true;
+                }
+
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::DragFloat("Generation rate", &cascadeSettings.foamGenerationRate, 0.05f, 0.0f, 20.0f, "%.3f 1/s")) {
+                    cascadeSettings.foamGenerationRate = BE1::Max(cascadeSettings.foamGenerationRate, 0.0f);
+                    oceanSettingsChanged = true;
+                }
+
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::DragFloat("Half-life", &cascadeSettings.foamHalfLife, 0.01f, 0.01f, 60.0f, "%.3f s")) {
+                    cascadeSettings.foamHalfLife = BE1::Max(cascadeSettings.foamHalfLife, 0.01f);
+                    oceanSettingsChanged = true;
+                }
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+        ImGui::EndDisabled();
+    }
+
+    if (oceanSettingsChanged) {
+        const bool settingsApplied = renderWorld->UpdateOceanSurface(oceanSettings);
+        assert(settingsApplied);
+        (void)settingsApplied;
+    }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Directional Light");
+    ImGui::TextDisabled("Azimuth: 0 = +X, 90 = +Y; Elevation: 0 = horizon");
+
+    const float directionalLightItemWidth = fontSize * 17.0f;
+    bool directionChanged = false;
+    bool lightingChanged = false;
+
+    ImGui::SetNextItemWidth(directionalLightItemWidth);
+    directionChanged |= ImGui::SliderFloat("Azimuth##OceanDirectionalLight", &directionalLightAzimuth, 0.0f, 360.0f, "%.1f deg");
+
+    ImGui::SetNextItemWidth(directionalLightItemWidth);
+    directionChanged |= ImGui::SliderFloat("Elevation##OceanDirectionalLight", &directionalLightElevation, -90.0f, 90.0f, "%.1f deg");
+
+    ImGui::SetNextItemWidth(directionalLightItemWidth);
+    lightingChanged |= ImGui::ColorEdit3("Color##OceanDirectionalLight", directionalLight.linearColor.Ptr(), ImGuiColorEditFlags_Float);
+
+    ImGui::SetNextItemWidth(directionalLightItemWidth);
+    if (ImGui::DragFloat("Intensity##OceanDirectionalLight", &directionalLight.intensity, 0.01f, 0.0f, 100.0f, "%.2f")) {
+        directionalLight.intensity = BE1::Max(directionalLight.intensity, 0.0f);
+        lightingChanged = true;
+    }
+
+    if (directionalLight.renderLightHandle < 0) {
+        return;
+    }
+
+    if (directionChanged) {
+        UpdateDirectionalLightDirection();
+        renderWorld->UpdateRenderLightTransform(directionalLight.renderLightHandle, directionalLight.origin, directionalLight.axis);
+    }
+
+    if (lightingChanged) {
+        renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
+    }
+}
+#endif

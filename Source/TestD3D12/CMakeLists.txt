@@ -24,6 +24,8 @@ set(SRC_FILES
     Scene/SceneMaterialBall.cpp
     Scene/SceneDebugDraw.h
     Scene/SceneDebugDraw.cpp
+    Scene/SceneOcean.h
+    Scene/SceneOcean.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico
@@ -190,6 +192,8 @@ set(SRC_FILES
     Render/Backend/RenderBackend_DrawSkySurf.cpp
     Render/Frontend/EnvironmentLight.h
     Render/Frontend/EnvironmentLight.cpp
+    Render/Frontend/OceanSurface.cpp
+    Render/Frontend/OceanSurface.h
     Render/Frontend/RenderLight.h
     Render/Frontend/RenderLight.cpp
     Render/Frontend/RenderObject.h

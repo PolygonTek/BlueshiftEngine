@@ -96,11 +96,6 @@ public:
     GpuOcean &                      GetGpuOcean() { return gpuOcean; }
     const GpuOcean &                GetGpuOcean() const { return gpuOcean; }
 
-                                    /// 메인 스레드에서 수정하는 기본 ocean 설정을 얻는다.
-    const GpuOcean::Settings &      GetOceanSettings() const { return oceanSettings; }
-    uint64_t                        GetOceanSettingsRevision() const { return oceanSettingsRevision; }
-    bool                            SetOceanSettings(const GpuOcean::Settings &settings);
-
     GpuSphericalHarmonics &         GetGpuSphericalHarmonics() { return gpuSphericalHarmonics; }
     const GpuSphericalHarmonics &   GetGpuSphericalHarmonics() const { return gpuSphericalHarmonics; }
 
@@ -220,8 +215,6 @@ private:
     SharedPtr<Texture>              dfgSumGGXTexture;
 
     GpuFFT                          gpuFFT;
-    GpuOcean::Settings              oceanSettings;
-    uint64_t                        oceanSettingsRevision = 1;
     GpuOcean                        gpuOcean;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     IBLBaker                        iblBaker;

@@ -112,6 +112,8 @@ void RenderFrameData::BeginFrame() {
     elapsedTime = 0.0f;
     elapsedPrevTime = 0.0f;
     frameCount = 0;
+    hasVisOceanSurface = false;
+    visOceanSurface.settingsRevision = 0;
     statEnabled = false;
     maxShaderSurfaceCount = 0;
     numLightCullingZBins = 0;
@@ -136,6 +138,18 @@ void RenderFrameData::EndFrame() {
 
     // 커맨드 버퍼 비우기.
     commands.used = 0;
+}
+
+void RenderFrameData::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision) {
+    if (hasVisOceanSurface) {
+        assert(visOceanSurface.settingsRevision == settingsRevision); // 현재 한 frame 에서는 하나의 ocean simulation 만 지원한다.
+        return;
+    }
+
+    visOceanSurface.simulationSettings = simulationSettings;
+    visOceanSurface.surfaceSettings = surfaceSettings;
+    visOceanSurface.settingsRevision = settingsRevision;
+    hasVisOceanSurface = true;
 }
 
 void RenderFrameData::ResetFrameData() {

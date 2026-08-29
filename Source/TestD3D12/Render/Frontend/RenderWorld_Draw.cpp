@@ -444,11 +444,15 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     // Add drawing surface of skybox.
     AddSkyBoxMeshes(frameData, renderCamera, visCamera);
 
+    if (hasOceanSurface) {
+        frameData->RegisterVisOceanSurface(oceanSurface.desc.simulation, oceanSurface.desc.surface, oceanSurface.revision);
+    }
+
     // 렌더 패스를 구성한다.
     renderPassBuilder.BuildMain(frameData, visCamera);
 
     // Post-Opaque 단계에서 그릴 ocean surface pipeline 을 준비한다.
-    PrepareOceanSurfacePipeline(frameData, visCamera);
+    PrepareOceanSurfacePipeline(visCamera);
 
     // 카메라의 debug draw 데이터를 구성한다.
     BuildDebugDraw(frameData, visCamera);
@@ -459,11 +463,12 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     viewCount++;
 }
 
-void RenderWorld::PrepareOceanSurfacePipeline(const RenderFrameData *frameData, VisCamera *visCamera) {
-    const GpuOcean::Settings &oceanSettings = frameData->GetOceanSettings();
-    if (!oceanSettings.enabled || BE1::HasFlag(visCamera->flags, RenderCamera::Flag::StaticOnly)) {
+void RenderWorld::PrepareOceanSurfacePipeline(VisCamera *visCamera) {
+    if (!hasOceanSurface || BE1::HasFlag(visCamera->flags, RenderCamera::Flag::StaticOnly)) {
         return;
     }
+
+    const GpuOcean::SurfaceSettings &surfaceSettings = oceanSurface.desc.surface;
 
     const SharedPtr<ShaderTemplate> &shaderTemplate = renderSystem->GetGpuOcean().GetSurfaceShaderTemplate();
     if (!shaderTemplate) {
@@ -480,7 +485,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(const RenderFrameData *frameData, 
 
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = nullptr;
-    graphicsPipelineDesc.rasterizerStateType = oceanSettings.surface.wireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidFrontSided;
+    graphicsPipelineDesc.rasterizerStateType = surfaceSettings.wireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidFrontSided;
     graphicsPipelineDesc.depthStencilStateType = visCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::LEqualWrite;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;

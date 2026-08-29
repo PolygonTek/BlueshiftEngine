@@ -456,6 +456,56 @@ void RenderWorld::RemoveEnvironmentLight() {
     hasEnvironmentLight = false;
 }
 
+bool RenderWorld::AddOceanSurface(const OceanSurface::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (hasOceanSurface) {
+        BE_WARNLOG("RenderWorld::AddOceanSurface: only one ocean surface is supported\n");
+        return false;
+    }
+
+    if (!desc.IsValid()) {
+        BE_WARNLOG("RenderWorld::AddOceanSurface: invalid description\n");
+        return false;
+    }
+
+    oceanSurface.Update(desc);
+    hasOceanSurface = true;
+    return true;
+}
+
+bool RenderWorld::UpdateOceanSurface(const OceanSurface::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasOceanSurface) {
+        BE_WARNLOG("RenderWorld::UpdateOceanSurface: no ocean surface has been added\n");
+        return false;
+    }
+
+    if (!desc.IsValid()) {
+        BE_WARNLOG("RenderWorld::UpdateOceanSurface: invalid description\n");
+        return false;
+    }
+
+    oceanSurface.Update(desc);
+    return true;
+}
+
+void RenderWorld::RemoveOceanSurface() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasOceanSurface) {
+        BE_WARNLOG("RenderWorld::RemoveOceanSurface: no ocean surface has been added\n");
+        return;
+    }
+
+    oceanSurface = OceanSurface();
+    hasOceanSurface = false;
+}
+
 void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
     const uint64_t previousFrameIndex = frameIndex;
     if (previousFrameIndex == 0) {

@@ -15,6 +15,7 @@
 #pragma once
 
 #include "EnvironmentLight.h"
+#include "OceanSurface.h"
 #include "RenderLight.h"
 #include "RenderObject.h"
 #include "Render/Mesh/GuiMesh.h"
@@ -122,6 +123,11 @@ public:
     void                        RequestEnvironmentLightCubemapRegeneration(const BE1::Vec3 &captureOrigin = BE1::Vec3::origin);
     void                        RemoveEnvironmentLight();
 
+    const OceanSurface *        GetOceanSurface() const { return hasOceanSurface ? &oceanSurface : nullptr; }
+    bool                        AddOceanSurface(const OceanSurface::Desc &desc);
+    bool                        UpdateOceanSurface(const OceanSurface::Desc &desc);
+    void                        RemoveOceanSurface();
+
     void                        SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial);
 
     void                        RenderScene(RenderCamera *renderCamera);
@@ -216,7 +222,7 @@ private:
     void                        BuildDebugDraw(RenderFrameData *frameData, VisCamera *visCamera);
     const DebugDrawData *       BuildDebugDrawData(RenderFrameData *frameData);
     void                        PrepareDebugDrawPipelines(VisCamera *visCamera);
-    void                        PrepareOceanSurfacePipeline(const RenderFrameData *frameData, VisCamera *visCamera);
+    void                        PrepareOceanSurfacePipeline(VisCamera *visCamera);
 
     void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
@@ -227,6 +233,8 @@ private:
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
     EnvironmentLight            environmentLight;
     bool                        hasEnvironmentLight = false;
+    OceanSurface                oceanSurface;
+    bool                        hasOceanSurface = false;
 
     bool                        frameActive = false;
     uint64_t                    frameIndex = 0;
