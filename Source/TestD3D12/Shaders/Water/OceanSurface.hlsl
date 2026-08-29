@@ -9,7 +9,7 @@
     "CBV(b1), " \
     "CBV(b2), " \
     "RootConstants(num32BitConstants=1, b3), " \
-    "DescriptorTable(SRV(t0, numDescriptors = 5)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = 4)), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 
 DECLARE_COMMON_STATIC_SAMPLERS
@@ -35,8 +35,7 @@ cbuffer OceanSurfaceDrawCB : register(b3) {
 Texture2DArray<float4> displacementAndDerivativeMap : register(t0);
 Texture2DArray<float> foamHistoryMap : register(t1);
 Texture2D<float4> foamDetailMap : register(t2);
-Texture2D<float4> waterDetailNormalMap : register(t3);
-StructuredBuffer<OceanSurfaceTileInstance> surfaceTileInstances : register(t4);
+StructuredBuffer<OceanSurfaceTileInstance> surfaceTileInstances : register(t3);
 
 static const float OceanCascadeLodThreshold = 0.05f;
 
@@ -228,25 +227,7 @@ CameraPassPSOutput PSMain(PSInput input) {
     // Surface normal
     const float3 unnormalizedNormal = float3(displacementZ_dy * displacementX_dy - displacementZ_dx * (1.0f + displacementY_dy), displacementZ_dx * displacementX_dy - displacementZ_dy * (1.0f + displacementX_dx), J);
     const float normalLengthSquared = dot(unnormalizedNormal, unnormalizedNormal);
-    float3 normal = normalLengthSquared > 0.0f ? unnormalizedNormal * rsqrt(normalLengthSquared) : float3(0.0f, 0.0f, 1.0f);
-
-    if (oceanSurfaceParams.normalStrength > 0.0f) {
-        float3 surfaceTangent = float3(1.0f + displacementX_dx, displacementX_dy, displacementZ_dx);
-        surfaceTangent -= normal * dot(surfaceTangent, normal);
-        const float tangentLengthSquared = dot(surfaceTangent, surfaceTangent);
-        if (tangentLengthSquared > 0.0f) {
-            surfaceTangent *= rsqrt(tangentLengthSquared);
-        } else {
-            const float3 referenceAxis = abs(normal.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(0.0f, 1.0f, 0.0f);
-            surfaceTangent = normalize(cross(referenceAxis, normal));
-        }
-        const float3 surfaceBitangent = cross(normal, surfaceTangent);
-
-        const float2 normalMapUV = input.samplePositionXY / oceanSurfaceParams.normalMapSize - frac(oceanSurfaceParams.normalMapUVOffset);
-        const float2 detailNormalXY = (waterDetailNormalMap.Sample(linearWrapSampler, normalMapUV).xy * 2.0f - 1.0f) * oceanSurfaceParams.normalStrength;
-        const float detailNormalZ = sqrt(saturate(1.0f - dot(detailNormalXY, detailNormalXY)));
-        normal = normalize(surfaceTangent * detailNormalXY.x + surfaceBitangent * detailNormalXY.y + normal * detailNormalZ);
-    }
+    const float3 normal = normalLengthSquared > 0.0f ? unnormalizedNormal * rsqrt(normalLengthSquared) : float3(0.0f, 0.0f, 1.0f);
 
     const float3 V = viewVector / max(viewDistance, 0.0001f);
     const float NdotV = saturate(dot(normal, V));

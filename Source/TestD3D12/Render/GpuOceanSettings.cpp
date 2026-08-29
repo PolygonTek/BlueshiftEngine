@@ -22,12 +22,12 @@ GpuOcean::SimulationSettings::SimulationSettings() {
         cascadeSettings[1] = { 60.0f, 0.75f, 4.0f, 0.4f };
     } else if constexpr (CascadeCount == 3) {
         cascadeSettings[0] = { 30.0f, 0.7f, 4.0f, 0.75f };
-        cascadeSettings[1] = { 45.0f, 0.75f, 4.0f, 0.4f };
+        cascadeSettings[1] = { 45.0f, 0.75f, 2.0f, 0.4f };
         cascadeSettings[2] = { 60.0f, 0.8f, 0.0f, 0.2f };
     } else {
         cascadeSettings[0] = { 30.0f, 0.7f, 4.0f, 0.75f };
-        cascadeSettings[1] = { 40.0f, 0.75f, 4.0f, 0.55f };
-        cascadeSettings[2] = { 50.0f, 0.8f, 4.0f, 0.3f };
+        cascadeSettings[1] = { 40.0f, 0.75f, 3.0f, 0.55f };
+        cascadeSettings[2] = { 50.0f, 0.8f, 2.0f, 0.3f };
         cascadeSettings[3] = { 60.0f, 0.82f, 0.0f, 0.2f };
     }
 
@@ -146,6 +146,6 @@ bool GpuOcean::SimulationSettings::IsValid() const {
 
 bool GpuOcean::SurfaceSettings::IsValid() const {
     return gridTileCountPerAxis > 0 && gridTileCountPerAxis <= MaxSurfaceGridTileCountPerAxis &&
-        gridSpacing > 0.0f && normalMapSize > 0.0f && scatterHeight > 0.0f && cascadeFadeScale > 0.0f &&
+        gridSpacing > 0.0f && scatterHeight > 0.0f && cascadeFadeScale > 0.0f &&
         (foamDetailStrength <= 0.0f || foamDetailMapSize > 0.0f);
 }

@@ -280,14 +280,6 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
         return false;
     }
 
-    RHI::Texture *waterDetailNormalMap = waterDetailNormalTexture ? waterDetailNormalTexture->GetReadyRHITexture() : nullptr;
-    if (!waterDetailNormalMap && textureManager.flatNormalTexture) {
-        waterDetailNormalMap = textureManager.flatNormalTexture->GetReadyRHITexture();
-    }
-    if (!waterDetailNormalMap) {
-        return false;
-    }
-
     OceanSurfaceTileBatch tileBatch;
     if (!BuildOceanSurfaceTileBatch(surfaceSettings, surfaceView, tileBatch)) {
         return false;
@@ -318,13 +310,6 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     params.gridSpacing = surfaceSettings.gridSpacing;
     params.surfaceHeight = surfaceSettings.height;
     params.roughness = surfaceSettings.roughness;
-    params.normalMapSize = surfaceSettings.normalMapSize;
-    params.normalStrength = surfaceSettings.normalStrength;
-    BE1::Vec2 windFlowDirection = -simulationSettings.windDirection;
-    windFlowDirection.Normalize();
-    const float normalMapScrollSpeed = simulationSettings.windSpeed * surfaceSettings.normalScrollSpeedScale;
-    const float normalMapUVOffsetScale = simulationTime * normalMapScrollSpeed / surfaceSettings.normalMapSize;
-    params.normalMapUVOffset = float2(windFlowDirection.x * normalMapUVOffsetScale, windFlowDirection.y * normalMapUVOffsetScale);
     const BE1::Color3 linearWaterColor = surfaceSettings.waterColor.SRGBToLinear();
     params.waterColor = float3(linearWaterColor.r, linearWaterColor.g, linearWaterColor.b);
     params.fresnelF0 = surfaceSettings.fresnelF0;
@@ -354,8 +339,7 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     RHI::renderer->SetTexture(commandList, 0, false, fieldTextureArray);
     RHI::renderer->SetTexture(commandList, 1, false, foamHistoryTextureArray);
     RHI::renderer->SetTexture(commandList, 2, false, foamDetailMap);
-    RHI::renderer->SetTexture(commandList, 3, false, waterDetailNormalMap);
-    RHI::renderer->SetBuffer(commandList, 4, false, tileInstanceBuffer);
+    RHI::renderer->SetBuffer(commandList, 3, false, tileInstanceBuffer);
 
     if (drawStats) {
         drawStats->instanceBufferAllocCount = 1;

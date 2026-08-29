@@ -157,16 +157,13 @@ public:
 
         bool                        wireframe = false;
         float                       roughness = 0.08f;
-        float                       normalMapSize = 8.0f;           ///< detail normal map 이 world-space 에서 한 번 반복되는 크기 (m)
-        float                       normalStrength = 0.35f;
-        float                       normalScrollSpeedScale = 0.025f;///< windSpeed 에 곱해 detail normal map 의 이동 속도를 정하는 배율
+        float                       fresnelF0 = 0.02f;
         BE1::Color3                 waterColor = BE1::Color3(0.061f, 0.18f, 0.25f); ///< sRGB water body color
         BE1::Color3                 scatterColor = BE1::Color3(0.0f, 0.34f, 0.38f); ///< 파도 마루에 더할 sRGB 산란색
-        float                       scatterHeight = 7.0f;           ///< 산란색이 최대 강도에 도달하는 기준 수면 위 높이 (m)
+        float                       scatterHeight = 15.0f;          ///< 산란색이 최대 강도에 도달하는 기준 수면 위 높이 (m)
         BE1::Color3                 foamColor = BE1::Color3(0.955f, 0.978f, 1.0f); ///< sRGB foam color
         float                       foamDetailMapSize = 16.0f;      ///< foam detail map 이 world-space 에서 한 번 반복되는 크기 (m)
         float                       foamDetailStrength = 1.0f;      ///< foam history mask 에 foam detail map 을 적용하는 강도 [0, 1]
-        float                       fresnelF0 = 0.02f;
         float                       cascadeFadeScale = 20.0f;       ///< cascade patch size 에 곱해 거리 기반 fade 구간을 정하는 배율
 
         bool                        IsValid() const;
@@ -242,7 +239,6 @@ private:
     SharedPtr<ShaderTemplate>       resolveOceanFieldsShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceShaderTemplate;
     SharedPtr<Texture>              foamDetailTexture;
-    SharedPtr<Texture>              waterDetailNormalTexture;
 
     SharedPtr<ShaderPipeline>       generatePhillipsInitialSpectrumPipeline;
     SharedPtr<ShaderPipeline>       generateTMAInitialSpectrumPipeline;

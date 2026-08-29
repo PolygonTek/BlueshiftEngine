@@ -298,23 +298,6 @@ void SceneOcean::BuildImGui() {
         }
 
         ImGui::SetNextItemWidth(itemWidth);
-        if (ImGui::DragFloat("Normal map size", &surfaceSettings.normalMapSize, 0.1f, 0.01f, 1000.0f, "%.2f m")) {
-            surfaceSettings.normalMapSize = BE1::Max(surfaceSettings.normalMapSize, 0.01f);
-            oceanSettingsChanged = true;
-        }
-
-        ImGui::SetNextItemWidth(itemWidth);
-        if (ImGui::SliderFloat("Normal strength", &surfaceSettings.normalStrength, 0.0f, 1.0f, "%.3f")) {
-            oceanSettingsChanged = true;
-        }
-
-        ImGui::SetNextItemWidth(itemWidth);
-        if (ImGui::DragFloat("Normal scroll speed scale", &surfaceSettings.normalScrollSpeedScale, 0.001f, 0.0f, 1.0f, "%.3f")) {
-            surfaceSettings.normalScrollSpeedScale = BE1::Max(surfaceSettings.normalScrollSpeedScale, 0.0f);
-            oceanSettingsChanged = true;
-        }
-
-        ImGui::SetNextItemWidth(itemWidth);
         if (ImGui::ColorEdit3("Water color", surfaceSettings.waterColor.Ptr(), ImGuiColorEditFlags_Float)) {
             oceanSettingsChanged = true;
         }

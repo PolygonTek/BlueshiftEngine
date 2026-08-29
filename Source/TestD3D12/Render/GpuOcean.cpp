@@ -46,11 +46,6 @@ void GpuOcean::Init() {
         foamDetailTexture.reset();
     }
 
-    waterDetailNormalTexture = textureManager.GetTexture("Data/EngineTextures/water_n.PNG", Texture::Flag::NormalMap | Texture::Flag::LinearColorSpace);
-    if (waterDetailNormalTexture == textureManager.defaultTexture) {
-        BE_WARNLOG("GpuOcean::Init: failed to load ocean detail normal texture\n");
-        waterDetailNormalTexture.reset();
-    }
     CreateSurfaceGrid();
 
     generatePhillipsInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generatePhillipsInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=0");
@@ -88,7 +83,6 @@ void GpuOcean::Shutdown() {
     resolveOceanFieldsShaderTemplate.reset();
     surfaceShaderTemplate.reset();
     foamDetailTexture.reset();
-    waterDetailNormalTexture.reset();
 }
 
 void GpuOcean::UpdatePipelineBuildState() {
