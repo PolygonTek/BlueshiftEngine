@@ -18,23 +18,23 @@
 GpuOcean::SimulationSettings::SimulationSettings() {
     // 가장 짧은 파장 cascade 는 기본적으로 새 foam 을 만들지 않고 기존 history 만 감쇠시킨다.
     if constexpr (CascadeCount == 2) {
-        cascadeSettings[0] = { 30.0f, 0.8f, 4.0f, 0.75f };
-        cascadeSettings[1] = { 60.0f, 0.4f, 0.0f, 0.2f };
+        cascadeSettings[0] = { 30.0f, 0.7f, 4.0f, 0.75f };
+        cascadeSettings[1] = { 60.0f, 0.75f, 4.0f, 0.4f };
     } else if constexpr (CascadeCount == 3) {
-        cascadeSettings[0] = { 30.0f, 0.8f, 4.0f, 0.75f };
-        cascadeSettings[1] = { 45.0f, 0.55f, 1.0f, 0.4f };
-        cascadeSettings[2] = { 60.0f, 0.4f, 0.0f, 0.2f };
+        cascadeSettings[0] = { 30.0f, 0.7f, 4.0f, 0.75f };
+        cascadeSettings[1] = { 45.0f, 0.75f, 4.0f, 0.4f };
+        cascadeSettings[2] = { 60.0f, 0.8f, 0.0f, 0.2f };
     } else {
-        cascadeSettings[0] = { 30.0f, 0.8f, 4.0f, 0.75f };
-        cascadeSettings[1] = { 40.0f, 0.65f, 2.0f, 0.55f };
-        cascadeSettings[2] = { 50.0f, 0.5f, 0.5f, 0.3f };
-        cascadeSettings[3] = { 60.0f, 0.4f, 0.0f, 0.2f };
+        cascadeSettings[0] = { 30.0f, 0.7f, 4.0f, 0.75f };
+        cascadeSettings[1] = { 40.0f, 0.75f, 4.0f, 0.55f };
+        cascadeSettings[2] = { 50.0f, 0.8f, 4.0f, 0.3f };
+        cascadeSettings[3] = { 60.0f, 0.82f, 0.0f, 0.2f };
     }
 
     for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
         cascades[cascadeIndex].randomSeed = 123 * (cascadeIndex + 1);
     }
-    InitCascades(1024.0f, 0.5f);
+    InitCascades(512.0f, 0.5f);
 }
 
 void GpuOcean::SimulationSettings::InitCascades(float largestPatchSize, float beta) {
@@ -146,6 +146,6 @@ bool GpuOcean::SimulationSettings::IsValid() const {
 
 bool GpuOcean::SurfaceSettings::IsValid() const {
     return gridTileCountPerAxis > 0 && gridTileCountPerAxis <= MaxSurfaceGridTileCountPerAxis &&
-        gridSpacing > 0.0f && normalMapSize > 0.0f && cascadeFadeScale > 0.0f &&
+        gridSpacing > 0.0f && normalMapSize > 0.0f && scatterHeight > 0.0f && cascadeFadeScale > 0.0f &&
         (foamDetailStrength <= 0.0f || foamDetailMapSize > 0.0f);
 }

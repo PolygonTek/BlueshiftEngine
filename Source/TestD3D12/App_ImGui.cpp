@@ -984,6 +984,17 @@ void App::BuildImGuiOverlay() {
                 }
 
                 ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::ColorEdit3("Scatter color", surfaceSettings.scatterColor.Ptr(), ImGuiColorEditFlags_Float)) {
+                    oceanSettingsChanged = true;
+                }
+
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::DragFloat("Scatter height", &surfaceSettings.scatterHeight, 0.05f, 0.01f, 1000.0f, "%.2f m")) {
+                    surfaceSettings.scatterHeight = BE1::Max(surfaceSettings.scatterHeight, 0.01f);
+                    oceanSettingsChanged = true;
+                }
+
+                ImGui::SetNextItemWidth(itemWidth);
                 if (ImGui::SliderFloat("Fresnel F0", &surfaceSettings.fresnelF0, 0.0f, 1.0f, "%.3f")) {
                     oceanSettingsChanged = true;
                 }

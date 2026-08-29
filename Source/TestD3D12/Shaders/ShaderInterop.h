@@ -443,6 +443,8 @@ struct OceanSurfaceParams {
     float displacementScale;
     float3 waterColor;
     float fresnelF0;
+    float3 scatterColor;
+    float scatterHeight;
     float3 foamColor;
     float cascadeFadeScale;
     float gridSnapSpacing;
@@ -455,7 +457,7 @@ struct OceanSurfaceParams {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanSurfaceParams) == 112, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanSurfaceParams) == 128, "OceanSurfaceParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanSurfaceTileInstance {

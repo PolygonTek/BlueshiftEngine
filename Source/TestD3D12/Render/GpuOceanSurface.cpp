@@ -328,6 +328,9 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     const BE1::Color3 linearWaterColor = surfaceSettings.waterColor.SRGBToLinear();
     params.waterColor = float3(linearWaterColor.r, linearWaterColor.g, linearWaterColor.b);
     params.fresnelF0 = surfaceSettings.fresnelF0;
+    const BE1::Color3 linearScatterColor = surfaceSettings.scatterColor.SRGBToLinear();
+    params.scatterColor = float3(linearScatterColor.r, linearScatterColor.g, linearScatterColor.b);
+    params.scatterHeight = surfaceSettings.scatterHeight;
     const BE1::Color3 linearFoamColor = surfaceSettings.foamColor.SRGBToLinear();
     params.foamColor = float3(linearFoamColor.r, linearFoamColor.g, linearFoamColor.b);
     params.foamDetailMapSize = surfaceSettings.foamDetailMapSize;

@@ -252,7 +252,9 @@ CameraPassPSOutput PSMain(PSInput input) {
 
     const float3 reflectionDir = reflect(-V, normal);
     const float3 reflection = SampleOceanReflection(reflectionDir, oceanSurfaceParams.roughness);
-    const float3 waterBodyColor = oceanSurfaceParams.waterColor * lerp(0.35f, 1.0f, NdotV);
+    const float normalizedCrestHeight = saturate((input.worldPosition.z - oceanSurfaceParams.surfaceHeight) / oceanSurfaceParams.scatterHeight);
+    const float crestScatter = normalizedCrestHeight * normalizedCrestHeight;
+    const float3 waterBodyColor = oceanSurfaceParams.waterColor * lerp(0.35f, 1.0f, NdotV) + oceanSurfaceParams.scatterColor * crestScatter;
     float3 color = lerp(waterBodyColor, reflection, fresnel);
 
     if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0u) {
