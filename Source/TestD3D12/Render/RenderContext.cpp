@@ -598,7 +598,7 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
     }
 
     frameData->BeginFrame();
-    frameData->SetOceanSettings(renderSystem->GetOceanSettings());
+    frameData->SetOceanSettings(renderSystem->GetOceanSettings(), renderSystem->GetOceanSettingsRevision());
 
     // BeginFrame 에서 frame fence 완료를 기다렸으므로, 렌더 커맨드에 밀어 넣었던 render work 들을 안전하게 완료한다.
     renderSystem->CompleteRenderWorks(frameData);

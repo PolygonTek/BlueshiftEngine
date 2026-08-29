@@ -185,10 +185,16 @@ void RenderSystem::UpdateFrame() {
     }
 }
 
-void RenderSystem::SetOceanSettings(const GpuOcean::Settings &settings) {
+bool RenderSystem::SetOceanSettings(const GpuOcean::Settings &settings) {
     assert(BE1::Engine::IsInMainThread());
 
+    if (!settings.IsValid()) {
+        return false;
+    }
+
     oceanSettings = settings;
+    oceanSettingsRevision++;
+    return true;
 }
 
 RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {

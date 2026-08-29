@@ -139,6 +139,10 @@ static const uint OceanSurfaceGridLodCount = 3;
 static const uint OceanFoamOptionBitEnabled = 1u << 0;
 static const uint OceanFoamOptionBitResetHistory = 1u << 1;
 
+#ifdef __cplusplus
+static_assert(OceanCascadeCount >= 2 && OceanCascadeCount <= 4, "GPU ocean supports between two and four cascades");
+#endif
+
 static const uint FFTRadix2_256StageCount = 8;
 static const uint FFTRadix2_256ButterflyCount = 256 / 2;
 static const uint FFTRadix2_256BlockSize = FFTRadix2_256ButterflyCount;
@@ -377,7 +381,8 @@ struct OceanPhillipsInitialSpectrumParams {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanPhillipsInitialSpectrumParams) == 80, "OceanPhillipsInitialSpectrumParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanPhillipsInitialSpectrumParams) == 32 + sizeof(OceanInitialSpectrumCascadeParams) * OceanCascadeCount,
+    "OceanPhillipsInitialSpectrumParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanTMAInitialSpectrumParams {
@@ -396,7 +401,8 @@ struct OceanTMAInitialSpectrumParams {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanTMAInitialSpectrumParams) == 96, "OceanTMAInitialSpectrumParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanTMAInitialSpectrumParams) == 48 + sizeof(OceanInitialSpectrumCascadeParams) * OceanCascadeCount,
+    "OceanTMAInitialSpectrumParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanTimeSpectrumParams {

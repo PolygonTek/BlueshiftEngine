@@ -98,7 +98,8 @@ public:
 
                                     /// 메인 스레드에서 수정하는 기본 ocean 설정을 얻는다.
     const GpuOcean::Settings &      GetOceanSettings() const { return oceanSettings; }
-    void                            SetOceanSettings(const GpuOcean::Settings &settings);
+    uint64_t                        GetOceanSettingsRevision() const { return oceanSettingsRevision; }
+    bool                            SetOceanSettings(const GpuOcean::Settings &settings);
 
     GpuSphericalHarmonics &         GetGpuSphericalHarmonics() { return gpuSphericalHarmonics; }
     const GpuSphericalHarmonics &   GetGpuSphericalHarmonics() const { return gpuSphericalHarmonics; }
@@ -220,6 +221,7 @@ private:
 
     GpuFFT                          gpuFFT;
     GpuOcean::Settings              oceanSettings;
+    uint64_t                        oceanSettingsRevision = 1;
     GpuOcean                        gpuOcean;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     IBLBaker                        iblBaker;

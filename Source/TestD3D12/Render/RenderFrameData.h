@@ -238,7 +238,8 @@ public:
     void                            SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount);
 
     const GpuOcean::Settings &      GetOceanSettings() const { return oceanSettings; }
-    void                            SetOceanSettings(const GpuOcean::Settings &settings) { oceanSettings = settings; }
+    uint64_t                        GetOceanSettingsRevision() const { return oceanSettingsRevision; }
+    void                            SetOceanSettings(const GpuOcean::Settings &settings, uint64_t revision) { oceanSettings = settings; oceanSettingsRevision = revision; }
 
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
@@ -333,6 +334,7 @@ private:
     float                           elapsedPrevTime = 0.0f;
     uint32_t                        frameCount = 0;
     GpuOcean::Settings              oceanSettings;
+    uint64_t                        oceanSettingsRevision = 0;
 
     bool                            statEnabled = false;
 

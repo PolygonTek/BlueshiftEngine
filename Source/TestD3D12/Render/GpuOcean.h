@@ -47,7 +47,6 @@ public:
 
     static constexpr uint32_t       FieldTextureSliceCount = 2 * CascadeCount;
     static constexpr uint32_t       SurfaceGridResolution = 256;
-    static constexpr uint32_t       SurfaceGridIndexCount = (SurfaceGridResolution - 1) * (SurfaceGridResolution - 1) * 6;
     static constexpr uint32_t       SurfaceGridLodCount = 3;
     static constexpr uint32_t       MaxSurfaceGridTileCountPerAxis = 32;
 
@@ -99,30 +98,21 @@ public:
     };
 
     struct CascadeSettings {
-        float                       updateRate = 60.0f;             ///< 캐스캐이드 field 갱신 빈도 (Hz). simulation time 을 기준으로 스케줄링한다.
+        float                       updateRate = 60.0f;             ///< 캐스케이드 field 갱신 빈도 (Hz). simulation time 을 기준으로 스케줄링한다.
         float                       foamThreshold = 0.5f;           ///< Jacobian 이 이 값보다 작을 때 foam 생성을 시작한다.
         float                       foamGenerationRate = 1.0f;      ///< Jacobian 압축량을 foam history 생성률로 변환하는 배율 (1/s)
         float                       foamHalfLife = 1.0f;            ///< 생성된 foam history 가 절반으로 감소하는 시간 (s)
     };
 
-    struct Settings {
-        bool                        enabled = true;
-        float                       surfaceHeight = 0.0f;
-        float                       surfaceGridSpacing = 1.0f;
-        uint32_t                    surfaceGridTileCountPerAxis = 16;
-        bool                        surfaceWireframe = false;
-        bool                        surfaceFrustumCulling = true;
-        float                       surfaceMaxDisplacement = 32.0f; ///< CPU tile culling bounds 를 모든 축으로 확장하는 최대 수면 변위 (m)
-        float                       surfaceRoughness = 0.08f;
-        float                       surfaceNormalMapSize = 8.0f;    ///< detail normal map 이 world-space 에서 한 번 반복되는 크기 (m)
-        float                       surfaceNormalStrength = 0.35f;
-        float                       surfaceNormalScrollSpeedScale = 0.025f; ///< windSpeed 에 곱해 detail normal map 의 이동 속도를 정하는 배율
-        BE1::Color3                 surfaceWaterColor = BE1::Color3(0.061f, 0.215f, 0.271f); ///< sRGB water body color
-        BE1::Color3                 surfaceFoamColor = BE1::Color3(0.955f, 0.978f, 1.0f); ///< sRGB foam color
-        float                       surfaceFoamDetailMapSize = 16.0f; ///< foam detail map 이 world-space 에서 한 번 반복되는 크기 (m)
-        float                       surfaceFoamDetailStrength = 1.0f; ///< foam history mask 에 foam detail map 을 적용하는 강도 [0, 1]
-        float                       surfaceFresnelF0 = 0.02f;
-        float                       surfaceCascadeFadeScale = 20.0f; ///< cascade patch size 에 곱해 거리 기반 fade 구간을 정하는 배율
+    struct SimulationSettings {
+        enum class ChangeFlag : uint8_t {
+            None                    = 0,
+            RecreateResources       = BIT(0),
+            RegenInitialSpectrum    = BIT(1),
+            ResetFoamHistory        = BIT(2)
+        };
+
+        friend constexpr std::true_type EnableBitmaskEnum(ChangeFlag) noexcept { return {}; }
 
         GpuFFT::FFTSize             fftSize = GpuFFT::FFTSize::FFT512;
         float                       displacementScale = 1.0f;       ///< linear scale applied to the final displacement and derivatives
@@ -144,31 +134,48 @@ public:
 
         bool                        foamEnabled = true;             ///< foam 생성, history 갱신 및 surface 합성을 활성화한다.
 
-        Settings() {
-            for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
-                cascades[cascadeIndex].randomSeed = 123 * (cascadeIndex + 1);
-            }
-            InitCascades(1024.0f, 0.5f);
-
-            cascadeSettings[0].updateRate = 30.0f;
-            cascadeSettings[0].foamThreshold = 0.8f;
-            cascadeSettings[0].foamGenerationRate = 4.0f;
-            cascadeSettings[0].foamHalfLife = 0.75f;
-
-            cascadeSettings[1].updateRate = 45.0f;
-            cascadeSettings[1].foamThreshold = 0.55f;
-            cascadeSettings[1].foamGenerationRate = 1.0f;
-            cascadeSettings[1].foamHalfLife = 0.4f;
-
-            // 가장 짧은 파장 cascade 는 기본적으로 새 foam 을 만들지 않고 기존 history 만 감쇠시킨다.
-            cascadeSettings[2].updateRate = 60.0f;
-            cascadeSettings[2].foamThreshold = 0.4f;
-            cascadeSettings[2].foamGenerationRate = 0.0f;
-            cascadeSettings[2].foamHalfLife = 0.2f;
-        }
+        SimulationSettings();
 
                                     /// 가장 큰 patch size 와 고주파 경계 비율로 각 cascade 의 patch size 와 파수 범위를 자동 초기화한다.
         void                        InitCascades(float largestPatchSize, float beta);
+
+                                    /// spectrum model parameter 가 같은지 검사한다.
+        bool                        HasSameSpectrumModelParameters(const SimulationSettings &rhs) const;
+
+                                    /// rhs 설정을 적용할 때 필요한 GPU 상태 변경을 분류한다.
+        ChangeFlag                  ClassifyChanges(const SimulationSettings &rhs) const;
+
+        bool                        IsValid() const;
+    };
+
+    struct SurfaceSettings {
+        float                       gridSpacing = 1.0f;
+        uint32_t                    gridTileCountPerAxis = 16;
+        float                       height = 0.0f;
+        float                       maxDisplacement = 32.0f;        ///< CPU tile culling bounds 를 모든 축으로 확장하는 최대 수면 변위 (m)
+        bool                        frustumCulling = true;
+
+        bool                        wireframe = false;
+        float                       roughness = 0.08f;
+        float                       normalMapSize = 8.0f;           ///< detail normal map 이 world-space 에서 한 번 반복되는 크기 (m)
+        float                       normalStrength = 0.35f;
+        float                       normalScrollSpeedScale = 0.025f; ///< windSpeed 에 곱해 detail normal map 의 이동 속도를 정하는 배율
+        BE1::Color3                 waterColor = BE1::Color3(0.061f, 0.215f, 0.271f); ///< sRGB water body color
+        BE1::Color3                 foamColor = BE1::Color3(0.955f, 0.978f, 1.0f); ///< sRGB foam color
+        float                       foamDetailMapSize = 16.0f;      ///< foam detail map 이 world-space 에서 한 번 반복되는 크기 (m)
+        float                       foamDetailStrength = 1.0f;     ///< foam history mask 에 foam detail map 을 적용하는 강도 [0, 1]
+        float                       fresnelF0 = 0.02f;
+        float                       cascadeFadeScale = 20.0f;      ///< cascade patch size 에 곱해 거리 기반 fade 구간을 정하는 배율
+
+        bool                        IsValid() const;
+    };
+
+    struct Settings {
+        bool                        enabled = true;
+        SimulationSettings          simulation;
+        SurfaceSettings             surface;
+
+        bool                        IsValid() const { return simulation.IsValid() && surface.IsValid(); }
     };
 
     void                            Init();
@@ -180,11 +187,8 @@ public:
     bool                            HasPipelineBuildFailed() const { return pipelineBuildFailed; }
 
     const SharedPtr<ShaderTemplate> &GetSurfaceShaderTemplate() const { return surfaceShaderTemplate; }
-    uint32_t                        GetSurfaceGridIndexCount() const { return surfaceGridIndexBuffer ? SurfaceGridIndexCount : 0; }
 
-                                    /// 주어진 index 의 cascade 설정을 얻는다.
-    const CascadeDesc *             GetCascadeDesc(uint32_t cascadeIndex) const { return cascadeIndex < CascadeCount ? &settings.cascades[cascadeIndex] : nullptr; }
-    const CascadeSettings *         GetCascadeSettings(uint32_t cascadeIndex) const { return cascadeIndex < CascadeCount ? &settings.cascadeSettings[cascadeIndex] : nullptr; }
+    bool                            IsSurfaceGridReady() const { return surfaceGridIndexBuffer != nullptr; }
 
                                     /// 현재 모든 cascade 의 출력 field (displacement/derivative textures) 가 준비되었는지 여부를 리턴한다.
     bool                            AreCascadeOutputsReady() const { return cascadeOutputsReady; }
@@ -192,13 +196,15 @@ public:
                                     /// 짝수 slice 에 displacement, 홀수 slice 에 derivative 를 저장하는 field texture array 를 얻는다.
     const RHI::Texture *            GetFieldTextureArray() const { return fieldTextureArray; }
 
-                                    /// 설정 변경을 적용하고 모든 cascade 의 출력 field 를 갱신한다.
-                                    /// enabled 가 false 이면 기존 리소스와 출력은 유지하고 시뮬레이션을 진행하지 않는다.
-    bool                            Update(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const Settings &newSettings, float deltaTime);
+                                    /// revision 이 갱신된 시뮬레이션 설정을 내부 상태에 적용한다.
+    void                            ApplySimulationSettings(const SimulationSettings &newSettings, uint64_t revision);
+
+                                    /// 현재 시뮬레이션 설정으로 모든 cascade 의 출력 field 를 갱신한다.
+    bool                            Update(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, float deltaTime);
 
                                     /// 현재 cascade 출력으로 카메라 중심의 NxN 수면 grid 중 view volume 에 보이는 tile 을 렌더링한다.
     bool                            DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
-                                        const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const Settings &renderSettings, const SurfaceView &surfaceView,
+                                        const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const SurfaceSettings &surfaceSettings, const SurfaceView &surfaceView,
                                         SurfaceDrawStats *drawStats = nullptr) const;
 
 private:
@@ -214,8 +220,6 @@ private:
     void                            DestroySurfaceGrid();
     void                            ResetCascadeUpdateSchedule();
 
-    bool                            InitialSpectrumSettingsEqual(const Settings &lhs, const Settings &rhs) const;
-
                                     /// 각 cascade 별로 displacement, derivative, foam history texture 를 업데이트한다.
     bool                            UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &baseParams, const OceanResolveFieldsParams &resolveParams);
 
@@ -226,20 +230,17 @@ private:
     bool                            GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &commonParams);
 
                                     /// 초기 스펙트럼을 시간에 따라 진화시키고 IFFT 입력용 complex spectrum 을 생성한다.
-                                    /// initialSpectrumTextureArray 는 짝수 정사각형 크기의 RGBA16F/RGBA32F 2D texture array 여야 한다.
-                                    /// outputSpectrumBuffer 는 N * N * OceanSpectrumComplexPlaneCount 개의 float2 를 저장하는 structured buffer 여야 한다.
+                                    /// 멤버 initialSpectrumTextureArray 는 짝수 정사각형 크기의 RGBA16F/RGBA32F 2D texture array 여야 한다.
+                                    /// 멤버 timeSpectrumBuffer 는 N * N * OceanSpectrumComplexPlaneCount 개의 float2 를 저장하는 structured buffer 여야 한다.
                                     /// 각 complex plane 은 두 real field spectrum 을 Z = A + iB 로 패킹하며 일반 row-major 순서로 저장한다.
-                                    /// initialSpectrumSRV 는 호출 전후 ShaderResourceCompute 상태이고, outputUAV 는 호출 전후 Undefined(Common) 상태이다.
-    bool                            GenerateTimeSpectrum(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &params, const RHI::Texture *initialSpectrumTextureArray, RHI::Buffer *outputSpectrumBuffer, RHI::ViewID initialSpectrumSRV = RHI::ViewID::PrimaryID, RHI::ViewID outputUAV = RHI::ViewID::PrimaryID);
+                                    /// 두 리소스의 primary view 를 사용하며 호출 전후 각각 ShaderResourceCompute, Undefined(Common) 상태이다.
+    bool                            GenerateTimeSpectrum(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &params);
 
                                     /// transposed complex IFFT 결과를 displacement/derivative map 으로 변환하고 foam history 를 갱신한다.
-                                    /// spatialFieldsBuffer 는 N * N * OceanSpectrumComplexPlaneCount 개의 float2 를 저장하는 structured buffer 여야 한다.
-                                    /// field texture array 는 RGBA16F/RGBA32F 의 2 * CascadeCount slice, foam history texture array 는 R16F/R32F 의 CascadeCount slice 여야 한다.
-                                    /// spatialFieldsBuffer 는 호출 전후 Undefined(Common) 상태이고, output texture 들은 호출 전후 ShaderResource 상태이다.
-    bool                            ResolveOceanFields(RHI::CommandList *commandList, const RHI::ConstantBuffer *resolveConstantBuffer, uint32_t cascadeIndex,
-                                        RHI::Buffer *spatialFieldsBuffer, RHI::Texture *outputFieldTextureArray, RHI::Texture *foamHistoryTextureArray,
-                                        RHI::ViewID spatialFieldsSRV = RHI::ViewID::PrimaryID, RHI::ViewID outputFieldUAV = RHI::ViewID::PrimaryID,
-                                        RHI::ViewID foamHistoryUAV = RHI::ViewID::PrimaryID);
+                                    /// 멤버 spatialFieldsBuffer 는 N * N * OceanSpectrumComplexPlaneCount 개의 float2 를 저장하는 structured buffer 여야 한다.
+                                    /// fieldTextureArray 는 RGBA16F/RGBA32F 의 2 * CascadeCount slice, foamHistoryTextureArray 는 R16F/R32F 의 CascadeCount slice 여야 한다.
+                                    /// 세 리소스의 primary view 를 사용하며 호출 전후 spatialFieldsBuffer 는 Undefined(Common), texture 들은 ShaderResource 상태이다.
+    bool                            ResolveOceanFields(RHI::CommandList *commandList, const RHI::ConstantBuffer *resolveConstantBuffer);
 
     SharedPtr<ShaderTemplate>       generatePhillipsInitialSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       generateTMAInitialSpectrumShaderTemplate;
@@ -254,11 +255,12 @@ private:
     SharedPtr<ShaderPipeline>       generateTimeSpectrumPipeline;
     SharedPtr<ShaderPipeline>       resolveOceanFieldsPipeline;
 
-    Settings                        settings;
+    SimulationSettings              simulationSettings;
+    uint64_t                        appliedSimulationSettingsRevision = 0;
 
-    RHI::Buffer *                   timeSpectrumBuffer = nullptr;   // (개별 캐스캐이드 계산에 임시로 사용됨) 시간에 따라 진화된 complex spectrum 을 저장하는 structured buffer
-    RHI::Buffer *                   ifftWorkBuffer = nullptr;       // (개별 캐스캐이드 계산에 임시로 사용됨) IFFT 를 위한 work buffer
-    RHI::Buffer *                   spatialFieldsBuffer = nullptr;  // (개별 캐스캐이드 계산에 임시로 사용됨) IFFT 결과를 저장하는 structured buffer
+    RHI::Buffer *                   timeSpectrumBuffer = nullptr;           // (개별 캐스케이드 계산에 임시로 사용됨) 시간에 따라 진화된 complex spectrum 을 저장하는 structured buffer
+    RHI::Buffer *                   ifftWorkBuffer = nullptr;               // (개별 캐스케이드 계산에 임시로 사용됨) IFFT 를 위한 work buffer
+    RHI::Buffer *                   spatialFieldsBuffer = nullptr;          // (개별 캐스케이드 계산에 임시로 사용됨) IFFT 결과를 저장하는 structured buffer
 
     RHI::Texture *                  initialSpectrumTextureArray = nullptr;  // slice per cascade, RG: h0(k), BA: conj(h0(-k))
     RHI::Texture *                  fieldTextureArray = nullptr;            // even slices: displacement, odd slices: derivative

@@ -353,8 +353,13 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     }
 
     // 메인 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
+    const GpuOcean::Settings &oceanSettings = frameData->GetOceanSettings();
     if (swapChainOutputEnabled && currentContext == renderSystem->mainRenderContext) {
-        renderSystem->gpuOcean.Update(mainCommandList, frameData->GetThreadData(0), frameData->GetOceanSettings(), frameData->GetFrameTime());
+        renderSystem->gpuOcean.ApplySimulationSettings(oceanSettings.simulation, frameData->GetOceanSettingsRevision());
+
+        if (oceanSettings.enabled) {
+            renderSystem->gpuOcean.Update(mainCommandList, frameData->GetThreadData(0), frameData->GetFrameTime());
+        }
     }
 
     if (swapChainOutputEnabled) {
@@ -1165,7 +1170,7 @@ void RenderBackend::DrawGpuOcean() {
     }
 
     GpuOcean &gpuOcean = renderSystem->GetGpuOcean();
-    if (!gpuOcean.AreCascadeOutputsReady() || gpuOcean.GetSurfaceGridIndexCount() == 0) {
+    if (!gpuOcean.AreCascadeOutputsReady() || !gpuOcean.IsSurfaceGridReady()) {
         return;
     }
 
@@ -1180,7 +1185,7 @@ void RenderBackend::DrawGpuOcean() {
     }
 
     GpuOcean::SurfaceDrawStats drawStats;
-    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, oceanSettings, surfaceView, &drawStats)) {
+    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, oceanSettings.surface, surfaceView, &drawStats)) {
         RecordDrawStats(drawStats.drawCount, drawStats.triangleCount, drawStats.instanceBufferAllocCount, drawStats.instanceBufferUploadBytes);
     }
 }

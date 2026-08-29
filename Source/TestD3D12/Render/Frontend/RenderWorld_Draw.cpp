@@ -480,7 +480,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(const RenderFrameData *frameData, 
 
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = nullptr;
-    graphicsPipelineDesc.rasterizerStateType = oceanSettings.surfaceWireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidFrontSided;
+    graphicsPipelineDesc.rasterizerStateType = oceanSettings.surface.wireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidFrontSided;
     graphicsPipelineDesc.depthStencilStateType = visCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::LEqualWrite;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
