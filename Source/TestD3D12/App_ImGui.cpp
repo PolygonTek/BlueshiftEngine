@@ -1044,6 +1044,14 @@ void App::BuildImGuiOverlay() {
                     r_toneMapExposureCompensation.SetFloat(exposureCompensation);
                 }
 
+                float minExposureEV = r_toneMapMinExposureEV.GetFloat();
+                float maxExposureEV = r_toneMapMaxExposureEV.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::DragFloatRange2("Exposure EV range", &minExposureEV, &maxExposureEV, 0.05f, r_toneMapMinExposureEV.GetMinValue(), r_toneMapMaxExposureEV.GetMaxValue(), "Min: %.2f EV", "Max: %.2f EV")) {
+                    r_toneMapMinExposureEV.SetFloat(minExposureEV);
+                    r_toneMapMaxExposureEV.SetFloat(BE1::Max(maxExposureEV, minExposureEV));
+                }
+
                 float whiteBalanceTemperature = r_whiteBalanceTemperature.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("White balance temperature", &whiteBalanceTemperature, r_whiteBalanceTemperature.GetMinValue(), r_whiteBalanceTemperature.GetMaxValue(), "%.0f K")) {

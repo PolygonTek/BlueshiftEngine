@@ -81,6 +81,8 @@ extern BE1::CVar    r_toneMapLuminanceLogMax;
 extern BE1::CVar    r_toneMapLuminanceAdaptationRate;
 extern BE1::CVar    r_toneMapMiddleGray;
 extern BE1::CVar    r_toneMapExposureCompensation;
+extern BE1::CVar    r_toneMapMinExposureEV;
+extern BE1::CVar    r_toneMapMaxExposureEV;
 extern BE1::CVar    r_whiteBalanceTemperature;
 
 extern BE1::CVar    r_colorGrading;

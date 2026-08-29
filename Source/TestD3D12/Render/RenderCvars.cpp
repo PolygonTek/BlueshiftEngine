@@ -76,6 +76,8 @@ CVAR(r_toneMapLuminanceLogMax, "2", BE1::CVar::Flag::Float, "tone mapping lumina
 CVAR_MINMAX(r_toneMapLuminanceAdaptationRate, "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);
 CVAR_MINMAX(r_toneMapMiddleGray, "0.18", BE1::CVar::Flag::Float, "tone mapping middle gray", 0.0f, 10.0f);
 CVAR_MINMAX(r_toneMapExposureCompensation, "0", BE1::CVar::Flag::Float, "tone mapping exposure compensation in EV", -5.0f, 5.0f);
+CVAR_MINMAX(r_toneMapMinExposureEV, "-8", BE1::CVar::Flag::Float, "tone mapping minimum automatic exposure in EV", -16.0f, 16.0f);
+CVAR_MINMAX(r_toneMapMaxExposureEV, "2", BE1::CVar::Flag::Float, "tone mapping maximum automatic exposure in EV", -16.0f, 16.0f);
 CVAR_MINMAX(r_whiteBalanceTemperature, "6500", BE1::CVar::Flag::Float, "white balance color temperature in Kelvin", 1000.0f, 15000.0f);
 
 CVAR(r_colorGrading, "0", BE1::CVar::Flag::Bool, "enable 3D LUT color grading");

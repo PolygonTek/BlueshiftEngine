@@ -64,6 +64,10 @@ bool RenderBackend::DispatchLuminance() {
     luminancePass2Params.luminanceAdaptationRate = BE1::Max(r_toneMapLuminanceAdaptationRate.GetFloat(), 0.0f);
     luminancePass2Params.middleGray = BE1::Max(r_toneMapMiddleGray.GetFloat(), 0.0f);
     luminancePass2Params.exposureCompensation = r_toneMapExposureCompensation.GetFloat();
+    const float minExposureEV = r_toneMapMinExposureEV.GetFloat();
+    const float maxExposureEV = BE1::Max(r_toneMapMaxExposureEV.GetFloat(), minExposureEV);
+    luminancePass2Params.minExposure = BE1::Math::Pow(2.0f, minExposureEV);
+    luminancePass2Params.maxExposure = BE1::Math::Pow(2.0f, maxExposureEV);
 
     RHI::Texture *inputTexture = currentPostProcessInputTexture ? currentPostProcessInputTexture : currentVisCamera->rtColorTexture;
 

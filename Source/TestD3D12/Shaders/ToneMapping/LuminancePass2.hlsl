@@ -46,16 +46,22 @@ void CSMain(uint binIndex : SV_GroupIndex) {
         float weightedAverageLuminance = exp2(((weightedLogAverage / (LuminanceHistogramBinCount - 2)) * luminancePass2Params.luminanceLogRange) + luminancePass2Params.luminanceLogMin);
         
         // 이전 프레임의 luminance 값과 현재의 평균값을 exp smoothing 으로 보간한다.
+        // luminance buffer 가 초기화된 첫 프레임에는 현재 평균값을 바로 사용하여 과도한 노출을 방지한다.
         float luminanceLastFrame = luminanceHistogram.Load<float>(LuminanceBufferOffsetLuminance);
         float adaptationFrameTime = max(frameConstants.frameTime, 0.0);
-        float adaptedLuminance = luminanceLastFrame + (weightedAverageLuminance - luminanceLastFrame) * (1 - exp(-adaptationFrameTime * luminancePass2Params.luminanceAdaptationRate));
+        float adaptedLuminance = weightedAverageLuminance;
+        if (luminanceLastFrame > 0.0) {
+            adaptedLuminance = luminanceLastFrame + (weightedAverageLuminance - luminanceLastFrame) * (1 - exp(-adaptationFrameTime * luminancePass2Params.luminanceAdaptationRate));
+        }
 
         // 보간된 luminance 값 저장 (다음 프레임에 사용)
         luminanceHistogram.Store<float>(LuminanceBufferOffsetLuminance, adaptedLuminance);
 
         // 자동 노출에 EV 단위의 노출 보정을 적용하여 저장한다.
         float exposureScale = exp2(luminancePass2Params.exposureCompensation);
-        luminanceHistogram.Store<float>(LuminanceBufferOffsetExposure, (luminancePass2Params.middleGray / max(adaptedLuminance, 0.0001)) * exposureScale);
+        float exposure = (luminancePass2Params.middleGray / max(adaptedLuminance, 0.0001)) * exposureScale;
+        float clampedExposure = exposure > 0.0 ? clamp(exposure, luminancePass2Params.minExposure, luminancePass2Params.maxExposure) : 0.0;
+        luminanceHistogram.Store<float>(LuminanceBufferOffsetExposure, clampedExposure);
     }
 
     // clear histogram for next frame
