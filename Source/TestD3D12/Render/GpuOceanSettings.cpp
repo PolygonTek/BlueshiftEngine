@@ -18,17 +18,17 @@
 GpuOcean::SimulationSettings::SimulationSettings() {
     // 가장 짧은 파장 cascade 는 기본적으로 새 foam 을 만들지 않고 기존 history 만 감쇠시킨다.
     if constexpr (CascadeCount == 2) {
-        cascadeSettings[0] = { 30.0f, 0.7f, 4.0f, 0.75f };
-        cascadeSettings[1] = { 60.0f, 0.75f, 4.0f, 0.4f };
+        cascadeSettings[0] = { 60.0f, 0.7f, 4.0f, 0.75f };
+        cascadeSettings[1] = { 30.0f, 0.75f, 4.0f, 0.4f };
     } else if constexpr (CascadeCount == 3) {
-        cascadeSettings[0] = { 30.0f, 0.7f, 4.0f, 0.75f };
+        cascadeSettings[0] = { 60.0f, 0.7f, 4.0f, 0.75f };
         cascadeSettings[1] = { 45.0f, 0.75f, 2.0f, 0.4f };
-        cascadeSettings[2] = { 60.0f, 0.8f, 0.0f, 0.2f };
+        cascadeSettings[2] = { 30.0f, 0.8f, 0.0f, 0.2f };
     } else {
-        cascadeSettings[0] = { 30.0f, 0.7f, 4.0f, 0.75f };
-        cascadeSettings[1] = { 40.0f, 0.75f, 3.0f, 0.55f };
-        cascadeSettings[2] = { 50.0f, 0.8f, 2.0f, 0.3f };
-        cascadeSettings[3] = { 60.0f, 0.82f, 0.0f, 0.2f };
+        cascadeSettings[0] = { 60.0f, 0.7f, 4.0f, 0.75f };
+        cascadeSettings[1] = { 50.0f, 0.75f, 3.0f, 0.55f };
+        cascadeSettings[2] = { 40.0f, 0.8f, 2.0f, 0.3f };
+        cascadeSettings[3] = { 30.0f, 0.82f, 0.0f, 0.2f };
     }
 
     for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
