@@ -168,6 +168,12 @@ public:
     void                        DrawDebugArrow(const BE1::Vec3 &start, const BE1::Vec3 &end, float coneSize, float coneRadius, bool depthTest = false, int lifeTime = 0);
 
 private:
+    enum class SkyboxState : uint8_t {
+        None,
+        Pending,
+        Ready
+    };
+
     struct DebugPrimitiveRange {
         uint32_t                firstVertex = 0;
         uint32_t                numVerts = 0;
@@ -206,6 +212,7 @@ private:
     void                        UpdateSkinningJointCachesByTask(RenderWorld::SkinningJointCacheTaskDesc *taskDesc);
     static void                 UpdateSkinningJointCachesByTaskFunction(void *data);
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    SkyboxState                 GetSkyboxState() const;
     void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint32_t &packedTileMin, uint32_t &packedTileMax);

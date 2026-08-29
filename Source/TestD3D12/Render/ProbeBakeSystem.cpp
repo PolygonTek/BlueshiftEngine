@@ -117,6 +117,10 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
                 ++index;
                 continue;
             }
+        } else if (candidate.renderWorld->GetSkyboxState() == RenderWorld::SkyboxState::Pending) {
+            // RenderWorld sky 를 캡처할 때는 skybox resource 가 모두 준비될 때까지 요청을 큐에 유지한다.
+            ++index;
+            continue;
         }
 
         request = candidate;
@@ -136,10 +140,11 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
     // 준비된 radianceCubemap 이 없다면 새로 캡쳐한다.
     if (!radianceCubeMap) {
         static constexpr int32_t radianceCubemapSize = 256;
+        const bool colorClear = request.renderWorld->GetSkyboxState() == RenderWorld::SkyboxState::None;
 
         radiancePrepared = CreateRadianceCubemap(radianceCubemapSize, true, radianceCubeMap);
         if (radiancePrepared) {
-            radiancePrepared = RenderCapture::RenderEnvCubeToTexture(renderContext, request.renderWorld, 0, true, false, BE1::Color4::black, request.captureOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), radianceCubeMap, true);
+            radiancePrepared = RenderCapture::RenderEnvCubeToTexture(renderContext, request.renderWorld, 0, true, colorClear, BE1::Color4::black, request.captureOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), radianceCubeMap, true);
         }
         generateRadianceMipChain = radiancePrepared;
     }

@@ -94,6 +94,49 @@ void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
     this->skyboxMaterial = skyboxMaterial;
 }
 
+static bool IsMaterialTextureReady(const Material *material, ShaderTemplate::StandardProperty property) {
+    const SharedPtr<Texture> *texture = material->GetPropertyTexture(property);
+    return texture && *texture && (*texture)->IsReadyForRendering();
+}
+
+RenderWorld::SkyboxState RenderWorld::GetSkyboxState() const {
+    if (!skyboxMaterial) {
+        return SkyboxState::None;
+    }
+
+    if (!skyboxMaterial->GetShaderTemplate() || !meshManager.defaultBoxMesh || !meshManager.defaultBoxMesh->IsReady()) {
+        return SkyboxState::Pending;
+    }
+
+    const Mesh::Surface *meshSurface = meshManager.defaultBoxMesh->GetSurface(0);
+    if (!meshSurface || !meshSurface->subMesh) {
+        return SkyboxState::Pending;
+    }
+
+    if (skyboxMaterial->FindPropertyIndex(ShaderTemplate::StandardProperty::SkyCubeMap) >= 0) {
+        return IsMaterialTextureReady(skyboxMaterial.get(), ShaderTemplate::StandardProperty::SkyCubeMap) ? SkyboxState::Ready : SkyboxState::Pending;
+    }
+
+    if (skyboxMaterial->FindPropertyIndex(ShaderTemplate::StandardProperty::SkyBackMap) >= 0) {
+        static constexpr ShaderTemplate::StandardProperty SkyboxTextureProperties[] = {
+            ShaderTemplate::StandardProperty::SkyBackMap,
+            ShaderTemplate::StandardProperty::SkyFrontMap,
+            ShaderTemplate::StandardProperty::SkyRightMap,
+            ShaderTemplate::StandardProperty::SkyLeftMap,
+            ShaderTemplate::StandardProperty::SkyTopMap,
+            ShaderTemplate::StandardProperty::SkyDownMap
+        };
+
+        for (ShaderTemplate::StandardProperty property : SkyboxTextureProperties) {
+            if (!IsMaterialTextureReady(skyboxMaterial.get(), property)) {
+                return SkyboxState::Pending;
+            }
+        }
+    }
+
+    return SkyboxState::Ready;
+}
+
 void RenderWorld::SetupPyramidBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera) {
     if (renderCamera->GetBloomMipCount() < 2) {
         return;
