@@ -30,6 +30,8 @@ cbuffer OceanSurfaceDrawCB : register(b3) {
     uint oceanSurfaceTileInstanceOffset;
 };
 
+#include "../PBR/ShadingParams.hlsli"
+
 Texture2DArray<float4> displacementAndDerivativeMap : register(t0);
 Texture2DArray<float> foamHistoryMap : register(t1);
 Texture2D<float4> foamDetailMap : register(t2);
@@ -250,8 +252,13 @@ CameraPassPSOutput PSMain(PSInput input) {
     const float NdotV = saturate(dot(normal, V));
     const float fresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - NdotV);
 
+    float specularRoughness = clamp(oceanSurfaceParams.roughness, MinRoughness, 1.0f);
+    if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0u) {
+        specularRoughness = ApplySpecularAA(specularRoughness, ComputeSpecularAAKernelRoughness(normal));
+    }
+
     const float3 reflectionDir = reflect(-V, normal);
-    const float3 reflection = SampleOceanReflection(reflectionDir, oceanSurfaceParams.roughness);
+    const float3 reflection = SampleOceanReflection(reflectionDir, specularRoughness);
     const float normalizedCrestHeight = saturate((input.worldPosition.z - oceanSurfaceParams.surfaceHeight) / oceanSurfaceParams.scatterHeight);
     const float crestScatter = normalizedCrestHeight * normalizedCrestHeight;
     const float3 waterBodyColor = oceanSurfaceParams.waterColor * lerp(0.35f, 1.0f, NdotV) + oceanSurfaceParams.scatterColor * crestScatter;
@@ -262,16 +269,22 @@ CameraPassPSOutput PSMain(PSInput input) {
         const float NdotL = saturate(dot(normal, L));
         
         if (NdotL > 0.0f) {
-            const float3 H = normalize(L + V);
-            const float roughnessSquared = max(oceanSurfaceParams.roughness * oceanSurfaceParams.roughness, 0.0004f);
-            const float specularPower = max(2.0f / roughnessSquared - 2.0f, 1.0f);
-            const float specularNormalization = (specularPower + 2.0f) * (0.125f * INV_PI);
-            const float NdotH = saturate(dot(normal, H));
-            const float specular = pow(NdotH, specularPower) * specularNormalization;
-            const float VdotH = saturate(dot(V, H));
-            const float sunFresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - VdotH);
-            
-            color += frameConstants.directionalLight.lightColor * NdotL * (oceanSurfaceParams.waterColor * 0.02f + specular * sunFresnel);
+            color += frameConstants.directionalLight.lightColor * oceanSurfaceParams.waterColor * (0.02f * NdotL);
+
+            const float3 halfVectorUnnormalized = L + V;
+            const float halfVectorLengthSquared = dot(halfVectorUnnormalized, halfVectorUnnormalized);
+            if (halfVectorLengthSquared > FLT_MIN) {
+                const float3 H = halfVectorUnnormalized * rsqrt(halfVectorLengthSquared);
+                const float NdotH = saturate(dot(normal, H));
+                const float VdotH = saturate(dot(V, H));
+                const float linearRoughness = specularRoughness * specularRoughness;
+                const float distribution = D_GGX(NdotH, linearRoughness);
+                const float visibility = G_SmithGGXCorrelated(max(NdotV, 1e-4f), NdotL, linearRoughness);
+                const float sunFresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - VdotH);
+                const float sunSpecular = distribution * visibility * sunFresnel * NdotL * PI;
+
+                color += frameConstants.directionalLight.lightColor * sunSpecular;
+            }
         }
     }
 
