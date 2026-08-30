@@ -33,6 +33,7 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld) {
 
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
 
+    app.SetCameraPitchYaw(25, 30);
     app.SetCameraDistance(5.0f);
 
     indirectLightingEnabled = true;

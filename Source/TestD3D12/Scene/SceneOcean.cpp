@@ -28,6 +28,7 @@ void SceneOcean::Init(RenderWorld *renderWorld) {
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
+    app.SetCameraPitchYaw(5, 145);
     app.SetCameraDistance(300.0f);
 
     oceanAdded = renderWorld->AddOceanSurface(oceanDesc);
@@ -36,6 +37,7 @@ void SceneOcean::Init(RenderWorld *renderWorld) {
     directionalLight.flags = RenderLight::Flag::None;
     directionalLight.linearColor = BE1::Color3::white;
     directionalLight.intensity = 2.0f;
+    directionalLightElevation = 20;
     UpdateDirectionalLightDirection();
 
     RenderLight::Desc directionalLightDesc;

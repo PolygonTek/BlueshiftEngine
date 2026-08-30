@@ -25,7 +25,8 @@
 void SceneDebugDraw::Init(RenderWorld *renderWorld) {
     this->renderWorld = renderWorld;
 
-    app.SetCameraDistance(150.0f);
+    app.SetCameraPitchYaw(30, 45);
+    app.SetCameraDistance(120.0f);
 
     renderWorld->ClearDebugPrimitives();
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);

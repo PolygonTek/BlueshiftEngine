@@ -442,6 +442,11 @@ void App::AddCameraDistance(int delta) {
     targetCameraDistance = BE1::Clamp(targetCameraDistance, 1.0f, 1000.0f);
 }
 
+void App::SetCameraPitchYaw(float pitch, float yaw) {
+    targetCameraPitch = BE1::Clamp(pitch, -90.0f, 90.0f);
+    targetCameraYaw = yaw;
+}
+
 void App::SetCameraDistance(float distance) {
     distance = BE1::Clamp(distance, 1.0f, 1000.0f);
     targetCameraDistance = distance;

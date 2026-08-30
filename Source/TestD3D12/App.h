@@ -82,6 +82,7 @@ public:
     void                            AddCameraMouseDelta(int deltaX, int deltaY);
     void                            AddCameraPanDelta(int deltaX, int deltaY);
     void                            AddCameraDistance(int delta);
+    void                            SetCameraPitchYaw(float pitch, float yaw);
     void                            SetCameraDistance(float distance);
 
     void                            GetCameraOriginAxis(BE1::Vec3 &origin, BE1::Mat3 &axis) const;
