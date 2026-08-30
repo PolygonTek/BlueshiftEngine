@@ -18,6 +18,7 @@
 
 class ShaderPipeline;
 class ShaderTemplate;
+class ShaderPipelineBootstrap;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -74,10 +75,7 @@ public:
     void                        Init();
     void                        Shutdown();
 
-    void                        UpdatePipelineBuildState();
-
-    bool                        ArePipelinesReady() const { return pipelinesReady; }
-    bool                        HasPipelineBuildFailed() const { return pipelineBuildFailed; }
+    void                        TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
     static bool                 GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSizeEnum);
     static uint32_t             GetGpuFFTSizeValue(GpuFFT::FFTSize fftSizeEnum);
@@ -243,7 +241,4 @@ private:
     RHI::Buffer *               fftRealTwiddle512Buffer = nullptr;
     RHI::Buffer *               fftRealTwiddle1024Buffer = nullptr;
     RHI::Buffer *               fftRealTwiddle2048Buffer = nullptr;
-
-    bool                        pipelinesReady = false;
-    bool                        pipelineBuildFailed = false;
 };

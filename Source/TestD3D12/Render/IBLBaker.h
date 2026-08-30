@@ -18,6 +18,7 @@
 
 class ShaderPipeline;
 class ShaderTemplate;
+class ShaderPipelineBootstrap;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -50,10 +51,7 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    void                            UpdatePipelineBuildState();
-
-    bool                            ArePipelinesReady() const { return pipelinesReady; }
-    bool                            HasPipelineBuildFailed() const { return pipelineBuildFailed; }
+    void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
                                     /// radianceCubeMap 의 mip 0 을 cosine-weighted midpoint quadrature 로 적분하여 Lambert diffuse irradiance cubemap 을 생성한다.
                                     /// outputUAV 는 mip 0 의 6개 face 를 포함해야 하며, 출력에는 Lambert BRDF 의 1/PI 가 포함된다.
@@ -101,7 +99,4 @@ private:
     SharedPtr<ShaderPipeline>       genLDSumPhongSpecularPipeline;
     SharedPtr<ShaderPipeline>       genLDSumGGXPipeline;
     SharedPtr<ShaderPipeline>       genDFGSumGGXPipeline;
-
-    bool                            pipelinesReady = false;
-    bool                            pipelineBuildFailed = false;
 };

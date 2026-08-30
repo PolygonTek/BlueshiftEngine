@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "GpuOcean.h"
+#include "ShaderPipelineBootstrap.h"
 #include "RenderSystem.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
@@ -28,8 +29,6 @@ void GpuOcean::Init() {
     simulationTime = 0.0f;
     ResetCascadeUpdateSchedule();
     foamHistoryMayContainFoamMask = 0u;
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
 
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
@@ -69,8 +68,6 @@ void GpuOcean::Shutdown() {
     initialSpectraReady = false;
     cascadeOutputsReady = false;
     foamHistoryResetPending = true;
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
 
     generatePhillipsInitialSpectrumPipeline.reset();
     generateTMAInitialSpectrumPipeline.reset();
@@ -85,50 +82,13 @@ void GpuOcean::Shutdown() {
     foamDetailTexture.reset();
 }
 
-void GpuOcean::UpdatePipelineBuildState() {
-    if (pipelinesReady || pipelineBuildFailed) {
-        return;
-    }
+void GpuOcean::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const {
+    static constexpr char groupName[] = "GpuOcean";
 
-    const ShaderPipeline *pipelines[] = {
-        generatePhillipsInitialSpectrumPipeline.get(),
-        generateTMAInitialSpectrumPipeline.get(),
-        generateTimeSpectrumPipeline.get(),
-        resolveOceanFieldsPipeline.get()
-    };
-
-    bool allReady = true;
-
-    for (const ShaderPipeline *pipeline : pipelines) {
-        if (!pipeline) {
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        switch (pipeline->GetState()) {
-        case ShaderPipeline::State::Ready:
-        case ShaderPipeline::State::Rebuilding:
-            break;
-        case ShaderPipeline::State::Building:
-            allReady = false;
-            break;
-        case ShaderPipeline::State::Empty:
-        case ShaderPipeline::State::Failed:
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        if (pipelineBuildFailed) {
-            break;
-        }
-    }
-
-    if (pipelineBuildFailed) {
-        BE_WARNLOG("GpuOcean::UpdatePipelineBuildState: pipeline build failed\n");
-        return;
-    }
-
-    pipelinesReady = allReady;
+    bootstrap.TrackPipeline(groupName, generatePhillipsInitialSpectrumPipeline);
+    bootstrap.TrackPipeline(groupName, generateTMAInitialSpectrumPipeline);
+    bootstrap.TrackPipeline(groupName, generateTimeSpectrumPipeline);
+    bootstrap.TrackPipeline(groupName, resolveOceanFieldsPipeline);
 }
 
 static void CalculateJONSWAPFetchParameters(float windSpeed, float gravity, float fetch, float &alpha, float &peakOmega) {

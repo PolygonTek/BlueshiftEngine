@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "IBLBaker.h"
+#include "ShaderPipelineBootstrap.h"
 #include "RenderSystem.h"
 #include "Image/Image.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
@@ -22,9 +23,6 @@
 #include "Shaders/ShaderInterop.h"
 
 void IBLBaker::Init() {
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
-
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
     constexpr bool asyncPipelineBuild = true;
@@ -41,9 +39,6 @@ void IBLBaker::Init() {
 }
 
 void IBLBaker::Shutdown() {
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
-
     genDiffuseIrradiancePipeline.reset();
     genLDSumPhongSpecularPipeline.reset();
     genLDSumGGXPipeline.reset();
@@ -55,50 +50,13 @@ void IBLBaker::Shutdown() {
     genDFGSumGGXShaderTemplate.reset();
 }
 
-void IBLBaker::UpdatePipelineBuildState() {
-    if (pipelinesReady || pipelineBuildFailed) {
-        return;
-    }
+void IBLBaker::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const {
+    static constexpr char groupName[] = "IBLBaker";
 
-    const ShaderPipeline *pipelines[] = {
-        genDiffuseIrradiancePipeline.get(),
-        genLDSumPhongSpecularPipeline.get(),
-        genLDSumGGXPipeline.get(),
-        genDFGSumGGXPipeline.get()
-    };
-
-    bool allReady = true;
-
-    for (const ShaderPipeline *pipeline : pipelines) {
-        if (!pipeline) {
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        switch (pipeline->GetState()) {
-        case ShaderPipeline::State::Ready:
-        case ShaderPipeline::State::Rebuilding:
-            break;
-        case ShaderPipeline::State::Building:
-            allReady = false;
-            break;
-        case ShaderPipeline::State::Empty:
-        case ShaderPipeline::State::Failed:
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        if (pipelineBuildFailed) {
-            break;
-        }
-    }
-
-    if (pipelineBuildFailed) {
-        BE_WARNLOG("IBLBaker::UpdatePipelineBuildState: pipeline build failed\n");
-        return;
-    }
-
-    pipelinesReady = allReady;
+    bootstrap.TrackPipeline(groupName, genDiffuseIrradiancePipeline);
+    bootstrap.TrackPipeline(groupName, genLDSumPhongSpecularPipeline);
+    bootstrap.TrackPipeline(groupName, genLDSumGGXPipeline);
+    bootstrap.TrackPipeline(groupName, genDFGSumGGXPipeline);
 }
 
 static bool GetOutputMipViewInfo(RHI::Texture *texture, RHI::ViewID outputUAV, uint32_t mipLevel, uint32_t requiredSliceCount, RHI::TextureViewInfo &outViewInfo) {

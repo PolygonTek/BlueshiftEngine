@@ -20,6 +20,7 @@
 #include "ConvolutionBloomKernelGenerator.h"
 #include "IBLBaker.h"
 #include "ProbeBakeSystem.h"
+#include "ShaderPipelineBootstrap.h"
 #include "RenderWork/RenderWorkQueue.h"
 
 class RenderContext;
@@ -55,6 +56,10 @@ public:
     void                            Shutdown();
 
     void                            UpdateFrame();
+
+    void                            UpdateShaderPipelineBootstrap() { shaderPipelineBootstrap.Update(); }
+    ShaderPipelineBootstrap::State  GetShaderPipelineBootstrapState() const { return shaderPipelineBootstrap.GetState(); }
+    float                           GetShaderPipelineBootstrapProgress() const { return shaderPipelineBootstrap.GetProgress(); }
 
     const RHI::MemoryUsage &        GetVideoMemoryUsage() const { return videoMemoryUsage; }
     bool                            IsUsingRenderThread() const { return !!renderThread; }
@@ -219,6 +224,7 @@ private:
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     IBLBaker                        iblBaker;
     ProbeBakeSystem                 probeBakeSystem;
+    ShaderPipelineBootstrap         shaderPipelineBootstrap;
 };
 
 extern RenderSystem *               renderSystem;

@@ -14,15 +14,13 @@
 
 #include "Precompiled.h"
 #include "GpuSphericalHarmonics.h"
+#include "ShaderPipelineBootstrap.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Shaders/ShaderInterop.h"
 
 void GpuSphericalHarmonics::Init() {
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
-
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
     constexpr bool asyncPipelineBuild = true;
@@ -88,9 +86,6 @@ void GpuSphericalHarmonics::Init() {
 }
 
 void GpuSphericalHarmonics::Shutdown() {
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
-
     if (shCoefficientBuffer) {
         RHI::renderer->DestroyBuffer(shCoefficientBuffer);
         shCoefficientBuffer = nullptr;
@@ -129,52 +124,15 @@ void GpuSphericalHarmonics::Shutdown() {
     sh3Resources.coefficientCount = 0;
 }
 
-void GpuSphericalHarmonics::UpdatePipelineBuildState() {
-    if (pipelinesReady || pipelineBuildFailed) {
-        return;
-    }
+void GpuSphericalHarmonics::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const {
+    static constexpr char groupName[] = "GpuSphericalHarmonics";
 
-    const ShaderPipeline *pipelines[] = {
-        sh2Resources.projectPipeline.get(),
-        sh2Resources.reducePipeline.get(),
-        sh2Resources.reconstructPipeline.get(),
-        sh3Resources.projectPipeline.get(),
-        sh3Resources.reducePipeline.get(),
-        sh3Resources.reconstructPipeline.get()
-    };
-
-    bool allReady = true;
-
-    for (const ShaderPipeline *pipeline : pipelines) {
-        if (!pipeline) {
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        switch (pipeline->GetState()) {
-        case ShaderPipeline::State::Ready:
-        case ShaderPipeline::State::Rebuilding:
-            break;
-        case ShaderPipeline::State::Building:
-            allReady = false;
-            break;
-        case ShaderPipeline::State::Empty:
-        case ShaderPipeline::State::Failed:
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        if (pipelineBuildFailed) {
-            break;
-        }
-    }
-
-    if (pipelineBuildFailed) {
-        BE_WARNLOG("GpuSphericalHarmonics::UpdatePipelineBuildState: pipeline build failed\n");
-        return;
-    }
-
-    pipelinesReady = allReady;
+    bootstrap.TrackPipeline(groupName, sh2Resources.projectPipeline);
+    bootstrap.TrackPipeline(groupName, sh2Resources.reducePipeline);
+    bootstrap.TrackPipeline(groupName, sh2Resources.reconstructPipeline);
+    bootstrap.TrackPipeline(groupName, sh3Resources.projectPipeline);
+    bootstrap.TrackPipeline(groupName, sh3Resources.reducePipeline);
+    bootstrap.TrackPipeline(groupName, sh3Resources.reconstructPipeline);
 }
 
 static bool ValidateCubemapSHInput(const RHI::Texture *cubeMap, RHI::ViewID cubeMapSRV) {

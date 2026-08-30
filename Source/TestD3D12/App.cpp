@@ -72,7 +72,7 @@ void App::Init(void *mainWindowHandle) {
     app_convolutionBloomAperturePreset.SetModified();
     app_convolutionBloomKernelSource.SetModified();
 
-    ChangeScene(0);
+    state = State::Bootstrapping;
 }
 
 void App::Shutdown() {
@@ -107,6 +107,29 @@ void App::Update(uint64_t frameUsec) {
 
     shaderTemplateManager.ProcessPendingGlobalDefineChanges();
 
+    if (state == State::BootstrapReady) {
+        FinishBootstrap();
+    } else if (state == State::Bootstrapping) {
+        renderSystem->UpdateShaderPipelineBootstrap();
+
+        switch (renderSystem->GetShaderPipelineBootstrapState()) {
+        case ShaderPipelineBootstrap::State::Ready:
+            state = State::BootstrapReady;
+            break;
+        case ShaderPipelineBootstrap::State::Failed:
+            state = State::BootstrapFailed;
+            break;
+        case ShaderPipelineBootstrap::State::Collecting:
+        case ShaderPipelineBootstrap::State::Loading:
+            break;
+        }
+    }
+
+    // Bootstrap 이 완료되기 전까지는 Scene 및 관련 런타임 업데이트를 시작하지 않는다.
+    if (state != State::Running) {
+        return;
+    }
+
     ProcessPendingSceneChange();
 
     elapsedUsec += frameUsec;
@@ -115,12 +138,19 @@ void App::Update(uint64_t frameUsec) {
 
     UpdateCamera(frameUsec);
 
-    BE1::cmdSystem.ExecuteCommandBuffer();
-
     CheckModifiedCVars();
 
     uint64_t t1 = BE1::PlatformTime::Microseconds();
     UpdateGameFrameTime(t1 - t0);
+}
+
+void App::FinishBootstrap() {
+    assert(state == State::BootstrapReady);
+    assert(renderSystem->GetShaderPipelineBootstrapState() == ShaderPipelineBootstrap::State::Ready);
+
+    ChangeScene(0);
+
+    state = State::Running;
 }
 
 void App::RequestSceneChange(int sceneIndex) {
@@ -205,12 +235,21 @@ void App::CheckModifiedCVars() {
 void App::Render(uint64_t frameUsec) {
     PROFILER_CPU_SCOPED_EVENT("App::Render");
 
+    if (state == State::Running) {
+        RenderRunningFrame(frameUsec);
+    } else {
+        RenderBootstrapFrame(frameUsec);
+    }
+}
+
+void App::RenderRunningFrame(uint64_t frameUsec) {
+    PROFILER_CPU_SCOPED_EVENT("App::RenderRunningFrame");
+
     const float frameTime = (float)MICRO2SEC((double)frameUsec);
     const float elapsedTime = (float)MICRO2SEC((double)elapsedUsec);
     const float elapsedPrevTime = (float)MICRO2SEC((double)(elapsedUsec - frameUsec));
 
     ProcessConvolutionBloomKernelGenerationResult();
-
     RenderPendingCaptureRequests();
 
     bool statEnabled = app_showStats.GetBool();
@@ -255,8 +294,37 @@ void App::Render(uint64_t frameUsec) {
     renderWorld->BeginFrame();
 
     RenderScene();
-
     RenderGUI();
+
+    renderWorld->EndFrame();
+
+    mainRenderContext->EndFrame();
+
+    uint64_t t1 = BE1::PlatformTime::Microseconds();
+    UpdateRenderFrontendFrameTime(t1 - t0);
+}
+
+void App::RenderBootstrapFrame(uint64_t frameUsec) {
+    PROFILER_CPU_SCOPED_EVENT("App::RenderBootstrapFrame");
+
+    RenderContext::FrameOptions frameOptions;
+    frameOptions.frameTime = (float)MICRO2SEC((double)frameUsec);
+    frameOptions.elapsedTime = 0.0f;
+    frameOptions.elapsedPrevTime = 0.0f;
+    frameOptions.statEnabled = false;
+    frameOptions.gpuTiming = false;
+    frameOptions.textureStreamingFeedback = false;
+    frameOptions.swapChainOutput = true;
+
+    mainRenderContext->BeginFrame(frameOptions);
+
+    uint64_t t0 = BE1::PlatformTime::Microseconds();
+
+    renderSystem->UpdateFrame();
+
+    renderWorld->BeginFrame();
+
+    RenderBootstrapScreen();
 
     renderWorld->EndFrame();
 
@@ -551,6 +619,45 @@ void App::RenderPendingCaptureRequests() {
             BE_WARNLOG("App::RenderPendingCaptureRequests: too many specular prefiltered environment capture files exist\n");
         }
     }
+}
+
+void App::RenderBootstrapScreen() {
+    const float width = static_cast<float>(mainRenderContext->GetWidth());
+    const float height = static_cast<float>(mainRenderContext->GetHeight());
+    const float progress = BE1::Clamp(renderSystem->GetShaderPipelineBootstrapProgress(), 0.0f, 1.0f);
+    const bool bootstrapFailed = state == State::BootstrapFailed;
+
+    const float barWidth = BE1::Clamp(width * 0.8f, 8.0f, 960.0f);
+    constexpr float barHeight = 8.0f;
+    constexpr float barPadding = 2.0f;
+    const float x = (width - barWidth) * 0.5f;
+    const float y = height * 0.75f;
+
+    // GUI camera 는 render target 을 clear 하지 않으므로, 불투명 사각형으로 화면 전체를 덮는다.
+    mainRenderContext->SetColor(BE1::Color4::black);
+    mainRenderContext->DrawBar(0.0f, 0.0f, width, height);
+
+    mainRenderContext->SetColor(BE1::Color4(0.14f, 0.14f, 0.07f, 1.0f));
+    mainRenderContext->DrawBar(x, y, barWidth, barHeight);
+
+    const BE1::Color4 fillColor = bootstrapFailed ? BE1::Color4(0.8f, 0.1f, 0.1f, 1.0f) : BE1::Color4(0.63f, 0.63f, 0.03f, 1.0f);
+    const float fillWidth = (barWidth - barPadding * 2.0f) * progress;
+    if (fillWidth > 0.0f) {
+        mainRenderContext->SetColor(fillColor);
+        mainRenderContext->DrawBar(x + barPadding, y + barPadding, fillWidth, barHeight - barPadding * 2.0f);
+    }
+
+    const int progressPercent = static_cast<int>(progress * 100.0f + 0.5f);
+    const char *statusText = bootstrapFailed ? "Shader pipeline build failed" : BE1::va("Building shader pipelines... %d%%", progressPercent);
+
+    mainRenderContext->SetFont(fontManager.defaultFont);
+    mainRenderContext->SetTextScale(1.0f);
+    mainRenderContext->SetTextShadowColor(BE1::Color4::black);
+    mainRenderContext->SetTextShadowOffset(1.0f, 1.0f);
+    mainRenderContext->SetColor(bootstrapFailed ? BE1::Color4(1.0f, 0.35f, 0.35f, 1.0f) : BE1::Color4::white);
+    mainRenderContext->DrawString(0.0f, BE1::Max(y - 32.0f, 0.0f), statusText, DrawTextFlag::Center | DrawTextFlag::DropShadows);
+
+    renderWorld->RenderGUI(mainRenderContext->GetGuiMesh());
 }
 
 void App::RenderScene() {

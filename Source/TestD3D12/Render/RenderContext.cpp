@@ -419,7 +419,11 @@ void RenderContext::InitPipelines() {
     graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
 
-    imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
+    // Fullscreen triangle 은 frame composition 과 bootstrap 화면에 항상 필요하므로 동기적으로 준비한다.
+    imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    if (!ShaderPipeline::GetReadyPSO(imagePipeline)) {
+        BE_FATALERROR("RenderContext::InitPipelines: failed to build image pipeline\n");
+    }
 
     const SharedPtr<ShaderTemplate> *hdrOutputShaderTemplate = nullptr;
     switch (swapChain->GetColorSpace()) {
@@ -436,7 +440,43 @@ void RenderContext::InitPipelines() {
 
     if (hdrOutputShaderTemplate) {
         graphicsPipelineDesc.renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
-        hdrOutputPipeline = shaderPipelineCache.GetGraphicsPipeline(*hdrOutputShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
+        hdrOutputPipeline = shaderPipelineCache.GetGraphicsPipeline(*hdrOutputShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+        if (!ShaderPipeline::GetReadyPSO(hdrOutputPipeline)) {
+            BE_FATALERROR("RenderContext::InitPipelines: failed to build HDR output pipeline\n");
+        }
+    }
+
+    // bootstrap 화면의 DrawBar 가 첫 프레임부터 보이도록 white unlit GUI pipeline 을 미리 준비한다.
+    GraphicsPipelineDesc bootstrapGuiPipelineDesc;
+    bootstrapGuiPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(VertexInputLayoutId::XyzStColor);
+    bootstrapGuiPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
+    GetSwapChainRenderDest(bootstrapGuiPipelineDesc.renderDest);
+
+    ShaderPipeline *bootstrapGuiPipeline = materialManager.whiteUnlitMaterial->GetGraphicsPipeline({}, bootstrapGuiPipelineDesc, false);
+    if (!ShaderPipeline::GetReadyPSO(bootstrapGuiPipeline)) {
+        BE_FATALERROR("RenderContext::InitPipelines: failed to build bootstrap GUI pipeline\n");
+    }
+
+    // bootstrap 텍스트가 첫 프레임부터 보이도록 필요한 glyph 와 font material pipeline 을 미리 준비한다.
+    static constexpr char BootstrapTextGlyphs[] = "Building shader pipelines... 0123456789%Shader pipeline build failed";
+    bool cachedGlyphs[128] = {};
+    SharedPtr<Material> bootstrapFontMaterial;
+
+    for (const unsigned char character : BootstrapTextGlyphs) {
+        if (character == 0 || character >= COUNT_OF(cachedGlyphs) || cachedGlyphs[character]) {
+            continue;
+        }
+        cachedGlyphs[character] = true;
+
+        FontGlyph *glyph = fontManager.defaultFont->GetGlyph(static_cast<char32_t>(character));
+        if (glyph && glyph->material && !bootstrapFontMaterial) {
+            bootstrapFontMaterial = glyph->material;
+        }
+    }
+
+    ShaderPipeline *bootstrapFontPipeline = bootstrapFontMaterial ? bootstrapFontMaterial->GetGraphicsPipeline({}, bootstrapGuiPipelineDesc, false) : nullptr;
+    if (!ShaderPipeline::GetReadyPSO(bootstrapFontPipeline)) {
+        BE_FATALERROR("RenderContext::InitPipelines: failed to build bootstrap font pipeline\n");
     }
 }
 

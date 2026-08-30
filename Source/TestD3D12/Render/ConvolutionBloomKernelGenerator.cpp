@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "ConvolutionBloomKernelGenerator.h"
+#include "ShaderPipelineBootstrap.h"
 #include "Render/Texture/Texture.h"
 #include "RenderSystem.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
@@ -22,9 +23,6 @@
 #include "Shaders/ShaderInterop.h"
 
 void ConvolutionBloomKernelGenerator::Init() {
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
-
     // 커널 사이즈로 유효한 FFT size enum 얻기
     if (!GpuFFT::GetGpuFFTSize(KernelSize, fftSizeEnum)) {
         BE_FATALERROR("ConvolutionBloomKernelGenerator::Init: invalid kernel size %u\n", KernelSize);
@@ -47,11 +45,16 @@ void ConvolutionBloomKernelGenerator::Init() {
     EnsureResources();
 }
 
-void ConvolutionBloomKernelGenerator::UpdatePipelineBuildState() {
-    if (pipelinesReady || pipelineBuildFailed) {
-        return;
-    }
+void ConvolutionBloomKernelGenerator::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const {
+    static constexpr char groupName[] = "ConvolutionBloomKernelGenerator";
 
+    bootstrap.TrackPipeline(groupName, aperturePreparePipeline);
+    bootstrap.TrackPipeline(groupName, reduceApertureEnergyPipeline);
+    bootstrap.TrackPipeline(groupName, resolveDiffractionPSFPipeline);
+    bootstrap.TrackPipeline(groupName, applyDispersionPipeline);
+}
+
+bool ConvolutionBloomKernelGenerator::ArePipelinesReady() const {
     const ShaderPipeline *pipelines[] = {
         aperturePreparePipeline.get(),
         reduceApertureEnergyPipeline.get(),
@@ -59,44 +62,15 @@ void ConvolutionBloomKernelGenerator::UpdatePipelineBuildState() {
         applyDispersionPipeline.get()
     };
 
-    bool allReady = true;
-
     for (const ShaderPipeline *pipeline : pipelines) {
-        if (!pipeline) {
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        switch (pipeline->GetState()) {
-        case ShaderPipeline::State::Ready:
-        case ShaderPipeline::State::Rebuilding:
-            break;
-        case ShaderPipeline::State::Building:
-            allReady = false;
-            break;
-        case ShaderPipeline::State::Empty:
-        case ShaderPipeline::State::Failed:
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        if (pipelineBuildFailed) {
-            break;
+        if (!pipeline || !pipeline->IsReady()) {
+            return false;
         }
     }
-
-    if (pipelineBuildFailed) {
-        BE_WARNLOG("ConvolutionBloomKernelGenerator::UpdatePipelineBuildState: pipeline build failed\n");
-        return;
-    }
-
-    pipelinesReady = allReady;
+    return true;
 }
 
 void ConvolutionBloomKernelGenerator::Shutdown() {
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
-
     DestroyResources();
     apertureSourceTexture.reset();
 

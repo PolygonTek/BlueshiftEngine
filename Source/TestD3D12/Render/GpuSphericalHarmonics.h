@@ -18,6 +18,7 @@
 
 class ShaderPipeline;
 class ShaderTemplate;
+class ShaderPipelineBootstrap;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -58,10 +59,7 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    void                            UpdatePipelineBuildState();
-
-    bool                            ArePipelinesReady() const { return pipelinesReady; }
-    bool                            HasPipelineBuildFailed() const { return pipelineBuildFailed; }
+    void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
                                     /// cubemap 을 2-band SH 로 투영하여 outputCoefficients 의 4개 float4 element 에 기록한다.
                                     /// cubeMap 은 ShaderResourceCompute, outputCoefficients 는 UnorderedAccess 상태여야 하며 함수는 두 상태를 변경하지 않는다.
@@ -124,7 +122,4 @@ private:
                                     // FilterCubemapSH2/SH3 의 projection 과 reconstruction 사이에서 계수를 저장하는 3-band 크기의 재사용 scratch buffer.
     RHI::Buffer *                   shCoefficientBuffer = nullptr;
     RHI::GPUResourceState           shCoefficientBufferState = RHI::GPUResourceState::Undefined;
-
-    bool                            pipelinesReady = false;
-    bool                            pipelineBuildFailed = false;
 };

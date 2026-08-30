@@ -90,6 +90,16 @@ public:
     void                            TakeScreenshot();
 
 private:
+    enum class State : uint8_t {
+        Bootstrapping,
+        BootstrapReady,
+        Running,
+        BootstrapFailed
+    };
+
+    void                            FinishBootstrap();
+    void                            RenderRunningFrame(uint64_t frameUsec);
+    void                            RenderBootstrapFrame(uint64_t frameUsec);
     void                            SetConvolutionBloomAperturePreset(AperturePreset aperturePreset);
     void                            RegenerateConvolutionBloomKernel();
     void                            ProcessConvolutionBloomKernelGenerationResult();
@@ -104,6 +114,7 @@ private:
     void                            UpdateGameFrameTime(uint64_t frameUsec);
     void                            UpdateRenderFrontendFrameTime(uint64_t frameUsec);
     void                            RenderPendingCaptureRequests();
+    void                            RenderBootstrapScreen();
     void                            RenderScene();
     void                            RenderGUI();
 
@@ -126,6 +137,7 @@ private:
     Scene *                         scene = nullptr;
     int                             sceneIndex = -1;
     int                             pendingSceneIndex = -1;
+    State                           state = State::Bootstrapping;
 
     SharedPtr<Font>                 mainFont;
     SharedPtr<Texture>              convolutionBloomApertureTexture;

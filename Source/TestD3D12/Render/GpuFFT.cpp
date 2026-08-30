@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "GpuFFT.h"
+#include "ShaderPipelineBootstrap.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
@@ -39,9 +40,6 @@ struct FFTDispatchEntry {
 static FFTDispatchEntry     fftDispatchTable[static_cast<uint32_t>(GpuFFT::FFTSize::Count)];
 
 void GpuFFT::Init() {
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
-
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
     constexpr bool asyncPipelineBuild = true;
@@ -194,9 +192,6 @@ void GpuFFT::Init() {
 }
 
 void GpuFFT::Shutdown() {
-    pipelinesReady = false;
-    pipelineBuildFailed = false;
-
     for (uint32_t i = 0; i < static_cast<uint32_t>(FFTSize::Count); i++) {
         fftDispatchTable[i] = FFTDispatchEntry{};
     }
@@ -303,88 +298,51 @@ void GpuFFT::Shutdown() {
     }
 }
 
-void GpuFFT::UpdatePipelineBuildState() {
-    if (pipelinesReady || pipelineBuildFailed) {
-        return;
-    }
+void GpuFFT::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const {
+    static constexpr char groupName[] = "GpuFFT";
 
-    const ShaderPipeline *pipelines[] = {
-        fftComplex256Pipeline.get(),
-        fftComplex512Pipeline.get(),
-        fftComplex1024Pipeline.get(),
-        fftComplex2048Pipeline.get(),
+    bootstrap.TrackPipeline(groupName, fftComplex256Pipeline);
+    bootstrap.TrackPipeline(groupName, fftComplex512Pipeline);
+    bootstrap.TrackPipeline(groupName, fftComplex1024Pipeline);
+    bootstrap.TrackPipeline(groupName, fftComplex2048Pipeline);
 
-        ifftComplex256Pipeline.get(),
-        ifftComplex512Pipeline.get(),
-        ifftComplex1024Pipeline.get(),
-        ifftComplex2048Pipeline.get(),
+    bootstrap.TrackPipeline(groupName, ifftComplex256Pipeline);
+    bootstrap.TrackPipeline(groupName, ifftComplex512Pipeline);
+    bootstrap.TrackPipeline(groupName, ifftComplex1024Pipeline);
+    bootstrap.TrackPipeline(groupName, ifftComplex2048Pipeline);
 
-        fftReal512Pipeline.get(),
-        fftReal1024Pipeline.get(),
-        fftReal2048Pipeline.get(),
+    bootstrap.TrackPipeline(groupName, fftReal512Pipeline);
+    bootstrap.TrackPipeline(groupName, fftReal1024Pipeline);
+    bootstrap.TrackPipeline(groupName, fftReal2048Pipeline);
 
-        ifftReal512Pipeline.get(),
-        ifftReal1024Pipeline.get(),
-        ifftReal2048Pipeline.get(),
+    bootstrap.TrackPipeline(groupName, ifftReal512Pipeline);
+    bootstrap.TrackPipeline(groupName, ifftReal1024Pipeline);
+    bootstrap.TrackPipeline(groupName, ifftReal2048Pipeline);
 
-        fftDualReal256Pipeline.get(),
-        fftDualReal512Pipeline.get(),
-        fftDualReal1024Pipeline.get(),
-        fftDualReal2048Pipeline.get(),
+    bootstrap.TrackPipeline(groupName, fftDualReal256Pipeline);
+    bootstrap.TrackPipeline(groupName, fftDualReal512Pipeline);
+    bootstrap.TrackPipeline(groupName, fftDualReal1024Pipeline);
+    bootstrap.TrackPipeline(groupName, fftDualReal2048Pipeline);
 
-        ifftDualReal256Pipeline.get(),
-        ifftDualReal512Pipeline.get(),
-        ifftDualReal1024Pipeline.get(),
-        ifftDualReal2048Pipeline.get(),
+    bootstrap.TrackPipeline(groupName, ifftDualReal256Pipeline);
+    bootstrap.TrackPipeline(groupName, ifftDualReal512Pipeline);
+    bootstrap.TrackPipeline(groupName, ifftDualReal1024Pipeline);
+    bootstrap.TrackPipeline(groupName, ifftDualReal2048Pipeline);
 
-        multiplyComplexSpectrum2DPipeline.get(),
-        multiplyPackedRealSpectrum2DPipeline.get(),
-        multiplyPackedDualRealSpectrum2DPipeline.get(),
+    bootstrap.TrackPipeline(groupName, multiplyComplexSpectrum2DPipeline);
+    bootstrap.TrackPipeline(groupName, multiplyPackedRealSpectrum2DPipeline);
+    bootstrap.TrackPipeline(groupName, multiplyPackedDualRealSpectrum2DPipeline);
 
-        transposeComplex256Pipeline.get(),
-        transposeComplex512Pipeline.get(),
-        transposeComplex1024Pipeline.get(),
-        transposeComplex2048Pipeline.get(),
-        transposeComplex256x512Pipeline.get(),
-        transposeComplex512x256Pipeline.get(),
-        transposeComplex512x1024Pipeline.get(),
-        transposeComplex1024x512Pipeline.get(),
-        transposeComplex1024x2048Pipeline.get(),
-        transposeComplex2048x1024Pipeline.get()
-    };
-
-    bool allReady = true;
-
-    for (const ShaderPipeline *pipeline : pipelines) {
-        if (!pipeline) {
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        switch (pipeline->GetState()) {
-        case ShaderPipeline::State::Ready:
-        case ShaderPipeline::State::Rebuilding:
-            break;
-        case ShaderPipeline::State::Building:
-            allReady = false;
-            break;
-        case ShaderPipeline::State::Empty:
-        case ShaderPipeline::State::Failed:
-            pipelineBuildFailed = true;
-            break;
-        }
-
-        if (pipelineBuildFailed) {
-            break;
-        }
-    }
-
-    if (pipelineBuildFailed) {
-        BE_WARNLOG("GpuFFT::UpdatePipelineBuildState: pipeline build failed\n");
-        return;
-    }
-
-    pipelinesReady = allReady;
+    bootstrap.TrackPipeline(groupName, transposeComplex256Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex512Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex1024Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex2048Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex256x512Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex512x256Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex512x1024Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex1024x512Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex1024x2048Pipeline);
+    bootstrap.TrackPipeline(groupName, transposeComplex2048x1024Pipeline);
 }
 
 bool GpuFFT::GetGpuFFTSize(uint32_t fftSizeValue, GpuFFT::FFTSize &fftSizeEnum) {

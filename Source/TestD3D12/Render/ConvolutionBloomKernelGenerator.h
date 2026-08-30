@@ -20,6 +20,7 @@
 class Texture;
 class ShaderPipeline;
 class ShaderTemplate;
+class ShaderPipelineBootstrap;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -36,10 +37,8 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    void                            UpdatePipelineBuildState();
-
-    bool                            ArePipelinesReady() const { return pipelinesReady; }
-    bool                            HasPipelineBuildFailed() const { return pipelineBuildFailed; }
+    void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
+    bool                            ArePipelinesReady() const;
 
     void                            SetApertureTexture(const SharedPtr<Texture> &texture);
     const SharedPtr<Texture> &      GetApertureTexture() const { return apertureSourceTexture; }
@@ -99,7 +98,4 @@ private:
     SharedPtr<ShaderPipeline>       reduceApertureEnergyPipeline;
     SharedPtr<ShaderPipeline>       resolveDiffractionPSFPipeline;
     SharedPtr<ShaderPipeline>       applyDispersionPipeline;
-
-    bool                            pipelinesReady = false;
-    bool                            pipelineBuildFailed = false;
 };

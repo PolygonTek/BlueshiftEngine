@@ -27,6 +27,7 @@ namespace BE1 {
 class ShaderPipeline;
 class ShaderTemplate;
 class Texture;
+class ShaderPipelineBootstrap;
 struct OceanPhillipsInitialSpectrumParams;
 struct OceanTMAInitialSpectrumParams;
 struct OceanTimeSpectrumParams;
@@ -172,10 +173,7 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    void                            UpdatePipelineBuildState();
-
-    bool                            ArePipelinesReady() const { return pipelinesReady; }
-    bool                            HasPipelineBuildFailed() const { return pipelineBuildFailed; }
+    void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
     const SharedPtr<ShaderTemplate> &GetSurfaceShaderTemplate() const { return surfaceShaderTemplate; }
 
@@ -275,6 +273,4 @@ private:
     bool                            initialSpectraReady = false;
     bool                            cascadeOutputsReady = false;
     bool                            foamHistoryResetPending = true;
-    bool                            pipelinesReady = false;
-    bool                            pipelineBuildFailed = false;
 };

@@ -153,6 +153,8 @@ set(SRC_FILES
     Render/ProbeBakeSystem.cpp
     Render/GpuTiming.h
     Render/GpuTiming.cpp
+    Render/ShaderPipelineBootstrap.h
+    Render/ShaderPipelineBootstrap.cpp
     Render/RenderContext.h
     Render/RenderContext.cpp
     Render/RenderFrameData.h

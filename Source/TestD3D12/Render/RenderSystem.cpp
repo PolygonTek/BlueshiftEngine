@@ -59,19 +59,26 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     shaderTemplateManager.Init();
 
+    shaderPipelineBootstrap.BeginCollection(96);
+
     gpuFFT.Init();
+    gpuFFT.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
     gpuOcean.Init();
+    gpuOcean.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
     gpuSphericalHarmonics.Init();
+    gpuSphericalHarmonics.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
     iblBaker.Init();
+    iblBaker.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
     probeBakeSystem.Init();
 
     InitComputePipelines();
 
     convolutionBloomKernelGenerator.Init();
+    convolutionBloomKernelGenerator.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
     materialManager.Init();
 
@@ -85,6 +92,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     backEnd = new RenderBackend;
     backEnd->Init();
+
+    shaderPipelineBootstrap.EndCollection();
 
 #ifdef USE_RENDER_THREAD
     InitRenderThread();
@@ -103,6 +112,8 @@ void RenderSystem::Shutdown() {
 #endif
 
     BE1::cmdSystem.RemoveCommand("screenshot");
+
+    shaderPipelineBootstrap.Reset();
 
     backEnd->Shutdown();
     SAFE_DELETE(backEnd);
@@ -168,12 +179,6 @@ void RenderSystem::UpdateFrame() {
     animManager.UpdateFrame();
 
     fontManager.UpdateFrame();
-
-    gpuFFT.UpdatePipelineBuildState();
-    gpuOcean.UpdatePipelineBuildState();
-    gpuSphericalHarmonics.UpdatePipelineBuildState();
-    iblBaker.UpdatePipelineBuildState();
-    convolutionBloomKernelGenerator.UpdatePipelineBuildState();
 
     RHI::renderer->GetMemoryUsage(videoMemoryUsage);
     assert(videoMemoryUsage.budgetBytes > 0);
@@ -380,14 +385,6 @@ void RenderSystem::PrepareProbeBakes(RenderContext *renderContext) {
     probeBakeSystem.Prepare(renderContext);
 }
 
-static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, SharedPtr<ShaderPipeline> &pipeline) {
-    if (pipeline && pipeline->GetState() != ShaderPipeline::State::Empty) {
-        return;
-    }
-
-    pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey(), false);
-}
-
 void RenderSystem::InitComputePipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
@@ -421,32 +418,41 @@ void RenderSystem::InitComputePipelines() {
     EnsureComputePipelines();
 }
 
+static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, SharedPtr<ShaderPipeline> &pipeline, ShaderPipelineBootstrap &bootstrap) {
+    static constexpr char groupName[] = "RenderSystem";
+
+    if (!pipeline || pipeline->GetState() == ShaderPipeline::State::Empty) {
+        pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey(), true);
+    }
+    bootstrap.TrackPipeline(groupName, pipeline);
+}
+
 void RenderSystem::EnsureComputePipelines() {
-    EnsureComputePipeline(genHiZMipFirstBatchShaderTemplate, genHiZMipFirstBatchPipeline);
-    EnsureComputePipeline(genHiZMipFirstBatchMSAAShaderTemplate, genHiZMipFirstBatchMSAAPipeline);
-    EnsureComputePipeline(genHiZMipBatchShaderTemplate, genHiZMipBatchPipeline);
-    EnsureComputePipeline(genHiZMipOddDimShaderTemplate, genHiZMipOddDimPipeline);
-    EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline);
-    EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline);
+    EnsureComputePipeline(genHiZMipFirstBatchShaderTemplate, genHiZMipFirstBatchPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(genHiZMipFirstBatchMSAAShaderTemplate, genHiZMipFirstBatchMSAAPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(genHiZMipBatchShaderTemplate, genHiZMipBatchPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(genHiZMipOddDimShaderTemplate, genHiZMipOddDimPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline, shaderPipelineBootstrap);
 
-    EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline);
-    EnsureComputePipeline(depthMSAAResolveShaderTemplate, depthMSAAResolvePipeline);
-    EnsureComputePipeline(surfaceOutputMSAAResolveNormalShaderTemplate, surfaceOutputMSAAResolveNormalPipeline);
-    EnsureComputePipeline(surfaceOutputMSAAResolveVelocityShaderTemplate, surfaceOutputMSAAResolveVelocityPipeline);
-    EnsureComputePipeline(surfaceOutputMSAAResolveNormalVelocityShaderTemplate, surfaceOutputMSAAResolveNormalVelocityPipeline);
+    EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(depthMSAAResolveShaderTemplate, depthMSAAResolvePipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(surfaceOutputMSAAResolveNormalShaderTemplate, surfaceOutputMSAAResolveNormalPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(surfaceOutputMSAAResolveVelocityShaderTemplate, surfaceOutputMSAAResolveVelocityPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(surfaceOutputMSAAResolveNormalVelocityShaderTemplate, surfaceOutputMSAAResolveNormalVelocityPipeline, shaderPipelineBootstrap);
 
-    EnsureComputePipeline(finalPostProcessShaderTemplate, finalPostProcessPipeline);
-    EnsureComputePipeline(taaResolveShaderTemplate, taaResolvePipeline);
-    EnsureComputePipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline);
-    EnsureComputePipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline);
+    EnsureComputePipeline(finalPostProcessShaderTemplate, finalPostProcessPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(taaResolveShaderTemplate, taaResolvePipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline, shaderPipelineBootstrap);
 
-    EnsureComputePipeline(bloomPrefilterShaderTemplate, bloomPrefilterPipeline);
-    EnsureComputePipeline(bloomDownsampleShaderTemplate, bloomDownsamplePipeline);
-    EnsureComputePipeline(bloomUpsampleShaderTemplate, bloomUpsamplePipeline);
+    EnsureComputePipeline(bloomPrefilterShaderTemplate, bloomPrefilterPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(bloomDownsampleShaderTemplate, bloomDownsamplePipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(bloomUpsampleShaderTemplate, bloomUpsamplePipeline, shaderPipelineBootstrap);
 
-    EnsureComputePipeline(convolutionBloomScreenPrepareShaderTemplate, convolutionBloomScreenPreparePipeline);
-    EnsureComputePipeline(convolutionBloomKernelPrepareShaderTemplate, convolutionBloomKernelPreparePipeline);
-    EnsureComputePipeline(convolutionBloomResolveShaderTemplate, convolutionBloomResolvePipeline);
+    EnsureComputePipeline(convolutionBloomScreenPrepareShaderTemplate, convolutionBloomScreenPreparePipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(convolutionBloomKernelPrepareShaderTemplate, convolutionBloomKernelPreparePipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(convolutionBloomResolveShaderTemplate, convolutionBloomResolvePipeline, shaderPipelineBootstrap);
 }
 
 void RenderSystem::ReleaseComputePipelines() {
