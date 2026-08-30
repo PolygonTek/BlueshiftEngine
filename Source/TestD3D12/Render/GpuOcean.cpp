@@ -275,7 +275,7 @@ bool GpuOcean::EnsureResources() {
         return false;
     }
 
-    const BE1::Image::Format initialSpectrumFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R32G32B32A32_FLOAT);
+    const BE1::Image::Format initialSpectrumFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16G16B16A16_FLOAT);
     const BE1::Image::Format outputFieldFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16G16B16A16_FLOAT);
     const BE1::Image::Format foamHistoryFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16_FLOAT);
 
