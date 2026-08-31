@@ -179,13 +179,13 @@ private:
     void                            InitPipelines();
     void                            ReleasePipelines();
     void                            CreateSwapChain(uint32_t width, uint32_t height, bool hdrOutputRequested);
-    void                            UpdateDisplayOutput();
-    void                            RecreateDisplayOutput(bool hdrOutputRequested);
-    void                            UpdateDisplayOutputSettings();
+    void                            UpdateDisplayOutput(const RenderFrameSettings &renderFrameSettings);
+    void                            RecreateDisplayOutput(bool hdrOutputRequested, const RenderFrameSettings &renderFrameSettings);
+    void                            UpdateDisplayOutputSettings(const RenderFrameSettings &renderFrameSettings);
     RHI::Format                     GetFrameCompositionColorFormat() const;
     void                            CreateFrameCompositionTexture();
     void                            DestroyFrameCompositionTexture();
-    bool                            EnsureCSMDepthTexture();
+    bool                            EnsureCSMDepthTexture(uint32_t resolution);
     bool                            CreateCSMDepthTexture(uint32_t resolution);
     void                            DestroyCSMDepthTexture();
     bool                            BeginImGui();

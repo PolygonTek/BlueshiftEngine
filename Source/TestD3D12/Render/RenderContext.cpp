@@ -25,23 +25,10 @@
 
 RenderContext *         RenderContext::activeContext = nullptr;
 
-static uint32_t GetMainRTSampleCountFromCVar() {
-    const int sampleCount = r_msaa.GetInteger();
-
-    if (sampleCount >= 8) {
-        return 8;
-    }
-    if (sampleCount >= 4) {
-        return 4;
-    }
-    if (sampleCount >= 2) {
-        return 2;
-    }
-    return 1;
-}
-
 void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) {
     this->windowHandle = windowHandle;
+
+    const RenderFrameSettings initialRenderFrameSettings = CaptureRenderFrameSettings();
 
     // 프레임 별로 사용할 프레임 데이터들을 초기화한다.
     // 프레임 데이터: 임시 메모리, 커맨드 리스트 풀, 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
@@ -59,12 +46,12 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     uint32_t backBufferWidth = rc.right;
     uint32_t backBufferHeight = rc.bottom;
 
-    CreateSwapChain(backBufferWidth, backBufferHeight, r_hdrOutput.GetBool());
+    CreateSwapChain(backBufferWidth, backBufferHeight, initialRenderFrameSettings.hdrOutput);
 
-    UpdateDisplayOutputSettings();
+    UpdateDisplayOutputSettings(initialRenderFrameSettings);
 
     mainRTColorFormat = RHI::Format::R16G16B16A16_FLOAT;
-    mainRTSampleCount = GetMainRTSampleCountFromCVar();
+    mainRTSampleCount = initialRenderFrameSettings.mainRTSampleCount;
     this->baseClearColor = !RHI::Renderer::IsSRGBFormat(mainRTColorFormat) ? baseClearColor.SRGBToLinear() : baseClearColor;
 
     CreateFrameCompositionTexture();
@@ -74,7 +61,7 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     imguiOverlay = RHI::renderer->CreateImGuiOverlay(windowHandle, frameCompositionTexture->GetFormat());
 #endif
 
-    if (!EnsureCSMDepthTexture()) {
+    if (!EnsureCSMDepthTexture(initialRenderFrameSettings.csmResolution)) {
         BE_WARNLOG("RenderContext::Init: failed to create CSM depth texture\n");
     }
 
@@ -141,12 +128,12 @@ void RenderContext::CreateSwapChain(uint32_t width, uint32_t height, bool hdrOut
     }
 }
 
-void RenderContext::UpdateDisplayOutputSettings() {
+void RenderContext::UpdateDisplayOutputSettings(const RenderFrameSettings &renderFrameSettings) {
     static constexpr float DefaultHDRPeakLuminanceNits = 1000.0f;
 
     DisplayOutputSettings settings;
-    settings.hdrOutputRequested = r_hdrOutput.GetBool();
-    settings.paperWhiteNits = r_hdrPaperWhiteNits.GetFloat();
+    settings.hdrOutputRequested = renderFrameSettings.hdrOutput;
+    settings.paperWhiteNits = renderFrameSettings.hdrPaperWhiteNits;
 
     displayInfo = {};
     displayInfoAvailable = swapChain->GetDisplayInfo(displayInfo);
@@ -156,7 +143,7 @@ void RenderContext::UpdateDisplayOutputSettings() {
         settings.maxFullFrameLuminanceNits = displayInfo.maxFullFrameLuminanceNits; // 디스플레이의 최대 전체 프레임 휘도 (니트 단위)
     }
 
-    const float peakLuminanceOverrideNits = BE1::Max(r_hdrPeakNits.GetFloat(), 0.0f);
+    const float peakLuminanceOverrideNits = renderFrameSettings.hdrPeakNits;
     cachedHDRPeakNitsOverride = peakLuminanceOverrideNits;
 
     if (peakLuminanceOverrideNits > 0.0f) {
@@ -202,7 +189,7 @@ void RenderContext::OnDisplayChange() {
     displayOutputDirty = true;
 }
 
-void RenderContext::RecreateDisplayOutput(bool hdrOutputRequested) {
+void RenderContext::RecreateDisplayOutput(bool hdrOutputRequested, const RenderFrameSettings &renderFrameSettings) {
     assert(!RenderContext::activeContext);
 
     if (renderSystem->IsUsingRenderThread()) {
@@ -228,7 +215,7 @@ void RenderContext::RecreateDisplayOutput(bool hdrOutputRequested) {
     swapChain = nullptr;
 
     CreateSwapChain(width, height, hdrOutputRequested);
-    UpdateDisplayOutputSettings();
+    UpdateDisplayOutputSettings(renderFrameSettings);
 
     CreateFrameCompositionTexture();
 
@@ -242,14 +229,14 @@ void RenderContext::RecreateDisplayOutput(bool hdrOutputRequested) {
     ResetGuiClipRect(width, height);
 }
 
-void RenderContext::UpdateDisplayOutput() {
+void RenderContext::UpdateDisplayOutput(const RenderFrameSettings &renderFrameSettings) {
     static constexpr uint32_t DisplayOutputPollFrameInterval = 60;
 
-    const bool hdrOutputRequested = r_hdrOutput.GetBool();
+    const bool hdrOutputRequested = renderFrameSettings.hdrOutput;
     const bool hdrOutputRequestChanged = displayOutputSettings.hdrOutputRequested != hdrOutputRequested;
     const bool hdrOutputSettingsChanged = hdrOutputRequestChanged ||
-        displayOutputSettings.paperWhiteNits != r_hdrPaperWhiteNits.GetFloat() ||
-        cachedHDRPeakNitsOverride != BE1::Max(r_hdrPeakNits.GetFloat(), 0.0f);
+        displayOutputSettings.paperWhiteNits != renderFrameSettings.hdrPaperWhiteNits ||
+        cachedHDRPeakNitsOverride != renderFrameSettings.hdrPeakNits;
 
     // 디스플레이 HDR 상태 변경 알림을 놓치지 않도록 저빈도로 현재 출력 정보를 다시 확인한다.
     const bool periodicDisplayOutputPoll = frameCount % DisplayOutputPollFrameInterval == 0;
@@ -259,13 +246,13 @@ void RenderContext::UpdateDisplayOutput() {
     }
 
     if (hdrOutputRequestChanged) {
-        RecreateDisplayOutput(hdrOutputRequested);
+        RecreateDisplayOutput(hdrOutputRequested, renderFrameSettings);
         displayOutputDirty = false;
         return;
     }
 
     if (!hdrOutputRequested) {
-        UpdateDisplayOutputSettings();
+        UpdateDisplayOutputSettings(renderFrameSettings);
         displayOutputDirty = false;
         return;
     }
@@ -276,9 +263,9 @@ void RenderContext::UpdateDisplayOutput() {
     const bool desiredHDROutput = swapChain->IsHDROutputAvailable();
 
     if (hdrOutputActive != desiredHDROutput) {
-        RecreateDisplayOutput(desiredHDROutput);
+        RecreateDisplayOutput(desiredHDROutput, renderFrameSettings);
     } else {
-        UpdateDisplayOutputSettings();
+        UpdateDisplayOutputSettings(renderFrameSettings);
     }
 
     displayOutputDirty = false;
@@ -321,8 +308,7 @@ void RenderContext::DestroyFrameCompositionTexture() {
     frameCompositionTextureNeedsClear = false;
 }
 
-bool RenderContext::EnsureCSMDepthTexture() {
-    const uint32_t resolution = static_cast<uint32_t>(BE1::Max(r_csmResolution.GetInteger(), 1));
+bool RenderContext::EnsureCSMDepthTexture(uint32_t resolution) {
     if (csmDepthTexture && csmDepthTexture->GetWidth() == resolution && csmDepthTexture->GetHeight() == resolution) {
         return true;
     }
@@ -616,7 +602,8 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
         return false;
     }
 
-    UpdateDisplayOutput();
+    const RenderFrameSettings renderFrameSettings = CaptureRenderFrameSettings();
+    UpdateDisplayOutput(renderFrameSettings);
 
     if (options.swapChainOutput) {
         // RenderCapture 는 활성 프레임 안에서 실행할 수 없으므로 필요한 radiance 캡처를 먼저 처리한다.
@@ -630,20 +617,20 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
 
     currentFrontendFrameIndex = frameCount % COUNT_OF(frames);
     RenderFrameData *frameData = GetCurrentFrontendFrameData();
-    mainRTSampleCount = GetMainRTSampleCountFromCVar();
+    mainRTSampleCount = renderFrameSettings.mainRTSampleCount;
 
     if (renderSystem->IsUsingRenderThread()) {
         // 현재 프런트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
         renderSystem->WaitFrameRenderCompleted(frameData);
     }
 
-    frameData->BeginFrame();
+    frameData->BeginFrame(renderFrameSettings);
 
     // BeginFrame 에서 frame fence 완료를 기다렸으므로, 렌더 커맨드에 밀어 넣었던 render work 들을 안전하게 완료한다.
     renderSystem->CompleteRenderWorks(frameData);
 
     // CSM depth texture 가 없거나 해상도가 바뀌었으면 새로 생성한다.
-    if (!EnsureCSMDepthTexture()) {
+    if (!EnsureCSMDepthTexture(renderFrameSettings.csmResolution)) {
         BE_WARNLOG("RenderContext::BeginFrame: failed to create CSM depth texture\n");
     }
 

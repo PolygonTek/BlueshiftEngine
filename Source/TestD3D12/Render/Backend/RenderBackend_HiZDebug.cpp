@@ -15,15 +15,15 @@
 #include "Precompiled.h"
 #include "RenderBackend.h"
 #include "Render/RenderSystem.h"
-#include "Render/RenderCvars.h"
-#include "Render/RenderInternal.h"
 #include "Render/RenderFrameData.h"
+#include "Render/RenderInternal.h"
 #include "Shaders/ShaderInterop.h"
 
 bool RenderBackend::DispatchHiZDebugPreview() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchHiZDebugPreview");
 
-    const uint32_t mipLevel = static_cast<uint32_t>(BE1::Clamp(r_hiZDebugPreviewMipLevel.GetInteger(), 0, static_cast<int>(currentVisCamera->hiZMipCount) - 1));
+    // 실제 Hi-Z 리소스의 mip 수는 화면 크기에 따라 snapshot 의 전역 상한보다 작을 수 있다.
+    const uint32_t mipLevel = BE1::Min(frameData->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentVisCamera->hiZMipCount - 1);
     const uint32_t inputWidth = currentVisCamera->hiZMipWidths[mipLevel];
     const uint32_t inputHeight = currentVisCamera->hiZMipHeights[mipLevel];
     const uint32_t outputWidth = currentVisCamera->hiZDebugPreviewTexture->GetWidth();

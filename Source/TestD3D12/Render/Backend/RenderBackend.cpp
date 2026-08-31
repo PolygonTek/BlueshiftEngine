@@ -16,7 +16,6 @@
 #include "RenderBackend.h"
 #include "Image/BayerMatrix.h"
 #include "Render/RenderWork/RenderWork.h"
-#include "Render/RenderCvars.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
@@ -209,6 +208,8 @@ bool RenderBackend::UploadCameraConstants() {
         return false;
     }
 
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+
     cameraConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(CameraConstants));
     if (!cameraConstantBuffer) {
         return false;
@@ -220,13 +221,13 @@ bool RenderBackend::UploadCameraConstants() {
     if (currentVisCamera->projectionOrthogonal) {
         flags |= ShaderCameraFlagProjectionOrthogonal;
     }
-    if (r_lightCullingZBin.GetBool()) {
+    if (renderFrameSettings.lightCullingZBin) {
         flags |= ShaderCameraFlagUseLightZBin;
     }
     if (currentVisCamera->directionalLightVisible) {
         flags |= ShaderCameraFlagUseDirectionalLight;
     }
-    if (r_specularAA.GetBool()) {
+    if (renderFrameSettings.specularAA) {
         flags |= ShaderCameraFlagUseSpecularAA;
     }
 
@@ -259,7 +260,7 @@ bool RenderBackend::UploadCameraConstants() {
     constants->lightCullingTileCountX = currentVisCamera->lightCulling.tileCountX;
     constants->lightCullingTileCountY = currentVisCamera->lightCulling.tileCountY;
     constants->lightCullingWordsPerTile = currentVisCamera->lightCulling.wordsPerTile;
-    constants->lightCullingDebugMode = static_cast<uint32_t>(r_lightCullingDebug.GetInteger());
+    constants->lightCullingDebugMode = renderFrameSettings.lightCullingDebugMode;
     constants->padding0 = 0;
 
     constants->cameraOrigin = float3(currentVisCamera->origin.x, currentVisCamera->origin.y, currentVisCamera->origin.z);
@@ -501,7 +502,8 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     currentVisCamera = cmd->visCamera;
 
-    if ((currentVisCamera->is2D && r_skipDrawCamera2D.GetBool()) || (!currentVisCamera->is2D && r_skipDrawCamera3D.GetBool())) {
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    if ((currentVisCamera->is2D && renderFrameSettings.skipDrawCamera2D) || (!currentVisCamera->is2D && renderFrameSettings.skipDrawCamera3D)) {
         return (const void *)(cmd + 1);
     }
 
@@ -613,7 +615,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         FinishHiZCulling();
     }
 
-    if (currentVisCamera->generateHiZ && !r_hiZOcclusionCullingFreeze.GetBool()) {
+    if (currentVisCamera->generateHiZ && !frameData->GetRenderFrameSettings().hiZOcclusionCullingFreeze) {
         DispatchGenHiZ();
     }
 
@@ -764,7 +766,8 @@ void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady) {
 
     currentPostProcessInputTexture = currentVisCamera->rtColorTexture;
 
-    if (!r_skipPostProcess.GetBool() && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    if (!renderFrameSettings.skipPostProcess && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
         bool depthHistoryReady = true;
         if (currentVisCamera->taaResolve && currentVisCamera->depthTexture->GetSampleCount() > 1) {
             depthHistoryReady = DispatchCurrentDepthMSAAResolve();
@@ -1094,7 +1097,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
 
     // 백버퍼를 전면버퍼와 교환한다.
-    currentContext->GetSwapChain()->SwapBuffers(r_vsync.GetBool());
+    currentContext->GetSwapChain()->SwapBuffers(frameData->GetRenderFrameSettings().vsync);
 
     PROFILER_FRAME_MARK();
 

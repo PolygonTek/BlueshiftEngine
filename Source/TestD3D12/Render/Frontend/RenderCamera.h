@@ -15,7 +15,7 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "Render/RenderCvars.h"
+#include "Render/RenderFrameSettings.h"
 
 class RenderWorld;
 class Texture;
@@ -163,7 +163,7 @@ public:
 
     bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
     bool                        EnsureSceneSnapshotResources(bool needed, bool halfResolution);
-    void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode);
+    void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, const RenderFrameSettings &renderFrameSettings);
 
     void                        InvalidateTemporalHistory();
 

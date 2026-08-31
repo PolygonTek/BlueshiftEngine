@@ -805,7 +805,7 @@ static uint32_t SelectBloomFFTSize(uint32_t renderWidth, uint32_t renderHeight, 
     return BE1::Min(fftSize, maxSize);
 }
 
-void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode) {
+void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, const RenderFrameSettings &renderFrameSettings) {
     if (skipPostProcess) {
         DestroyPostProcessResources();
         return;
@@ -839,12 +839,12 @@ void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format 
         }
     }
 
-    const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution;
-    if (bloomMode == RenderBloomMode::Pyramid) {
+    const bool useConvolutionBloom = renderFrameSettings.bloomMode == RenderBloomMode::Convolution;
+    if (renderFrameSettings.bloomMode == RenderBloomMode::Pyramid) {
         DestroyConvolutionBloomResources();
         DestroyConvolutionBloomOutputTexture();
 
-        const uint32_t requestedBloomMipMaxLevelCount = static_cast<uint32_t>(BE1::Clamp(r_pyramidBloomMipCount.GetInteger(), 1, RenderBloomDownMaxLevelCount));
+        const uint32_t requestedBloomMipMaxLevelCount = renderFrameSettings.pyramidBloomMipMaxLevelCount;
         const bool hasReusablePyramidBloomTextures = bloomDownTexture && bloomUpTexture && bloomMipCount > 0 && bloomMipMaxLevelCount == requestedBloomMipMaxLevelCount;
 
         if (!hasReusablePyramidBloomTextures) {
@@ -855,8 +855,7 @@ void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format 
     } else if (useConvolutionBloom) {
         DestroyPyramidBloomTextures();
 
-        const uint32_t convolutionBloomFFTMaxSize = static_cast<uint32_t>(BE1::Clamp(r_convolutionBloomFFTMaxSize.GetInteger(), 256, 1024));
-        const uint32_t requestedFFTBloomSize = SelectBloomFFTSize(renderWidth, renderHeight, convolutionBloomFFTMaxSize);
+        const uint32_t requestedFFTBloomSize = SelectBloomFFTSize(renderWidth, renderHeight, renderFrameSettings.convolutionBloomFFTMaxSize);
         const bool hasReusableFFTBloomResources =
             fftBloomScreenSpatialBuffer &&
             fftBloomScreenSpectrumBuffer &&

@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "RenderPassBuilder.h"
 #include "Render/RenderContext.h"
-#include "Render/RenderCvars.h"
 #include "Render/RenderFrameData.h"
 #include "Render/RenderInternal.h"
 #include "Render/Material/Material.h"
@@ -131,7 +130,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         return;
     }
 
-    const bool useDepthPrepass = r_depthPrepass.GetBool();
+    const bool useDepthPrepass = frameData->GetRenderFrameSettings().depthPrepass;
     const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
     const bool directLighting = visCamera->directionalLightVisible || visCamera->numVisLocalLights > 0;
     const bool indirectLighting = visCamera->environmentLightDiffuseIrradianceCubeMap && visCamera->environmentLightSpecularCubeMap;

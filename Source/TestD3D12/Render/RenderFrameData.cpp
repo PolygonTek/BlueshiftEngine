@@ -100,11 +100,13 @@ void RenderFrameData::Shutdown() {
     frameArena.Shutdown();
 }
 
-void RenderFrameData::BeginFrame() {
+void RenderFrameData::BeginFrame(const RenderFrameSettings &renderFrameSettings) {
     PROFILER_CPU_SCOPED_EVENT("RenderFrameData::BeginFrame");
 
     // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
     WaitFrameFence();
+
+    this->renderFrameSettings = renderFrameSettings;
 
     ClearPendingImGuiOverlay();
 

@@ -14,7 +14,6 @@
 
 #include "Precompiled.h"
 #include "RenderWorld.h"
-#include "Render/RenderCvars.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
 #include "RenderCamera.h"
@@ -166,9 +165,10 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
         return;
     }
 
-    renderCamera->SetConvolutionBloomKernelRotation(r_convolutionBloomKernelRotation.GetFloat());
-    renderCamera->SetConvolutionBloomKernelScale(r_convolutionBloomKernelScale.GetFloat());
-    renderCamera->SetConvolutionBloomPaddingTrim(r_convolutionBloomPaddingTrim.GetFloat());
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    renderCamera->SetConvolutionBloomKernelRotation(renderFrameSettings.convolutionBloomKernelRotation);
+    renderCamera->SetConvolutionBloomKernelScale(renderFrameSettings.convolutionBloomKernelScale);
+    renderCamera->SetConvolutionBloomPaddingTrim(renderFrameSettings.convolutionBloomPaddingTrim);
 
     const uint32_t fftBloomSize = renderCamera->GetFFTBloomSize();
     const bool updateFFTBloomKernelBuffer = renderCamera->IsFFTBloomKernelDirty();
@@ -256,6 +256,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrontendFrameData();
     RenderContext *renderContext = RenderContext::activeContext;
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
     const BE1::Rect &outputRect = renderCamera->desc.outputRect;
     const uint32_t renderWidth = renderCamera->desc.renderWidth > 0 ? renderCamera->desc.renderWidth : (outputRect.w > 0 ? static_cast<uint32_t>(outputRect.w) : 0);
     const uint32_t renderHeight = renderCamera->desc.renderHeight > 0 ? renderCamera->desc.renderHeight : (outputRect.h > 0 ? static_cast<uint32_t>(outputRect.h) : 0);
@@ -278,32 +279,32 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         }
     }
 
-    const bool skipPostProcess = r_skipPostProcess.GetBool() || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
+    const bool skipPostProcess = renderFrameSettings.skipPostProcess || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
     const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableTemporalHistory);
-    const bool useTAA = temporalHistoryEnabled && r_taa.GetBool() && !skipPostProcess;
+    const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess;
     const bool needColorHistory = useTAA;
     const bool needDepthHistory = useTAA;
-    const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && r_hiZOcclusionCulling.GetBool();
+    const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && renderFrameSettings.hiZOcclusionCulling;
     const bool needHiZTexture = needHiZCullResources;
-    const bool needHiZDebugPreview = needHiZTexture && r_hiZDebugPreview.GetBool();
+    const bool needHiZDebugPreview = needHiZTexture && renderFrameSettings.hiZDebugPreview;
 
-    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
+    const RenderBloomMode bloomMode = renderFrameSettings.bloomMode;
 
     if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, renderContext->GetBaseClearColor())) {
         return;
     }
 
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
-    const bool requestHalfResSnapshotColor = needSceneSnapshot && r_snapshotColorHalfRes.GetBool() && !renderCamera->GetRTColorMSAATexture();
+    const bool requestHalfResSnapshotColor = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
     RHI::PipelineState *sceneSnapshotDownsamplePSO = requestHalfResSnapshotColor ? GetSceneSnapshotDownsamplePSO(renderContext->GetMainRTColorFormat()) : nullptr;
     const bool useHalfResSnapshotColor = requestHalfResSnapshotColor && sceneSnapshotDownsamplePSO;
     renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot, useHalfResSnapshotColor);
 
     renderCamera->EnsureHiZResources(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
-    renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, bloomMode);
+    renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, renderFrameSettings);
 
-    const bool temporalJitterEnabled = useTAA && r_taaJitter.GetBool();
-    const uint32_t temporalJitterSampleCount = static_cast<uint32_t>(BE1::Max(r_taaJitterSampleCount.GetInteger(), 1));
+    const bool temporalJitterEnabled = useTAA && renderFrameSettings.taaJitter;
+    const uint32_t temporalJitterSampleCount = renderFrameSettings.taaJitterSampleCount;
 
     renderCamera->UpdateTemporalJitter(temporalJitterEnabled, temporalJitterSampleCount);
 
@@ -464,7 +465,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->taaResolve = useTAA;
 
     // freeze 가 되면 prevViewProjMatrix 를 유지하기 위해서 hiZCullViewProjMatrix 에 복사한다.
-    if (!r_hiZOcclusionCullingFreeze.GetBool() || !renderCamera->previousHiZValid) {
+    if (!renderFrameSettings.hiZOcclusionCullingFreeze || !renderCamera->previousHiZValid) {
         renderCamera->hiZCullViewProjMatrix = visCamera->prevViewProjMatrix;
     }
     visCamera->hiZCullViewProjMatrix = renderCamera->hiZCullViewProjMatrix;
@@ -487,7 +488,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         }
     }
 
-    if (!r_hiZOcclusionCullingFreeze.GetBool()) {
+    if (!renderFrameSettings.hiZOcclusionCullingFreeze) {
         renderCamera->previousHiZValid = visCamera->generateHiZ;
     }
 }
@@ -675,7 +676,7 @@ void RenderWorld::SetVisObjectWorldMatrices(const RenderObject *renderObject, Vi
 void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
-    const bool skipViewCulling = r_skipViewCulling.GetBool();
+    const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
 
@@ -854,7 +855,7 @@ void RenderWorld::UpdateVisibleSkinningJointCaches(RenderFrameData *frameData) {
 void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddMeshes");
 
-    const bool skipViewCulling = r_skipViewCulling.GetBool();
+    const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
 
     UpdateVisibleSkinningJointCaches(frameData);
 
@@ -973,7 +974,7 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera
 void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisLights");
 
-    const bool skipViewCulling = r_skipViewCulling.GetBool();
+    const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
     const BE1::Vec3 &viewZAxis = cameraDesc.axis[EngineAxis::Forward];
@@ -1237,7 +1238,7 @@ void RenderWorld::BuildDebugDraw(RenderFrameData *frameData, VisCamera *visCamer
         return;
     }
 
-    visCamera->showDebugLights = r_showLights2.GetBool() && visCamera->numVisLocalLights > 0;
+    visCamera->showDebugLights = frameData->GetRenderFrameSettings().showDebugLights && visCamera->numVisLocalLights > 0;
 
     // 현재 debug primitive 저장소의 프레임 snapshot 을 카메라에 연결한다.
     visCamera->debugDrawData = BuildDebugDrawData(frameData);

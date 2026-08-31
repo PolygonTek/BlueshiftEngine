@@ -219,6 +219,8 @@ void TextureManager::UnregisterStreamingTexture(Texture *texture) {
 }
 
 uint32_t TextureManager::GetStreamingTextureMinResidentMaxDimension() const {
+    assert(BE1::Engine::IsInMainThread());
+
     return static_cast<uint32_t>(BE1::Max(1, r_textureStreamingMinResidentMaxDimension.GetInteger()));
 }
 

@@ -117,3 +117,99 @@ CVAR_MINMAX(r_convolutionBloomPaddingTrim, "0.125", BE1::CVar::Flag::Float, "con
 CVAR_MINMAX(r_convolutionBloomApertureScale, "0.2", BE1::CVar::Flag::Float, "convolution bloom aperture size within the FFT domain", 0.02f, 1.0f);
 CVAR_MINMAX(r_convolutionBloomDispersionAmount, "1.0", BE1::CVar::Flag::Float, "convolution bloom diffraction dispersion amount", 0.0f, 1.0f);
 CVAR(r_convolutionBloomDebug, "1", BE1::CVar::Flag::Bool, "save convolution bloom kernel bounds debug image");
+
+static uint32_t NormalizeMainRTSampleCount(int sampleCount) {
+    if (sampleCount >= 8) {
+        return 8;
+    }
+    if (sampleCount >= 4) {
+        return 4;
+    }
+    if (sampleCount >= 2) {
+        return 2;
+    }
+    return 1;
+}
+
+RenderFrameSettings CaptureRenderFrameSettings() {
+    assert(BE1::Engine::IsInMainThread());
+
+    RenderFrameSettings settings;
+
+    settings.mainRTSampleCount = NormalizeMainRTSampleCount(r_msaa.GetInteger());
+    settings.csmResolution = static_cast<uint32_t>(r_csmResolution.GetInteger());
+    settings.taaJitterSampleCount = static_cast<uint32_t>(r_taaJitterSampleCount.GetInteger());
+    settings.hiZDebugPreviewMipLevel = static_cast<uint32_t>(r_hiZDebugPreviewMipLevel.GetInteger());
+    settings.lightCullingDebugMode = static_cast<uint32_t>(r_lightCullingDebug.GetInteger());
+    settings.toneMappingOperator = static_cast<uint32_t>(r_toneMapOp.GetInteger());
+    settings.pyramidBloomMipMaxLevelCount = static_cast<uint32_t>(r_pyramidBloomMipCount.GetInteger());
+    settings.convolutionBloomFFTMaxSize = static_cast<uint32_t>(r_convolutionBloomFFTMaxSize.GetInteger());
+
+    settings.bloomMode = static_cast<RenderBloomMode>(r_bloom.GetInteger());
+
+    settings.hdrPaperWhiteNits = r_hdrPaperWhiteNits.GetFloat();
+    settings.hdrPeakNits = r_hdrPeakNits.GetFloat();
+
+    settings.toneMapLuminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
+    settings.toneMapLuminanceLogMax = BE1::Max(r_toneMapLuminanceLogMax.GetFloat(), settings.toneMapLuminanceLogMin + 0.0001f);
+    settings.toneMapLuminanceAdaptationRate = r_toneMapLuminanceAdaptationRate.GetFloat();
+    settings.toneMapMiddleGray = r_toneMapMiddleGray.GetFloat();
+    settings.toneMapExposureCompensation = r_toneMapExposureCompensation.GetFloat();
+    settings.toneMapMinExposureEV = r_toneMapMinExposureEV.GetFloat();
+    settings.toneMapMaxExposureEV = BE1::Max(r_toneMapMaxExposureEV.GetFloat(), settings.toneMapMinExposureEV);
+    settings.whiteBalanceTemperature = r_whiteBalanceTemperature.GetFloat();
+
+    settings.taaHistoryWeight = r_taaHistoryWeight.GetFloat();
+    settings.taaColorBoxSigma = r_taaColorBoxSigma.GetFloat();
+    settings.taaSubpixelWeight = r_taaSubpixelWeight.GetFloat();
+    settings.taaLuminanceWeight = r_taaLuminanceWeight.GetFloat();
+    settings.taaDepthFallbackThreshold = r_taaDepthFallbackThreshold.GetFloat();
+
+    settings.lensDistortion = r_lensDistortion.GetFloat();
+    settings.chromaticAberration = r_chromaticAberration.GetFloat();
+    settings.vignetteIntensity = r_vignette.GetFloat();
+
+    settings.bloomThreshold = r_bloomThreshold.GetFloat();
+    settings.bloomSoftThreshold = r_bloomSoftThreshold.GetFloat();
+    settings.bloomIntensity = r_bloomIntensity.GetFloat();
+    settings.bloomDirtIntensity = r_bloomDirtIntensity.GetFloat();
+
+    settings.pyramidBloomPrefilterQuality = static_cast<float>(r_pyramidBloomPrefilterQuality.GetInteger());
+    settings.pyramidBloomScatter = r_pyramidBloomScatter.GetFloat();
+    settings.pyramidBloomPrefilterRadius = r_pyramidBloomPrefilterRadius.GetFloat();
+    settings.pyramidBloomDownsampleRadius = r_pyramidBloomDownsampleRadius.GetFloat();
+    settings.pyramidBloomUpsampleRadius = r_pyramidBloomUpsampleRadius.GetFloat();
+
+    settings.convolutionBloomPrefilterRadius = r_convolutionBloomPrefilterRadius.GetFloat();
+    settings.convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
+    settings.convolutionBloomKernelGain = r_convolutionBloomKernelGain.GetFloat();
+    settings.convolutionBloomKernelRotation = r_convolutionBloomKernelRotation.GetFloat();
+    settings.convolutionBloomPaddingTrim = r_convolutionBloomPaddingTrim.GetFloat();
+
+    settings.skipViewCulling = r_skipViewCulling.GetBool();
+    settings.skipDrawCamera2D = r_skipDrawCamera2D.GetBool();
+    settings.skipDrawCamera3D = r_skipDrawCamera3D.GetBool();
+    settings.skipPostProcess = r_skipPostProcess.GetBool();
+
+    settings.showDebugLights = r_showLights2.GetBool();
+    settings.lightCullingZBin = r_lightCullingZBin.GetBool();
+    settings.depthPrepass = r_depthPrepass.GetBool();
+    settings.specularAA = r_specularAA.GetBool();
+
+    settings.vsync = r_vsync.GetBool();
+    settings.hdrOutput = r_hdrOutput.GetBool();
+
+    settings.snapshotColorHalfRes = r_snapshotColorHalfRes.GetBool();
+    settings.taa = r_taa.GetBool();
+    settings.taaJitter = r_taaJitter.GetBool();
+
+    settings.hiZOcclusionCulling = r_hiZOcclusionCulling.GetBool();
+    settings.hiZOcclusionCullingFreeze = r_hiZOcclusionCullingFreeze.GetBool();
+    settings.hiZDebugPreview = r_hiZDebugPreview.GetBool();
+
+    settings.toneMapping = r_toneMapping.GetBool();
+    settings.colorGrading = r_colorGrading.GetBool();
+    settings.dithering = r_dithering.GetBool();
+
+    return settings;
+}

@@ -159,6 +159,7 @@ set(SRC_FILES
     Render/RenderContext.cpp
     Render/RenderFrameData.h
     Render/RenderFrameData.cpp
+    Render/RenderFrameSettings.h
     Render/RenderWork/RenderWork.h
     Render/RenderWork/RenderWorkQueue.h
     Render/RenderWork/RenderWorkQueue.cpp

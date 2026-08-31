@@ -61,4 +61,5 @@ private:
     uint32_t                        currentBackBufferIndex = 0;
     uint32_t                        width = 0;
     uint32_t                        height = 0;
+    bool                            allowTearing = false;
 };

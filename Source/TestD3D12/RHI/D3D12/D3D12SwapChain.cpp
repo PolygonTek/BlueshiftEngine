@@ -17,10 +17,12 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SwapChain.h"
 
-static CVAR(d3d12_swapChainAllowTearing, "1", BE1::CVar::Flag::Bool, "allow tearing when presenting without vsync");
+static CVAR(d3d12_swapChainAllowTearing, "1", BE1::CVar::Flag::Bool, "allow tearing when presenting without vsync (applied when creating the swap chain)");
 
 RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) {
     DXGI_FORMAT dxgiFormat = RHIFormatToDXGIFormat(format);
+    // Present는 렌더 스레드에서 실행되므로 스왑체인 생성 시 메인 스레드의 CVar 값을 캡처한다.
+    const bool allowTearing = supportsTearing && d3d12_swapChainAllowTearing.GetBool();
 
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = (UINT)width;
@@ -37,7 +39,7 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
     swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
-    if (supportsTearing) {
+    if (allowTearing) {
         swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
     }
 
@@ -74,6 +76,7 @@ RHI::SwapChain *D3D12Renderer::CreateSwapChain(HWND hwnd, uint32_t width, uint32
     swapChain->swapChainFormat = dxgiFormat;
     swapChain->width = width;
     swapChain->height = height;
+    swapChain->allowTearing = allowTearing;
     swapChain->dxgiSwapChain = dxgiSwapChain3;
     swapChain->CreateRTVs();
 
@@ -141,7 +144,7 @@ void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
     }
 
     UINT swapChainFlags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-    if (D3D12Renderer::GetRenderer()->supportsTearing) {
+    if (allowTearing) {
         swapChainFlags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
     }
 
@@ -157,7 +160,7 @@ void D3D12SwapChain::Resize(uint32_t width, uint32_t height) {
 
 void D3D12SwapChain::SwapBuffers(bool vsync) {
     const UINT syncInterval = vsync ? 1 : 0;
-    const UINT presentFlags = (!vsync && D3D12Renderer::GetRenderer()->supportsTearing && d3d12_swapChainAllowTearing.GetBool()) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+    const UINT presentFlags = !vsync && allowTearing ? DXGI_PRESENT_ALLOW_TEARING : 0;
 
     if (dxgiSwapChain->Present(syncInterval, presentFlags) == DXGI_ERROR_DEVICE_REMOVED) {
         BE_FATALERROR("DXGI Device Removed");

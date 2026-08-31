@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "RenderBackend.h"
 #include "Render/RenderContext.h"
-#include "Render/RenderCvars.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
 #include "Render/RenderFrameData.h"
@@ -25,7 +24,8 @@
 bool RenderBackend::DispatchLuminance() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchLuminance");
 
-    if (!r_toneMapping.GetBool()) {
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    if (!renderFrameSettings.toneMapping) {
         return false;
     }
 
@@ -47,8 +47,8 @@ bool RenderBackend::DispatchLuminance() {
     const uint32_t sampleW = BE1::Max(inputW / 2, 1u);
     const uint32_t sampleH = BE1::Max(inputH / 2, 1u);
 
-    const float lumLogMin = r_toneMapLuminanceLogMin.GetFloat();
-    const float lumLogMax = BE1::Max(r_toneMapLuminanceLogMax.GetFloat(), lumLogMin + 0.0001f);
+    const float lumLogMin = renderFrameSettings.toneMapLuminanceLogMin;
+    const float lumLogMax = renderFrameSettings.toneMapLuminanceLogMax;
     const float lumLogRange = lumLogMax - lumLogMin;
 
     LuminancePass1Params luminancePass1Params = {};
@@ -61,11 +61,11 @@ bool RenderBackend::DispatchLuminance() {
     luminancePass2Params.luminanceLogMin = lumLogMin;
     luminancePass2Params.luminanceLogRange = lumLogRange;
     luminancePass2Params.luminancePixelCount = static_cast<float>(sampleW * sampleH);
-    luminancePass2Params.luminanceAdaptationRate = BE1::Max(r_toneMapLuminanceAdaptationRate.GetFloat(), 0.0f);
-    luminancePass2Params.middleGray = BE1::Max(r_toneMapMiddleGray.GetFloat(), 0.0f);
-    luminancePass2Params.exposureCompensation = r_toneMapExposureCompensation.GetFloat();
-    const float minExposureEV = r_toneMapMinExposureEV.GetFloat();
-    const float maxExposureEV = BE1::Max(r_toneMapMaxExposureEV.GetFloat(), minExposureEV);
+    luminancePass2Params.luminanceAdaptationRate = renderFrameSettings.toneMapLuminanceAdaptationRate;
+    luminancePass2Params.middleGray = renderFrameSettings.toneMapMiddleGray;
+    luminancePass2Params.exposureCompensation = renderFrameSettings.toneMapExposureCompensation;
+    const float minExposureEV = renderFrameSettings.toneMapMinExposureEV;
+    const float maxExposureEV = renderFrameSettings.toneMapMaxExposureEV;
     luminancePass2Params.minExposure = BE1::Math::Pow(2.0f, minExposureEV);
     luminancePass2Params.maxExposure = BE1::Math::Pow(2.0f, maxExposureEV);
 
@@ -267,19 +267,20 @@ bool RenderBackend::DispatchTAAResolve() {
         return false;
     }
 
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
     TAAResolveParams taaResolveParams = {};
     taaResolveParams.outputSize = uint2(outputW, outputH);
     taaResolveParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    taaResolveParams.historyWeight = r_taaHistoryWeight.GetFloat();
+    taaResolveParams.historyWeight = renderFrameSettings.taaHistoryWeight;
     taaResolveParams.historyValid = historyValid ? 1u : 0u;
     taaResolveParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
     taaResolveParams.orthogonal = currentVisCamera->projectionOrthogonal ? 1u : 0u;
     taaResolveParams.projectionDepthParams = float2(currentVisCamera->projectionDepthA, currentVisCamera->projectionDepthB);
     taaResolveParams.ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
-    taaResolveParams.depthFallbackThreshold = r_taaDepthFallbackThreshold.GetFloat();
-    taaResolveParams.maxSubpixelCurrentWeight = r_taaSubpixelWeight.GetFloat();
-    taaResolveParams.luminanceWeight = r_taaLuminanceWeight.GetFloat();
-    taaResolveParams.colorBoxSigma = r_taaColorBoxSigma.GetFloat();
+    taaResolveParams.depthFallbackThreshold = renderFrameSettings.taaDepthFallbackThreshold;
+    taaResolveParams.maxSubpixelCurrentWeight = renderFrameSettings.taaSubpixelWeight;
+    taaResolveParams.luminanceWeight = renderFrameSettings.taaLuminanceWeight;
+    taaResolveParams.colorBoxSigma = renderFrameSettings.taaColorBoxSigma;
 
     RHI::ConstantBuffer *taaResolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(TAAResolveParams), &taaResolveParams);
     if (!taaResolveConstantBuffer) {
@@ -333,7 +334,7 @@ bool RenderBackend::DispatchTAAResolve() {
 bool RenderBackend::DispatchBloom() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchBloom");
 
-    const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
+    const RenderBloomMode bloomMode = frameData->GetRenderFrameSettings().bloomMode;
     switch (bloomMode) {
     case RenderBloomMode::Pyramid:
         return DispatchPyramidBloom();
@@ -357,13 +358,14 @@ bool RenderBackend::DispatchPyramidBloom() {
 
     RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute));
 
-    const float bloomThreshold = BE1::Max(r_bloomThreshold.GetFloat(), 0.0f);
-    const float bloomSoftThreshold = BE1::Max(r_bloomSoftThreshold.GetFloat(), 0.0f);
-    const float pyramidBloomPrefilterQuality = static_cast<float>(BE1::Clamp(r_pyramidBloomPrefilterQuality.GetInteger(), 0, 1));
-    const float pyramidBloomScatter = BE1::Clamp(r_pyramidBloomScatter.GetFloat(), 0.0f, 1.0f);
-    const float pyramidBloomPrefilterRadius = BE1::Max(r_pyramidBloomPrefilterRadius.GetFloat(), 0.0f);
-    const float pyramidBloomDownsampleRadius = BE1::Max(r_pyramidBloomDownsampleRadius.GetFloat(), 0.0f);
-    const float pyramidBloomUpsampleRadius = BE1::Max(r_pyramidBloomUpsampleRadius.GetFloat(), 0.0f);
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const float bloomThreshold = renderFrameSettings.bloomThreshold;
+    const float bloomSoftThreshold = renderFrameSettings.bloomSoftThreshold;
+    const float pyramidBloomPrefilterQuality = renderFrameSettings.pyramidBloomPrefilterQuality;
+    const float pyramidBloomScatter = renderFrameSettings.pyramidBloomScatter;
+    const float pyramidBloomPrefilterRadius = renderFrameSettings.pyramidBloomPrefilterRadius;
+    const float pyramidBloomDownsampleRadius = renderFrameSettings.pyramidBloomDownsampleRadius;
+    const float pyramidBloomUpsampleRadius = renderFrameSettings.pyramidBloomUpsampleRadius;
 
     auto dispatchDownsamplePass = [this](GpuTiming::Tag timingTag, RHI::Texture *inputTexture, RHI::ViewID inputViewID, uint32_t inputWidth, uint32_t inputHeight, uint32_t outputMipLevel, float threshold, float softThreshold, float prefilterQuality, float radius) -> bool {
         const uint32_t outputWidth = currentVisCamera->bloomMipWidths[outputMipLevel];
@@ -623,9 +625,10 @@ bool RenderBackend::DispatchConvolutionBloomScreenPrefilter() {
         return false;
     }
 
-    const float bloomThreshold = BE1::Max(r_bloomThreshold.GetFloat(), 0.0f);
-    const float bloomSoftThreshold = BE1::Max(r_bloomSoftThreshold.GetFloat(), 0.0f);
-    const float convolutionBloomPrefilterRadius = BE1::Max(r_convolutionBloomPrefilterRadius.GetFloat(), 0.0f);
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const float bloomThreshold = renderFrameSettings.bloomThreshold;
+    const float bloomSoftThreshold = renderFrameSettings.bloomSoftThreshold;
+    const float convolutionBloomPrefilterRadius = renderFrameSettings.convolutionBloomPrefilterRadius;
 
     BloomParams bloomParams = {};
     bloomParams.inputSize = uint2(inputW, inputH);
@@ -752,7 +755,7 @@ bool RenderBackend::DispatchConvolutionBloomMultiplySpectrum() {
     const float kernelAreaScale = BE1::Max(currentVisCamera->fftBloomMappedKernelScale.x * currentVisCamera->fftBloomMappedKernelScale.y, 0.000001f);
     const float kernelSampleCount = static_cast<float>(fftSize * fftSize) * kernelAreaScale;
     const float kernelNormalizationFactor = currentVisCamera->fftBloomKernelInverseAverageLuminance / kernelSampleCount;
-    const float kernelGain = BE1::Max(r_convolutionBloomKernelGain.GetFloat(), 0.0f);
+    const float kernelGain = frameData->GetRenderFrameSettings().convolutionBloomKernelGain;
     const float kernelSpectrumScale = kernelGain * kernelNormalizationFactor;
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ConvolutionBloomMultiplySpectrum);
@@ -859,16 +862,18 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
         return false;
     }
 
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+
     RHI::Texture *colorGradingLUTTexture = currentVisCamera->colorGradingLUTTexture;
     if (!colorGradingLUTTexture) {
         return false;
     }
     assert(colorGradingLUTTexture->GetStatus() == RHI::GPUResourceStatus::Ready);
-    const bool useColorGrading = r_colorGrading.GetBool();
+    const bool useColorGrading = renderFrameSettings.colorGrading;
 
     RHI::Texture *bloomDirtMaskTexture = currentVisCamera->bloomDirtMaskTexture;
-    const float bloomIntensity = useBloom ? BE1::Max(r_bloomIntensity.GetFloat(), 0.0f) : 0.0f;
-    const float bloomDirtIntensity = BE1::Clamp(r_bloomDirtIntensity.GetFloat(), r_bloomDirtIntensity.GetMinValue(), r_bloomDirtIntensity.GetMaxValue());
+    const float bloomIntensity = useBloom ? renderFrameSettings.bloomIntensity : 0.0f;
+    const float bloomDirtIntensity = renderFrameSettings.bloomDirtIntensity;
     const bool useBloomDirtMask = bloomIntensity > 0.0f && bloomDirtMaskTexture && bloomDirtIntensity > 0.0f;
     if (useBloomDirtMask) {
         assert(bloomDirtMaskTexture->GetStatus() == RHI::GPUResourceStatus::Ready);
@@ -884,7 +889,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.outputSize = uint2(outputW, outputH);
     finalPostProcessParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     finalPostProcessParams.flags = useToneMapping ? FinalPostProcessFlagToneMapping : 0u;
-    finalPostProcessParams.toneMappingOperator = static_cast<uint32_t>(BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorPBRNeutral)));
+    finalPostProcessParams.toneMappingOperator = renderFrameSettings.toneMappingOperator;
     const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
     const bool hdrOutput = RHI::SwapChain::IsHDRColorSpace(currentContext->GetSwapChain()->GetColorSpace());
     finalPostProcessParams.paperWhiteNits = displayOutputSettings.paperWhiteNits;
@@ -901,9 +906,9 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
             finalPostProcessParams.bloomDirtUvScale.x = outputAspectRatio / dirtAspectRatio;
         }
     }
-    finalPostProcessParams.chromaticAberration = BE1::Max(r_chromaticAberration.GetFloat(), 0.0f);
-    finalPostProcessParams.vignetteIntensity = BE1::Clamp(r_vignette.GetFloat(), 0.0f, 1.0f);
-    finalPostProcessParams.lensDistortion = BE1::Clamp(r_lensDistortion.GetFloat(), r_lensDistortion.GetMinValue(), r_lensDistortion.GetMaxValue());
+    finalPostProcessParams.chromaticAberration = renderFrameSettings.chromaticAberration;
+    finalPostProcessParams.vignetteIntensity = renderFrameSettings.vignetteIntensity;
+    finalPostProcessParams.lensDistortion = renderFrameSettings.lensDistortion;
     finalPostProcessParams.lensDistortionFitScale = 1.0f - BE1::Max(finalPostProcessParams.lensDistortion, 0.0f);
     const float outputWidth = static_cast<float>(outputW);
     const float outputHeight = static_cast<float>(outputH);
@@ -911,7 +916,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
 
     // 선택한 색온도의 광원 아래에서 촬영된 white 가 6500K 기준 white 로 보이도록 RGB gain 을 계산한다.
     static const BE1::Color3 referenceWhite = BE1::Color3::FromColorTemperature(6500.0f);
-    const BE1::Color3 sourceWhite = BE1::Color3::FromColorTemperature(BE1::Clamp(r_whiteBalanceTemperature.GetFloat(), 1000.0f, 15000.0f));
+    const BE1::Color3 sourceWhite = BE1::Color3::FromColorTemperature(renderFrameSettings.whiteBalanceTemperature);
     finalPostProcessParams.whiteBalance = float3(
         referenceWhite.r / BE1::Max(sourceWhite.r, referenceWhite.r * 0.01f),
         referenceWhite.g / BE1::Max(sourceWhite.g, referenceWhite.g * 0.01f),
@@ -920,7 +925,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     if (hdrOutput) {
         finalPostProcessParams.flags |= FinalPostProcessFlagHDROutput;
     }
-    if (r_dithering.GetBool() && !hdrOutput) {
+    if (renderFrameSettings.dithering && !hdrOutput) {
         finalPostProcessParams.flags |= FinalPostProcessFlagDithering;
     }
     if (useColorGrading) {
@@ -939,8 +944,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     RHI::ViewID bloomViewID = RHI::ViewID::PrimaryID;
 
     if (useBloom) {
-        const RenderBloomMode bloomMode = static_cast<RenderBloomMode>(BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution)));
-        const bool useConvolutionBloom = bloomMode == RenderBloomMode::Convolution;
+        const bool useConvolutionBloom = renderFrameSettings.bloomMode == RenderBloomMode::Convolution;
         if (useConvolutionBloom && currentVisCamera->fftBloomConvolutionOutputTexture) {
             bloomTexture = currentVisCamera->fftBloomConvolutionOutputTexture;
         } else {

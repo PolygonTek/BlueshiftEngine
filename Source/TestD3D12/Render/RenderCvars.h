@@ -15,12 +15,10 @@
 #pragma once
 
 #include "Core/CVars.h"
+#include "RenderFrameSettings.h"
 
-enum RenderBloomMode {
-    Off = 0,
-    Pyramid = 1,
-    Convolution = 2
-};
+// 메인 스레드에서 현재 CVar 값을 한 프레임의 불변 렌더 설정으로 캡처한다.
+RenderFrameSettings CaptureRenderFrameSettings();
 
 extern BE1::CVar    r_skipViewCulling;
 extern BE1::CVar    r_skipDrawCamera2D;

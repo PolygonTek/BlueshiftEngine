@@ -35,6 +35,8 @@ void LoadingSystem::Shutdown() {
 }
 
 bool LoadingSystem::IsAsyncAllowed() {
+    assert(BE1::Engine::IsInMainThread());
+
     return !loading_forceSynchronous.GetBool();
 }
 
@@ -85,6 +87,8 @@ bool LoadingSystem::EnqueueTextureLoad(SharedPtr<Texture> texture, const char *f
         return false;
     }
 
+    const uint32_t streamingMinResidentMaxDimension = BE1::HasFlag(flags, Texture::Flag::Streaming) ? textureManager.GetStreamingTextureMinResidentMaxDimension() : 1;
+
     {
         BE1::ScopedLock lock(requestMutex);
 
@@ -96,6 +100,7 @@ bool LoadingSystem::EnqueueTextureLoad(SharedPtr<Texture> texture, const char *f
         request.texture = texture;
         request.filename = filename;
         request.textureFlags = flags;
+        request.streamingMinResidentMaxDimension = streamingMinResidentMaxDimension;
         request.isReload = isReload;
         request.serial = serial;
         request.priority = priority;
@@ -467,7 +472,7 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
     // Texture::Flag::Streaming 이 켜져있으면 스트리밍 가능한 파일의 partial mip loading 을 시도한다.
     if (BE1::HasFlag(request.textureFlags, Texture::Flag::Streaming)) {
         // 이미지 파일에서 r_textureStreamingMinResidentMaxDimension 이하의 크기까지의 mip 레벨만 initial loading
-        if (image->LoadMipRangeForMaxDimension(request.filename.c_str(), textureManager.GetStreamingTextureMinResidentMaxDimension(), &mipRange)) {
+        if (image->LoadMipRangeForMaxDimension(request.filename.c_str(), request.streamingMinResidentMaxDimension, &mipRange)) {
             useMipRange = mipRange.mipCount < mipRange.originalMipLevels;
         }
     }

@@ -17,6 +17,7 @@
 #include "Core/Allocator.h"
 #include "RHI/RHI.h"
 #include "GpuOcean.h"
+#include "RenderFrameSettings.h"
 #include "Render/Frontend/RenderLight.h"
 #include "ShaderLightCullingTable.h"
 #include "ShaderLightTable.h"
@@ -243,6 +244,8 @@ public:
     uint32_t                        GetFrameCount() const { return frameCount; }
     void                            SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount);
 
+    const RenderFrameSettings &     GetRenderFrameSettings() const { return renderFrameSettings; }
+
     const VisOceanSurface *         GetVisOceanSurface() const { return hasVisOceanSurface ? &visOceanSurface : nullptr; }
     void                            RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision);
 
@@ -274,7 +277,7 @@ public:
     bool                            EnsureShaderSurfaceTableCapacity() { return shaderSurfaceTable.EnsureBufferCapacity(maxShaderSurfaceCount); }
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
-    void                            BeginFrame();
+    void                            BeginFrame(const RenderFrameSettings &renderFrameSettings);
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 종료
     void                            EndFrame();
@@ -334,6 +337,7 @@ private:
     uint64_t                        frameFenceValue = 0;
     uint64_t                        frameSerial = 0;
     static uint64_t                 globalFrameSerial;
+    RenderFrameSettings             renderFrameSettings;
     float                           frameTime = 0.0f;
     float                           elapsedTime = 0.0f;
     float                           elapsedPrevTime = 0.0f;
