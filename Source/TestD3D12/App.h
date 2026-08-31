@@ -21,6 +21,11 @@ class Scene;
 class Texture;
 class Font;
 
+namespace RHI {
+    class Texture;
+    struct ViewID;
+}
+
 class App {
 public:
     enum class CameraControlMode {
@@ -88,6 +93,10 @@ public:
     void                            GetCameraOriginAxis(BE1::Vec3 &origin, BE1::Mat3 &axis) const;
 
     void                            TakeScreenshot();
+
+#ifdef ENABLE_IMGUI
+    static bool                     DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID viewID, float maxPreviewSize, bool center, uint32_t arraySlice = 0);
+#endif
 
 private:
     enum class State : uint8_t {

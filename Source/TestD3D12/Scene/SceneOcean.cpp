@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "App.h"
+#include "Render/RenderSystem.h"
 #include "Render/Frontend/EnvironmentLight.h"
 #include "Render/Frontend/RenderWorld.h"
 #include "Render/Material/MaterialManager.h"
@@ -386,6 +387,99 @@ void SceneOcean::BuildImGui() {
             ImGui::PopID();
         }
         ImGui::EndDisabled();
+    }
+
+    if (roundedCollapsingHeader("Debug##OceanDebugHeader")) {
+        enum class DebugTexture : int {
+            InitialSpectrum,
+            Fields,
+            FoamHistory
+        };
+
+        enum class DebugField : int {
+            Displacement,
+            Derivative
+        };
+
+        static const char *debugTextureNames[] = {
+            "Initial Spectrum",
+            "Fields",
+            "Foam History"
+        };
+        static const char *debugFieldNames[] = {
+            "Displacement",
+            "Derivative"
+        };
+        static int selectedDebugTexture = static_cast<int>(DebugTexture::InitialSpectrum);
+        static int selectedDebugField = static_cast<int>(DebugField::Displacement);
+        static int selectedDebugCascade = 0;
+
+        ImGui::SetNextItemWidth(itemWidth);
+        ImGui::Combo("Texture##OceanDebugTexture", &selectedDebugTexture, debugTextureNames, COUNT_OF(debugTextureNames));
+
+        selectedDebugCascade = BE1::Clamp(selectedDebugCascade, 0, static_cast<int>(GpuOcean::CascadeCount) - 1);
+        ImGui::SetNextItemWidth(itemWidth);
+        ImGui::SliderInt("Cascade##OceanDebugCascade", &selectedDebugCascade, 0, static_cast<int>(GpuOcean::CascadeCount) - 1);
+
+        const DebugTexture debugTextureType = static_cast<DebugTexture>(selectedDebugTexture);
+        if (debugTextureType == DebugTexture::Fields) {
+            ImGui::SetNextItemWidth(itemWidth);
+            ImGui::Combo("Field##OceanDebugField", &selectedDebugField, debugFieldNames, COUNT_OF(debugFieldNames));
+        }
+
+        const GpuOcean *gpuOcean = renderSystem ? &renderSystem->GetGpuOcean() : nullptr;
+        const RHI::Texture *debugTexture = nullptr;
+        if (gpuOcean) {
+            switch (static_cast<DebugTexture>(selectedDebugTexture)) {
+            case DebugTexture::InitialSpectrum:
+                debugTexture = gpuOcean->GetInitialSpectrumTextureArray();
+                break;
+            case DebugTexture::Fields:
+                debugTexture = gpuOcean->GetFieldTextureArray();
+                break;
+            case DebugTexture::FoamHistory:
+                debugTexture = gpuOcean->GetFoamHistoryTextureArray();
+                break;
+            }
+        }
+
+        if (!debugTexture || debugTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
+            ImGui::TextDisabled("Ocean debug texture is unavailable.");
+        } else {
+            const DebugField debugFieldType = static_cast<DebugField>(selectedDebugField);
+            const uint32_t cascadeIndex = static_cast<uint32_t>(selectedDebugCascade);
+            const uint32_t sliceIndex = debugTextureType == DebugTexture::Fields
+                ? cascadeIndex * 2u + static_cast<uint32_t>(debugFieldType)
+                : cascadeIndex;
+            const float patchSize = simulationSettings.cascades[cascadeIndex].patchSize;
+
+            ImGui::Text("%u x %u", debugTexture->GetWidth(), debugTexture->GetHeight());
+            ImGui::Text("Cascade %u (%.2f m)", cascadeIndex, patchSize);
+            switch (debugTextureType) {
+            case DebugTexture::InitialSpectrum:
+                ImGui::TextWrapped("RG = h0(k), BA = conj(h0(-k))");
+                break;
+            case DebugTexture::Fields:
+                if (debugFieldType == DebugField::Displacement) {
+                    ImGui::TextWrapped("R=Dx, G=Dy, B=Dz, A=dDx/dy");
+                } else {
+                    ImGui::TextWrapped("R=dDz/dx, G=dDz/dy, B=dDx/dx, A=dDy/dy");
+                }
+                break;
+            case DebugTexture::FoamHistory:
+                ImGui::TextUnformatted("R = accumulated foam");
+                break;
+            }
+
+            ImGui::TextDisabled("Raw HDR preview (?)");
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Signed and out-of-range values are clipped.");
+            }
+            if (sliceIndex >= debugTexture->GetArraySize() ||
+                !App::DrawImGuiTexturePreview(debugTexture, RHI::ViewID::PrimaryID, fontSize * 24.0f, true, sliceIndex)) {
+                ImGui::TextDisabled("Ocean debug preview is unavailable.");
+            }
+        }
     }
 
     if (oceanSettingsChanged) {

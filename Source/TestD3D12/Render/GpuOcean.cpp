@@ -300,8 +300,8 @@ bool GpuOcean::EnsureResources() {
     const BE1::Image::Format outputFieldFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16G16B16A16_FLOAT);
     const BE1::Image::Format foamHistoryFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16_FLOAT);
 
-    // 각 cascade 의 initial spectrum 을 동일한 index 의 slice 에 저장하며 compute SRV 상태로 유지한다.
-    initialSpectrumTextureArray = CreateOceanTexture("GpuOcean::initialSpectrumTextureArray", spectrumSize, initialSpectrumFormat, CascadeCount, RHI::TextureMipInitMode::FromImage, RHI::GPUResourceState::ShaderResourceCompute);
+    // 각 cascade 의 initial spectrum 을 동일한 index 의 slice 에 저장하며 graphics/compute SRV 상태로 유지한다.
+    initialSpectrumTextureArray = CreateOceanTexture("GpuOcean::initialSpectrumTextureArray", spectrumSize, initialSpectrumFormat, CascadeCount, RHI::TextureMipInitMode::FromImage, RHI::GPUResourceState::ShaderResource);
     if (!initialSpectrumTextureArray) {
         DestroyResources();
         return false;
@@ -437,7 +437,7 @@ static bool DispatchGenerateInitialSpectra(RHI::CommandList *commandList, RHI::F
         return false;
     }
 
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(outputTextureArray, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::UnorderedAccess));
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(outputTextureArray, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess));
 
     RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetTexture(commandList, 0, true, outputTextureArray, outputUAV);
@@ -447,7 +447,7 @@ static bool DispatchGenerateInitialSpectra(RHI::CommandList *commandList, RHI::F
     const uint32_t threadGroupCountY = BE1::DivCeil(spectrumHeight, OceanInitialSpectrumBlockSizeY);
     RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, GpuOcean::CascadeCount);
 
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(outputTextureArray, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute));
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(outputTextureArray, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource));
     return true;
 }
 

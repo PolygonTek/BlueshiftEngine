@@ -193,8 +193,14 @@ public:
                                     /// 현재 모든 cascade 의 출력 field (displacement/derivative textures) 가 준비되었는지 여부를 리턴한다.
     bool                            AreCascadeOutputsReady() const { return cascadeOutputsReady; }
 
+                                    /// 각 cascade 의 초기 스펙트럼을 같은 index 의 slice 에 저장하는 texture array 를 얻는다.
+    const RHI::Texture *            GetInitialSpectrumTextureArray() const { return initialSpectrumTextureArray; }
+
                                     /// 짝수 slice 에 displacement, 홀수 slice 에 derivative 를 저장하는 field texture array 를 얻는다.
     const RHI::Texture *            GetFieldTextureArray() const { return fieldTextureArray; }
+
+                                    /// 각 cascade 의 누적 foam history 를 같은 index 의 slice 에 저장하는 texture array 를 얻는다.
+    const RHI::Texture *            GetFoamHistoryTextureArray() const { return foamHistoryTextureArray; }
 
                                     /// revision 이 갱신된 시뮬레이션 설정을 내부 상태에 적용한다.
     void                            ApplySimulationSettings(const SimulationSettings &newSettings, uint64_t revision);
@@ -233,7 +239,7 @@ private:
                                     /// 멤버 initialSpectrumTextureArray 는 짝수 정사각형 크기의 RGBA16F/RGBA32F 2D texture array 여야 한다.
                                     /// 멤버 timeSpectrumBuffer 는 N * N * OceanSpectrumComplexPlaneCount 개의 float2 를 저장하는 structured buffer 여야 한다.
                                     /// 각 complex plane 은 두 real field spectrum 을 Z = A + iB 로 패킹하며 일반 row-major 순서로 저장한다.
-                                    /// 두 리소스의 primary view 를 사용하며 호출 전후 각각 ShaderResourceCompute, Undefined(Common) 상태이다.
+                                    /// 두 리소스의 primary view 를 사용하며 호출 전후 각각 ShaderResource, Undefined(Common) 상태이다.
     bool                            GenerateTimeSpectrum(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &params);
 
                                     /// transposed complex IFFT 결과를 displacement/derivative map 으로 변환하고 foam history 를 갱신한다.

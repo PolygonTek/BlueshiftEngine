@@ -319,14 +319,14 @@ static void TextureFlagsToText(RHI::TextureFlag flags, char *text, size_t textSi
     }
 }
 
-static bool DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID viewID, float maxPreviewSize, bool center, uint32_t arraySlice = 0) {
+bool App::DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID viewID, float maxPreviewSize, bool center, uint32_t arraySlice) {
     if (!texture || maxPreviewSize <= 0.0f) {
         return false;
     }
 
     RHI::TextureViewInfo viewInfo;
     const bool hasViewInfo = texture->GetViewInfo(RHI::ViewType::SRV, viewID, viewInfo);
-    const uint64_t textureID = RHI::renderer->GetImGuiTextureID(texture, viewID, arraySlice);
+    const uint64_t textureID = RHI::renderer->GetImGuiTextureID(texture, viewID, arraySlice, false);
     const uint32_t previewWidth = hasViewInfo ? viewInfo.width : texture->GetWidth();
     const uint32_t previewHeight = hasViewInfo ? viewInfo.height : texture->GetHeight();
     if (textureID == 0 || previewWidth == 0 || previewHeight == 0) {

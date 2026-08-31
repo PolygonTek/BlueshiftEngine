@@ -49,17 +49,20 @@ static ImDrawCallback           imguiSetSamplerLinearCallback = nullptr;
 static ImDrawCallback           imguiSetSamplerNearestCallback = nullptr;
 static constexpr uint32_t       LinearOutputPipelineStateKeyBit = 0x80000000u;
 static constexpr uint32_t       TextureArrayPipelineStateKeyBit = 0x40000000u;
+static constexpr uint32_t       AlphaBlendDisabledPipelineStateKeyBit = 0x20000000u;
 
-// ImTextureID 의 하위 32 bit 에 bindless index 를 유지하고, 최상위 bit 와 상위 31 bit 로 Texture2DArray slice 를 전달한다.
+// ImTextureID 의 하위 32 bit 에 bindless index, bit 63 에 Texture2DArray 여부, bit 62 에 alpha blend 비활성화 여부를 저장한다.
+// Texture2DArray 의 상대 slice index 는 bit 32..61 로 전달한다.
 static constexpr uint64_t       ImGuiTextureArrayFlag = 1ull << 63;
+static constexpr uint64_t       ImGuiTextureAlphaBlendDisabledFlag = 1ull << 62;
 static constexpr uint64_t       ImGuiTextureBindlessIndexMask = 0xffffffffull;
-static constexpr uint64_t       ImGuiTextureArraySliceMask = 0x7fffffffull;
+static constexpr uint64_t       ImGuiTextureArraySliceMask = 0x3fffffffull;
 
 static bool RequiresLinearOutput(DXGI_FORMAT rtvFormat) {
     return rtvFormat == DXGI_FORMAT_R16G16B16A16_FLOAT || D3D12Renderer::IsSRGBFormat(rtvFormat) || D3D12Renderer::IsHDRSwapChainFormat(rtvFormat);
 }
 
-static uint32_t MakePipelineStateKey(DXGI_FORMAT rtvFormat, bool linearOutput, bool textureArray) {
+static uint32_t MakePipelineStateKey(DXGI_FORMAT rtvFormat, bool linearOutput, bool textureArray, bool alphaBlend) {
     uint32_t key = static_cast<uint32_t>(rtvFormat);
     if (linearOutput) {
         key |= LinearOutputPipelineStateKeyBit;
@@ -67,19 +70,29 @@ static uint32_t MakePipelineStateKey(DXGI_FORMAT rtvFormat, bool linearOutput, b
     if (textureArray) {
         key |= TextureArrayPipelineStateKeyBit;
     }
+    if (!alphaBlend) {
+        key |= AlphaBlendDisabledPipelineStateKeyBit;
+    }
     return key;
 }
 
-static uint64_t MakeImGuiTextureID(uint32_t bindlessIndex, uint32_t arraySlice, bool textureArray) {
+static uint64_t MakeImGuiTextureID(uint32_t bindlessIndex, uint32_t arraySlice, bool textureArray, bool alphaBlend) {
     uint64_t textureID = bindlessIndex;
     if (textureArray) {
         textureID |= ImGuiTextureArrayFlag | (static_cast<uint64_t>(arraySlice) << 32);
+    }
+    if (!alphaBlend) {
+        textureID |= ImGuiTextureAlphaBlendDisabledFlag;
     }
     return textureID;
 }
 
 static bool IsImGuiTextureArray(uint64_t textureID) {
     return (textureID & ImGuiTextureArrayFlag) != 0;
+}
+
+static bool IsImGuiTextureAlphaBlendEnabled(uint64_t textureID) {
+    return (textureID & ImGuiTextureAlphaBlendDisabledFlag) == 0;
 }
 
 static uint32_t GetImGuiTextureBindlessIndex(uint64_t textureID) {
@@ -209,8 +222,10 @@ bool D3D12ImGuiRenderer::CreatePipelineObjects(DXGI_FORMAT rtvFormat, bool linea
         return false;
     }
 
-    return CreatePipelineState(rtvFormat, linearOutput, false) &&
-        CreatePipelineState(rtvFormat, linearOutput, true);
+    return CreatePipelineState(rtvFormat, linearOutput, false, true) &&
+        CreatePipelineState(rtvFormat, linearOutput, true, true) &&
+        CreatePipelineState(rtvFormat, linearOutput, false, false) &&
+        CreatePipelineState(rtvFormat, linearOutput, true, false);
 }
 
 bool D3D12ImGuiRenderer::CreateRootSignature() {
@@ -311,13 +326,13 @@ static bool CompileImGuiShader(const char *sourceName, const char *shaderText, c
 }
 
 
-bool D3D12ImGuiRenderer::CreatePipelineState(DXGI_FORMAT rtvFormat, bool linearOutput, bool textureArray) {
+bool D3D12ImGuiRenderer::CreatePipelineState(DXGI_FORMAT rtvFormat, bool linearOutput, bool textureArray, bool alphaBlend) {
     if (rtvFormat == DXGI_FORMAT_UNKNOWN) {
         BE_WARNLOG("D3D12ImGuiRenderer::CreatePipelineState: invalid RTV format\n");
         return false;
     }
 
-    const uint32_t pipelineStateKey = MakePipelineStateKey(rtvFormat, linearOutput, textureArray);
+    const uint32_t pipelineStateKey = MakePipelineStateKey(rtvFormat, linearOutput, textureArray, alphaBlend);
     if (pipelineStateMap.find(pipelineStateKey) != pipelineStateMap.end()) {
         return true;
     }
@@ -466,7 +481,7 @@ bool D3D12ImGuiRenderer::CreatePipelineState(DXGI_FORMAT rtvFormat, bool linearO
     psoDesc.SampleDesc.Count = 1;
 
     psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
-    psoDesc.BlendState.RenderTarget[0].BlendEnable = TRUE;
+    psoDesc.BlendState.RenderTarget[0].BlendEnable = alphaBlend ? TRUE : FALSE;
     psoDesc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
     psoDesc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
     psoDesc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
@@ -515,8 +530,8 @@ void D3D12ImGuiRenderer::FreePipelineObjects() {
     SAFE_RELEASE(rootSignature);
 }
 
-ID3D12PipelineState *D3D12ImGuiRenderer::GetPipelineState(DXGI_FORMAT rtvFormat, bool linearOutput, bool textureArray) const {
-    auto it = pipelineStateMap.find(MakePipelineStateKey(rtvFormat, linearOutput, textureArray));
+ID3D12PipelineState *D3D12ImGuiRenderer::GetPipelineState(DXGI_FORMAT rtvFormat, bool linearOutput, bool textureArray, bool alphaBlend) const {
+    auto it = pipelineStateMap.find(MakePipelineStateKey(rtvFormat, linearOutput, textureArray, alphaBlend));
     return it != pipelineStateMap.end() ? it->second : nullptr;
 }
 
@@ -818,16 +833,20 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
 
     DXGI_FORMAT rtvFormat = D3D12Renderer::RHIFormatToDXGIFormat(_overlay->GetRTVFormat());
     const bool linearOutput = RequiresLinearOutput(rtvFormat);
-    ID3D12PipelineState *texture2DPipelineState = GetPipelineState(rtvFormat, linearOutput, false);
-    ID3D12PipelineState *texture2DArrayPipelineState = GetPipelineState(rtvFormat, linearOutput, true);
-    if (!texture2DPipelineState || !texture2DArrayPipelineState) {
+    ID3D12PipelineState *texture2DPipelineState = GetPipelineState(rtvFormat, linearOutput, false, true);
+    ID3D12PipelineState *texture2DArrayPipelineState = GetPipelineState(rtvFormat, linearOutput, true, true);
+    ID3D12PipelineState *texture2DOpaquePipelineState = GetPipelineState(rtvFormat, linearOutput, false, false);
+    ID3D12PipelineState *texture2DArrayOpaquePipelineState = GetPipelineState(rtvFormat, linearOutput, true, false);
+    if (!texture2DPipelineState || !texture2DArrayPipelineState || !texture2DOpaquePipelineState || !texture2DArrayOpaquePipelineState) {
         if (!CreatePipelineObjects(rtvFormat, linearOutput)) {
             return;
         }
-        texture2DPipelineState = GetPipelineState(rtvFormat, linearOutput, false);
-        texture2DArrayPipelineState = GetPipelineState(rtvFormat, linearOutput, true);
+        texture2DPipelineState = GetPipelineState(rtvFormat, linearOutput, false, true);
+        texture2DArrayPipelineState = GetPipelineState(rtvFormat, linearOutput, true, true);
+        texture2DOpaquePipelineState = GetPipelineState(rtvFormat, linearOutput, false, false);
+        texture2DArrayOpaquePipelineState = GetPipelineState(rtvFormat, linearOutput, true, false);
     }
-    if (!rootSignature || !texture2DPipelineState || !texture2DArrayPipelineState) {
+    if (!rootSignature || !texture2DPipelineState || !texture2DArrayPipelineState || !texture2DOpaquePipelineState || !texture2DArrayOpaquePipelineState) {
         return;
     }
 
@@ -904,7 +923,10 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
             }
 
             const bool textureArray = IsImGuiTextureArray(textureID);
-            ID3D12PipelineState *desiredPipelineState = textureArray ? texture2DArrayPipelineState : texture2DPipelineState;
+            const bool alphaBlend = IsImGuiTextureAlphaBlendEnabled(textureID);
+            ID3D12PipelineState *desiredPipelineState = textureArray
+                ? (alphaBlend ? texture2DArrayPipelineState : texture2DArrayOpaquePipelineState)
+                : (alphaBlend ? texture2DPipelineState : texture2DOpaquePipelineState);
             if (currentPipelineState != desiredPipelineState) {
                 graphicsCommandList->SetPipelineState(desiredPipelineState);
                 currentPipelineState = desiredPipelineState;
@@ -932,7 +954,7 @@ void D3D12ImGuiRenderer::FreeDrawData(RHI::ImGuiOverlay *overlay, void *userData
     static_cast<D3D12ImGuiOverlay *>(overlay)->FreeCapturedDrawData(userData);
 }
 
-uint64_t D3D12Renderer::GetImGuiTextureID(const RHI::Texture *texture, RHI::ViewID viewID, uint32_t arraySlice) const {
+uint64_t D3D12Renderer::GetImGuiTextureID(const RHI::Texture *texture, RHI::ViewID viewID, uint32_t arraySlice, bool alphaBlend) const {
     if (!texture || !texture->HasValidView(RHI::ViewType::SRV, viewID)) {
         return 0;
     }
@@ -943,7 +965,7 @@ uint64_t D3D12Renderer::GetImGuiTextureID(const RHI::Texture *texture, RHI::View
     }
 
     if (texture->type != RHI::TextureType::Texture2DArray) {
-        return MakeImGuiTextureID(bindlessIndex, 0, false);
+        return MakeImGuiTextureID(bindlessIndex, 0, false, alphaBlend);
     }
 
     RHI::TextureViewInfo viewInfo;
@@ -953,7 +975,7 @@ uint64_t D3D12Renderer::GetImGuiTextureID(const RHI::Texture *texture, RHI::View
     }
 
     // Texture2DArray 의 array coordinate 는 SRV 의 FirstArraySlice 를 기준으로 한 상대 index 다.
-    return MakeImGuiTextureID(bindlessIndex, arraySlice - viewInfo.firstSlice, true);
+    return MakeImGuiTextureID(bindlessIndex, arraySlice - viewInfo.firstSlice, true, alphaBlend);
 }
 
 void D3D12Renderer::RenderImGuiDrawData(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::ImGuiOverlay *overlay, void *userData) {
