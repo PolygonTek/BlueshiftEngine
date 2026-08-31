@@ -21,7 +21,7 @@
 #include <cstdlib>
 #include <limits>
 
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
 
 constexpr int InvSqrtBenchmarkValueCount = 4096;
 constexpr int InvSqrtBenchmarkIterationCount = 4096;
@@ -518,7 +518,7 @@ static void RunSinCosBenchmark(const float *inputs, Function function, FastFunct
 #endif
 
 static void BenchmarkInvSqrt() {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     alignas(64) float inputs[InvSqrtBenchmarkValueCount];
     InitializeInvSqrtBenchmarkInputs(inputs);
 
@@ -543,7 +543,7 @@ static void BenchmarkInvSqrt() {
 }
 
 static void BenchmarkSqrt() {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     alignas(64) float inputs[InvSqrtBenchmarkValueCount];
     InitializeInvSqrtBenchmarkInputs(inputs);
 
@@ -568,7 +568,7 @@ static void BenchmarkSqrt() {
 
 
 static void BenchmarkTrigonometry() {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     alignas(64) float angleInputs[TrigBenchmarkValueCount];
     alignas(64) float tanInputs[TrigBenchmarkValueCount];
     alignas(64) float unitInputs[TrigBenchmarkValueCount];
@@ -645,7 +645,7 @@ static void BenchmarkTrigonometry() {
 }
 
 static void BenchmarkLog() {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     alignas(64) float inputs[TrigBenchmarkValueCount];
     InitializeLogBenchmarkInputs(inputs, 0xa4093822u);
 
@@ -669,7 +669,7 @@ static void BenchmarkLog() {
 }
 
 static void BenchmarkExp() {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     alignas(64) float inputs[TrigBenchmarkValueCount];
     alignas(64) float accuracyInputs[TrigBenchmarkValueCount];
     InitializeExpBenchmarkInputs(inputs, -10.0f, 10.0f, 0x299f31d0u);
@@ -694,7 +694,7 @@ static void BenchmarkExp() {
 }
 
 static void BenchmarkPow() {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     alignas(64) float baseInputs[TrigBenchmarkValueCount];
     alignas(64) float exponentInputs[TrigBenchmarkValueCount];
     InitializePowBenchmarkInputs(baseInputs, exponentInputs, 0xec4e6c89u);

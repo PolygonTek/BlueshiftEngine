@@ -14,6 +14,12 @@
 
 #pragma once
 
+#if defined(_DEBUG)
+#define BE_CVAR_ASSERT_MAIN_THREAD() AssertMainThreadAccess()
+#else
+#define BE_CVAR_ASSERT_MAIN_THREAD() ((void)0)
+#endif
+
 /*
 -------------------------------------------------------------------------------
 
@@ -41,17 +47,16 @@ class BE_API CVar {
 
 public:
     enum Flag {
-        All             = -1,
-        Modified        = BIT(0),
-        Static          = BIT(1),
-        ReadOnly        = BIT(2),
-        Integer         = BIT(3),
-        Float           = BIT(4),
-        Bool            = BIT(5),
-        Archive         = BIT(6),
+        All                 = -1,
+        Modified            = BIT(0),
+        Static              = BIT(1),
+        ReadOnly            = BIT(2),
+        Integer             = BIT(3),
+        Float               = BIT(4),
+        Bool                = BIT(5),
+        Archive             = BIT(6),
     };
-    
-    // do not use default ctor
+
     CVar() = delete;
     CVar(const char *name, const char *value, int flags, const char *description);
     CVar(const char *name, const char *value, int flags, const char *description, float valueMin, float valueMax);
@@ -59,18 +64,18 @@ public:
 
     const char *            GetName() const { return name; }
     const char *            GetDescription() const { return desc; }
-    int                     GetFlags() const { return flags; }
+    int                     GetFlags() const { BE_CVAR_ASSERT_MAIN_THREAD(); return flags; }
     float                   GetMinValue() const { return valueMin; }
     float                   GetMaxValue() const { return valueMax; }
     
-    bool                    IsModified() const { return flags & Flag::Modified; }
-    void                    SetModified() { flags |= Flag::Modified; }
-    void                    ClearModified() { flags &= ~Flag::Modified; }
+    bool                    IsModified() const { BE_CVAR_ASSERT_MAIN_THREAD(); return flags & Flag::Modified; }
+    void                    SetModified() { BE_CVAR_ASSERT_MAIN_THREAD(); flags |= Flag::Modified; }
+    void                    ClearModified() { BE_CVAR_ASSERT_MAIN_THREAD(); flags &= ~Flag::Modified; }
 
-    const char *            GetString() const { return valueString; }
-    float                   GetFloat() const { return valueFloat; }
-    int                     GetInteger() const { return valueInteger; }
-    bool                    GetBool() const { return (valueInteger != 0); }
+    const char *            GetString() const { BE_CVAR_ASSERT_MAIN_THREAD(); return valueString; }
+    float                   GetFloat() const { BE_CVAR_ASSERT_MAIN_THREAD(); return valueFloat; }
+    int                     GetInteger() const { BE_CVAR_ASSERT_MAIN_THREAD(); return valueInteger; }
+    bool                    GetBool() const { BE_CVAR_ASSERT_MAIN_THREAD(); return (valueInteger != 0); }
 
     void                    SetString(const char *value);
     void                    SetFloat(const float value) { SetString(va("%f", value)); }
@@ -80,6 +85,11 @@ public:
     static void             RegisterStaticCVars();
     
 protected:
+#if defined(_DEBUG)
+    // CVar 값과 modified 상태는 CVarSystem::Init() 을 호출한 스레드에서만 접근한다.
+    static void             AssertMainThreadAccess();
+#endif
+
     const char *            name;           ///< name
     const char *            defaultValue;   ///< default value
     const char *            desc;           ///< description
@@ -95,6 +105,8 @@ protected:
     
     void                    Init(const char *name, const char *value, int flags, const char *description, float valueMin, float valueMax);
 };
+
+#undef BE_CVAR_ASSERT_MAIN_THREAD
 
 class CVarSystem {
 public:
@@ -131,6 +143,11 @@ public:
     void                    WriteVariables(File *fp) const;
 
 private:
+#if defined(_DEBUG)
+    void                    AssertMainThreadAccess() const;
+    uint64_t                mainThreadId = 0;
+#endif
+
     Array<CVar *>           cvars;
     HashIndex               cvarHash;
     bool                    initialized;

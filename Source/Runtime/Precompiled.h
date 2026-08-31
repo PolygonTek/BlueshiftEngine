@@ -941,10 +941,6 @@ void BE_CDECL BE_API Assert(bool expr);
 
 #define BE_ASSERT BE1::Assert
 
-#if defined _DEBUG && !defined BE_DEBUG
-#define BE_DEBUG
-#endif
-
 BE_NAMESPACE_END
 
 // Bit OR

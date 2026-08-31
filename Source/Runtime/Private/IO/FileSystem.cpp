@@ -27,7 +27,6 @@ BE_NAMESPACE_BEGIN
 #define FILEHASH_SIZE   1024
 
 static CVar             fs_baseDir("fs_baseDir", ".", 0, "");
-static CVar             fs_debug("fs_debug", "0", CVar::Flag::Bool, "");
 
 FileSystem              fileSystem;
 
@@ -90,8 +89,9 @@ void FileSystem::ClearSearchPath() {
             s->archive->entryHash.Free();
             unzClose(s->archive->unzArchive);
             delete s->archive;
-        } else if (s->pathname) {
+        } else {
             delete[] s->pathname;
+            delete[] s->relativePathname;
         }
         
         delete s;
@@ -130,13 +130,19 @@ void FileSystem::AddSearchPath(const char *path) {
     SearchPath *search = BE_NEW SearchPath;
     search->pathname = BE_NEW char[MaxAbsolutePath];
     strcpy(search->pathname, path);
+
+    // OpenFileRead 는 로딩 스레드에서도 호출되므로 메인 스레드에서 상대 경로를 미리 계산한다.
+    const Str relativePath = ToRelativePath(path);
+    search->relativePathname = BE_NEW char[relativePath.Length() + 1];
+    strcpy(search->relativePathname, relativePath.c_str());
+
     search->archive = nullptr;
     search->next = searchPath;
     searchPath = search;
 
     // Add zip files from path to searchpath.
     Array<FileInfo> files;
-    int num = PlatformFile::ListFiles(ToRelativePath(path), "*.zip", false, false, files);
+    int num = PlatformFile::ListFiles(relativePath, "*.zip", false, false, files);
 
     for (int i = 0; i < num; i++) {
         AddSearchPath_ZIP(path, files[i].filename);
@@ -276,6 +282,8 @@ void FileSystem::AddSearchPath_ZIP(const char *path, const char *filename) {
     }
 
     SearchPath *search = BE_NEW SearchPath;
+    search->pathname = nullptr;
+    search->relativePathname = nullptr;
     search->archive = archive;
     search->next = searchPath;
     searchPath = search;
@@ -406,10 +414,6 @@ bool FileSystem::RemoveFile(const char *filename, bool evenReadOnly) {
 }
 
 bool FileSystem::MoveFile(const char *srcFilename, const char *dstFilename) {
-    if (fs_debug.GetBool()) {
-        BE_LOG("MoveFile: %s --> %s\n", srcFilename, dstFilename);
-    }
-    
     Str path = dstFilename;
     path.StripFileName();
     CreateDirectory(path, true);
@@ -438,10 +442,6 @@ bool FileSystem::MoveFile(const char *srcFilename, const char *dstFilename) {
 bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, ProgressCallback *progress) {
     if (progress && !progress->Poll(0.0f)) {
         return false;
-    }
-
-    if (fs_debug.GetBool()) {
-        BE_LOG("CopyFile: %s --> %s\n", srcFilename, dstFilename);
     }
 
     size_t srcFileSize;
@@ -573,10 +573,6 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
 
     PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileRead(filename);
     if (pf) {
-        if (fs_debug.GetBool()) {
-            BE_LOG("FileSystem::OpenFileRead: %s\n", filename);
-        }
-        
         FileReal *file = BE_NEW FileReal(filename, pf);
         if (fileSize) {
             file->size = *fileSize = pf->Size(); //PlatformFile::FileSize(filename);
@@ -609,10 +605,6 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
             }
                         
             if (i != -1) {
-                if (fs_debug.GetBool()) {
-                    BE_LOG("FileSystem::OpenFileRead: %s (found in '%s')\n", filename, archive->name);
-                }
-
                 unzSetOffset(archive->unzArchive, entry->unzOffset);
                 unzOpenCurrentFile(archive->unzArchive);
                 FileInZip *file = BE_NEW FileInZip(filename, (void *)archive->unzArchive);
@@ -625,16 +617,12 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
                 break;
             }
         } else {
-            Str relativePath = Str(s->pathname).ToRelativePath(Str(fs_baseDir.GetString()));
+            Str relativePath = s->relativePathname;
             relativePath.AppendPath(filename);
             relativePath.CleanPath();
 
             PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileRead(relativePath);
             if (pf) {
-                if (fs_debug.GetBool()) {
-                    BE_LOG("FileSystem::OpenFileRead: %s (found in '%s')\n", relativePath.c_str(), s->pathname);
-                }
-
                 FileReal *file = BE_NEW FileReal(relativePath, pf);
                 
                 if (fileSize) {
@@ -651,10 +639,6 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
 }
 
 File *FileSystem::OpenFileWrite(const char *filename) {
-    if (fs_debug.GetBool()) {
-        BE_LOG("FileSystem::OpenFileWrite: %s\n", filename);
-    }
-    
     Str writeDir = filename;
     writeDir.StripFileName();
     if (!writeDir.IsEmpty()) {
@@ -681,10 +665,6 @@ File *FileSystem::OpenFileWrite(const char *filename) {
 }
 
 File *FileSystem::OpenFileAppend(const char *filename) {
-    if (fs_debug.GetBool()) {
-        BE_LOG("FileSystem::OpenFileAppend: %s\n", filename);
-    }
-
     Str writeDir = filename;
     writeDir.StripFileName();
     if (!writeDir.IsEmpty()) {

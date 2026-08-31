@@ -115,6 +115,7 @@ public:
 private:
     struct SearchPath {
         char *          pathname;
+        char *          relativePathname;
         ZipArchive *    archive;
         SearchPath *    next;
     };
