@@ -178,6 +178,7 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
             params.depth = simulationSettings.depth;
             params.swell = simulationSettings.tma.swell;
             params.spread = simulationSettings.tma.spread;
+            params.gamma = simulationSettings.tma.peakEnhancement;
             if (!GenerateInitialSpectraTMA(commandList, frameThreadData, params)) {
                 return false;
             }

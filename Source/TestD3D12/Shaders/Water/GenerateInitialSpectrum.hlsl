@@ -62,7 +62,7 @@ float ComputeSpectrumDensity(float2 waveVector) {
     float cosTheta = dot(waveDirection, spectrumParams.windDirection);
 
     float spectrumDensity = spectrumParams.spectrumScale;
-    spectrumDensity *= TMASpectrum(dispersion.x, spectrumParams.peakOmega, spectrumParams.alpha, spectrumParams.gravity, spectrumParams.depth);
+    spectrumDensity *= TMASpectrum(dispersion.x, spectrumParams.peakOmega, spectrumParams.alpha, spectrumParams.gravity, spectrumParams.depth, spectrumParams.gamma);
 #if OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL == OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_POSITIVE_COSINE_SQUARED
     float directionalSpread = PositiveCosineSquaredDirectionalSpread(cosTheta);
 #elif OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL == OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_HASSELMANN

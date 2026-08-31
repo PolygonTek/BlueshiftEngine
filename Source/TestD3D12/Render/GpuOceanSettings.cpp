@@ -126,6 +126,7 @@ bool GpuOcean::SimulationSettings::IsValid() const {
         break;
     case SpectrumModel::TMA:
         if (tma.spectrumScale < 0.0f || tma.fetch <= 0.0f ||
+            tma.peakEnhancement < 1.0f || tma.peakEnhancement > 7.0f ||
             tma.swell < 0.0f || tma.swell > 1.0f || tma.spread < 0.0f || tma.spread > 1.0f) {
             return false;
         }

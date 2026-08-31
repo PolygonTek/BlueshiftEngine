@@ -52,15 +52,14 @@ float PhillipsSpectrum(float2 waveVector, float2 windDirection, float windSpeed,
 }
 
 // 1차원 각주파수 스펙트럼 S(omega)
-float JONSWAPSpectrum(float omega, float peakOmega, float alpha, float gravity) {
+float JONSWAPSpectrum(float omega, float peakOmega, float alpha, float gravity, float gamma) {
     if (omega <= 0.0f) {
         return 0.0f;
     }
 
-    const float gamma = 3.3f;
     float sigma = omega <= peakOmega ? 0.07f : 0.09f;
     float normalizedPeakDistance = (omega - peakOmega) / (sigma * peakOmega);
-    float peakEnhancement = exp(-0.5f * normalizedPeakDistance * normalizedPeakDistance);
+    float peakEnhancementExponent = exp(-0.5f * normalizedPeakDistance * normalizedPeakDistance);
 
     float peakRatio = peakOmega / omega;
     float peakRatioSquared = peakRatio * peakRatio;
@@ -68,11 +67,11 @@ float JONSWAPSpectrum(float omega, float peakOmega, float alpha, float gravity) 
     float omegaSquared = omega * omega;
     float omegaFourth = omegaSquared * omegaSquared;
 
-    return alpha * gravity * gravity / (omegaFourth * omega) * exp(-1.25f * peakRatioFourth) * pow(gamma, peakEnhancement);
+    return alpha * gravity * gravity / (omegaFourth * omega) * exp(-1.25f * peakRatioFourth) * pow(gamma, peakEnhancementExponent);
 }
 
 // TMA 는 JONSWAP 각주파수 스펙트럼에 유한 수심 보정을 적용한다.
-float TMASpectrum(float omega, float peakOmega, float alpha, float gravity, float depth) {
+float TMASpectrum(float omega, float peakOmega, float alpha, float gravity, float depth, float gamma) {
     float dimensionlessFrequency = min(omega * sqrt(depth / gravity), 2.0f);
     float depthCorrection;
 
@@ -83,7 +82,7 @@ float TMASpectrum(float omega, float peakOmega, float alpha, float gravity, floa
         depthCorrection = 1.0f - 0.5f * distanceFromUpperLimit * distanceFromUpperLimit;
     }
 
-    return JONSWAPSpectrum(omega, peakOmega, alpha, gravity) * depthCorrection;
+    return JONSWAPSpectrum(omega, peakOmega, alpha, gravity, gamma) * depthCorrection;
 }
 
 // 정방향 반구에만 에너지를 배분하는 주파수 비의존 cos^2 방향 분포. [-PI, PI] 에서 적분값은 1 이다.

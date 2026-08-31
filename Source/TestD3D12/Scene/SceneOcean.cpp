@@ -182,6 +182,11 @@ void SceneOcean::BuildImGui() {
                 oceanSettingsChanged = true;
             }
 
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::SliderFloat("Peak enhancement (gamma)", &simulationSettings.tma.peakEnhancement, 1.0f, 7.0f, "%.2f")) {
+                oceanSettingsChanged = true;
+            }
+
             static const char *directionalSpreadModelNames[] = { "Positive cosine squared", "Hasselmann", "Donelan-Banner", "Mitsuyasu" };
             int directionalSpreadModelIndex = static_cast<int>(simulationSettings.tma.directionalSpreadModel);
             ImGui::SetNextItemWidth(itemWidth);

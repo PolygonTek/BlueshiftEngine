@@ -398,7 +398,7 @@ struct OceanTMAInitialSpectrumParams {
     float depth;
     float swell;
     float spread;
-    float padding0;
+    float gamma;
     OceanInitialSpectrumCascadeParams cascadeParams[OceanCascadeCount];
 };
 

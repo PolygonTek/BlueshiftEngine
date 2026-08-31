@@ -88,11 +88,12 @@ public:
     struct TMASpectrumSettings {
         float                       spectrumScale = 1.0f;           ///< model-specific power spectrum scale
         float                       fetch = 250000.0f;              ///< 바람이 수면 위를 같은 방향으로 불어온 거리 (m). alpha 와 peakOmega 계산에 사용한다.
+        float                       peakEnhancement = 3.3f;         ///< JONSWAP peak enhancement 계수 gamma [1, 7]
         DirectionalSpreadModel      directionalSpreadModel = DirectionalSpreadModel::Hasselmann;
         float                       swell = 0.8f;                   ///< Hasselmann 저주파 파동의 진행 방향 집중도를 높이는 swell 계수 [0, 1]
         float                       spread = 0.2f;                  ///< 선택한 방향 분포에 섞는 등방 분포의 비율 [0, 1]. 1이면 완전한 등방 분포다.
 
-        bool                        operator==(const TMASpectrumSettings &rhs) const { return spectrumScale == rhs.spectrumScale && fetch == rhs.fetch && directionalSpreadModel == rhs.directionalSpreadModel && swell == rhs.swell && spread == rhs.spread; }
+        bool                        operator==(const TMASpectrumSettings &rhs) const { return spectrumScale == rhs.spectrumScale && fetch == rhs.fetch && peakEnhancement == rhs.peakEnhancement && directionalSpreadModel == rhs.directionalSpreadModel && swell == rhs.swell && spread == rhs.spread; }
         bool                        operator!=(const TMASpectrumSettings &rhs) const { return !(*this == rhs); }
     };
 
