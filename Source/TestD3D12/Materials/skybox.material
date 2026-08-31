@@ -1,6 +1,6 @@
 material sunsetSkybox {
     cull twoSided
-    shaderTemplate "Source/TestD3D12/Shaders/SkyboxCubemap"
+    shaderTemplate "Source/TestD3D12/Shaders/Skybox/SkyboxCubemap"
 
     properties {
         skyCubeMap "Data/Test/kloofendal_48d_partly_cloudy_puresky_4k.dds"

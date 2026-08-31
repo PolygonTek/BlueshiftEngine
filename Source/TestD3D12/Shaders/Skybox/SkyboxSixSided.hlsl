@@ -1,4 +1,4 @@
-#include "SurfaceDrawCommon.hlsli"
+#include "../SurfaceDrawCommon.hlsli"
 
 #define SKYBOX_SIX_SIDED_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \

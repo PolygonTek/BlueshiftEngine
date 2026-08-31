@@ -382,7 +382,7 @@ void MaterialManager::CreateEngineMaterials() {
     static constexpr const char *defaultSkyboxMaterialText = ENGINE_MATERIAL(
     {
         cull twoSided
-        shaderTemplate "Source/TestD3D12/Shaders/SkyboxCubemap"
+        shaderTemplate "Source/TestD3D12/Shaders/Skybox/SkyboxCubemap"
 
         properties {
             skyCubeMap "Data/EngineTextures/default_sky.dds"
