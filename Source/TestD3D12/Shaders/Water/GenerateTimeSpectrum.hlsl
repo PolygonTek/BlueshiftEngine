@@ -71,7 +71,9 @@ OceanFieldSpectra ComputeOceanFieldSpectra(uint2 pq, uint spectrumSize) {
     // ∂Dj/∂xl = i kl (+i C kj / |k|) h = -C kj kl / |k| h
     spectra.displacementX_dx = -h * (spectrumParams.choppiness * waveVector.x * waveVector.x * invK);
     spectra.displacementY_dy = -h * (spectrumParams.choppiness * waveVector.y * waveVector.y * invK);
-    spectra.displacementX_dy = -h * (spectrumParams.choppiness * oddWaveVector.x * oddWaveVector.y * invK);
+    if ((spectrumParams.options & OceanTimeSpectrumOptionBitCrossDerivative) != 0u) {
+        spectra.displacementX_dy = -h * (spectrumParams.choppiness * oddWaveVector.x * oddWaveVector.y * invK);
+    }
     spectra.displacementZ_dx = ih * oddWaveVector.x;
     spectra.displacementZ_dy = ih * oddWaveVector.y;
     return spectra;

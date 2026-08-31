@@ -240,14 +240,22 @@ CameraPassPSOutput PSMain(PSInput input) {
 
     const float3 reflectionDir = reflect(-V, normal);
     const float3 reflection = SampleOceanReflection(reflectionDir, specularRoughness);
-    const float normalizedCrestHeight = saturate((input.worldPosition.z - oceanSurfaceParams.surfaceHeight) / oceanSurfaceParams.scatterHeight);
-    const float crestScatter = normalizedCrestHeight * normalizedCrestHeight;
-    const float3 waterBodyColor = oceanSurfaceParams.waterColor * lerp(0.35f, 1.0f, NdotV) + oceanSurfaceParams.scatterColor * crestScatter;
+    const float waterBodyFactor = lerp(0.35f, 1.0f, NdotV);
+    const float3 waterBodyColor = oceanSurfaceParams.waterColor * waterBodyFactor;
     float3 color = lerp(waterBodyColor, reflection, fresnel);
 
     if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0u) {
         const float3 L = -frameConstants.directionalLight.direction;
         const float NdotL = saturate(dot(normal, L));
+
+        // 얇은 파도 마루를 통과한 직접광은 광원이 시선 반대편에 있을수록 강하게 보인다.
+        const float normalizedCrestHeight = saturate((input.worldPosition.z - oceanSurfaceParams.surfaceHeight) / oceanSurfaceParams.scatterHeight);
+        const float crestScatter = normalizedCrestHeight * normalizedCrestHeight;
+        const float backLight = saturate(dot(V, -L));
+        const float scatterPhase = backLight * backLight;
+        const float scatterAmount = (1.0f - fresnel) * crestScatter * scatterPhase;
+        const float3 relativeScatter = oceanSurfaceParams.scatterColor * (1.0f - oceanSurfaceParams.waterColor);
+        color += frameConstants.directionalLight.lightColor * relativeScatter * scatterAmount;
         
         if (NdotL > 0.0f) {
             color += frameConstants.directionalLight.lightColor * oceanSurfaceParams.waterColor * (0.02f * NdotL);

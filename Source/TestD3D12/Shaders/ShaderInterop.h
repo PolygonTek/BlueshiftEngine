@@ -136,6 +136,7 @@ static const uint OceanSpectrumComplexPlaneCount = 4;
 static const uint OceanCascadeCount = 3;
 static const uint OceanSurfaceGridResolution = 256;
 static const uint OceanSurfaceGridLodCount = 3;
+static const uint OceanTimeSpectrumOptionBitCrossDerivative = 1u << 0;
 static const uint OceanFoamOptionBitEnabled = 1u << 0;
 static const uint OceanFoamOptionBitResetHistory = 1u << 1;
 
@@ -413,7 +414,8 @@ struct OceanTimeSpectrumParams {
     float choppiness;
     float patchSize;
     uint cascadeIndex;
-    float2 padding0;
+    uint options;
+    float padding0;
 };
 
 #ifdef __cplusplus

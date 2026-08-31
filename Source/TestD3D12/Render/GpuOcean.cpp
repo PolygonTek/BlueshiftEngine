@@ -111,8 +111,12 @@ void GpuOcean::ApplySimulationSettings(const SimulationSettings &newSettings, ui
         cascadeResourcesDirty = true;
     }
 
-    if (BE1::HasFlag(changes, SimulationSettings::ChangeFlag::RegenInitialSpectrum)) {
+    const bool regenInitialSpectrum = BE1::HasFlag(changes, SimulationSettings::ChangeFlag::RegenInitialSpectrum);
+    if (regenInitialSpectrum) {
         initialSpectraReady = false;
+    }
+
+    if (regenInitialSpectrum || BE1::HasFlag(changes, SimulationSettings::ChangeFlag::RefreshCascadeOutputs)) {
         cascadeOutputsReady = false;
         ResetCascadeUpdateSchedule();
     }
@@ -177,6 +181,7 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
     params.gravity = simulationSettings.gravity;
     params.depth = simulationSettings.depth;
     params.choppiness = simulationSettings.choppiness;
+    params.options = simulationSettings.crossDerivativeEnabled ? OceanTimeSpectrumOptionBitCrossDerivative : 0u;
 
     OceanResolveFieldsParams resolveParams = {};
     resolveParams.deltaTime = simulationDeltaTime;

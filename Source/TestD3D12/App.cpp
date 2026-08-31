@@ -182,6 +182,12 @@ void App::ChangeScene(int sceneIndex) {
 
     scene = SceneRegistry::Create(sceneIndex);
     scene->Init(renderWorld);
+
+    if (cameraControlMode == CameraControlMode::Fly) {
+        const BE1::Mat3 targetCameraAxis = BE1::Angles(0.0f, targetCameraPitch, targetCameraYaw).ToMat3();
+        targetCameraOrigin = targetCameraCenter - targetCameraAxis[0] * targetCameraDistance;
+    }
+
     this->sceneIndex = sceneIndex;
 }
 

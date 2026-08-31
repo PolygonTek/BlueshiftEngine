@@ -129,7 +129,7 @@ void SceneOcean::BuildImGui() {
     }
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::DragFloat("Displacement scale", &simulationSettings.displacementScale, 0.01f, 0.0f, 10.0f, "%.3f")) {
+    if (ImGui::SliderFloat("Displacement scale", &simulationSettings.displacementScale, 0.0f, 5.0f, "%.3f")) {
         simulationSettings.displacementScale = BE1::Max(simulationSettings.displacementScale, 0.0f);
         oceanSettingsChanged = true;
     }
@@ -139,8 +139,12 @@ void SceneOcean::BuildImGui() {
         oceanSettingsChanged = true;
     }
 
+    if (ImGui::Checkbox("Cross derivative (∂Dx/∂y)", &simulationSettings.crossDerivativeEnabled)) {
+        oceanSettingsChanged = true;
+    }
+
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Time scale", &simulationSettings.timeScale, 0.0f, 4.0f, "%.3f")) {
+    if (ImGui::SliderFloat("Time scale", &simulationSettings.timeScale, 0.0f, 10.0f, "%.3f")) {
         oceanSettingsChanged = true;
     }
 
@@ -197,7 +201,7 @@ void SceneOcean::BuildImGui() {
         }
 
         ImGui::SetNextItemWidth(itemWidth);
-        if (ImGui::SliderFloat("Wind speed", &simulationSettings.windSpeed, 0.1f, 60.0f, "%.2f m/s")) {
+        if (ImGui::SliderFloat("Wind speed", &simulationSettings.windSpeed, 0.01f, 60.0f, "%.2f m/s")) {
             oceanSettingsChanged = true;
         }
 
