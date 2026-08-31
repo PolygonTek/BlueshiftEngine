@@ -5,12 +5,28 @@
 #define OCEAN_SPECTRUM_MODEL_PHILLIPS 0
 #define OCEAN_SPECTRUM_MODEL_TMA      1
 
+#define OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_POSITIVE_COSINE_SQUARED 0
+#define OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_HASSELMANN              1
+#define OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_DONELAN_BANNER          2
+#define OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_MITSUYASU               3
+
 #ifndef OCEAN_SPECTRUM_MODEL
 #define OCEAN_SPECTRUM_MODEL OCEAN_SPECTRUM_MODEL_PHILLIPS
 #endif
 
 #if OCEAN_SPECTRUM_MODEL != OCEAN_SPECTRUM_MODEL_PHILLIPS && OCEAN_SPECTRUM_MODEL != OCEAN_SPECTRUM_MODEL_TMA
 #error Invalid OCEAN_SPECTRUM_MODEL.
+#endif
+
+#ifndef OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL
+#define OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_HASSELMANN
+#endif
+
+#if OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL != OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_POSITIVE_COSINE_SQUARED && \
+    OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL != OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_HASSELMANN && \
+    OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL != OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_DONELAN_BANNER && \
+    OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL != OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_MITSUYASU
+#error Invalid OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL.
 #endif
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
@@ -47,8 +63,16 @@ float ComputeSpectrumDensity(float2 waveVector) {
 
     float spectrumDensity = spectrumParams.spectrumScale;
     spectrumDensity *= TMASpectrum(dispersion.x, spectrumParams.peakOmega, spectrumParams.alpha, spectrumParams.gravity, spectrumParams.depth);
+#if OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL == OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_POSITIVE_COSINE_SQUARED
+    float directionalSpread = PositiveCosineSquaredDirectionalSpread(cosTheta);
+#elif OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL == OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_HASSELMANN
     float directionalSpread = HasselmannDirectionalSpreadWithSwell(dispersion.x, spectrumParams.peakOmega, spectrumParams.windSpeed, spectrumParams.gravity, cosTheta, spectrumParams.swell);
-    // spread = 0 은 Hasselmann 분포, 1 은 모든 방향이 동일한 등방 분포다.
+#elif OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL == OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_DONELAN_BANNER
+    float directionalSpread = DonelanBannerDirectionalSpread(dispersion.x, spectrumParams.peakOmega, cosTheta);
+#elif OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL == OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL_MITSUYASU
+    float directionalSpread = MitsuyasuDirectionalSpread(dispersion.x, spectrumParams.peakOmega, spectrumParams.windSpeed, spectrumParams.gravity, cosTheta);
+#endif
+    // spread = 0 은 선택한 방향 분포, 1 은 모든 방향이 동일한 등방 분포다.
     directionalSpread = lerp(directionalSpread, INV_TWO_PI, spectrumParams.spread);
     spectrumDensity *= directionalSpread;
     spectrumDensity *= dispersion.y * inverseWaveNumber;

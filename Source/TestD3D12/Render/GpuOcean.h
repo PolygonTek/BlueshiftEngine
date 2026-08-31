@@ -67,7 +67,14 @@ public:
 
     enum class SpectrumModel : uint8_t {
         Phillips,                   ///< Phillips spectrum
-        TMA                         ///< TMA spectrum + Hasselmann/isotropic directional spread (+swell parameter)
+        TMA                         ///< TMA spectrum + selectable directional spread
+    };
+
+    enum class DirectionalSpreadModel : uint8_t {
+        PositiveCosineSquared,      ///< Frequency-independent normalized cos^2 spread over the forward hemisphere
+        Hasselmann,                 ///< Hasselmann directional spread with an additional swell concentration parameter
+        DonelanBanner,              ///< Donelan directional spread with Banner's high-frequency extension
+        Mitsuyasu                   ///< Mitsuyasu directional spread with inverse-wave-age-dependent peak concentration
     };
 
     struct PhillipsSpectrumSettings {
@@ -81,10 +88,11 @@ public:
     struct TMASpectrumSettings {
         float                       spectrumScale = 1.0f;           ///< model-specific power spectrum scale
         float                       fetch = 250000.0f;              ///< 바람이 수면 위를 같은 방향으로 불어온 거리 (m). alpha 와 peakOmega 계산에 사용한다.
-        float                       swell = 0.8f;                   ///< 저주파 파동의 진행 방향 집중도를 높이는 swell 계수 [0, 1]
-        float                       spread = 0.2f;                  ///< Hasselmann 분포에 섞는 등방 분포의 비율 [0, 1]. 1이면 완전한 등방 분포다.
+        DirectionalSpreadModel      directionalSpreadModel = DirectionalSpreadModel::Hasselmann;
+        float                       swell = 0.8f;                   ///< Hasselmann 저주파 파동의 진행 방향 집중도를 높이는 swell 계수 [0, 1]
+        float                       spread = 0.2f;                  ///< 선택한 방향 분포에 섞는 등방 분포의 비율 [0, 1]. 1이면 완전한 등방 분포다.
 
-        bool                        operator==(const TMASpectrumSettings &rhs) const { return spectrumScale == rhs.spectrumScale && fetch == rhs.fetch && swell == rhs.swell && spread == rhs.spread; }
+        bool                        operator==(const TMASpectrumSettings &rhs) const { return spectrumScale == rhs.spectrumScale && fetch == rhs.fetch && directionalSpreadModel == rhs.directionalSpreadModel && swell == rhs.swell && spread == rhs.spread; }
         bool                        operator!=(const TMASpectrumSettings &rhs) const { return !(*this == rhs); }
     };
 
@@ -217,7 +225,7 @@ private:
                                     /// Phillips spectrum 으로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
     bool                            GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &commonParams);
 
-                                    /// TMA spectrum 과 Hasselmann/isotropic directional spread 혼합으로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
+                                    /// TMA spectrum 과 선택한 directional/isotropic spread 혼합으로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
     bool                            GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTMAInitialSpectrumParams &commonParams);
 
                                     /// 초기 스펙트럼을 시간에 따라 진화시키고 IFFT 입력용 complex spectrum 을 생성한다.
@@ -234,14 +242,20 @@ private:
     bool                            ResolveOceanFields(RHI::CommandList *commandList, const RHI::ConstantBuffer *resolveConstantBuffer);
 
     SharedPtr<ShaderTemplate>       generatePhillipsInitialSpectrumShaderTemplate;
-    SharedPtr<ShaderTemplate>       generateTMAInitialSpectrumShaderTemplate;
+    SharedPtr<ShaderTemplate>       generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate;
+    SharedPtr<ShaderTemplate>       generateTMAHasselmannInitialSpectrumShaderTemplate;
+    SharedPtr<ShaderTemplate>       generateTMADonelanBannerInitialSpectrumShaderTemplate;
+    SharedPtr<ShaderTemplate>       generateTMAMitsuyasuInitialSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       generateTimeSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       resolveOceanFieldsShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceShaderTemplate;
     SharedPtr<Texture>              foamDetailTexture;
 
     SharedPtr<ShaderPipeline>       generatePhillipsInitialSpectrumPipeline;
-    SharedPtr<ShaderPipeline>       generateTMAInitialSpectrumPipeline;
+    SharedPtr<ShaderPipeline>       generateTMAPositiveCosineSquaredInitialSpectrumPipeline;
+    SharedPtr<ShaderPipeline>       generateTMAHasselmannInitialSpectrumPipeline;
+    SharedPtr<ShaderPipeline>       generateTMADonelanBannerInitialSpectrumPipeline;
+    SharedPtr<ShaderPipeline>       generateTMAMitsuyasuInitialSpectrumPipeline;
     SharedPtr<ShaderPipeline>       generateTimeSpectrumPipeline;
     SharedPtr<ShaderPipeline>       resolveOceanFieldsPipeline;
 

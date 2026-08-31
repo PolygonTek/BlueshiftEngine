@@ -182,13 +182,23 @@ void SceneOcean::BuildImGui() {
                 oceanSettingsChanged = true;
             }
 
+            static const char *directionalSpreadModelNames[] = { "Positive cosine squared", "Hasselmann", "Donelan-Banner", "Mitsuyasu" };
+            int directionalSpreadModelIndex = static_cast<int>(simulationSettings.tma.directionalSpreadModel);
             ImGui::SetNextItemWidth(itemWidth);
-            if (ImGui::SliderFloat("Swell", &simulationSettings.tma.swell, 0.0f, 1.0f, "%.3f")) {
+            if (ImGui::Combo("Directional model", &directionalSpreadModelIndex, directionalSpreadModelNames, COUNT_OF(directionalSpreadModelNames))) {
+                simulationSettings.tma.directionalSpreadModel = static_cast<GpuOcean::DirectionalSpreadModel>(directionalSpreadModelIndex);
                 oceanSettingsChanged = true;
             }
 
+            if (simulationSettings.tma.directionalSpreadModel == GpuOcean::DirectionalSpreadModel::Hasselmann) {
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::SliderFloat("Swell", &simulationSettings.tma.swell, 0.0f, 1.0f, "%.3f")) {
+                    oceanSettingsChanged = true;
+                }
+            }
+
             ImGui::SetNextItemWidth(itemWidth);
-            if (ImGui::SliderFloat("Isotropic spread", &simulationSettings.tma.spread, 0.0f, 1.0f, "%.3f")) {
+            if (ImGui::SliderFloat("Isotropic mix", &simulationSettings.tma.spread, 0.0f, 1.0f, "%.3f")) {
                 oceanSettingsChanged = true;
             }
         }

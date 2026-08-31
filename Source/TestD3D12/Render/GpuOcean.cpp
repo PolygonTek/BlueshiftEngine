@@ -48,12 +48,18 @@ void GpuOcean::Init() {
     CreateSurfaceGrid();
 
     generatePhillipsInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generatePhillipsInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=0");
-    generateTMAInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1");
+    generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAPositiveCosineSquaredInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=0");
+    generateTMAHasselmannInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAHasselmannInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=1");
+    generateTMADonelanBannerInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMADonelanBannerInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=2");
+    generateTMAMitsuyasuInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAMitsuyasuInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=3");
     generateTimeSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateOceanTimeSpectrumShader", shaderModel, "Water/GenerateTimeSpectrum.hlsl", baseDir, "CSMain");
     resolveOceanFieldsShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_resolveOceanFieldsShader", shaderModel, "Water/ResolveOceanFields.hlsl", baseDir, "CSMain");
 
     generatePhillipsInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generatePhillipsInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    generateTMAInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    generateTMAPositiveCosineSquaredInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    generateTMAHasselmannInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAHasselmannInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    generateTMADonelanBannerInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMADonelanBannerInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    generateTMAMitsuyasuInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAMitsuyasuInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
     generateTimeSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTimeSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
     resolveOceanFieldsPipeline = shaderPipelineCache.GetComputePipeline(resolveOceanFieldsShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 }
@@ -70,12 +76,18 @@ void GpuOcean::Shutdown() {
     foamHistoryResetPending = true;
 
     generatePhillipsInitialSpectrumPipeline.reset();
-    generateTMAInitialSpectrumPipeline.reset();
+    generateTMAPositiveCosineSquaredInitialSpectrumPipeline.reset();
+    generateTMAHasselmannInitialSpectrumPipeline.reset();
+    generateTMADonelanBannerInitialSpectrumPipeline.reset();
+    generateTMAMitsuyasuInitialSpectrumPipeline.reset();
     generateTimeSpectrumPipeline.reset();
     resolveOceanFieldsPipeline.reset();
 
     generatePhillipsInitialSpectrumShaderTemplate.reset();
-    generateTMAInitialSpectrumShaderTemplate.reset();
+    generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate.reset();
+    generateTMAHasselmannInitialSpectrumShaderTemplate.reset();
+    generateTMADonelanBannerInitialSpectrumShaderTemplate.reset();
+    generateTMAMitsuyasuInitialSpectrumShaderTemplate.reset();
     generateTimeSpectrumShaderTemplate.reset();
     resolveOceanFieldsShaderTemplate.reset();
     surfaceShaderTemplate.reset();
@@ -86,7 +98,10 @@ void GpuOcean::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const
     static constexpr char groupName[] = "GpuOcean";
 
     bootstrap.TrackPipeline(groupName, generatePhillipsInitialSpectrumPipeline);
-    bootstrap.TrackPipeline(groupName, generateTMAInitialSpectrumPipeline);
+    bootstrap.TrackPipeline(groupName, generateTMAPositiveCosineSquaredInitialSpectrumPipeline);
+    bootstrap.TrackPipeline(groupName, generateTMAHasselmannInitialSpectrumPipeline);
+    bootstrap.TrackPipeline(groupName, generateTMADonelanBannerInitialSpectrumPipeline);
+    bootstrap.TrackPipeline(groupName, generateTMAMitsuyasuInitialSpectrumPipeline);
     bootstrap.TrackPipeline(groupName, generateTimeSpectrumPipeline);
     bootstrap.TrackPipeline(groupName, resolveOceanFieldsPipeline);
 }
@@ -477,7 +492,25 @@ bool GpuOcean::GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::Fra
 
     CopyInitialSpectrumCascadeParams(simulationSettings.cascades, params.cascadeParams);
 
-    if (!DispatchGenerateInitialSpectra(commandList, frameThreadData, generateTMAInitialSpectrumPipeline, params, initialSpectrumTextureArray, RHI::ViewID::PrimaryID)) {
+    const SharedPtr<ShaderPipeline> *pipeline;
+    switch (simulationSettings.tma.directionalSpreadModel) {
+    case DirectionalSpreadModel::PositiveCosineSquared:
+        pipeline = &generateTMAPositiveCosineSquaredInitialSpectrumPipeline;
+        break;
+    case DirectionalSpreadModel::Hasselmann:
+        pipeline = &generateTMAHasselmannInitialSpectrumPipeline;
+        break;
+    case DirectionalSpreadModel::DonelanBanner:
+        pipeline = &generateTMADonelanBannerInitialSpectrumPipeline;
+        break;
+    case DirectionalSpreadModel::Mitsuyasu:
+        pipeline = &generateTMAMitsuyasuInitialSpectrumPipeline;
+        break;
+    default:
+        return false;
+    }
+
+    if (!DispatchGenerateInitialSpectra(commandList, frameThreadData, *pipeline, params, initialSpectrumTextureArray, RHI::ViewID::PrimaryID)) {
         return false;
     }
 

@@ -129,6 +129,15 @@ bool GpuOcean::SimulationSettings::IsValid() const {
             tma.swell < 0.0f || tma.swell > 1.0f || tma.spread < 0.0f || tma.spread > 1.0f) {
             return false;
         }
+        switch (tma.directionalSpreadModel) {
+        case DirectionalSpreadModel::PositiveCosineSquared:
+        case DirectionalSpreadModel::Hasselmann:
+        case DirectionalSpreadModel::DonelanBanner:
+        case DirectionalSpreadModel::Mitsuyasu:
+            break;
+        default:
+            return false;
+        }
         break;
     default:
         return false;
