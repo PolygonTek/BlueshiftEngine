@@ -917,6 +917,7 @@ namespace RHI {
             image.texture = texture;
             image.viewID = viewID;
             image.type = Type::ResolveDepth;
+            image.depthResolveMode = depthResolveMode;
             image.beforeState = beforeState;
             image.duringState = GPUResourceState::CopyDst;
             image.afterState = afterState;

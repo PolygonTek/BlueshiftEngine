@@ -1687,7 +1687,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             assert(texture->HasValidView(RHI::ViewType::DSV, renderPassImage.viewID));
             const D3D12DSVEntry &dsvEntry = texture->dsvEntries[renderPassImage.viewID.value];
             dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
-            dsDesc.DepthEndingAccess.Resolve.Format = texture->textureDesc.Format;
+            dsDesc.DepthEndingAccess.Resolve.Format = dsvEntry.viewDesc.Format;
             switch (renderPassImage.depthResolveMode) {
             case RHI::RenderPassImage::DepthResolveMode::Min:
                 dsDesc.DepthEndingAccess.Resolve.ResolveMode = D3D12_RESOLVE_MODE_MIN;
