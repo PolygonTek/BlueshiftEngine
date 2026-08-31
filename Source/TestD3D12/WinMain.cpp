@@ -238,13 +238,19 @@ static BOOL InitInstance(int nCmdShow, LPTSTR lpCmdLine) {
     BE1::Str newPath = commonDllPath + ";" + pathBuffer;
     BE1::PlatformSystem::SetEnvVar("PATH", newPath);
 
-    char szFullTitle[128];
-    BE1::Str::snPrintf(szFullTitle, sizeof(szFullTitle), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    char szTitleText[128];
+    BE1::Str::snPrintf(szTitleText, sizeof(szTitleText), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    BE1::Str titleText = szTitleText;
+#if defined(_DEBUG)
+    titleText += " (DEBUG)";
+#elif defined(_DEVELOPMENT)
+    titleText += " (DEVELOPMENT)";
+#endif
 
-    wchar_t title[128];
-    BE1::PlatformWinUtils::UTF8ToUCS2(szFullTitle, title, COUNT_OF(title));
+    wchar_t realTitle[128];
+    BE1::PlatformWinUtils::UTF8ToUCS2(titleText.c_str(), realTitle, COUNT_OF(realTitle));
 
-    hwndMain = CreateMainWindow(title, 1920, 1080);
+    hwndMain = CreateMainWindow(realTitle, 1920, 1080);
 
     app.Init(hwndMain);
 
