@@ -160,7 +160,7 @@ bool IsSceneFarDepth(float depth) {
     return abs(depth - cameraConstants.ndcFarZ) <= 1.0e-6f;
 }
 
-float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float viewDistance, float3 incidentVector, float3 normal, float eta, out bool totalInternalReflection) {
+float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float viewDistance, float3 incidentVector, float3 normal, float eta, float3 waterBodyColor, out bool totalInternalReflection) {
     const uint2 sceneSize = uint2(oceanSurfaceParams.sceneSize);
 
     // 수면 위치를 scene texture 의 texel 중심에 맞춘다.
@@ -180,7 +180,7 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
     const float refractionK = 1.0f - eta * eta * (1.0f - NdotI * NdotI);
     totalInternalReflection = refractionK <= 0.0f;
     if (totalInternalReflection) {
-        return oceanSurfaceParams.waterColor;
+        return waterBodyColor;
     }
 
     const float3 refractionDirection = refract(incidentVector, normal, eta);
@@ -210,11 +210,11 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
         }
     }
 
-    // 물을 통과한 거리에 따라 scene color 를 감쇠시키고 water color 로 수렴시킨다.
+    // 물을 통과한 거리에 따라 scene color 를 감쇠시키고 굴절을 끈 경우와 같은 water body color 로 수렴시킨다.
     const float3 sceneColor = sceneColorTexture.SampleLevel(linearClampSampler, sampleUV, 0.0f).rgb;
     const float absorptionScale = min(waterThickness / oceanSurfaceParams.absorptionDistance, 8.0f);
     const float3 transmittance = pow(oceanSurfaceParams.waterColor, absorptionScale);
-    return sceneColor * transmittance + oceanSurfaceParams.waterColor * (1.0f - transmittance);
+    return sceneColor * transmittance + waterBodyColor * (1.0f - transmittance);
 }
 
 [RootSignature(OCEAN_ROOT_SIGNATURE)]
@@ -334,7 +334,7 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     if ((oceanSurfaceParams.surfaceOptions & OceanSurfaceOptionBitRefractionEnabled) != 0u) {
         const float eta = isFrontFace ? oceanSurfaceParams.airToWaterEta : oceanSurfaceParams.waterToAirEta;
         bool totalInternalReflection;
-        transmission = SampleOceanRefraction(input.position.xy, input.worldPosition, viewDistance, -V, normal, eta, totalInternalReflection);
+        transmission = SampleOceanRefraction(input.position.xy, input.worldPosition, viewDistance, -V, normal, eta, waterBodyColor, totalInternalReflection);
         if (totalInternalReflection) {
             fresnel = 1.0f;
         }
