@@ -197,7 +197,14 @@ bool D3D12ImGuiOverlay::Init(void *mainWindowHandle, RHI::Format renderTargetFor
 
     ImFontConfig fontConfig;
     fontConfig.SizePixels = imguiBaseFontSize * dpiScale;
-    io.FontDefault = io.Fonts->AddFontDefaultVector(&fontConfig);
+    fontConfig.Flags |= ImFontFlags_NoLoadError;
+
+    const BE1::Str fontPath = BE1::fileSystem.ToAbsolutePath("Data/EngineFonts/consola.ttf");
+    io.FontDefault = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), fontConfig.SizePixels, &fontConfig);
+    if (!io.FontDefault) {
+        BE_WARNLOG("D3D12ImGuiOverlay::Init: failed to load consola.ttf, using the embedded default font\n");
+        io.FontDefault = io.Fonts->AddFontDefaultVector(&fontConfig);
+    }
 
     if (!ImGui_ImplWin32_Init(mainWindowHandle)) {
         BE_WARNLOG("D3D12ImGuiOverlay::Init: ImGui_ImplWin32_Init failed\n");
