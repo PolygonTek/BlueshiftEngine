@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <atomic>
+
 #include "Render/Texture/Texture.h"
 #include "Render/Mesh/Mesh.h"
 #include "Render/Animation/Skeleton.h"
@@ -119,6 +121,8 @@ private:
         BE1::Array<ShaderPropertyInfo> oldProperties;
     };
 
+    void                            UpdateWorkerSettings();
+
     void                            Run();
     bool                            PopNextRequest(LoadRequest &outRequest);
     bool                            ProcessTextureLoadRequest(const LoadRequest &request);
@@ -157,6 +161,7 @@ private:
     BE1::Array<PendingMaterialReload> pendingMaterialReloads;
     BE1::Array<PendingShaderTemplateReload> pendingShaderTemplateReloads;
     uint64_t                        nextRequestSequence = 0;
+    std::atomic<int>                workerDelayMsec { 0 };
 
     bool                            stopping = false;
 };

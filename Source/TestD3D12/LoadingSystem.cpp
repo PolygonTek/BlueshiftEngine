@@ -26,6 +26,7 @@ static CVAR_MINMAX(loading_delayMsec, "0", BE1::CVar::Flag::Integer, "artificial
 static CVAR(loading_forceSynchronous, "0", BE1::CVar::Flag::Bool, "force asynchronous load and shader pipeline build requests to run synchronously");
 
 void LoadingSystem::Init() {
+    UpdateWorkerSettings();
     Start();
 }
 
@@ -406,6 +407,12 @@ bool LoadingSystem::PopNextRequest(LoadRequest &outRequest) {
     return true;
 }
 
+void LoadingSystem::UpdateWorkerSettings() {
+    assert(BE1::Engine::IsInMainThread());
+
+    workerDelayMsec.store(loading_delayMsec.GetInteger(), std::memory_order_relaxed);
+}
+
 void LoadingSystem::Run() {
     while (1) {
         PROFILER_CPU_SCOPED_EVENT("LoadingSystem::Run");
@@ -415,7 +422,7 @@ void LoadingSystem::Run() {
             break;
         }
 
-        const int delayMsec = loading_delayMsec.GetInteger();
+        const int delayMsec = workerDelayMsec.load(std::memory_order_relaxed);
         if (delayMsec > 0) {
             BE1::PlatformProcess::Sleep(MILLI2SEC(delayMsec));
         }
@@ -671,6 +678,8 @@ void LoadingSystem::QueueShaderTemplateReload(SharedPtr<ShaderTemplate> shaderTe
 
 void LoadingSystem::ProcessLoadCompletions() {
     assert(BE1::Engine::IsInMainThread());
+
+    UpdateWorkerSettings();
 
     BE1::Array<LoadCompletion> localCompletions;
     {
