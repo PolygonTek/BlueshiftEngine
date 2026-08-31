@@ -1116,6 +1116,7 @@ namespace RHI {
 
         virtual ImGuiOverlay *          CreateImGuiOverlay(void *windowHandle, Format renderTargetFormat) = 0;
         virtual void                    DestroyImGuiOverlay(ImGuiOverlay *overlay) = 0;
+        virtual uint64_t                GetImGuiTextureID(const Texture *texture, ViewID viewID = ViewID::PrimaryID, uint32_t arraySlice = 0) const = 0;
         virtual void                    RenderImGuiDrawData(FrameThreadData *frameThreadData, CommandList *commandList, ImGuiOverlay *overlay, void *userData) = 0;
         virtual void                    FreeImGuiDrawData(ImGuiOverlay *overlay, void *userData) = 0;
 

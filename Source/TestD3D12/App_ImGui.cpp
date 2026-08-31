@@ -319,14 +319,14 @@ static void TextureFlagsToText(RHI::TextureFlag flags, char *text, size_t textSi
     }
 }
 
-static bool DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID viewID, float maxPreviewSize, bool center) {
+static bool DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID viewID, float maxPreviewSize, bool center, uint32_t arraySlice = 0) {
     if (!texture || maxPreviewSize <= 0.0f) {
         return false;
     }
 
     RHI::TextureViewInfo viewInfo;
     const bool hasViewInfo = texture->GetViewInfo(RHI::ViewType::SRV, viewID, viewInfo);
-    const uint32_t textureID = texture->GetBindlessIndex(RHI::ViewType::SRV, viewID);
+    const uint64_t textureID = RHI::renderer->GetImGuiTextureID(texture, viewID, arraySlice);
     const uint32_t previewWidth = hasViewInfo ? viewInfo.width : texture->GetWidth();
     const uint32_t previewHeight = hasViewInfo ? viewInfo.height : texture->GetHeight();
     if (textureID == 0 || previewWidth == 0 || previewHeight == 0) {
@@ -373,6 +373,7 @@ static bool DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID vie
 void App::BuildImGuiTextureViewer() {
     static int selectedTextureIndex = 0;
     static int selectedViewIndex = 0;
+    static int selectedSlice = 0;
 
     constexpr int MaxTextureViewerEntries = 16;
     ImGuiTextureViewerEntry entries[MaxTextureViewerEntries];
@@ -411,6 +412,8 @@ void App::BuildImGuiTextureViewer() {
             const bool selected = selectedTextureIndex == entryIndex;
             if (ImGui::Selectable(entries[entryIndex].label, selected)) {
                 selectedTextureIndex = entryIndex;
+                selectedViewIndex = 0;
+                selectedSlice = 0;
             }
             if (selected) {
                 ImGui::SetItemDefaultFocus();
@@ -434,6 +437,21 @@ void App::BuildImGuiTextureViewer() {
     const RHI::ViewID viewID = texture->GetViewID(RHI::ViewType::SRV, selectedViewIndex);
     RHI::TextureViewInfo viewInfo;
     const bool hasViewInfo = texture->GetViewInfo(RHI::ViewType::SRV, viewID, viewInfo);
+
+    if (texture->type == RHI::TextureType::Texture2DArray && hasViewInfo && viewInfo.sliceCount > 0) {
+        const int firstSlice = static_cast<int>(viewInfo.firstSlice);
+        const int lastSlice = static_cast<int>(viewInfo.firstSlice + viewInfo.sliceCount - 1);
+        selectedSlice = BE1::Min(BE1::Max(selectedSlice, firstSlice), lastSlice);
+
+        if (firstSlice != lastSlice) {
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            char sliceSliderLabel[32];
+            BE1::Str::snPrintf(sliceSliderLabel, static_cast<int>(sizeof(sliceSliderLabel)), "Slice (%i..%i)", firstSlice, lastSlice);
+            ImGui::SliderInt(sliceSliderLabel, &selectedSlice, firstSlice, lastSlice);
+        }
+    } else {
+        selectedSlice = 0;
+    }
 
     ImGui::Separator();
     ImGui::Text("Type: %s, Format: %s", RHI::Renderer::TextureTypeName(texture->type), RHI::Renderer::FormatName(texture->GetFormat()));
@@ -468,7 +486,7 @@ void App::BuildImGuiTextureViewer() {
         ImGui::Text("View ID: %u", viewID.value);
     }
 
-    if (!DrawImGuiTexturePreview(texture, viewID, fontSize * 24.0f, true)) {
+    if (!DrawImGuiTexturePreview(texture, viewID, fontSize * 24.0f, true, static_cast<uint32_t>(selectedSlice))) {
         ImGui::TextColored(ImGuiWarningTextColor, "Preview is unavailable.");
     }
 }

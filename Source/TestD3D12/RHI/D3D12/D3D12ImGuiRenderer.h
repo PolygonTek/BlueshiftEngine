@@ -40,8 +40,8 @@ private:
     bool                            CreatePipelineObjects(DXGI_FORMAT rtvFormat, bool linearOutput);
     void                            FreePipelineObjects();
     bool                            CreateRootSignature();
-    bool                            CreatePipelineState(DXGI_FORMAT rtvFormat, bool linearOutput);
-    ID3D12PipelineState *           GetPipelineState(DXGI_FORMAT rtvFormat, bool linearOutput) const;
+    bool                            CreatePipelineState(DXGI_FORMAT rtvFormat, bool linearOutput, bool textureArray);
+    ID3D12PipelineState *           GetPipelineState(DXGI_FORMAT rtvFormat, bool linearOutput, bool textureArray) const;
     bool                            UpdateTexture(D3D12ImGuiOverlay *overlay, ImTextureData *textureData);
 
     ID3D12RootSignature *           rootSignature = nullptr;
