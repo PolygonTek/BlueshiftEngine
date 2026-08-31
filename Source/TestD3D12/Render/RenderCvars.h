@@ -53,6 +53,7 @@ extern BE1::CVar    r_csmSlopeScaledDepthBias2;
 extern BE1::CVar    r_csmSlopeScaledDepthBias3;
 
 extern BE1::CVar    r_msaa;
+extern BE1::CVar    r_snapshotColorHalfRes;
 extern BE1::CVar    r_taa;
 extern BE1::CVar    r_taaJitter;
 extern BE1::CVar    r_taaJitterSampleCount;

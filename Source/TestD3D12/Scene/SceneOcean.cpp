@@ -164,7 +164,7 @@ void SceneOcean::BuildImGui() {
         oceanSettingsChanged = true;
     }
 
-    if (ImGui::Checkbox("Cross derivative (∂Dx/∂y)", &simulationSettings.crossDerivativeEnabled)) {
+    if (ImGui::Checkbox("Use cross derivative (∂Dx/∂y)", &simulationSettings.crossDerivativeEnabled)) {
         oceanSettingsChanged = true;
     }
 

@@ -42,12 +42,13 @@ CVAR(r_csmConstantDepthBias0, "1000.0", BE1::CVar::Flag::Float, "constant depth 
 CVAR(r_csmConstantDepthBias1, "500.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 1");
 CVAR(r_csmConstantDepthBias2, "250.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 2");
 CVAR(r_csmConstantDepthBias3, "125.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 3");
-CVAR(r_csmSlopeScaledDepthBias0, "5.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 0"); 
+CVAR(r_csmSlopeScaledDepthBias0, "5.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 0");
 CVAR(r_csmSlopeScaledDepthBias1, "4.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 1");
 CVAR(r_csmSlopeScaledDepthBias2, "3.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 2");
 CVAR(r_csmSlopeScaledDepthBias3, "2.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 3");
 
 CVAR_MINMAX(r_msaa, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "MSAA sample count (1 = off, 2/4/8 = enabled)", 0, 8);
+CVAR(r_snapshotColorHalfRes, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "capture non-MSAA scene snapshot color at half resolution");
 CVAR(r_taa, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable temporal anti-aliasing");
 CVAR(r_taaJitter, "1", BE1::CVar::Flag::Bool, "enable temporal projection jitter");
 CVAR_MINMAX(r_taaJitterSampleCount, "16", BE1::CVar::Flag::Integer, "temporal projection jitter sample count", 1, 64);

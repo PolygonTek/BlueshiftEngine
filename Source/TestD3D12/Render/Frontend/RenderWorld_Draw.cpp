@@ -231,6 +231,23 @@ static RHI::PipelineState *GetOutputImagePSO(const RHI::Texture *outputTexture, 
     return ShaderPipeline::GetReadyPSO(imagePipeline);
 }
 
+static RHI::PipelineState *GetSceneSnapshotDownsamplePSO(RHI::Format outputFormat) {
+    if (!shaderTemplateManager.fullscreenImageLinearShaderTemplate) {
+        return nullptr;
+    }
+
+    GraphicsPipelineDesc graphicsPipelineDesc;
+    graphicsPipelineDesc.renderDest.renderTargetCount = 1;
+    graphicsPipelineDesc.renderDest.renderTargetFormats[0] = outputFormat;
+    graphicsPipelineDesc.renderDest.sampleCount = 1;
+    graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
+    graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
+    graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+
+    const SharedPtr<ShaderPipeline> downsamplePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageLinearShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    return ShaderPipeline::GetReadyPSO(downsamplePipeline);
+}
+
 void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::RenderScene");
 
@@ -277,7 +294,10 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
-    renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot);
+    const bool requestHalfResSnapshotColor = needSceneSnapshot && r_snapshotColorHalfRes.GetBool() && !renderCamera->GetRTColorMSAATexture();
+    RHI::PipelineState *sceneSnapshotDownsamplePSO = requestHalfResSnapshotColor ? GetSceneSnapshotDownsamplePSO(renderContext->GetMainRTColorFormat()) : nullptr;
+    const bool useHalfResSnapshotColor = requestHalfResSnapshotColor && sceneSnapshotDownsamplePSO;
+    renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot, useHalfResSnapshotColor);
 
     renderCamera->EnsureHiZResources(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
     renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, bloomMode);
@@ -365,6 +385,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->rtNormalMSAATexture = renderCamera->GetRTNormalMSAATexture();
     visCamera->rtVelocityTexture = renderCamera->GetRTVelocityTexture();
     visCamera->rtVelocityMSAATexture = renderCamera->GetRTVelocityMSAATexture();
+    visCamera->sceneSnapshotDownsamplePSO = useHalfResSnapshotColor ? sceneSnapshotDownsamplePSO : nullptr;
     visCamera->snapshotColorTexture = renderCamera->GetSnapshotColorTexture();
     visCamera->snapshotDepthTexture = renderCamera->GetSnapshotDepthTexture();
 

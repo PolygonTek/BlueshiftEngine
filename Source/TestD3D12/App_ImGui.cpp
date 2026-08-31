@@ -622,6 +622,14 @@ void App::BuildImGuiOverlay() {
                 r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
             }
 
+            const bool snapshotColorHalfResAvailable = msaaSampleCounts[msaaSampleCountIndex] == 1;
+            ImGui::BeginDisabled(!snapshotColorHalfResAvailable);
+            bool snapshotColorHalfRes = r_snapshotColorHalfRes.GetBool();
+            if (ImGui::Checkbox("Half-resolution snapshot color", &snapshotColorHalfRes)) {
+                r_snapshotColorHalfRes.SetBool(snapshotColorHalfRes);
+            }
+            ImGui::EndDisabled();
+
             bool lightCullingZBin = r_lightCullingZBin.GetBool();
             if (ImGui::Checkbox("Light culling Z-bin", &lightCullingZBin)) {
                 r_lightCullingZBin.SetBool(lightCullingZBin);

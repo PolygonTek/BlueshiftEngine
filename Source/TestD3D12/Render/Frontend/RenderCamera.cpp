@@ -1100,23 +1100,25 @@ bool RenderCamera::CreateDepthTexture(uint32_t width, uint32_t height, RHI::Form
     return true;
 }
 
-bool RenderCamera::EnsureSceneSnapshotResources(bool needed) {
+bool RenderCamera::EnsureSceneSnapshotResources(bool needed, bool halfResolution) {
     if (!needed) {
         DestroySceneSnapshotResources();
         return true;
     }
 
+    const uint32_t snapshotColorWidth = halfResolution ? BE1::Max((renderWidth + 1u) / 2u, 1u) : renderWidth;
+    const uint32_t snapshotColorHeight = halfResolution ? BE1::Max((renderHeight + 1u) / 2u, 1u) : renderHeight;
     if (snapshotColorTexture && snapshotDepthTexture &&
-        snapshotColorTexture->GetWidth() == renderWidth && snapshotColorTexture->GetHeight() == renderHeight && snapshotColorTexture->GetFormat() == renderColorFormat &&
+        snapshotColorTexture->GetWidth() == snapshotColorWidth && snapshotColorTexture->GetHeight() == snapshotColorHeight && snapshotColorTexture->GetFormat() == renderColorFormat &&
         snapshotDepthTexture->GetWidth() == renderWidth && snapshotDepthTexture->GetHeight() == renderHeight && snapshotDepthTexture->GetFormat() == renderDepthFormat) {
         return true;
     }
 
     DestroySceneSnapshotResources();
-    return CreateSceneSnapshotResources();
+    return CreateSceneSnapshotResources(halfResolution);
 }
 
-bool RenderCamera::CreateSceneSnapshotResources() {
+bool RenderCamera::CreateSceneSnapshotResources(bool halfResolution) {
     if (renderWidth == 0 || renderHeight == 0 || renderColorFormat == RHI::Format::Unknown || renderDepthFormat == RHI::Format::Unknown) {
         return false;
     }
@@ -1126,9 +1128,12 @@ bool RenderCamera::CreateSceneSnapshotResources() {
         return false;
     }
 
+    const uint32_t snapshotColorWidth = halfResolution ? BE1::Max((renderWidth + 1u) / 2u, 1u) : renderWidth;
+    const uint32_t snapshotColorHeight = halfResolution ? BE1::Max((renderHeight + 1u) / 2u, 1u) : renderHeight;
+    const RHI::TextureFlag snapshotColorFlags = halfResolution ? RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource : RHI::TextureFlag::ShaderResource;
     SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
-    colorImage->InitFromMemory(renderWidth, renderHeight, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    snapshotColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource, colorImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    colorImage->InitFromMemory(snapshotColorWidth, snapshotColorHeight, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    snapshotColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, snapshotColorFlags, colorImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!snapshotColorTexture) {
         BE_WARNLOG("RenderCamera::CreateSceneSnapshotResources: failed to create scene color texture\n");
         return false;

@@ -162,7 +162,7 @@ public:
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
 
     bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
-    bool                        EnsureSceneSnapshotResources(bool needed);
+    bool                        EnsureSceneSnapshotResources(bool needed, bool halfResolution);
     void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode);
 
     void                        InvalidateTemporalHistory();
@@ -242,7 +242,7 @@ private:
     void                        DestroyRenderTextures();
     bool                        CreateRTColorTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
     bool                        CreateDepthTexture(uint32_t width, uint32_t height, RHI::Format depthFormat, uint32_t sampleCount);
-    bool                        CreateSceneSnapshotResources();
+    bool                        CreateSceneSnapshotResources(bool halfResolution);
     void                        DestroySceneSnapshotResources();
     void                        EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview);
     bool                        CreateHiZTexture(uint32_t width, uint32_t height);
