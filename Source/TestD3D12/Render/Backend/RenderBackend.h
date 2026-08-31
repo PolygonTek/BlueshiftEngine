@@ -85,6 +85,7 @@ private:
     void                            ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
     void                            ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
+    void                            CaptureSceneSnapshot();
     void                            ExecuteDrawCamera3DPostOpaquePass();
 
     void                            DrawCamera3DDepthPrepass();

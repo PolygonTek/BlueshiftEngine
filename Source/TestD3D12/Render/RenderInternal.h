@@ -159,6 +159,8 @@ struct VisCamera {
     RHI::PipelineState *        debugDrawPSOs[DebugDrawData::MaxBatches] = {};
     bool                        showDebugLights = false;
     RHI::PipelineState *        oceanSurfacePSO = nullptr;
+    RHI::Texture *              snapshotColorTexture = nullptr;
+    RHI::Texture *              snapshotDepthTexture = nullptr;
 
     LightCulling                lightCulling;
 

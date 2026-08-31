@@ -443,13 +443,15 @@ struct RenderPassImagesDesc {
     RHI::GPUResourceState            renderTargetAfterState;
     RHI::GPUResourceState            depthBeforeState;
     RHI::GPUResourceState            depthAfterState;
-    bool                             resolveColor;
+    const RHI::Texture *             colorResolveTexture;
+    const RHI::Texture *             depthResolveTexture;
+    RHI::RenderPassImage::DepthResolveMode depthResolveMode;
 };
 
 // Camera3D render pass 에서 사용할 color, surface output, depth attachment 를 구성한다.
 // 각 attachment 의 종료 상태를 다음 pass 의 시작 상태와 연결해 불필요한 resource transition 을 피하고,
-// resolveColor 가 지정된 마지막 pass 에서만 MSAA color 를 resolve 한다.
-static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const RenderPassImagesDesc &desc, const RHI::ClearValue *clearColorValue, RHI::RenderPassImage renderPassImages[5]) {
+// 지정된 resolve texture 로 MSAA color/depth 를 resolve 한다.
+static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const RenderPassImagesDesc &desc, const RHI::ClearValue *clearColorValue, RHI::RenderPassImage renderPassImages[6]) {
     uint32_t renderPassImageCount = 0;
 
     const bool useMSAA = visCamera->rtColorMSAATexture != nullptr;
@@ -482,9 +484,11 @@ static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const 
 
     renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(visCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState);
 
-    // Color resolve 는 Ocean 과 Transparent 렌더링까지 끝난 마지막 pass 에서만 수행한다.
-    if (useMSAA && desc.resolveColor) {
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveColor(visCamera->rtColorTexture, RHI::ViewID::PrimaryID, 0);
+    if (useMSAA && desc.colorResolveTexture) {
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveColor(desc.colorResolveTexture, RHI::ViewID::PrimaryID, 0);
+    }
+    if (useMSAA && desc.depthResolveTexture) {
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveDepth(desc.depthResolveTexture, RHI::ViewID::PrimaryID, desc.depthResolveMode);
     }
 
     return renderPassImageCount;
@@ -593,7 +597,8 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     const RHI::RenderPassImage::LoadAction sceneDepthLoadAction = hasDepthPrepass ? RHI::RenderPassImage::LoadAction::Load : depthLoadAction;
     ExecuteDrawCamera3DScenePass(clearFlags, clearColor, useExplicitClearColor, sceneDepthLoadAction);
 
-    // 향후 Ocean 굴절에 필요한 scene color/depth 입력은 두 pass 사이에서 준비한다.
+    // Ocean 이 현재 렌더 타겟을 읽는 feedback loop 없이 굴절할 수 있도록 Opaque scene color/depth 를 보존한다.
+    CaptureSceneSnapshot();
 
     // Ocean, Transparent, Debug primitive 를 렌더링한다.
     ExecuteDrawCamera3DPostOpaquePass();
@@ -639,6 +644,7 @@ void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, cons
         colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
     }
 
+    const bool captureSceneSnapshot = currentVisCamera->oceanSurfacePSO && currentVisCamera->snapshotColorTexture && currentVisCamera->snapshotDepthTexture;
     const RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
     const RenderPassImagesDesc passDesc = {
         colorLoadAction,
@@ -648,9 +654,11 @@ void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, cons
         RHI::GPUResourceState::RenderTarget,
         RHI::GPUResourceState::ShaderResource,
         RHI::GPUResourceState::DepthWrite,
-        false
+        captureSceneSnapshot ? currentVisCamera->snapshotColorTexture : nullptr,
+        captureSceneSnapshot ? currentVisCamera->snapshotDepthTexture : nullptr,
+        currentVisCamera->projectionPolicy.reverseZ ? RHI::RenderPassImage::DepthResolveMode::Max : RHI::RenderPassImage::DepthResolveMode::Min
     };
-    RHI::RenderPassImage renderPassImages[5];
+    RHI::RenderPassImage renderPassImages[6];
     const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentVisCamera, passDesc, useExplicitClearColor ? &clearColorValue : nullptr, renderPassImages);
 
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
@@ -658,6 +666,39 @@ void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, cons
     DrawCamera3DScenePass();
 
     RHI::renderer->EndRenderPass(mainCommandList);
+}
+
+void RenderBackend::CaptureSceneSnapshot() {
+    RHI::Texture *snapshotColorTexture = currentVisCamera->snapshotColorTexture;
+    RHI::Texture *snapshotDepthTexture = currentVisCamera->snapshotDepthTexture;
+    if (!currentVisCamera->oceanSurfacePSO || !snapshotColorTexture || !snapshotDepthTexture || currentVisCamera->rtColorMSAATexture) {
+        return;
+    }
+
+    RHI::Texture *sourceColorTexture = currentVisCamera->rtColorTexture;
+    RHI::Texture *sourceDepthTexture = currentVisCamera->depthTexture;
+    assert(sourceColorTexture->GetSampleCount() == 1 && sourceDepthTexture->GetSampleCount() == 1);
+    assert(snapshotColorTexture->GetWidth() == sourceColorTexture->GetWidth() && snapshotColorTexture->GetHeight() == sourceColorTexture->GetHeight());
+    assert(snapshotDepthTexture->GetWidth() == sourceDepthTexture->GetWidth() && snapshotDepthTexture->GetHeight() == sourceDepthTexture->GetHeight());
+
+    RHI::GPUBarrier copyBarriers[] = {
+        RHI::Renderer::MakeTextureBarrier(sourceColorTexture, RHI::GPUResourceState::RenderTarget, RHI::GPUResourceState::CopySrc),
+        RHI::Renderer::MakeTextureBarrier(sourceDepthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::CopySrc),
+        RHI::Renderer::MakeTextureBarrier(snapshotColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::CopyDst),
+        RHI::Renderer::MakeTextureBarrier(snapshotDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::CopyDst)
+    };
+    RHI::renderer->Barrier(mainCommandList, copyBarriers, COUNT_OF(copyBarriers));
+
+    RHI::renderer->CopyTexture(mainCommandList, snapshotColorTexture, 0, 0, 0, 0, 0, sourceColorTexture, 0, 0, 0, 0, 0, sourceColorTexture->GetWidth(), sourceColorTexture->GetHeight(), 1);
+    RHI::renderer->CopyTexture(mainCommandList, snapshotDepthTexture, 0, 0, 0, 0, 0, sourceDepthTexture, 0, 0, 0, 0, 0, sourceDepthTexture->GetWidth(), sourceDepthTexture->GetHeight(), 1);
+
+    RHI::GPUBarrier finishBarriers[] = {
+        RHI::Renderer::MakeTextureBarrier(sourceColorTexture, RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::RenderTarget),
+        RHI::Renderer::MakeTextureBarrier(sourceDepthTexture, RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::DepthWrite),
+        RHI::Renderer::MakeTextureBarrier(snapshotColorTexture, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(snapshotDepthTexture, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource)
+    };
+    RHI::renderer->Barrier(mainCommandList, finishBarriers, COUNT_OF(finishBarriers));
 }
 
 void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
@@ -669,9 +710,11 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
         RHI::GPUResourceState::ShaderResource,
         RHI::GPUResourceState::DepthWrite,
         RHI::GPUResourceState::ShaderResource,
-        true
+        currentVisCamera->rtColorTexture,
+        nullptr,
+        RHI::RenderPassImage::DepthResolveMode::None
     };
-    RHI::RenderPassImage renderPassImages[5];
+    RHI::RenderPassImage renderPassImages[6];
     const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentVisCamera, passDesc, nullptr, renderPassImages);
 
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
@@ -1182,7 +1225,8 @@ void RenderBackend::DrawGpuOcean() {
     }
 
     GpuOcean::SurfaceDrawStats drawStats;
-    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, visOceanSurface->surfaceSettings, surfaceView, &drawStats)) {
+    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, visOceanSurface->surfaceSettings, surfaceView,
+        currentVisCamera->snapshotColorTexture, currentVisCamera->snapshotDepthTexture, &drawStats)) {
         RecordDrawStats(drawStats.drawCount, drawStats.triangleCount, drawStats.instanceBufferAllocCount, drawStats.instanceBufferUploadBytes);
     }
 }

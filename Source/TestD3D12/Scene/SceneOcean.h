@@ -15,8 +15,12 @@
 #pragma once
 
 #include "Scene/Scene.h"
+#include "Scene/GameObject.h"
 #include "Scene/GameLight.h"
 #include "Render/Frontend/OceanSurface.h"
+
+class Material;
+class Mesh;
 
 class SceneOcean : public Scene {
 public:
@@ -33,6 +37,9 @@ private:
     void                        UpdateDirectionalLightDirection();
 
     RenderWorld *               renderWorld = nullptr;
+    SharedPtr<Mesh>             testBoxMesh;
+    SharedPtr<Material>         testBoxMaterial;
+    GameObject                  testBox;
     OceanSurface::Desc          oceanDesc;
     GameLight                   directionalLight;
 

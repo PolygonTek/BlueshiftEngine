@@ -22,6 +22,7 @@
 #include "Math/Frustum.h"
 
 static constexpr uint32_t OceanSurfaceGridLodSteps[] = { 1u, 3u, 5u };
+static constexpr float MinOceanSurfaceShaderDivisor = 1.0e-4f;
 
 static_assert(GpuOcean::CascadeCount == OceanCascadeCount);
 static_assert(COUNT_OF(OceanSurfaceGridLodSteps) == GpuOcean::SurfaceGridLodCount);
@@ -254,7 +255,8 @@ static bool BuildOceanSurfaceTileBatch(const GpuOcean::SurfaceSettings &settings
 }
 
 bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
-    const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const SurfaceSettings &surfaceSettings, const SurfaceView &surfaceView, SurfaceDrawStats *drawStats) const {
+    const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const SurfaceSettings &surfaceSettings, const SurfaceView &surfaceView,
+    const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture, SurfaceDrawStats *drawStats) const {
     PROFILER_CPU_SCOPED_EVENT("GpuOcean::DrawSurface");
 
     assert(surfaceSettings.IsValid());
@@ -272,13 +274,21 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
         return false;
     }
 
-    RHI::Texture *foamDetailMap = foamDetailTexture ? foamDetailTexture->GetReadyRHITexture() : nullptr;
-    if (!foamDetailMap && textureManager.whiteTexture) {
-        foamDetailMap = textureManager.whiteTexture->GetReadyRHITexture();
-    }
-    if (!foamDetailMap) {
+    RHI::Texture *fallbackTexture = textureManager.whiteTexture ? textureManager.whiteTexture->GetReadyRHITexture() : nullptr;
+    if (!fallbackTexture) {
         return false;
     }
+
+    RHI::Texture *foamDetailMap = foamDetailTexture ? foamDetailTexture->GetReadyRHITexture() : nullptr;
+    if (!foamDetailMap) {
+        foamDetailMap = fallbackTexture;
+    }
+
+    assert((sceneColorTexture != nullptr) == (sceneDepthTexture != nullptr));
+    const bool refractionEnabled = surfaceSettings.refractionEnabled && sceneColorTexture && sceneDepthTexture;
+    const RHI::Texture *boundSceneColorTexture = refractionEnabled ? sceneColorTexture : fallbackTexture;
+    const RHI::Texture *boundSceneDepthTexture = refractionEnabled ? sceneDepthTexture : fallbackTexture;
+    assert(boundSceneColorTexture->GetWidth() == boundSceneDepthTexture->GetWidth() && boundSceneColorTexture->GetHeight() == boundSceneDepthTexture->GetHeight());
 
     OceanSurfaceTileBatch tileBatch;
     if (!BuildOceanSurfaceTileBatch(surfaceSettings, surfaceView, tileBatch)) {
@@ -315,15 +325,25 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     params.fresnelF0 = surfaceSettings.fresnelF0;
     const BE1::Color3 linearScatterColor = surfaceSettings.scatterColor.SRGBToLinear();
     params.scatterColor = float3(linearScatterColor.r, linearScatterColor.g, linearScatterColor.b);
-    params.scatterHeight = surfaceSettings.scatterHeight;
+    params.scatterHeight = BE1::Max(surfaceSettings.scatterHeight, MinOceanSurfaceShaderDivisor);
     const BE1::Color3 linearFoamColor = surfaceSettings.foamColor.SRGBToLinear();
     params.foamColor = float3(linearFoamColor.r, linearFoamColor.g, linearFoamColor.b);
-    params.foamDetailMapSize = surfaceSettings.foamDetailMapSize;
+    params.foamDetailMapSize = BE1::Max(surfaceSettings.foamDetailMapSize, MinOceanSurfaceShaderDivisor);
     params.foamDetailStrength = surfaceSettings.foamDetailStrength;
+    params.refractionDistance = BE1::Max(surfaceSettings.refractionDistance, 0.0f);
+    params.absorptionDistance = BE1::Max(surfaceSettings.absorptionDistance, MinOceanSurfaceShaderDivisor);
+    const float sqrtF0 = BE1::Math::Sqrt(BE1::Clamp(surfaceSettings.fresnelF0, 0.0f, 0.99f));
+    params.airToWaterEta = (1.0f - sqrtF0) / (1.0f + sqrtF0);
+    params.waterToAirEta = (1.0f + sqrtF0) / (1.0f - sqrtF0);
+    params.sceneSize = float2(static_cast<float>(boundSceneColorTexture->GetWidth()), static_cast<float>(boundSceneColorTexture->GetHeight()));
+    params.sceneSizeRcp = float2(1.0f / params.sceneSize.x, 1.0f / params.sceneSize.y);
     params.displacementScale = simulationSettings.displacementScale;
-    params.cascadeFadeScale = surfaceSettings.cascadeFadeScale;
+    params.cascadeFadeScale = BE1::Max(surfaceSettings.cascadeFadeScale, MinOceanSurfaceShaderDivisor);
     params.gridSnapSpacing = tileBatch.gridSnapSpacing;
-    params.foamOptions = simulationSettings.foamEnabled ? OceanFoamOptionBitEnabled : 0u;
+    params.surfaceOptions = simulationSettings.foamEnabled ? OceanSurfaceOptionBitFoamEnabled : 0u;
+    if (refractionEnabled) {
+        params.surfaceOptions |= OceanSurfaceOptionBitRefractionEnabled;
+    }
 
     RHI::ConstantBuffer *surfaceConstantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
     if (!surfaceConstantBuffer) {
@@ -336,10 +356,13 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 2, surfaceConstantBuffer);
 
-    RHI::renderer->SetTexture(commandList, 0, false, fieldTextureArray);
-    RHI::renderer->SetTexture(commandList, 1, false, foamHistoryTextureArray);
-    RHI::renderer->SetTexture(commandList, 2, false, foamDetailMap);
-    RHI::renderer->SetBuffer(commandList, 3, false, tileInstanceBuffer);
+    RHI::renderer->SetBuffer(commandList, 0, false, tileInstanceBuffer);
+    RHI::renderer->SetTexture(commandList, 1, false, fieldTextureArray);
+    RHI::renderer->SetTexture(commandList, 2, false, foamHistoryTextureArray);
+    RHI::renderer->SetTexture(commandList, 3, false, foamDetailMap);
+
+    RHI::renderer->SetTexture(commandList, 4, false, boundSceneColorTexture);
+    RHI::renderer->SetTexture(commandList, 5, false, boundSceneDepthTexture);
 
     if (drawStats) {
         drawStats->instanceBufferAllocCount = 1;

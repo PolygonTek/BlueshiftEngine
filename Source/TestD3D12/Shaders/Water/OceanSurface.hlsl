@@ -2,6 +2,8 @@
 #include "../Common.hlsli"
 #include "../CommonBindless.hlsli"
 #include "../CameraPassOutputCommon.hlsli"
+#include "../PBR/BRDFLibrary.hlsli"
+#include "../PBR/SpecularAA.hlsli"
 
 #define OCEAN_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
@@ -9,7 +11,7 @@
     "CBV(b1), " \
     "CBV(b2), " \
     "RootConstants(num32BitConstants=1, b3), " \
-    "DescriptorTable(SRV(t0, numDescriptors = 4)), " \
+    "DescriptorTable(SRV(t0, numDescriptors = 6)), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 
 DECLARE_COMMON_STATIC_SAMPLERS
@@ -30,12 +32,12 @@ cbuffer OceanSurfaceDrawCB : register(b3) {
     uint oceanSurfaceTileInstanceOffset;
 };
 
-#include "../PBR/ShadingParams.hlsli"
-
-Texture2DArray<float4> displacementAndDerivativeMap : register(t0);
-Texture2DArray<float> foamHistoryMap : register(t1);
-Texture2D<float4> foamDetailMap : register(t2);
-StructuredBuffer<OceanSurfaceTileInstance> surfaceTileInstances : register(t3);
+StructuredBuffer<OceanSurfaceTileInstance> surfaceTileInstances : register(t0);
+Texture2DArray<float4> displacementAndDerivativeMap : register(t1);
+Texture2DArray<float> foamHistoryMap : register(t2);
+Texture2D<float4> foamDetailMap : register(t3);
+Texture2D<float4> sceneColorTexture : register(t4);
+Texture2D<float> sceneDepthTexture : register(t5);
 
 static const float OceanCascadeLodThreshold = 0.05f;
 
@@ -140,10 +142,86 @@ float3 SampleOceanReflection(float3 reflectionDir, float roughness) {
     return lerp(float3(0.055f, 0.085f, 0.12f), float3(0.28f, 0.48f, 0.78f), skyGradient);
 }
 
+float2 ProjectOceanWorldPositionToUV(float3 worldPosition) {
+    const float4 clipPosition = mul(cameraConstants.viewProjMatrix, float4(worldPosition, 1.0f));
+    const float2 ndcPosition = clipPosition.xy / max(clipPosition.w, FLT_MIN);
+    return ndcPosition * float2(0.5f, -0.5f) + 0.5f;
+}
+
+uint2 GetScenePixelCoord(float2 uv, uint2 textureSize) {
+    return min(uint2(saturate(uv) * float2(textureSize)), textureSize - 1u);
+}
+
+float LoadSceneDepth(float2 uv, uint2 textureSize) {
+    return sceneDepthTexture.Load(int3(GetScenePixelCoord(uv, textureSize), 0));
+}
+
+bool IsSceneFarDepth(float depth) {
+    return abs(depth - cameraConstants.ndcFarZ) <= 1.0e-6f;
+}
+
+float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float viewDistance, float3 incidentVector, float3 normal, float eta, out bool totalInternalReflection) {
+    const uint2 sceneSize = uint2(oceanSurfaceParams.sceneSize);
+
+    // 수면 위치를 scene texture 의 texel 중심에 맞춘다.
+    const float2 baseUV = pixelPosition * oceanSurfaceParams.sceneSizeRcp;
+
+    // Scene depth 로 수면 아래의 초기 물 두께를 추정한다.
+    const float deepWaterThickness = oceanSurfaceParams.absorptionDistance * 4.0f;
+    float waterThickness = deepWaterThickness;
+    const float sceneDepth = LoadSceneDepth(baseUV, sceneSize);
+    if (!IsSceneFarDepth(sceneDepth)) {
+        const float3 sceneWorldPosition = ReconstructPosition(baseUV, sceneDepth, cameraConstants.invViewProjMatrix);
+        waterThickness = length(sceneWorldPosition - worldPosition);
+    }
+
+    // Snell 법칙의 판별식이 음수이면 투과광 없이 전반사로 처리한다.
+    const float NdotI = dot(normal, incidentVector);
+    const float refractionK = 1.0f - eta * eta * (1.0f - NdotI * NdotI);
+    totalInternalReflection = refractionK <= 0.0f;
+    if (totalInternalReflection) {
+        return oceanSurfaceParams.waterColor;
+    }
+
+    const float3 refractionDirection = refract(incidentVector, normal, eta);
+    const float refractionTraceDistance = min(waterThickness, oceanSurfaceParams.refractionDistance);
+
+    // 굴절점이 화면 밖으로 나가도 가장 가까운 scene texture 의 texel 중심에서 샘플링한다.
+    const float2 projectedRefractedUV = ProjectOceanWorldPositionToUV(worldPosition + refractionDirection * refractionTraceDistance);
+    const float2 halfTexelSize = oceanSurfaceParams.sceneSizeRcp * 0.5f;
+    const float2 refractedUV = clamp(projectedRefractedUV, halfTexelSize, 1.0f - halfTexelSize);
+
+    // 앞쪽 물체가 수면을 통해 잘못 비치지 않도록 굴절 위치의 depth 와 진행 방향을 검증한다.
+    float2 sampleUV = baseUV;
+    const float candidateDepth = LoadSceneDepth(refractedUV, sceneSize);
+    if (IsSceneFarDepth(candidateDepth)) {
+        sampleUV = refractedUV;
+        waterThickness = deepWaterThickness;
+    } else {
+        const float3 candidateWorldPosition = ReconstructPosition(refractedUV, candidateDepth, cameraConstants.invViewProjMatrix);
+        const float3 candidateViewVector = candidateWorldPosition - cameraConstants.cameraOrigin;
+        const float minCandidateViewDistance = viewDistance + 0.001f;
+        const bool candidateBehindWater = dot(candidateViewVector, candidateViewVector) > minCandidateViewDistance * minCandidateViewDistance;
+        const bool candidateAlongRefractionRay = dot(candidateWorldPosition - worldPosition, refractionDirection) > 0.0f;
+
+        if (candidateBehindWater && candidateAlongRefractionRay) {
+            sampleUV = refractedUV;
+            waterThickness = length(candidateWorldPosition - worldPosition);
+        }
+    }
+
+    // 물을 통과한 거리에 따라 scene color 를 감쇠시키고 water color 로 수렴시킨다.
+    const float3 sceneColor = sceneColorTexture.SampleLevel(linearClampSampler, sampleUV, 0.0f).rgb;
+    const float absorptionScale = min(waterThickness / oceanSurfaceParams.absorptionDistance, 8.0f);
+    const float3 transmittance = pow(oceanSurfaceParams.waterColor, absorptionScale);
+    return sceneColor * transmittance + oceanSurfaceParams.waterColor * (1.0f - transmittance);
+}
+
 [RootSignature(OCEAN_ROOT_SIGNATURE)]
 PSInput VSMain(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) {
     PSInput result;
 
+    // 타일과 이웃 타일의 LOD 를 반영하여 경계 정점을 coarse 격자에 맞춘다.
     uint2 gridCoord = uint2(vertexID % OceanSurfaceGridResolution, vertexID / OceanSurfaceGridResolution);
     const OceanSurfaceTileInstance tileInstance = surfaceTileInstances[oceanSurfaceTileInstanceOffset + instanceID];
     uint vertexLodLevel;
@@ -157,6 +235,8 @@ PSInput VSMain(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) {
     const float2 snappedCameraPosition = floor(cameraConstants.cameraOrigin.xy / oceanSurfaceParams.gridSnapSpacing + 0.5f) * oceanSurfaceParams.gridSnapSpacing;
     const float2 samplePositionXY = snappedCameraPosition + tiledGridPosition * oceanSurfaceParams.gridSpacing;
     const float3 baseWorldPosition = float3(samplePositionXY, oceanSurfaceParams.surfaceHeight);
+
+    // 카메라 거리와 정점 LOD 에 맞는 cascade 및 mip 에서 displacement 를 합성한다.
     const float viewDistance = length(cameraConstants.cameraOrigin - baseWorldPosition);
     const float4 cascadeLodWeights = GetOceanCascadeLodWeights(viewDistance);
     const float vertexMipLevelOffset = GetOceanSurfaceGridLodMipOffset(vertexLodLevel);
@@ -164,6 +244,7 @@ PSInput VSMain(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) {
     const float3 worldPosition = float3(samplePositionXY + displacement.xy, oceanSurfaceParams.surfaceHeight + displacement.z);
     const float4 worldPosition4 = float4(worldPosition, 1.0f);
 
+    // 변위가 적용된 world position 과 surface sampling 좌표를 pixel shader 로 전달한다.
     result.position = mul(cameraConstants.viewProjMatrix, worldPosition4);
     result.worldPosition = worldPosition;
     result.samplePositionXY = samplePositionXY;
@@ -177,15 +258,16 @@ PSInput VSMain(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) {
 }
 
 [RootSignature(OCEAN_ROOT_SIGNATURE)]
-CameraPassPSOutput PSMain(PSInput input) {
-    float displacementX_dy = 0.0f;
-    float4 derivatives = 0.0f;
-    float foamComplement = 1.0f;
-    const bool foamEnabled = (oceanSurfaceParams.foamOptions & OceanFoamOptionBitEnabled) != 0u;
+CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
+    const bool foamEnabled = (oceanSurfaceParams.surfaceOptions & OceanSurfaceOptionBitFoamEnabled) != 0u;
     const float3 viewVector = cameraConstants.cameraOrigin - input.worldPosition;
     const float viewDistance = length(viewVector);
     const float4 cascadeLodWeights = GetOceanCascadeLodWeights(viewDistance);
+    float displacementX_dy = 0.0f;
+    float4 derivatives = 0.0f;
+    float foamComplement = 1.0f;
 
+    // 활성 cascade 의 displacement derivative 와 foam history 를 pixel 단위로 합성한다.
     [unroll]
     for (uint cascadeIndex = 0; cascadeIndex < OceanCascadeCount; ++cascadeIndex) {
         const float cascadeLodWeight = cascadeLodWeights[cascadeIndex];
@@ -221,28 +303,43 @@ CameraPassPSOutput PSMain(PSInput input) {
         foam *= lerp(1.0f, foamDetail, oceanSurfaceParams.foamDetailStrength);
     }
 
+    // 합성한 derivative 의 Jacobian 으로 변위된 수면의 geometric normal 을 복원한다.
     // Horizontal displacement Jacobian determinant
     const float J = (1.0f + displacementX_dx) * (1.0f + displacementY_dy) - displacementX_dy * displacementX_dy;
 
     // Surface normal
     const float3 unnormalizedNormal = float3(displacementZ_dy * displacementX_dy - displacementZ_dx * (1.0f + displacementY_dy), displacementZ_dx * displacementX_dy - displacementZ_dy * (1.0f + displacementX_dx), J);
     const float normalLengthSquared = dot(unnormalizedNormal, unnormalizedNormal);
-    const float3 normal = normalLengthSquared > 0.0f ? unnormalizedNormal * rsqrt(normalLengthSquared) : float3(0.0f, 0.0f, 1.0f);
+    const float3 geometricNormal = normalLengthSquared > 0.0f ? unnormalizedNormal * rsqrt(normalLengthSquared) : float3(0.0f, 0.0f, 1.0f);
 
     const float3 V = viewVector / max(viewDistance, 0.0001f);
+    float3 normal = geometricNormal * (isFrontFace ? 1.0f : -1.0f);
+    if (dot(normal, V) < 0.0f) {
+        normal = -normal;
+    }
     const float NdotV = saturate(dot(normal, V));
-    const float fresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - NdotV);
+    float fresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - NdotV);
 
     float specularRoughness = clamp(oceanSurfaceParams.roughness, MinRoughness, 1.0f);
     if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0u) {
         specularRoughness = ApplySpecularAA(specularRoughness, ComputeSpecularAAKernelRoughness(normal));
     }
 
+    // Fresnel 계수로 환경 반사와 선택적인 scene refraction 을 합성한다.
     const float3 reflectionDir = reflect(-V, normal);
     const float3 reflection = SampleOceanReflection(reflectionDir, specularRoughness);
     const float waterBodyFactor = lerp(0.35f, 1.0f, NdotV);
     const float3 waterBodyColor = oceanSurfaceParams.waterColor * waterBodyFactor;
-    float3 color = lerp(waterBodyColor, reflection, fresnel);
+    float3 transmission = waterBodyColor;
+    if ((oceanSurfaceParams.surfaceOptions & OceanSurfaceOptionBitRefractionEnabled) != 0u) {
+        const float eta = isFrontFace ? oceanSurfaceParams.airToWaterEta : oceanSurfaceParams.waterToAirEta;
+        bool totalInternalReflection;
+        transmission = SampleOceanRefraction(input.position.xy, input.worldPosition, viewDistance, -V, normal, eta, totalInternalReflection);
+        if (totalInternalReflection) {
+            fresnel = 1.0f;
+        }
+    }
+    float3 color = lerp(transmission, reflection, fresnel);
 
     if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0u) {
         const float3 L = -frameConstants.directionalLight.direction;

@@ -3,13 +3,11 @@
 
 #include "../CommonBindless.hlsli"
 #include "BRDFLibrary.hlsli"
+#include "SpecularAA.hlsli"
 
 #ifndef USE_MULTIPLE_SCATTERING_COMPENSATION
     #define USE_MULTIPLE_SCATTERING_COMPENSATION 0
 #endif
-
-static const float SpecularAAVariance = 0.15;
-static const float SpecularAAThreshold = 0.2;
 
 struct ShadingParams {
     float4 baseColor;
@@ -48,23 +46,12 @@ float3 DecodeTangentSpaceNormal(float2 encodedNormal) {
     return float3(normalXY, normalZ);
 }
 
-float ComputeSpecularAAKernelRoughness(float3 normal) {
-    const float3 normalDx = ddx(normal);
-    const float3 normalDy = ddy(normal);
-    const float normalVariance = SpecularAAVariance * (dot(normalDx, normalDx) + dot(normalDy, normalDy));
-    return min(2.0 * normalVariance, SpecularAAThreshold);
-}
-
-float ApplySpecularAA(float roughness, float kernelRoughness) {
-    return sqrt(saturate(roughness * roughness + kernelRoughness));
-}
-
 // material texture 를 샘플링하여 direct lighting 과 indirect lighting 에서 공유할 입력값을 준비한다.
 ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseColor, float2 texCoord, float3 viewDir, float3 normal,
 #if _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
     float3x3 tangentToWorld,
 #endif
-    SamplerState materialSampler) {
+    bool useSpecularAA, SamplerState materialSampler) {
     ShadingParams shading;
 
     shading.baseColor = baseColor;
@@ -78,7 +65,7 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 #endif
 
     float specularAAKernelRoughness = 0.0;
-    if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0) {
+    if (useSpecularAA) {
         specularAAKernelRoughness = ComputeSpecularAAKernelRoughness(shading.normal);
     }
 
@@ -121,7 +108,7 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 
     shading.metallic = saturate(shading.metallic);
     shading.roughness = clamp(shading.roughness, MinRoughness, 1.0f);
-    if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0) {
+    if (useSpecularAA) {
         shading.roughness = ApplySpecularAA(shading.roughness, specularAAKernelRoughness);
     }
     shading.linearRoughness = shading.roughness * shading.roughness;
@@ -173,7 +160,7 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
     shading.clearCoatNormal = shading.normal;
 #endif
 
-    if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0) {
+    if (useSpecularAA) {
         float clearCoatSpecularAAKernelRoughness = specularAAKernelRoughness;
 #if _CLEARCOAT_NORMAL != 0
         clearCoatSpecularAAKernelRoughness = ComputeSpecularAAKernelRoughness(shading.clearCoatNormal);

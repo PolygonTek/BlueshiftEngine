@@ -143,10 +143,11 @@ CameraPassPSOutput PSMain(PSInput input) {
     clip(baseColor.a - shaderMaterial.alphaCutoff);
 #endif
 
+    const bool useSpecularAA = (cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0u;
 #if _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
-    ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, tangentToWorld, materialSampler);
+    ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, tangentToWorld, useSpecularAA, materialSampler);
 #else
-    ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, materialSampler);
+    ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, baseTc, viewDir, worldNormal, useSpecularAA, materialSampler);
 #endif
 
     CameraPassPSOutput result;

@@ -160,7 +160,5 @@ bool GpuOcean::SimulationSettings::IsValid() const {
 }
 
 bool GpuOcean::SurfaceSettings::IsValid() const {
-    return gridTileCountPerAxis > 0 && gridTileCountPerAxis <= MaxSurfaceGridTileCountPerAxis &&
-        gridSpacing > 0.0f && scatterHeight > 0.0f && cascadeFadeScale > 0.0f &&
-        (foamDetailStrength <= 0.0f || foamDetailMapSize > 0.0f);
+    return gridTileCountPerAxis > 0 && gridTileCountPerAxis <= MaxSurfaceGridTileCountPerAxis && gridSpacing > 0.0f;
 }

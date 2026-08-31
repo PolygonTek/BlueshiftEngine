@@ -162,6 +162,7 @@ public:
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);
 
     bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
+    bool                        EnsureSceneSnapshotResources(bool needed);
     void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, RenderBloomMode bloomMode);
 
     void                        InvalidateTemporalHistory();
@@ -175,6 +176,8 @@ public:
     RHI::Texture *              GetRTNormalMSAATexture() const { return rtNormalMSAATexture; }
     RHI::Texture *              GetRTVelocityTexture() const { return rtVelocityTexture; }
     RHI::Texture *              GetRTVelocityMSAATexture() const { return rtVelocityMSAATexture; }
+    RHI::Texture *              GetSnapshotColorTexture() const { return snapshotColorTexture; }
+    RHI::Texture *              GetSnapshotDepthTexture() const { return snapshotDepthTexture; }
     RHI::Texture *              GetColorHistoryTexture(uint32_t index) const { return colorHistoryTextures[index % 2]; }
     RHI::Texture *              GetCurrentColorHistoryTexture() const { return colorHistoryTextures[currentHistoryTextureIndex]; }
     RHI::Texture *              GetPreviousColorHistoryTexture() const { return colorHistoryTextures[currentHistoryTextureIndex ^ 1]; }
@@ -239,6 +242,8 @@ private:
     void                        DestroyRenderTextures();
     bool                        CreateRTColorTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
     bool                        CreateDepthTexture(uint32_t width, uint32_t height, RHI::Format depthFormat, uint32_t sampleCount);
+    bool                        CreateSceneSnapshotResources();
+    void                        DestroySceneSnapshotResources();
     void                        EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview);
     bool                        CreateHiZTexture(uint32_t width, uint32_t height);
     void                        DestroyHiZTexture();
@@ -316,6 +321,8 @@ private:
     RHI::Texture *              rtNormalMSAATexture = nullptr;
     RHI::Texture *              rtVelocityTexture = nullptr;
     RHI::Texture *              rtVelocityMSAATexture = nullptr;
+    RHI::Texture *              snapshotColorTexture = nullptr;
+    RHI::Texture *              snapshotDepthTexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
 
     RHI::Texture *              colorHistoryTextures[2] = {};

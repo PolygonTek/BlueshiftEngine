@@ -1100,6 +1100,75 @@ bool RenderCamera::CreateDepthTexture(uint32_t width, uint32_t height, RHI::Form
     return true;
 }
 
+bool RenderCamera::EnsureSceneSnapshotResources(bool needed) {
+    if (!needed) {
+        DestroySceneSnapshotResources();
+        return true;
+    }
+
+    if (snapshotColorTexture && snapshotDepthTexture &&
+        snapshotColorTexture->GetWidth() == renderWidth && snapshotColorTexture->GetHeight() == renderHeight && snapshotColorTexture->GetFormat() == renderColorFormat &&
+        snapshotDepthTexture->GetWidth() == renderWidth && snapshotDepthTexture->GetHeight() == renderHeight && snapshotDepthTexture->GetFormat() == renderDepthFormat) {
+        return true;
+    }
+
+    DestroySceneSnapshotResources();
+    return CreateSceneSnapshotResources();
+}
+
+bool RenderCamera::CreateSceneSnapshotResources() {
+    if (renderWidth == 0 || renderHeight == 0 || renderColorFormat == RHI::Format::Unknown || renderDepthFormat == RHI::Format::Unknown) {
+        return false;
+    }
+
+    BE1::Image::Format colorImageFormat = BE1::Image::Format::Unknown;
+    if (!RHI::Renderer::RHIFormatToImageFormat(renderColorFormat, &colorImageFormat, nullptr)) {
+        return false;
+    }
+
+    SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
+    colorImage->InitFromMemory(renderWidth, renderHeight, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    snapshotColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource, colorImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!snapshotColorTexture) {
+        BE_WARNLOG("RenderCamera::CreateSceneSnapshotResources: failed to create scene color texture\n");
+        return false;
+    }
+    RHI::renderer->SetName(snapshotColorTexture, "RenderCamera::snapshotColorTexture");
+
+    BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
+    if (!RHI::Renderer::RHIFormatToImageFormat(renderDepthFormat, &depthImageFormat, nullptr)) {
+        DestroySceneSnapshotResources();
+        return false;
+    }
+
+    const RHI::ClearValue depthClearValue = RHI::ClearValue::DepthStencil(desc.projectionPolicy.GetDepthClearValue(), 0);
+    SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
+    depthImage->InitFromMemory(renderWidth, renderHeight, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    snapshotDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthImage,
+        RHI::TextureMipInitMode::FromImage, depthClearValue, 1, RHI::GPUResourceState::ShaderResource);
+    if (!snapshotDepthTexture ||
+        !RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::SRV).IsValid() ||
+        !RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::DSV).IsValid()) {
+        BE_WARNLOG("RenderCamera::CreateSceneSnapshotResources: failed to create scene depth texture\n");
+        DestroySceneSnapshotResources();
+        return false;
+    }
+    RHI::renderer->SetName(snapshotDepthTexture, "RenderCamera::snapshotDepthTexture");
+
+    return true;
+}
+
+void RenderCamera::DestroySceneSnapshotResources() {
+    if (snapshotColorTexture) {
+        RHI::renderer->DestroyTexture(snapshotColorTexture);
+        snapshotColorTexture = nullptr;
+    }
+    if (snapshotDepthTexture) {
+        RHI::renderer->DestroyTexture(snapshotDepthTexture);
+        snapshotDepthTexture = nullptr;
+    }
+}
+
 void RenderCamera::EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview) {
     assert(!needHiZCullResources || needHiZTexture);
     assert(!needHiZDebugPreview || needHiZTexture);
@@ -1374,6 +1443,8 @@ bool RenderCamera::CreateRTVelocityTextures(uint32_t width, uint32_t height, uin
 }
 
 void RenderCamera::DestroyRenderTextures() {
+    DestroySceneSnapshotResources();
+
     if (rtColorTexture) {
         RHI::renderer->DestroyTexture(rtColorTexture);
         rtColorTexture = nullptr;

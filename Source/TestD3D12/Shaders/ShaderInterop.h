@@ -139,6 +139,8 @@ static const uint OceanSurfaceGridLodCount = 3;
 static const uint OceanTimeSpectrumOptionBitCrossDerivative = 1u << 0;
 static const uint OceanFoamOptionBitEnabled = 1u << 0;
 static const uint OceanFoamOptionBitResetHistory = 1u << 1;
+static const uint OceanSurfaceOptionBitFoamEnabled = 1u << 0;
+static const uint OceanSurfaceOptionBitRefractionEnabled = 1u << 1;
 
 #ifdef __cplusplus
 static_assert(OceanCascadeCount >= 2 && OceanCascadeCount <= 4, "GPU ocean supports between two and four cascades");
@@ -451,13 +453,19 @@ struct OceanSurfaceParams {
     float3 foamColor;
     float cascadeFadeScale;
     float gridSnapSpacing;
-    uint foamOptions;
+    uint surfaceOptions;
     float foamDetailMapSize;
     float foamDetailStrength;
+    float refractionDistance;
+    float absorptionDistance;
+    float airToWaterEta;
+    float waterToAirEta;
+    float2 sceneSize;
+    float2 sceneSizeRcp;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanSurfaceParams) == 112, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanSurfaceParams) == 144, "OceanSurfaceParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanSurfaceTileInstance {

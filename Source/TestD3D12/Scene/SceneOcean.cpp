@@ -18,6 +18,8 @@
 #include "Render/Frontend/EnvironmentLight.h"
 #include "Render/Frontend/RenderWorld.h"
 #include "Render/Material/MaterialManager.h"
+#include "Render/Mesh/MeshInstance.h"
+#include "Render/Mesh/MeshManager.h"
 #include "Scene/SceneOcean.h"
 
 #ifdef ENABLE_IMGUI
@@ -29,8 +31,23 @@ void SceneOcean::Init(RenderWorld *renderWorld) {
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
-    app.SetCameraPitchYaw(5, 145);
-    app.SetCameraDistance(300.0f);
+    app.SetCameraPitchYaw(10, 145);
+    app.SetCameraDistance(150.0f);
+
+    testBoxMesh = meshManager.GetMesh("_defaultBoxMesh");
+    testBoxMaterial = materialManager.GetSingleTextureMaterial("Data/Test/Brick_Wall_Worn.dds");
+    if (testBoxMesh && testBoxMaterial) {
+        // 원점의 수면이 박스를 절반으로 나누어 물 위/아래 영상을 직접 비교할 수 있게 한다.
+        testBox.worldMatrix.SetTRS(BE1::Vec3::origin, BE1::Mat3::identity, BE1::Vec3(40.0f));
+
+        RenderObject::Desc testBoxDesc;
+        testBoxDesc.worldMatrix = testBox.worldMatrix;
+        testBoxDesc.meshInstance = testBoxMesh->GetStaticInstance();
+        testBoxDesc.aabb = testBoxMesh->GetAABB();
+        testBoxDesc.materials.SetCount(1);
+        testBoxDesc.materials[0] = testBoxMaterial;
+        testBox.renderObjectHandle = renderWorld->AddRenderObject(testBoxDesc);
+    }
 
     oceanAdded = renderWorld->AddOceanSurface(oceanDesc);
 
@@ -68,6 +85,13 @@ void SceneOcean::Shutdown() {
     if (!renderWorld) {
         return;
     }
+
+    if (testBox.renderObjectHandle >= 0) {
+        renderWorld->RemoveRenderObject(testBox.renderObjectHandle);
+        testBox.renderObjectHandle = -1;
+    }
+    testBoxMaterial.reset();
+    testBoxMesh.reset();
 
     if (directionalLight.renderLightHandle >= 0) {
         renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
@@ -323,6 +347,20 @@ void SceneOcean::BuildImGui() {
         if (ImGui::ColorEdit3("Water color", surfaceSettings.waterColor.Ptr(), ImGuiColorEditFlags_Float)) {
             oceanSettingsChanged = true;
         }
+
+        oceanSettingsChanged |= ImGui::Checkbox("Refraction", &surfaceSettings.refractionEnabled);
+        ImGui::BeginDisabled(!surfaceSettings.refractionEnabled);
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Refraction distance", &surfaceSettings.refractionDistance, 0.1f, 0.01f, 1000.0f, "%.2f m")) {
+            surfaceSettings.refractionDistance = BE1::Max(surfaceSettings.refractionDistance, 0.01f);
+            oceanSettingsChanged = true;
+        }
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::DragFloat("Absorption distance", &surfaceSettings.absorptionDistance, 0.1f, 0.01f, 10000.0f, "%.2f m")) {
+            surfaceSettings.absorptionDistance = BE1::Max(surfaceSettings.absorptionDistance, 0.01f);
+            oceanSettingsChanged = true;
+        }
+        ImGui::EndDisabled();
 
         ImGui::SetNextItemWidth(itemWidth);
         if (ImGui::ColorEdit3("Scatter color", surfaceSettings.scatterColor.Ptr(), ImGuiColorEditFlags_Float)) {

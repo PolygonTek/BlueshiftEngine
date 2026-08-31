@@ -276,6 +276,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         return;
     }
 
+    const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
+    renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot);
+
     renderCamera->EnsureHiZResources(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
     renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, bloomMode);
 
@@ -362,6 +365,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->rtNormalMSAATexture = renderCamera->GetRTNormalMSAATexture();
     visCamera->rtVelocityTexture = renderCamera->GetRTVelocityTexture();
     visCamera->rtVelocityMSAATexture = renderCamera->GetRTVelocityMSAATexture();
+    visCamera->snapshotColorTexture = renderCamera->GetSnapshotColorTexture();
+    visCamera->snapshotDepthTexture = renderCamera->GetSnapshotDepthTexture();
 
     visCamera->generateHiZ = requestHiZGeneration;
     if (visCamera->generateHiZ) {
@@ -525,10 +530,9 @@ void RenderWorld::PrepareOceanSurfacePipeline(VisCamera *visCamera) {
     if (visCamera->needVelocityOutput) {
         featureSet.EnableFeature(ShaderFeature::OutputVelocity);
     }
-
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = nullptr;
-    graphicsPipelineDesc.rasterizerStateType = surfaceSettings.wireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidFrontSided;
+    graphicsPipelineDesc.rasterizerStateType = surfaceSettings.wireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidTwoSided;
     graphicsPipelineDesc.depthStencilStateType = visCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::LEqualWrite;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
