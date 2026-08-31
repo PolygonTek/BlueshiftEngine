@@ -34,6 +34,7 @@ public:
         DepthPrepass,
         OpaquePass,
         SkyPass,
+        SceneSnapshot,
         OceanPass,
         TransparentPass,
         GuiPass,

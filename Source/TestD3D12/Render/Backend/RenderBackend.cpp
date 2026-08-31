@@ -681,6 +681,8 @@ void RenderBackend::CaptureSceneSnapshot() {
     assert(snapshotColorTexture->GetWidth() == sourceColorTexture->GetWidth() && snapshotColorTexture->GetHeight() == sourceColorTexture->GetHeight());
     assert(snapshotDepthTexture->GetWidth() == sourceDepthTexture->GetWidth() && snapshotDepthTexture->GetHeight() == sourceDepthTexture->GetHeight());
 
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SceneSnapshot);
+
     RHI::GPUBarrier copyBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(sourceColorTexture, RHI::GPUResourceState::RenderTarget, RHI::GPUResourceState::CopySrc),
         RHI::Renderer::MakeTextureBarrier(sourceDepthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::CopySrc),

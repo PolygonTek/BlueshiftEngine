@@ -23,6 +23,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Depth Prepass",
         "Opaque Pass",
         "Sky Pass",
+        "Scene Snapshot",
         "Ocean Pass",
         "Transparent Pass",
         "GUI Pass",
