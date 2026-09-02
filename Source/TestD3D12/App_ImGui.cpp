@@ -795,6 +795,393 @@ void App::BuildImGuiOverlay() {
                 BuildImGuiTextureViewer();
             }
 
+            if (roundedCollapsingHeader("Post Process##RenderPostProcessHeader")) {
+                bool postProcessing = !r_skipPostProcess.GetBool();
+                if (ImGui::Checkbox("Post processing", &postProcessing)) {
+                    r_skipPostProcess.SetBool(!postProcessing);
+                }
+
+                if (ImGui::BeginTabBar("PostProcessTabs")) {
+                    if (ImGui::BeginTabItem("Bloom")) {
+                        int bloomMode = BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution));
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::Combo("Bloom", &bloomMode,
+                            "Off\0"
+                            "Pyramid\0"
+                            "Convolution\0")) {
+                            r_bloom.SetInteger(bloomMode);
+                        }
+                        const bool useBloom = bloomMode != static_cast<int>(RenderBloomMode::Off);
+                        const bool usePyramidBloom = bloomMode == static_cast<int>(RenderBloomMode::Pyramid);
+                        const bool useConvolutionBloom = bloomMode == static_cast<int>(RenderBloomMode::Convolution);
+
+                        if (useBloom) {
+                            float bloomThreshold = r_bloomThreshold.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom threshold", &bloomThreshold, r_bloomThreshold.GetMinValue(), r_bloomThreshold.GetMaxValue(), "%.2f")) {
+                                r_bloomThreshold.SetFloat(bloomThreshold);
+                            }
+
+                            float bloomSoftThreshold = r_bloomSoftThreshold.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom soft threshold", &bloomSoftThreshold, r_bloomSoftThreshold.GetMinValue(), r_bloomSoftThreshold.GetMaxValue(), "%.2f")) {
+                                r_bloomSoftThreshold.SetFloat(bloomSoftThreshold);
+                            }
+
+                            float bloomIntensity = r_bloomIntensity.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom intensity", &bloomIntensity, r_bloomIntensity.GetMinValue(), r_bloomIntensity.GetMaxValue(), "%.3f")) {
+                                r_bloomIntensity.SetFloat(bloomIntensity);
+                            }
+
+                            float bloomDirtIntensity = r_bloomDirtIntensity.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom dirt intensity", &bloomDirtIntensity,
+                                r_bloomDirtIntensity.GetMinValue(), r_bloomDirtIntensity.GetMaxValue(), "%.3f")) {
+                                r_bloomDirtIntensity.SetFloat(bloomDirtIntensity);
+                            }
+                        }
+
+                        if (usePyramidBloom) {
+                            int pyramidBloomPrefilterQuality = BE1::Clamp(r_pyramidBloomPrefilterQuality.GetInteger(), 0, 1);
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::Combo("Bloom prefilter quality", &pyramidBloomPrefilterQuality,
+                                "Rotated Grid 5 Tap\0"
+                                "Jimenez 13 Tap\0")) {
+                                r_pyramidBloomPrefilterQuality.SetInteger(pyramidBloomPrefilterQuality);
+                            }
+
+                            float pyramidBloomScatter = r_pyramidBloomScatter.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom scatter", &pyramidBloomScatter, r_pyramidBloomScatter.GetMinValue(), r_pyramidBloomScatter.GetMaxValue(), "%.3f")) {
+                                r_pyramidBloomScatter.SetFloat(pyramidBloomScatter);
+                            }
+
+                            float pyramidBloomPrefilterRadius = r_pyramidBloomPrefilterRadius.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom prefilter radius", &pyramidBloomPrefilterRadius, r_pyramidBloomPrefilterRadius.GetMinValue(), r_pyramidBloomPrefilterRadius.GetMaxValue(), "%.2f")) {
+                                r_pyramidBloomPrefilterRadius.SetFloat(pyramidBloomPrefilterRadius);
+                            }
+
+                            float pyramidBloomDownsampleRadius = r_pyramidBloomDownsampleRadius.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom downsample radius", &pyramidBloomDownsampleRadius, r_pyramidBloomDownsampleRadius.GetMinValue(), r_pyramidBloomDownsampleRadius.GetMaxValue(), "%.2f")) {
+                                r_pyramidBloomDownsampleRadius.SetFloat(pyramidBloomDownsampleRadius);
+                            }
+
+                            float pyramidBloomUpsampleRadius = r_pyramidBloomUpsampleRadius.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom upsample radius", &pyramidBloomUpsampleRadius, r_pyramidBloomUpsampleRadius.GetMinValue(), r_pyramidBloomUpsampleRadius.GetMaxValue(), "%.2f")) {
+                                r_pyramidBloomUpsampleRadius.SetFloat(pyramidBloomUpsampleRadius);
+                            }
+                        }
+
+                        if (useConvolutionBloom) {
+                            static constexpr int convolutionBloomFFTMaxSizeOptions[] = { 256, 512, 1024 };
+                            int convolutionBloomFFTMaxSize = r_convolutionBloomFFTMaxSize.GetInteger();
+                            int convolutionBloomFFTMaxSizeIndex = convolutionBloomFFTMaxSize <= 256 ? 0 : (convolutionBloomFFTMaxSize <= 512 ? 1 : 2);
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::Combo("Bloom FFT max size", &convolutionBloomFFTMaxSizeIndex,
+                                "256\0"
+                                "512\0"
+                                "1024\0")) {
+                                r_convolutionBloomFFTMaxSize.SetInteger(convolutionBloomFFTMaxSizeOptions[convolutionBloomFFTMaxSizeIndex]);
+                            }
+
+                            float convolutionBloomPrefilterRadius = r_convolutionBloomPrefilterRadius.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom prefilter radius", &convolutionBloomPrefilterRadius, r_convolutionBloomPrefilterRadius.GetMinValue(), r_convolutionBloomPrefilterRadius.GetMaxValue(), "%.2f")) {
+                                r_convolutionBloomPrefilterRadius.SetFloat(convolutionBloomPrefilterRadius);
+                            }
+
+                            int convolutionBloomKernelSource = app_convolutionBloomKernelSource.GetInteger();
+                            const char *currentKernelSourceName = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture) ? "From Aperture" : "Preset";
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::BeginCombo("Bloom kernel source", currentKernelSourceName)) {
+                                const bool presetSelected = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::Preset);
+                                if (ImGui::Selectable("Preset", presetSelected)) {
+                                    if (!presetSelected) {
+                                        app_convolutionBloomKernelSource.SetInteger(static_cast<int>(App::ConvolutionBloomKernelSource::Preset));
+                                        convolutionBloomKernelSource = static_cast<int>(App::ConvolutionBloomKernelSource::Preset);
+                                    }
+                                }
+                                if (presetSelected) {
+                                    ImGui::SetItemDefaultFocus();
+                                }
+
+                                if (ImGui::Selectable("From Aperture", convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture))) {
+                                    if (convolutionBloomKernelSource != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                                        app_convolutionBloomKernelSource.SetInteger(static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture));
+                                        convolutionBloomKernelSource = static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture);
+                                    }
+                                }
+                                if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                                    ImGui::SetItemDefaultFocus();
+                                }
+                                ImGui::EndCombo();
+                            }
+
+                            if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::Preset)) {
+                                char currentKernelName[32];
+                                GetConvolutionBloomKernelPresetName(app_convolutionBloomKernelPreset.GetInteger(), currentKernelName, sizeof(currentKernelName));
+                                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                                if (ImGui::BeginCombo("Bloom kernel preset", currentKernelName)) {
+                                    for (int kernelPreset = 0; kernelPreset < App::ConvolutionBloomKernelPresetCount; ++kernelPreset) {
+                                        char kernelName[32];
+                                        GetConvolutionBloomKernelPresetName(kernelPreset, kernelName, sizeof(kernelName));
+
+                                        const bool isSelected = kernelPreset == app_convolutionBloomKernelPreset.GetInteger();
+                                        if (ImGui::Selectable(kernelName, isSelected)) {
+                                            if (kernelPreset != app_convolutionBloomKernelPreset.GetInteger()) {
+                                                app_convolutionBloomKernelPreset.SetInteger(kernelPreset);
+                                            }
+                                        }
+                                        if (isSelected) {
+                                            ImGui::SetItemDefaultFocus();
+                                        }
+                                    }
+                                    ImGui::EndCombo();
+                                }
+                            } else if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                                int convolutionBloomAperturePreset = app_convolutionBloomAperturePreset.GetInteger();
+                                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                                if (ImGui::Combo("Bloom aperture preset", &convolutionBloomAperturePreset,
+                                    "Triangle\0"
+                                    "Square\0"
+                                    "Horz Rectangle\0"
+                                    "Vert Rectangle\0"
+                                    "Pentagon\0"
+                                    "Hexagon\0"
+                                    "Heptagon\0"
+                                    "Octagon\0"
+                                    "Circle\0")) {
+                                    app_convolutionBloomAperturePreset.SetInteger(convolutionBloomAperturePreset);
+                                }
+
+                                if (convolutionBloomApertureTexture && convolutionBloomApertureTexture->IsReadyForRendering()) {
+                                    const RHI::Texture *apertureTexture = convolutionBloomApertureTexture->GetRHITexture();
+                                    if (apertureTexture) {
+                                        ImGui::Spacing();
+                                        DrawImGuiTexturePreview(apertureTexture, RHI::ViewID::PrimaryID, fontSize * 8.0f, false);
+                                    }
+                                }
+                            }
+
+                            float convolutionBloomKernelRotation = r_convolutionBloomKernelRotation.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom kernel rotation", &convolutionBloomKernelRotation, -180.0f, 180.0f, "%.1f deg")) {
+                                r_convolutionBloomKernelRotation.SetFloat(convolutionBloomKernelRotation);
+                            }
+
+                            float convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom kernel scale", &convolutionBloomKernelScale, r_convolutionBloomKernelScale.GetMinValue(), r_convolutionBloomKernelScale.GetMaxValue(), "%.3f")) {
+                                r_convolutionBloomKernelScale.SetFloat(convolutionBloomKernelScale);
+                            }
+
+                            float convolutionBloomKernelGain = r_convolutionBloomKernelGain.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom kernel gain", &convolutionBloomKernelGain, r_convolutionBloomKernelGain.GetMinValue(), r_convolutionBloomKernelGain.GetMaxValue(), "%.4f")) {
+                                r_convolutionBloomKernelGain.SetFloat(convolutionBloomKernelGain);
+                            }
+
+                            float convolutionBloomPaddingTrim = r_convolutionBloomPaddingTrim.GetFloat();
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::SliderFloat("Bloom padding trim", &convolutionBloomPaddingTrim, r_convolutionBloomPaddingTrim.GetMinValue(), r_convolutionBloomPaddingTrim.GetMaxValue(), "%.3f")) {
+                                r_convolutionBloomPaddingTrim.SetFloat(convolutionBloomPaddingTrim);
+                            }
+
+                            if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
+                                bool regenerateConvolutionBloomKernel = false;
+
+                                float convolutionBloomApertureScale = r_convolutionBloomApertureScale.GetFloat();
+                                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                                if (ImGui::SliderFloat("Bloom aperture scale", &convolutionBloomApertureScale, r_convolutionBloomApertureScale.GetMinValue(), r_convolutionBloomApertureScale.GetMaxValue(), "%.3f")) {
+                                    r_convolutionBloomApertureScale.SetFloat(convolutionBloomApertureScale);
+                                }
+                                regenerateConvolutionBloomKernel |= ImGui::IsItemDeactivatedAfterEdit();
+
+                                float convolutionBloomDispersionAmount = r_convolutionBloomDispersionAmount.GetFloat();
+                                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                                if (ImGui::SliderFloat("Bloom dispersion amount", &convolutionBloomDispersionAmount, r_convolutionBloomDispersionAmount.GetMinValue(), r_convolutionBloomDispersionAmount.GetMaxValue(), "%.3f")) {
+                                    r_convolutionBloomDispersionAmount.SetFloat(convolutionBloomDispersionAmount);
+                                }
+                                regenerateConvolutionBloomKernel |= ImGui::IsItemDeactivatedAfterEdit();
+
+                                if (regenerateConvolutionBloomKernel) {
+                                    RegenerateConvolutionBloomKernel();
+                                }
+                            }
+                        }
+
+                        ImGui::EndTabItem();
+                    }
+
+                    if (ImGui::BeginTabItem("Tone Mapping")) {
+                        bool toneMapping = r_toneMapping.GetBool();
+                        if (ImGui::Checkbox("Tone mapping", &toneMapping)) {
+                            r_toneMapping.SetBool(toneMapping);
+                        }
+
+                        const bool hdrOutput = mainRenderContext && RHI::SwapChain::IsHDRColorSpace(mainRenderContext->GetSwapChain()->GetColorSpace());
+                        int toneMapOp = hdrOutput ? static_cast<int>(ToneMappingOperatorFilmicGT) :
+                            BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorPBRNeutral));
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        ImGui::BeginDisabled(hdrOutput);
+                        if (ImGui::Combo("Tone map operator", &toneMapOp,
+                            "Linear\0"
+                            "Exponential\0"
+                            "Logarithmic\0"
+                            "Drago Logarithmic\0"
+                            "Reinhard\0"
+                            "Reinhard Extended\0"
+                            "Filmic ALU\0"
+                            "Filmic ACES\0"
+                            "Filmic Unreal3\0"
+                            "Filmic Uncharted 2\0"
+                            "Filmic GT\0"
+                            "PBR Neutral\0\0")) {
+                            r_toneMapOp.SetInteger(toneMapOp);
+                        }
+                        ImGui::EndDisabled();
+
+                        float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
+                        float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::DragFloatRange2("Luminance log2 range", &luminanceLogMin, &luminanceLogMax, 0.05f, -16.0f, 16.0f, "Min: %.2f", "Max: %.2f")) {
+                            r_toneMapLuminanceLogMin.SetFloat(luminanceLogMin);
+                            r_toneMapLuminanceLogMax.SetFloat(BE1::Max(luminanceLogMax, luminanceLogMin + 0.0001f));
+                        }
+
+                        float luminanceAdaptationRate = r_toneMapLuminanceAdaptationRate.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Luminance adaptation rate", &luminanceAdaptationRate, r_toneMapLuminanceAdaptationRate.GetMinValue(), r_toneMapLuminanceAdaptationRate.GetMaxValue(), "%.2f")) {
+                            r_toneMapLuminanceAdaptationRate.SetFloat(luminanceAdaptationRate);
+                        }
+
+                        float middleGray = r_toneMapMiddleGray.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Middle gray", &middleGray, r_toneMapMiddleGray.GetMinValue(), r_toneMapMiddleGray.GetMaxValue(), "%.3f")) {
+                            r_toneMapMiddleGray.SetFloat(middleGray);
+                        }
+
+                        float exposureCompensation = r_toneMapExposureCompensation.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Exposure compensation", &exposureCompensation, r_toneMapExposureCompensation.GetMinValue(), r_toneMapExposureCompensation.GetMaxValue(), "%.2f EV")) {
+                            r_toneMapExposureCompensation.SetFloat(exposureCompensation);
+                        }
+
+                        float minExposureEV = r_toneMapMinExposureEV.GetFloat();
+                        float maxExposureEV = r_toneMapMaxExposureEV.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::DragFloatRange2("Exposure EV range", &minExposureEV, &maxExposureEV, 0.05f, r_toneMapMinExposureEV.GetMinValue(), r_toneMapMaxExposureEV.GetMaxValue(), "Min: %.2f EV", "Max: %.2f EV")) {
+                            r_toneMapMinExposureEV.SetFloat(minExposureEV);
+                            r_toneMapMaxExposureEV.SetFloat(BE1::Max(maxExposureEV, minExposureEV));
+                        }
+
+                        float whiteBalanceTemperature = r_whiteBalanceTemperature.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("White balance temperature", &whiteBalanceTemperature, r_whiteBalanceTemperature.GetMinValue(), r_whiteBalanceTemperature.GetMaxValue(), "%.0f K")) {
+                            r_whiteBalanceTemperature.SetFloat(whiteBalanceTemperature);
+                        }
+
+                        ImGui::EndTabItem();
+                    }
+
+                    if (ImGui::BeginTabItem("Color Grading")) {
+                        bool colorGrading = r_colorGrading.GetBool();
+                        if (ImGui::Checkbox("Color grading", &colorGrading)) {
+                            r_colorGrading.SetBool(colorGrading);
+                        }
+
+                        bool colorGradingLUTChanged = false;
+
+                        float colorGradingSaturation = r_colorGradingSaturation.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Color grading saturation", &colorGradingSaturation,
+                            r_colorGradingSaturation.GetMinValue(), r_colorGradingSaturation.GetMaxValue(), "%.3f")) {
+                            r_colorGradingSaturation.SetFloat(colorGradingSaturation);
+                            colorGradingLUTChanged = true;
+                        }
+
+                        float colorGradingContrast = r_colorGradingContrast.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Color grading contrast", &colorGradingContrast,
+                            r_colorGradingContrast.GetMinValue(), r_colorGradingContrast.GetMaxValue(), "%.3f")) {
+                            r_colorGradingContrast.SetFloat(colorGradingContrast);
+                            colorGradingLUTChanged = true;
+                        }
+
+                        float colorGradingGamma = r_colorGradingGamma.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Color grading gamma", &colorGradingGamma,
+                            r_colorGradingGamma.GetMinValue(), r_colorGradingGamma.GetMaxValue(), "%.3f")) {
+                            r_colorGradingGamma.SetFloat(colorGradingGamma);
+                            colorGradingLUTChanged = true;
+                        }
+
+                        float colorGradingGain = r_colorGradingGain.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Color grading gain", &colorGradingGain,
+                            r_colorGradingGain.GetMinValue(), r_colorGradingGain.GetMaxValue(), "%.3f")) {
+                            r_colorGradingGain.SetFloat(colorGradingGain);
+                            colorGradingLUTChanged = true;
+                        }
+
+                        float colorGradingTint[3] = {
+                            r_colorGradingTintR.GetFloat(),
+                            r_colorGradingTintG.GetFloat(),
+                            r_colorGradingTintB.GetFloat()
+                        };
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::ColorEdit3("Color tint", colorGradingTint, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
+                            colorGradingTint[0] = BE1::Clamp(colorGradingTint[0], r_colorGradingTintR.GetMinValue(), r_colorGradingTintR.GetMaxValue());
+                            colorGradingTint[1] = BE1::Clamp(colorGradingTint[1], r_colorGradingTintG.GetMinValue(), r_colorGradingTintG.GetMaxValue());
+                            colorGradingTint[2] = BE1::Clamp(colorGradingTint[2], r_colorGradingTintB.GetMinValue(), r_colorGradingTintB.GetMaxValue());
+                            r_colorGradingTintR.SetFloat(colorGradingTint[0]);
+                            r_colorGradingTintG.SetFloat(colorGradingTint[1]);
+                            r_colorGradingTintB.SetFloat(colorGradingTint[2]);
+                            colorGradingLUTChanged = true;
+                        }
+
+                        if (colorGradingLUTChanged) {
+                            renderSystem->RequestColorGradingLUTUpdate();
+                        }
+
+                        ImGui::EndTabItem();
+                    }
+
+                    if (ImGui::BeginTabItem("Image Effects")) {
+                        float lensDistortion = r_lensDistortion.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Lens distortion", &lensDistortion, r_lensDistortion.GetMinValue(), r_lensDistortion.GetMaxValue(), "%.3f")) {
+                            r_lensDistortion.SetFloat(lensDistortion);
+                        }
+
+                        float chromaticAberration = r_chromaticAberration.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Chromatic aberration", &chromaticAberration, r_chromaticAberration.GetMinValue(), r_chromaticAberration.GetMaxValue(), "%.2f px")) {
+                            r_chromaticAberration.SetFloat(chromaticAberration);
+                        }
+
+                        float vignette = r_vignette.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Vignette", &vignette, r_vignette.GetMinValue(), r_vignette.GetMaxValue(), "%.3f")) {
+                            r_vignette.SetFloat(vignette);
+                        }
+
+                        bool dithering = r_dithering.GetBool();
+                        if (ImGui::Checkbox("Dithering", &dithering)) {
+                            r_dithering.SetBool(dithering);
+                        }
+
+                        ImGui::EndTabItem();
+                    }
+
+                    ImGui::EndTabBar();
+                }
+            }
+
             ImGui::EndTabItem();
         }
 
@@ -832,383 +1219,6 @@ void App::BuildImGuiOverlay() {
                 }
             } else {
                 ImGui::TextColored(ImGuiWarningTextColor, "Physics world is unavailable.");
-            }
-
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Post Process")) {
-            bool postProcessing = !r_skipPostProcess.GetBool();
-            if (ImGui::Checkbox("Post processing", &postProcessing)) {
-                r_skipPostProcess.SetBool(!postProcessing);
-            }
-
-            if (roundedCollapsingHeader("Bloom##BloomHeader")) {
-                int bloomMode = BE1::Clamp(r_bloom.GetInteger(), static_cast<int>(RenderBloomMode::Off), static_cast<int>(RenderBloomMode::Convolution));
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::Combo("Bloom", &bloomMode,
-                    "Off\0"
-                    "Pyramid\0"
-                    "Convolution\0")) {
-                    r_bloom.SetInteger(bloomMode);
-                }
-                const bool useBloom = bloomMode != static_cast<int>(RenderBloomMode::Off);
-                const bool usePyramidBloom = bloomMode == static_cast<int>(RenderBloomMode::Pyramid);
-                const bool useConvolutionBloom = bloomMode == static_cast<int>(RenderBloomMode::Convolution);
-
-                if (useBloom) {
-                    float bloomThreshold = r_bloomThreshold.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom threshold", &bloomThreshold, r_bloomThreshold.GetMinValue(), r_bloomThreshold.GetMaxValue(), "%.2f")) {
-                        r_bloomThreshold.SetFloat(bloomThreshold);
-                    }
-
-                    float bloomSoftThreshold = r_bloomSoftThreshold.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom soft threshold", &bloomSoftThreshold, r_bloomSoftThreshold.GetMinValue(), r_bloomSoftThreshold.GetMaxValue(), "%.2f")) {
-                        r_bloomSoftThreshold.SetFloat(bloomSoftThreshold);
-                    }
-
-                    float bloomIntensity = r_bloomIntensity.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom intensity", &bloomIntensity, r_bloomIntensity.GetMinValue(), r_bloomIntensity.GetMaxValue(), "%.3f")) {
-                        r_bloomIntensity.SetFloat(bloomIntensity);
-                    }
-
-                    float bloomDirtIntensity = r_bloomDirtIntensity.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom dirt intensity", &bloomDirtIntensity,
-                        r_bloomDirtIntensity.GetMinValue(), r_bloomDirtIntensity.GetMaxValue(), "%.3f")) {
-                        r_bloomDirtIntensity.SetFloat(bloomDirtIntensity);
-                    }
-                }
-
-                if (usePyramidBloom) {
-                    int pyramidBloomPrefilterQuality = BE1::Clamp(r_pyramidBloomPrefilterQuality.GetInteger(), 0, 1);
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Bloom prefilter quality", &pyramidBloomPrefilterQuality,
-                        "Rotated Grid 5 Tap\0"
-                        "Jimenez 13 Tap\0")) {
-                        r_pyramidBloomPrefilterQuality.SetInteger(pyramidBloomPrefilterQuality);
-                    }
-
-                    float pyramidBloomScatter = r_pyramidBloomScatter.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom scatter", &pyramidBloomScatter, r_pyramidBloomScatter.GetMinValue(), r_pyramidBloomScatter.GetMaxValue(), "%.3f")) {
-                        r_pyramidBloomScatter.SetFloat(pyramidBloomScatter);
-                    }
-
-                    float pyramidBloomPrefilterRadius = r_pyramidBloomPrefilterRadius.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom prefilter radius", &pyramidBloomPrefilterRadius, r_pyramidBloomPrefilterRadius.GetMinValue(), r_pyramidBloomPrefilterRadius.GetMaxValue(), "%.2f")) {
-                        r_pyramidBloomPrefilterRadius.SetFloat(pyramidBloomPrefilterRadius);
-                    }
-
-                    float pyramidBloomDownsampleRadius = r_pyramidBloomDownsampleRadius.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom downsample radius", &pyramidBloomDownsampleRadius, r_pyramidBloomDownsampleRadius.GetMinValue(), r_pyramidBloomDownsampleRadius.GetMaxValue(), "%.2f")) {
-                        r_pyramidBloomDownsampleRadius.SetFloat(pyramidBloomDownsampleRadius);
-                    }
-
-                    float pyramidBloomUpsampleRadius = r_pyramidBloomUpsampleRadius.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom upsample radius", &pyramidBloomUpsampleRadius, r_pyramidBloomUpsampleRadius.GetMinValue(), r_pyramidBloomUpsampleRadius.GetMaxValue(), "%.2f")) {
-                        r_pyramidBloomUpsampleRadius.SetFloat(pyramidBloomUpsampleRadius);
-                    }
-                }
-
-                if (useConvolutionBloom) {
-                    static constexpr int convolutionBloomFFTMaxSizeOptions[] = { 256, 512, 1024 };
-                    int convolutionBloomFFTMaxSize = r_convolutionBloomFFTMaxSize.GetInteger();
-                    int convolutionBloomFFTMaxSizeIndex = convolutionBloomFFTMaxSize <= 256 ? 0 : (convolutionBloomFFTMaxSize <= 512 ? 1 : 2);
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Bloom FFT max size", &convolutionBloomFFTMaxSizeIndex,
-                        "256\0"
-                        "512\0"
-                        "1024\0")) {
-                        r_convolutionBloomFFTMaxSize.SetInteger(convolutionBloomFFTMaxSizeOptions[convolutionBloomFFTMaxSizeIndex]);
-                    }
-
-                    float convolutionBloomPrefilterRadius = r_convolutionBloomPrefilterRadius.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom prefilter radius", &convolutionBloomPrefilterRadius, r_convolutionBloomPrefilterRadius.GetMinValue(), r_convolutionBloomPrefilterRadius.GetMaxValue(), "%.2f")) {
-                        r_convolutionBloomPrefilterRadius.SetFloat(convolutionBloomPrefilterRadius);
-                    }
-
-                    int convolutionBloomKernelSource = app_convolutionBloomKernelSource.GetInteger();
-                    const char *currentKernelSourceName = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture) ? "From Aperture" : "Preset";
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::BeginCombo("Bloom kernel source", currentKernelSourceName)) {
-                        const bool presetSelected = convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::Preset);
-                        if (ImGui::Selectable("Preset", presetSelected)) {
-                            if (!presetSelected) {
-                                app_convolutionBloomKernelSource.SetInteger(static_cast<int>(App::ConvolutionBloomKernelSource::Preset));
-                                convolutionBloomKernelSource = static_cast<int>(App::ConvolutionBloomKernelSource::Preset);
-                            }
-                        }
-                        if (presetSelected) {
-                            ImGui::SetItemDefaultFocus();
-                        }
-
-                        if (ImGui::Selectable("From Aperture", convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture))) {
-                            if (convolutionBloomKernelSource != static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
-                                app_convolutionBloomKernelSource.SetInteger(static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture));
-                                convolutionBloomKernelSource = static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture);
-                            }
-                        }
-                        if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
-                            ImGui::SetItemDefaultFocus();
-                        }
-                        ImGui::EndCombo();
-                    }
-
-                    if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::Preset)) {
-                        char currentKernelName[32];
-                        GetConvolutionBloomKernelPresetName(app_convolutionBloomKernelPreset.GetInteger(), currentKernelName, sizeof(currentKernelName));
-                        ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::BeginCombo("Bloom kernel preset", currentKernelName)) {
-                            for (int kernelPreset = 0; kernelPreset < App::ConvolutionBloomKernelPresetCount; ++kernelPreset) {
-                                char kernelName[32];
-                                GetConvolutionBloomKernelPresetName(kernelPreset, kernelName, sizeof(kernelName));
-
-                                const bool isSelected = kernelPreset == app_convolutionBloomKernelPreset.GetInteger();
-                                if (ImGui::Selectable(kernelName, isSelected)) {
-                                    if (kernelPreset != app_convolutionBloomKernelPreset.GetInteger()) {
-                                        app_convolutionBloomKernelPreset.SetInteger(kernelPreset);
-                                    }
-                                }
-                                if (isSelected) {
-                                    ImGui::SetItemDefaultFocus();
-                                }
-                            }
-                            ImGui::EndCombo();
-                        }
-                    } else if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
-                        int convolutionBloomAperturePreset = app_convolutionBloomAperturePreset.GetInteger();
-                        ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::Combo("Bloom aperture preset", &convolutionBloomAperturePreset,
-                            "Triangle\0"
-                            "Square\0"
-                            "Horz Rectangle\0"
-                            "Vert Rectangle\0"
-                            "Pentagon\0"
-                            "Hexagon\0"
-                            "Heptagon\0"
-                            "Octagon\0"
-                            "Circle\0")) {
-                            app_convolutionBloomAperturePreset.SetInteger(convolutionBloomAperturePreset);
-                        }
-
-                        if (convolutionBloomApertureTexture && convolutionBloomApertureTexture->IsReadyForRendering()) {
-                            const RHI::Texture *apertureTexture = convolutionBloomApertureTexture->GetRHITexture();
-                            if (apertureTexture) {
-                                ImGui::Spacing();
-                                DrawImGuiTexturePreview(apertureTexture, RHI::ViewID::PrimaryID, fontSize * 8.0f, false);
-                            }
-                        }
-                    }
-
-                    float convolutionBloomKernelRotation = r_convolutionBloomKernelRotation.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom kernel rotation", &convolutionBloomKernelRotation, -180.0f, 180.0f, "%.1f deg")) {
-                        r_convolutionBloomKernelRotation.SetFloat(convolutionBloomKernelRotation);
-                    }
-
-                    float convolutionBloomKernelScale = r_convolutionBloomKernelScale.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom kernel scale", &convolutionBloomKernelScale, r_convolutionBloomKernelScale.GetMinValue(), r_convolutionBloomKernelScale.GetMaxValue(), "%.3f")) {
-                        r_convolutionBloomKernelScale.SetFloat(convolutionBloomKernelScale);
-                    }
-
-                    float convolutionBloomKernelGain = r_convolutionBloomKernelGain.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom kernel gain", &convolutionBloomKernelGain, r_convolutionBloomKernelGain.GetMinValue(), r_convolutionBloomKernelGain.GetMaxValue(), "%.4f")) {
-                        r_convolutionBloomKernelGain.SetFloat(convolutionBloomKernelGain);
-                    }
-
-                    float convolutionBloomPaddingTrim = r_convolutionBloomPaddingTrim.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Bloom padding trim", &convolutionBloomPaddingTrim, r_convolutionBloomPaddingTrim.GetMinValue(), r_convolutionBloomPaddingTrim.GetMaxValue(), "%.3f")) {
-                        r_convolutionBloomPaddingTrim.SetFloat(convolutionBloomPaddingTrim);
-                    }
-
-                    if (convolutionBloomKernelSource == static_cast<int>(App::ConvolutionBloomKernelSource::GenerateFromAperture)) {
-                        bool regenerateConvolutionBloomKernel = false;
-
-                        float convolutionBloomApertureScale = r_convolutionBloomApertureScale.GetFloat();
-                        ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Bloom aperture scale", &convolutionBloomApertureScale, r_convolutionBloomApertureScale.GetMinValue(), r_convolutionBloomApertureScale.GetMaxValue(), "%.3f")) {
-                            r_convolutionBloomApertureScale.SetFloat(convolutionBloomApertureScale);
-                        }
-                        regenerateConvolutionBloomKernel |= ImGui::IsItemDeactivatedAfterEdit();
-
-                        float convolutionBloomDispersionAmount = r_convolutionBloomDispersionAmount.GetFloat();
-                        ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Bloom dispersion amount", &convolutionBloomDispersionAmount, r_convolutionBloomDispersionAmount.GetMinValue(), r_convolutionBloomDispersionAmount.GetMaxValue(), "%.3f")) {
-                            r_convolutionBloomDispersionAmount.SetFloat(convolutionBloomDispersionAmount);
-                        }
-                        regenerateConvolutionBloomKernel |= ImGui::IsItemDeactivatedAfterEdit();
-
-                        if (regenerateConvolutionBloomKernel) {
-                            RegenerateConvolutionBloomKernel();
-                        }
-                    }
-                }
-            }
-
-            if (roundedCollapsingHeader("Tone mapping##ToneMappingHeader")) {
-                bool toneMapping = r_toneMapping.GetBool();
-                if (ImGui::Checkbox("Tone mapping", &toneMapping)) {
-                    r_toneMapping.SetBool(toneMapping);
-                }
-
-                const bool hdrOutput = mainRenderContext && RHI::SwapChain::IsHDRColorSpace(mainRenderContext->GetSwapChain()->GetColorSpace());
-                int toneMapOp = hdrOutput ? static_cast<int>(ToneMappingOperatorFilmicGT) :
-                    BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorPBRNeutral));
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                ImGui::BeginDisabled(hdrOutput);
-                if (ImGui::Combo("Tone map operator", &toneMapOp,
-                    "Linear\0"
-                    "Exponential\0"
-                    "Logarithmic\0"
-                    "Drago Logarithmic\0"
-                    "Reinhard\0"
-                    "Reinhard Extended\0"
-                    "Filmic ALU\0"
-                    "Filmic ACES\0"
-                    "Filmic Unreal3\0"
-                    "Filmic Uncharted 2\0"
-                    "Filmic GT\0"
-                    "PBR Neutral\0\0")) {
-                    r_toneMapOp.SetInteger(toneMapOp);
-                }
-                ImGui::EndDisabled();
-
-                float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
-                float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::DragFloatRange2("Luminance log2 range", &luminanceLogMin, &luminanceLogMax, 0.05f, -16.0f, 16.0f, "Min: %.2f", "Max: %.2f")) {
-                    r_toneMapLuminanceLogMin.SetFloat(luminanceLogMin);
-                    r_toneMapLuminanceLogMax.SetFloat(BE1::Max(luminanceLogMax, luminanceLogMin + 0.0001f));
-                }
-
-                float luminanceAdaptationRate = r_toneMapLuminanceAdaptationRate.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Luminance adaptation rate", &luminanceAdaptationRate, r_toneMapLuminanceAdaptationRate.GetMinValue(), r_toneMapLuminanceAdaptationRate.GetMaxValue(), "%.2f")) {
-                    r_toneMapLuminanceAdaptationRate.SetFloat(luminanceAdaptationRate);
-                }
-
-                float middleGray = r_toneMapMiddleGray.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Middle gray", &middleGray, r_toneMapMiddleGray.GetMinValue(), r_toneMapMiddleGray.GetMaxValue(), "%.3f")) {
-                    r_toneMapMiddleGray.SetFloat(middleGray);
-                }
-
-                float exposureCompensation = r_toneMapExposureCompensation.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Exposure compensation", &exposureCompensation, r_toneMapExposureCompensation.GetMinValue(), r_toneMapExposureCompensation.GetMaxValue(), "%.2f EV")) {
-                    r_toneMapExposureCompensation.SetFloat(exposureCompensation);
-                }
-
-                float minExposureEV = r_toneMapMinExposureEV.GetFloat();
-                float maxExposureEV = r_toneMapMaxExposureEV.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::DragFloatRange2("Exposure EV range", &minExposureEV, &maxExposureEV, 0.05f, r_toneMapMinExposureEV.GetMinValue(), r_toneMapMaxExposureEV.GetMaxValue(), "Min: %.2f EV", "Max: %.2f EV")) {
-                    r_toneMapMinExposureEV.SetFloat(minExposureEV);
-                    r_toneMapMaxExposureEV.SetFloat(BE1::Max(maxExposureEV, minExposureEV));
-                }
-
-                float whiteBalanceTemperature = r_whiteBalanceTemperature.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("White balance temperature", &whiteBalanceTemperature, r_whiteBalanceTemperature.GetMinValue(), r_whiteBalanceTemperature.GetMaxValue(), "%.0f K")) {
-                    r_whiteBalanceTemperature.SetFloat(whiteBalanceTemperature);
-                }
-            }
-
-            if (roundedCollapsingHeader("Color grading##ColorGradingHeader")) {
-                bool colorGrading = r_colorGrading.GetBool();
-                if (ImGui::Checkbox("Color grading", &colorGrading)) {
-                    r_colorGrading.SetBool(colorGrading);
-                }
-
-                bool colorGradingLUTChanged = false;
-
-                float colorGradingSaturation = r_colorGradingSaturation.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Color grading saturation", &colorGradingSaturation,
-                    r_colorGradingSaturation.GetMinValue(), r_colorGradingSaturation.GetMaxValue(), "%.3f")) {
-                    r_colorGradingSaturation.SetFloat(colorGradingSaturation);
-                    colorGradingLUTChanged = true;
-                }
-
-                float colorGradingContrast = r_colorGradingContrast.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Color grading contrast", &colorGradingContrast,
-                    r_colorGradingContrast.GetMinValue(), r_colorGradingContrast.GetMaxValue(), "%.3f")) {
-                    r_colorGradingContrast.SetFloat(colorGradingContrast);
-                    colorGradingLUTChanged = true;
-                }
-
-                float colorGradingGamma = r_colorGradingGamma.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Color grading gamma", &colorGradingGamma,
-                    r_colorGradingGamma.GetMinValue(), r_colorGradingGamma.GetMaxValue(), "%.3f")) {
-                    r_colorGradingGamma.SetFloat(colorGradingGamma);
-                    colorGradingLUTChanged = true;
-                }
-
-                float colorGradingGain = r_colorGradingGain.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Color grading gain", &colorGradingGain,
-                    r_colorGradingGain.GetMinValue(), r_colorGradingGain.GetMaxValue(), "%.3f")) {
-                    r_colorGradingGain.SetFloat(colorGradingGain);
-                    colorGradingLUTChanged = true;
-                }
-
-                float colorGradingTint[3] = {
-                    r_colorGradingTintR.GetFloat(),
-                    r_colorGradingTintG.GetFloat(),
-                    r_colorGradingTintB.GetFloat()
-                };
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::ColorEdit3("Color tint", colorGradingTint, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
-                    colorGradingTint[0] = BE1::Clamp(colorGradingTint[0], r_colorGradingTintR.GetMinValue(), r_colorGradingTintR.GetMaxValue());
-                    colorGradingTint[1] = BE1::Clamp(colorGradingTint[1], r_colorGradingTintG.GetMinValue(), r_colorGradingTintG.GetMaxValue());
-                    colorGradingTint[2] = BE1::Clamp(colorGradingTint[2], r_colorGradingTintB.GetMinValue(), r_colorGradingTintB.GetMaxValue());
-                    r_colorGradingTintR.SetFloat(colorGradingTint[0]);
-                    r_colorGradingTintG.SetFloat(colorGradingTint[1]);
-                    r_colorGradingTintB.SetFloat(colorGradingTint[2]);
-                    colorGradingLUTChanged = true;
-                }
-
-                if (colorGradingLUTChanged) {
-                    renderSystem->RequestColorGradingLUTUpdate();
-                }
-            }
-
-            if (roundedCollapsingHeader("Image effects##PostProcessImageEffectsHeader")) {
-                float lensDistortion = r_lensDistortion.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Lens distortion", &lensDistortion, r_lensDistortion.GetMinValue(), r_lensDistortion.GetMaxValue(), "%.3f")) {
-                    r_lensDistortion.SetFloat(lensDistortion);
-                }
-
-                float chromaticAberration = r_chromaticAberration.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Chromatic aberration", &chromaticAberration, r_chromaticAberration.GetMinValue(), r_chromaticAberration.GetMaxValue(), "%.2f px")) {
-                    r_chromaticAberration.SetFloat(chromaticAberration);
-                }
-
-                float vignette = r_vignette.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Vignette", &vignette, r_vignette.GetMinValue(), r_vignette.GetMaxValue(), "%.3f")) {
-                    r_vignette.SetFloat(vignette);
-                }
-
-                bool dithering = r_dithering.GetBool();
-                if (ImGui::Checkbox("Dithering", &dithering)) {
-                    r_dithering.SetBool(dithering);
-                }
             }
 
             ImGui::EndTabItem();
