@@ -28,36 +28,32 @@
 #include "imgui/imgui.h"
 #endif
 
-static constexpr float DefaultWaterDensity = 1000.0f;
-static constexpr float BuoyantBoxRelativeDensity = 0.5f;
-
 void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
     app.SetCameraPitchYaw(10, 145);
-    app.SetCameraDistance(150.0f);
+    app.SetCameraDistance(80.0f);
 
     struct BoxInitDesc {
         BE1::Vec3 position;
         BE1::Vec3 size;
+        float mass;
+        float relativeDensity;
     };
 
     static const BoxInitDesc boxInitDescs[BoxCount] = {
-        { BE1::Vec3(-10.0f, -10.0f, 20.0f), BE1::Vec3(15.0f) },
-        { BE1::Vec3(10.0f, -10.0f, 20.0f), BE1::Vec3(15.0f) },
-        { BE1::Vec3(10.0f, 10.0f, 20.0f), BE1::Vec3(15.0f) },
-        { BE1::Vec3(-10.0f, 10.0f, 20.0f), BE1::Vec3(15.0f) },
-        { BE1::Vec3(0.0f, 0.0f, 40.0f), BE1::Vec3(15.0f) }
+        { BE1::Vec3(-5.0f, -5.0f, 20.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f },
+        { BE1::Vec3(5.0f, -5.0f, 20.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f },
+        { BE1::Vec3(5.0f, 5.0f, 20.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f },
+        { BE1::Vec3(-5.0f, 5.0f, 20.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f },
+        { BE1::Vec3(0.0f, 0.0f, 40.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f }
     };
 
     boxMesh = meshManager.GetMesh("_defaultBoxMesh");
     boxMaterial = materialManager.GetSingleTextureMaterial("Data/Test/Roman_Stone_Floor.dds");
     const BE1::AABB boxMeshAABB = boxMesh->GetAABB();
-    const BE1::PhysBuoyancySurfaceProvider *surfaceProvider = physicsWorld->GetBuoyancySurfaceProvider();
-    const float providerFluidDensity = surfaceProvider ? surfaceProvider->GetFluidDensity() : 0.0f;
-    const float fluidDensity = providerFluidDensity > 0.0f ? providerFluidDensity : DefaultWaterDensity;
 
     for (uint32_t boxIndex = 0; boxIndex < BoxCount; ++boxIndex) {
         const BoxInitDesc &initDesc = boxInitDescs[boxIndex];
@@ -83,7 +79,7 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
         rigidBodyDesc.type = BE1::PhysCollidable::Type::RigidBody;
         rigidBodyDesc.origin = boxOrigin;
         rigidBodyDesc.axis = BE1::Mat3::identity;
-        rigidBodyDesc.mass = box.collider->GetVolume() * fluidDensity * BuoyantBoxRelativeDensity;
+        rigidBodyDesc.mass = initDesc.mass;
         rigidBodyDesc.restitution = 0.02f;
         rigidBodyDesc.friction = 1.0f;
         rigidBodyDesc.enableCCD = false;
@@ -94,6 +90,8 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
         rigidBodyDesc.character = false;
         rigidBodyDesc.kinematic = false;
         rigidBodyDesc.enableBuoyancy = true;
+        rigidBodyDesc.buoyancyForceMode = BE1::PhysBuoyancyForceMode::RelativeDensity;
+        rigidBodyDesc.buoyancyRelativeDensity = initDesc.relativeDensity;
         rigidBodyDesc.buoyancyPontoonSettings.voxelResolution = 2;
         rigidBodyDesc.buoyancyPontoonSettings.subsamplesPerAxis = 2;
 

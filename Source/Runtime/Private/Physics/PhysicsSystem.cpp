@@ -187,6 +187,14 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
 
             PhysRigidBody *rb = BE_NEW PhysRigidBody(rigidBody, totalCentroid);
             if (desc.enableBuoyancy) {
+                float relativeDensity = desc.buoyancyRelativeDensity;
+                if (desc.buoyancyForceMode == PhysBuoyancyForceMode::RelativeDensity && relativeDensity <= 0.0f) {
+                    BE_WARNLOG("PhysicsSystem::CreateCollidable: buoyancyRelativeDensity must be greater than zero; using 1.0\n");
+                    relativeDensity = 1.0f;
+                }
+
+                rb->SetBuoyancyProperties(desc.buoyancyForceMode, relativeDensity);
+
                 // shape 기반으로 복셀화시켜서 부력용 폰툰을 생성한다.
                 Array<PhysBuoyancyPontoon> buoyancyPontoons;
                 if (GenerateRigidBodyBuoyancyPontoons(desc, buoyancyPontoons)) {

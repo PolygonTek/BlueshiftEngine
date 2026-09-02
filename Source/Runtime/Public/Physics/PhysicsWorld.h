@@ -63,7 +63,10 @@ public:
     virtual ~PhysBuoyancySurfaceProvider() = default;
 
     virtual bool            IsActive() const = 0;
+
     virtual uint32_t        GetMaxQueryCount() const = 0;
+
+                            /// 물의 질량 밀도 (kg/m^3) 를 리턴한다. 예를 들어 현실의 물은 약 1000.0f 이고 공기는 약 1.225f 이다.
     virtual float           GetFluidDensity() const = 0;
 
                             /// 수면 변위를 포함하는 world Z 범위를 반환한다.
@@ -104,6 +107,8 @@ struct PhysCollidableDesc {
     bool                    character;
     bool                    kinematic;
     bool                    enableBuoyancy = false;
+    PhysBuoyancyForceMode::Enum buoyancyForceMode = PhysBuoyancyForceMode::PhysicalDensity;
+    float                   buoyancyRelativeDensity = 1.0f; ///< 물체 밀도 / 유체 밀도. RelativeDensity 모드에서는 정지 상태의 목표 침수율에 해당한다.
     PhysBuoyancyPontoonSettings buoyancyPontoonSettings;
 };
 

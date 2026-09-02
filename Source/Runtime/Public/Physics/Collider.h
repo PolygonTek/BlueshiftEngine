@@ -25,6 +25,13 @@ BE_NAMESPACE_BEGIN
 class Mesh;
 class CollisionMaterial;
 
+struct PhysBuoyancyForceMode {
+    enum Enum {
+        PhysicalDensity,    ///< Surface provider 의 실제 유체 밀도를 사용한다.
+        RelativeDensity     ///< 상대 밀도로 목표 침수율을 결정한다.
+    };
+};
+
 struct PhysBuoyancyPontoonSettings {
     uint32_t                voxelResolution = 2;        ///< Collider AABB 의 가장 긴 축의 voxel 개수
     uint32_t                subsamplesPerAxis = 2;      ///< 각 voxel 의 점유율을 추정하기 위해 voxel 내부의 각 축 별로 배치할 sample 개수

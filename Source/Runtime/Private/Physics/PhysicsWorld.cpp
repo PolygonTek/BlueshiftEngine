@@ -397,7 +397,7 @@ void PhysicsWorld::ApplyBuoyancyForces() {
     const float fluidDensity = buoyancySurfaceProvider->GetFluidDensity();
     const Vec3 gravity = GetGravity();
     const float gravityMagnitude = gravity.Length();
-    if (fluidDensity <= 0.0f || gravityMagnitude <= 0.0f) {
+    if (gravityMagnitude <= 0.0f) {
         return;
     }
 
@@ -412,6 +412,19 @@ void PhysicsWorld::ApplyBuoyancyForces() {
         const float bodyMass = rigidBody->GetMass();
         const float bodyVolume = rigidBody->GetBuoyancyVolume();
         if (bodyMass <= 0.0f || bodyVolume <= 0.0f) {
+            continue;
+        }
+
+        float buoyancyDensity = fluidDensity;
+        if (rigidBody->GetBuoyancyForceMode() == PhysBuoyancyForceMode::RelativeDensity) {
+            const float relativeDensity = rigidBody->GetBuoyancyRelativeDensity();
+            if (relativeDensity <= 0.0f) {
+                continue;
+            }
+
+            // Rigid body mass 와 목표 침수율로 이 body 에 적용할 유효 유체 밀도를 계산한다.
+            buoyancyDensity = bodyMass / (bodyVolume * relativeDensity);
+        } else if (buoyancyDensity <= 0.0f) {
             continue;
         }
 
@@ -474,9 +487,9 @@ void PhysicsWorld::ApplyBuoyancyForces() {
                 continue;
             }
 
-            const float buoyancyForce = fluidDensity * pontoon.volume * submergedFraction * gravityMagnitude;
+            const float buoyancyForce = buoyancyDensity * pontoon.volume * submergedFraction * gravityMagnitude;
             const float waterplaneArea = pontoon.volume / (2.0f * halfExtent);
-            const float springConstant = fluidDensity * gravityMagnitude * waterplaneArea;
+            const float springConstant = buoyancyDensity * gravityMagnitude * waterplaneArea;
             const float pontoonMass = bodyMass * pontoon.volume / bodyVolume;
             const float dampingCoefficient = 2.0f * Math::Sqrt(springConstant * pontoonMass) * BuoyancyDampingRatio;
             const Vec3 pointVelocity = linearVelocity + angularVelocity.Cross(worldCenter - centerOfMass);

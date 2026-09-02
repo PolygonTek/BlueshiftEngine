@@ -92,8 +92,11 @@ public:
     const PhysBuoyancyPontoon &GetBuoyancyPontoon(int index) const { return buoyancyPontoons[index]; }
     const Array<PhysBuoyancyPontoon> &GetBuoyancyPontoons() const { return buoyancyPontoons; }
     float                   GetBuoyancyVolume() const { return buoyancyVolume; }
+    PhysBuoyancyForceMode::Enum GetBuoyancyForceMode() const { return buoyancyForceMode; }
+    float                   GetBuoyancyRelativeDensity() const { return buoyancyRelativeDensity; }
 
 private:
+    void                    SetBuoyancyProperties(PhysBuoyancyForceMode::Enum forceMode, float relativeDensity);
     void                    SetBuoyancyPontoons(Array<PhysBuoyancyPontoon> &&pontoons);
 
     btRigidBody *           GetRigidBody();
@@ -102,6 +105,8 @@ private:
     PhysVehicle *           vehiclePtr = nullptr;
     Array<PhysBuoyancyPontoon> buoyancyPontoons;
     float                   buoyancyVolume = 0.0f;
+    PhysBuoyancyForceMode::Enum buoyancyForceMode = PhysBuoyancyForceMode::PhysicalDensity;
+    float                   buoyancyRelativeDensity = 1.0f;
 };
 
 BE_NAMESPACE_END
