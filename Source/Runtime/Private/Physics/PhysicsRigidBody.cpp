@@ -25,9 +25,10 @@ PhysRigidBody::PhysRigidBody(btRigidBody *rigidBody, const Vec3 &centroid) :
 PhysRigidBody::~PhysRigidBody() {
 }
 
-void PhysRigidBody::SetBuoyancyProperties(PhysBuoyancyForceMode::Enum forceMode, float relativeDensity) {
+void PhysRigidBody::SetBuoyancyProperties(PhysBuoyancyForceMode::Enum forceMode, float relativeDensity, float dragCoefficient) {
     buoyancyForceMode = forceMode;
     buoyancyRelativeDensity = relativeDensity;
+    buoyancyDragCoefficient = dragCoefficient;
 }
 
 void PhysRigidBody::SetBuoyancyPontoons(Array<PhysBuoyancyPontoon> &&pontoons) {

@@ -109,6 +109,7 @@ struct PhysCollidableDesc {
     bool                    enableBuoyancy = false;
     PhysBuoyancyForceMode::Enum buoyancyForceMode = PhysBuoyancyForceMode::PhysicalDensity;
     float                   buoyancyRelativeDensity = 1.0f; ///< 물체 밀도 / 유체 밀도. RelativeDensity 모드에서는 정지 상태의 목표 침수율에 해당한다.
+    float                   buoyancyDragCoefficient = 1.0f; ///< 수평 이동과 회전에 적용할 무차원 유체 항력 계수
     PhysBuoyancyPontoonSettings buoyancyPontoonSettings;
 };
 

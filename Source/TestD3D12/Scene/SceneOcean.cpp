@@ -41,14 +41,16 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
         BE1::Vec3 size;
         float mass;
         float relativeDensity;
+        float dragCoefficient;
     };
 
     static const BoxInitDesc boxInitDescs[BoxCount] = {
-        { BE1::Vec3(-5.0f, -5.0f, 20.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f },
-        { BE1::Vec3(5.0f, -5.0f, 20.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f },
-        { BE1::Vec3(5.0f, 5.0f, 20.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f },
-        { BE1::Vec3(-5.0f, 5.0f, 20.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f },
-        { BE1::Vec3(0.0f, 0.0f, 40.0f), BE1::Vec3(5.0f), 1000.0f, 0.65f }
+        { BE1::Vec3(-5.0f, -5.0f, 20.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
+        { BE1::Vec3(5.0f, -5.0f, 20.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
+        { BE1::Vec3(5.0f, 5.0f, 20.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
+        { BE1::Vec3(-5.0f, 5.0f, 20.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
+        { BE1::Vec3(0.0f, 0.0f, 30.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
+        { BE1::Vec3(0.0f, 0.0f, 40.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f }
     };
 
     boxMesh = meshManager.GetMesh("_defaultBoxMesh");
@@ -92,6 +94,7 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
         rigidBodyDesc.enableBuoyancy = true;
         rigidBodyDesc.buoyancyForceMode = BE1::PhysBuoyancyForceMode::RelativeDensity;
         rigidBodyDesc.buoyancyRelativeDensity = initDesc.relativeDensity;
+        rigidBodyDesc.buoyancyDragCoefficient = initDesc.dragCoefficient;
         rigidBodyDesc.buoyancyPontoonSettings.voxelResolution = 2;
         rigidBodyDesc.buoyancyPontoonSettings.subsamplesPerAxis = 2;
 

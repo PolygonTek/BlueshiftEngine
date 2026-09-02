@@ -94,9 +94,10 @@ public:
     float                   GetBuoyancyVolume() const { return buoyancyVolume; }
     PhysBuoyancyForceMode::Enum GetBuoyancyForceMode() const { return buoyancyForceMode; }
     float                   GetBuoyancyRelativeDensity() const { return buoyancyRelativeDensity; }
+    float                   GetBuoyancyDragCoefficient() const { return buoyancyDragCoefficient; }
 
 private:
-    void                    SetBuoyancyProperties(PhysBuoyancyForceMode::Enum forceMode, float relativeDensity);
+    void                    SetBuoyancyProperties(PhysBuoyancyForceMode::Enum forceMode, float relativeDensity, float dragCoefficient);
     void                    SetBuoyancyPontoons(Array<PhysBuoyancyPontoon> &&pontoons);
 
     btRigidBody *           GetRigidBody();
@@ -107,6 +108,7 @@ private:
     float                   buoyancyVolume = 0.0f;
     PhysBuoyancyForceMode::Enum buoyancyForceMode = PhysBuoyancyForceMode::PhysicalDensity;
     float                   buoyancyRelativeDensity = 1.0f;
+    float                   buoyancyDragCoefficient = 1.0f;
 };
 
 BE_NAMESPACE_END

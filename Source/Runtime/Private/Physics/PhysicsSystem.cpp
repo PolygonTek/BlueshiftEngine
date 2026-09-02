@@ -193,7 +193,13 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
                     relativeDensity = 1.0f;
                 }
 
-                rb->SetBuoyancyProperties(desc.buoyancyForceMode, relativeDensity);
+                float dragCoefficient = desc.buoyancyDragCoefficient;
+                if (dragCoefficient < 0.0f) {
+                    BE_WARNLOG("PhysicsSystem::CreateCollidable: buoyancyDragCoefficient must not be negative; using 0.0\n");
+                    dragCoefficient = 0.0f;
+                }
+
+                rb->SetBuoyancyProperties(desc.buoyancyForceMode, relativeDensity, dragCoefficient);
 
                 // shape 기반으로 복셀화시켜서 부력용 폰툰을 생성한다.
                 Array<PhysBuoyancyPontoon> buoyancyPontoons;

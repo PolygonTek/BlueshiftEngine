@@ -381,7 +381,8 @@ void PhysicsWorld::ClearActiveBuoyancyQueries() {
 // 2. 수면 근처 pontoon 은 query 결과의 위치와 normal 로 침수율을 계산한다.
 // 3. 침수 체적에 비례하는 아르키메데스 부력을 계산한다.
 // 4. pontoon 위치의 속도를 이용해 수직 운동에 대한 감쇠력을 계산한다.
-// 5. 두 힘을 합산해 중력 반대 방향으로 pontoon 중심에 적용한다.
+// 5. 수평 지점 속도와 이동 방향의 투영 면적으로 유체 항력을 계산한다.
+// 6. 계산한 힘들을 pontoon 중심에 적용해 수평 이동과 회전을 함께 감쇠한다.
 void PhysicsWorld::ApplyBuoyancyForces() {
     if (!buoyancySurfaceProvider || !buoyancySurfaceProvider->IsActive()) {
         return;
@@ -433,6 +434,7 @@ void PhysicsWorld::ApplyBuoyancyForces() {
         const Vec3 centerOfMass = bodyOrigin + bodyAxis * rigidBody->centroid;
         const Vec3 linearVelocity = rigidBody->GetLinearVelocity();
         const Vec3 angularVelocity = rigidBody->GetAngularVelocity();
+        const float dragCoefficient = rigidBody->GetBuoyancyDragCoefficient();
         const Array<PhysBuoyancyPontoon> &pontoons = rigidBody->GetBuoyancyPontoons();
 
         assert(buoyantBody.activeQueries.Count() == pontoons.Count());
@@ -493,11 +495,27 @@ void PhysicsWorld::ApplyBuoyancyForces() {
             const float pontoonMass = bodyMass * pontoon.volume / bodyVolume;
             const float dampingCoefficient = 2.0f * Math::Sqrt(springConstant * pontoonMass) * BuoyancyDampingRatio;
             const Vec3 pointVelocity = linearVelocity + angularVelocity.Cross(worldCenter - centerOfMass);
-            const float dampingForce = -dampingCoefficient * pointVelocity.Dot(buoyancyDirection);
-            const float forceMagnitude = Max(buoyancyForce + dampingForce, 0.0f);
+            const float verticalSpeed = pointVelocity.Dot(buoyancyDirection);
+            const float dampingForce = -dampingCoefficient * verticalSpeed;
+            const float verticalForceMagnitude = Max(buoyancyForce + dampingForce, 0.0f);
 
-            if (forceMagnitude > 0.0f) {
-                rigidBody->ApplyForce(buoyancyDirection * forceMagnitude, worldCenter);
+            Vec3 dragForce = Vec3::zero;
+            if (dragCoefficient > 0.0f) {
+                const Vec3 horizontalVelocity = pointVelocity - buoyancyDirection * verticalSpeed;
+                const float horizontalSpeed = horizontalVelocity.Length();
+                if (horizontalSpeed > VECTOR_EPSILON) {
+                    const Vec3 dragDirection = horizontalVelocity / horizontalSpeed;
+                    const float dragHalfExtent = worldPontoon.ProjectionRadius(dragDirection);
+                    if (dragHalfExtent > VECTOR_EPSILON) {
+                        const float submergedArea = pontoon.volume * submergedFraction / (2.0f * dragHalfExtent);
+                        const float dragMagnitude = 0.5f * buoyancyDensity * dragCoefficient * submergedArea * horizontalSpeed * horizontalSpeed;
+                        dragForce = -dragDirection * dragMagnitude;
+                    }
+                }
+            }
+
+            if (verticalForceMagnitude > 0.0f || dragForce.LengthSqr() > 0.0f) {
+                rigidBody->ApplyForce(buoyancyDirection * verticalForceMagnitude + dragForce, worldCenter);
             }
         }
     }
@@ -519,7 +537,7 @@ void PhysicsWorld::UpdateBuoyancyQueries() {
     float minimumSurfaceHeight;
     float maximumSurfaceHeight;
     const uint32_t maxQueryCount = buoyancySurfaceProvider->GetMaxQueryCount();
-    if (maxQueryCount == 0 || buoyancySurfaceProvider->GetFluidDensity() <= 0.0f ||
+    if (maxQueryCount == 0 ||
         !buoyancySurfaceProvider->GetSurfaceHeightRange(minimumSurfaceHeight, maximumSurfaceHeight) ||
         minimumSurfaceHeight > maximumSurfaceHeight || GetGravity().LengthSqr() <= 0.0f) {
         buoyancySurfaceProvider->SubmitQueries(nullptr, 0);

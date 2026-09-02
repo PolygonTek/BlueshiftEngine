@@ -39,7 +39,7 @@ public:
 #endif
 
 private:
-    static constexpr uint32_t   BoxCount = 5;
+    static constexpr uint32_t   BoxCount = 6;
 
     struct Box {
         GameObject              gameObject;
