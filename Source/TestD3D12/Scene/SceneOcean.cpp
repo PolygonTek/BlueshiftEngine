@@ -14,6 +14,8 @@
 
 #include "Precompiled.h"
 #include "App.h"
+#include "Math/OBB.h"
+#include "Physics/Physics.h"
 #include "Render/RenderSystem.h"
 #include "Render/Frontend/EnvironmentLight.h"
 #include "Render/Frontend/RenderWorld.h"
@@ -26,9 +28,11 @@
 #include "imgui/imgui.h"
 #endif
 
+static constexpr float DefaultWaterDensity = 1000.0f;
+static constexpr float BuoyantBoxRelativeDensity = 0.5f;
+
 void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
-    this->physicsWorld = physicsWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
@@ -36,29 +40,33 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     app.SetCameraDistance(150.0f);
 
     struct BoxInitDesc {
-        BE1::Vec2 queryPosition;
+        BE1::Vec3 position;
         BE1::Vec3 size;
     };
+
     static const BoxInitDesc boxInitDescs[BoxCount] = {
-        { BE1::Vec2(-20.0f, -20.0f), BE1::Vec3(2.0f) },
-        { BE1::Vec2(20.0f, -20.0f), BE1::Vec3(2.0f) },
-        { BE1::Vec2(20.0f, 20.0f), BE1::Vec3(2.0f) },
-        { BE1::Vec2(-20.0f, 20.0f), BE1::Vec3(2.0f) },
-        { BE1::Vec2(0.0f, 0.0f), BE1::Vec3(20.0f) }
+        { BE1::Vec3(-10.0f, -10.0f, 20.0f), BE1::Vec3(15.0f) },
+        { BE1::Vec3(10.0f, -10.0f, 20.0f), BE1::Vec3(15.0f) },
+        { BE1::Vec3(10.0f, 10.0f, 20.0f), BE1::Vec3(15.0f) },
+        { BE1::Vec3(-10.0f, 10.0f, 20.0f), BE1::Vec3(15.0f) },
+        { BE1::Vec3(0.0f, 0.0f, 40.0f), BE1::Vec3(15.0f) }
     };
 
     boxMesh = meshManager.GetMesh("_defaultBoxMesh");
-    boxMaterial = materialManager.GetSingleTextureMaterial("Data/Test/Brick_Wall_Worn.dds");
+    boxMaterial = materialManager.GetSingleTextureMaterial("Data/Test/Roman_Stone_Floor.dds");
+    const BE1::AABB boxMeshAABB = boxMesh->GetAABB();
+    const BE1::PhysBuoyancySurfaceProvider *surfaceProvider = physicsWorld->GetBuoyancySurfaceProvider();
+    const float providerFluidDensity = surfaceProvider ? surfaceProvider->GetFluidDensity() : 0.0f;
+    const float fluidDensity = providerFluidDensity > 0.0f ? providerFluidDensity : DefaultWaterDensity;
 
-    for (uint32_t queryId = 0; queryId < BoxCount; ++queryId) {
-        const BoxInitDesc &initDesc = boxInitDescs[queryId];
-        Box &box = boxes[queryId];
-        box.queryPosition = initDesc.queryPosition;
+    for (uint32_t boxIndex = 0; boxIndex < BoxCount; ++boxIndex) {
+        const BoxInitDesc &initDesc = boxInitDescs[boxIndex];
+
+        Box &box = boxes[boxIndex];
         box.size = initDesc.size;
-        box.gameObject.worldMatrix.SetTRS(
-            BE1::Vec3(initDesc.queryPosition.x, initDesc.queryPosition.y, oceanDesc.surface.height),
-            BE1::Mat3::identity,
-            initDesc.size);
+
+        const BE1::Vec3 boxOrigin = initDesc.position;
+        box.gameObject.worldMatrix.SetTRS(boxOrigin, BE1::Mat3::identity, initDesc.size);
 
         RenderObject::Desc boxDesc;
         boxDesc.worldMatrix = box.gameObject.worldMatrix;
@@ -67,6 +75,36 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
         boxDesc.materials.SetCount(1);
         boxDesc.materials[0] = boxMaterial;
         box.gameObject.renderObjectHandle = renderWorld->AddRenderObject(boxDesc);
+
+        box.collider = BE1::colliderManager.AllocUnnamedCollider();
+        box.collider->CreateBox(boxMeshAABB.Center() * box.size, boxMeshAABB.Extents() * box.size);
+
+        BE1::PhysCollidableDesc rigidBodyDesc = {};
+        rigidBodyDesc.type = BE1::PhysCollidable::Type::RigidBody;
+        rigidBodyDesc.origin = boxOrigin;
+        rigidBodyDesc.axis = BE1::Mat3::identity;
+        rigidBodyDesc.mass = box.collider->GetVolume() * fluidDensity * BuoyantBoxRelativeDensity;
+        rigidBodyDesc.restitution = 0.02f;
+        rigidBodyDesc.friction = 1.0f;
+        rigidBodyDesc.enableCCD = false;
+        rigidBodyDesc.rollingFriction = 1.0f;
+        rigidBodyDesc.spinningFriction = 1.0f;
+        rigidBodyDesc.linearDamping = 0.04f;
+        rigidBodyDesc.angularDamping = 0.02f;
+        rigidBodyDesc.character = false;
+        rigidBodyDesc.kinematic = false;
+        rigidBodyDesc.enableBuoyancy = true;
+        rigidBodyDesc.buoyancyPontoonSettings.voxelResolution = 2;
+        rigidBodyDesc.buoyancyPontoonSettings.subsamplesPerAxis = 2;
+
+        BE1::PhysShapeDesc shapeDesc = {};
+        shapeDesc.localOrigin = BE1::Vec3::zero;
+        shapeDesc.localAxis = BE1::Mat3::identity;
+        shapeDesc.collider = box.collider;
+        rigidBodyDesc.shapes.Append(shapeDesc);
+
+        box.rigidBody = static_cast<BE1::PhysRigidBody *>(BE1::physicsSystem.CreateCollidable(rigidBodyDesc));
+        box.rigidBody->AddToWorld(physicsWorld);
     }
 
     oceanAdded = renderWorld->AddOceanSurface(oceanDesc);
@@ -102,13 +140,16 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
 }
 
 void SceneOcean::Shutdown() {
-    if (!renderWorld) {
-        physicsWorld = nullptr;
-        return;
-    }
-
     for (Box &box : boxes) {
-        if (box.gameObject.renderObjectHandle >= 0) {
+        if (box.rigidBody) {
+            BE1::physicsSystem.DestroyCollidable(box.rigidBody);
+            box.rigidBody = nullptr;
+        }
+        if (box.collider) {
+            BE1::colliderManager.ReleaseCollider(box.collider, true);
+            box.collider = nullptr;
+        }
+        if (renderWorld && box.gameObject.renderObjectHandle >= 0) {
             renderWorld->RemoveRenderObject(box.gameObject.renderObjectHandle);
             box.gameObject.renderObjectHandle = -1;
         }
@@ -116,22 +157,21 @@ void SceneOcean::Shutdown() {
     boxMaterial.reset();
     boxMesh.reset();
 
-    if (directionalLight.renderLightHandle >= 0) {
+    if (renderWorld && directionalLight.renderLightHandle >= 0) {
         renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
         directionalLight.renderLightHandle = -1;
     }
 
-    if (environmentLightAdded) {
+    if (renderWorld && environmentLightAdded) {
         renderWorld->RemoveEnvironmentLight();
         environmentLightAdded = false;
     }
 
-    if (oceanAdded) {
+    if (renderWorld && oceanAdded) {
         renderWorld->RemoveOceanSurface();
         oceanAdded = false;
     }
 
-    physicsWorld = nullptr;
     renderWorld = nullptr;
 }
 
@@ -139,45 +179,40 @@ void SceneOcean::Update(uint64_t elapsedUsec) {
     PROFILER_CPU_SCOPED_EVENT("SceneOcean::Update");
 
     (void)elapsedUsec;
-    UpdateSurfaceQueries();
-}
-
-void SceneOcean::UpdateSurfaceQueries() {
-    if (!oceanAdded) {
-        return;
-    }
-
-    GpuOceanSurface &gpuOceanSurface = renderSystem->GetGpuOceanSurface();
-
-    for (uint32_t queryId = 0; queryId < BoxCount; ++queryId) {
-        OceanSurfaceQueryResult result;
-        if (!gpuOceanSurface.GetQueryResult(queryId, result)) {
+    for (Box &box : boxes) {
+        if (!box.rigidBody) {
             continue;
         }
 
-        const BE1::Vec3 surfacePosition(result.surfacePosition.x, result.surfacePosition.y, result.surfacePosition.z);
-        const BE1::Vec3 surfaceNormal(result.surfaceNormal.x, result.surfaceNormal.y, result.surfaceNormal.z);
-
-        BE1::Vec3 surfaceTangent;
-        BE1::Vec3 surfaceBitangent;
-        surfaceNormal.OrthogonalBasis(surfaceTangent, surfaceBitangent);
-        const BE1::Mat3 surfaceAxis(surfaceTangent, surfaceBitangent, surfaceNormal);
-
-        Box &box = boxes[queryId];
-        box.gameObject.worldMatrix.SetTRS(surfacePosition, surfaceAxis, box.size);
+        box.gameObject.worldMatrix.SetTRS(box.rigidBody->GetOrigin(), box.rigidBody->GetAxis(), box.size);
         if (box.gameObject.renderObjectHandle >= 0) {
             renderWorld->UpdateRenderObjectTransform(box.gameObject.renderObjectHandle, box.gameObject.worldMatrix);
         }
     }
 
-    OceanSurfaceQueryInput queries[BoxCount] = {};
-    for (uint32_t queryId = 0; queryId < BoxCount; ++queryId) {
-        const Box &box = boxes[queryId];
-        queries[queryId].worldPositionXY = float2(box.queryPosition.x, box.queryPosition.y);
-        queries[queryId].sampleDiameter = BE1::Max(box.size.x, box.size.y);
-        queries[queryId].queryId = queryId;
+    if (showPontoons) {
+        DrawBuoyancyPontoons();
     }
-    renderWorld->SetOceanSurfaceQueries(queries, BoxCount);
+}
+
+void SceneOcean::DrawBuoyancyPontoons() const {
+    renderWorld->SetDebugColor(BE1::Color4::cyan, BE1::Color4(BE1::Color4::cyan.ToColor3(), 0.08f));
+
+    for (const Box &box : boxes) {
+        if (!box.rigidBody) {
+            continue;
+        }
+
+        const BE1::Vec3 bodyOrigin = box.rigidBody->GetOrigin();
+        const BE1::Mat3 bodyAxis = box.rigidBody->GetAxis();
+        for (const BE1::PhysBuoyancyPontoon &pontoon : box.rigidBody->GetBuoyancyPontoons()) {
+            const BE1::Vec3 worldCenter = bodyOrigin + bodyAxis * pontoon.localCenter;
+            const BE1::Mat3 worldAxis = bodyAxis * pontoon.localAxis;
+            renderWorld->DrawDebugOBB(BE1::OBB(worldCenter, pontoon.localExtents, worldAxis), true, false);
+        }
+    }
+
+    renderWorld->SetDebugColor(BE1::Color4::zero, BE1::Color4::zero);
 }
 
 void SceneOcean::UpdateDirectionalLightDirection() {
@@ -493,6 +528,8 @@ void SceneOcean::BuildImGui() {
     }
 
     if (roundedCollapsingHeader("Debug##OceanDebugHeader")) {
+        ImGui::Checkbox("Show pontoons", &showPontoons);
+
         enum class DebugTexture : int {
             InitialSpectrum,
             Fields,

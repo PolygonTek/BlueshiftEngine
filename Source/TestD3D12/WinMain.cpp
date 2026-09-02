@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Event.h"
+#include "Core/Object.h"
+#include "Core/Signal.h"
 #include "Platform/PlatformSystem.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
@@ -209,6 +212,9 @@ static BOOL InitInstance(int nCmdShow, LPTSTR lpCmdLine) {
     basePath.AppendPath("../../..");
     basePath.CleanPath();
     BE1::Engine::InitBase(4096, basePath, SystemLog, SystemError);
+    BE1::EventSystem::Init();
+    BE1::SignalSystem::Init();
+    BE1::Object::Init();
 
     // search path 설정
     BE1::Str searchPath = basePath;
@@ -266,6 +272,9 @@ static void ShutdownInstance() {
         BE1::fileSystem.CloseFile(file);
     }
 
+    BE1::Object::Shutdown();
+    BE1::EventSystem::Shutdown();
+    BE1::SignalSystem::Shutdown();
     BE1::Engine::ShutdownBase();
 }
 

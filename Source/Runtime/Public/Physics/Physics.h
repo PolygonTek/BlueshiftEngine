@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "Collider.h"
 #include "PhysicsCollisionListener.h"
 #include "PhysicsCollidable.h"
 #include "PhysicsRigidBody.h"

@@ -28,6 +28,7 @@ class btDynamicsWorld;
 
 #include "Core/SignalObject.h"
 #include "Containers/HashTable.h"
+#include "Collider.h"
 #include "PhysicsCollidable.h"
 #include "PhysicsCollisionListener.h"
 #include "PhysicsConstraint.h"
@@ -44,6 +45,34 @@ struct PhysShapeDesc {
     Vec3                    localOrigin;        // local position in system units
     Mat3                    localAxis;
     Collider *              collider;
+};
+
+struct PhysBuoyancySurfaceQuery {
+    uint32_t                queryId;            ///< Provider 가 결과에 그대로 연결해야 하는 opaque ID
+    Vec3                    worldPosition;
+    float                   sampleDiameter;
+};
+
+struct PhysBuoyancySurfaceQueryResult {
+    Vec3                    surfacePosition;
+    Vec3                    surfaceNormal;
+};
+
+class PhysBuoyancySurfaceProvider {
+public:
+    virtual ~PhysBuoyancySurfaceProvider() = default;
+
+    virtual bool            IsActive() const = 0;
+    virtual uint32_t        GetMaxQueryCount() const = 0;
+    virtual float           GetFluidDensity() const = 0;
+
+                            /// 수면 변위를 포함하는 world Z 범위를 반환한다.
+    virtual bool            GetSurfaceHeightRange(float &minimumHeight, float &maximumHeight) const = 0;
+
+                            /// queryCount 가 0이면 이전 query batch 를 비운다.
+    virtual bool            SubmitQueries(const PhysBuoyancySurfaceQuery *queries, uint32_t queryCount) = 0;
+
+    virtual bool            GetQueryResult(uint32_t queryId, PhysBuoyancySurfaceQueryResult &result) const = 0;
 };
 
 struct PhysCollidableDesc {
@@ -74,6 +103,8 @@ struct PhysCollidableDesc {
     float                   angularDamping;
     bool                    character;
     bool                    kinematic;
+    bool                    enableBuoyancy = false;
+    PhysBuoyancyPontoonSettings buoyancyPontoonSettings;
 };
 
 struct PhysConstraintDesc {
@@ -162,6 +193,9 @@ public:
     float                   GetAirDensity() const;
     void                    SetAirDensity(float airDensity);
 
+    PhysBuoyancySurfaceProvider *GetBuoyancySurfaceProvider() const { return buoyancySurfaceProvider; }
+    void                    SetBuoyancySurfaceProvider(PhysBuoyancySurfaceProvider *provider);
+
     int                     GetCollisionFilterMask(int bit) const;
     void                    SetCollisionFilterMask(int bit, int mask);
 
@@ -200,6 +234,18 @@ public:
     static const SignalDef  SIG_PostStep;
 
 private:
+    struct BuoyantRigidBody {
+        PhysRigidBody *     rigidBody = nullptr;
+        uint32_t            firstQueryId = 0;
+        Array<uint8_t>      activeQueries;
+    };
+
+    void                    AddBuoyantRigidBody(PhysRigidBody *rigidBody);
+    void                    RemoveBuoyantRigidBody(PhysRigidBody *rigidBody);
+    void                    ClearActiveBuoyancyQueries();
+    void                    ApplyBuoyancyForces();
+    void                    UpdateBuoyancyQueries();
+
     void                    ProcessCollision();
     void                    OverlapShape(btCollisionObject *collisionObject, int filterGroup, int filterMask, Array<PhysCollidable *> &colliders) const;
     bool                    ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const;
@@ -224,6 +270,10 @@ private:
     btGhostPairCallback *   ghostPairCallback = nullptr;
     //btOverlapFilterCallback *filterCallback = nullptr;
     btDynamicsWorld *       dynamicsWorld = nullptr;
+    PhysBuoyancySurfaceProvider *buoyancySurfaceProvider = nullptr;
+    Array<BuoyantRigidBody> buoyantRigidBodies;
+    Array<PhysBuoyancySurfaceQuery> buoyancyQueries;
+    uint64_t                nextBuoyancyQueryId = 0;
 };
 
 BE_NAMESPACE_END

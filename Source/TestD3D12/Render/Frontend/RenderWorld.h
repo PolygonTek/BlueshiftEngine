@@ -18,6 +18,7 @@
 #include "OceanSurface.h"
 #include "RenderLight.h"
 #include "RenderObject.h"
+#include "Physics/PhysicsWorld.h"
 #include "Render/Mesh/GuiMesh.h"
 #include "RenderPassBuilder.h"
 #include "Render/DebugDrawPipeline.h"
@@ -65,7 +66,7 @@ struct BE1::enable_bitmask_operators<DrawTextFlag> {
 ---------------------------------------------------------------------------------------------------
 */
 
-class RenderWorld {
+class RenderWorld : public BE1::PhysBuoyancySurfaceProvider {
     friend class ProbeBakeSystem;
 
 public:
@@ -128,6 +129,13 @@ public:
     bool                        UpdateOceanSurface(const OceanSurface::Desc &desc);
     void                        RemoveOceanSurface();
     bool                        SetOceanSurfaceQueries(const OceanSurfaceQueryInput *queries, uint32_t queryCount);
+
+    virtual bool                IsActive() const override { return hasOceanSurface; }
+    virtual uint32_t            GetMaxQueryCount() const override { return GpuOceanSurface::MaxQueryCount; }
+    virtual float               GetFluidDensity() const override { return 1000.0f; }
+    virtual bool                GetSurfaceHeightRange(float &minimumHeight, float &maximumHeight) const override;
+    virtual bool                SubmitQueries(const BE1::PhysBuoyancySurfaceQuery *queries, uint32_t queryCount) override;
+    virtual bool                GetQueryResult(uint32_t queryId, BE1::PhysBuoyancySurfaceQueryResult &result) const override;
 
     void                        SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial);
 

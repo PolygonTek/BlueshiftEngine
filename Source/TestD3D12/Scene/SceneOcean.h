@@ -22,6 +22,11 @@
 class Material;
 class Mesh;
 
+namespace BE1 {
+    class Collider;
+    class PhysRigidBody;
+}
+
 class SceneOcean : public Scene {
 public:
     void                        Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) override;
@@ -38,15 +43,15 @@ private:
 
     struct Box {
         GameObject              gameObject;
-        BE1::Vec2               queryPosition;
         BE1::Vec3               size;
+        BE1::Collider *         collider = nullptr;
+        BE1::PhysRigidBody *    rigidBody = nullptr;
     };
 
+    void                        DrawBuoyancyPontoons() const;
     void                        UpdateDirectionalLightDirection();
-    void                        UpdateSurfaceQueries();
 
     RenderWorld *               renderWorld = nullptr;
-    BE1::PhysicsWorld *         physicsWorld = nullptr;
     SharedPtr<Mesh>             boxMesh;
     SharedPtr<Material>         boxMaterial;
     Box                         boxes[BoxCount];
@@ -55,6 +60,7 @@ private:
 
     float                       directionalLightAzimuth = 145.0f;
     float                       directionalLightElevation = 35.0f;
+    bool                        showPontoons = false;
     bool                        oceanAdded = false;
     bool                        environmentLightAdded = false;
 };

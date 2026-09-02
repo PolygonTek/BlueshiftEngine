@@ -157,6 +157,12 @@ public:
                         /// all the specified points, but might not be the optimally smallest OBB in terms of volume.
     void                SetFromPoints(const Vec3 *points, int numPoints);
 
+                        /// Returns radius of the OBB projected onto the given axis.
+    float               ProjectionRadius(const Vec3 &axis) const;
+
+                        /// Returns extents of the OBB projected onto the given three axes.
+    Vec3                ProjectionExtents(const Mat3 &axis) const;
+
                         /// Calculates minimum / maximum value by projecting OBB onto the given axis.
     void                ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;
 
@@ -314,23 +320,32 @@ BE_INLINE bool OBB::IsContainPoint(const Vec3 &p) const {
     return true;
 }
 
+BE_INLINE float OBB::ProjectionRadius(const Vec3 &inAxis) const {
+    return Math::Abs(extents[0] * axis[0].Dot(inAxis)) +
+           Math::Abs(extents[1] * axis[1].Dot(inAxis)) +
+           Math::Abs(extents[2] * axis[2].Dot(inAxis));
+}
+
+BE_INLINE Vec3 OBB::ProjectionExtents(const Mat3 &inAxis) const {
+    return Vec3(
+        ProjectionRadius(inAxis[0]),
+        ProjectionRadius(inAxis[1]),
+        ProjectionRadius(inAxis[2]));
+}
+
 BE_INLINE void OBB::ProjectOnAxis(const Vec3 &inAxis, float &outMin, float &outMax) const {
-    float d1 = inAxis.Dot(center);
-    float d2 = Math::Abs(extents[0] * axis[0].Dot(inAxis)) +
-               Math::Abs(extents[1] * axis[1].Dot(inAxis)) +
-               Math::Abs(extents[2] * axis[2].Dot(inAxis));
-    outMin = d1 - d2;
-    outMax = d1 + d2;
+    const float projectedCenter = inAxis.Dot(center);
+    const float projectedRadius = ProjectionRadius(inAxis);
+    outMin = projectedCenter - projectedRadius;
+    outMax = projectedCenter + projectedRadius;
 }
 
 BE_INLINE void OBB::ProjectOnAxis(const Mat3 &inAxis, AABB &outMinMaxs) const {
     for (int i = 0; i < 3; i++) {
-        float d1 = inAxis[i].Dot(center);
-        float d2 = Math::Abs(extents[0] * axis[0].Dot(inAxis[i])) +
-                   Math::Abs(extents[1] * axis[1].Dot(inAxis[i])) +
-                   Math::Abs(extents[2] * axis[2].Dot(inAxis[i]));
-        outMinMaxs[0][i] = d1 - d2;
-        outMinMaxs[1][i] = d1 + d2;
+        const float projectedCenter = inAxis[i].Dot(center);
+        const float projectedRadius = ProjectionRadius(inAxis[i]);
+        outMinMaxs[0][i] = projectedCenter - projectedRadius;
+        outMinMaxs[1][i] = projectedCenter + projectedRadius;
     }
 }
 

@@ -42,9 +42,8 @@ void GpuOceanSurface::Init(GpuOcean *gpuOcean) {
     assert(gpuOcean);
 
     this->gpuOcean = gpuOcean;
-    for (bool &valid : queryResultValid) {
-        valid = false;
-    }
+    queryResultCache.Clear();
+    queryResultCache.Init(MaxQueryCount, MaxQueryCount, MaxQueryCount);
 
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
@@ -69,6 +68,7 @@ void GpuOceanSurface::Init(GpuOcean *gpuOcean) {
 
 void GpuOceanSurface::Shutdown() {
     DestroyQueryResources();
+    queryResultCache.Clear();
     DestroyGrid();
 
     foamDetailTexture.reset();
@@ -84,8 +84,7 @@ void GpuOceanSurface::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap
     bootstrap.TrackPipeline(groupName, queryPipeline);
 }
 
-GpuOceanSurface::QueryReadbackFrame *GpuOceanSurface::DispatchQueries(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData,
-    const OceanSurfaceQueryInput *queries, uint32_t queryCount, float surfaceHeight) {
+GpuOceanSurface::QueryReadbackFrame *GpuOceanSurface::DispatchQueries(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanSurfaceQueryInput *queries, uint32_t queryCount, float surfaceHeight) {
     PROFILER_CPU_SCOPED_EVENT("GpuOceanSurface::DispatchQueries");
 
     if (!gpuOcean || !queries || queryCount == 0 || queryCount > MaxQueryCount) {
@@ -181,10 +180,7 @@ void GpuOceanSurface::ConsumeCompletedQueries() {
         const OceanSurfaceQueryResult *results = static_cast<const OceanSurfaceQueryResult *>(readbackFrame.buffer->mappedPtr);
         for (uint32_t resultIndex = 0; resultIndex < readbackFrame.queryCount; ++resultIndex) {
             const OceanSurfaceQueryResult &result = results[resultIndex];
-            if (result.queryId < MaxQueryCount) {
-                queryResultCache[result.queryId] = result;
-                queryResultValid[result.queryId] = true;
-            }
+            queryResultCache.Set(result.queryId, result);
         }
 
         // readback frame 을 재사용할 수 있도록 상태를 초기화한다.
@@ -197,11 +193,12 @@ void GpuOceanSurface::ConsumeCompletedQueries() {
 bool GpuOceanSurface::GetQueryResult(uint32_t queryId, OceanSurfaceQueryResult &outResult) const {
     assert(BE1::Engine::IsInMainThread());
 
-    if (queryId >= MaxQueryCount || !queryResultValid[queryId]) {
+    const BE1::HashMap<uint32_t, OceanSurfaceQueryResult>::KV *cachedResult = queryResultCache.Get(queryId);
+    if (!cachedResult) {
         return false;
     }
 
-    outResult = queryResultCache[queryId];
+    outResult = cachedResult->second;
     return true;
 }
 

@@ -87,11 +87,21 @@ public:
     void                    ApplyImpulse(const Vec3 &impulse, const Vec3 &worldPos);
     void                    ApplyAngularImpulse(const Vec3 &impulse);
 
+    bool                    HasBuoyancyPontoons() const { return !buoyancyPontoons.IsEmpty(); }
+    int                     NumBuoyancyPontoons() const { return buoyancyPontoons.Count(); }
+    const PhysBuoyancyPontoon &GetBuoyancyPontoon(int index) const { return buoyancyPontoons[index]; }
+    const Array<PhysBuoyancyPontoon> &GetBuoyancyPontoons() const { return buoyancyPontoons; }
+    float                   GetBuoyancyVolume() const { return buoyancyVolume; }
+
 private:
+    void                    SetBuoyancyPontoons(Array<PhysBuoyancyPontoon> &&pontoons);
+
     btRigidBody *           GetRigidBody();
     const btRigidBody *     GetRigidBody() const;
 
     PhysVehicle *           vehiclePtr = nullptr;
+    Array<PhysBuoyancyPontoon> buoyancyPontoons;
+    float                   buoyancyVolume = 0.0f;
 };
 
 BE_NAMESPACE_END

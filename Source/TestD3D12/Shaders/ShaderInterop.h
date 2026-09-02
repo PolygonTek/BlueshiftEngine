@@ -444,7 +444,7 @@ static_assert(sizeof(OceanResolveFieldsParams) == 32, "OceanResolveFieldsParams 
 struct OceanSurfaceQueryInput {
     float2 worldPositionXY;     ///< horizontal world position at which the displaced surface is requested
     float sampleDiameter;       ///< world-space filter diameter in meters; zero samples mip 0
-    uint queryId;               ///< caller-owned result-cache slot in [0, GpuOceanSurface::MaxQueryCount)
+    uint queryId;               ///< result 에 그대로 전달되는 caller-owned opaque ID
 };
 
 #ifdef __cplusplus

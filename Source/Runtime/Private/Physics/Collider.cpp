@@ -498,6 +498,195 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
     //shape->setMargin(0.001f);
 }
 
+struct BuoyancyConvexVolume {
+    Array<Plane> planes;
+
+    bool Contains(const Vec3 &point, float tolerance) const {
+        for (const Plane &plane : planes) {
+            if (plane.Distance(point) > tolerance) {
+                return false;
+            }
+        }
+        return !planes.IsEmpty();
+    }
+};
+
+static bool CollectBuoyancyConvexVolumes(const btCollisionShape *collisionShape, const btTransform &parentTransform, const Vec3 &colliderCentroid, Array<BuoyancyConvexVolume> &convexVolumes) {
+    if (collisionShape->isCompound()) {
+        const btCompoundShape *compoundShape = static_cast<const btCompoundShape *>(collisionShape);
+        for (int childIndex = 0; childIndex < compoundShape->getNumChildShapes(); ++childIndex) {
+            const btTransform childTransform = parentTransform * compoundShape->getChildTransform(childIndex);
+            if (!CollectBuoyancyConvexVolumes(compoundShape->getChildShape(childIndex), childTransform, colliderCentroid, convexVolumes)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    if (!collisionShape->isConvex()) {
+        return false;
+    }
+
+    const btConvexShape *convexShape = static_cast<const btConvexShape *>(collisionShape);
+    btShapeHull shapeHull(convexShape);
+    if (!shapeHull.buildHull(convexShape->getMargin()) || shapeHull.numVertices() < 4 || shapeHull.numTriangles() < 4) {
+        return false;
+    }
+
+    Array<Vec3> vertices;
+    vertices.SetCount(shapeHull.numVertices());
+
+    Vec3 hullCenter = Vec3::zero;
+    const btVector3 *shapeHullVertices = shapeHull.getVertexPointer();
+    for (int vertexIndex = 0; vertexIndex < shapeHull.numVertices(); ++vertexIndex) {
+        const btVector3 transformedVertex = parentTransform * shapeHullVertices[vertexIndex];
+        Vec3 &vertex = vertices[vertexIndex];
+        vertex = PhysicsUnitToSystemUnit(ToVec3(transformedVertex)) + colliderCentroid;
+        hullCenter += vertex;
+    }
+    hullCenter /= static_cast<float>(vertices.Count());
+
+    BuoyancyConvexVolume &convexVolume = convexVolumes.Alloc();
+    convexVolume.planes.Reserve(shapeHull.numTriangles());
+
+    const unsigned int *indices = shapeHull.getIndexPointer();
+    for (int triangleIndex = 0; triangleIndex < shapeHull.numTriangles(); ++triangleIndex) {
+        const Vec3 &a = vertices[indices[triangleIndex * 3 + 0]];
+        const Vec3 &b = vertices[indices[triangleIndex * 3 + 1]];
+        const Vec3 &c = vertices[indices[triangleIndex * 3 + 2]];
+
+        Vec3 normal = (b - a).Cross(c - a);
+        if (normal.Normalize() == 0.0f) {
+            continue;
+        }
+
+        Plane plane(normal, a);
+        if (plane.Distance(hullCenter) > 0.0f) {
+            plane.Flip();
+        }
+
+        convexVolume.planes.Append(plane);
+    }
+
+    if (convexVolume.planes.IsEmpty()) {
+        convexVolumes.SetCount(convexVolumes.Count() - 1);
+        return false;
+    }
+    return true;
+}
+
+static bool IsInsideAnyBuoyancyConvexVolume(const Array<BuoyancyConvexVolume> &convexVolumes, const Vec3 &point, float tolerance) {
+    for (const BuoyancyConvexVolume &convexVolume : convexVolumes) {
+        if (convexVolume.Contains(point, tolerance)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Collider::GenerateBuoyancyPontoons(const PhysBuoyancyPontoonSettings &settings, Array<PhysBuoyancyPontoon> &pontoons) const {
+    pontoons.Clear();
+
+    if (!shape) {
+        return false;
+    }
+
+    const uint32_t voxelResolution = Clamp(settings.voxelResolution, 1u, 32u);
+    const uint32_t subsamplesPerAxis = Clamp(settings.subsamplesPerAxis, 1u, 4u);
+    if (voxelResolution != settings.voxelResolution || subsamplesPerAxis != settings.subsamplesPerAxis) {
+        BE_WARNLOG("Collider::GenerateBuoyancyPontoons: clamped invalid settings (voxelResolution: %u -> %u, subsamplesPerAxis: %u -> %u)\n",
+            settings.voxelResolution, voxelResolution, settings.subsamplesPerAxis, subsamplesPerAxis);
+    }
+
+    Array<BuoyancyConvexVolume> convexVolumes;
+    if (!CollectBuoyancyConvexVolumes(shape, btTransform::getIdentity(), centroid, convexVolumes) || convexVolumes.IsEmpty()) {
+        return false;
+    }
+
+    const AABB bounds = GetAABB();
+    if (bounds.IsCleared()) {
+        return false;
+    }
+
+    const Vec3 boundsSize = bounds.Sizes();
+    const float longestAxisSize = boundsSize.MaxComponent();
+    if (boundsSize.MinComponent() <= 0.0f || longestAxisSize <= 0.0f) {
+        return false;
+    }
+
+    const float targetVoxelSize = longestAxisSize / static_cast<float>(voxelResolution);
+    int voxelCounts[3];
+    for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+        voxelCounts[axisIndex] = Max(1, static_cast<int>(Math::Ceil(boundsSize[axisIndex] / targetVoxelSize)));
+    }
+
+    const Vec3 voxelSize(
+        boundsSize.x / static_cast<float>(voxelCounts[0]),
+        boundsSize.y / static_cast<float>(voxelCounts[1]),
+        boundsSize.z / static_cast<float>(voxelCounts[2]));
+    const Vec3 voxelExtents = voxelSize * 0.5f;
+    const float voxelVolume = voxelSize.x * voxelSize.y * voxelSize.z;
+    const float containmentTolerance = longestAxisSize * 1e-5f;
+    const int subsampleCount = static_cast<int>(subsamplesPerAxis * subsamplesPerAxis * subsamplesPerAxis);
+    const float inverseSubsamplesPerAxis = 1.0f / static_cast<float>(subsamplesPerAxis);
+
+    pontoons.Reserve(voxelCounts[0] * voxelCounts[1] * voxelCounts[2]);
+
+    float generatedVolume = 0.0f;
+    for (int voxelZ = 0; voxelZ < voxelCounts[2]; ++voxelZ) {
+        for (int voxelY = 0; voxelY < voxelCounts[1]; ++voxelY) {
+            for (int voxelX = 0; voxelX < voxelCounts[0]; ++voxelX) {
+                const Vec3 voxelMins = bounds[0] + Vec3(
+                    voxelSize.x * static_cast<float>(voxelX),
+                    voxelSize.y * static_cast<float>(voxelY),
+                    voxelSize.z * static_cast<float>(voxelZ));
+
+                Vec3 occupiedCenterSum = Vec3::zero;
+                int occupiedSubsampleCount = 0;
+                for (uint32_t sampleZ = 0; sampleZ < subsamplesPerAxis; ++sampleZ) {
+                    for (uint32_t sampleY = 0; sampleY < subsamplesPerAxis; ++sampleY) {
+                        for (uint32_t sampleX = 0; sampleX < subsamplesPerAxis; ++sampleX) {
+                            const Vec3 sampleFraction(
+                                (static_cast<float>(sampleX) + 0.5f) * inverseSubsamplesPerAxis,
+                                (static_cast<float>(sampleY) + 0.5f) * inverseSubsamplesPerAxis,
+                                (static_cast<float>(sampleZ) + 0.5f) * inverseSubsamplesPerAxis);
+                            const Vec3 samplePosition = voxelMins + voxelSize * sampleFraction;
+                            if (IsInsideAnyBuoyancyConvexVolume(convexVolumes, samplePosition, containmentTolerance)) {
+                                occupiedCenterSum += samplePosition;
+                                occupiedSubsampleCount++;
+                            }
+                        }
+                    }
+                }
+
+                if (occupiedSubsampleCount == 0) {
+                    continue;
+                }
+
+                PhysBuoyancyPontoon &pontoon = pontoons.Alloc();
+                pontoon.localCenter = occupiedCenterSum / static_cast<float>(occupiedSubsampleCount);
+                pontoon.localAxis = Mat3::identity;
+                pontoon.localExtents = voxelExtents;
+                pontoon.volume = voxelVolume * static_cast<float>(occupiedSubsampleCount) / static_cast<float>(subsampleCount);
+                generatedVolume += pontoon.volume;
+            }
+        }
+    }
+
+    if (pontoons.IsEmpty() || generatedVolume <= 0.0f) {
+        pontoons.Clear();
+        return false;
+    }
+
+    if (volume > 0.0f) {
+        const float volumeScale = volume / generatedVolume;
+        for (PhysBuoyancyPontoon &pontoon : pontoons) {
+            pontoon.volume *= volumeScale;
+        }
+    }
+    return true;
+}
+
 bool Collider::Load(const char *filename, bool convexHull, const Vec3 &scale) {
     Purge();
 

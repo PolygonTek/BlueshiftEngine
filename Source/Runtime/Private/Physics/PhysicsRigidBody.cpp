@@ -25,6 +25,15 @@ PhysRigidBody::PhysRigidBody(btRigidBody *rigidBody, const Vec3 &centroid) :
 PhysRigidBody::~PhysRigidBody() {
 }
 
+void PhysRigidBody::SetBuoyancyPontoons(Array<PhysBuoyancyPontoon> &&pontoons) {
+    buoyancyPontoons.Swap(pontoons);
+
+    buoyancyVolume = 0.0f;
+    for (const PhysBuoyancyPontoon &pontoon : buoyancyPontoons) {
+        buoyancyVolume += pontoon.volume;
+    }
+}
+
 btRigidBody *PhysRigidBody::GetRigidBody() {
     return static_cast<btRigidBody *>(collisionObject);
 }
@@ -167,6 +176,7 @@ void PhysRigidBody::AddToWorld(PhysicsWorld *physicsWorld) {
 
     physicsWorld->dynamicsWorld->addRigidBody(rigidBody, internalGroup, internalMask);
     this->physicsWorld = physicsWorld;
+    physicsWorld->AddBuoyantRigidBody(this);
 }
 
 void PhysRigidBody::RemoveFromWorld() {
@@ -175,6 +185,7 @@ void PhysRigidBody::RemoveFromWorld() {
         return;
     }
 
+    physicsWorld->RemoveBuoyantRigidBody(this);
     physicsWorld->dynamicsWorld->removeRigidBody(static_cast<btRigidBody *>(collisionObject));
     physicsWorld = nullptr;
 }

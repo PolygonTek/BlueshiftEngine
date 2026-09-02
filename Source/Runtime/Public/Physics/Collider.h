@@ -25,6 +25,18 @@ BE_NAMESPACE_BEGIN
 class Mesh;
 class CollisionMaterial;
 
+struct PhysBuoyancyPontoonSettings {
+    uint32_t                voxelResolution = 2;        ///< Collider AABB 의 가장 긴 축의 voxel 개수
+    uint32_t                subsamplesPerAxis = 2;      ///< 각 voxel 의 점유율을 추정하기 위해 voxel 내부의 각 축 별로 배치할 sample 개수
+};
+
+struct PhysBuoyancyPontoon {
+    Vec3                    localCenter;
+    Mat3                    localAxis;
+    Vec3                    localExtents;
+    float                   volume = 0.0f;              ///< pontoon 에 배분된 Collider volume. 현재 침수 체적은 이 값에 submergedFraction을 곱해 계산한다.
+};
+
 class CollisionMesh {
     friend class Collider;
 
@@ -95,6 +107,9 @@ public:
     void                    CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = MmToUnit(0.0f));
 
     void                    SetLocalScaling(float sx, float sy, float sz);
+
+                            /// Collider 형상을 voxel pontoon 집합으로 변환한다.
+    bool                    GenerateBuoyancyPontoons(const PhysBuoyancyPontoonSettings &settings, Array<PhysBuoyancyPontoon> &pontoons) const;
 
                             /// Returns axis-aligned bounding box in system units.
     const AABB              GetAABB() const;

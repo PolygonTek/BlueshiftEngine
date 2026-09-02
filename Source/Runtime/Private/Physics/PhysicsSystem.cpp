@@ -25,8 +25,7 @@ BE_NAMESPACE_BEGIN
 PhysicsSystem       physicsSystem;
 btEmptyShape *      emptyShape = nullptr;
 
-static bool CustomMaterialCombinerCallback(btManifoldPoint &cp, const btCollisionObjectWrapper *colObj0, int partId0, int index0, 
-    const btCollisionObjectWrapper *colObj1, int partId1, int index1) {
+static bool CustomMaterialCombinerCallback(btManifoldPoint &cp, const btCollisionObjectWrapper *colObj0, int partId0, int index0, const btCollisionObjectWrapper *colObj1, int partId1, int index1) {
     //btAdjustInternalEdgeContacts(cp, colObj1, colObj0, partId1, index1);
     //btAdjustInternalEdgeContacts(cp, colObj1, colObj0, partId1, index1, BT_TRIANGLE_CONVEX_BACKFACE_MODE);
     //btAdjustInternalEdgeContacts(cp, colObj1, colObj0, partId1, index1, BT_TRIANGLE_CONVEX_DOUBLE_SIDED + BT_TRIANGLE_CONCAVE_DOUBLE_SIDED);
@@ -69,6 +68,34 @@ void PhysicsSystem::FreePhysicsWorld(PhysicsWorld *physicsWorld) {
         physicsWorlds.Remove(physicsWorld);
         delete physicsWorld;
     }
+}
+
+static bool GenerateRigidBodyBuoyancyPontoons(const PhysCollidableDesc &desc, Array<PhysBuoyancyPontoon> &buoyancyPontoons) {
+    buoyancyPontoons.Clear();
+
+    for (const PhysShapeDesc &shapeDesc : desc.shapes) {
+        if (!shapeDesc.collider) {
+            buoyancyPontoons.Clear();
+            return false;
+        }
+
+        Array<PhysBuoyancyPontoon> shapePontoons;
+        if (!shapeDesc.collider->GenerateBuoyancyPontoons(desc.buoyancyPontoonSettings, shapePontoons)) {
+            buoyancyPontoons.Clear();
+            return false;
+        }
+
+        const int firstPontoonIndex = buoyancyPontoons.Count();
+        buoyancyPontoons.AppendArray(shapePontoons);
+
+        for (int pontoonIndex = firstPontoonIndex; pontoonIndex < buoyancyPontoons.Count(); ++pontoonIndex) {
+            PhysBuoyancyPontoon &pontoon = buoyancyPontoons[pontoonIndex];
+            pontoon.localCenter = shapeDesc.localOrigin + shapeDesc.localAxis * pontoon.localCenter;
+            pontoon.localAxis = shapeDesc.localAxis * pontoon.localAxis;
+        }
+    }
+
+    return !buoyancyPontoons.IsEmpty();
 }
 
 PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) {
@@ -159,6 +186,15 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             rigidBody->setSleepingThresholds(SystemUnitToPhysicsUnit(0.2f), 2.0f);
 
             PhysRigidBody *rb = BE_NEW PhysRigidBody(rigidBody, totalCentroid);
+            if (desc.enableBuoyancy) {
+                // shape 기반으로 복셀화시켜서 부력용 폰툰을 생성한다.
+                Array<PhysBuoyancyPontoon> buoyancyPontoons;
+                if (GenerateRigidBodyBuoyancyPontoons(desc, buoyancyPontoons)) {
+                    rb->SetBuoyancyPontoons(std::move(buoyancyPontoons));
+                } else {
+                    BE_WARNLOG("PhysicsSystem::CreateCollidable: failed to generate buoyancy pontoons\n");
+                }
+            }
             rb->SetRestitution(desc.restitution);
             rb->SetFriction(desc.friction);
             rb->SetRollingFriction(desc.rollingFriction);

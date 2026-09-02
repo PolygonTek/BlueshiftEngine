@@ -28,6 +28,7 @@ const SignalDef PhysicsWorld::SIG_PreStep("PhysicsWorld::PreStep", "f");
 const SignalDef PhysicsWorld::SIG_PostStep("PhysicsWorld::PostStep", "f");
 
 static constexpr int MAX_SUBSTEPS = 16;
+static constexpr float BuoyancyDampingRatio = 1.0f;
 
 static void PreTickCallback(btDynamicsWorld *world, btScalar timeStep) {
     static_cast<PhysicsWorld *>(world->getWorldUserInfo())->PreStep(timeStep);
@@ -187,6 +188,14 @@ void PhysicsWorld::Reset() {
 
     time = 0;
     accumulatedTimeDelta = 0;
+
+    ClearActiveBuoyancyQueries();
+
+    buoyancyQueries.SetCount(0, false);
+
+    if (buoyancySurfaceProvider && buoyancySurfaceProvider->IsActive()) {
+        buoyancySurfaceProvider->SubmitQueries(nullptr, 0);
+    }
 }
 
 void PhysicsWorld::SetConstraintSolver(ConstraintSolver::Enum solverType) {
@@ -239,6 +248,10 @@ void PhysicsWorld::StepSimulation(float frameTime) {
     BE_PROFILE_CPU_SCOPE_STATIC("PhysicsWorld::StepSimulation");
 
     if (!physics_enable.GetBool()) {
+        ClearActiveBuoyancyQueries();
+        if (buoyancySurfaceProvider && buoyancySurfaceProvider->IsActive()) {
+            buoyancySurfaceProvider->SubmitQueries(nullptr, 0);
+        }
         return;
     }
 
@@ -267,6 +280,8 @@ void PhysicsWorld::StepSimulation(float frameTime) {
     
     accumulatedTimeDelta = 0.0f;
 #endif
+
+    UpdateBuoyancyQueries();
 }
 
 const Vec3 PhysicsWorld::GetGravity() const {
@@ -299,6 +314,254 @@ float PhysicsWorld::GetAirDensity() const {
 void PhysicsWorld::SetAirDensity(float airDensity) {
     btSoftBodyWorldInfo &softBodyWorldInfo = ((btSoftRigidDynamicsWorld *)dynamicsWorld)->getWorldInfo();
     softBodyWorldInfo.air_density = (btScalar)airDensity;
+}
+
+void PhysicsWorld::SetBuoyancySurfaceProvider(PhysBuoyancySurfaceProvider *provider) {
+    if (buoyancySurfaceProvider == provider) {
+        return;
+    }
+
+    if (buoyancySurfaceProvider && buoyancySurfaceProvider->IsActive()) {
+        buoyancySurfaceProvider->SubmitQueries(nullptr, 0);
+    }
+
+    buoyancySurfaceProvider = provider;
+
+    ClearActiveBuoyancyQueries();
+    buoyancyQueries.SetCount(0, false);
+}
+
+void PhysicsWorld::AddBuoyantRigidBody(PhysRigidBody *rigidBody) {
+    if (!rigidBody || !rigidBody->HasBuoyancyPontoons()) {
+        return;
+    }
+
+    for (const BuoyantRigidBody &buoyantBody : buoyantRigidBodies) {
+        if (buoyantBody.rigidBody == rigidBody) {
+            return;
+        }
+    }
+
+    const uint64_t pontoonCount = static_cast<uint64_t>(rigidBody->NumBuoyancyPontoons());
+    if (nextBuoyancyQueryId + pontoonCount > (uint64_t(1) << 32)) {
+        BE_WARNLOG("PhysicsWorld::AddBuoyantRigidBody: buoyancy query ID space exhausted\n");
+        return;
+    }
+
+    BuoyantRigidBody &buoyantBody = buoyantRigidBodies.Alloc();
+    buoyantBody.rigidBody = rigidBody;
+    buoyantBody.firstQueryId = static_cast<uint32_t>(nextBuoyancyQueryId);
+    buoyantBody.activeQueries.SetCount(static_cast<int>(pontoonCount));
+    for (uint8_t &active : buoyantBody.activeQueries) {
+        active = 0;
+    }
+
+    nextBuoyancyQueryId += pontoonCount;
+}
+
+void PhysicsWorld::RemoveBuoyantRigidBody(PhysRigidBody *rigidBody) {
+    for (int bodyIndex = 0; bodyIndex < buoyantRigidBodies.Count(); ++bodyIndex) {
+        if (buoyantRigidBodies[bodyIndex].rigidBody == rigidBody) {
+            buoyantRigidBodies.RemoveIndexFast(bodyIndex);
+            return;
+        }
+    }
+}
+
+void PhysicsWorld::ClearActiveBuoyancyQueries() {
+    for (BuoyantRigidBody &buoyantBody : buoyantRigidBodies) {
+        for (uint8_t &active : buoyantBody.activeQueries) {
+            active = 0;
+        }
+    }
+}
+
+// 등록된 동적 rigid body 의 각 pontoon 에 부력을 적용한다.
+// 1. 수면 높이 범위로 pontoon 을 비침수, 완전 침수, 수면 query 필요 상태로 구분한다.
+// 2. 수면 근처 pontoon 은 query 결과의 위치와 normal 로 침수율을 계산한다.
+// 3. 침수 체적에 비례하는 아르키메데스 부력을 계산한다.
+// 4. pontoon 위치의 속도를 이용해 수직 운동에 대한 감쇠력을 계산한다.
+// 5. 두 힘을 합산해 중력 반대 방향으로 pontoon 중심에 적용한다.
+void PhysicsWorld::ApplyBuoyancyForces() {
+    if (!buoyancySurfaceProvider || !buoyancySurfaceProvider->IsActive()) {
+        return;
+    }
+
+    float minimumSurfaceHeight;
+    float maximumSurfaceHeight;
+    if (!buoyancySurfaceProvider->GetSurfaceHeightRange(minimumSurfaceHeight, maximumSurfaceHeight) ||
+        minimumSurfaceHeight > maximumSurfaceHeight) {
+        return;
+    }
+
+    const float fluidDensity = buoyancySurfaceProvider->GetFluidDensity();
+    const Vec3 gravity = GetGravity();
+    const float gravityMagnitude = gravity.Length();
+    if (fluidDensity <= 0.0f || gravityMagnitude <= 0.0f) {
+        return;
+    }
+
+    const Vec3 buoyancyDirection = -gravity / gravityMagnitude;
+
+    for (BuoyantRigidBody &buoyantBody : buoyantRigidBodies) {
+        PhysRigidBody *rigidBody = buoyantBody.rigidBody;
+        if (!rigidBody || rigidBody->IsStatic() || rigidBody->IsKinematic()) {
+            continue;
+        }
+
+        const float bodyMass = rigidBody->GetMass();
+        const float bodyVolume = rigidBody->GetBuoyancyVolume();
+        if (bodyMass <= 0.0f || bodyVolume <= 0.0f) {
+            continue;
+        }
+
+        const Vec3 bodyOrigin = rigidBody->GetOrigin();
+        const Mat3 bodyAxis = rigidBody->GetAxis();
+        const Vec3 centerOfMass = bodyOrigin + bodyAxis * rigidBody->centroid;
+        const Vec3 linearVelocity = rigidBody->GetLinearVelocity();
+        const Vec3 angularVelocity = rigidBody->GetAngularVelocity();
+        const Array<PhysBuoyancyPontoon> &pontoons = rigidBody->GetBuoyancyPontoons();
+
+        assert(buoyantBody.activeQueries.Count() == pontoons.Count());
+        for (int pontoonIndex = 0; pontoonIndex < pontoons.Count(); ++pontoonIndex) {
+            const PhysBuoyancyPontoon &pontoon = pontoons[pontoonIndex];
+            const Vec3 worldCenter = bodyOrigin + bodyAxis * pontoon.localCenter;
+            const Mat3 worldAxis = bodyAxis * pontoon.localAxis;
+            const OBB worldPontoon(worldCenter, pontoon.localExtents, worldAxis);
+            const Vec3 projectedExtents = worldPontoon.ProjectionExtents(Mat3::identity);
+
+            const float pontoonBottom = worldCenter.z - projectedExtents.z;
+            const float pontoonTop = worldCenter.z + projectedExtents.z;
+            if (pontoonBottom > maximumSurfaceHeight) {
+                continue;
+            }
+
+            Vec3 surfaceNormal = Vec3::unitZ;
+            float submergedFraction = 1.0f;
+            float halfExtent = projectedExtents.z;
+
+            if (pontoonTop >= minimumSurfaceHeight) {
+                if (!buoyantBody.activeQueries[pontoonIndex]) {
+                    continue;
+                }
+
+                PhysBuoyancySurfaceQueryResult queryResult;
+                const uint32_t queryId = buoyantBody.firstQueryId + static_cast<uint32_t>(pontoonIndex);
+                if (!buoyancySurfaceProvider->GetQueryResult(queryId, queryResult)) {
+                    continue;
+                }
+
+                surfaceNormal = queryResult.surfaceNormal;
+                if (surfaceNormal.Normalize() == 0.0f) {
+                    surfaceNormal = Vec3::unitZ;
+                } else if (surfaceNormal.z < 0.0f) {
+                    surfaceNormal = -surfaceNormal;
+                }
+
+                halfExtent = worldPontoon.ProjectionRadius(surfaceNormal);
+                if (halfExtent <= VECTOR_EPSILON) {
+                    continue;
+                }
+
+                const float submersionDepth = (queryResult.surfacePosition - worldCenter).Dot(surfaceNormal);
+                submergedFraction = Clamp((submersionDepth + halfExtent) / (2.0f * halfExtent), 0.0f, 1.0f);
+                if (submergedFraction <= 0.0f) {
+                    continue;
+                }
+            }
+
+            if (halfExtent <= VECTOR_EPSILON || pontoon.volume <= 0.0f) {
+                continue;
+            }
+
+            const float buoyancyForce = fluidDensity * pontoon.volume * submergedFraction * gravityMagnitude;
+            const float waterplaneArea = pontoon.volume / (2.0f * halfExtent);
+            const float springConstant = fluidDensity * gravityMagnitude * waterplaneArea;
+            const float pontoonMass = bodyMass * pontoon.volume / bodyVolume;
+            const float dampingCoefficient = 2.0f * Math::Sqrt(springConstant * pontoonMass) * BuoyancyDampingRatio;
+            const Vec3 pointVelocity = linearVelocity + angularVelocity.Cross(worldCenter - centerOfMass);
+            const float dampingForce = -dampingCoefficient * pointVelocity.Dot(buoyancyDirection);
+            const float forceMagnitude = Max(buoyancyForce + dampingForce, 0.0f);
+
+            if (forceMagnitude > 0.0f) {
+                rigidBody->ApplyForce(buoyancyDirection * forceMagnitude, worldCenter);
+            }
+        }
+    }
+}
+
+// 이번 프레임의 부력 계산에 필요한 수면 query 를 구성해 surface provider 에 제출한다.
+// 1. 이전 프레임의 활성 query 상태를 초기화하고 provider 와 부력 계산 조건을 검사한다.
+// 2. 동적 rigid body 의 pontoons 중 수면 높이 범위와 겹칠 수 있는 것만 선별한다.
+// 3. 선별된 pontoon 의 위치와 수평 크기로 query 를 만들고 해당 query 를 활성 상태로 표시한다.
+// 4. 완성된 query batch 를 제출하며, 제출에 실패하면 활성 상태를 초기화해 오래된 결과가 사용되지 않게 한다.
+void PhysicsWorld::UpdateBuoyancyQueries() {
+    ClearActiveBuoyancyQueries();
+    buoyancyQueries.SetCount(0, false);
+
+    if (!buoyancySurfaceProvider || !buoyancySurfaceProvider->IsActive()) {
+        return;
+    }
+
+    float minimumSurfaceHeight;
+    float maximumSurfaceHeight;
+    const uint32_t maxQueryCount = buoyancySurfaceProvider->GetMaxQueryCount();
+    if (maxQueryCount == 0 || buoyancySurfaceProvider->GetFluidDensity() <= 0.0f ||
+        !buoyancySurfaceProvider->GetSurfaceHeightRange(minimumSurfaceHeight, maximumSurfaceHeight) ||
+        minimumSurfaceHeight > maximumSurfaceHeight || GetGravity().LengthSqr() <= 0.0f) {
+        buoyancySurfaceProvider->SubmitQueries(nullptr, 0);
+        return;
+    }
+
+    if (maxQueryCount > static_cast<uint32_t>(INT_MAX)) {
+        buoyancySurfaceProvider->SubmitQueries(nullptr, 0);
+        return;
+    }
+
+    buoyancyQueries.Reserve(static_cast<int>(maxQueryCount));
+
+    // 등록된 부유 강체들을 순회한다. 각 강체의 pontoons 중 수면 범위와 겹칠 수 있는 것만 선별해 query 를 구성한다.
+    for (int bodyIndex = 0; bodyIndex < buoyantRigidBodies.Count() && static_cast<uint32_t>(buoyancyQueries.Count()) < maxQueryCount; ++bodyIndex) {
+        BuoyantRigidBody &buoyantBody = buoyantRigidBodies[bodyIndex];
+        const PhysRigidBody *rigidBody = buoyantBody.rigidBody;
+
+        if (!rigidBody || rigidBody->IsStatic() || rigidBody->IsKinematic() || rigidBody->GetMass() <= 0.0f) {
+            continue;
+        }
+
+        const Vec3 bodyOrigin = rigidBody->GetOrigin();
+        const Mat3 bodyAxis = rigidBody->GetAxis();
+        const Array<PhysBuoyancyPontoon> &pontoons = rigidBody->GetBuoyancyPontoons();
+
+        for (int pontoonIndex = 0; pontoonIndex < pontoons.Count() && static_cast<uint32_t>(buoyancyQueries.Count()) < maxQueryCount; ++pontoonIndex) {
+            const PhysBuoyancyPontoon &pontoon = pontoons[pontoonIndex];
+            const Vec3 worldCenter = bodyOrigin + bodyAxis * pontoon.localCenter;
+            const Mat3 worldAxis = bodyAxis * pontoon.localAxis;
+            const OBB worldPontoon(worldCenter, pontoon.localExtents, worldAxis);
+            const Vec3 projectedExtents = worldPontoon.ProjectionExtents(Mat3::identity);
+
+            if (worldCenter.z - projectedExtents.z > maximumSurfaceHeight ||
+                worldCenter.z + projectedExtents.z < minimumSurfaceHeight) {
+                continue;
+            }
+
+            const float sampleDiameter = 2.0f * Max(projectedExtents.x, projectedExtents.y);
+            if (sampleDiameter <= 0.0f) {
+                continue;
+            }
+
+            PhysBuoyancySurfaceQuery &query = buoyancyQueries.Alloc();
+            query.queryId = buoyantBody.firstQueryId + static_cast<uint32_t>(pontoonIndex);
+            query.worldPosition = worldCenter;
+            query.sampleDiameter = sampleDiameter;
+            buoyantBody.activeQueries[pontoonIndex] = 1;
+        }
+    }
+
+    const uint32_t queryCount = static_cast<uint32_t>(buoyancyQueries.Count());
+    if (!buoyancySurfaceProvider->SubmitQueries(queryCount > 0 ? buoyancyQueries.Ptr() : nullptr, queryCount)) {
+        ClearActiveBuoyancyQueries();
+    }
 }
 
 int PhysicsWorld::GetCollisionFilterMask(int bit) const {
@@ -888,6 +1151,7 @@ void PhysicsWorld::DebugDraw() {
 }
 
 void PhysicsWorld::PreStep(float timeStep) {
+    ApplyBuoyancyForces();
     EmitSignal(&SIG_PreStep, timeStep);
 }
 

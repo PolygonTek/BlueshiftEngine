@@ -58,6 +58,7 @@ void App::Init(void *mainWindowHandle) {
 
     renderWorld = new RenderWorld;
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("_defaultSkyboxMaterial"));
+    physicsWorld->SetBuoyancySurfaceProvider(renderWorld);
 
     renderCamera = new RenderCamera;
 
@@ -85,6 +86,7 @@ void App::Init(void *mainWindowHandle) {
 void App::Shutdown() {
     DestroyScene();
 
+    physicsWorld->SetBuoyancySurfaceProvider(nullptr);
     physicsWorld->Disconnect(&BE1::PhysicsWorld::SIG_PreStep, this);
     BE1::physicsSystem.FreePhysicsWorld(physicsWorld);
     physicsWorld = nullptr;

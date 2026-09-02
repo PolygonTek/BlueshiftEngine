@@ -16,6 +16,7 @@
 
 #include <atomic>
 
+#include "Containers/HashMap.h"
 #include "GpuOcean.h"
 #include "Math/Color3.h"
 #include "Math/Vector3.h"
@@ -76,7 +77,7 @@ public:
         bool                        refractionEnabled = true;
         float                       refractionDistance = 2.0f;      ///< 화면 공간 굴절 방향을 추적할 최대 거리 (m)
         float                       absorptionDistance = 30.0f;     ///< 투과율이 waterColor 에 도달하는 물 속 거리 (m)
-        BE1::Color3                 scatterColor = BE1::Color3(0.0f, 0.34f, 0.38f); ///< 파도 마루에서 waterColor 를 기준으로 밝힐 sRGB 산란색
+        BE1::Color3                 scatterColor = BE1::Color3(0.0f, 0.26f, 0.29f); ///< 파도 마루에서 waterColor 를 기준으로 밝힐 sRGB 산란색
         float                       scatterHeight = 8.0f;           ///< 산란색이 최대 강도에 도달하는 기준 수면 위 높이 (m)
         BE1::Color3                 foamColor = BE1::Color3(0.955f, 0.978f, 1.0f); ///< sRGB foam color
         float                       foamDetailMapSize = 16.0f;      ///< foam detail map 이 world-space 에서 한 번 반복되는 크기 (m)
@@ -144,6 +145,5 @@ private:
     RHI::ViewID                     queryOutputUAV = RHI::ViewID::InvalidID;
     QueryReadbackFrame              queryReadbackFrames[2] = {};
     uint32_t                        queryReadbackFrameIndex = 0;
-    OceanSurfaceQueryResult         queryResultCache[MaxQueryCount] = {};
-    bool                            queryResultValid[MaxQueryCount] = {};
+    BE1::HashMap<uint32_t, OceanSurfaceQueryResult> queryResultCache;
 };

@@ -520,17 +520,56 @@ bool RenderWorld::SetOceanSurfaceQueries(const OceanSurfaceQueryInput *queries, 
         return false;
     }
 
-    for (uint32_t queryIndex = 0; queryIndex < queryCount; ++queryIndex) {
-        if (queries[queryIndex].queryId >= GpuOceanSurface::MaxQueryCount) {
-            BE_WARNLOG("RenderWorld::SetOceanSurfaceQueries: query ID %u is out of range\n", queries[queryIndex].queryId);
-            return false;
-        }
-    }
-
     oceanSurface.queries.SetCount(static_cast<int>(queryCount), false);
     if (queryCount > 0) {
         BE1::simdProcessor->Memcpy(oceanSurface.queries.Ptr(), queries, static_cast<int>(queryCount * sizeof(OceanSurfaceQueryInput)));
     }
+    return true;
+}
+
+bool RenderWorld::GetSurfaceHeightRange(float &minimumHeight, float &maximumHeight) const {
+    if (!hasOceanSurface) {
+        return false;
+    }
+
+    const GpuOceanSurface::Settings &surfaceSettings = oceanSurface.GetDesc().surface;
+    minimumHeight = surfaceSettings.height - surfaceSettings.maxDisplacement;
+    maximumHeight = surfaceSettings.height + surfaceSettings.maxDisplacement;
+    return true;
+}
+
+bool RenderWorld::SubmitQueries(const BE1::PhysBuoyancySurfaceQuery *queries, uint32_t queryCount) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasOceanSurface || (queryCount > 0 && !queries) || queryCount > GpuOceanSurface::MaxQueryCount) {
+        return false;
+    }
+
+    oceanSurface.queries.SetCount(static_cast<int>(queryCount), false);
+
+    for (uint32_t queryIndex = 0; queryIndex < queryCount; ++queryIndex) {
+        const BE1::PhysBuoyancySurfaceQuery &sourceQuery = queries[queryIndex];
+        OceanSurfaceQueryInput &destinationQuery = oceanSurface.queries[queryIndex];
+        destinationQuery.worldPositionXY = float2(sourceQuery.worldPosition.x, sourceQuery.worldPosition.y);
+        destinationQuery.sampleDiameter = sourceQuery.sampleDiameter;
+        destinationQuery.queryId = sourceQuery.queryId;
+    }
+    return true;
+}
+
+bool RenderWorld::GetQueryResult(uint32_t queryId, BE1::PhysBuoyancySurfaceQueryResult &result) const {
+    if (!hasOceanSurface || !renderSystem) {
+        return false;
+    }
+
+    OceanSurfaceQueryResult oceanResult;
+    if (!renderSystem->GetGpuOceanSurface().GetQueryResult(queryId, oceanResult)) {
+        return false;
+    }
+
+    result.surfacePosition.Set(oceanResult.surfacePosition.x, oceanResult.surfacePosition.y, oceanResult.surfacePosition.z);
+    result.surfaceNormal.Set(oceanResult.surfaceNormal.x, oceanResult.surfaceNormal.y, oceanResult.surfaceNormal.z);
     return true;
 }
 
