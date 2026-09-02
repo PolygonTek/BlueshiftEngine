@@ -20,6 +20,7 @@
 #include "Render/Backend/RenderBackend.h"
 #include "Render/Frontend/RenderCamera.h"
 #include "Render/Texture/Texture.h"
+#include "Physics/Physics.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneRegistry.h"
 #include "App.h"
@@ -792,6 +793,45 @@ void App::BuildImGuiOverlay() {
 
             if (roundedCollapsingHeader("Texture Viewer##TextureViewerHeader")) {
                 BuildImGuiTextureViewer();
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Physics")) {
+            if (physicsWorld) {
+                const float itemWidth = fontSize * 12.0f;
+
+                bool simulationEnabled = BE1::cvarSystem.GetCVarBool("physics_enable");
+                if (ImGui::Checkbox("Simulation", &simulationEnabled)) {
+                    BE1::cvarSystem.SetCVarBool("physics_enable", simulationEnabled);
+                }
+
+                BE1::Vec3 gravity = physicsWorld->GetGravity();
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::DragFloat3("Gravity", gravity.Ptr(), 0.1f, -100.0f, 100.0f, "%.2f m/s^2")) {
+                    physicsWorld->SetGravity(gravity);
+                }
+
+                int fixedFrameRate = physicsWorld->GetFrameRate();
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::SliderInt("Fixed frame rate", &fixedFrameRate, 15, 240, "%d Hz")) {
+                    physicsWorld->SetFrameRate(fixedFrameRate);
+                }
+
+                float maximumAllowedTimeStep = physicsWorld->GetMaximumAllowedTimeStep();
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::DragFloat("Maximum time step", &maximumAllowedTimeStep, 0.005f, 0.01f, 1.0f, "%.3f s")) {
+                    physicsWorld->SetMaximumAllowedTimeStep(maximumAllowedTimeStep);
+                }
+
+                int solverIterations = physicsWorld->GetConstraintSolverIterations();
+                ImGui::SetNextItemWidth(itemWidth);
+                if (ImGui::SliderInt("Solver iterations", &solverIterations, 1, 100)) {
+                    physicsWorld->SetConstraintSolverIterations(solverIterations);
+                }
+            } else {
+                ImGui::TextColored(ImGuiWarningTextColor, "Physics world is unavailable.");
             }
 
             ImGui::EndTabItem();

@@ -18,7 +18,7 @@
 
 class SceneDebugDraw : public Scene {
 public:
-    void                        Init(RenderWorld *renderWorld) override;
+    void                        Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) override;
     void                        Shutdown() override;
 
     void                        Update(uint64_t elapsedUsec) override;
@@ -36,6 +36,7 @@ private:
     void                        DrawTimedPrimitive(const BE1::Mat3 &axis);
 
     RenderWorld *               renderWorld = nullptr;
+    BE1::PhysicsWorld *         physicsWorld = nullptr;
 
     bool                        drawLines = true;
     bool                        drawFill = true;

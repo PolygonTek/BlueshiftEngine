@@ -26,8 +26,9 @@
 #include "imgui/imgui.h"
 #endif
 
-void SceneOcean::Init(RenderWorld *renderWorld) {
+void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
+    this->physicsWorld = physicsWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
@@ -102,6 +103,7 @@ void SceneOcean::Init(RenderWorld *renderWorld) {
 
 void SceneOcean::Shutdown() {
     if (!renderWorld) {
+        physicsWorld = nullptr;
         return;
     }
 
@@ -129,6 +131,7 @@ void SceneOcean::Shutdown() {
         oceanAdded = false;
     }
 
+    physicsWorld = nullptr;
     renderWorld = nullptr;
 }
 

@@ -28,8 +28,9 @@
 #include "imgui/imgui.h"
 #endif
 
-void SceneMaterialBall::Init(RenderWorld *renderWorld) {
+void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
+    this->physicsWorld = physicsWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
 
@@ -70,6 +71,7 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld) {
 
 void SceneMaterialBall::Shutdown() {
     if (!renderWorld) {
+        physicsWorld = nullptr;
         return;
     }
 
@@ -92,11 +94,14 @@ void SceneMaterialBall::Shutdown() {
         environmentLightAdded = false;
     }
 
+    physicsWorld = nullptr;
     renderWorld = nullptr;
 }
 
 void SceneMaterialBall::Update(uint64_t elapsedUsec) {
     PROFILER_CPU_SCOPED_EVENT("SceneMaterialBall::Update");
+
+    (void)elapsedUsec;
 }
 
 void SceneMaterialBall::UpdateDirectionalLightDirection() {

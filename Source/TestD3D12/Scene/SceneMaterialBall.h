@@ -24,7 +24,7 @@ class ShaderTemplate;
 
 class SceneMaterialBall : public Scene {
 public:
-    void                        Init(RenderWorld *renderWorld) override;
+    void                        Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) override;
     void                        Shutdown() override;
 
     void                        Update(uint64_t elapsedUsec) override;
@@ -38,6 +38,7 @@ private:
     void                        UpdateEnvironmentLightRotation();
 
     RenderWorld *               renderWorld = nullptr;
+    BE1::PhysicsWorld *         physicsWorld = nullptr;
     SharedPtr<Mesh>             testMesh;
     SharedPtr<Material>         testMaterial;
     SharedPtr<ShaderTemplate>   litShaderTemplate;

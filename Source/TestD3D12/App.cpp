@@ -24,6 +24,7 @@
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/Texture/TextureManager.h"
 #include "Render/Font/FontManager.h"
+#include "Physics/Physics.h"
 #include "LoadingSystem.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneRegistry.h"
@@ -44,6 +45,12 @@ void App::Init(void *mainWindowHandle) {
 
     renderSystem = new RenderSystem;
     renderSystem->Init(mainWindowHandle);
+
+    BE1::physicsSystem.Init();
+
+    physicsWorld = BE1::physicsSystem.AllocPhysicsWorld();
+    physicsWorld->SetGravity(BE1::Vec3(0.0f, 0.0f, -9.81f));
+    physicsWorld->Connect(&BE1::PhysicsWorld::SIG_PreStep, this, (BE1::SignalCallback)&App::FixedUpdate);
 
     mainRenderContext = renderSystem->CreateRenderContext(mainWindowHandle, true);
 
@@ -77,6 +84,11 @@ void App::Init(void *mainWindowHandle) {
 
 void App::Shutdown() {
     DestroyScene();
+
+    physicsWorld->Disconnect(&BE1::PhysicsWorld::SIG_PreStep, this);
+    BE1::physicsSystem.FreePhysicsWorld(physicsWorld);
+    physicsWorld = nullptr;
+    BE1::physicsSystem.Shutdown();
 
     SAFE_DELETE(renderCamera);
     SAFE_DELETE(renderWorld);
@@ -136,6 +148,8 @@ void App::Update(uint64_t frameUsec) {
 
     renderSystem->BeginGameFrame();
 
+    physicsWorld->StepSimulation(static_cast<float>(MICRO2SEC(static_cast<double>(frameUsec))));
+
     scene->Update(elapsedUsec);
 
     UpdateCamera(frameUsec);
@@ -144,6 +158,12 @@ void App::Update(uint64_t frameUsec) {
 
     uint64_t t1 = BE1::PlatformTime::Microseconds();
     UpdateGameFrameTime(t1 - t0);
+}
+
+void App::FixedUpdate(float timeStep) {
+    if (scene) {
+        scene->FixedUpdate(timeStep);
+    }
 }
 
 void App::FinishBootstrap() {
@@ -183,7 +203,7 @@ void App::ChangeScene(int sceneIndex) {
     ResetCamera();
 
     scene = SceneRegistry::Create(sceneIndex);
-    scene->Init(renderWorld);
+    scene->Init(renderWorld, physicsWorld);
 
     if (cameraControlMode == CameraControlMode::Fly) {
         const BE1::Mat3 targetCameraAxis = BE1::Angles(0.0f, targetCameraPitch, targetCameraYaw).ToMat3();
@@ -194,11 +214,14 @@ void App::ChangeScene(int sceneIndex) {
 }
 
 void App::DestroyScene() {
-    if (!scene) {
-        return;
+    if (scene) {
+        scene->Shutdown();
     }
 
-    scene->Shutdown();
+    if (physicsWorld) {
+        physicsWorld->ClearScene();
+    }
+
     SAFE_DELETE(scene);
 
     sceneIndex = -1;
@@ -238,6 +261,8 @@ void App::CheckModifiedCVars() {
         SetConvolutionBloomAperturePreset((App::AperturePreset)app_convolutionBloomAperturePreset.GetInteger());
         RegenerateConvolutionBloomKernel();
     }
+
+    BE1::physicsSystem.CheckModifiedCVars();
 }
 
 void App::Render(uint64_t frameUsec) {

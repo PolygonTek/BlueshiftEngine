@@ -22,8 +22,9 @@
 #include "imgui/imgui.h"
 #endif
 
-void SceneDebugDraw::Init(RenderWorld *renderWorld) {
+void SceneDebugDraw::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
+    this->physicsWorld = physicsWorld;
 
     app.SetCameraPitchYaw(30, 45);
     app.SetCameraDistance(120.0f);
@@ -34,12 +35,14 @@ void SceneDebugDraw::Init(RenderWorld *renderWorld) {
 
 void SceneDebugDraw::Shutdown() {
     if (!renderWorld) {
+        physicsWorld = nullptr;
         return;
     }
 
     renderWorld->ClearDebugPrimitives();
     renderWorld->SetDebugColor(BE1::Color4::zero, BE1::Color4::zero);
 
+    physicsWorld = nullptr;
     renderWorld = nullptr;
 }
 

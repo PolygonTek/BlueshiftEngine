@@ -16,13 +16,21 @@
 
 class RenderWorld;
 
+namespace BE1 {
+    class PhysicsWorld;
+}
+
 class Scene {
 public:
     virtual ~Scene() = default;
 
-    virtual void                Init(RenderWorld *renderWorld) = 0;
+    virtual void                Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) = 0;
     virtual void                Shutdown() = 0;
 
+                                /// PhysicsWorld::SIG_PreStep 에서 fixed substep 마다 호출된다.
+    virtual void                FixedUpdate(float) {}
+
+                                /// 전체 physics step 이후 frame 당 한 번 호출된다.
     virtual void                Update(uint64_t elapsedUsec) = 0;
 
 #ifdef ENABLE_IMGUI

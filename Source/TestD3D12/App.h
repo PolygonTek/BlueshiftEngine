@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Core/SignalObject.h"
+
 class RenderContext;
 class RenderWorld;
 class RenderCamera;
@@ -21,12 +23,16 @@ class Scene;
 class Texture;
 class Font;
 
+namespace BE1 {
+    class PhysicsWorld;
+}
+
 namespace RHI {
     class Texture;
     struct ViewID;
 }
 
-class App {
+class App : public BE1::SignalObject {
 public:
     enum class CameraControlMode {
         Orbit,
@@ -107,6 +113,7 @@ private:
     };
 
     void                            FinishBootstrap();
+    void                            FixedUpdate(float timeStep);
     void                            RenderRunningFrame(uint64_t frameUsec);
     void                            RenderBootstrapFrame(uint64_t frameUsec);
     void                            SetConvolutionBloomAperturePreset(AperturePreset aperturePreset);
@@ -143,6 +150,7 @@ private:
     RenderContext *                 mainRenderContext = nullptr;
     RenderCamera *                  renderCamera = nullptr;
     RenderWorld *                   renderWorld = nullptr;
+    BE1::PhysicsWorld *             physicsWorld = nullptr;
     Scene *                         scene = nullptr;
     int                             sceneIndex = -1;
     int                             pendingSceneIndex = -1;
