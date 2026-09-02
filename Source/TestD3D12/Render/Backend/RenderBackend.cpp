@@ -678,6 +678,7 @@ void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, cons
 void RenderBackend::CaptureSceneSnapshot() {
     RHI::Texture *snapshotColorTexture = currentVisCamera->snapshotColorTexture;
     RHI::Texture *snapshotDepthTexture = currentVisCamera->snapshotDepthTexture;
+
     if (!currentVisCamera->oceanSurfacePSO || !snapshotColorTexture || !snapshotDepthTexture || currentVisCamera->rtColorMSAATexture) {
         return;
     }
@@ -685,39 +686,49 @@ void RenderBackend::CaptureSceneSnapshot() {
     RHI::Texture *sourceColorTexture = currentVisCamera->rtColorTexture;
     RHI::Texture *sourceDepthTexture = currentVisCamera->depthTexture;
     assert(sourceColorTexture->GetSampleCount() == 1 && sourceDepthTexture->GetSampleCount() == 1);
-    assert(snapshotDepthTexture->GetWidth() == sourceDepthTexture->GetWidth() && snapshotDepthTexture->GetHeight() == sourceDepthTexture->GetHeight());
+    assert(sourceColorTexture->GetWidth() == sourceDepthTexture->GetWidth() && sourceColorTexture->GetHeight() == sourceDepthTexture->GetHeight());
 
-    const bool downsampleColor = snapshotColorTexture->GetWidth() != sourceColorTexture->GetWidth() || snapshotColorTexture->GetHeight() != sourceColorTexture->GetHeight();
-    assert(!downsampleColor || (snapshotColorTexture->GetWidth() <= sourceColorTexture->GetWidth() && snapshotColorTexture->GetHeight() <= sourceColorTexture->GetHeight()));
-    if (downsampleColor && !currentVisCamera->sceneSnapshotDownsamplePSO) {
-        return;
+    const bool downsampleSnapshot = snapshotColorTexture->GetWidth() != sourceColorTexture->GetWidth() || snapshotColorTexture->GetHeight() != sourceColorTexture->GetHeight();
+    if (downsampleSnapshot) {
+        assert(snapshotColorTexture->GetWidth() <= sourceColorTexture->GetWidth() && snapshotColorTexture->GetHeight() <= sourceColorTexture->GetHeight());
+        assert(snapshotDepthTexture->GetWidth() == snapshotColorTexture->GetWidth() && snapshotDepthTexture->GetHeight() == snapshotColorTexture->GetHeight());
+    } else {
+        assert(snapshotDepthTexture->GetWidth() == sourceDepthTexture->GetWidth() && snapshotDepthTexture->GetHeight() == sourceDepthTexture->GetHeight());
+    }
+    if (downsampleSnapshot) {
+        if (!currentVisCamera->sceneSnapshotDownsamplePSO ||
+            !snapshotColorTexture->HasValidView(RHI::ViewType::RTV) ||
+            !snapshotDepthTexture->HasValidView(RHI::ViewType::RTV)) {
+            return;
+        }
     }
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SceneSnapshot);
 
     RHI::GPUBarrier captureBarriers[4];
     uint32_t captureBarrierCount = 0;
-    captureBarriers[captureBarrierCount++] = RHI::Renderer::MakeTextureBarrier(sourceColorTexture, RHI::GPUResourceState::RenderTarget, downsampleColor ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::CopySrc);
-    captureBarriers[captureBarrierCount++] = RHI::Renderer::MakeTextureBarrier(sourceDepthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::CopySrc);
-    if (!downsampleColor) {
+    captureBarriers[captureBarrierCount++] = RHI::Renderer::MakeTextureBarrier(sourceColorTexture, RHI::GPUResourceState::RenderTarget, downsampleSnapshot ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::CopySrc);
+    captureBarriers[captureBarrierCount++] = RHI::Renderer::MakeTextureBarrier(sourceDepthTexture, RHI::GPUResourceState::DepthWrite, downsampleSnapshot ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::CopySrc);
+    if (!downsampleSnapshot) {
         captureBarriers[captureBarrierCount++] = RHI::Renderer::MakeTextureBarrier(snapshotColorTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::CopyDst);
+        captureBarriers[captureBarrierCount++] = RHI::Renderer::MakeTextureBarrier(snapshotDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::CopyDst);
     }
-    captureBarriers[captureBarrierCount++] = RHI::Renderer::MakeTextureBarrier(snapshotDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::CopyDst);
     RHI::renderer->Barrier(mainCommandList, captureBarriers, captureBarrierCount);
 
-    if (downsampleColor) {
+    if (downsampleSnapshot) {
         const BE1::Rect snapshotRect(0, 0, snapshotColorTexture->GetWidth(), snapshotColorTexture->GetHeight());
-        RHI::RenderPassImage snapshotColorImage = RHI::RenderPassImage::Color(snapshotColorTexture, RHI::ViewID::PrimaryID,
-            RHI::RenderPassImage::LoadAction::DontCare, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
-        RHI::renderer->BeginRenderPass(mainCommandList, &snapshotColorImage, 1);
+        RHI::RenderPassImage snapshotImages[] = {
+            RHI::RenderPassImage::Color(snapshotColorTexture, RHI::ViewID::PrimaryID,
+                RHI::RenderPassImage::LoadAction::DontCare, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource),
+            RHI::RenderPassImage::Color(snapshotDepthTexture, RHI::ViewID::PrimaryID,
+                RHI::RenderPassImage::LoadAction::DontCare, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource)
+        };
+        RHI::renderer->BeginRenderPass(mainCommandList, snapshotImages, COUNT_OF(snapshotImages));
         RHI::renderer->SetViewport(mainCommandList, snapshotRect);
         RHI::renderer->SetScissorRect(mainCommandList, snapshotRect);
         RHI::renderer->SetPSO(mainCommandList, currentVisCamera->sceneSnapshotDownsamplePSO);
         RHI::renderer->SetTexture(mainCommandList, 0, false, sourceColorTexture);
-
-        FullscreenImageParams imageParams = {};
-        imageParams.texCoordScale = float2(1.0f, 1.0f);
-        RHI::renderer->SetConstants(mainCommandList, 0, &imageParams, sizeof(imageParams), 0);
+        RHI::renderer->SetTexture(mainCommandList, 1, false, sourceDepthTexture);
         RHI::renderer->Draw(mainCommandList, 3, 0);
 
         RecordDrawStats(1, 1, 0, 0);
@@ -729,17 +740,17 @@ void RenderBackend::CaptureSceneSnapshot() {
         RHI::renderer->SetScissorRect(mainCommandList, sourceRect);
     } else {
         RHI::renderer->CopyTexture(mainCommandList, snapshotColorTexture, 0, 0, 0, 0, 0, sourceColorTexture, 0, 0, 0, 0, 0, sourceColorTexture->GetWidth(), sourceColorTexture->GetHeight(), 1);
+        RHI::renderer->CopyTexture(mainCommandList, snapshotDepthTexture, 0, 0, 0, 0, 0, sourceDepthTexture, 0, 0, 0, 0, 0, sourceDepthTexture->GetWidth(), sourceDepthTexture->GetHeight(), 1);
     }
-    RHI::renderer->CopyTexture(mainCommandList, snapshotDepthTexture, 0, 0, 0, 0, 0, sourceDepthTexture, 0, 0, 0, 0, 0, sourceDepthTexture->GetWidth(), sourceDepthTexture->GetHeight(), 1);
 
     RHI::GPUBarrier finishBarriers[4];
     uint32_t finishBarrierCount = 0;
-    finishBarriers[finishBarrierCount++] = RHI::Renderer::MakeTextureBarrier(sourceColorTexture, downsampleColor ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::RenderTarget);
-    finishBarriers[finishBarrierCount++] = RHI::Renderer::MakeTextureBarrier(sourceDepthTexture, RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::DepthWrite);
-    if (!downsampleColor) {
+    finishBarriers[finishBarrierCount++] = RHI::Renderer::MakeTextureBarrier(sourceColorTexture, downsampleSnapshot ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::RenderTarget);
+    finishBarriers[finishBarrierCount++] = RHI::Renderer::MakeTextureBarrier(sourceDepthTexture, downsampleSnapshot ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::DepthWrite);
+    if (!downsampleSnapshot) {
         finishBarriers[finishBarrierCount++] = RHI::Renderer::MakeTextureBarrier(snapshotColorTexture, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource);
+        finishBarriers[finishBarrierCount++] = RHI::Renderer::MakeTextureBarrier(snapshotDepthTexture, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource);
     }
-    finishBarriers[finishBarrierCount++] = RHI::Renderer::MakeTextureBarrier(snapshotDepthTexture, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource);
     RHI::renderer->Barrier(mainCommandList, finishBarriers, finishBarrierCount);
 }
 
@@ -1266,6 +1277,8 @@ void RenderBackend::DrawGpuOcean() {
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::OceanPass);
     GpuOceanSurface::View surfaceView;
     surfaceView.origin = currentVisCamera->origin;
+    surfaceView.renderWidth = currentVisCamera->renderWidth;
+    surfaceView.renderHeight = currentVisCamera->renderHeight;
     surfaceView.infiniteZFar = currentVisCamera->projectionInfiniteZFar;
     if (currentVisCamera->projectionOrthogonal) {
         surfaceView.box = &currentVisCamera->viewBox;

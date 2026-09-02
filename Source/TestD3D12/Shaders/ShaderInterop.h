@@ -497,10 +497,12 @@ struct OceanSurfaceParams {
     float waterToAirEta;
     float2 sceneSize;
     float2 sceneSizeRcp;
+    float2 sceneSnapshotSize;
+    float2 sceneSnapshotSizeRcp;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanSurfaceParams) == 144, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanSurfaceParams) == 160, "OceanSurfaceParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanSurfaceTileInstance {

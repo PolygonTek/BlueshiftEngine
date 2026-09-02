@@ -89,6 +89,8 @@ public:
 
     struct View {
         BE1::Vec3                   origin = BE1::Vec3::origin;
+        uint32_t                    renderWidth = 0;
+        uint32_t                    renderHeight = 0;
         const BE1::Frustum *        frustum = nullptr;
         const BE1::OBB *            box = nullptr;
         bool                        infiniteZFar = false;

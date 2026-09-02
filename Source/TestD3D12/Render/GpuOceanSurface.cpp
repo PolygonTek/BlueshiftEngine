@@ -490,6 +490,7 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
     PROFILER_CPU_SCOPED_EVENT("GpuOceanSurface::Draw");
 
     assert(settings.IsValid());
+    assert(view.renderWidth > 0u && view.renderHeight > 0u);
 
     if (drawStats) {
         *drawStats = {};
@@ -518,6 +519,7 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
 
     assert((sceneColorTexture != nullptr) == (sceneDepthTexture != nullptr));
     const bool refractionEnabled = settings.refractionEnabled && sceneColorTexture && sceneDepthTexture;
+    assert(!refractionEnabled || (sceneColorTexture->GetWidth() == sceneDepthTexture->GetWidth() && sceneColorTexture->GetHeight() == sceneDepthTexture->GetHeight()));
     const RHI::Texture *boundSceneColorTexture = refractionEnabled ? sceneColorTexture : fallbackTexture;
     const RHI::Texture *boundSceneDepthTexture = refractionEnabled ? sceneDepthTexture : fallbackTexture;
 
@@ -566,9 +568,11 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
     const float sqrtF0 = BE1::Math::Sqrt(BE1::Clamp(settings.fresnelF0, 0.0f, 0.99f));
     params.airToWaterEta = (1.0f - sqrtF0) / (1.0f + sqrtF0);
     params.waterToAirEta = (1.0f + sqrtF0) / (1.0f - sqrtF0);
-    // Scene color 는 normalized UV 로 샘플링되어 half resolution 일 수 있지만, depth Load 좌표는 full-resolution depth 크기를 사용한다.
-    params.sceneSize = float2(static_cast<float>(boundSceneDepthTexture->GetWidth()), static_cast<float>(boundSceneDepthTexture->GetHeight()));
+    // Raster pixel 좌표를 normalized UV 로 바꾸는 render 크기와 snapshot texel 크기를 분리한다.
+    params.sceneSize = float2(static_cast<float>(view.renderWidth), static_cast<float>(view.renderHeight));
     params.sceneSizeRcp = float2(1.0f / params.sceneSize.x, 1.0f / params.sceneSize.y);
+    params.sceneSnapshotSize = float2(static_cast<float>(boundSceneDepthTexture->GetWidth()), static_cast<float>(boundSceneDepthTexture->GetHeight()));
+    params.sceneSnapshotSizeRcp = float2(1.0f / params.sceneSnapshotSize.x, 1.0f / params.sceneSnapshotSize.y);
     params.displacementScale = gpuOcean->GetDisplacementScale();
     params.cascadeFadeScale = BE1::Max(settings.cascadeFadeScale, MinOceanSurfaceShaderDivisor);
     params.gridSnapSpacing = tileBatch.gridSnapSpacing;

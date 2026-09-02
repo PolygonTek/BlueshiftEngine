@@ -1105,15 +1105,19 @@ bool RenderCamera::EnsureSceneSnapshotResources(bool needed, bool halfResolution
         return true;
     }
 
-    const uint32_t snapshotColorWidth = halfResolution ? BE1::Max((renderWidth + 1u) / 2u, 1u) : renderWidth;
-    const uint32_t snapshotColorHeight = halfResolution ? BE1::Max((renderHeight + 1u) / 2u, 1u) : renderHeight;
+    const uint32_t snapshotWidth = halfResolution ? BE1::Max((renderWidth + 1u) / 2u, 1u) : renderWidth;
+    const uint32_t snapshotHeight = halfResolution ? BE1::Max((renderHeight + 1u) / 2u, 1u) : renderHeight;
+    const RHI::Format snapshotColorFormat = renderColorFormat;
+    const RHI::Format snapshotDepthFormat = halfResolution ? RHI::Format::R32_FLOAT : renderDepthFormat;
+
     if (snapshotColorTexture && snapshotDepthTexture &&
-        snapshotColorTexture->GetWidth() == snapshotColorWidth && snapshotColorTexture->GetHeight() == snapshotColorHeight && snapshotColorTexture->GetFormat() == renderColorFormat &&
-        snapshotDepthTexture->GetWidth() == renderWidth && snapshotDepthTexture->GetHeight() == renderHeight && snapshotDepthTexture->GetFormat() == renderDepthFormat) {
+        snapshotColorTexture->GetWidth() == snapshotWidth && snapshotColorTexture->GetHeight() == snapshotHeight && snapshotColorTexture->GetFormat() == snapshotColorFormat &&
+        snapshotDepthTexture->GetWidth() == snapshotWidth && snapshotDepthTexture->GetHeight() == snapshotHeight && snapshotDepthTexture->GetFormat() == snapshotDepthFormat) {
         return true;
     }
 
     DestroySceneSnapshotResources();
+
     return CreateSceneSnapshotResources(halfResolution);
 }
 
@@ -1127,11 +1131,12 @@ bool RenderCamera::CreateSceneSnapshotResources(bool halfResolution) {
         return false;
     }
 
-    const uint32_t snapshotColorWidth = halfResolution ? BE1::Max((renderWidth + 1u) / 2u, 1u) : renderWidth;
-    const uint32_t snapshotColorHeight = halfResolution ? BE1::Max((renderHeight + 1u) / 2u, 1u) : renderHeight;
+    const uint32_t snapshotWidth = halfResolution ? BE1::Max((renderWidth + 1u) / 2u, 1u) : renderWidth;
+    const uint32_t snapshotHeight = halfResolution ? BE1::Max((renderHeight + 1u) / 2u, 1u) : renderHeight;
     const RHI::TextureFlag snapshotColorFlags = halfResolution ? RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource : RHI::TextureFlag::ShaderResource;
+
     SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
-    colorImage->InitFromMemory(snapshotColorWidth, snapshotColorHeight, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    colorImage->InitFromMemory(snapshotWidth, snapshotHeight, 1, 1, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
     snapshotColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, snapshotColorFlags, colorImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!snapshotColorTexture) {
         BE_WARNLOG("RenderCamera::CreateSceneSnapshotResources: failed to create scene color texture\n");
@@ -1139,20 +1144,39 @@ bool RenderCamera::CreateSceneSnapshotResources(bool halfResolution) {
     }
     RHI::renderer->SetName(snapshotColorTexture, "RenderCamera::snapshotColorTexture");
 
-    BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
-    if (!RHI::Renderer::RHIFormatToImageFormat(renderDepthFormat, &depthImageFormat, nullptr)) {
-        DestroySceneSnapshotResources();
-        return false;
+    if (halfResolution) {
+        SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
+        depthImage->InitFromMemory(snapshotWidth, snapshotHeight, 1, 1, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        snapshotDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D,
+            RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::SkipDefaultViews,
+            depthImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (snapshotDepthTexture) {
+            // Half-resolution depth 는 MRT color output 과 ocean shader input 양쪽에서 사용한다.
+            const RHI::ViewID srvViewID = RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::SRV);
+            const RHI::ViewID rtvViewID = RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::RTV);
+            if (!srvViewID.IsPrimary() || !rtvViewID.IsPrimary()) {
+                RHI::renderer->DestroyTexture(snapshotDepthTexture);
+                snapshotDepthTexture = nullptr;
+            }
+        }
+    } else {
+        BE1::Image::Format depthImageFormat = BE1::Image::Format::Unknown;
+        if (!RHI::Renderer::RHIFormatToImageFormat(renderDepthFormat, &depthImageFormat, nullptr)) {
+            DestroySceneSnapshotResources();
+            return false;
+        }
+
+        const RHI::ClearValue depthClearValue = RHI::ClearValue::DepthStencil(desc.projectionPolicy.GetDepthClearValue(), 0);
+        SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
+        depthImage->InitFromMemory(snapshotWidth, snapshotHeight, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        snapshotDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthImage, RHI::TextureMipInitMode::FromImage, depthClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        if (snapshotDepthTexture && (!RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::SRV).IsValid() || !RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::DSV).IsValid())) {
+            RHI::renderer->DestroyTexture(snapshotDepthTexture);
+            snapshotDepthTexture = nullptr;
+        }
     }
 
-    const RHI::ClearValue depthClearValue = RHI::ClearValue::DepthStencil(desc.projectionPolicy.GetDepthClearValue(), 0);
-    SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
-    depthImage->InitFromMemory(renderWidth, renderHeight, 1, 1, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    snapshotDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthImage,
-        RHI::TextureMipInitMode::FromImage, depthClearValue, 1, RHI::GPUResourceState::ShaderResource);
-    if (!snapshotDepthTexture ||
-        !RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::SRV).IsValid() ||
-        !RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::DSV).IsValid()) {
+    if (!snapshotDepthTexture) {
         BE_WARNLOG("RenderCamera::CreateSceneSnapshotResources: failed to create scene depth texture\n");
         DestroySceneSnapshotResources();
         return false;

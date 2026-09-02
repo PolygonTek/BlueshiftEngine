@@ -41,6 +41,7 @@ Texture2D<float4> sceneColorTexture : register(t4);
 Texture2D<float> sceneDepthTexture : register(t5);
 
 static const float OceanCascadeLodThreshold = 0.05f;
+static const float2 OceanRefractionHistoryRejectVelocity = float2(2.0f, 2.0f);
 
 struct PSInput {
     float4 position : SV_POSITION;
@@ -162,19 +163,11 @@ bool IsSceneFarDepth(float depth) {
 }
 
 float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float viewDistance, float3 incidentVector, float3 normal, float eta, float3 waterBodyColor, out bool totalInternalReflection) {
-    const uint2 sceneSize = uint2(oceanSurfaceParams.sceneSize);
+    const uint2 snapshotSize = uint2(oceanSurfaceParams.sceneSnapshotSize);
 
     // 수면 위치를 scene texture 의 texel 중심에 맞춘다.
     const float2 baseUV = pixelPosition * oceanSurfaceParams.sceneSizeRcp;
-
-    // Scene depth 로 수면 아래의 초기 물 두께를 추정한다.
     const float deepWaterThickness = oceanSurfaceParams.absorptionDistance * 4.0f;
-    float waterThickness = deepWaterThickness;
-    const float sceneDepth = LoadSceneDepth(baseUV, sceneSize);
-    if (!IsSceneFarDepth(sceneDepth)) {
-        const float3 sceneWorldPosition = ReconstructPosition(baseUV, sceneDepth, cameraConstants.invViewProjMatrix);
-        waterThickness = length(sceneWorldPosition - worldPosition);
-    }
 
     // Snell 법칙의 판별식이 음수이면 투과광 없이 전반사로 처리한다.
     const float NdotI = dot(normal, incidentVector);
@@ -185,34 +178,58 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
     }
 
     const float3 refractionDirection = refract(incidentVector, normal, eta);
-    const float refractionTraceDistance = min(waterThickness, oceanSurfaceParams.refractionDistance);
+    const float refractionTraceDistance = oceanSurfaceParams.refractionDistance;
 
-    // 굴절점이 화면 밖으로 나가도 가장 가까운 scene texture 의 texel 중심에서 샘플링한다.
+    // 얕은 물에서는 수면 아래 물체까지의 거리에 비례하여 굴절 왜곡량을 줄인다.
+    float refractionDepthFactor = 1.0f;
+    const float baseDepth = LoadSceneDepth(baseUV, snapshotSize);
+    if (!IsSceneFarDepth(baseDepth)) {
+        const float3 baseWorldPosition = ReconstructPosition(baseUV, baseDepth, cameraConstants.invViewProjMatrix);
+        const float baseViewDistance = length(baseWorldPosition - cameraConstants.cameraOrigin);
+        const float baseWaterThickness = max(baseViewDistance - viewDistance, 0.0f);
+        refractionDepthFactor = saturate(baseWaterThickness / max(refractionTraceDistance, 0.0001f));
+    }
+
+    // 평평한 수면의 굴절 이동을 제거하고 파도 normal 로 추가되는 화면 왜곡만 사용한다.
+    // 기준 normal 에서 전반사가 발생하는 임계 구간은 offset 을 0 으로 만들어 불연속을 피한다.
+    const float3 referenceNormal = float3(0.0f, 0.0f, normal.z >= 0.0f ? 1.0f : -1.0f);
+    const float referenceNdotI = dot(referenceNormal, incidentVector);
+    const float referenceRefractionK = 1.0f - eta * eta * (1.0f - referenceNdotI * referenceNdotI);
     const float2 projectedRefractedUV = ProjectOceanWorldPositionToUV(worldPosition + refractionDirection * refractionTraceDistance);
-    const float2 halfTexelSize = oceanSurfaceParams.sceneSizeRcp * 0.5f;
-    const float2 refractedUV = clamp(projectedRefractedUV, halfTexelSize, 1.0f - halfTexelSize);
+    float2 projectedReferenceUV = projectedRefractedUV;
+    if (referenceRefractionK > 0.0f) {
+        const float3 referenceRefractionDirection = refract(incidentVector, referenceNormal, eta);
+        projectedReferenceUV = ProjectOceanWorldPositionToUV(worldPosition + referenceRefractionDirection * refractionTraceDistance);
+    }
 
-    // 앞쪽 물체가 수면을 통해 잘못 비치지 않도록 굴절 위치의 depth 와 진행 방향을 검증한다.
-    float2 sampleUV = baseUV;
-    const float candidateDepth = LoadSceneDepth(refractedUV, sceneSize);
-    if (IsSceneFarDepth(candidateDepth)) {
-        sampleUV = refractedUV;
-        waterThickness = deepWaterThickness;
-    } else {
-        const float3 candidateWorldPosition = ReconstructPosition(refractedUV, candidateDepth, cameraConstants.invViewProjMatrix);
-        const float3 candidateViewVector = candidateWorldPosition - cameraConstants.cameraOrigin;
-        const float minCandidateViewDistance = viewDistance + 0.001f;
-        const bool candidateBehindWater = dot(candidateViewVector, candidateViewVector) > minCandidateViewDistance * minCandidateViewDistance;
-        const bool candidateAlongRefractionRay = dot(candidateWorldPosition - worldPosition, refractionDirection) > 0.0f;
+    // 굴절점이 화면 밖으로 나가면 가장 가까운 scene texture 의 texel 중심으로 제한한다.
+    const float2 halfTexelSize = oceanSurfaceParams.sceneSnapshotSizeRcp * 0.5f;
+    const float2 pnoOffset = (projectedRefractedUV - projectedReferenceUV) * refractionDepthFactor;
+    const float2 candidateUV = clamp(baseUV + pnoOffset, halfTexelSize, 1.0f - halfTexelSize);
 
-        if (candidateBehindWater && candidateAlongRefractionRay) {
-            sampleUV = refractedUV;
-            waterThickness = length(candidateWorldPosition - worldPosition);
-        }
+    // 굴절 위치가 foreground 를 가리키면 hard fallback 하지 않고 offset 을 연속적으로 줄인다.
+    float refractionValidity = 1.0f;
+    const float candidateDepth = LoadSceneDepth(candidateUV, snapshotSize);
+    if (!IsSceneFarDepth(candidateDepth)) {
+        const float3 candidateWorldPosition = ReconstructPosition(candidateUV, candidateDepth, cameraConstants.invViewProjMatrix);
+        const float candidateViewDistance = length(candidateWorldPosition - cameraConstants.cameraOrigin);
+        const float depthFadeDistance = max(2.0f * fwidth(viewDistance), 0.02f);
+        refractionValidity = smoothstep(0.0f, depthFadeDistance, candidateViewDistance - viewDistance);
+    }
+
+    const float2 sampleUV = lerp(baseUV, candidateUV, refractionValidity);
+
+    // 최종 color 와 같은 UV 의 depth 로 물을 통과한 거리를 계산한다.
+    float waterThickness = deepWaterThickness;
+    const float sampleDepth = LoadSceneDepth(sampleUV, snapshotSize);
+    if (!IsSceneFarDepth(sampleDepth)) {
+        const float3 sampleWorldPosition = ReconstructPosition(sampleUV, sampleDepth, cameraConstants.invViewProjMatrix);
+        const float sampleViewDistance = length(sampleWorldPosition - cameraConstants.cameraOrigin);
+        waterThickness = max(sampleViewDistance - viewDistance, 0.0f);
     }
 
     // 물을 통과한 거리에 따라 scene color 를 감쇠시키고 굴절을 끈 경우와 같은 water body color 로 수렴시킨다.
-    const float3 sceneColor = sceneColorTexture.SampleLevel(linearClampSampler, sampleUV, 0.0f).rgb;
+    const float3 sceneColor = sceneColorTexture.SampleLevel(pointClampSampler, sampleUV, 0.0f).rgb;
     const float absorptionScale = min(waterThickness / oceanSurfaceParams.absorptionDistance, 8.0f);
     const float3 transmittance = pow(oceanSurfaceParams.waterColor, absorptionScale);
     return sceneColor * transmittance + waterBodyColor * (1.0f - transmittance);
@@ -312,10 +329,12 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     const float waterBodyFactor = lerp(0.35f, 1.0f, NdotV);
     const float3 waterBodyColor = oceanSurfaceParams.waterColor * waterBodyFactor;
     float3 transmission = waterBodyColor;
+    bool refractionApplied = false;
     if ((oceanSurfaceParams.surfaceOptions & OceanSurfaceOptionBitRefractionEnabled) != 0u) {
         const float eta = isFrontFace ? oceanSurfaceParams.airToWaterEta : oceanSurfaceParams.waterToAirEta;
         bool totalInternalReflection;
         transmission = SampleOceanRefraction(input.position.xy, input.worldPosition, viewDistance, -V, normal, eta, waterBodyColor, totalInternalReflection);
+        refractionApplied = !totalInternalReflection;
         if (totalInternalReflection) {
             fresnel = 1.0f;
         }
@@ -373,7 +392,8 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     result.normal = EncodeOctahedralNormal(normal);
 #endif
 #ifdef OUTPUT_VELOCITY
-    result.velocity = CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
+    // 이전 ocean field 와 굴절 UV 가 없으므로 굴절 픽셀은 화면 밖으로 reprojection 하여 TAA history 를 사용하지 않는다.
+    result.velocity = refractionApplied ? OceanRefractionHistoryRejectVelocity : CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
 #endif
     return result;
 }

@@ -232,19 +232,21 @@ static RHI::PipelineState *GetOutputImagePSO(const RHI::Texture *outputTexture, 
 }
 
 static RHI::PipelineState *GetSceneSnapshotDownsamplePSO(RHI::Format outputFormat) {
-    if (!shaderTemplateManager.fullscreenImageLinearShaderTemplate) {
+    if (!shaderTemplateManager.sceneSnapshotDownsampleShaderTemplate) {
         return nullptr;
     }
 
     GraphicsPipelineDesc graphicsPipelineDesc;
-    graphicsPipelineDesc.renderDest.renderTargetCount = 1;
+    graphicsPipelineDesc.renderDest.renderTargetCount = 2;
     graphicsPipelineDesc.renderDest.renderTargetFormats[0] = outputFormat;
+    graphicsPipelineDesc.renderDest.renderTargetFormats[1] = RHI::Format::R32_FLOAT;
     graphicsPipelineDesc.renderDest.sampleCount = 1;
     graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
 
-    const SharedPtr<ShaderPipeline> downsamplePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageLinearShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    // Half-resolution color/depth 가 같은 원본 texel 을 나타내도록 전용 point downsample pipeline 을 사용한다.
+    const SharedPtr<ShaderPipeline> downsamplePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.sceneSnapshotDownsampleShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
     return ShaderPipeline::GetReadyPSO(downsamplePipeline);
 }
 
@@ -295,10 +297,10 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
-    const bool requestHalfResSnapshotColor = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
-    RHI::PipelineState *sceneSnapshotDownsamplePSO = requestHalfResSnapshotColor ? GetSceneSnapshotDownsamplePSO(renderContext->GetMainRTColorFormat()) : nullptr;
-    const bool useHalfResSnapshotColor = requestHalfResSnapshotColor && sceneSnapshotDownsamplePSO;
-    renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot, useHalfResSnapshotColor);
+    const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
+    RHI::PipelineState *sceneSnapshotDownsamplePSO = requestHalfResSnapshot ? GetSceneSnapshotDownsamplePSO(renderContext->GetMainRTColorFormat()) : nullptr;
+    const bool useHalfResSnapshot = requestHalfResSnapshot && sceneSnapshotDownsamplePSO;
+    renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot, useHalfResSnapshot);
 
     renderCamera->EnsureHiZResources(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
     renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, renderFrameSettings);
@@ -386,7 +388,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->rtNormalMSAATexture = renderCamera->GetRTNormalMSAATexture();
     visCamera->rtVelocityTexture = renderCamera->GetRTVelocityTexture();
     visCamera->rtVelocityMSAATexture = renderCamera->GetRTVelocityMSAATexture();
-    visCamera->sceneSnapshotDownsamplePSO = useHalfResSnapshotColor ? sceneSnapshotDownsamplePSO : nullptr;
+    visCamera->sceneSnapshotDownsamplePSO = useHalfResSnapshot ? sceneSnapshotDownsamplePSO : nullptr;
     visCamera->snapshotColorTexture = renderCamera->GetSnapshotColorTexture();
     visCamera->snapshotDepthTexture = renderCamera->GetSnapshotDepthTexture();
 
