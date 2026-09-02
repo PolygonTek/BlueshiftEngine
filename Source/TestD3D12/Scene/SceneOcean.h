@@ -34,12 +34,21 @@ public:
 #endif
 
 private:
+    static constexpr uint32_t   BoxCount = 5;
+
+    struct Box {
+        GameObject              gameObject;
+        BE1::Vec2               queryPosition;
+        BE1::Vec3               size;
+    };
+
     void                        UpdateDirectionalLightDirection();
+    void                        UpdateSurfaceQueries();
 
     RenderWorld *               renderWorld = nullptr;
-    SharedPtr<Mesh>             testBoxMesh;
-    SharedPtr<Material>         testBoxMaterial;
-    GameObject                  testBox;
+    SharedPtr<Mesh>             boxMesh;
+    SharedPtr<Material>         boxMaterial;
+    Box                         boxes[BoxCount];
     OceanSurface::Desc          oceanDesc;
     GameLight                   directionalLight;
 

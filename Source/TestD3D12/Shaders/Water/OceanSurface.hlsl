@@ -1,5 +1,6 @@
 #include "../ShaderInterop.h"
 #include "../Common.hlsli"
+#include "OceanFieldCommon.hlsli"
 #include "../CommonBindless.hlsli"
 #include "../CameraPassOutputCommon.hlsli"
 #include "../PBR/BRDFLibrary.hlsli"
@@ -263,7 +264,7 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     const float3 viewVector = cameraConstants.cameraOrigin - input.worldPosition;
     const float viewDistance = length(viewVector);
     const float4 cascadeLodWeights = GetOceanCascadeLodWeights(viewDistance);
-    float displacementX_dy = 0.0f;
+    float Dxdy = 0.0f;
     float4 derivatives = 0.0f;
     float foamComplement = 1.0f;
 
@@ -276,7 +277,7 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
             const float displacementSlice = float(2u * cascadeIndex);
             const float derivativeSlice = displacementSlice + 1.0f;
 
-            displacementX_dy += displacementAndDerivativeMap.Sample(linearWrapSampler, float3(uv, displacementSlice)).w * cascadeLodWeight;
+            Dxdy += displacementAndDerivativeMap.Sample(linearWrapSampler, float3(uv, displacementSlice)).w * cascadeLodWeight;
             derivatives += displacementAndDerivativeMap.Sample(linearWrapSampler, float3(uv, derivativeSlice)) * cascadeLodWeight;
 
             if (foamEnabled) {
@@ -286,31 +287,11 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
         }
     }
 
-    displacementX_dy *= oceanSurfaceParams.displacementScale;
+    Dxdy *= oceanSurfaceParams.displacementScale;
     derivatives *= oceanSurfaceParams.displacementScale;
 
-    const float displacementZ_dx = derivatives.x;
-    const float displacementZ_dy = derivatives.y;
-    const float displacementX_dx = derivatives.z;
-    const float displacementY_dy = derivatives.w;
-
-    // 낮은 history 값이 넓은 회색 막처럼 보이지 않도록 cascade 합성 결과의 대비를 높인다.
-    float foam = smoothstep(0.0f, 1.0f, 1.0f - foamComplement);
-
-    if (foamEnabled && oceanSurfaceParams.foamDetailStrength > 0.0f) {
-        const float2 foamDetailUV = input.samplePositionXY / oceanSurfaceParams.foamDetailMapSize;
-        const float foamDetail = foamDetailMap.Sample(linearWrapSampler, foamDetailUV).a;
-        foam *= lerp(1.0f, foamDetail, oceanSurfaceParams.foamDetailStrength);
-    }
-
     // 합성한 derivative 의 Jacobian 으로 변위된 수면의 geometric normal 을 복원한다.
-    // Horizontal displacement Jacobian determinant
-    const float J = (1.0f + displacementX_dx) * (1.0f + displacementY_dy) - displacementX_dy * displacementX_dy;
-
-    // Surface normal
-    const float3 unnormalizedNormal = float3(displacementZ_dy * displacementX_dy - displacementZ_dx * (1.0f + displacementY_dy), displacementZ_dx * displacementX_dy - displacementZ_dy * (1.0f + displacementX_dx), J);
-    const float normalLengthSquared = dot(unnormalizedNormal, unnormalizedNormal);
-    const float3 geometricNormal = normalLengthSquared > 0.0f ? unnormalizedNormal * rsqrt(normalLengthSquared) : float3(0.0f, 0.0f, 1.0f);
+    const float3 geometricNormal = CalculateOceanSurfaceNormal(Dxdy, derivatives);
 
     const float3 V = viewVector / max(viewDistance, 0.0001f);
     float3 normal = geometricNormal * (isFrontFace ? 1.0f : -1.0f);
@@ -372,6 +353,15 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
                 color += frameConstants.directionalLight.lightColor * sunSpecular;
             }
         }
+    }
+
+    // 낮은 history 값이 넓은 회색 막처럼 보이지 않도록 cascade 합성 결과의 대비를 높인다.
+    float foam = smoothstep(0.0f, 1.0f, 1.0f - foamComplement);
+
+    if (foamEnabled && oceanSurfaceParams.foamDetailStrength > 0.0f) {
+        const float2 foamDetailUV = input.samplePositionXY / oceanSurfaceParams.foamDetailMapSize;
+        const float foamDetail = foamDetailMap.Sample(linearWrapSampler, foamDetailUV).a;
+        foam *= lerp(1.0f, foamDetail, oceanSurfaceParams.foamDetailStrength);
     }
 
     color = lerp(color, oceanSurfaceParams.foamColor, foam);

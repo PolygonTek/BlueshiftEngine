@@ -127,6 +127,7 @@ public:
     bool                        AddOceanSurface(const OceanSurface::Desc &desc);
     bool                        UpdateOceanSurface(const OceanSurface::Desc &desc);
     void                        RemoveOceanSurface();
+    bool                        SetOceanSurfaceQueries(const OceanSurfaceQueryInput *queries, uint32_t queryCount);
 
     void                        SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial);
 

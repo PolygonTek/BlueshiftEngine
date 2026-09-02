@@ -36,4 +36,5 @@ private:
 
     Desc                              desc;
     uint64_t                          revision = 0;
+    BE1::Array<OceanSurfaceQueryInput> queries;
 };

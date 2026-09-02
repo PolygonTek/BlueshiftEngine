@@ -341,6 +341,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     gpuTimingEnabled = cmd->gpuTiming;
     textureStreamingFeedbackEnabled = cmd->textureStreamingFeedback;
     swapChainOutputEnabled = cmd->swapChainOutput;
+    oceanSurfaceQueryReadbackFrame = nullptr;
 
     statDrawCount = 0;
     statDrawTriangleCount = 0;
@@ -353,11 +354,16 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         gpuTiming.BeginFrame(mainCommandList, frameData, currentContext);
     }
 
-    // 메인 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
     const VisOceanSurface *visOceanSurface = frameData->GetVisOceanSurface();
     if (visOceanSurface && swapChainOutputEnabled && currentContext == renderSystem->mainRenderContext) {
         renderSystem->gpuOcean.ApplySimulationSettings(visOceanSurface->simulationSettings, visOceanSurface->settingsRevision);
-        renderSystem->gpuOcean.Update(mainCommandList, frameData->GetThreadData(0), frameData->GetFrameTime());
+
+        // 메인 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
+        if (renderSystem->gpuOcean.Update(mainCommandList, frameData->GetThreadData(0), frameData->GetFrameTime())) {
+            if (visOceanSurface->surfaceQueryCount > 0) {
+                oceanSurfaceQueryReadbackFrame = renderSystem->gpuOcean.DispatchSurfaceQueries(mainCommandList, frameData->GetThreadData(0), visOceanSurface->surfaceQueries, visOceanSurface->surfaceQueryCount, visOceanSurface->surfaceSettings.height);
+            }
+        }
     }
 
     if (swapChainOutputEnabled) {
@@ -432,7 +438,6 @@ static const RenderPass *FindRenderPass(const VisCamera *visCamera, RenderPassTy
             return renderPass;
         }
     }
-
     return nullptr;
 }
 
@@ -1028,7 +1033,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
     bool needsCommandList = renderImGuiOverlay || finishGpuTiming || frameCompositionTexture;
 #ifdef USE_MIPMAP_STREAMING
     needsCommandList |= textureStreamingFeedbackEnabled;
-    TextureStreamingFeedback::ReadbackFrame *readbackFrame = nullptr;
+    TextureStreamingFeedback::ReadbackFrame *textureStreamingReadbackFrame = nullptr;
 #endif
 
     if (needsCommandList) {
@@ -1036,7 +1041,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
 
 #ifdef USE_MIPMAP_STREAMING
         if (textureStreamingFeedbackEnabled) {
-            readbackFrame = currentContext->textureStreamingFeedback.Resolve(mainCommandList);
+            textureStreamingReadbackFrame = currentContext->textureStreamingFeedback.Resolve(mainCommandList);
         }
 #endif
 
@@ -1083,10 +1088,15 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
     }
 
 #ifdef USE_MIPMAP_STREAMING
-    if (readbackFrame) {
-        readbackFrame->SetReadbackFenceValue(fenceValue);
+    if (textureStreamingReadbackFrame) {
+        textureStreamingReadbackFrame->SetReadbackFenceValue(fenceValue);
     }
 #endif
+
+    if (oceanSurfaceQueryReadbackFrame) {
+        oceanSurfaceQueryReadbackFrame->SetReadbackFenceValue(fenceValue);
+        oceanSurfaceQueryReadbackFrame = nullptr;
+    }
 
     return (const void *)(cmd + 1);
 }

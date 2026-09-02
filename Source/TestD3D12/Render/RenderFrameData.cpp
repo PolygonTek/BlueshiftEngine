@@ -115,6 +115,8 @@ void RenderFrameData::BeginFrame(const RenderFrameSettings &renderFrameSettings)
     elapsedPrevTime = 0.0f;
     frameCount = 0;
     hasVisOceanSurface = false;
+    visOceanSurface.surfaceQueries = nullptr;
+    visOceanSurface.surfaceQueryCount = 0;
     visOceanSurface.settingsRevision = 0;
     statEnabled = false;
     maxShaderSurfaceCount = 0;
@@ -142,7 +144,7 @@ void RenderFrameData::EndFrame() {
     commands.used = 0;
 }
 
-void RenderFrameData::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision) {
+void RenderFrameData::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount) {
     if (hasVisOceanSurface) {
         assert(visOceanSurface.settingsRevision == settingsRevision); // 현재 한 frame 에서는 하나의 ocean simulation 만 지원한다.
         return;
@@ -151,6 +153,17 @@ void RenderFrameData::RegisterVisOceanSurface(const GpuOcean::SimulationSettings
     visOceanSurface.simulationSettings = simulationSettings;
     visOceanSurface.surfaceSettings = surfaceSettings;
     visOceanSurface.settingsRevision = settingsRevision;
+
+    if (surfaceQueries && surfaceQueryCount > 0) {
+        const int queryDataSize = static_cast<int>(surfaceQueryCount * sizeof(OceanSurfaceQueryInput));
+        OceanSurfaceQueryInput *queryCopy = static_cast<OceanSurfaceQueryInput *>(MemAlloc(queryDataSize));
+        if (queryCopy) {
+            BE1::simdProcessor->Memcpy(queryCopy, surfaceQueries, queryDataSize);
+
+            visOceanSurface.surfaceQueries = queryCopy;
+            visOceanSurface.surfaceQueryCount = surfaceQueryCount;
+        }
+    }
     hasVisOceanSurface = true;
 }
 

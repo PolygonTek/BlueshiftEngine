@@ -130,6 +130,8 @@ struct PendingImGuiOverlay {
 struct VisOceanSurface {
     GpuOcean::SimulationSettings    simulationSettings;
     GpuOcean::SurfaceSettings       surfaceSettings;
+    const OceanSurfaceQueryInput *  surfaceQueries = nullptr;
+    uint32_t                        surfaceQueryCount = 0;
     uint64_t                        settingsRevision = 0;
 };
 
@@ -247,7 +249,7 @@ public:
     const RenderFrameSettings &     GetRenderFrameSettings() const { return renderFrameSettings; }
 
     const VisOceanSurface *         GetVisOceanSurface() const { return hasVisOceanSurface ? &visOceanSurface : nullptr; }
-    void                            RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision);
+    void                            RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount);
 
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }

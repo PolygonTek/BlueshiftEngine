@@ -506,6 +506,34 @@ void RenderWorld::RemoveOceanSurface() {
     hasOceanSurface = false;
 }
 
+bool RenderWorld::SetOceanSurfaceQueries(const OceanSurfaceQueryInput *queries, uint32_t queryCount) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasOceanSurface) {
+        BE_WARNLOG("RenderWorld::SetOceanSurfaceQueries: no ocean surface has been added\n");
+        return false;
+    }
+
+    if ((queryCount > 0 && !queries) || queryCount > GpuOcean::MaxSurfaceQueryCount) {
+        BE_WARNLOG("RenderWorld::SetOceanSurfaceQueries: invalid query data or count %u\n", queryCount);
+        return false;
+    }
+
+    for (uint32_t queryIndex = 0; queryIndex < queryCount; ++queryIndex) {
+        if (queries[queryIndex].queryId >= GpuOcean::MaxSurfaceQueryCount) {
+            BE_WARNLOG("RenderWorld::SetOceanSurfaceQueries: query ID %u is out of range\n", queries[queryIndex].queryId);
+            return false;
+        }
+    }
+
+    oceanSurface.queries.SetCount(static_cast<int>(queryCount), false);
+    if (queryCount > 0) {
+        BE1::simdProcessor->Memcpy(oceanSurface.queries.Ptr(), queries, static_cast<int>(queryCount * sizeof(OceanSurfaceQueryInput)));
+    }
+    return true;
+}
+
 void RenderWorld::CapturePrevWorldMatrix(RenderObject *renderObject) {
     const uint64_t previousFrameIndex = frameIndex;
     if (previousFrameIndex == 0) {

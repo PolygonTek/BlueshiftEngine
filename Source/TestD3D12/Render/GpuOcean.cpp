@@ -29,6 +29,9 @@ void GpuOcean::Init() {
     simulationTime = 0.0f;
     ResetCascadeUpdateSchedule();
     foamHistoryMayContainFoamMask = 0u;
+    for (bool &valid : surfaceQueryResultValid) {
+        valid = false;
+    }
 
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
@@ -54,6 +57,7 @@ void GpuOcean::Init() {
     generateTMAMitsuyasuInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAMitsuyasuInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=3");
     generateTimeSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateOceanTimeSpectrumShader", shaderModel, "Water/GenerateTimeSpectrum.hlsl", baseDir, "CSMain");
     resolveOceanFieldsShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_resolveOceanFieldsShader", shaderModel, "Water/ResolveOceanFields.hlsl", baseDir, "CSMain");
+    sampleOceanSurfaceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_sampleOceanSurfaceShader", shaderModel, "Water/SampleOceanSurface.hlsl", baseDir, "CSMain");
 
     generatePhillipsInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generatePhillipsInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
     generateTMAPositiveCosineSquaredInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
@@ -62,10 +66,12 @@ void GpuOcean::Init() {
     generateTMAMitsuyasuInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAMitsuyasuInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
     generateTimeSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTimeSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
     resolveOceanFieldsPipeline = shaderPipelineCache.GetComputePipeline(resolveOceanFieldsShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    sampleOceanSurfacePipeline = shaderPipelineCache.GetComputePipeline(sampleOceanSurfaceShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 }
 
 void GpuOcean::Shutdown() {
     DestroySurfaceGrid();
+    DestroySurfaceQueryResources();
     DestroyResources();
 
     simulationTime = 0.0f;
@@ -82,6 +88,7 @@ void GpuOcean::Shutdown() {
     generateTMAMitsuyasuInitialSpectrumPipeline.reset();
     generateTimeSpectrumPipeline.reset();
     resolveOceanFieldsPipeline.reset();
+    sampleOceanSurfacePipeline.reset();
 
     generatePhillipsInitialSpectrumShaderTemplate.reset();
     generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate.reset();
@@ -90,6 +97,7 @@ void GpuOcean::Shutdown() {
     generateTMAMitsuyasuInitialSpectrumShaderTemplate.reset();
     generateTimeSpectrumShaderTemplate.reset();
     resolveOceanFieldsShaderTemplate.reset();
+    sampleOceanSurfaceShaderTemplate.reset();
     surfaceShaderTemplate.reset();
     foamDetailTexture.reset();
 }
@@ -104,6 +112,7 @@ void GpuOcean::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const
     bootstrap.TrackPipeline(groupName, generateTMAMitsuyasuInitialSpectrumPipeline);
     bootstrap.TrackPipeline(groupName, generateTimeSpectrumPipeline);
     bootstrap.TrackPipeline(groupName, resolveOceanFieldsPipeline);
+    bootstrap.TrackPipeline(groupName, sampleOceanSurfacePipeline);
 }
 
 static void CalculateJONSWAPFetchParameters(float windSpeed, float gravity, float fetch, float &alpha, float &peakOmega) {
@@ -206,11 +215,131 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
     if (foamHistoryResetPending) {
         resolveParams.foamOptions |= OceanFoamOptionBitResetHistory;
     }
+
     if (!UpdateCascades(commandList, frameThreadData, params, resolveParams)) {
         return false;
     }
 
     simulationTime = nextSimulationTime;
+    return true;
+}
+
+GpuOcean::SurfaceQueryReadbackFrame *GpuOcean::DispatchSurfaceQueries(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanSurfaceQueryInput *queries, uint32_t queryCount, float surfaceHeight) {
+    PROFILER_CPU_SCOPED_EVENT("GpuOcean::DispatchSurfaceQueries");
+
+    if (!queries || queryCount == 0 || queryCount > MaxSurfaceQueryCount) {
+        return nullptr;
+    }
+
+    if (!cascadeOutputsReady || !fieldTextureArray || fieldTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready) {
+        return nullptr;
+    }
+
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(sampleOceanSurfacePipeline);
+    if (!pso || !EnsureSurfaceQueryResources()) {
+        return nullptr;
+    }
+
+    // 이번 query dispatch 결과를 받을 유휴 readback frame 을 찾는다.
+    SurfaceQueryReadbackFrame *readbackFrame = nullptr;
+    uint32_t readbackFrameIndex = surfaceQueryReadbackFrameIndex;
+    for (uint32_t attempt = 0; attempt < COUNT_OF(surfaceQueryReadbackFrames); ++attempt) {
+        SurfaceQueryReadbackFrame &candidate = surfaceQueryReadbackFrames[readbackFrameIndex];
+        if (candidate.buffer && candidate.state.load() == SurfaceQueryReadbackFrame::State::Idle) {
+            readbackFrame = &candidate;
+            break;
+        }
+        readbackFrameIndex = (readbackFrameIndex + 1u) % COUNT_OF(surfaceQueryReadbackFrames);
+    }
+
+    if (!readbackFrame) {
+        return nullptr;
+    }
+
+    RHI::Buffer *queryInputBuffer = frameThreadData->AllocStructuredBuffer(sizeof(OceanSurfaceQueryInput), queryCount, queries);
+    if (!queryInputBuffer) {
+        return nullptr;
+    }
+
+    float cascadePatchSizes[4] = {};
+    static_assert(CascadeCount <= COUNT_OF(cascadePatchSizes));
+    for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
+        cascadePatchSizes[cascadeIndex] = simulationSettings.cascades[cascadeIndex].patchSize;
+    }
+
+    OceanSurfaceQueryParams params = {};
+    params.cascadePatchSizes = float4(cascadePatchSizes);
+    params.surfaceHeight = surfaceHeight;
+    params.displacementScale = simulationSettings.displacementScale;
+    params.sampleTime = simulationTime;
+    params.queryCount = queryCount;
+
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
+    if (!constantBuffer) {
+        return nullptr;
+    }
+
+    readbackFrame->queryCount = queryCount;
+
+    // fence 값이 등록되기 전까지 다른 dispatch 가 이 readback frame 을 재사용하지 못하게 한다.
+    readbackFrame->state.store(SurfaceQueryReadbackFrame::State::Resolving);
+
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(surfaceQueryOutputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
+
+    RHI::renderer->SetPSO(commandList, pso);
+    RHI::renderer->SetTexture(commandList, 0, false, fieldTextureArray);
+    RHI::renderer->SetBuffer(commandList, 1, false, queryInputBuffer);
+    RHI::renderer->SetBuffer(commandList, 0, true, surfaceQueryOutputBuffer, surfaceQueryOutputUAV);
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->Dispatch(commandList, BE1::DivCeil(queryCount, OceanSurfaceQueryBlockSize), 1, 1);
+
+    // compute shader 가 생성한 결과를 CPU readback buffer 로 복사한다.
+    const uint32_t resultSize = queryCount * sizeof(OceanSurfaceQueryResult);
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(surfaceQueryOutputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::CopySrc));
+    RHI::renderer->CopyBuffer(commandList, readbackFrame->buffer, 0, surfaceQueryOutputBuffer, 0, resultSize);
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(surfaceQueryOutputBuffer, RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::Undefined));
+
+    surfaceQueryReadbackFrameIndex = (readbackFrameIndex + 1u) % COUNT_OF(surfaceQueryReadbackFrames);
+    return readbackFrame;
+}
+
+void GpuOcean::ConsumeCompletedSurfaceQueries() {
+    assert(BE1::Engine::IsInMainThread());
+
+    for (SurfaceQueryReadbackFrame &readbackFrame : surfaceQueryReadbackFrames) {
+        if (readbackFrame.state.load() != SurfaceQueryReadbackFrame::State::Submitted) {
+            continue;
+        }
+
+        const uint64_t fenceValue = readbackFrame.fenceValue.load();
+        if (!RHI::renderer->IsFenceComplete(RHI::CommandQueueType::Graphics, fenceValue)) {
+            continue;
+        }
+
+        const OceanSurfaceQueryResult *results = static_cast<const OceanSurfaceQueryResult *>(readbackFrame.buffer->mappedPtr);
+        for (uint32_t resultIndex = 0; resultIndex < readbackFrame.queryCount; ++resultIndex) {
+            const OceanSurfaceQueryResult &result = results[resultIndex];
+            if (result.queryId < MaxSurfaceQueryCount) {
+                surfaceQueryResultCache[result.queryId] = result;
+                surfaceQueryResultValid[result.queryId] = true;
+            }
+        }
+
+        // readback frame 을 재사용할 수 있도록 상태를 초기화한다.
+        readbackFrame.queryCount = 0;
+        readbackFrame.fenceValue.store(0);
+        readbackFrame.state.store(SurfaceQueryReadbackFrame::State::Idle);
+    }
+}
+
+bool GpuOcean::GetSurfaceQueryResult(uint32_t queryId, OceanSurfaceQueryResult &outResult) const {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (queryId >= MaxSurfaceQueryCount || !surfaceQueryResultValid[queryId]) {
+        return false;
+    }
+
+    outResult = surfaceQueryResultCache[queryId];
     return true;
 }
 
@@ -369,6 +498,66 @@ void GpuOcean::DestroyResources() {
     foamHistoryResetPending = true;
     foamHistoryMayContainFoamMask = 0u;
     ResetCascadeUpdateSchedule();
+}
+
+bool GpuOcean::EnsureSurfaceQueryResources() {
+    if (surfaceQueryOutputBuffer) {
+        return true;
+    }
+
+    DestroySurfaceQueryResources();
+
+    const uint32_t bufferSize = MaxSurfaceQueryCount * sizeof(OceanSurfaceQueryResult);
+    surfaceQueryOutputBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::UnorderedAccess, bufferSize, nullptr);
+    if (!surfaceQueryOutputBuffer) {
+        BE_WARNLOG("GpuOcean::EnsureSurfaceQueryResources: failed to create output buffer\n");
+        return false;
+    }
+    RHI::renderer->SetName(surfaceQueryOutputBuffer, "GpuOcean::surfaceQueryOutputBuffer");
+
+    surfaceQueryOutputUAV = RHI::renderer->CreateView(surfaceQueryOutputBuffer, RHI::ViewType::UAV, RHI::Format::Unknown, sizeof(OceanSurfaceQueryResult), 0, bufferSize);
+    if (!surfaceQueryOutputUAV.IsValid()) {
+        BE_WARNLOG("GpuOcean::EnsureSurfaceQueryResources: failed to create output UAV\n");
+        DestroySurfaceQueryResources();
+        return false;
+    }
+
+    for (int i = 0; i < COUNT_OF(surfaceQueryReadbackFrames); ++i) {
+        SurfaceQueryReadbackFrame &readbackFrame = surfaceQueryReadbackFrames[i];
+        readbackFrame.buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, bufferSize, nullptr);
+        if (!readbackFrame.buffer) {
+            BE_WARNLOG("GpuOcean::EnsureSurfaceQueryResources: failed to create readback buffer %i\n", i);
+            DestroySurfaceQueryResources();
+            return false;
+        }
+
+        RHI::renderer->SetName(readbackFrame.buffer, BE1::va("GpuOcean::surfaceQueryReadbackFrames[%i].buffer", i));
+        readbackFrame.queryCount = 0;
+        readbackFrame.fenceValue.store(0);
+        readbackFrame.state.store(SurfaceQueryReadbackFrame::State::Idle);
+    }
+
+    surfaceQueryReadbackFrameIndex = 0;
+    return true;
+}
+
+void GpuOcean::DestroySurfaceQueryResources() {
+    for (SurfaceQueryReadbackFrame &readbackFrame : surfaceQueryReadbackFrames) {
+        if (readbackFrame.buffer) {
+            RHI::renderer->DestroyBuffer(readbackFrame.buffer);
+            readbackFrame.buffer = nullptr;
+        }
+        readbackFrame.queryCount = 0;
+        readbackFrame.fenceValue.store(0);
+        readbackFrame.state.store(SurfaceQueryReadbackFrame::State::Idle);
+    }
+
+    if (surfaceQueryOutputBuffer) {
+        RHI::renderer->DestroyBuffer(surfaceQueryOutputBuffer);
+        surfaceQueryOutputBuffer = nullptr;
+    }
+    surfaceQueryOutputUAV = RHI::ViewID::InvalidID;
+    surfaceQueryReadbackFrameIndex = 0;
 }
 
 void GpuOcean::ResetCascadeUpdateSchedule() {

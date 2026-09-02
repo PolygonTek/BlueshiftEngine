@@ -161,6 +161,10 @@ void RenderSystem::Shutdown() {
     RHI::DestroyRenderer();
 }
 
+void RenderSystem::BeginGameFrame() {
+    gpuOcean.ConsumeCompletedSurfaceQueries();
+}
+
 void RenderSystem::UpdateFrame() {
     textureManager.UpdateFrame();
 

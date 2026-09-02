@@ -55,6 +55,7 @@ public:
     void                            Init(void *mainWindowHandle);
     void                            Shutdown();
 
+    void                            BeginGameFrame();
     void                            UpdateFrame();
 
     void                            UpdateShaderPipelineBootstrap() { shaderPipelineBootstrap.Update(); }

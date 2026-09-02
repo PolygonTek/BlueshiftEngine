@@ -134,6 +134,8 @@ void App::Update(uint64_t frameUsec) {
 
     elapsedUsec += frameUsec;
 
+    renderSystem->BeginGameFrame();
+
     scene->Update(elapsedUsec);
 
     UpdateCamera(frameUsec);

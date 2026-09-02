@@ -514,8 +514,9 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     // Add drawing surface of skybox.
     AddSkyBoxMeshes(frameData, renderCamera, visCamera);
 
+    // Ocean surface 와 query 정보를 프레임 데이터에 등록한다.
     if (hasOceanSurface) {
-        frameData->RegisterVisOceanSurface(oceanSurface.desc.simulation, oceanSurface.desc.surface, oceanSurface.revision);
+        frameData->RegisterVisOceanSurface(oceanSurface.desc.simulation, oceanSurface.desc.surface, oceanSurface.revision, oceanSurface.queries.Ptr(), static_cast<uint32_t>(oceanSurface.queries.Count()));
     }
 
     // 렌더 패스를 구성한다.

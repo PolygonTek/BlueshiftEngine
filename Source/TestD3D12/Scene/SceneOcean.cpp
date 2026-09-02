@@ -34,19 +34,38 @@ void SceneOcean::Init(RenderWorld *renderWorld) {
     app.SetCameraPitchYaw(10, 145);
     app.SetCameraDistance(150.0f);
 
-    testBoxMesh = meshManager.GetMesh("_defaultBoxMesh");
-    testBoxMaterial = materialManager.GetSingleTextureMaterial("Data/Test/Brick_Wall_Worn.dds");
-    if (testBoxMesh && testBoxMaterial) {
-        // 원점의 수면이 박스를 절반으로 나누어 물 위/아래 영상을 직접 비교할 수 있게 한다.
-        testBox.worldMatrix.SetTRS(BE1::Vec3::origin, BE1::Mat3::identity, BE1::Vec3(40.0f));
+    struct BoxInitDesc {
+        BE1::Vec2 queryPosition;
+        BE1::Vec3 size;
+    };
+    static const BoxInitDesc boxInitDescs[BoxCount] = {
+        { BE1::Vec2(-20.0f, -20.0f), BE1::Vec3(2.0f) },
+        { BE1::Vec2(20.0f, -20.0f), BE1::Vec3(2.0f) },
+        { BE1::Vec2(20.0f, 20.0f), BE1::Vec3(2.0f) },
+        { BE1::Vec2(-20.0f, 20.0f), BE1::Vec3(2.0f) },
+        { BE1::Vec2(0.0f, 0.0f), BE1::Vec3(20.0f) }
+    };
 
-        RenderObject::Desc testBoxDesc;
-        testBoxDesc.worldMatrix = testBox.worldMatrix;
-        testBoxDesc.meshInstance = testBoxMesh->GetStaticInstance();
-        testBoxDesc.aabb = testBoxMesh->GetAABB();
-        testBoxDesc.materials.SetCount(1);
-        testBoxDesc.materials[0] = testBoxMaterial;
-        testBox.renderObjectHandle = renderWorld->AddRenderObject(testBoxDesc);
+    boxMesh = meshManager.GetMesh("_defaultBoxMesh");
+    boxMaterial = materialManager.GetSingleTextureMaterial("Data/Test/Brick_Wall_Worn.dds");
+
+    for (uint32_t queryId = 0; queryId < BoxCount; ++queryId) {
+        const BoxInitDesc &initDesc = boxInitDescs[queryId];
+        Box &box = boxes[queryId];
+        box.queryPosition = initDesc.queryPosition;
+        box.size = initDesc.size;
+        box.gameObject.worldMatrix.SetTRS(
+            BE1::Vec3(initDesc.queryPosition.x, initDesc.queryPosition.y, oceanDesc.surface.height),
+            BE1::Mat3::identity,
+            initDesc.size);
+
+        RenderObject::Desc boxDesc;
+        boxDesc.worldMatrix = box.gameObject.worldMatrix;
+        boxDesc.meshInstance = boxMesh->GetStaticInstance();
+        boxDesc.aabb = boxMesh->GetAABB();
+        boxDesc.materials.SetCount(1);
+        boxDesc.materials[0] = boxMaterial;
+        box.gameObject.renderObjectHandle = renderWorld->AddRenderObject(boxDesc);
     }
 
     oceanAdded = renderWorld->AddOceanSurface(oceanDesc);
@@ -86,12 +105,14 @@ void SceneOcean::Shutdown() {
         return;
     }
 
-    if (testBox.renderObjectHandle >= 0) {
-        renderWorld->RemoveRenderObject(testBox.renderObjectHandle);
-        testBox.renderObjectHandle = -1;
+    for (Box &box : boxes) {
+        if (box.gameObject.renderObjectHandle >= 0) {
+            renderWorld->RemoveRenderObject(box.gameObject.renderObjectHandle);
+            box.gameObject.renderObjectHandle = -1;
+        }
     }
-    testBoxMaterial.reset();
-    testBoxMesh.reset();
+    boxMaterial.reset();
+    boxMesh.reset();
 
     if (directionalLight.renderLightHandle >= 0) {
         renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
@@ -113,6 +134,47 @@ void SceneOcean::Shutdown() {
 
 void SceneOcean::Update(uint64_t elapsedUsec) {
     PROFILER_CPU_SCOPED_EVENT("SceneOcean::Update");
+
+    (void)elapsedUsec;
+    UpdateSurfaceQueries();
+}
+
+void SceneOcean::UpdateSurfaceQueries() {
+    if (!oceanAdded) {
+        return;
+    }
+
+    GpuOcean &gpuOcean = renderSystem->GetGpuOcean();
+
+    for (uint32_t queryId = 0; queryId < BoxCount; ++queryId) {
+        OceanSurfaceQueryResult result;
+        if (!gpuOcean.GetSurfaceQueryResult(queryId, result)) {
+            continue;
+        }
+
+        const BE1::Vec3 surfacePosition(result.surfacePosition.x, result.surfacePosition.y, result.surfacePosition.z);
+        const BE1::Vec3 surfaceNormal(result.surfaceNormal.x, result.surfaceNormal.y, result.surfaceNormal.z);
+
+        BE1::Vec3 surfaceTangent;
+        BE1::Vec3 surfaceBitangent;
+        surfaceNormal.OrthogonalBasis(surfaceTangent, surfaceBitangent);
+        const BE1::Mat3 surfaceAxis(surfaceTangent, surfaceBitangent, surfaceNormal);
+
+        Box &box = boxes[queryId];
+        box.gameObject.worldMatrix.SetTRS(surfacePosition, surfaceAxis, box.size);
+        if (box.gameObject.renderObjectHandle >= 0) {
+            renderWorld->UpdateRenderObjectTransform(box.gameObject.renderObjectHandle, box.gameObject.worldMatrix);
+        }
+    }
+
+    OceanSurfaceQueryInput queries[BoxCount] = {};
+    for (uint32_t queryId = 0; queryId < BoxCount; ++queryId) {
+        const Box &box = boxes[queryId];
+        queries[queryId].worldPositionXY = float2(box.queryPosition.x, box.queryPosition.y);
+        queries[queryId].sampleDiameter = BE1::Max(box.size.x, box.size.y);
+        queries[queryId].queryId = queryId;
+    }
+    renderWorld->SetOceanSurfaceQueries(queries, BoxCount);
 }
 
 void SceneOcean::UpdateDirectionalLightDirection() {

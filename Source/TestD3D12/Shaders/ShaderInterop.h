@@ -131,6 +131,8 @@ static const uint OceanTimeSpectrumBlockSizeX = 8;
 static const uint OceanTimeSpectrumBlockSizeY = 8;
 static const uint OceanResolveFieldsBlockSizeX = 8;
 static const uint OceanResolveFieldsBlockSizeY = 8;
+static const uint OceanSurfaceQueryBlockSize = 64;
+static const uint OceanSurfaceQueryFixedPointIterationCount = 3;
 
 static const uint OceanSpectrumComplexPlaneCount = 4;
 static const uint OceanCascadeCount = 3;
@@ -437,6 +439,39 @@ struct OceanResolveFieldsParams {
 
 #ifdef __cplusplus
 static_assert(sizeof(OceanResolveFieldsParams) == 32, "OceanResolveFieldsParams must match the HLSL constant-buffer layout");
+#endif
+
+struct OceanSurfaceQueryInput {
+    float2 worldPositionXY;     ///< horizontal world position at which the displaced surface is requested
+    float sampleDiameter;       ///< world-space filter diameter in meters; zero samples mip 0
+    uint queryId;               ///< caller-owned result-cache slot in [0, GpuOcean::MaxSurfaceQueryCount)
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanSurfaceQueryInput) == 16, "OceanSurfaceQueryInput must match the HLSL structured-buffer layout");
+#endif
+
+struct OceanSurfaceQueryResult {
+    float3 surfacePosition;
+    uint queryId;
+    float3 surfaceNormal;
+    float sampleTime;           ///< ocean simulation time represented by this result
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanSurfaceQueryResult) == 32, "OceanSurfaceQueryResult must match the HLSL structured-buffer layout");
+#endif
+
+struct OceanSurfaceQueryParams {
+    float4 cascadePatchSizes;
+    float surfaceHeight;
+    float displacementScale;
+    float sampleTime;
+    uint queryCount;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(OceanSurfaceQueryParams) == 32, "OceanSurfaceQueryParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanSurfaceParams {

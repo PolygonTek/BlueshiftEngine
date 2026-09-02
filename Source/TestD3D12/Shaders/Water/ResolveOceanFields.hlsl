@@ -1,4 +1,5 @@
 #include "../ShaderInterop.h"
+#include "OceanFieldCommon.hlsli"
 
 #define COMMON_ROOT_SIGNATURE \
     "RootFlags(0), " \
@@ -13,7 +14,7 @@ cbuffer OceanResolveFieldsCB : register(b0) {
 StructuredBuffer<float2> spatialFields : register(t0);
 
 // cascade c 의 displacement 는 2*c, derivative 는 2*c+1 slice 에 저장한다.
-RWTexture2DArray<float4> fieldMap : register(u0);
+RWTexture2DArray<float4> displacementAndDerivativeMap : register(u0);
 RWTexture2DArray<float> foamHistoryMap : register(u1);
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
@@ -22,7 +23,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     uint fieldWidth;
     uint fieldHeight;
     uint fieldSliceCount;
-    fieldMap.GetDimensions(fieldWidth, fieldHeight, fieldSliceCount);
+    displacementAndDerivativeMap.GetDimensions(fieldWidth, fieldHeight, fieldSliceCount);
 
     uint2 transposedCoord = dispatchThreadId.xy;
     if (transposedCoord.x >= fieldWidth || transposedCoord.y >= fieldWidth) {
@@ -48,24 +49,22 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     // Cascade 합성 단계에서 모든 field 를 더한 뒤 최종 normal 과 Jacobian 을 계산할 수 있도록 원본 값을 보존한다.
     // displacement: (Dx, Dy, Dz, Dxdy), derivative: (Dzdx, Dzdy, Dxdx, Dydy)
     const uint displacementSlice = 2u * resolveParams.cascadeIndex;
-    fieldMap[uint3(coord, displacementSlice)] = float4(Dx_Dy, Dz_Dxdy);
-    fieldMap[uint3(coord, displacementSlice + 1u)] = float4(Dzdx_Dzdy, Dxdx_Dydy);
+    displacementAndDerivativeMap[uint3(coord, displacementSlice)] = float4(Dx_Dy, Dz_Dxdy);
+    displacementAndDerivativeMap[uint3(coord, displacementSlice + 1u)] = float4(Dzdx_Dzdy, Dxdx_Dydy);
 
     if ((resolveParams.foamOptions & OceanFoamOptionBitEnabled) != 0u) {
-        const float displacementX_dy = Dz_Dxdy.y * resolveParams.displacementScale;
-        const float displacementX_dx = Dxdx_Dydy.x * resolveParams.displacementScale;
-        const float displacementY_dy = Dxdx_Dydy.y * resolveParams.displacementScale;
+        const float Dxdy = Dz_Dxdy.y * resolveParams.displacementScale;
+        const float Dxdx = Dxdx_Dydy.x * resolveParams.displacementScale;
+        const float Dydy = Dxdx_Dydy.y * resolveParams.displacementScale;
 
-        const float J = (1.0f + displacementX_dx) * (1.0f + displacementY_dy) - displacementX_dy * displacementX_dy;
+        const float J = CalculateOceanJacobian(Dxdy, Dxdx, Dydy);
 
         // 수평 변위의 Jacobian 이 작아질수록 파면이 압축되므로 foam source 를 생성한다.
         const float foamSourceRate = max(resolveParams.foamThreshold - J, 0.0f) * resolveParams.foamGenerationRate;
         const uint3 foamCoord = uint3(coord, resolveParams.cascadeIndex);
         const float prevFoam = (resolveParams.foamOptions & OceanFoamOptionBitResetHistory) != 0u ? 0.0f : foamHistoryMap[foamCoord];
         const float foamDecay = exp(-resolveParams.foamDecayRate * resolveParams.deltaTime);
-        const float foamIntegrationScale = resolveParams.foamDecayRate > 1e-6f
-            ? (1.0f - foamDecay) / resolveParams.foamDecayRate
-            : resolveParams.deltaTime;
+        const float foamIntegrationScale = resolveParams.foamDecayRate > 1e-6f ? (1.0f - foamDecay) / resolveParams.foamDecayRate : resolveParams.deltaTime;
 
         foamHistoryMap[foamCoord] = saturate(prevFoam * foamDecay + foamSourceRate * foamIntegrationScale);
     }

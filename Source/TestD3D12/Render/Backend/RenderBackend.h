@@ -16,6 +16,7 @@
 
 #include "RHI/RHI.h"
 #include "Render/GpuTiming.h"
+#include "Render/GpuOcean.h"
 #include "Render/Frontend/RenderCamera.h"
 
 class RenderFrameData;
@@ -157,6 +158,7 @@ private:
     bool                            gpuTimingEnabled = false;
     bool                            textureStreamingFeedbackEnabled = false;
     bool                            swapChainOutputEnabled = false;
+    GpuOcean::SurfaceQueryReadbackFrame *oceanSurfaceQueryReadbackFrame = nullptr;
     RHI::PipelineState *            frameImagePSO = nullptr;
     RHI::PipelineState *            frameHDROutputPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchPSO = nullptr;
