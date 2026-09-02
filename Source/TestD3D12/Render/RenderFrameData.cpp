@@ -144,7 +144,7 @@ void RenderFrameData::EndFrame() {
     commands.used = 0;
 }
 
-void RenderFrameData::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount) {
+void RenderFrameData::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount) {
     if (hasVisOceanSurface) {
         assert(visOceanSurface.settingsRevision == settingsRevision); // 현재 한 frame 에서는 하나의 ocean simulation 만 지원한다.
         return;

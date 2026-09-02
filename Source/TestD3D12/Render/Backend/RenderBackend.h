@@ -16,7 +16,7 @@
 
 #include "RHI/RHI.h"
 #include "Render/GpuTiming.h"
-#include "Render/GpuOcean.h"
+#include "Render/GpuOceanSurface.h"
 #include "Render/Frontend/RenderCamera.h"
 
 class RenderFrameData;
@@ -158,7 +158,7 @@ private:
     bool                            gpuTimingEnabled = false;
     bool                            textureStreamingFeedbackEnabled = false;
     bool                            swapChainOutputEnabled = false;
-    GpuOcean::SurfaceQueryReadbackFrame *oceanSurfaceQueryReadbackFrame = nullptr;
+
     RHI::PipelineState *            frameImagePSO = nullptr;
     RHI::PipelineState *            frameHDROutputPSO = nullptr;
     RHI::PipelineState *            frameGenHiZMipFirstBatchPSO = nullptr;
@@ -193,6 +193,8 @@ private:
     BE1::Array<DrawSurfsTaskDesc>   drawSurfsTaskDescs;
     BE1::Array<SurfaceInstanceBatch> hiZCullDrawBatches;
     BE1::Array<HiZCullPassRange>    hiZCullPassRanges;
+
+    GpuOceanSurface::QueryReadbackFrame *oceanSurfaceQueryReadbackFrame = nullptr;
 
     uint64_t                        statRenderElapsedUsec = 0;
     int                             statRenderFrameCount = 0;

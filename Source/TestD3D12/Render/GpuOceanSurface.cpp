@@ -13,7 +13,11 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "GpuOcean.h"
+#include "GpuOceanSurface.h"
+#include "ShaderPipelineBootstrap.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
+#include "Render/ShaderPipeline/ShaderPipelineCache.h"
+#include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/Texture/Texture.h"
 #include "Render/Texture/TextureManager.h"
 #include "Shaders/ShaderInterop.h"
@@ -25,48 +29,278 @@ static constexpr uint32_t OceanSurfaceGridLodSteps[] = { 1u, 3u, 5u };
 static constexpr float MinOceanSurfaceShaderDivisor = 1.0e-4f;
 
 static_assert(GpuOcean::CascadeCount == OceanCascadeCount);
-static_assert(COUNT_OF(OceanSurfaceGridLodSteps) == GpuOcean::SurfaceGridLodCount);
-static_assert(GpuOcean::SurfaceGridLodCount == OceanSurfaceGridLodCount);
-static_assert(GpuOcean::SurfaceGridLodCount == 3u);
-static_assert((GpuOcean::SurfaceGridResolution - 1u) % OceanSurfaceGridLodSteps[GpuOcean::SurfaceGridLodCount - 1u] == 0u);
+static_assert(COUNT_OF(OceanSurfaceGridLodSteps) == GpuOceanSurface::GridLodCount);
+static_assert(GpuOceanSurface::GridLodCount == OceanSurfaceGridLodCount);
+static_assert(GpuOceanSurface::GridLodCount == 3u);
+static_assert((GpuOceanSurface::GridResolution - 1u) % OceanSurfaceGridLodSteps[GpuOceanSurface::GridLodCount - 1u] == 0u);
 
-static constexpr uint32_t GetOceanSurfaceGridLodIndexCount(uint32_t lodLevel) {
-    const uint32_t quadCountPerAxis = (GpuOcean::SurfaceGridResolution - 1u) / OceanSurfaceGridLodSteps[lodLevel];
-    return quadCountPerAxis * quadCountPerAxis * 6u;
+bool GpuOceanSurface::Settings::IsValid() const {
+    return gridTileCountPerAxis > 0 && gridTileCountPerAxis <= MaxGridTileCountPerAxis && gridSpacing > 0.0f;
 }
 
-bool GpuOcean::CreateSurfaceGrid() {
-    static_assert(CascadeCount == OceanCascadeCount);
-    static_assert(SurfaceGridResolution == OceanSurfaceGridResolution);
-    static_assert(SurfaceGridResolution * SurfaceGridResolution <= 1u << 16u);
+void GpuOceanSurface::Init(GpuOcean *gpuOcean) {
+    assert(gpuOcean);
 
-    if (surfaceGridIndexBuffer) {
+    this->gpuOcean = gpuOcean;
+    for (bool &valid : queryResultValid) {
+        valid = false;
+    }
+
+    const char *baseDir = "Source/TestD3D12/Shaders";
+    const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
+    constexpr bool asyncPipelineBuild = true;
+
+    queryShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_sampleOceanSurfaceShader", shaderModel, "Water/SampleOceanSurface.hlsl", baseDir, "CSMain");
+    queryPipeline = shaderPipelineCache.GetComputePipeline(queryShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+
+    shaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Water/OceanSurface");
+    if (!shaderTemplate) {
+        BE_WARNLOG("GpuOceanSurface::Init: failed to load ocean surface shader template\n");
+    }
+
+    foamDetailTexture = textureManager.GetTexture("Data/EngineTextures/water_form.PNG", Texture::Flag::LinearColorSpace);
+    if (foamDetailTexture == textureManager.defaultTexture) {
+        BE_WARNLOG("GpuOceanSurface::Init: failed to load ocean foam detail texture\n");
+        foamDetailTexture.reset();
+    }
+
+    CreateGrid();
+}
+
+void GpuOceanSurface::Shutdown() {
+    DestroyQueryResources();
+    DestroyGrid();
+
+    foamDetailTexture.reset();
+    queryPipeline.reset();
+    queryShaderTemplate.reset();
+    shaderTemplate.reset();
+    gpuOcean = nullptr;
+}
+
+void GpuOceanSurface::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const {
+    static constexpr char groupName[] = "GpuOceanSurface";
+
+    bootstrap.TrackPipeline(groupName, queryPipeline);
+}
+
+GpuOceanSurface::QueryReadbackFrame *GpuOceanSurface::DispatchQueries(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData,
+    const OceanSurfaceQueryInput *queries, uint32_t queryCount, float surfaceHeight) {
+    PROFILER_CPU_SCOPED_EVENT("GpuOceanSurface::DispatchQueries");
+
+    if (!gpuOcean || !queries || queryCount == 0 || queryCount > MaxQueryCount) {
+        return nullptr;
+    }
+
+    const RHI::Texture *fieldTextureArray = gpuOcean->GetFieldTextureArray();
+    if (!gpuOcean->AreCascadeOutputsReady() || !fieldTextureArray || fieldTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready) {
+        return nullptr;
+    }
+
+    RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(queryPipeline);
+    if (!pso || !EnsureQueryResources()) {
+        return nullptr;
+    }
+
+    // 이번 query dispatch 결과를 받을 유휴 readback frame 을 찾는다.
+    QueryReadbackFrame *readbackFrame = nullptr;
+    uint32_t readbackFrameIndex = queryReadbackFrameIndex;
+    for (uint32_t attempt = 0; attempt < COUNT_OF(queryReadbackFrames); ++attempt) {
+        QueryReadbackFrame &candidate = queryReadbackFrames[readbackFrameIndex];
+        if (candidate.buffer && candidate.state.load() == QueryReadbackFrame::State::Idle) {
+            readbackFrame = &candidate;
+            break;
+        }
+        readbackFrameIndex = (readbackFrameIndex + 1u) % COUNT_OF(queryReadbackFrames);
+    }
+
+    if (!readbackFrame) {
+        return nullptr;
+    }
+
+    RHI::Buffer *queryInputBuffer = frameThreadData->AllocStructuredBuffer(sizeof(OceanSurfaceQueryInput), queryCount, queries);
+    if (!queryInputBuffer) {
+        return nullptr;
+    }
+
+    float cascadePatchSizes[4] = {};
+    static_assert(GpuOcean::CascadeCount <= COUNT_OF(cascadePatchSizes));
+    for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+        cascadePatchSizes[cascadeIndex] = gpuOcean->GetCascadePatchSize(cascadeIndex);
+    }
+
+    OceanSurfaceQueryParams params = {};
+    params.cascadePatchSizes = float4(cascadePatchSizes);
+    params.surfaceHeight = surfaceHeight;
+    params.displacementScale = gpuOcean->GetDisplacementScale();
+    params.sampleTime = gpuOcean->GetSimulationTime();
+    params.queryCount = queryCount;
+
+    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
+    if (!constantBuffer) {
+        return nullptr;
+    }
+
+    readbackFrame->queryCount = queryCount;
+
+    // fence 값이 등록되기 전까지 다른 dispatch 가 이 readback frame 을 재사용하지 못하게 한다.
+    readbackFrame->state.store(QueryReadbackFrame::State::Resolving);
+
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(queryOutputBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
+
+    RHI::renderer->SetPSO(commandList, pso);
+    RHI::renderer->SetTexture(commandList, 0, false, fieldTextureArray);
+    RHI::renderer->SetBuffer(commandList, 1, false, queryInputBuffer);
+    RHI::renderer->SetBuffer(commandList, 0, true, queryOutputBuffer, queryOutputUAV);
+    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->Dispatch(commandList, BE1::DivCeil(queryCount, OceanSurfaceQueryBlockSize), 1, 1);
+
+    // compute shader 가 생성한 결과를 CPU readback buffer 로 복사한다.
+    const uint32_t resultSize = queryCount * sizeof(OceanSurfaceQueryResult);
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(queryOutputBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::CopySrc));
+    RHI::renderer->CopyBuffer(commandList, readbackFrame->buffer, 0, queryOutputBuffer, 0, resultSize);
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(queryOutputBuffer, RHI::GPUResourceState::CopySrc, RHI::GPUResourceState::Undefined));
+
+    queryReadbackFrameIndex = (readbackFrameIndex + 1u) % COUNT_OF(queryReadbackFrames);
+    return readbackFrame;
+}
+
+void GpuOceanSurface::ConsumeCompletedQueries() {
+    assert(BE1::Engine::IsInMainThread());
+
+    for (QueryReadbackFrame &readbackFrame : queryReadbackFrames) {
+        if (readbackFrame.state.load() != QueryReadbackFrame::State::Submitted) {
+            continue;
+        }
+
+        const uint64_t fenceValue = readbackFrame.fenceValue.load();
+        if (!RHI::renderer->IsFenceComplete(RHI::CommandQueueType::Graphics, fenceValue)) {
+            continue;
+        }
+
+        const OceanSurfaceQueryResult *results = static_cast<const OceanSurfaceQueryResult *>(readbackFrame.buffer->mappedPtr);
+        for (uint32_t resultIndex = 0; resultIndex < readbackFrame.queryCount; ++resultIndex) {
+            const OceanSurfaceQueryResult &result = results[resultIndex];
+            if (result.queryId < MaxQueryCount) {
+                queryResultCache[result.queryId] = result;
+                queryResultValid[result.queryId] = true;
+            }
+        }
+
+        // readback frame 을 재사용할 수 있도록 상태를 초기화한다.
+        readbackFrame.queryCount = 0;
+        readbackFrame.fenceValue.store(0);
+        readbackFrame.state.store(QueryReadbackFrame::State::Idle);
+    }
+}
+
+bool GpuOceanSurface::GetQueryResult(uint32_t queryId, OceanSurfaceQueryResult &outResult) const {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (queryId >= MaxQueryCount || !queryResultValid[queryId]) {
+        return false;
+    }
+
+    outResult = queryResultCache[queryId];
+    return true;
+}
+
+bool GpuOceanSurface::EnsureQueryResources() {
+    if (queryOutputBuffer) {
         return true;
     }
 
-    DestroySurfaceGrid();
+    DestroyQueryResources();
+
+    const uint32_t bufferSize = MaxQueryCount * sizeof(OceanSurfaceQueryResult);
+    queryOutputBuffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::UnorderedAccess, bufferSize, nullptr);
+    if (!queryOutputBuffer) {
+        BE_WARNLOG("GpuOceanSurface::EnsureQueryResources: failed to create output buffer\n");
+        return false;
+    }
+    RHI::renderer->SetName(queryOutputBuffer, "GpuOceanSurface::queryOutputBuffer");
+
+    queryOutputUAV = RHI::renderer->CreateView(queryOutputBuffer, RHI::ViewType::UAV, RHI::Format::Unknown, sizeof(OceanSurfaceQueryResult), 0, bufferSize);
+    if (!queryOutputUAV.IsValid()) {
+        BE_WARNLOG("GpuOceanSurface::EnsureQueryResources: failed to create output UAV\n");
+        DestroyQueryResources();
+        return false;
+    }
+
+    for (int i = 0; i < COUNT_OF(queryReadbackFrames); ++i) {
+        QueryReadbackFrame &readbackFrame = queryReadbackFrames[i];
+        readbackFrame.buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, bufferSize, nullptr);
+        if (!readbackFrame.buffer) {
+            BE_WARNLOG("GpuOceanSurface::EnsureQueryResources: failed to create readback buffer %i\n", i);
+            DestroyQueryResources();
+            return false;
+        }
+
+        RHI::renderer->SetName(readbackFrame.buffer, BE1::va("GpuOceanSurface::queryReadbackFrames[%i].buffer", i));
+        readbackFrame.queryCount = 0;
+        readbackFrame.fenceValue.store(0);
+        readbackFrame.state.store(QueryReadbackFrame::State::Idle);
+    }
+
+    queryReadbackFrameIndex = 0;
+    return true;
+}
+
+void GpuOceanSurface::DestroyQueryResources() {
+    for (QueryReadbackFrame &readbackFrame : queryReadbackFrames) {
+        if (readbackFrame.buffer) {
+            RHI::renderer->DestroyBuffer(readbackFrame.buffer);
+            readbackFrame.buffer = nullptr;
+        }
+        readbackFrame.queryCount = 0;
+        readbackFrame.fenceValue.store(0);
+        readbackFrame.state.store(QueryReadbackFrame::State::Idle);
+    }
+
+    if (queryOutputBuffer) {
+        RHI::renderer->DestroyBuffer(queryOutputBuffer);
+        queryOutputBuffer = nullptr;
+    }
+    queryOutputUAV = RHI::ViewID::InvalidID;
+    queryReadbackFrameIndex = 0;
+}
+
+static constexpr uint32_t GetOceanSurfaceGridLodIndexCount(uint32_t lodLevel) {
+    const uint32_t quadCountPerAxis = (GpuOceanSurface::GridResolution - 1u) / OceanSurfaceGridLodSteps[lodLevel];
+    return quadCountPerAxis * quadCountPerAxis * 6u;
+}
+
+bool GpuOceanSurface::CreateGrid() {
+    static_assert(GridResolution == OceanSurfaceGridResolution);
+    static_assert(GridResolution * GridResolution <= 1u << 16u);
+
+    if (gridIndexBuffer) {
+        return true;
+    }
+
+    DestroyGrid();
 
     uint32_t totalIndexCount = 0;
-    for (uint32_t lodLevel = 0; lodLevel < SurfaceGridLodCount; ++lodLevel) {
-        surfaceGridLodRanges[lodLevel].firstIndex = totalIndexCount;
-        surfaceGridLodRanges[lodLevel].indexCount = GetOceanSurfaceGridLodIndexCount(lodLevel);
-        totalIndexCount += surfaceGridLodRanges[lodLevel].indexCount;
+    for (uint32_t lodLevel = 0; lodLevel < GridLodCount; ++lodLevel) {
+        gridLodRanges[lodLevel].firstIndex = totalIndexCount;
+        gridLodRanges[lodLevel].indexCount = GetOceanSurfaceGridLodIndexCount(lodLevel);
+        totalIndexCount += gridLodRanges[lodLevel].indexCount;
     }
 
     BE1::Array<uint16_t> indices;
     indices.SetCount(totalIndexCount);
 
     uint32_t indexOffset = 0;
-    for (uint32_t lodLevel = 0; lodLevel < SurfaceGridLodCount; ++lodLevel) {
+    for (uint32_t lodLevel = 0; lodLevel < GridLodCount; ++lodLevel) {
         const uint32_t gridStep = OceanSurfaceGridLodSteps[lodLevel];
-        const SurfaceGridLodRange &lodRange = surfaceGridLodRanges[lodLevel];
+        const GridLodRange &lodRange = gridLodRanges[lodLevel];
         assert(indexOffset == lodRange.firstIndex);
 
-        for (uint32_t y = 0; y < SurfaceGridResolution - 1; y += gridStep) {
-            for (uint32_t x = 0; x < SurfaceGridResolution - 1; x += gridStep) {
-                const uint32_t bottomLeft = y * SurfaceGridResolution + x;
+        for (uint32_t y = 0; y < GridResolution - 1; y += gridStep) {
+            for (uint32_t x = 0; x < GridResolution - 1; x += gridStep) {
+                const uint32_t bottomLeft = y * GridResolution + x;
                 const uint32_t bottomRight = bottomLeft + gridStep;
-                const uint32_t topLeft = bottomLeft + gridStep * SurfaceGridResolution;
+                const uint32_t topLeft = bottomLeft + gridStep * GridResolution;
                 const uint32_t topRight = topLeft + gridStep;
 
                 indices[indexOffset++] = static_cast<uint16_t>(bottomLeft);
@@ -80,22 +314,22 @@ bool GpuOcean::CreateSurfaceGrid() {
         assert(indexOffset == lodRange.firstIndex + lodRange.indexCount);
     }
 
-    surfaceGridIndexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indices[0]), totalIndexCount, indices.Ptr());
-    if (!surfaceGridIndexBuffer) {
-        BE_WARNLOG("GpuOcean::CreateSurfaceGrid: failed to create packed surface grid index buffer\n");
-        DestroySurfaceGrid();
+    gridIndexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indices[0]), totalIndexCount, indices.Ptr());
+    if (!gridIndexBuffer) {
+        BE_WARNLOG("GpuOceanSurface::CreateGrid: failed to create packed surface grid index buffer\n");
+        DestroyGrid();
         return false;
     }
-    RHI::renderer->SetName(surfaceGridIndexBuffer, "GpuOcean::surfaceGridIndexBuffer");
+    RHI::renderer->SetName(gridIndexBuffer, "GpuOceanSurface::gridIndexBuffer");
     return true;
 }
 
-void GpuOcean::DestroySurfaceGrid() {
-    if (surfaceGridIndexBuffer) {
-        RHI::renderer->DestroyIndexBuffer(surfaceGridIndexBuffer);
-        surfaceGridIndexBuffer = nullptr;
+void GpuOceanSurface::DestroyGrid() {
+    if (gridIndexBuffer) {
+        RHI::renderer->DestroyIndexBuffer(gridIndexBuffer);
+        gridIndexBuffer = nullptr;
     }
-    for (SurfaceGridLodRange &lodRange : surfaceGridLodRanges) {
+    for (GridLodRange &lodRange : gridLodRanges) {
         lodRange = {};
     }
 }
@@ -111,17 +345,17 @@ static uint32_t GetOceanSurfaceTileLodLevel(float tileX, float tileY) {
     return 2u;
 }
 
-static constexpr uint32_t MaxOceanSurfaceTileCount = GpuOcean::MaxSurfaceGridTileCountPerAxis * GpuOcean::MaxSurfaceGridTileCountPerAxis;
+static constexpr uint32_t MaxOceanSurfaceTileCount = GpuOceanSurface::MaxGridTileCountPerAxis * GpuOceanSurface::MaxGridTileCountPerAxis;
 
 struct OceanSurfaceTileBatch {
-    OceanSurfaceTileInstance        instances[MaxOceanSurfaceTileCount];
-    uint32_t                        lodInstanceCounts[GpuOcean::SurfaceGridLodCount];
-    uint32_t                        lodInstanceOffsets[GpuOcean::SurfaceGridLodCount];
-    uint32_t                        instanceCount;
-    float                           gridSnapSpacing;
+    OceanSurfaceTileInstance    instances[MaxOceanSurfaceTileCount];
+    uint32_t                    lodInstanceCounts[GpuOceanSurface::GridLodCount];
+    uint32_t                    lodInstanceOffsets[GpuOceanSurface::GridLodCount];
+    uint32_t                    instanceCount;
+    float                       gridSnapSpacing;
 };
 
-static bool BuildOceanSurfaceTileBatch(const GpuOcean::SurfaceSettings &settings, const GpuOcean::SurfaceView &view, OceanSurfaceTileBatch &batch) {
+static bool BuildOceanSurfaceTileBatch(const GpuOceanSurface::Settings &settings, const GpuOceanSurface::View &view, OceanSurfaceTileBatch &batch) {
     batch = {};
 
     const bool hasPerspectiveFrustum = view.frustum != nullptr;
@@ -134,7 +368,7 @@ static bool BuildOceanSurfaceTileBatch(const GpuOcean::SurfaceSettings &settings
     const float tileCenterOffset = static_cast<float>(tileCountPerAxis - 1u) * 0.5f;
 
     uint32_t tileLodLevels[MaxOceanSurfaceTileCount] = {};
-    uint32_t tileLodCounts[GpuOcean::SurfaceGridLodCount] = {};
+    uint32_t tileLodCounts[GpuOceanSurface::GridLodCount] = {};
     for (uint32_t tileY = 0; tileY < tileCountPerAxis; ++tileY) {
         for (uint32_t tileX = 0; tileX < tileCountPerAxis; ++tileX) {
             const float tilePositionX = static_cast<float>(tileX) - tileCenterOffset;
@@ -153,7 +387,7 @@ static bool BuildOceanSurfaceTileBatch(const GpuOcean::SurfaceSettings &settings
         BE1::Math::Round(view.origin.x / batch.gridSnapSpacing) * batch.gridSnapSpacing,
         BE1::Math::Round(view.origin.y / batch.gridSnapSpacing) * batch.gridSnapSpacing);
 
-    const float tileSize = static_cast<float>(GpuOcean::SurfaceGridResolution - 1u) * settings.gridSpacing;
+    const float tileSize = static_cast<float>(GpuOceanSurface::GridResolution - 1u) * settings.gridSpacing;
     const float tileHalfSize = tileSize * 0.5f;
     BE1::Frustum expandedSurfaceFrustum;
     const BE1::Frustum *surfaceFrustum = view.frustum;
@@ -189,9 +423,7 @@ static bool BuildOceanSurfaceTileBatch(const GpuOcean::SurfaceSettings &settings
                     tileCenter - BE1::Vec3(tileHalfSize, tileHalfSize, 0.0f),
                     tileCenter + BE1::Vec3(tileHalfSize, tileHalfSize, 0.0f));
                 const BE1::AABB expandedTileBounds = tileBounds.Expand(settings.maxDisplacement);
-                const bool culled = hasPerspectiveFrustum
-                    ? surfaceFrustum->CullAABB(expandedTileBounds)
-                    : !view.box->IsIntersectAABB(expandedTileBounds);
+                const bool culled = hasPerspectiveFrustum ? surfaceFrustum->CullAABB(expandedTileBounds) : !view.box->IsIntersectAABB(expandedTileBounds);
                 if (!culled) {
                     tileVisible[tileIndex] = true;
                     batch.instanceCount++;
@@ -204,7 +436,7 @@ static bool BuildOceanSurfaceTileBatch(const GpuOcean::SurfaceSettings &settings
         for (uint32_t tileIndex = 0; tileIndex < batch.instanceCount; ++tileIndex) {
             tileVisible[tileIndex] = true;
         }
-        for (uint32_t lodLevel = 0; lodLevel < GpuOcean::SurfaceGridLodCount; ++lodLevel) {
+        for (uint32_t lodLevel = 0; lodLevel < GpuOceanSurface::GridLodCount; ++lodLevel) {
             batch.lodInstanceCounts[lodLevel] = tileLodCounts[lodLevel];
         }
     }
@@ -213,11 +445,11 @@ static bool BuildOceanSurfaceTileBatch(const GpuOcean::SurfaceSettings &settings
         return true;
     }
 
-    uint32_t lodInstanceWriteOffsets[GpuOcean::SurfaceGridLodCount] = {};
-    for (uint32_t lodLevel = 1; lodLevel < GpuOcean::SurfaceGridLodCount; ++lodLevel) {
+    uint32_t lodInstanceWriteOffsets[GpuOceanSurface::GridLodCount] = {};
+    for (uint32_t lodLevel = 1; lodLevel < GpuOceanSurface::GridLodCount; ++lodLevel) {
         batch.lodInstanceOffsets[lodLevel] = batch.lodInstanceOffsets[lodLevel - 1u] + batch.lodInstanceCounts[lodLevel - 1u];
     }
-    for (uint32_t lodLevel = 0; lodLevel < GpuOcean::SurfaceGridLodCount; ++lodLevel) {
+    for (uint32_t lodLevel = 0; lodLevel < GpuOceanSurface::GridLodCount; ++lodLevel) {
         lodInstanceWriteOffsets[lodLevel] = batch.lodInstanceOffsets[lodLevel];
     }
 
@@ -247,28 +479,31 @@ static bool BuildOceanSurfaceTileBatch(const GpuOcean::SurfaceSettings &settings
             tileInstance.packedNeighborLodLevels = leftLodLevel | (rightLodLevel << 8u) | (bottomLodLevel << 16u) | (topLodLevel << 24u);
         }
     }
-    for (uint32_t lodLevel = 0; lodLevel < GpuOcean::SurfaceGridLodCount; ++lodLevel) {
+
+    for (uint32_t lodLevel = 0; lodLevel < GpuOceanSurface::GridLodCount; ++lodLevel) {
         assert(lodInstanceWriteOffsets[lodLevel] == batch.lodInstanceOffsets[lodLevel] + batch.lodInstanceCounts[lodLevel]);
     }
 
     return true;
 }
 
-bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
-    const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const SurfaceSettings &surfaceSettings, const SurfaceView &surfaceView,
-    const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture, SurfaceDrawStats *drawStats) const {
-    PROFILER_CPU_SCOPED_EVENT("GpuOcean::DrawSurface");
+bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
+    const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const Settings &settings, const View &view,
+    const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture, DrawStats *drawStats) const {
+    PROFILER_CPU_SCOPED_EVENT("GpuOceanSurface::Draw");
 
-    assert(surfaceSettings.IsValid());
+    assert(settings.IsValid());
 
     if (drawStats) {
         *drawStats = {};
     }
 
-    if (!pipelineState || !frameConstantBuffer || !cameraConstantBuffer || !surfaceGridIndexBuffer || !cascadeOutputsReady) {
+    if (!gpuOcean || !pipelineState || !frameConstantBuffer || !cameraConstantBuffer || !gridIndexBuffer || !gpuOcean->AreCascadeOutputsReady()) {
         return false;
     }
 
+    const RHI::Texture *fieldTextureArray = gpuOcean->GetFieldTextureArray();
+    const RHI::Texture *foamHistoryTextureArray = gpuOcean->GetFoamHistoryTextureArray();
     if (!fieldTextureArray || fieldTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready ||
         !foamHistoryTextureArray || foamHistoryTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready) {
         return false;
@@ -285,12 +520,12 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     }
 
     assert((sceneColorTexture != nullptr) == (sceneDepthTexture != nullptr));
-    const bool refractionEnabled = surfaceSettings.refractionEnabled && sceneColorTexture && sceneDepthTexture;
+    const bool refractionEnabled = settings.refractionEnabled && sceneColorTexture && sceneDepthTexture;
     const RHI::Texture *boundSceneColorTexture = refractionEnabled ? sceneColorTexture : fallbackTexture;
     const RHI::Texture *boundSceneDepthTexture = refractionEnabled ? sceneDepthTexture : fallbackTexture;
 
     OceanSurfaceTileBatch tileBatch;
-    if (!BuildOceanSurfaceTileBatch(surfaceSettings, surfaceView, tileBatch)) {
+    if (!BuildOceanSurfaceTileBatch(settings, view, tileBatch)) {
         return false;
     }
     if (tileBatch.instanceCount == 0u) {
@@ -307,40 +542,40 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     float cascadeVertexMipLevels[4] = {};
     const float fieldTextureResolution = static_cast<float>(fieldTextureArray->GetWidth());
     const float maxFieldMipLevel = static_cast<float>(fieldTextureArray->GetMipLevelCount() - 1u);
-    for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
-        const float patchSize = simulationSettings.cascades[cascadeIndex].patchSize;
+    for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+        const float patchSize = gpuOcean->GetCascadePatchSize(cascadeIndex);
         cascadePatchSizes[cascadeIndex] = patchSize;
-        cascadeVertexMipLevels[cascadeIndex] = BE1::Clamp(BE1::Math::Log2(surfaceSettings.gridSpacing * fieldTextureResolution / patchSize), 0.0f, maxFieldMipLevel);
+        cascadeVertexMipLevels[cascadeIndex] = BE1::Clamp(BE1::Math::Log2(settings.gridSpacing * fieldTextureResolution / patchSize), 0.0f, maxFieldMipLevel);
     }
 
     OceanSurfaceParams params = {};
     params.cascadePatchSizes = float4(cascadePatchSizes);
     params.cascadeVertexMipLevels = float4(cascadeVertexMipLevels);
-    params.gridSpacing = surfaceSettings.gridSpacing;
-    params.surfaceHeight = surfaceSettings.height;
-    params.roughness = surfaceSettings.roughness;
-    const BE1::Color3 linearWaterColor = surfaceSettings.waterColor.SRGBToLinear();
+    params.gridSpacing = settings.gridSpacing;
+    params.surfaceHeight = settings.height;
+    params.roughness = settings.roughness;
+    const BE1::Color3 linearWaterColor = settings.waterColor.SRGBToLinear();
     params.waterColor = float3(linearWaterColor.r, linearWaterColor.g, linearWaterColor.b);
-    params.fresnelF0 = surfaceSettings.fresnelF0;
-    const BE1::Color3 linearScatterColor = surfaceSettings.scatterColor.SRGBToLinear();
+    params.fresnelF0 = settings.fresnelF0;
+    const BE1::Color3 linearScatterColor = settings.scatterColor.SRGBToLinear();
     params.scatterColor = float3(linearScatterColor.r, linearScatterColor.g, linearScatterColor.b);
-    params.scatterHeight = BE1::Max(surfaceSettings.scatterHeight, MinOceanSurfaceShaderDivisor);
-    const BE1::Color3 linearFoamColor = surfaceSettings.foamColor.SRGBToLinear();
+    params.scatterHeight = BE1::Max(settings.scatterHeight, MinOceanSurfaceShaderDivisor);
+    const BE1::Color3 linearFoamColor = settings.foamColor.SRGBToLinear();
     params.foamColor = float3(linearFoamColor.r, linearFoamColor.g, linearFoamColor.b);
-    params.foamDetailMapSize = BE1::Max(surfaceSettings.foamDetailMapSize, MinOceanSurfaceShaderDivisor);
-    params.foamDetailStrength = surfaceSettings.foamDetailStrength;
-    params.refractionDistance = BE1::Max(surfaceSettings.refractionDistance, 0.0f);
-    params.absorptionDistance = BE1::Max(surfaceSettings.absorptionDistance, MinOceanSurfaceShaderDivisor);
-    const float sqrtF0 = BE1::Math::Sqrt(BE1::Clamp(surfaceSettings.fresnelF0, 0.0f, 0.99f));
+    params.foamDetailMapSize = BE1::Max(settings.foamDetailMapSize, MinOceanSurfaceShaderDivisor);
+    params.foamDetailStrength = settings.foamDetailStrength;
+    params.refractionDistance = BE1::Max(settings.refractionDistance, 0.0f);
+    params.absorptionDistance = BE1::Max(settings.absorptionDistance, MinOceanSurfaceShaderDivisor);
+    const float sqrtF0 = BE1::Math::Sqrt(BE1::Clamp(settings.fresnelF0, 0.0f, 0.99f));
     params.airToWaterEta = (1.0f - sqrtF0) / (1.0f + sqrtF0);
     params.waterToAirEta = (1.0f + sqrtF0) / (1.0f - sqrtF0);
     // Scene color 는 normalized UV 로 샘플링되어 half resolution 일 수 있지만, depth Load 좌표는 full-resolution depth 크기를 사용한다.
     params.sceneSize = float2(static_cast<float>(boundSceneDepthTexture->GetWidth()), static_cast<float>(boundSceneDepthTexture->GetHeight()));
     params.sceneSizeRcp = float2(1.0f / params.sceneSize.x, 1.0f / params.sceneSize.y);
-    params.displacementScale = simulationSettings.displacementScale;
-    params.cascadeFadeScale = BE1::Max(surfaceSettings.cascadeFadeScale, MinOceanSurfaceShaderDivisor);
+    params.displacementScale = gpuOcean->GetDisplacementScale();
+    params.cascadeFadeScale = BE1::Max(settings.cascadeFadeScale, MinOceanSurfaceShaderDivisor);
     params.gridSnapSpacing = tileBatch.gridSnapSpacing;
-    params.surfaceOptions = simulationSettings.foamEnabled ? OceanSurfaceOptionBitFoamEnabled : 0u;
+    params.surfaceOptions = gpuOcean->IsFoamEnabled() ? OceanSurfaceOptionBitFoamEnabled : 0u;
     if (refractionEnabled) {
         params.surfaceOptions |= OceanSurfaceOptionBitRefractionEnabled;
     }
@@ -351,7 +586,7 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
     }
 
     RHI::renderer->SetPSO(commandList, pipelineState);
-    RHI::renderer->SetIndexBuffer(commandList, surfaceGridIndexBuffer);
+    RHI::renderer->SetIndexBuffer(commandList, gridIndexBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 0, frameConstantBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 2, surfaceConstantBuffer);
@@ -369,13 +604,13 @@ bool GpuOcean::DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *
         drawStats->instanceBufferUploadBytes = sizeof(OceanSurfaceTileInstance) * tileBatch.instanceCount;
     }
 
-    for (uint32_t lodLevel = 0; lodLevel < SurfaceGridLodCount; ++lodLevel) {
+    for (uint32_t lodLevel = 0; lodLevel < GridLodCount; ++lodLevel) {
         const uint32_t instanceCount = tileBatch.lodInstanceCounts[lodLevel];
         if (instanceCount == 0) {
             continue;
         }
 
-        const SurfaceGridLodRange &lodRange = surfaceGridLodRanges[lodLevel];
+        const GridLodRange &lodRange = gridLodRanges[lodLevel];
         const uint32_t tileInstanceOffset = tileBatch.lodInstanceOffsets[lodLevel];
         RHI::renderer->SetConstants(commandList, 3, &tileInstanceOffset, sizeof(tileInstanceOffset), 0);
         RHI::renderer->DrawIndexedInstanced(commandList, lodRange.indexCount, instanceCount, lodRange.firstIndex, 0, 0);

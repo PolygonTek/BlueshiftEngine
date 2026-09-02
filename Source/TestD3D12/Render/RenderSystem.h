@@ -15,6 +15,7 @@
 #include "RHI/RHI.h"
 #include "GpuFFT.h"
 #include "GpuOcean.h"
+#include "GpuOceanSurface.h"
 #include "GpuSphericalHarmonics.h"
 #include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
@@ -101,6 +102,9 @@ public:
 
     GpuOcean &                      GetGpuOcean() { return gpuOcean; }
     const GpuOcean &                GetGpuOcean() const { return gpuOcean; }
+
+    GpuOceanSurface &               GetGpuOceanSurface() { return gpuOceanSurface; }
+    const GpuOceanSurface &         GetGpuOceanSurface() const { return gpuOceanSurface; }
 
     GpuSphericalHarmonics &         GetGpuSphericalHarmonics() { return gpuSphericalHarmonics; }
     const GpuSphericalHarmonics &   GetGpuSphericalHarmonics() const { return gpuSphericalHarmonics; }
@@ -222,6 +226,7 @@ private:
 
     GpuFFT                          gpuFFT;
     GpuOcean                        gpuOcean;
+    GpuOceanSurface                 gpuOceanSurface;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     IBLBaker                        iblBaker;
     ProbeBakeSystem                 probeBakeSystem;

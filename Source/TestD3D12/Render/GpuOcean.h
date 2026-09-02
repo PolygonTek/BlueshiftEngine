@@ -14,21 +14,12 @@
 
 #pragma once
 
-#include <atomic>
 #include "GpuFFT.h"
-#include "Math/Color3.h"
 #include "Math/Vector2.h"
-#include "Math/Vector3.h"
 #include "Shaders/ShaderInterop.h"
-
-namespace BE1 {
-    class Frustum;
-    class OBB;
-}
 
 class ShaderPipeline;
 class ShaderTemplate;
-class Texture;
 class ShaderPipelineBootstrap;
 
 /*
@@ -40,46 +31,11 @@ class ShaderPipelineBootstrap;
 */
 
 class GpuOcean {
-    friend class RenderSystem;
-
 public:
     static constexpr uint32_t       CascadeCount = 3;
     static_assert(CascadeCount >= 2 && CascadeCount <= 4, "GpuOcean supports between two and four cascades");
 
     static constexpr uint32_t       FieldTextureSliceCount = 2 * CascadeCount;
-    static constexpr uint32_t       SurfaceGridResolution = 256;
-    static constexpr uint32_t       SurfaceGridLodCount = 3;
-    static constexpr uint32_t       MaxSurfaceGridTileCountPerAxis = 32;
-    static constexpr uint32_t       MaxSurfaceQueryCount = 4096;
-
-    struct SurfaceQueryReadbackFrame {
-        enum class State : uint8_t {
-            Idle,                   ///< query dispatch 결과를 받을 수 있는 유휴 상태
-            Resolving,              ///< readback 명령은 기록했지만 제출 fence 는 아직 등록되지 않은 상태
-            Submitted               ///< command list 제출 후 readback 완료 fence 를 기다리는 상태
-        };
-
-        RHI::Buffer *               buffer = nullptr;
-        uint32_t                    queryCount = 0;
-        std::atomic<uint64_t>       fenceValue = 0;
-        std::atomic<State>          state = State::Idle;
-
-        void                        SetReadbackFenceValue(uint64_t fenceValue) { this->fenceValue.store(fenceValue); this->state.store(State::Submitted); }
-    };
-
-    struct SurfaceDrawStats {
-        uint32_t                    drawCount = 0;
-        uint64_t                    triangleCount = 0;
-        uint32_t                    instanceBufferAllocCount = 0;
-        uint32_t                    instanceBufferUploadBytes = 0;
-    };
-
-    struct SurfaceView {
-        BE1::Vec3                   origin = BE1::Vec3::origin;
-        const BE1::Frustum *        frustum = nullptr;
-        const BE1::OBB *            box = nullptr;
-        bool                        infiniteZFar = false;
-    };
 
     enum class SpectrumModel : uint8_t {
         Phillips,                   ///< Phillips spectrum
@@ -176,41 +132,18 @@ public:
         bool                        IsValid() const;
     };
 
-    struct SurfaceSettings {
-        float                       gridSpacing = 1.0f;
-        uint32_t                    gridTileCountPerAxis = 16;
-        float                       height = 0.0f;
-        float                       maxDisplacement = 32.0f;        ///< CPU tile culling bounds 를 모든 축으로 확장하는 최대 수면 변위 (m)
-        bool                        frustumCulling = true;
-
-        bool                        wireframe = false;
-        float                       roughness = 0.08f;
-        float                       fresnelF0 = 0.02f;
-        BE1::Color3                 waterColor = BE1::Color3(0.061f, 0.18f, 0.25f); ///< sRGB water body color
-        bool                        refractionEnabled = true;
-        float                       refractionDistance = 2.0f;      ///< 화면 공간 굴절 방향을 추적할 최대 거리 (m)
-        float                       absorptionDistance = 30.0f;     ///< 투과율이 waterColor 에 도달하는 물 속 거리 (m)
-        BE1::Color3                 scatterColor = BE1::Color3(0.0f, 0.34f, 0.38f); ///< 파도 마루에서 waterColor 를 기준으로 밝힐 sRGB 산란색
-        float                       scatterHeight = 8.0f;           ///< 산란색이 최대 강도에 도달하는 기준 수면 위 높이 (m)
-        BE1::Color3                 foamColor = BE1::Color3(0.955f, 0.978f, 1.0f); ///< sRGB foam color
-        float                       foamDetailMapSize = 16.0f;      ///< foam detail map 이 world-space 에서 한 번 반복되는 크기 (m)
-        float                       foamDetailStrength = 1.0f;      ///< foam history mask 에 foam detail map 을 적용하는 강도 [0, 1]
-        float                       cascadeFadeScale = 20.0f;       ///< cascade patch size 에 곱해 거리 기반 fade 구간을 정하는 배율
-
-        bool                        IsValid() const;
-    };
-
     void                            Init();
     void                            Shutdown();
 
     void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
-    const SharedPtr<ShaderTemplate> &GetSurfaceShaderTemplate() const { return surfaceShaderTemplate; }
-
-    bool                            IsSurfaceGridReady() const { return surfaceGridIndexBuffer != nullptr; }
-
                                     /// 현재 모든 cascade 의 출력 field (displacement/derivative textures) 가 준비되었는지 여부를 리턴한다.
     bool                            AreCascadeOutputsReady() const { return cascadeOutputsReady; }
+
+    float                           GetCascadePatchSize(uint32_t cascadeIndex) const { assert(cascadeIndex < CascadeCount); return simulationSettings.cascades[cascadeIndex].patchSize; }
+    float                           GetDisplacementScale() const { return simulationSettings.displacementScale; }
+    float                           GetSimulationTime() const { return simulationTime; }
+    bool                            IsFoamEnabled() const { return simulationSettings.foamEnabled; }
 
                                     /// 각 cascade 의 초기 스펙트럼을 같은 index 의 slice 에 저장하는 texture array 를 얻는다.
     const RHI::Texture *            GetInitialSpectrumTextureArray() const { return initialSpectrumTextureArray; }
@@ -227,33 +160,10 @@ public:
                                     /// 현재 시뮬레이션 설정으로 모든 cascade 의 출력 field 를 갱신한다.
     bool                            Update(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, float deltaTime);
 
-                                    /// 쿼리 XY 지점들의 surface position/normal 을 GPU 에서 배치 계산하고 비동기 readback 을 예약한다.
-    [[nodiscard]]                   /// queryId 는 [0, MaxSurfaceQueryCount) 범위의 호출자 소유 결과-cache 슬롯이다.
-    SurfaceQueryReadbackFrame *     DispatchSurfaceQueries(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanSurfaceQueryInput *queries, uint32_t queryCount, float surfaceHeight);
-
-                                    /// queryId 슬롯에 완료된 결과가 있으면 복사한다.
-    bool                            GetSurfaceQueryResult(uint32_t queryId, OceanSurfaceQueryResult &outResult) const;
-
-                                    /// 현재 cascade 출력으로 카메라 중심의 NxN 수면 grid 중 view volume 에 보이는 tile 을 렌더링한다.
-    bool                            DrawSurface(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
-                                        const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const SurfaceSettings &surfaceSettings, const SurfaceView &surfaceView,
-                                        const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture,
-                                        SurfaceDrawStats *drawStats = nullptr) const;
-
 private:
-    struct SurfaceGridLodRange {
-        uint32_t                    firstIndex = 0;
-        uint32_t                    indexCount = 0;
-    };
-
     bool                            HasResources() const;
     bool                            EnsureResources();
     void                            DestroyResources();
-    bool                            EnsureSurfaceQueryResources();
-    void                            DestroySurfaceQueryResources();
-
-    bool                            CreateSurfaceGrid();
-    void                            DestroySurfaceGrid();
     void                            ResetCascadeUpdateSchedule();
 
                                     /// 각 cascade 별로 displacement, derivative, foam history texture 를 업데이트한다.
@@ -278,9 +188,6 @@ private:
                                     /// 세 리소스의 primary view 를 사용하며 호출 전후 spatialFieldsBuffer 는 Undefined(Common), texture 들은 ShaderResource 상태이다.
     bool                            ResolveOceanFields(RHI::CommandList *commandList, const RHI::ConstantBuffer *resolveConstantBuffer);
 
-                                    /// 완료된 readback 만 내부 queryId cache 로 옮긴다.
-    void                            ConsumeCompletedSurfaceQueries();
-
     SharedPtr<ShaderTemplate>       generatePhillipsInitialSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       generateTMAHasselmannInitialSpectrumShaderTemplate;
@@ -288,9 +195,6 @@ private:
     SharedPtr<ShaderTemplate>       generateTMAMitsuyasuInitialSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       generateTimeSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       resolveOceanFieldsShaderTemplate;
-    SharedPtr<ShaderTemplate>       sampleOceanSurfaceShaderTemplate;
-    SharedPtr<ShaderTemplate>       surfaceShaderTemplate;
-    SharedPtr<Texture>              foamDetailTexture;
 
     SharedPtr<ShaderPipeline>       generatePhillipsInitialSpectrumPipeline;
     SharedPtr<ShaderPipeline>       generateTMAPositiveCosineSquaredInitialSpectrumPipeline;
@@ -299,7 +203,6 @@ private:
     SharedPtr<ShaderPipeline>       generateTMAMitsuyasuInitialSpectrumPipeline;
     SharedPtr<ShaderPipeline>       generateTimeSpectrumPipeline;
     SharedPtr<ShaderPipeline>       resolveOceanFieldsPipeline;
-    SharedPtr<ShaderPipeline>       sampleOceanSurfacePipeline;
 
     SimulationSettings              simulationSettings;
     uint64_t                        appliedSimulationSettingsRevision = 0;
@@ -312,20 +215,10 @@ private:
     RHI::Texture *                  fieldTextureArray = nullptr;            // even slices: displacement, odd slices: derivative
     RHI::Texture *                  foamHistoryTextureArray = nullptr;      // slice per cascade, R: temporally accumulated foam
 
-    RHI::Buffer *                   surfaceQueryOutputBuffer = nullptr;
-    RHI::ViewID                     surfaceQueryOutputUAV = RHI::ViewID::InvalidID;
-    SurfaceQueryReadbackFrame       surfaceQueryReadbackFrames[2] = {};
-    uint32_t                        surfaceQueryReadbackFrameIndex = 0;
-    OceanSurfaceQueryResult         surfaceQueryResultCache[MaxSurfaceQueryCount] = {};
-    bool                            surfaceQueryResultValid[MaxSurfaceQueryCount] = {};
-
     BE1::Array<RHI::ViewID>         fieldMipSRVs;
     BE1::Array<RHI::ViewID>         fieldMipUAVs;
     BE1::Array<RHI::ViewID>         foamMipSRVs;
     BE1::Array<RHI::ViewID>         foamMipUAVs;
-
-    RHI::IndexBuffer *              surfaceGridIndexBuffer = nullptr;
-    SurfaceGridLodRange             surfaceGridLodRanges[SurfaceGridLodCount] = {};
 
     float                           simulationTime = 0.0f;
     float                           cascadeLastUpdateTimes[CascadeCount] = {};

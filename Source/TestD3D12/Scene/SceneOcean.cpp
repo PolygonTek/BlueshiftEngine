@@ -144,11 +144,11 @@ void SceneOcean::UpdateSurfaceQueries() {
         return;
     }
 
-    GpuOcean &gpuOcean = renderSystem->GetGpuOcean();
+    GpuOceanSurface &gpuOceanSurface = renderSystem->GetGpuOceanSurface();
 
     for (uint32_t queryId = 0; queryId < BoxCount; ++queryId) {
         OceanSurfaceQueryResult result;
-        if (!gpuOcean.GetSurfaceQueryResult(queryId, result)) {
+        if (!gpuOceanSurface.GetQueryResult(queryId, result)) {
             continue;
         }
 
@@ -199,7 +199,7 @@ void SceneOcean::BuildImGui() {
 
     OceanSurface::Desc oceanSettings = oceanSurface->GetDesc();
     GpuOcean::SimulationSettings &simulationSettings = oceanSettings.simulation;
-    GpuOcean::SurfaceSettings &surfaceSettings = oceanSettings.surface;
+    GpuOceanSurface::Settings &surfaceSettings = oceanSettings.surface;
     bool oceanSettingsChanged = false;
     bool oceanCascadeSettingsChanged = false;
     const float itemWidth = fontSize * 12.0f;
@@ -384,7 +384,7 @@ void SceneOcean::BuildImGui() {
 
         int surfaceGridTileCountPerAxis = static_cast<int>(surfaceSettings.gridTileCountPerAxis);
         ImGui::SetNextItemWidth(itemWidth);
-        if (ImGui::SliderInt("Surface grid tiles per axis", &surfaceGridTileCountPerAxis, 1, GpuOcean::MaxSurfaceGridTileCountPerAxis)) {
+        if (ImGui::SliderInt("Surface grid tiles per axis", &surfaceGridTileCountPerAxis, 1, GpuOceanSurface::MaxGridTileCountPerAxis)) {
             surfaceSettings.gridTileCountPerAxis = static_cast<uint32_t>(surfaceGridTileCountPerAxis);
             oceanSettingsChanged = true;
         }

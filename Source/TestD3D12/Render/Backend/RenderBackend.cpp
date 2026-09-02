@@ -361,7 +361,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         // 메인 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
         if (renderSystem->gpuOcean.Update(mainCommandList, frameData->GetThreadData(0), frameData->GetFrameTime())) {
             if (visOceanSurface->surfaceQueryCount > 0) {
-                oceanSurfaceQueryReadbackFrame = renderSystem->gpuOcean.DispatchSurfaceQueries(mainCommandList, frameData->GetThreadData(0), visOceanSurface->surfaceQueries, visOceanSurface->surfaceQueryCount, visOceanSurface->surfaceSettings.height);
+                oceanSurfaceQueryReadbackFrame = renderSystem->gpuOceanSurface.DispatchQueries(mainCommandList, frameData->GetThreadData(0), visOceanSurface->surfaceQueries, visOceanSurface->surfaceQueryCount, visOceanSurface->surfaceSettings.height);
             }
         }
     }
@@ -1258,12 +1258,13 @@ void RenderBackend::DrawGpuOcean() {
     }
 
     GpuOcean &gpuOcean = renderSystem->GetGpuOcean();
-    if (!gpuOcean.AreCascadeOutputsReady() || !gpuOcean.IsSurfaceGridReady()) {
+    GpuOceanSurface &gpuOceanSurface = renderSystem->GetGpuOceanSurface();
+    if (!gpuOcean.AreCascadeOutputsReady() || !gpuOceanSurface.IsGridReady()) {
         return;
     }
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::OceanPass);
-    GpuOcean::SurfaceView surfaceView;
+    GpuOceanSurface::View surfaceView;
     surfaceView.origin = currentVisCamera->origin;
     surfaceView.infiniteZFar = currentVisCamera->projectionInfiniteZFar;
     if (currentVisCamera->projectionOrthogonal) {
@@ -1272,8 +1273,8 @@ void RenderBackend::DrawGpuOcean() {
         surfaceView.frustum = &currentVisCamera->viewFrustum;
     }
 
-    GpuOcean::SurfaceDrawStats drawStats;
-    if (gpuOcean.DrawSurface(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, visOceanSurface->surfaceSettings, surfaceView,
+    GpuOceanSurface::DrawStats drawStats;
+    if (gpuOceanSurface.Draw(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, visOceanSurface->surfaceSettings, surfaceView,
         currentVisCamera->snapshotColorTexture, currentVisCamera->snapshotDepthTexture, &drawStats)) {
         RecordDrawStats(drawStats.drawCount, drawStats.triangleCount, drawStats.instanceBufferAllocCount, drawStats.instanceBufferUploadBytes);
     }

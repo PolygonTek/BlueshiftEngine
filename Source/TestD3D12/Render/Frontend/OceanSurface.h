@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Render/GpuOcean.h"
+#include "Render/GpuOceanSurface.h"
 
 class RenderWorld;
 
@@ -24,7 +25,7 @@ class OceanSurface {
 public:
     struct Desc {
         GpuOcean::SimulationSettings  simulation;
-        GpuOcean::SurfaceSettings     surface;
+        GpuOceanSurface::Settings     surface;
 
         bool                          IsValid() const { return simulation.IsValid() && surface.IsValid(); }
     };

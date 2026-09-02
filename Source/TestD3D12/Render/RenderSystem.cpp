@@ -67,6 +67,9 @@ void RenderSystem::Init(void *mainWindowHandle) {
     gpuOcean.Init();
     gpuOcean.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
+    gpuOceanSurface.Init(&gpuOcean);
+    gpuOceanSurface.TrackBootstrapPipelines(shaderPipelineBootstrap);
+
     gpuSphericalHarmonics.Init();
     gpuSphericalHarmonics.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
@@ -138,6 +141,8 @@ void RenderSystem::Shutdown() {
 
     gpuSphericalHarmonics.Shutdown();
 
+    gpuOceanSurface.Shutdown();
+
     gpuOcean.Shutdown();
 
     gpuFFT.Shutdown();
@@ -162,7 +167,7 @@ void RenderSystem::Shutdown() {
 }
 
 void RenderSystem::BeginGameFrame() {
-    gpuOcean.ConsumeCompletedSurfaceQueries();
+    gpuOceanSurface.ConsumeCompletedQueries();
 }
 
 void RenderSystem::UpdateFrame() {

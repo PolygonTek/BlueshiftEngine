@@ -515,13 +515,13 @@ bool RenderWorld::SetOceanSurfaceQueries(const OceanSurfaceQueryInput *queries, 
         return false;
     }
 
-    if ((queryCount > 0 && !queries) || queryCount > GpuOcean::MaxSurfaceQueryCount) {
+    if ((queryCount > 0 && !queries) || queryCount > GpuOceanSurface::MaxQueryCount) {
         BE_WARNLOG("RenderWorld::SetOceanSurfaceQueries: invalid query data or count %u\n", queryCount);
         return false;
     }
 
     for (uint32_t queryIndex = 0; queryIndex < queryCount; ++queryIndex) {
-        if (queries[queryIndex].queryId >= GpuOcean::MaxSurfaceQueryCount) {
+        if (queries[queryIndex].queryId >= GpuOceanSurface::MaxQueryCount) {
             BE_WARNLOG("RenderWorld::SetOceanSurfaceQueries: query ID %u is out of range\n", queries[queryIndex].queryId);
             return false;
         }

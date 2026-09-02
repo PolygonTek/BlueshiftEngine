@@ -17,6 +17,7 @@
 #include "Core/Allocator.h"
 #include "RHI/RHI.h"
 #include "GpuOcean.h"
+#include "GpuOceanSurface.h"
 #include "RenderFrameSettings.h"
 #include "Render/Frontend/RenderLight.h"
 #include "ShaderLightCullingTable.h"
@@ -129,7 +130,7 @@ struct PendingImGuiOverlay {
 
 struct VisOceanSurface {
     GpuOcean::SimulationSettings    simulationSettings;
-    GpuOcean::SurfaceSettings       surfaceSettings;
+    GpuOceanSurface::Settings       surfaceSettings;
     const OceanSurfaceQueryInput *  surfaceQueries = nullptr;
     uint32_t                        surfaceQueryCount = 0;
     uint64_t                        settingsRevision = 0;
@@ -249,7 +250,7 @@ public:
     const RenderFrameSettings &     GetRenderFrameSettings() const { return renderFrameSettings; }
 
     const VisOceanSurface *         GetVisOceanSurface() const { return hasVisOceanSurface ? &visOceanSurface : nullptr; }
-    void                            RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOcean::SurfaceSettings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount);
+    void                            RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount);
 
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }

@@ -539,9 +539,9 @@ void RenderWorld::PrepareOceanSurfacePipeline(VisCamera *visCamera) {
         return;
     }
 
-    const GpuOcean::SurfaceSettings &surfaceSettings = oceanSurface.desc.surface;
+    const GpuOceanSurface::Settings &surfaceSettings = oceanSurface.desc.surface;
 
-    const SharedPtr<ShaderTemplate> &shaderTemplate = renderSystem->GetGpuOcean().GetSurfaceShaderTemplate();
+    const SharedPtr<ShaderTemplate> &shaderTemplate = renderSystem->GetGpuOceanSurface().GetShaderTemplate();
     if (!shaderTemplate) {
         return;
     }

@@ -158,7 +158,3 @@ bool GpuOcean::SimulationSettings::IsValid() const {
 
     return true;
 }
-
-bool GpuOcean::SurfaceSettings::IsValid() const {
-    return gridTileCountPerAxis > 0 && gridTileCountPerAxis <= MaxSurfaceGridTileCountPerAxis && gridSpacing > 0.0f;
-}

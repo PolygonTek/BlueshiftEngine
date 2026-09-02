@@ -167,6 +167,7 @@ set(SRC_FILES
     Render/GpuFFT.cpp
     Render/GpuOcean.h
     Render/GpuOceanSettings.cpp
+    Render/GpuOceanSurface.h
     Render/GpuOceanSurface.cpp
     Render/GpuOcean.cpp
     Render/GpuSphericalHarmonics.h
