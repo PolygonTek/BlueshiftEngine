@@ -289,6 +289,9 @@ void RenderBackend::UpdateFramePSOs() {
     frameGenHiZMipOddDimPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipOddDimPipeline);
     frameHiZCullInstancesPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZCullInstancesPipeline);
     frameHiZDebugPreviewPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZDebugPreviewPipeline);
+    frameScreenSpaceDepthPyramidFirstPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstPipeline);
+    frameScreenSpaceDepthPyramidFirstMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstMSAAPipeline);
+    frameScreenSpaceDepthPyramidReducePSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidReducePipeline);
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
     frameSurfaceOutputMSAAResolveNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalPipeline);
@@ -603,6 +606,10 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     // Opaque 와 Skybox 를 렌더링한다.
     const RHI::RenderPassImage::LoadAction sceneDepthLoadAction = hasDepthPrepass ? RHI::RenderPassImage::LoadAction::Load : depthLoadAction;
     ExecuteDrawCamera3DScenePass(clearFlags, clearColor, useExplicitClearColor, sceneDepthLoadAction);
+
+    if (currentVisCamera->generateScreenSpaceDepthPyramid) {
+        DispatchGenScreenSpaceDepthPyramid();
+    }
 
     // Ocean 이 현재 렌더 타겟을 읽는 feedback loop 없이 굴절할 수 있도록 Opaque scene color/depth 를 보존한다.
     CaptureSceneSnapshot();

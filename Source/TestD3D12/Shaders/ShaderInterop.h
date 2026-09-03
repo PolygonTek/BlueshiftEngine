@@ -91,6 +91,9 @@ static const uint GenHiZMipBlockSizeY = 8;
 static const uint HiZDebugPreviewBlockSizeX = 16;
 static const uint HiZDebugPreviewBlockSizeY = 16;
 
+static const uint ScreenSpaceDepthPyramidBlockSizeX = 8;
+static const uint ScreenSpaceDepthPyramidBlockSizeY = 8;
+
 static const uint HiZCullThreadCount = 64;
 static const uint HiZCullIndirectArgInstanceCountOffset = 4;
 static const uint HiZCullIndirectArgSize = 20;
@@ -327,6 +330,16 @@ struct HiZMipGenParams {
     uint outputMipCount;
     uint useMinDepth;
 };
+
+struct ScreenSpaceDepthPyramidParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    uint2 validOutputSize;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(ScreenSpaceDepthPyramidParams) == 24, "ScreenSpaceDepthPyramidParams must match the HLSL root constants");
+#endif
 
 struct HiZDebugPreviewParams {
     uint2 inputSize;

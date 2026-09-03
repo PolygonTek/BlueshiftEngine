@@ -289,12 +289,15 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && renderFrameSettings.hiZOcclusionCulling;
     const bool needHiZTexture = needHiZCullResources;
     const bool needHiZDebugPreview = needHiZTexture && renderFrameSettings.hiZDebugPreview;
+    const bool needScreenSpaceDepthPyramid = renderFrameSettings.screenSpaceReflection && !skipPostProcess && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
 
     const RenderBloomMode bloomMode = renderFrameSettings.bloomMode;
 
     if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, renderContext->GetBaseClearColor())) {
         return;
     }
+
+    renderCamera->EnsureScreenSpaceDepthPyramidResources(renderWidth, renderHeight, needScreenSpaceDepthPyramid);
 
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
     const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
@@ -314,6 +317,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool requestHiZOcclusionCulling = canUseHiZ && needHiZCullResources && renderCamera->GetHiZCullVisibleInstanceBuffer() && renderCamera->GetHiZCullIndirectArgsBuffer();
     const bool requestHiZDebugPreview = canUseHiZ && needHiZDebugPreview && renderCamera->GetHiZDebugPreviewTexture();
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
+    const bool requestScreenSpaceDepthPyramidGeneration = needScreenSpaceDepthPyramid && renderCamera->GetDepthTexture() && renderCamera->GetScreenSpaceDepthPyramidTexture();
 
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
     VisCamera *visCamera = frameData->AllocVisCamera();
@@ -391,6 +395,21 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->sceneSnapshotDownsamplePSO = useHalfResSnapshot ? sceneSnapshotDownsamplePSO : nullptr;
     visCamera->snapshotColorTexture = renderCamera->GetSnapshotColorTexture();
     visCamera->snapshotDepthTexture = renderCamera->GetSnapshotDepthTexture();
+
+    visCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;
+    if (visCamera->generateScreenSpaceDepthPyramid) {
+        visCamera->screenSpaceDepthPyramidTexture = renderCamera->GetScreenSpaceDepthPyramidTexture();
+        visCamera->screenSpaceDepthPyramidMipCount = renderCamera->GetScreenSpaceDepthPyramidMipCount();
+        visCamera->screenSpaceDepthPyramidValidWidth = renderCamera->GetScreenSpaceDepthPyramidValidWidth();
+        visCamera->screenSpaceDepthPyramidValidHeight = renderCamera->GetScreenSpaceDepthPyramidValidHeight();
+
+        for (uint32_t mipLevel = 0; mipLevel < RenderScreenSpaceDepthPyramidMaxLevelCount; ++mipLevel) {
+            visCamera->screenSpaceDepthPyramidMipSRVs[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipSRVs()[mipLevel];
+            visCamera->screenSpaceDepthPyramidMipUAVs[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipUAVs()[mipLevel];
+            visCamera->screenSpaceDepthPyramidMipWidths[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipWidths()[mipLevel];
+            visCamera->screenSpaceDepthPyramidMipHeights[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipHeights()[mipLevel];
+        }
+    }
 
     visCamera->generateHiZ = requestHiZGeneration;
     if (visCamera->generateHiZ) {

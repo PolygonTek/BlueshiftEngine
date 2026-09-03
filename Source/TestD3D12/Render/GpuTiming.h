@@ -42,6 +42,7 @@ public:
         HiZCulling,
         GenHiZ,
         HiZDebugPreview,
+        GenScreenSpaceDepthPyramid,
         SurfaceOutputMSAAResolve,
         DepthMSAAResolve,
         LuminancePass1,

@@ -224,6 +224,16 @@ struct VisCamera {
     RHI::Texture *              hiZDebugPreviewTexture = nullptr;
     float                       hiZDebugLinearDepthScale = 1.0f;
 
+    bool                        generateScreenSpaceDepthPyramid = false;
+    RHI::Texture *              screenSpaceDepthPyramidTexture = nullptr;
+    RHI::ViewID                 screenSpaceDepthPyramidMipSRVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    RHI::ViewID                 screenSpaceDepthPyramidMipUAVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    uint32_t                    screenSpaceDepthPyramidMipWidths[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    uint32_t                    screenSpaceDepthPyramidMipHeights[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    uint32_t                    screenSpaceDepthPyramidMipCount = 0;
+    uint32_t                    screenSpaceDepthPyramidValidWidth = 0;
+    uint32_t                    screenSpaceDepthPyramidValidHeight = 0;
+
     bool                        taaResolve = false;
     RHI::Buffer *               luminanceBuffer = nullptr;
     RHI::Texture *              colorGradingLUTTexture = nullptr;

@@ -385,6 +385,7 @@ void App::BuildImGuiTextureViewer() {
 
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetRTColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", depthTexture);
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Depth Pyramid", renderCamera->GetScreenSpaceDepthPyramidTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", renderCamera->GetRTVelocityTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetRTNormalTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
@@ -609,6 +610,11 @@ void App::BuildImGuiOverlay() {
             bool specularAA = r_specularAA.GetBool();
             if (ImGui::Checkbox("Specular AA", &specularAA)) {
                 r_specularAA.SetBool(specularAA);
+            }
+
+            bool screenSpaceReflection = r_screenSpaceReflection.GetBool();
+            if (ImGui::Checkbox("Screen-space reflections", &screenSpaceReflection)) {
+                r_screenSpaceReflection.SetBool(screenSpaceReflection);
             }
 
             static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };

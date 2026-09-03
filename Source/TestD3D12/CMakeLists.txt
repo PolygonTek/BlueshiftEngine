@@ -190,6 +190,7 @@ set(SRC_FILES
     Render/Backend/RenderBackend_HiZCulling.cpp
     Render/Backend/RenderBackend_GenHiZ.cpp
     Render/Backend/RenderBackend_HiZDebug.cpp
+    Render/Backend/RenderBackend_GenScreenSpaceDepthPyramid.cpp
     Render/Backend/RenderBackend_PostProcess.cpp
     Render/Backend/RenderBackend_DebugDraw.cpp
     Render/Backend/RenderBackend_DrawGenericSurf.cpp

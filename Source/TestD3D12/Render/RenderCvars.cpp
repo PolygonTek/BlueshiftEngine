@@ -63,6 +63,8 @@ CVAR(r_hiZOcclusionCullingFreeze, "0", BE1::CVar::Flag::Bool, "freeze Hi-Z occlu
 CVAR(r_hiZDebugPreview, "0", BE1::CVar::Flag::Bool, "enable Hi-Z debug preview texture update");
 CVAR_MINMAX(r_hiZDebugPreviewMipLevel, "0", BE1::CVar::Flag::Integer, "Hi-Z debug preview mip level", 0, RenderHiZMaxLevelCount - 1);
 
+CVAR(r_screenSpaceReflection, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
+
 CVAR_MINMAX(r_textureFilter, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "texture filtering mode for material samplers", 0, static_cast<int>(RHI::TextureFilter::Count) - 1);
 CVAR_MINMAX(r_textureMaxAnisotropy, "8", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "maximum anisotropy for material samplers", 1, 16);
 CVAR(r_textureStreamingStreamInDelay, "0", BE1::CVar::Flag::Integer, "texture streaming frame delay before loading higher-resolution mips");
@@ -206,6 +208,8 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.hiZOcclusionCulling = r_hiZOcclusionCulling.GetBool();
     settings.hiZOcclusionCullingFreeze = r_hiZOcclusionCullingFreeze.GetBool();
     settings.hiZDebugPreview = r_hiZDebugPreview.GetBool();
+
+    settings.screenSpaceReflection = r_screenSpaceReflection.GetBool();
 
     settings.toneMapping = r_toneMapping.GetBool();
     settings.colorGrading = r_colorGrading.GetBool();

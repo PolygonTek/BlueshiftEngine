@@ -405,6 +405,13 @@ void RenderSystem::InitComputePipelines() {
     hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZ/HiZCullInstances.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZ/HiZDebugPreview.hlsl", baseDir);
 
+    screenSpaceDepthPyramidFirstShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstShader", computeShaderModel,
+        "Reflection/GenerateScreenSpaceDepthPyramid.hlsl", baseDir, "CSMain", "SCREEN_SPACE_DEPTH_PYRAMID_FIRST_MIP=1");
+    screenSpaceDepthPyramidFirstMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstMSAAShader", computeShaderModel,
+        "Reflection/GenerateScreenSpaceDepthPyramid.hlsl", baseDir, "CSMain", "SCREEN_SPACE_DEPTH_PYRAMID_FIRST_MIP=1, SCREEN_SPACE_DEPTH_PYRAMID_DEPTH_MSAA=1");
+    screenSpaceDepthPyramidReduceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidReduceShader", computeShaderModel,
+        "Reflection/GenerateScreenSpaceDepthPyramid.hlsl", baseDir);
+
     lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "Lighting/LightCulling.hlsl", baseDir);
     depthMSAAResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthMSAAResolveShader", computeShaderModel, "DepthMSAAResolve.hlsl", baseDir);
     surfaceOutputMSAAResolveNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
@@ -444,6 +451,10 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline, shaderPipelineBootstrap);
 
+    EnsureComputePipeline(screenSpaceDepthPyramidFirstShaderTemplate, screenSpaceDepthPyramidFirstPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(screenSpaceDepthPyramidFirstMSAAShaderTemplate, screenSpaceDepthPyramidFirstMSAAPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(screenSpaceDepthPyramidReduceShaderTemplate, screenSpaceDepthPyramidReducePipeline, shaderPipelineBootstrap);
+
     EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(depthMSAAResolveShaderTemplate, depthMSAAResolvePipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(surfaceOutputMSAAResolveNormalShaderTemplate, surfaceOutputMSAAResolveNormalPipeline, shaderPipelineBootstrap);
@@ -472,6 +483,10 @@ void RenderSystem::ReleaseComputePipelines() {
     hiZCullInstancesPipeline.reset();
     hiZDebugPreviewPipeline.reset();
 
+    screenSpaceDepthPyramidFirstPipeline.reset();
+    screenSpaceDepthPyramidFirstMSAAPipeline.reset();
+    screenSpaceDepthPyramidReducePipeline.reset();
+
     lightCullingPipeline.reset();
     depthMSAAResolvePipeline.reset();
     surfaceOutputMSAAResolveNormalPipeline.reset();
@@ -497,6 +512,9 @@ void RenderSystem::ReleaseComputePipelines() {
     genHiZMipOddDimShaderTemplate.reset();
     hiZCullInstancesShaderTemplate.reset();
     hiZDebugPreviewShaderTemplate.reset();
+    screenSpaceDepthPyramidFirstShaderTemplate.reset();
+    screenSpaceDepthPyramidFirstMSAAShaderTemplate.reset();
+    screenSpaceDepthPyramidReduceShaderTemplate.reset();
     depthMSAAResolveShaderTemplate.reset();
     surfaceOutputMSAAResolveNormalShaderTemplate.reset();
     surfaceOutputMSAAResolveVelocityShaderTemplate.reset();

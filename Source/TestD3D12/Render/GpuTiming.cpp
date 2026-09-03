@@ -31,6 +31,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "Hi-Z Culling",
         "Gen Hi-Z",
         "Hi-Z Debug Preview",
+        "Gen Screen-Space Depth Pyramid",
         "Surface Output MSAA Resolve",
         "Depth History Resolve",
         "Luminance Pass 1",

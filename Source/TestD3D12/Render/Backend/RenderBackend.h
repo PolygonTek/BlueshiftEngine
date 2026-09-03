@@ -122,6 +122,7 @@ private:
     void                            FinishHiZCulling();
     bool                            DispatchGenHiZ();
     bool                            DispatchHiZDebugPreview();
+    bool                            DispatchGenScreenSpaceDepthPyramid();
     bool                            DispatchSurfaceOutputMSAAResolve();
     bool                            DispatchCurrentDepthMSAAResolve();
 
@@ -168,6 +169,9 @@ private:
     RHI::PipelineState *            frameHiZCullInstancesPSO = nullptr;
     RHI::PipelineState *            frameLightCullingPSO = nullptr;
     RHI::PipelineState *            frameHiZDebugPreviewPSO = nullptr;
+    RHI::PipelineState *            frameScreenSpaceDepthPyramidFirstPSO = nullptr;
+    RHI::PipelineState *            frameScreenSpaceDepthPyramidFirstMSAAPSO = nullptr;
+    RHI::PipelineState *            frameScreenSpaceDepthPyramidReducePSO = nullptr;
     RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalPSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveVelocityPSO = nullptr;

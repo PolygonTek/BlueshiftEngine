@@ -23,6 +23,7 @@
 
 RenderCamera::~RenderCamera() {
     DestroyPostProcessResources();
+    DestroyScreenSpaceDepthPyramidTexture();
     DestroyHiZResources();
     DestroyRenderTextures();
 }
@@ -1195,6 +1196,102 @@ void RenderCamera::DestroySceneSnapshotResources() {
         RHI::renderer->DestroyTexture(snapshotDepthTexture);
         snapshotDepthTexture = nullptr;
     }
+}
+
+void RenderCamera::EnsureScreenSpaceDepthPyramidResources(uint32_t width, uint32_t height, bool needed) {
+    if (!needed || width == 0 || height == 0) {
+        DestroyScreenSpaceDepthPyramidTexture();
+        return;
+    }
+
+    // validWidth, validHeight 는 원본 depth 를 2x2 축소한 mip 0 의 실제 데이터 영역이다.
+    const uint32_t validWidth = BE1::Max((width + 1) >> 1, 1u);
+    const uint32_t validHeight = BE1::Max((height + 1) >> 1, 1u);
+
+    // pyramidWidth, pyramidHeight 는 valid 영역을 좌상단에 포함하도록 power-of-two 로 올린 텍스처 할당 크기다.
+    const uint32_t pyramidWidth = BE1::Math::RoundUpPowerOfTwo(validWidth);
+    const uint32_t pyramidHeight = BE1::Math::RoundUpPowerOfTwo(validHeight);
+
+    if (screenSpaceDepthPyramidTexture &&
+        screenSpaceDepthPyramidTexture->GetWidth() == pyramidWidth &&
+        screenSpaceDepthPyramidTexture->GetHeight() == pyramidHeight) {
+        screenSpaceDepthPyramidValidWidth = validWidth;
+        screenSpaceDepthPyramidValidHeight = validHeight;
+        return;
+    }
+
+    DestroyScreenSpaceDepthPyramidTexture();
+    screenSpaceDepthPyramidValidWidth = validWidth;
+    screenSpaceDepthPyramidValidHeight = validHeight;
+    CreateScreenSpaceDepthPyramidTexture(pyramidWidth, pyramidHeight);
+}
+
+bool RenderCamera::CreateScreenSpaceDepthPyramidTexture(uint32_t width, uint32_t height) {
+    uint32_t mipCount = 0;
+    uint32_t mipWidth = width;
+    uint32_t mipHeight = height;
+
+    while (mipCount < RenderScreenSpaceDepthPyramidMaxLevelCount) {
+        screenSpaceDepthPyramidMipWidths[mipCount] = mipWidth;
+        screenSpaceDepthPyramidMipHeights[mipCount] = mipHeight;
+        mipCount++;
+
+        if (mipWidth == 1 && mipHeight == 1) {
+            break;
+        }
+
+        mipWidth = mipWidth > 1 ? mipWidth >> 1 : 1;
+        mipHeight = mipHeight > 1 ? mipHeight >> 1 : 1;
+    }
+
+    const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R32G32_FLOAT);
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(width, height, 1, 1, mipCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    screenSpaceDepthPyramidTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!screenSpaceDepthPyramidTexture) {
+        BE_WARNLOG("RenderCamera::CreateScreenSpaceDepthPyramidTexture: failed to create depth pyramid texture\n");
+        DestroyScreenSpaceDepthPyramidTexture();
+        return false;
+    }
+
+    RHI::renderer->SetName(screenSpaceDepthPyramidTexture, "RenderCamera::screenSpaceDepthPyramidTexture");
+
+    for (uint32_t mipLevel = 0; mipLevel < mipCount; ++mipLevel) {
+        screenSpaceDepthPyramidMipSRVs[mipLevel] = RHI::renderer->CreateView(screenSpaceDepthPyramidTexture, RHI::ViewType::SRV, RHI::Format::Auto, 0, screenSpaceDepthPyramidTexture->GetArraySize(), mipLevel, 1);
+        if (!screenSpaceDepthPyramidMipSRVs[mipLevel].IsValid()) {
+            BE_WARNLOG("RenderCamera::CreateScreenSpaceDepthPyramidTexture: failed to create mip %i SRV\n", mipLevel);
+            DestroyScreenSpaceDepthPyramidTexture();
+            return false;
+        }
+
+        screenSpaceDepthPyramidMipUAVs[mipLevel] = RHI::renderer->CreateView(screenSpaceDepthPyramidTexture, RHI::ViewType::UAV, RHI::Format::Auto, 0, screenSpaceDepthPyramidTexture->GetArraySize(), mipLevel, 1);
+        if (!screenSpaceDepthPyramidMipUAVs[mipLevel].IsValid()) {
+            BE_WARNLOG("RenderCamera::CreateScreenSpaceDepthPyramidTexture: failed to create mip %i UAV\n", mipLevel);
+            DestroyScreenSpaceDepthPyramidTexture();
+            return false;
+        }
+    }
+
+    screenSpaceDepthPyramidMipCount = mipCount;
+    return true;
+}
+
+void RenderCamera::DestroyScreenSpaceDepthPyramidTexture() {
+    if (screenSpaceDepthPyramidTexture) {
+        RHI::renderer->DestroyTexture(screenSpaceDepthPyramidTexture);
+        screenSpaceDepthPyramidTexture = nullptr;
+    }
+
+    for (uint32_t mipLevel = 0; mipLevel < RenderScreenSpaceDepthPyramidMaxLevelCount; ++mipLevel) {
+        screenSpaceDepthPyramidMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
+        screenSpaceDepthPyramidMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
+        screenSpaceDepthPyramidMipWidths[mipLevel] = 0;
+        screenSpaceDepthPyramidMipHeights[mipLevel] = 0;
+    }
+    screenSpaceDepthPyramidMipCount = 0;
+    screenSpaceDepthPyramidValidWidth = 0;
+    screenSpaceDepthPyramidValidHeight = 0;
 }
 
 void RenderCamera::EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview) {

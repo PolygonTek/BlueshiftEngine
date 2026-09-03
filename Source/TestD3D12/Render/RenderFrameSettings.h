@@ -95,6 +95,8 @@ struct RenderFrameSettings {
     bool                    hiZOcclusionCullingFreeze = false;
     bool                    hiZDebugPreview = false;
 
+    bool                    screenSpaceReflection = false;
+
     bool                    toneMapping = true;
     bool                    colorGrading = false;
     bool                    dithering = true;
