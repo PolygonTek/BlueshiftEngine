@@ -39,11 +39,13 @@ public:
 #endif
 
 private:
-    static constexpr uint32_t   BoxCount = 6;
+    static constexpr uint32_t   BuoyantShapeCount = 4;
+    static constexpr uint32_t   BuoyantVariantsPerShape = 3;
+    static constexpr uint32_t   BuoyantObjectCount = BuoyantShapeCount * BuoyantVariantsPerShape;
 
-    struct Box {
+    struct BuoyantObject {
         GameObject              gameObject;
-        BE1::Vec3               size;
+        BE1::Vec3               scale;
         BE1::Collider *         collider = nullptr;
         BE1::PhysRigidBody *    rigidBody = nullptr;
     };
@@ -52,9 +54,9 @@ private:
     void                        UpdateDirectionalLightDirection();
 
     RenderWorld *               renderWorld = nullptr;
-    SharedPtr<Mesh>             boxMesh;
-    SharedPtr<Material>         boxMaterial;
-    Box                         boxes[BoxCount];
+    SharedPtr<Mesh>             buoyantMeshes[BuoyantShapeCount];
+    SharedPtr<Material>         buoyantMaterial;
+    BuoyantObject               buoyantObjects[BuoyantObjectCount];
     OceanSurface::Desc          oceanDesc;
     GameLight                   directionalLight;
 

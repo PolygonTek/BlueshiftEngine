@@ -54,22 +54,6 @@ void ConvolutionBloomKernelGenerator::TrackBootstrapPipelines(ShaderPipelineBoot
     bootstrap.TrackPipeline(groupName, applyDispersionPipeline);
 }
 
-bool ConvolutionBloomKernelGenerator::ArePipelinesReady() const {
-    const ShaderPipeline *pipelines[] = {
-        aperturePreparePipeline.get(),
-        reduceApertureEnergyPipeline.get(),
-        resolveDiffractionPSFPipeline.get(),
-        applyDispersionPipeline.get()
-    };
-
-    for (const ShaderPipeline *pipeline : pipelines) {
-        if (!pipeline || !pipeline->IsReady()) {
-            return false;
-        }
-    }
-    return true;
-}
-
 void ConvolutionBloomKernelGenerator::Shutdown() {
     DestroyResources();
     apertureSourceTexture.reset();

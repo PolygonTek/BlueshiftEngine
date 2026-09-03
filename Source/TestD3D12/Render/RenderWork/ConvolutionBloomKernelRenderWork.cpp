@@ -26,12 +26,7 @@ ConvolutionBloomKernelRenderWork::ConvolutionBloomKernelRenderWork(uint64_t requ
 }
 
 bool ConvolutionBloomKernelRenderWork::IsReadyToAttach() const {
-    if (!apertureTexture || !apertureTexture->IsReadyForRendering()) {
-        return false;
-    }
-
-    const ConvolutionBloomKernelGenerator &kernelGenerator = renderSystem->GetConvolutionBloomKernelGenerator();
-    return kernelGenerator.ArePipelinesReady();
+    return apertureTexture && apertureTexture->IsReadyForRendering();
 }
 
 bool ConvolutionBloomKernelRenderWork::RecordCommands(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) {

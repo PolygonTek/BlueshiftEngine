@@ -36,51 +36,91 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     app.SetCameraPitchYaw(10, 145);
     app.SetCameraDistance(80.0f);
 
-    struct BoxInitDesc {
+    enum class BuoyantShape : uint32_t {
+        Box,
+        Sphere,
+        Cylinder,
+        Capsule
+    };
+
+    struct BuoyantObjectInitDesc {
+        BuoyantShape shape;
         BE1::Vec3 position;
-        BE1::Vec3 size;
+        BE1::Mat3 axis;
+        BE1::Vec3 scale;
         float mass;
         float relativeDensity;
         float dragCoefficient;
     };
 
-    static const BoxInitDesc boxInitDescs[BoxCount] = {
-        { BE1::Vec3(-5.0f, -5.0f, 20.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
-        { BE1::Vec3(5.0f, -5.0f, 20.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
-        { BE1::Vec3(5.0f, 5.0f, 20.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
-        { BE1::Vec3(-5.0f, 5.0f, 20.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
-        { BE1::Vec3(0.0f, 0.0f, 30.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
-        { BE1::Vec3(0.0f, 0.0f, 40.0f), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f }
+    static const BuoyantObjectInitDesc buoyantObjectInitDescs[BuoyantObjectCount] = {
+        { BuoyantShape::Box, BE1::Vec3(-18.0f, -10.0f, 12.0f), BE1::Mat3::identity, BE1::Vec3(6.0f, 6.0f, 6.0f), 100.0f, 0.6f, 1.0f },
+        { BuoyantShape::Box, BE1::Vec3(-18.0f,   0.0f, 12.0f), BE1::Angles(20.0f, 15.0f, 25.0f).ToMat3(), BE1::Vec3(9.0f, 4.0f, 3.0f), 100.0f, 0.6f, 1.0f },
+        { BuoyantShape::Box, BE1::Vec3(-18.0f,  10.0f, 12.0f), BE1::Angles(-15.0f, 30.0f, -35.0f).ToMat3(), BE1::Vec3(4.0f, 8.0f, 4.0f), 100.0f, 0.6f, 1.0f },
+
+        { BuoyantShape::Sphere,  BE1::Vec3( -6.0f, -10.0f, 12.0f), BE1::Angles(15.0f, 0.0f, 20.0f).ToMat3(), BE1::Vec3(4.0f), 100.0f, 0.6f, 1.0f },
+        { BuoyantShape::Sphere,  BE1::Vec3( -6.0f,   0.0f, 12.0f), BE1::Angles(-20.0f, 35.0f, 10.0f).ToMat3(), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f },
+        { BuoyantShape::Sphere,  BE1::Vec3( -6.0f,  10.0f, 12.0f), BE1::Angles(30.0f, -25.0f, 40.0f).ToMat3(), BE1::Vec3(8.0f), 100.0f, 0.6f, 1.0f },
+
+        { BuoyantShape::Cylinder, BE1::Vec3(6.0f, -10.0f, 12.0f), BE1::Mat3::identity, BE1::Vec3(5.0f, 5.0f, 2.0f), 100.0f, 0.6f, 1.0f },
+        { BuoyantShape::Cylinder, BE1::Vec3(6.0f,   0.0f, 12.0f), BE1::Angles(35.0f, 10.0f, 15.0f).ToMat3(), BE1::Vec3(4.0f, 4.0f, 4.0f), 100.0f, 0.6f, 1.0f },
+        { BuoyantShape::Cylinder, BE1::Vec3(6.0f,  10.0f, 12.0f), BE1::Angles(-20.0f, 55.0f, -30.0f).ToMat3(), BE1::Vec3(6.0f, 6.0f, 1.5f), 100.0f, 0.6f, 1.0f },
+
+        { BuoyantShape::Capsule, BE1::Vec3(18.0f, -10.0f, 12.0f), BE1::Mat3::identity, BE1::Vec3(4.0f), 100.0f, 0.6f, 1.0f },
+        { BuoyantShape::Capsule, BE1::Vec3(18.0f,   0.0f, 12.0f), BE1::Angles(40.0f, 20.0f, -15.0f).ToMat3(), BE1::Vec3(5.0f), 100.0f, 0.6f, 1.0f },
+        { BuoyantShape::Capsule, BE1::Vec3(18.0f,  10.0f, 12.0f), BE1::Angles(-30.0f, 50.0f, 25.0f).ToMat3(), BE1::Vec3(6.0f), 100.0f, 0.6f, 1.0f }
     };
 
-    boxMesh = meshManager.GetMesh("_defaultBoxMesh");
-    boxMaterial = materialManager.GetSingleTextureMaterial("Data/Test/Roman_Stone_Floor.dds");
-    const BE1::AABB boxMeshAABB = boxMesh->GetAABB();
+    buoyantMeshes[static_cast<uint32_t>(BuoyantShape::Box)] = meshManager.GetMesh("_defaultBoxMesh");
+    buoyantMeshes[static_cast<uint32_t>(BuoyantShape::Sphere)] = meshManager.GetMesh("_defaultSphereMesh");
+    buoyantMeshes[static_cast<uint32_t>(BuoyantShape::Cylinder)] = meshManager.GetMesh("_defaultCylinderMesh");
+    buoyantMeshes[static_cast<uint32_t>(BuoyantShape::Capsule)] = meshManager.GetMesh("_defaultCapsuleMesh");
 
-    for (uint32_t boxIndex = 0; boxIndex < BoxCount; ++boxIndex) {
-        const BoxInitDesc &initDesc = boxInitDescs[boxIndex];
+    buoyantMaterial = materialManager.GetSingleTextureMaterial("Data/Test/Roman_Stone_Floor.dds");
 
-        Box &box = boxes[boxIndex];
-        box.size = initDesc.size;
+    for (uint32_t objectIndex = 0; objectIndex < BuoyantObjectCount; ++objectIndex) {
+        const BuoyantObjectInitDesc &initDesc = buoyantObjectInitDescs[objectIndex];
+        const SharedPtr<Mesh> &mesh = buoyantMeshes[static_cast<uint32_t>(initDesc.shape)];
 
-        const BE1::Vec3 boxOrigin = initDesc.position;
-        box.gameObject.worldMatrix.SetTRS(boxOrigin, BE1::Mat3::identity, initDesc.size);
+        BuoyantObject &object = buoyantObjects[objectIndex];
+        object.scale = initDesc.scale;
+        object.gameObject.worldMatrix.SetTRS(initDesc.position, initDesc.axis, initDesc.scale);
 
-        RenderObject::Desc boxDesc;
-        boxDesc.worldMatrix = box.gameObject.worldMatrix;
-        boxDesc.meshInstance = boxMesh->GetStaticInstance();
-        boxDesc.aabb = boxMesh->GetAABB();
-        boxDesc.materials.SetCount(1);
-        boxDesc.materials[0] = boxMaterial;
-        box.gameObject.renderObjectHandle = renderWorld->AddRenderObject(boxDesc);
+        RenderObject::Desc renderObjectDesc;
+        renderObjectDesc.worldMatrix = object.gameObject.worldMatrix;
+        renderObjectDesc.meshInstance = mesh->GetStaticInstance();
+        renderObjectDesc.aabb = mesh->GetAABB();
+        renderObjectDesc.materials.SetCount(1);
+        renderObjectDesc.materials[0] = buoyantMaterial;
+        object.gameObject.renderObjectHandle = renderWorld->AddRenderObject(renderObjectDesc);
 
-        box.collider = BE1::colliderManager.AllocUnnamedCollider();
-        box.collider->CreateBox(boxMeshAABB.Center() * box.size, boxMeshAABB.Extents() * box.size);
+        const BE1::AABB meshAABB = mesh->GetAABB();
+        const BE1::Vec3 colliderCenter = meshAABB.Center() * initDesc.scale;
+        const BE1::Vec3 meshExtents = meshAABB.Extents();
+
+        object.collider = BE1::colliderManager.AllocUnnamedCollider();
+
+        switch (initDesc.shape) {
+        case BuoyantShape::Box:
+            object.collider->CreateBox(colliderCenter, meshExtents * initDesc.scale);
+            break;
+        case BuoyantShape::Sphere:
+            object.collider->CreateSphere(colliderCenter, meshExtents.x * initDesc.scale.x);
+            break;
+        case BuoyantShape::Cylinder:
+            // The built-in cylinder is one unit in diameter and two units high along local Z.
+            object.collider->CreateCylinder(colliderCenter, meshExtents.x * initDesc.scale.x, meshExtents.z * initDesc.scale.z * 2.0f, BE1::Collider::Axis::Z);
+            break;
+        case BuoyantShape::Capsule:
+            // Collider capsule height is the straight section between its Z-axis hemispheres.
+            object.collider->CreateCapsule(colliderCenter, meshExtents.x * initDesc.scale.x, (meshExtents.z - meshExtents.x) * initDesc.scale.z * 2.0f, BE1::Collider::Axis::Z);
+            break;
+        }
 
         BE1::PhysCollidableDesc rigidBodyDesc = {};
         rigidBodyDesc.type = BE1::PhysCollidable::Type::RigidBody;
-        rigidBodyDesc.origin = boxOrigin;
-        rigidBodyDesc.axis = BE1::Mat3::identity;
+        rigidBodyDesc.origin = initDesc.position;
+        rigidBodyDesc.axis = initDesc.axis;
         rigidBodyDesc.mass = initDesc.mass;
         rigidBodyDesc.restitution = 0.02f;
         rigidBodyDesc.friction = 1.0f;
@@ -101,11 +141,11 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
         BE1::PhysShapeDesc shapeDesc = {};
         shapeDesc.localOrigin = BE1::Vec3::zero;
         shapeDesc.localAxis = BE1::Mat3::identity;
-        shapeDesc.collider = box.collider;
+        shapeDesc.collider = object.collider;
         rigidBodyDesc.shapes.Append(shapeDesc);
 
-        box.rigidBody = static_cast<BE1::PhysRigidBody *>(BE1::physicsSystem.CreateCollidable(rigidBodyDesc));
-        box.rigidBody->AddToWorld(physicsWorld);
+        object.rigidBody = static_cast<BE1::PhysRigidBody *>(BE1::physicsSystem.CreateCollidable(rigidBodyDesc));
+        object.rigidBody->AddToWorld(physicsWorld);
     }
 
     oceanAdded = renderWorld->AddOceanSurface(oceanDesc);
@@ -141,22 +181,27 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
 }
 
 void SceneOcean::Shutdown() {
-    for (Box &box : boxes) {
-        if (box.rigidBody) {
-            BE1::physicsSystem.DestroyCollidable(box.rigidBody);
-            box.rigidBody = nullptr;
+    for (BuoyantObject &object : buoyantObjects) {
+        if (object.rigidBody) {
+            BE1::physicsSystem.DestroyCollidable(object.rigidBody);
+            object.rigidBody = nullptr;
         }
-        if (box.collider) {
-            BE1::colliderManager.ReleaseCollider(box.collider, true);
-            box.collider = nullptr;
+
+        if (object.collider) {
+            BE1::colliderManager.ReleaseCollider(object.collider, true);
+            object.collider = nullptr;
         }
-        if (renderWorld && box.gameObject.renderObjectHandle >= 0) {
-            renderWorld->RemoveRenderObject(box.gameObject.renderObjectHandle);
-            box.gameObject.renderObjectHandle = -1;
+
+        if (renderWorld && object.gameObject.renderObjectHandle >= 0) {
+            renderWorld->RemoveRenderObject(object.gameObject.renderObjectHandle);
+            object.gameObject.renderObjectHandle = -1;
         }
     }
-    boxMaterial.reset();
-    boxMesh.reset();
+
+    buoyantMaterial.reset();
+    for (SharedPtr<Mesh> &mesh : buoyantMeshes) {
+        mesh.reset();
+    }
 
     if (renderWorld && directionalLight.renderLightHandle >= 0) {
         renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
@@ -179,15 +224,14 @@ void SceneOcean::Shutdown() {
 void SceneOcean::Update(uint64_t elapsedUsec) {
     PROFILER_CPU_SCOPED_EVENT("SceneOcean::Update");
 
-    (void)elapsedUsec;
-    for (Box &box : boxes) {
-        if (!box.rigidBody) {
+    for (BuoyantObject &object : buoyantObjects) {
+        if (!object.rigidBody) {
             continue;
         }
 
-        box.gameObject.worldMatrix.SetTRS(box.rigidBody->GetOrigin(), box.rigidBody->GetAxis(), box.size);
-        if (box.gameObject.renderObjectHandle >= 0) {
-            renderWorld->UpdateRenderObjectTransform(box.gameObject.renderObjectHandle, box.gameObject.worldMatrix);
+        object.gameObject.worldMatrix.SetTRS(object.rigidBody->GetOrigin(), object.rigidBody->GetAxis(), object.scale);
+        if (object.gameObject.renderObjectHandle >= 0) {
+            renderWorld->UpdateRenderObjectTransform(object.gameObject.renderObjectHandle, object.gameObject.worldMatrix);
         }
     }
 
@@ -199,14 +243,15 @@ void SceneOcean::Update(uint64_t elapsedUsec) {
 void SceneOcean::DrawBuoyancyPontoons() const {
     renderWorld->SetDebugColor(BE1::Color4::cyan, BE1::Color4(BE1::Color4::cyan.ToColor3(), 0.08f));
 
-    for (const Box &box : boxes) {
-        if (!box.rigidBody) {
+    for (const BuoyantObject &object : buoyantObjects) {
+        if (!object.rigidBody) {
             continue;
         }
 
-        const BE1::Vec3 bodyOrigin = box.rigidBody->GetOrigin();
-        const BE1::Mat3 bodyAxis = box.rigidBody->GetAxis();
-        for (const BE1::PhysBuoyancyPontoon &pontoon : box.rigidBody->GetBuoyancyPontoons()) {
+        const BE1::Vec3 bodyOrigin = object.rigidBody->GetOrigin();
+        const BE1::Mat3 bodyAxis = object.rigidBody->GetAxis();
+
+        for (const BE1::PhysBuoyancyPontoon &pontoon : object.rigidBody->GetBuoyancyPontoons()) {
             const BE1::Vec3 worldCenter = bodyOrigin + bodyAxis * pontoon.localCenter;
             const BE1::Mat3 worldAxis = bodyAxis * pontoon.localAxis;
             renderWorld->DrawDebugOBB(BE1::OBB(worldCenter, pontoon.localExtents, worldAxis), true, false);

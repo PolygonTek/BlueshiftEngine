@@ -38,7 +38,6 @@ public:
     void                            Shutdown();
 
     void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
-    bool                            ArePipelinesReady() const;
 
     void                            SetApertureTexture(const SharedPtr<Texture> &texture);
     const SharedPtr<Texture> &      GetApertureTexture() const { return apertureSourceTexture; }

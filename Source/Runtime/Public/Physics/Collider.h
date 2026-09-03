@@ -34,7 +34,7 @@ struct PhysBuoyancyForceMode {
 
 struct PhysBuoyancyPontoonSettings {
     uint32_t                voxelResolution = 2;        ///< Collider AABB 의 가장 긴 축의 voxel 개수
-    uint32_t                subsamplesPerAxis = 2;      ///< 각 voxel 의 점유율을 추정하기 위해 voxel 내부의 각 축 별로 배치할 sample 개수
+    uint32_t                subsamplesPerAxis = 3;      ///< 각 voxel 의 점유율을 추정하기 위해 voxel 내부의 각 축 별로 배치할 sample 개수
 };
 
 struct PhysBuoyancyPontoon {

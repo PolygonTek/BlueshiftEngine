@@ -105,6 +105,7 @@ public:
 
     void                            Init(GpuOcean *gpuOcean);
     void                            Shutdown();
+
     void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
     const SharedPtr<ShaderTemplate> &GetShaderTemplate() const { return shaderTemplate; }
