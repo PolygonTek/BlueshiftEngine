@@ -386,6 +386,7 @@ void App::BuildImGuiTextureViewer() {
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetRTColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", depthTexture);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Depth Pyramid", renderCamera->GetScreenSpaceDepthPyramidTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Trace", renderCamera->GetSSRTraceTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", renderCamera->GetRTVelocityTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetRTNormalTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
@@ -612,11 +613,6 @@ void App::BuildImGuiOverlay() {
                 r_specularAA.SetBool(specularAA);
             }
 
-            bool screenSpaceReflection = r_screenSpaceReflection.GetBool();
-            if (ImGui::Checkbox("Screen-space reflections", &screenSpaceReflection)) {
-                r_screenSpaceReflection.SetBool(screenSpaceReflection);
-            }
-
             static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
             int msaaSampleCount = r_msaa.GetInteger();
             int msaaSampleCountIndex = msaaSampleCount >= 8 ? 3 : (msaaSampleCount >= 4 ? 2 : (msaaSampleCount >= 2 ? 1 : 0));
@@ -754,6 +750,65 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
+            if (roundedCollapsingHeader("Screen Space Reflection##SSRHeader")) {
+                bool ssr = r_ssr.GetBool();
+                if (ImGui::Checkbox("Screen-space reflections", &ssr)) {
+                    r_ssr.SetBool(ssr);
+                }
+
+                ImGui::BeginDisabled(!ssr);
+                ImGui::Indent();
+
+                bool ssrDebug = r_ssrDebug.GetBool();
+                if (ImGui::Checkbox("Trace debug output", &ssrDebug)) {
+                    r_ssrDebug.SetBool(ssrDebug);
+                }
+                ImGui::SameLine();
+                ImGui::TextDisabled("(?)");
+                if (ImGui::IsItemHovered()) {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted(
+                        "Green: Hit\n"
+                        "Red: Miss\n"
+                        "Blue: Maximum iterations reached\n"
+                        "Black: No surface");
+                    ImGui::EndTooltip();
+                }
+
+                float ssrMaxDistance = r_ssrMaxDistance.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Trace distance", &ssrMaxDistance, r_ssrMaxDistance.GetMinValue(), r_ssrMaxDistance.GetMaxValue(), "%.1f m")) {
+                    r_ssrMaxDistance.SetFloat(ssrMaxDistance);
+                }
+
+                float ssrThickness = r_ssrThickness.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Thickness", &ssrThickness, r_ssrThickness.GetMinValue(), r_ssrThickness.GetMaxValue(), "%.2f m")) {
+                    r_ssrThickness.SetFloat(ssrThickness);
+                }
+
+                int ssrMaxIterations = r_ssrMaxIterations.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderInt("Max iterations", &ssrMaxIterations, static_cast<int>(r_ssrMaxIterations.GetMinValue()), static_cast<int>(r_ssrMaxIterations.GetMaxValue()))) {
+                    r_ssrMaxIterations.SetInteger(ssrMaxIterations);
+                }
+
+                int ssrBinaryRefinementSteps = r_ssrBinaryRefinementSteps.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderInt("Binary refinement", &ssrBinaryRefinementSteps, static_cast<int>(r_ssrBinaryRefinementSteps.GetMinValue()), static_cast<int>(r_ssrBinaryRefinementSteps.GetMaxValue()))) {
+                    r_ssrBinaryRefinementSteps.SetInteger(ssrBinaryRefinementSteps);
+                }
+
+                float ssrNormalBias = r_ssrNormalBias.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Normal bias", &ssrNormalBias, r_ssrNormalBias.GetMinValue(), r_ssrNormalBias.GetMaxValue(), "%.3f m")) {
+                    r_ssrNormalBias.SetFloat(ssrNormalBias);
+                }
+
+                ImGui::Unindent();
+                ImGui::EndDisabled();
+            }
+
             if (roundedCollapsingHeader("Texture Sampling##TextureSamplingHeader")) {
                 int textureFilterIndex = r_textureFilter.GetInteger();
                 const RHI::TextureFilter textureFilter = static_cast<RHI::TextureFilter>(textureFilterIndex);
@@ -774,9 +829,7 @@ void App::BuildImGuiOverlay() {
 
                 int maxAnisotropy = r_textureMaxAnisotropy.GetInteger();
                 ImGui::SetNextItemWidth(fontSize * 14.0f);
-                if (ImGui::SliderInt("Texture max anisotropy", &maxAnisotropy,
-                        static_cast<int>(r_textureMaxAnisotropy.GetMinValue()),
-                        static_cast<int>(r_textureMaxAnisotropy.GetMaxValue()))) {
+                if (ImGui::SliderInt("Texture max anisotropy", &maxAnisotropy, static_cast<int>(r_textureMaxAnisotropy.GetMinValue()), static_cast<int>(r_textureMaxAnisotropy.GetMaxValue()))) {
                     r_textureMaxAnisotropy.SetInteger(maxAnisotropy);
                 }
             }
@@ -790,9 +843,7 @@ void App::BuildImGuiOverlay() {
 
                 int maxLevelReduction = r_textureStreamingMaxLevelReduction.GetInteger();
                 ImGui::SetNextItemWidth(fontSize * 6.0f);
-                if (ImGui::SliderInt("Texture max level reduction", &maxLevelReduction,
-                        static_cast<int>(r_textureStreamingMaxLevelReduction.GetMinValue()),
-                        static_cast<int>(r_textureStreamingMaxLevelReduction.GetMaxValue()))) {
+                if (ImGui::SliderInt("Texture max level reduction", &maxLevelReduction, static_cast<int>(r_textureStreamingMaxLevelReduction.GetMinValue()), static_cast<int>(r_textureStreamingMaxLevelReduction.GetMaxValue()))) {
                     r_textureStreamingMaxLevelReduction.SetInteger(maxLevelReduction);
                 }
             }

@@ -233,6 +233,9 @@ struct VisCamera {
     uint32_t                    screenSpaceDepthPyramidMipCount = 0;
     uint32_t                    screenSpaceDepthPyramidValidWidth = 0;
     uint32_t                    screenSpaceDepthPyramidValidHeight = 0;
+    bool                        traceSSR = false;
+    RHI::Texture *              ssrResolvedDepthTexture = nullptr;
+    RHI::Texture *              ssrTraceTexture = nullptr;
 
     bool                        taaResolve = false;
     RHI::Buffer *               luminanceBuffer = nullptr;

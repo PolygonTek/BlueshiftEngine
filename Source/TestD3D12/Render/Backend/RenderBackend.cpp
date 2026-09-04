@@ -250,6 +250,7 @@ bool RenderBackend::UploadCameraConstants() {
     constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
     constants->projectionDepthA = currentVisCamera->projectionDepthA;
     constants->projectionDepthB = currentVisCamera->projectionDepthB;
+    constants->ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
     constants->flags = flags;
     constants->numLocalLights = currentVisCamera->numVisLocalLights;
     constants->lightCullingLightRefTableOffset = currentVisCamera->lightCulling.lightRefTableOffset;
@@ -261,10 +262,8 @@ bool RenderBackend::UploadCameraConstants() {
     constants->lightCullingTileCountY = currentVisCamera->lightCulling.tileCountY;
     constants->lightCullingWordsPerTile = currentVisCamera->lightCulling.wordsPerTile;
     constants->lightCullingDebugMode = renderFrameSettings.lightCullingDebugMode;
-    constants->padding0 = 0;
 
     constants->cameraOrigin = float3(currentVisCamera->origin.x, currentVisCamera->origin.y, currentVisCamera->origin.z);
-    constants->padding1 = 0.0f;
 
     const BE1::Mat3 &environmentLightAxis = currentVisCamera->environmentLightAxis;
     constants->environmentLightAxis = float3x4(
@@ -279,6 +278,9 @@ bool RenderBackend::UploadCameraConstants() {
     constants->environmentLightSpecularMipCount = currentVisCamera->environmentLightSpecularMipCount;
     constants->padding2 = 0;
 
+    constants->cameraForward = float3(currentVisCamera->axis[0].x, currentVisCamera->axis[0].y, currentVisCamera->axis[0].z);
+    constants->padding3 = 0.0f;
+
     return true;
 }
 
@@ -292,6 +294,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameScreenSpaceDepthPyramidFirstPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstPipeline);
     frameScreenSpaceDepthPyramidFirstMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstMSAAPipeline);
     frameScreenSpaceDepthPyramidReducePSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidReducePipeline);
+    frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
     frameSurfaceOutputMSAAResolveNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalPipeline);
@@ -607,8 +610,15 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     const RHI::RenderPassImage::LoadAction sceneDepthLoadAction = hasDepthPrepass ? RHI::RenderPassImage::LoadAction::Load : depthLoadAction;
     ExecuteDrawCamera3DScenePass(clearFlags, clearColor, useExplicitClearColor, sceneDepthLoadAction);
 
+    // SSR trace 를 위한 screen-space depth pyramid 를 생성한다.
+    bool ssrTraceReady = false;
     if (currentVisCamera->generateScreenSpaceDepthPyramid) {
-        DispatchGenScreenSpaceDepthPyramid();
+        if (DispatchGenScreenSpaceDepthPyramid()) {
+            // SSR trace 를 수행한다.
+            if (currentVisCamera->traceSSR) {
+                ssrTraceReady = DispatchSSRTrace();
+            }
+        }
     }
 
     // Ocean 이 현재 렌더 타겟을 읽는 feedback loop 없이 굴절할 수 있도록 Opaque scene color/depth 를 보존한다.
@@ -635,7 +645,9 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         DispatchHiZDebugPreview();
     }
 
-    PostProcessAndBlitToOutput(surfaceOutputsReady);
+    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RHI::Texture *outputOverrideTexture = renderFrameSettings.ssrDebug && ssrTraceReady ? currentVisCamera->ssrTraceTexture : nullptr;
+    PostProcessAndBlitToOutput(surfaceOutputsReady, outputOverrideTexture);
 }
 
 void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
@@ -784,13 +796,15 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
     RHI::renderer->EndRenderPass(mainCommandList);
 }
 
-void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady) {
+void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady, const RHI::Texture *outputOverrideTexture) {
     const RHI::Texture *finalColorTexture = currentVisCamera->rtColorTexture;
 
     currentPostProcessInputTexture = currentVisCamera->rtColorTexture;
 
     const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
-    if (!renderFrameSettings.skipPostProcess && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
+    if (outputOverrideTexture) {
+        finalColorTexture = outputOverrideTexture;
+    } else if (!renderFrameSettings.skipPostProcess && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
         bool depthHistoryReady = true;
         if (currentVisCamera->taaResolve && currentVisCamera->depthTexture->GetSampleCount() > 1) {
             depthHistoryReady = DispatchCurrentDepthMSAAResolve();

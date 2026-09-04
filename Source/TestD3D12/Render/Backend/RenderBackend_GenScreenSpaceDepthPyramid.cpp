@@ -23,8 +23,13 @@ bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
     RHI::Texture *depthTexture = currentVisCamera->depthTexture;
     RHI::Texture *depthPyramidTexture = currentVisCamera->screenSpaceDepthPyramidTexture;
     const uint32_t mipCount = currentVisCamera->screenSpaceDepthPyramidMipCount;
+    const bool useMSAA = depthTexture && depthTexture->GetSampleCount() > 1;
+    RHI::Texture *normalMSAATexture = useMSAA ? currentVisCamera->rtNormalMSAATexture : nullptr;
+    RHI::Texture *resolvedDepthTexture = useMSAA ? currentVisCamera->ssrResolvedDepthTexture : nullptr;
+    RHI::Texture *resolvedNormalTexture = useMSAA ? currentVisCamera->rtNormalTexture : nullptr;
 
-    if (!depthTexture || !depthPyramidTexture || mipCount == 0) {
+    if (!depthTexture || !depthPyramidTexture || mipCount == 0 ||
+        (useMSAA && (!normalMSAATexture || !resolvedDepthTexture || !resolvedNormalTexture))) {
         return false;
     }
 
@@ -32,9 +37,17 @@ bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
     assert(currentVisCamera->screenSpaceDepthPyramidValidHeight == BE1::Max((depthTexture->GetHeight() + 1) >> 1, 1u));
     assert(currentVisCamera->screenSpaceDepthPyramidMipWidths[0] == depthPyramidTexture->GetWidth());
     assert(currentVisCamera->screenSpaceDepthPyramidMipHeights[0] == depthPyramidTexture->GetHeight());
+    if (useMSAA) {
+        assert(depthTexture->GetWidth() == normalMSAATexture->GetWidth() && depthTexture->GetHeight() == normalMSAATexture->GetHeight());
+        assert(depthTexture->GetSampleCount() == normalMSAATexture->GetSampleCount());
+        assert(depthTexture->GetWidth() == resolvedDepthTexture->GetWidth() && depthTexture->GetHeight() == resolvedDepthTexture->GetHeight());
+        assert(depthTexture->GetWidth() == resolvedNormalTexture->GetWidth() && depthTexture->GetHeight() == resolvedNormalTexture->GetHeight());
+        assert(resolvedDepthTexture->GetSampleCount() == 1 && resolvedNormalTexture->GetSampleCount() == 1);
+    }
 
     // MSAA depth 는 Texture2DMS 로 각 sample 을 직접 읽어 min/max 를 구해야 하므로, 단일 sample 용 Texture2D shader 와 PSO 를 분리한다.
-    RHI::PipelineState *firstMipPSO = depthTexture->GetSampleCount() > 1 ? frameScreenSpaceDepthPyramidFirstMSAAPSO : frameScreenSpaceDepthPyramidFirstPSO;
+    // MSAA variant 는 같은 sample 순회를 재사용해 SSR 입력 depth/normal 도 함께 resolve 한다.
+    RHI::PipelineState *firstMipPSO = useMSAA ? frameScreenSpaceDepthPyramidFirstMSAAPSO : frameScreenSpaceDepthPyramidFirstPSO;
     if (!firstMipPSO || (mipCount > 1 && !frameScreenSpaceDepthPyramidReducePSO)) {
         return false;
     }
@@ -45,27 +58,44 @@ bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
     params.inputSize = uint2(depthTexture->GetWidth(), depthTexture->GetHeight());
     params.outputSize = uint2(currentVisCamera->screenSpaceDepthPyramidMipWidths[0], currentVisCamera->screenSpaceDepthPyramidMipHeights[0]);
     params.validOutputSize = uint2(currentVisCamera->screenSpaceDepthPyramidValidWidth, currentVisCamera->screenSpaceDepthPyramidValidHeight);
+    params.farPlaneDeviceDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
+    params.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
 
-    RHI::GPUBarrier firstMipStartBarriers[] = {
-        RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
-        RHI::Renderer::MakeTextureBarrier(depthPyramidTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, 0)
-    };
-    RHI::renderer->Barrier(mainCommandList, firstMipStartBarriers, COUNT_OF(firstMipStartBarriers));
+    RHI::GPUBarrier firstMipStartBarriers[5];
+    uint32_t firstMipStartBarrierCount = 0;
+    firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResourceCompute);
+    firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthPyramidTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, 0);
+    if (useMSAA) {
+        firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalMSAATexture, RHI::GPUResourceState::RenderTarget, RHI::GPUResourceState::ShaderResourceCompute);
+        firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(resolvedDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess);
+        firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(resolvedNormalTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess);
+    }
+    RHI::renderer->Barrier(mainCommandList, firstMipStartBarriers, firstMipStartBarrierCount);
 
     RHI::renderer->SetPSO(mainCommandList, firstMipPSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, depthTexture, RHI::ViewID::PrimaryID);
     RHI::renderer->SetTexture(mainCommandList, 0, true, depthPyramidTexture, currentVisCamera->screenSpaceDepthPyramidMipUAVs[0]);
+    if (useMSAA) {
+        RHI::renderer->SetTexture(mainCommandList, 1, false, normalMSAATexture);
+        RHI::renderer->SetTexture(mainCommandList, 1, true, resolvedDepthTexture);
+        RHI::renderer->SetTexture(mainCommandList, 2, true, resolvedNormalTexture);
+    }
     RHI::renderer->SetConstants(mainCommandList, 0, &params, sizeof(params), 0);
 
     uint32_t threadGroupCountX = BE1::DivCeil(params.outputSize.x, ScreenSpaceDepthPyramidBlockSizeX);
     uint32_t threadGroupCountY = BE1::DivCeil(params.outputSize.y, ScreenSpaceDepthPyramidBlockSizeY);
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
-    RHI::GPUBarrier firstMipEndBarriers[] = {
-        RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
-        RHI::Renderer::MakeTextureBarrier(depthPyramidTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute, 0, 0)
-    };
-    RHI::renderer->Barrier(mainCommandList, firstMipEndBarriers, COUNT_OF(firstMipEndBarriers));
+    RHI::GPUBarrier firstMipEndBarriers[5];
+    uint32_t firstMipEndBarrierCount = 0;
+    firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::DepthWrite);
+    firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthPyramidTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute, 0, 0);
+    if (useMSAA) {
+        firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalMSAATexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::RenderTarget);
+        firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(resolvedDepthTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource);
+        firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(resolvedNormalTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource);
+    }
+    RHI::renderer->Barrier(mainCommandList, firstMipEndBarriers, firstMipEndBarrierCount);
 
     if (mipCount > 1) {
         RHI::renderer->SetPSO(mainCommandList, frameScreenSpaceDepthPyramidReducePSO);

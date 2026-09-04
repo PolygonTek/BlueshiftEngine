@@ -93,6 +93,12 @@ static const uint HiZDebugPreviewBlockSizeY = 16;
 
 static const uint ScreenSpaceDepthPyramidBlockSizeX = 8;
 static const uint ScreenSpaceDepthPyramidBlockSizeY = 8;
+static const uint SSRTraceBlockSizeX = 8;
+static const uint SSRTraceBlockSizeY = 8;
+
+static const uint ScreenSpaceRayTraceStatusMiss = 0;
+static const uint ScreenSpaceRayTraceStatusHit = 1;
+static const uint ScreenSpaceRayTraceStatusMaxIterations = 2;
 
 static const uint HiZCullThreadCount = 64;
 static const uint HiZCullIndirectArgInstanceCountOffset = 4;
@@ -335,10 +341,30 @@ struct ScreenSpaceDepthPyramidParams {
     uint2 inputSize;
     uint2 outputSize;
     uint2 validOutputSize;
+    float farPlaneDeviceDepth;
+    uint useMinDepth;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ScreenSpaceDepthPyramidParams) == 24, "ScreenSpaceDepthPyramidParams must match the HLSL root constants");
+static_assert(sizeof(ScreenSpaceDepthPyramidParams) == 32, "ScreenSpaceDepthPyramidParams must match the HLSL root constants");
+#endif
+
+struct SSRTraceParams {
+    uint2 inputSize;
+    uint2 outputSize;
+
+    uint depthPyramidMipCount;
+    uint maxIterations;
+    uint binaryRefinementSteps;
+    uint useMinDepth;
+
+    float maxDistance;
+    float thickness;
+    float normalBias;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(SSRTraceParams) == 44, "SSRTraceParams must match the HLSL root constants");
 #endif
 
 struct HiZDebugPreviewParams {
@@ -635,6 +661,7 @@ struct CameraConstants {
     float ndcFarZ;
     float projectionDepthA;
     float projectionDepthB;
+    float2 ndcDepthScaleBias;
     uint flags;
 
     uint numLocalLights;
@@ -646,11 +673,9 @@ struct CameraConstants {
     uint lightCullingTileCountX;
     uint lightCullingTileCountY;
     uint lightCullingWordsPerTile;
-    uint lightCullingDebugMode;
-    uint padding0;
 
     float3 cameraOrigin;
-    float padding1;
+    uint lightCullingDebugMode;
 
     row_major float3x4 environmentLightAxis;
     float3 environmentLightColor;
@@ -660,14 +685,19 @@ struct CameraConstants {
     uint environmentLightSpecularCubeMapIndex;
     uint environmentLightSpecularMipCount;
     uint padding2;
+
+    float3 cameraForward;
+    float padding3;
 };
 
 #ifdef __cplusplus
+static_assert(offsetof(CameraConstants, ndcDepthScaleBias) == 464, "CameraConstants NDC depth conversion must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, cameraOrigin) == 512, "CameraConstants camera data must follow the existing layout");
 static_assert(offsetof(CameraConstants, environmentLightAxis) == 528, "CameraConstants environment axis must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, environmentLightColor) == 576, "CameraConstants environment color must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, environmentLightDiffuseIrradianceCubeMapIndex) == 592, "CameraConstants environment texture indices must match the HLSL constant-buffer layout");
-static_assert(sizeof(CameraConstants) == 608, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, cameraForward) == 608, "CameraConstants camera direction must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 624, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {

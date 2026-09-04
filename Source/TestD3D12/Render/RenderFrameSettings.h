@@ -26,18 +26,27 @@ enum RenderBloomMode {
 struct RenderFrameSettings {
     uint32_t                mainRTSampleCount = 1;
     uint32_t                csmResolution = 1024;
-    uint32_t                taaJitterSampleCount = 16;
-    uint32_t                hiZDebugPreviewMipLevel = 0;
     uint32_t                lightCullingDebugMode = 0;
-    uint32_t                toneMappingOperator = 0;
-    uint32_t                pyramidBloomMipMaxLevelCount = 1;
-    uint32_t                convolutionBloomFFTMaxSize = 256;
-
-    RenderBloomMode         bloomMode = RenderBloomMode::Off;
 
     float                   hdrPaperWhiteNits = 200.0f;
     float                   hdrPeakNits = 0.0f;
 
+    uint32_t                taaJitterSampleCount = 16;
+    float                   taaHistoryWeight = 0.9f;
+    float                   taaColorBoxSigma = 2.0f;
+    float                   taaSubpixelWeight = 0.5f;
+    float                   taaLuminanceWeight = 0.25f;
+    float                   taaDepthFallbackThreshold = 1.0f;
+
+    uint32_t                hiZDebugPreviewMipLevel = 0;
+
+    uint32_t                ssrMaxIterations = 64;
+    uint32_t                ssrBinaryRefinementSteps = 5;
+    float                   ssrMaxDistance = 48.0f;
+    float                   ssrThickness = 1.0f;
+    float                   ssrNormalBias = 0.02f;
+
+    uint32_t                toneMappingOperator = 0;
     float                   toneMapLuminanceLogMin = -10.0f;
     float                   toneMapLuminanceLogMax = 2.0f;
     float                   toneMapLuminanceAdaptationRate = 1.1f;
@@ -47,27 +56,24 @@ struct RenderFrameSettings {
     float                   toneMapMaxExposureEV = 2.0f;
     float                   whiteBalanceTemperature = 6500.0f;
 
-    float                   taaHistoryWeight = 0.9f;
-    float                   taaColorBoxSigma = 2.0f;
-    float                   taaSubpixelWeight = 0.5f;
-    float                   taaLuminanceWeight = 0.25f;
-    float                   taaDepthFallbackThreshold = 1.0f;
-
     float                   lensDistortion = 0.0f;
     float                   chromaticAberration = 0.0f;
     float                   vignetteIntensity = 0.0f;
 
+    RenderBloomMode         bloomMode = RenderBloomMode::Off;
     float                   bloomThreshold = 1.0f;
     float                   bloomSoftThreshold = 0.5f;
     float                   bloomIntensity = 0.15f;
     float                   bloomDirtIntensity = 0.0f;
 
+    uint32_t                pyramidBloomMipMaxLevelCount = 1;
     float                   pyramidBloomPrefilterQuality = 1.0f;
     float                   pyramidBloomScatter = 0.67f;
     float                   pyramidBloomPrefilterRadius = 1.25f;
     float                   pyramidBloomDownsampleRadius = 1.0f;
     float                   pyramidBloomUpsampleRadius = 1.0f;
 
+    uint32_t                convolutionBloomFFTMaxSize = 256;
     float                   convolutionBloomPrefilterRadius = 1.5f;
     float                   convolutionBloomKernelScale = 1.0f;
     float                   convolutionBloomKernelGain = 1.0f;
@@ -95,7 +101,8 @@ struct RenderFrameSettings {
     bool                    hiZOcclusionCullingFreeze = false;
     bool                    hiZDebugPreview = false;
 
-    bool                    screenSpaceReflection = false;
+    bool                    ssr = false;
+    bool                    ssrDebug = false;
 
     bool                    toneMapping = true;
     bool                    colorGrading = false;

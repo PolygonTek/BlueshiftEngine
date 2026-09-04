@@ -63,7 +63,13 @@ CVAR(r_hiZOcclusionCullingFreeze, "0", BE1::CVar::Flag::Bool, "freeze Hi-Z occlu
 CVAR(r_hiZDebugPreview, "0", BE1::CVar::Flag::Bool, "enable Hi-Z debug preview texture update");
 CVAR_MINMAX(r_hiZDebugPreviewMipLevel, "0", BE1::CVar::Flag::Integer, "Hi-Z debug preview mip level", 0, RenderHiZMaxLevelCount - 1);
 
-CVAR(r_screenSpaceReflection, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
+CVAR(r_ssr, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
+CVAR(r_ssrDebug, "0", BE1::CVar::Flag::Bool, "show screen-space reflection trace debug output");
+CVAR_MINMAX(r_ssrMaxDistance, "48.0", BE1::CVar::Flag::Float, "screen-space reflection maximum trace distance", 0.1f, 1000.0f);
+CVAR_MINMAX(r_ssrThickness, "1.0", BE1::CVar::Flag::Float, "screen-space reflection hit thickness", 0.0f, 10.0f);
+CVAR_MINMAX(r_ssrMaxIterations, "64", BE1::CVar::Flag::Integer, "screen-space reflection maximum Hi-Z traversal iterations", 1, 128);
+CVAR_MINMAX(r_ssrBinaryRefinementSteps, "3", BE1::CVar::Flag::Integer, "screen-space reflection binary refinement steps", 0, 8);
+CVAR_MINMAX(r_ssrNormalBias, "0.02", BE1::CVar::Flag::Float, "screen-space reflection world-space normal bias", 0.0f, 1.0f);
 
 CVAR_MINMAX(r_textureFilter, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "texture filtering mode for material samplers", 0, static_cast<int>(RHI::TextureFilter::Count) - 1);
 CVAR_MINMAX(r_textureMaxAnisotropy, "8", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "maximum anisotropy for material samplers", 1, 16);
@@ -209,7 +215,13 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.hiZOcclusionCullingFreeze = r_hiZOcclusionCullingFreeze.GetBool();
     settings.hiZDebugPreview = r_hiZDebugPreview.GetBool();
 
-    settings.screenSpaceReflection = r_screenSpaceReflection.GetBool();
+    settings.ssr = r_ssr.GetBool();
+    settings.ssrDebug = r_ssrDebug.GetBool();
+    settings.ssrMaxDistance = r_ssrMaxDistance.GetFloat();
+    settings.ssrThickness = r_ssrThickness.GetFloat();
+    settings.ssrMaxIterations = r_ssrMaxIterations.GetInteger();
+    settings.ssrBinaryRefinementSteps = r_ssrBinaryRefinementSteps.GetInteger();
+    settings.ssrNormalBias = r_ssrNormalBias.GetFloat();
 
     settings.toneMapping = r_toneMapping.GetBool();
     settings.colorGrading = r_colorGrading.GetBool();

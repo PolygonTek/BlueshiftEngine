@@ -1,15 +1,7 @@
 #ifndef __CAMERA_PASS_OUTPUT_COMMON_HLSLI__
 #define __CAMERA_PASS_OUTPUT_COMMON_HLSLI__
 
-float2 EncodeOctahedralNormal(float3 normal) {
-    normal /= abs(normal.x) + abs(normal.y) + abs(normal.z);
-
-    if (normal.z < 0.0f) {
-        const float2 signNotZero = float2(normal.x >= 0.0f ? 1.0f : -1.0f, normal.y >= 0.0f ? 1.0f : -1.0f);
-        normal.xy = (1.0f - abs(normal.yx)) * signNotZero;
-    }
-    return normal.xy;
-}
+#include "NormalEncoding.hlsli"
 
 float2 CalcVelocity(float4 currentClipPosition, float4 prevClipPosition) {
     const float2 currentNDC = currentClipPosition.xy / currentClipPosition.w;

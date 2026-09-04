@@ -213,12 +213,7 @@ void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out fl
 #endif
 
 float LinearizeDepth(float deviceDepth) {
-    const float ndcDepth = deviceDepth * taaResolveParams.ndcDepthScaleBias.x + taaResolveParams.ndcDepthScaleBias.y;
-
-    if (taaResolveParams.orthogonal != 0) {
-        return LinearizeOrthogonalDepth(ndcDepth, taaResolveParams.projectionDepthParams.x, taaResolveParams.projectionDepthParams.y);
-    }
-    return LinearizePerspectiveDepth(ndcDepth, taaResolveParams.projectionDepthParams.x, taaResolveParams.projectionDepthParams.y);
+    return DeviceDepthToLinearDepth(deviceDepth, taaResolveParams.ndcDepthScaleBias, taaResolveParams.projectionDepthParams, taaResolveParams.orthogonal != 0);
 }
 
 float LoadCurrentDepth(int2 pixelCoord, int2 maxPixelCoord) {

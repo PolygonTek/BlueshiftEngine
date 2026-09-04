@@ -124,6 +124,14 @@ inline float ComputeTextureLod(in uint2 textureSize, in float2 dFdx_uv, in float
     return log2(lengthMinor);
 }
 
+// Clip space position 을 좌상단 원점의 UV [0, 1] 와 device depth 로 변환한다.
+inline float3 ClipPositionToScreenPosition(float4 clipPosition, float2 ndcDepthScaleBias) {
+    const float3 ndcPosition = clipPosition.xyz / clipPosition.w;
+    const float2 uv = ndcPosition.xy * float2(0.5f, -0.5f) + 0.5f;
+    const float deviceDepth = (ndcPosition.z - ndcDepthScaleBias.y) / ndcDepthScaleBias.x;
+    return float3(uv, deviceDepth);
+}
+
 // Reconstructs world-space position from depth buffer
 // uv    : screen space coordinate in [0, 1] range, origin at upper-left corner of the screen
 // depth : depth value in NDC Z range [0, 1]
@@ -173,6 +181,14 @@ inline float LinearizeOrthogonalDepth(float ndcDepth, float projDepthA, float pr
     // projection matrix 는 오른손 좌표계이므로 음수 방향이 카메라 앞쪽이다. 그러므로 preview 를 위해서 뒤집는다.
     // viewDistance = -viewZ = (B - ndcZ) / A
     return (projDepthB - ndcDepth) / SafeSignedDenominator(projDepthA);
+}
+
+// device depth 를 카메라 전방 축을 따르는 양의 linear view depth 로 변환한다.
+inline float DeviceDepthToLinearDepth(float deviceDepth, float2 ndcDepthScaleBias, float2 projectionDepthParams, bool orthogonal) {
+    const float ndcDepth = deviceDepth * ndcDepthScaleBias.x + ndcDepthScaleBias.y;
+    return orthogonal ?
+        LinearizeOrthogonalDepth(ndcDepth, projectionDepthParams.x, projectionDepthParams.y) :
+        LinearizePerspectiveDepth(ndcDepth, projectionDepthParams.x, projectionDepthParams.y);
 }
 
 #endif // __COMMON_HLSLI__

@@ -165,6 +165,7 @@ public:
     bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
     bool                        EnsureSceneSnapshotResources(bool needed, bool halfResolution);
     void                        EnsureScreenSpaceDepthPyramidResources(uint32_t width, uint32_t height, bool needed);
+    void                        EnsureSSRTraceResources(uint32_t width, uint32_t height, uint32_t sampleCount, bool needed);
     void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, const RenderFrameSettings &renderFrameSettings);
 
     void                        InvalidateTemporalHistory();
@@ -208,6 +209,8 @@ public:
     uint32_t                    GetScreenSpaceDepthPyramidMipCount() const { return screenSpaceDepthPyramidMipCount; }
     uint32_t                    GetScreenSpaceDepthPyramidValidWidth() const { return screenSpaceDepthPyramidValidWidth; }
     uint32_t                    GetScreenSpaceDepthPyramidValidHeight() const { return screenSpaceDepthPyramidValidHeight; }
+    RHI::Texture *              GetSSRResolvedDepthTexture() const { return ssrResolvedDepthTexture; }
+    RHI::Texture *              GetSSRTraceTexture() const { return ssrTraceTexture; }
 
     RHI::Texture *              GetPostProcessColorTexture() const { return postProcessColorTexture; }
     RHI::Buffer *               GetLuminanceBuffer() const { return luminanceBuffer; }
@@ -257,6 +260,10 @@ private:
     void                        DestroySceneSnapshotResources();
     bool                        CreateScreenSpaceDepthPyramidTexture(uint32_t width, uint32_t height);
     void                        DestroyScreenSpaceDepthPyramidTexture();
+    bool                        CreateSSRTraceTexture(uint32_t width, uint32_t height);
+    void                        DestroySSRTraceTexture();
+    bool                        CreateSSRResolvedDepthTexture(uint32_t width, uint32_t height);
+    void                        DestroySSRResolvedDepthTexture();
     void                        EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview);
     bool                        CreateHiZTexture(uint32_t width, uint32_t height);
     void                        DestroyHiZTexture();
@@ -346,6 +353,8 @@ private:
     uint32_t                    screenSpaceDepthPyramidMipCount = 0;
     uint32_t                    screenSpaceDepthPyramidValidWidth = 0;
     uint32_t                    screenSpaceDepthPyramidValidHeight = 0;
+    RHI::Texture *              ssrResolvedDepthTexture = nullptr;
+    RHI::Texture *              ssrTraceTexture = nullptr;
 
     RHI::Texture *              colorHistoryTextures[2] = {};
     RHI::Texture *              depthHistoryTextures[2] = {};

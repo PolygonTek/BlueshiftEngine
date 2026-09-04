@@ -94,7 +94,7 @@ private:
     void                            DrawCamera3DPostOpaquePass();
     void                            DrawCamera2D();
 
-    void                            PostProcessAndBlitToOutput(bool surfaceOutputsReady);
+    void                            PostProcessAndBlitToOutput(bool surfaceOutputsReady, const RHI::Texture *outputOverrideTexture);
     void                            BlitTextureToRenderTarget(const RHI::Texture *texture, const RHI::Texture *renderTargetTexture, RHI::ViewID renderTargetViewID,
                                         RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destinationRect, RHI::PipelineState *imagePSO);
     void                            BlitTextureToSwapChain(const RHI::Texture *texture, const BE1::Rect &destinationRect);
@@ -123,6 +123,7 @@ private:
     bool                            DispatchGenHiZ();
     bool                            DispatchHiZDebugPreview();
     bool                            DispatchGenScreenSpaceDepthPyramid();
+    bool                            DispatchSSRTrace();
     bool                            DispatchSurfaceOutputMSAAResolve();
     bool                            DispatchCurrentDepthMSAAResolve();
 
@@ -172,6 +173,7 @@ private:
     RHI::PipelineState *            frameScreenSpaceDepthPyramidFirstPSO = nullptr;
     RHI::PipelineState *            frameScreenSpaceDepthPyramidFirstMSAAPSO = nullptr;
     RHI::PipelineState *            frameScreenSpaceDepthPyramidReducePSO = nullptr;
+    RHI::PipelineState *            frameSSRTracePSO = nullptr;
     RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalPSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveVelocityPSO = nullptr;

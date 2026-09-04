@@ -23,6 +23,8 @@
 
 RenderCamera::~RenderCamera() {
     DestroyPostProcessResources();
+    DestroySSRTraceTexture();
+    DestroySSRResolvedDepthTexture();
     DestroyScreenSpaceDepthPyramidTexture();
     DestroyHiZResources();
     DestroyRenderTextures();
@@ -1292,6 +1294,77 @@ void RenderCamera::DestroyScreenSpaceDepthPyramidTexture() {
     screenSpaceDepthPyramidMipCount = 0;
     screenSpaceDepthPyramidValidWidth = 0;
     screenSpaceDepthPyramidValidHeight = 0;
+}
+
+void RenderCamera::EnsureSSRTraceResources(uint32_t width, uint32_t height, uint32_t sampleCount, bool needed) {
+    if (!needed || width == 0 || height == 0) {
+        DestroySSRTraceTexture();
+        DestroySSRResolvedDepthTexture();
+        return;
+    }
+
+    const uint32_t traceWidth = BE1::Max((width + 1u) >> 1, 1u);
+    const uint32_t traceHeight = BE1::Max((height + 1u) >> 1, 1u);
+
+    if (!ssrTraceTexture || ssrTraceTexture->GetWidth() != traceWidth || ssrTraceTexture->GetHeight() != traceHeight) {
+        DestroySSRTraceTexture();
+
+        if (!CreateSSRTraceTexture(traceWidth, traceHeight)) {
+            DestroySSRResolvedDepthTexture();
+            return;
+        }
+    }
+
+    if (sampleCount <= 1) {
+        DestroySSRResolvedDepthTexture();
+    } else if (!ssrResolvedDepthTexture || ssrResolvedDepthTexture->GetWidth() != width || ssrResolvedDepthTexture->GetHeight() != height) {
+        DestroySSRResolvedDepthTexture();
+        CreateSSRResolvedDepthTexture(width, height);
+    }
+}
+
+bool RenderCamera::CreateSSRTraceTexture(uint32_t width, uint32_t height) {
+    const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16G16B16A16_FLOAT);
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(width, height, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    ssrTraceTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!ssrTraceTexture) {
+        BE_WARNLOG("RenderCamera::CreateSSRTraceTexture: failed to create trace texture\n");
+        return false;
+    }
+
+    RHI::renderer->SetName(ssrTraceTexture, "RenderCamera::ssrTraceTexture");
+    return true;
+}
+
+void RenderCamera::DestroySSRTraceTexture() {
+    if (ssrTraceTexture) {
+        RHI::renderer->DestroyTexture(ssrTraceTexture);
+        ssrTraceTexture = nullptr;
+    }
+}
+
+bool RenderCamera::CreateSSRResolvedDepthTexture(uint32_t width, uint32_t height) {
+    const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R32_FLOAT);
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(width, height, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    ssrResolvedDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!ssrResolvedDepthTexture) {
+        BE_WARNLOG("RenderCamera::CreateSSRResolvedDepthTexture: failed to create resolved depth texture\n");
+        return false;
+    }
+
+    RHI::renderer->SetName(ssrResolvedDepthTexture, "RenderCamera::ssrResolvedDepthTexture");
+    return true;
+}
+
+void RenderCamera::DestroySSRResolvedDepthTexture() {
+    if (ssrResolvedDepthTexture) {
+        RHI::renderer->DestroyTexture(ssrResolvedDepthTexture);
+        ssrResolvedDepthTexture = nullptr;
+    }
 }
 
 void RenderCamera::EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview) {

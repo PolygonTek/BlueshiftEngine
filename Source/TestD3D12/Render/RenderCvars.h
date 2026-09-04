@@ -66,7 +66,13 @@ extern BE1::CVar    r_hiZOcclusionCullingFreeze;
 extern BE1::CVar    r_hiZDebugPreview;
 extern BE1::CVar    r_hiZDebugPreviewMipLevel;
 
-extern BE1::CVar    r_screenSpaceReflection;
+extern BE1::CVar    r_ssr;
+extern BE1::CVar    r_ssrDebug;
+extern BE1::CVar    r_ssrMaxDistance;
+extern BE1::CVar    r_ssrThickness;
+extern BE1::CVar    r_ssrMaxIterations;
+extern BE1::CVar    r_ssrBinaryRefinementSteps;
+extern BE1::CVar    r_ssrNormalBias;
 
 extern BE1::CVar    r_textureFilter;
 extern BE1::CVar    r_textureMaxAnisotropy;

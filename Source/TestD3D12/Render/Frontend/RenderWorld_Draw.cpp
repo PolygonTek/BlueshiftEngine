@@ -289,7 +289,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && renderFrameSettings.hiZOcclusionCulling;
     const bool needHiZTexture = needHiZCullResources;
     const bool needHiZDebugPreview = needHiZTexture && renderFrameSettings.hiZDebugPreview;
-    const bool needScreenSpaceDepthPyramid = renderFrameSettings.screenSpaceReflection && !skipPostProcess && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
+    const bool needSSR = renderFrameSettings.ssr && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
 
     const RenderBloomMode bloomMode = renderFrameSettings.bloomMode;
 
@@ -297,7 +297,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         return;
     }
 
-    renderCamera->EnsureScreenSpaceDepthPyramidResources(renderWidth, renderHeight, needScreenSpaceDepthPyramid);
+    renderCamera->EnsureScreenSpaceDepthPyramidResources(renderWidth, renderHeight, needSSR);
+    renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), needSSR);
 
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
     const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
@@ -317,7 +318,10 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool requestHiZOcclusionCulling = canUseHiZ && needHiZCullResources && renderCamera->GetHiZCullVisibleInstanceBuffer() && renderCamera->GetHiZCullIndirectArgsBuffer();
     const bool requestHiZDebugPreview = canUseHiZ && needHiZDebugPreview && renderCamera->GetHiZDebugPreviewTexture();
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
-    const bool requestScreenSpaceDepthPyramidGeneration = needScreenSpaceDepthPyramid && renderCamera->GetDepthTexture() && renderCamera->GetScreenSpaceDepthPyramidTexture();
+    const bool useMSAA = renderCamera->GetRTColorMSAATexture() != nullptr;
+    const bool hasSSRInputs = renderCamera->GetRTNormalTexture() && (!useMSAA || renderCamera->GetSSRResolvedDepthTexture());
+    const bool requestScreenSpaceDepthPyramidGeneration = needSSR && hasSSRInputs && renderCamera->GetDepthTexture() && renderCamera->GetScreenSpaceDepthPyramidTexture();
+    const bool requestSSRTrace = requestScreenSpaceDepthPyramidGeneration && renderCamera->GetSSRTraceTexture();
 
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
     VisCamera *visCamera = frameData->AllocVisCamera();
@@ -383,7 +387,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     visCamera->flags = renderCamera->desc.flags;
-    visCamera->needNormalOutput = false;
+    visCamera->needNormalOutput = needSSR;
     visCamera->needVelocityOutput = useTAA;
     visCamera->rtColorTexture = renderCamera->GetRTColorTexture();
     visCamera->rtColorMSAATexture = renderCamera->GetRTColorMSAATexture();
@@ -410,6 +414,10 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
             visCamera->screenSpaceDepthPyramidMipHeights[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipHeights()[mipLevel];
         }
     }
+
+    visCamera->traceSSR = requestSSRTrace;
+    visCamera->ssrResolvedDepthTexture = renderCamera->GetSSRResolvedDepthTexture();
+    visCamera->ssrTraceTexture = renderCamera->GetSSRTraceTexture();
 
     visCamera->generateHiZ = requestHiZGeneration;
     if (visCamera->generateHiZ) {

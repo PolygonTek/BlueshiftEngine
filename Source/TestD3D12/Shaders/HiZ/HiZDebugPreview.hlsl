@@ -13,12 +13,7 @@ Texture2D<float> inputHiZTexture : register(t0);
 RWTexture2D<float4> outputPreviewTexture : register(u0);
 
 float LinearizeDepth(float deviceDepth) {
-    const float ndcDepth = deviceDepth * hiZDebugPreviewParams.ndcDepthScaleBias.x + hiZDebugPreviewParams.ndcDepthScaleBias.y;
-    
-    if (hiZDebugPreviewParams.orthogonal != 0) {
-        return LinearizeOrthogonalDepth(ndcDepth, hiZDebugPreviewParams.projectionDepthParams.x, hiZDebugPreviewParams.projectionDepthParams.y);
-    }
-    return LinearizePerspectiveDepth(ndcDepth, hiZDebugPreviewParams.projectionDepthParams.x, hiZDebugPreviewParams.projectionDepthParams.y);
+    return DeviceDepthToLinearDepth(deviceDepth, hiZDebugPreviewParams.ndcDepthScaleBias, hiZDebugPreviewParams.projectionDepthParams, hiZDebugPreviewParams.orthogonal != 0);
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
