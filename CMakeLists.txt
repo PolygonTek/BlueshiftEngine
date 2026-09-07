@@ -328,6 +328,7 @@ if (BUILD_RUNTIME)
     add_subdirectory(Source/ThirdParty/STB)
     add_subdirectory(Source/ThirdParty/imgui)
     add_subdirectory(Source/ThirdParty/delabella)
+    add_subdirectory(Source/ThirdParty/meshoptimizer)
 
     # Tracy options must be set before add_subdirectory.
     set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
