@@ -324,6 +324,10 @@ void Mesh::InternalData::FinishSurfaces(FinishFlag finishFlags) {
         ComputeAABB();
     }
 
+    if (BE1::HasFlag(finishFlags, FinishFlag::OptimizeIndices)) {
+        OptimizeIndexedTriangles();
+    }
+
     if (BE1::HasFlag(finishFlags, FinishFlag::ComputeNormals) && !BE1::HasFlag(finishFlags, FinishFlag::ComputeTangents)) {
         ComputeNormals();
     }
@@ -420,6 +424,13 @@ void Mesh::InternalData::GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::
         }
         break;
         }
+    }
+}
+
+void Mesh::InternalData::OptimizeIndexedTriangles() {
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;
+        subMesh->OptimizeIndexedTriangles();
     }
 }
 

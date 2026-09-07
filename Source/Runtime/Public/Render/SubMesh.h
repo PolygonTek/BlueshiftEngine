@@ -115,6 +115,8 @@ public:
     const Vec3              CalculateCentroid() const;
     const Mat3              CalculateInertiaTensor(const Vec3 &centroid, float mass) const;
 
+                            /// Optimizes triangle and vertex order; requires an unshared reference mesh before GPU upload.
+                            /// Invalidates edge data; recompute edges before using edge-dependent operations.
     void                    OptimizeIndexedTriangles();
 
     bool                    IsGpuSkinningEnabled() const { return gpuSkinningEnabled; }

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "SubMesh.h"
+#include "meshoptimizer.h"
 
 void SubMesh::Alloc(uint32_t numNewVerts, uint32_t numNewIndexes) {
     static int32_t subMeshIdCounter = 0;
@@ -1034,6 +1035,74 @@ const BE1::Mat3 SubMesh::CalculateInertiaTensor(const BE1::Vec3 &centroid, float
 
     return inertia;
 #endif
+}
+
+void SubMesh::OptimizeIndexedTriangles() {
+    if (!verts || !indexes || numVerts == 0 || numIndexes == 0) {
+        return;
+    }
+
+    if (vertexBuffer || vertexWeightBuffer || indexBuffer) {
+        BE_WARNLOG("SubMesh::OptimizeIndexedTriangles: requires a mesh before GPU upload\n");
+        return;
+    }
+
+    assert(numIndexes % 3 == 0);
+    meshopt_optimizeVertexCache(indexes, indexes, numIndexes, numVerts);
+
+    unsigned int *remap = (unsigned int *)Mem_Alloc16(sizeof(*remap) * numVerts);
+    unsigned int nextVertex = static_cast<unsigned int>(meshopt_optimizeVertexFetchRemap(remap, indexes, numIndexes, numVerts));
+    bool remapNeeded = false;
+    for (uint32_t i = 0; i < numVerts; i++) {
+        // Preserve unreferenced vertices so bounds and auxiliary vertex data remain valid.
+        if (remap[i] == ~0u) {
+            remap[i] = nextVertex++;
+        }
+        remapNeeded |= remap[i] != i;
+    }
+    assert(nextVertex == numVerts);
+
+    if (remapNeeded) {
+        BE1::VertexGenericLit *newVerts = (BE1::VertexGenericLit *)Mem_Alloc16(sizeof(*newVerts) * numVerts);
+        meshopt_remapVertexBuffer(newVerts, verts, numVerts, sizeof(*verts), remap);
+        Mem_AlignedFree(verts);
+        verts = newVerts;
+
+        if (vertWeights) {
+            const int weightSize = VertexWeightSize();
+            void *newVertWeights = Mem_Alloc16(static_cast<size_t>(weightSize) * numVerts);
+            meshopt_remapVertexBuffer(newVertWeights, vertWeights, numVerts, weightSize, remap);
+            Mem_AlignedFree(vertWeights);
+            vertWeights = newVertWeights;
+        }
+
+        if (dominantTris) {
+            // Geometry is unchanged; keep the selected triangles and normalization scales.
+            BE1::DominantTri *newDominantTris = (BE1::DominantTri *)Mem_Alloc16(sizeof(*newDominantTris) * numVerts);
+            for (uint32_t i = 0; i < numVerts; i++) {
+                BE1::DominantTri &tri = newDominantTris[remap[i]];
+                tri = dominantTris[i];
+                tri.v2 = remap[tri.v2];
+                tri.v3 = remap[tri.v3];
+            }
+            Mem_AlignedFree(dominantTris);
+            dominantTris = newDominantTris;
+        }
+
+        meshopt_remapIndexBuffer(indexes, indexes, numIndexes, remap);
+    }
+    Mem_AlignedFree(remap);
+
+    // Triangle order changes invalidate edge adjacency even when vertex order stays the same.
+    // FinishSurfaces rebuilds edges when requested by its finish flags.
+    if (BE1::HasFlag(flags, Flag::EdgesCalculated)) {
+        Mem_AlignedFree(edges);
+        Mem_AlignedFree(edgeIndexes);
+        edges = nullptr;
+        edgeIndexes = nullptr;
+        numEdges = 0;
+        flags &= ~Flag::EdgesCalculated;
+    }
 }
 
 void SubMesh::UploadStaticDataToGPU() const {

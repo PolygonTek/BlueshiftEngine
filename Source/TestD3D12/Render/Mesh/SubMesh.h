@@ -108,6 +108,10 @@ public:
                             /// Calculates the inertia tensor of the sub-mesh given its centroid and mass.
     const BE1::Mat3         CalculateInertiaTensor(const BE1::Vec3 &centroid, float mass) const;
 
+                            /// Optimizes triangle and vertex order before instantiation or GPU upload.
+                            /// Invalidates edge data; recompute edges before using edge-dependent operations.
+    void                    OptimizeIndexedTriangles();
+
     void                    UploadStaticDataToGPU() const;
 
 private:

@@ -140,6 +140,8 @@ public:
                             /// Get local bind-pose AABBs for all joints.
     void                    GetJointAABBs(const Mat3x4 *invBindPoseMats, Array<AABB> &jointAabbs) const;
 
+                            /// Optimizes surface triangle and vertex order before instantiation or GPU upload.
+                            /// Invalidates edge data; request ComputeEdges in FinishSurfaces when needed.
     void                    OptimizeIndexedTriangles();
 
     void                    Voxelize();

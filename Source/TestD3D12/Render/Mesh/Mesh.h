@@ -46,7 +46,8 @@ public:
         ComputeNormals              = BIT(2),
         ComputeTangents             = BIT(3),
         UseUnsmoothedTangents       = BIT(4),
-        SortAndMerge                = BIT(5)
+        SortAndMerge                = BIT(5),
+        OptimizeIndices             = BIT(6)
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(FinishFlag) noexcept { return {}; }
@@ -168,6 +169,10 @@ private:
         void                        RecomputeTangents();
 
         void                        GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::Array<BE1::AABB> &jointAabbs) const;
+
+                                    /// Optimizes surface triangle and vertex order before instantiation or GPU upload.
+                                    /// Invalidates edge data; request ComputeEdges in FinishSurfaces when needed.
+        void                        OptimizeIndexedTriangles();
 
         bool                        IsCompatibleSkeleton(const Skeleton *skeleton) const;
 

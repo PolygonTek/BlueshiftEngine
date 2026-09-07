@@ -1087,6 +1087,7 @@ target_link_libraries(${PROJECT_NAME}
     luasocket
     LuaCpp
     delabella
+    meshoptimizer
     Tracy::TracyClient
     SDL3::SDL3-static)
 

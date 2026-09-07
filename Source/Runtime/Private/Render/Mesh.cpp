@@ -221,6 +221,11 @@ void Mesh::GetJointAABBs(const Mat3x4 *invBindPoseMats, Array<AABB> &jointAabbs)
 }
 
 void Mesh::OptimizeIndexedTriangles() {
+    if (IsInstantiatedMesh() || !instantiatedMeshes.IsEmpty()) {
+        BE_WARNLOG("Mesh::OptimizeIndexedTriangles: requires a reference mesh with no instances\n");
+        return;
+    }
+
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;
         subMesh->OptimizeIndexedTriangles();

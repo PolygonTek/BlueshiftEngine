@@ -17,6 +17,7 @@
 #include "RenderInternal.h"
 #include "SIMD/SIMD.h"
 #include "Core/Heap.h"
+#include "meshoptimizer.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -1392,6 +1393,139 @@ const Mat3 SubMesh::CalculateInertiaTensor(const Vec3 &centroid, float mass) con
 }
 
 void SubMesh::OptimizeIndexedTriangles() {
+    if (!alloced || numVerts == 0 || numIndexes == 0) {
+        return;
+    }
+
+    if (type != Mesh::Type::Reference || vertexCache->buffer != Graphics::NullBuffer || indexCache->buffer != Graphics::NullBuffer) {
+        BE_WARNLOG("SubMesh::OptimizeIndexedTriangles: requires a reference mesh before GPU upload\n");
+        return;
+    }
+
+    assert(numIndexes % 3 == 0);
+    meshopt_optimizeVertexCache(indexes, indexes, numIndexes, numVerts);
+
+    unsigned int *remap = (unsigned int *)Mem_Alloc16(sizeof(*remap) * numVerts);
+    unsigned int nextVertex = static_cast<unsigned int>(meshopt_optimizeVertexFetchRemap(remap, indexes, numIndexes, numVerts));
+    bool remapNeeded = false;
+    for (int i = 0; i < numVerts; i++) {
+        // Preserve unreferenced vertices so bounds and auxiliary vertex data remain valid.
+        if (remap[i] == ~0u) {
+            remap[i] = nextVertex++;
+        }
+        remapNeeded |= remap[i] != static_cast<unsigned int>(i);
+    }
+    assert(nextVertex == numVerts);
+
+    if (numMirroredVerts > 0 && remapNeeded) {
+        // Mirrored vertices must remain a suffix for NumOriginalVerts and FixMirroredVerts.
+        unsigned int *vertexOrder = (unsigned int *)Mem_Alloc16(sizeof(*vertexOrder) * numVerts);
+        for (int i = 0; i < numVerts; i++) {
+            vertexOrder[remap[i]] = i;
+        }
+
+        const unsigned int numOriginalVerts = NumOriginalVerts();
+        unsigned int nextOriginal = 0;
+        unsigned int nextMirrored = numOriginalVerts;
+        remapNeeded = false;
+        for (int i = 0; i < numVerts; i++) {
+            const unsigned int oldIndex = vertexOrder[i];
+            const unsigned int newIndex = oldIndex < numOriginalVerts ? nextOriginal++ : nextMirrored++;
+            remap[oldIndex] = newIndex;
+            remapNeeded |= oldIndex != newIndex;
+        }
+        Mem_AlignedFree(vertexOrder);
+    }
+
+    if (remapNeeded) {
+        VertexGenericLit *newVerts = (VertexGenericLit *)Mem_Alloc16(sizeof(*newVerts) * numVerts);
+        meshopt_remapVertexBuffer(newVerts, verts, numVerts, sizeof(*verts), remap);
+        Mem_AlignedFree(verts);
+        verts = newVerts;
+
+        if (vertWeights) {
+            const int weightSize = VertexWeightSize();
+            void *newVertWeights = Mem_Alloc16(static_cast<size_t>(weightSize) * numVerts);
+            meshopt_remapVertexBuffer(newVertWeights, vertWeights, numVerts, weightSize, remap);
+            Mem_AlignedFree(vertWeights);
+            vertWeights = newVertWeights;
+        }
+
+        if (numJointWeights > 0) {
+            // CPU weights are variable-length groups terminated by nextVertOffset != 0.
+            // Build destination offsets once, then copy each group with its weighted positions.
+            assert(jointWeights && jointWeightVerts);
+            int *weightOffsets = (int *)Mem_Alloc16(sizeof(*weightOffsets) * (static_cast<size_t>(numVerts) + 1));
+            int sourceOffset = 0;
+            for (int i = 0; i < numVerts; i++) {
+                const int firstWeight = sourceOffset;
+                do {
+                    assert(sourceOffset < numJointWeights);
+                } while (jointWeights[sourceOffset++].nextVertOffset == 0);
+                weightOffsets[remap[i] + 1] = sourceOffset - firstWeight;
+            }
+            assert(sourceOffset == numJointWeights);
+
+            weightOffsets[0] = 0;
+            for (int i = 0; i < numVerts; i++) {
+                weightOffsets[i + 1] += weightOffsets[i];
+            }
+
+            JointWeight *newJointWeights = (JointWeight *)Mem_Alloc16(sizeof(*newJointWeights) * numJointWeights);
+            Vec4 *newJointWeightVerts = (Vec4 *)Mem_Alloc16(sizeof(*newJointWeightVerts) * numJointWeights);
+            sourceOffset = 0;
+            for (int i = 0; i < numVerts; i++) {
+                const unsigned int newIndex = remap[i];
+                const int destinationOffset = weightOffsets[newIndex];
+                const int weightCount = weightOffsets[newIndex + 1] - destinationOffset;
+                memcpy(newJointWeights + destinationOffset, jointWeights + sourceOffset, sizeof(*jointWeights) * weightCount);
+                memcpy(newJointWeightVerts + destinationOffset, jointWeightVerts + sourceOffset, sizeof(*jointWeightVerts) * weightCount);
+                sourceOffset += weightCount;
+            }
+            Mem_AlignedFree(weightOffsets);
+            Mem_AlignedFree(jointWeights);
+            Mem_AlignedFree(jointWeightVerts);
+            jointWeights = newJointWeights;
+            jointWeightVerts = newJointWeightVerts;
+        }
+
+        if (numMirroredVerts > 0) {
+            const int numOriginalVerts = NumOriginalVerts();
+            VertIndex *newMirroredVerts = (VertIndex *)Mem_Alloc16(sizeof(*newMirroredVerts) * numMirroredVerts);
+            for (int i = 0; i < numMirroredVerts; i++) {
+                newMirroredVerts[remap[numOriginalVerts + i] - numOriginalVerts] = remap[mirroredVerts[i]];
+            }
+            Mem_AlignedFree(mirroredVerts);
+            mirroredVerts = newMirroredVerts;
+        }
+
+        if (dominantTris) {
+            // Geometry is unchanged; keep the selected triangles and normalization scales.
+            DominantTri *newDominantTris = (DominantTri *)Mem_Alloc16(sizeof(*newDominantTris) * numVerts);
+            for (int i = 0; i < numVerts; i++) {
+                DominantTri &tri = newDominantTris[remap[i]];
+                tri = dominantTris[i];
+                tri.v2 = remap[tri.v2];
+                tri.v3 = remap[tri.v3];
+            }
+            Mem_AlignedFree(dominantTris);
+            dominantTris = newDominantTris;
+        }
+
+        meshopt_remapIndexBuffer(indexes, indexes, numIndexes, remap);
+    }
+    Mem_AlignedFree(remap);
+
+    // Triangle order changes invalidate edge adjacency even when vertex order stays the same.
+    // FinishSurfaces rebuilds edges when requested by its finish flags.
+    if (edgesCalculated) {
+        Mem_AlignedFree(edges);
+        Mem_AlignedFree(edgeIndexes);
+        edges = nullptr;
+        edgeIndexes = nullptr;
+        numEdges = 0;
+        edgesCalculated = false;
+    }
 }
 
 BE_NAMESPACE_END
