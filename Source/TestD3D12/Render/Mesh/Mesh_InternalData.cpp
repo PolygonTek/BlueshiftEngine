@@ -52,8 +52,14 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
     BE_LOG("Loading mesh '%s'...\n", binaryMeshFilename.c_str());
 
     byte *data;
-    BE1::fileSystem.LoadFile(binaryMeshFilename, true, (void **)&data);
+    const size_t fileSize = BE1::fileSystem.LoadFile(binaryMeshFilename, true, (void **)&data);
     if (!data) {
+        return false;
+    }
+
+    if (fileSize < sizeof(BMeshHeader)) {
+        BE_WARNLOG("Mesh::InternalData::LoadBinaryMesh: truncated header %s\n", binaryMeshFilename.c_str());
+        BE1::fileSystem.FreeFile(data);
         return false;
     }
 
@@ -62,6 +68,12 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
 
     if (bMeshHeader->ident != BMESH_IDENT) {
         BE_WARNLOG("Mesh::InternalData::LoadBinaryMesh: bad format %s\n", binaryMeshFilename.c_str());
+        BE1::fileSystem.FreeFile(data);
+        return false;
+    }
+
+    if (bMeshHeader->version != 1 && bMeshHeader->version != BMESH_VERSION) {
+        BE_WARNLOG("Mesh::InternalData::LoadBinaryMesh: unsupported version %i in %s\n", bMeshHeader->version, binaryMeshFilename.c_str());
         BE1::fileSystem.FreeFile(data);
         return false;
     }
@@ -98,17 +110,36 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
         meshSurf->materialIndex = bMeshSurf->materialIndex;
 
         // --- vertexes ---
-        for (int i = 0; i < bMeshSurf->numVerts; i++) {
-            BE1::VertexGenericLit *v = &subMesh->verts[i];
-
-            const BMeshVert *bMeshVert = (const BMeshVert *)ptr;
-
-            v->SetPosition(bMeshVert->position);
-            v->SetTexCoord(bMeshVert->texCoord);
-            v->SetTangentFrame(bMeshVert->normal, bMeshVert->tangent, bMeshVert->bitangent);
-            v->SetColor(bMeshVert->color);
-
-            ptr += sizeof(BMeshVert);
+        if (bMeshHeader->version == 1) {
+            const BMeshVertV1 *bMeshVerts = (const BMeshVertV1 *)ptr;
+            for (int i = 0; i < bMeshSurf->numVerts; i++) {
+                BE1::VertexGenericLit *v = &subMesh->verts[i];
+                const BMeshVertV1 &bMeshVert = bMeshVerts[i];
+                v->SetPosition(bMeshVert.position);
+                v->SetTexCoord(bMeshVert.texCoord);
+                v->SetTangentFrame(bMeshVert.normal, bMeshVert.tangent, bMeshVert.bitangent);
+                v->SetColor(bMeshVert.color);
+            }
+            ptr += sizeof(BMeshVertV1) * bMeshSurf->numVerts;
+        } else {
+            const BMeshVert *bMeshVerts = (const BMeshVert *)ptr;
+            for (int i = 0; i < bMeshSurf->numVerts; i++) {
+                BE1::VertexGenericLit *v = &subMesh->verts[i];
+                const BMeshVert &bMeshVert = bMeshVerts[i];
+                v->SetPosition(bMeshVert.position);
+                v->st[0] = bMeshVert.texCoord[0];
+                v->st[1] = bMeshVert.texCoord[1];
+                v->SetColor(bMeshVert.color);
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+                v->tangentFrame = bMeshVert.tangentFrame;
+#else
+                BE1::Vec3 normal, tangent;
+                float bitangentSign;
+                BE1::PackedTangentFrame::Unpack(bMeshVert.tangentFrame, normal, tangent, bitangentSign);
+                v->SetTangentFrame(normal, tangent, bitangentSign);
+#endif
+            }
+            ptr += sizeof(BMeshVert) * bMeshSurf->numVerts;
         }
 
         // --- vertex weights ---
@@ -242,11 +273,14 @@ void Mesh::InternalData::WriteBinaryMesh(const char *filename) {
 
             BMeshVert bMeshVert;
             bMeshVert.position = v->GetPosition();
-            bMeshVert.texCoord = v->GetTexCoord();
-            bMeshVert.normal = v->GetNormal();
-            bMeshVert.tangent = v->GetTangent();
-            bMeshVert.bitangent = v->GetBiTangent();
+            bMeshVert.texCoord[0] = v->st[0];
+            bMeshVert.texCoord[1] = v->st[1];
             bMeshVert.color = v->GetColor();
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+            bMeshVert.tangentFrame = v->tangentFrame;
+#else
+            bMeshVert.tangentFrame = BE1::PackedTangentFrame::Pack(v->GetNormal(), v->GetTangent(), v->GetBiTangentSign());
+#endif
             fp->Write(&bMeshVert, sizeof(bMeshVert));
         }
 
