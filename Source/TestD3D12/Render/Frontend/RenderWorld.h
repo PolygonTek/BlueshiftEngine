@@ -23,18 +23,20 @@
 #include "RenderPassBuilder.h"
 #include "Render/DebugDrawPipeline.h"
 #include "Render/DebugDrawVertex.h"
+#include "Render/RenderFrameData.h"
 
 struct VisSurf;
 struct VisCamera;
 struct VisLight;
 struct VisObject;
 struct DebugDrawData;
-class RenderFrameData;
 class RenderCamera;
 class Texture;
 class Material;
 class Mesh;
 class SubMesh;
+class MeshInstance;
+class Skeleton;
 enum class VisSurfFlag : uint8_t;
 
 enum class DrawTextFlag : uint16_t {
@@ -74,7 +76,9 @@ public:
         None                    = 0,
         RenderObjects           = BIT(0),
         RenderLights            = BIT(1),
-        All                     = BIT(0) | BIT(1)
+        OceanSurface            = BIT(2),
+        EnvironmentLight        = BIT(3),
+        All                     = BIT(0) | BIT(1) | BIT(2) | BIT(3)
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(ClearFlag) noexcept { return {}; }
@@ -99,6 +103,7 @@ public:
     void                        UpdateRenderObjectTransform(int index, const BE1::Mat3x4 &worldMatrix);
     void                        UpdateRenderObjectBounds(int index, const BE1::AABB &aabb);
     void                        UpdateRenderObjectMesh(int index, const SharedPtr<MeshInstance> &meshInstance);
+    void                        UpdateRenderObjectSkeleton(int index, const SharedPtr<Skeleton> &skeleton);
     void                        UpdateRenderObjectMaterials(int index, const BE1::Array<SharedPtr<Material>> &materials);
     void                        UpdateRenderObjectFont(int index, const SharedPtr<Font> &font);
     void                        UpdateRenderObjectText(int index, const BE1::Str &text);
@@ -197,12 +202,10 @@ private:
         BE1::Array<DebugPrimitiveRange> primitives;
     };
 
-    struct SkinningJointCacheTaskDesc {
-        int32_t                 threadIndex = -1;
+    struct UpdateSkinningJointCachesTaskDesc {
         RenderWorld *           renderWorld = nullptr;
-        RenderFrameData *       frameData = nullptr;
-        VisObject *             firstVisObject = nullptr;
-        uint32_t                numVisObjects = 0;
+        const VisObject **      skinnedMeshObjects = nullptr;
+        uint32_t                numSkinnedMeshObjects = 0;
     };
 
     bool                        IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const;
@@ -214,11 +217,12 @@ private:
     void                        SetVisObjectWorldMatrices(const RenderObject *renderObject, VisObject *visObject);
     void                        FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        UpdateVisibleSkinningJointCaches(RenderFrameData *frameData);
-    void                        UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints);
-    void                        UpdateSkinningJointCachesWithoutTask(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects);
-    void                        UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints, uint32_t numTasks);
-    void                        UpdateSkinningJointCachesByTask(RenderWorld::SkinningJointCacheTaskDesc *taskDesc);
+    int                         CountSkinningUploadJoints(const RenderFrameData::ChunkRange<VisObject> &visObjects, bool needVelocityOutput, uint64_t currentFrameSerial) const;
+    void                        BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera *visCamera);
+    void                        UpdateSkinningJointCaches(RenderFrameData *frameData, const VisObject **objects, uint32_t numObjects, uint32_t numSkinningJoints);
+    void                        UpdateSkinningJointCachesWithoutTask(const VisObject **objects, uint32_t numObjects);
+    void                        UpdateSkinningJointCachesWithTask(const VisObject **objects, uint32_t numObjects, uint32_t numSkinningJoints, uint32_t numTasks);
+    void                        UpdateSkinningJointCachesByTask(RenderWorld::UpdateSkinningJointCachesTaskDesc *taskDesc);
     static void                 UpdateSkinningJointCachesByTaskFunction(void *data);
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     SkyboxState                 GetSkyboxState() const;
@@ -257,7 +261,8 @@ private:
     uint64_t                    viewCount = 0;      ///< Counter used to track how many views (or scene renderings) have been issued.
 
     uint32_t                    renderWorldGroupId = -1;
-    BE1::Array<SkinningJointCacheTaskDesc> skinningJointCacheTaskDescs;
+    BE1::Array<UpdateSkinningJointCachesTaskDesc> updateSkinningJointCachesTaskDescs;
+    BE1::Array<const VisObject *> skinningJointCacheUpdateObjects = BE1::Array<const VisObject *>(256); // Reused across cameras/frames.
 
     GuiMesh                     textMesh;           ///< 3D text mesh
     SharedPtr<Material>         skyboxMaterial;

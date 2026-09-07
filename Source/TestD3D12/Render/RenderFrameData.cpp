@@ -16,6 +16,7 @@
 #include "RenderFrameData.h"
 #include "RenderContext.h"
 #include "RenderInternal.h"
+#include "Render/Animation/Skeleton.h"
 #include "Render/Material/Material.h"
 #include "Render/Texture/Texture.h"
 
@@ -87,6 +88,8 @@ void RenderFrameData::Shutdown() {
     ClearRetainedMaterials();
 
     ClearRetainedMeshInstances();
+
+    ClearRetainedSkeletons();
 
     ClearRetainedFonts();
 
@@ -179,6 +182,8 @@ void RenderFrameData::ResetFrameData() {
     ClearRetainedMaterials();
 
     ClearRetainedMeshInstances();
+
+    ClearRetainedSkeletons();
 
     ClearRetainedFonts();
 
@@ -287,6 +292,14 @@ void RenderFrameData::ClearRetainedMeshInstances() {
     retainedMeshInstances.SetCount(0, false);
 }
 
+void RenderFrameData::ClearRetainedSkeletons() {
+    const int numRetainedSkeletons = retainedSkeletons.Count();
+    for (int i = 0; i < numRetainedSkeletons; ++i) {
+        retainedSkeletons[i].reset();
+    }
+    retainedSkeletons.SetCount(0, false);
+}
+
 void RenderFrameData::ClearRetainedFonts() {
     const int numRetainedFonts = retainedFonts.Count();
     for (int i = 0; i < numRetainedFonts; ++i) {
@@ -329,6 +342,20 @@ MeshInstance *RenderFrameData::RetainMeshInstance(const SharedPtr<MeshInstance> 
     }
 
     return meshInstancePtr;
+}
+
+Skeleton *RenderFrameData::RetainSkeleton(const SharedPtr<Skeleton> &skeleton) {
+    if (!skeleton) {
+        return nullptr;
+    }
+
+    Skeleton *skeletonPtr = skeleton.get();
+    if (skeletonPtr->GetRetainedFrameSerial() != frameSerial) {
+        skeletonPtr->SetRetainedFrameSerial(frameSerial);
+        retainedSkeletons.Append(skeleton);
+    }
+
+    return skeletonPtr;
 }
 
 Font *RenderFrameData::RetainFont(const SharedPtr<Font> &font) {
@@ -400,6 +427,21 @@ VisCamera *RenderFrameData::AllocVisCamera() {
     return newVisCamera;
 }
 
+RenderFrameData::ChunkRange<VisObject> RenderFrameData::GetVisObjects(uint32_t firstIndex) const {
+    assert(firstIndex <= numVisObjects);
+    if (firstIndex >= numVisObjects) {
+        return ChunkRange<VisObject>(nullptr);
+    }
+
+    // 앞선 오브젝트를 개별 순회하지 않고 chunk 단위로 건너뛴다.
+    Chunk *firstChunk = firstVisObjectChunk;
+    while (firstIndex >= firstChunk->count) {
+        firstIndex -= firstChunk->count;
+        firstChunk = firstChunk->next;
+    }
+    return ChunkRange<VisObject>(firstChunk, firstIndex);
+}
+
 VisObject *RenderFrameData::AllocVisObject() {
     if (numVisObjects >= MaxVisObjects) {
         assert(0);
@@ -427,6 +469,21 @@ VisObject *RenderFrameData::AllocVisObject() {
     return newVisObject;
 }
 
+RenderFrameData::ChunkRange<VisText> RenderFrameData::GetVisTexts(uint32_t firstIndex) const {
+    assert(firstIndex <= numVisTexts);
+    if (firstIndex >= numVisTexts) {
+        return ChunkRange<VisText>(nullptr);
+    }
+
+    // 앞선 텍스트를 개별 순회하지 않고 chunk 단위로 건너뛴다.
+    Chunk *firstChunk = firstVisTextChunk;
+    while (firstIndex >= firstChunk->count) {
+        firstIndex -= firstChunk->count;
+        firstChunk = firstChunk->next;
+    }
+    return ChunkRange<VisText>(firstChunk, firstIndex);
+}
+
 VisText *RenderFrameData::AllocVisText() {
     if (numVisTexts >= MaxVisTexts) {
         assert(0);
@@ -452,6 +509,21 @@ VisText *RenderFrameData::AllocVisText() {
     numVisTexts++;
 
     return newVisText;
+}
+
+RenderFrameData::ChunkRange<VisLight> RenderFrameData::GetVisLights(uint32_t firstIndex) const {
+    assert(firstIndex <= numVisLights);
+    if (firstIndex >= numVisLights) {
+        return ChunkRange<VisLight>(nullptr);
+    }
+
+    // 앞선 라이트를 개별 순회하지 않고 chunk 단위로 건너뛴다.
+    Chunk *firstChunk = firstVisLightChunk;
+    while (firstIndex >= firstChunk->count) {
+        firstIndex -= firstChunk->count;
+        firstChunk = firstChunk->next;
+    }
+    return ChunkRange<VisLight>(firstChunk, firstIndex);
 }
 
 VisSpotLightData *RenderFrameData::AllocVisSpotLightData() {

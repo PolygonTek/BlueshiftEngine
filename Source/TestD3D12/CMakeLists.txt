@@ -22,6 +22,8 @@ set(SRC_FILES
     Scene/SceneMatrix.cpp
     Scene/SceneMaterialBall.h
     Scene/SceneMaterialBall.cpp
+    Scene/SceneSkinnedMesh.h
+    Scene/SceneSkinnedMesh.cpp
     Scene/SceneDebugDraw.h
     Scene/SceneDebugDraw.cpp
     Scene/SceneOcean.h
@@ -83,6 +85,7 @@ set(SRC_FILES
     Render/Animation/SkinningJointCache.cpp
     Render/Animation/Skeleton.h
     Render/Animation/Skeleton.cpp
+    Render/Animation/Skeleton_InternalData.cpp
     Render/Animation/SkeletonManager.h
     Render/Animation/SkeletonManager.cpp
     Render/Font/Font.h

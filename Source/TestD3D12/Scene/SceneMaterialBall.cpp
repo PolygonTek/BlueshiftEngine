@@ -75,24 +75,15 @@ void SceneMaterialBall::Shutdown() {
         return;
     }
 
-    if (materialBall.renderObjectHandle >= 0) {
-        renderWorld->RemoveRenderObject(materialBall.renderObjectHandle);
-        materialBall.renderObjectHandle = -1;
-    }
+    renderWorld->ClearScene();
+    materialBall.renderObjectHandle = -1;
+    directionalLight.renderLightHandle = -1;
+    environmentLightAdded = false;
+
     testMesh.reset();
     testMaterial.reset();
     litShaderTemplate.reset();
     litDirectShaderTemplate.reset();
-
-    if (directionalLight.renderLightHandle >= 0) {
-        renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
-        directionalLight.renderLightHandle = -1;
-    }
-
-    if (environmentLightAdded) {
-        renderWorld->RemoveEnvironmentLight();
-        environmentLightAdded = false;
-    }
 
     physicsWorld = nullptr;
     renderWorld = nullptr;

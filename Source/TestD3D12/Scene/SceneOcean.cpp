@@ -181,6 +181,13 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
 }
 
 void SceneOcean::Shutdown() {
+    if (renderWorld) {
+        renderWorld->ClearScene();
+    }
+    directionalLight.renderLightHandle = -1;
+    environmentLightAdded = false;
+    oceanAdded = false;
+
     for (BuoyantObject &object : buoyantObjects) {
         if (object.rigidBody) {
             BE1::physicsSystem.DestroyCollidable(object.rigidBody);
@@ -192,30 +199,12 @@ void SceneOcean::Shutdown() {
             object.collider = nullptr;
         }
 
-        if (renderWorld && object.gameObject.renderObjectHandle >= 0) {
-            renderWorld->RemoveRenderObject(object.gameObject.renderObjectHandle);
-            object.gameObject.renderObjectHandle = -1;
-        }
+        object.gameObject.renderObjectHandle = -1;
     }
 
     buoyantMaterial.reset();
     for (SharedPtr<Mesh> &mesh : buoyantMeshes) {
         mesh.reset();
-    }
-
-    if (renderWorld && directionalLight.renderLightHandle >= 0) {
-        renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
-        directionalLight.renderLightHandle = -1;
-    }
-
-    if (renderWorld && environmentLightAdded) {
-        renderWorld->RemoveEnvironmentLight();
-        environmentLightAdded = false;
-    }
-
-    if (renderWorld && oceanAdded) {
-        renderWorld->RemoveOceanSurface();
-        oceanAdded = false;
     }
 
     renderWorld = nullptr;

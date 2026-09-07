@@ -99,17 +99,17 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
     ResolveResult result;
     result.inputLayoutId = baseInputLayoutId;
 
-    const int maxVertexWeights = visSurf->subMesh->MaxVertexWeights();
-    if (maxVertexWeights > 0) {
-        result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
-    }
-
     if (!shaderTemplate) {
         return result;
     }
 
     ShaderFeatureSet featureSet = BuildDepthFeatureSet(visSurf->baseFeatureSet | passFeatureSet);
     featureSet = shaderTemplate->MaskSupportedFeatures(featureSet);
+
+    const int maxVertexWeights = visSurf->subMesh->MaxVertexWeights();
+    if (maxVertexWeights > 0 && (featureSet.flags & ShaderFeatureSet::GpuSkinningWeightMask) != 0) {
+        result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
+    }
 
     int hashKey;
     if (PSOEntry *entry = FindPSOEntry(featureSet, result.inputLayoutId, hashKey)) {

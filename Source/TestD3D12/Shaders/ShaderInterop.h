@@ -105,6 +105,7 @@ static const uint HiZCullIndirectArgInstanceCountOffset = 4;
 static const uint HiZCullIndirectArgSize = 20;
 
 static const uint ShaderSurfaceFlagNonUniformScale = 1u << 0;
+static const uint ShaderSkinningJointOffsetInvalid = 0xFFFFFFFF;
 
 static const uint ShaderLightTypeBitCount = 2;
 static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
@@ -704,6 +705,10 @@ struct SurfaceDrawParams {
     uint instanceBaseOffset;
 };
 
+struct ShaderSkinningJoint {
+    row_major float3x4 matrix;
+};
+
 struct ShaderSurface {
     row_major float3x4 worldMatrix;
     row_major float3x4 prevWorldMatrix;
@@ -711,9 +716,16 @@ struct ShaderSurface {
     float4 localBoundingSphere;
     uint shaderMaterialIndex;
     uint flags;
-    uint padding1;
-    uint padding2;
+    uint skinningJointOffset; // Element offset in the camera joint buffer; ShaderSkinningJointOffsetInvalid if unavailable.
+    uint prevSkinningJointOffset; // Previous rendered pose; aliases the current offset when history is unavailable.
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderSkinningJoint) == 48, "ShaderSkinningJoint must match the joint buffer stride");
+static_assert(offsetof(ShaderSurface, skinningJointOffset) == 120, "ShaderSurface skinning offset must match the HLSL layout");
+static_assert(offsetof(ShaderSurface, prevSkinningJointOffset) == 124, "ShaderSurface previous skinning offset must match the HLSL layout");
+static_assert(sizeof(ShaderSurface) == 128, "ShaderSurface must match the HLSL structured-buffer layout");
+#endif
 
 struct ShaderMaterial {
     uint baseColorTextureIndex;

@@ -106,7 +106,6 @@ private:
     void                            DrawDebugLights();
     void                            DrawDebugPrimitives();
 
-    void                            UploadStaticDataToGPU(const RenderPass *renderPass) const;
     void                            SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const;
 
     void                            DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);

@@ -1018,6 +1018,8 @@ namespace RHI {
 
         virtual void                    Reset() = 0;
 
+        virtual uint64_t                GetUsedBytes() const = 0;
+
         virtual VertexBuffer *          AllocVertex(uint32_t vertexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual IndexBuffer *           AllocIndex(uint32_t indexSize, uint32_t count, const void *data = nullptr) = 0;
         virtual ConstantBuffer *        AllocConstant(uint32_t size, const void *data = nullptr) = 0;

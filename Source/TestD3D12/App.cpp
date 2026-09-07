@@ -763,6 +763,7 @@ void App::RenderGUI() {
 
         mainRenderContext->DrawString(x, y, BE1::va("Objects: %u, Draws: %u, Tris: %llu", renderStats.visibleObjectCount, renderStats.drawCount, renderStats.drawTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Instance Tables: %u, Upload: %s", renderStats.instanceTableAllocCount, BE1::Str::FormatBytes(renderStats.instanceTableUploadBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Dynamic buffer used: %s", BE1::Str::FormatBytes(renderStats.dynamicBufferUsedBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
 
         mainRenderContext->DrawString(x, y, BE1::va("Lights: %u (Point: %u, Spot: %u, BoxDir: %u)", renderStats.visibleLightCount, renderStats.visiblePointLightCount, renderStats.visibleSpotLightCount, renderStats.visibleBoxDirLightCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Light Culling Thread Groups: %llu", renderStats.lightCullingThreadGroupCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;

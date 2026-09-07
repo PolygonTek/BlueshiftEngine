@@ -23,8 +23,9 @@
     Mesh Instance
 
     원본 Mesh 에 렌더링 인스턴스별 상태를 덧붙여 관리한다.
-    Static 인스턴스는 Mesh 의 surface 데이터를 그대로 참조하고,
-    Skinned 인스턴스는 원본 Mesh 의 data serial 에 맞춰 joint matrix 와 GPU skinning joint cache 를 갱신한다.
+    Static MeshInstance 는 원본 Mesh 를 그대로 참조하여 사용한다.
+    Skinned MeshInstance 는 원본 Mesh 에 맞춰 joint matrix 배열과 캐시를 갱신하여 사용한다.
+    SkinningJointCache 는 현재/이전 joint pose 의 CPU skinning 결과를 소유한다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -58,7 +59,7 @@ public:
                                     // 원본 메시의 변경 사항을 인스턴스에 반영해야 하는지 여부를 리턴한다.
     bool                            NeedsRefreshFromSource() const;
 
-                                    // 원본 메시가 수정되었으면, 인스턴스의 skinning matrix 와 joint cache 를 갱신한다.
+                                    // 원본 메시가 수정되었으면, 인스턴스의 skinning matrix 배열을 갱신하고 포즈 이력을 초기화한다.
     bool                            EnsureCurrent();
 
     int                             NumSurfaces() const;
@@ -68,21 +69,20 @@ public:
 
     const BE1::AABB &               GetAABB() const;
 
-    int                             NumSkinningMatrices() const { return skinningMatrices.Count(); }
-    const BE1::Mat3x4 *             GetSkinningMatrices() const { return skinningMatrices.Ptr(); }
-    BE1::Mat3x4 *                   GetSkinningMatrices() { return skinningMatrices.Ptr(); }
-    bool                            SetSkinningMatrices(const BE1::Mat3x4 *matrices, int numMatrices);
+    int                             NumJointMats() const { return jointMats.Count(); }
+    const BE1::Mat3x4 *             GetJointMats() const { return jointMats.Ptr(); }
+    uint64_t                        GetJointMatsSerial() const { return jointMatsSerial; }
+    bool                            SetJointMats(const BE1::Mat3x4 *matrices, int numMatrices);
 
     const SkinningJointCache *      GetSkinningJointCache() const { return skinningJointCache.get(); }
     SkinningJointCache *            GetSkinningJointCache() { return skinningJointCache.get(); }
-    bool                            UpdateSkinningJointCache(RHI::FrameThreadData *frameThreadData, const Skeleton *skeleton);
-
-    RHI::Buffer *                   GetSkinningJointBuffer() const { return skinningJointCache ? skinningJointCache->GetJointBuffer() : nullptr; }
+    bool                            UpdateSkinningJointCache(const Skeleton *skeleton);
+    void                            InvalidateSkinningJointCache();
 
 private:
     bool                            RefreshFromSource();
     bool                            HasSkinningData() const;
-    void                            ResizeSkinningMatrices(int numMatrices);
+    void                            ResizeJointMats(int numMatrices);
 
     static constexpr uint32_t       InvalidDataSerial = UINT32_MAX;
 
@@ -90,6 +90,7 @@ private:
     SharedPtr<Mesh>                 sourceMesh;
     uint32_t                        sourceDataSerial = InvalidDataSerial;
     uint64_t                        retainedFrameSerial = 0;
-    BE1::Array<BE1::Mat3x4>         skinningMatrices = BE1::Array<BE1::Mat3x4>(64);
-    std::unique_ptr<SkinningJointCache> skinningJointCache;
+    BE1::Array<BE1::Mat3x4>         jointMats = BE1::Array<BE1::Mat3x4>(64);
+    uint64_t                        jointMatsSerial = 0;
+    UniquePtr<SkinningJointCache>   skinningJointCache;
 };

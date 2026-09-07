@@ -49,6 +49,10 @@ void RenderObject::UpdateMesh(const SharedPtr<MeshInstance> &meshInstance) {
     UpdateWorldAABB();
 }
 
+void RenderObject::UpdateSkeleton(const SharedPtr<Skeleton> &skeleton) {
+    desc.skeleton = skeleton;
+}
+
 void RenderObject::UpdateMaterials(const BE1::Array<SharedPtr<Material>> &materials) {
     desc.materials = materials;
 }
@@ -99,6 +103,10 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Mesh)) {
         desc.meshInstance = src.meshInstance;
+    }
+
+    if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Skeleton)) {
+        desc.skeleton = src.skeleton;
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Materials)) {

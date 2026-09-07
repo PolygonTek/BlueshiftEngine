@@ -19,6 +19,7 @@
 #include "RenderCamera.h"
 #include "Render/RenderInternal.h"
 #include "Render/RenderUtils.h"
+#include "Render/Animation/Skeleton.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
@@ -31,8 +32,6 @@ static_assert(static_cast<uint32_t>(RenderLight::Type::Point) == ShaderLightType
 static_assert(static_cast<uint32_t>(RenderLight::Type::Spot) == ShaderLightTypeSpot);
 static_assert(static_cast<uint32_t>(RenderLight::Type::BoxDir) == ShaderLightTypeBoxDir);
 
-static constexpr uint32_t MaxSkinningJointsPerTask = 1024;
-
 static BE_INLINE bool IsRenderLayerVisible(uint32_t layerMask, uint8_t layer) {
     return layer < 32 && (layerMask & BIT(layer)) != 0;
 }
@@ -44,13 +43,14 @@ static const Material *GetVisObjectMaterial(const VisObject *visObject, int mate
     return materialManager.defaultLitMaterial.get();
 }
 
-static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubMesh *subMesh) {
+static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubMesh *subMesh, bool skinning) {
     ShaderFeatureSet featureSet;
 
     if (material->GetRenderingMode() == Material::RenderingMode::AlphaCutoff) {
         featureSet.EnableFeature(ShaderFeature::Perforated);
     }
-    int maxVertexWeights = subMesh->MaxVertexWeights();
+
+    int maxVertexWeights = skinning ? subMesh->MaxVertexWeights() : 0;
     if (maxVertexWeights == 8) {
         featureSet.EnableFeature(ShaderFeature::GpuSkinningWeight8);
     } else if (maxVertexWeights == 4) {
@@ -69,13 +69,23 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
     }
 
     assert(material);
+    assert(subMesh);
+
+    if (!subMesh->vertexBuffer || !subMesh->indexBuffer || (subMesh->vertWeights && !subMesh->vertexWeightBuffer)) {
+        subMesh->UploadStaticDataToGPU();
+    }
+
+    if (!subMesh->vertexBuffer || !subMesh->indexBuffer || (subMesh->vertWeights && !subMesh->vertexWeightBuffer)) {
+        BE_WARNLOG("RenderWorld::AddVisSurf: failed to prepare static submesh buffers\n");
+        return;
+    }
 
     VisSurf *drawSurf = (VisSurf *)frameData->MemAlloc(sizeof(VisSurf));
     drawSurf->index = visCamera->numVisSurfs;
     drawSurf->space = visObject;
     drawSurf->subMesh = subMesh;
     drawSurf->material = material;
-    drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh);
+    drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh, visObject->skinningJointOffset != ShaderSkinningJointOffsetInvalid);
     drawSurf->shaderMaterialIndex = frameData->RegisterShaderMaterial(material);
     drawSurf->flags = flags;
 
@@ -657,6 +667,10 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
         visObject->meshInstance = frameData->RetainMeshInstance(renderObject->desc.meshInstance);
     }
 
+    if (visObject->meshInstance && visObject->meshInstance->IsSkinned()) {
+        visObject->skeleton = frameData->RetainSkeleton(renderObject->desc.skeleton);
+    }
+
     const int numMaterials = renderObject->desc.materials.Count();
     visObject->numMaterials = static_cast<uint32_t>(numMaterials);
     if (numMaterials > 0) {
@@ -710,7 +724,10 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
 
-    const uint32_t startVisibleObjectCount = frameData->NumVisObjects();
+    // 같은 프레임 데이터로 RenderScene 을 여러 번 호출하면 앞선 카메라의 VisObject 와 VisText 가 누적되어 있다.
+    // 현재 카메라에서 새로 등록할 VisObject 와 VisText 를 구분하기 위해 각각 시작 인덱스를 기록한다.
+    visCamera->firstVisObjectIndex = frameData->NumVisObjects();
+    visCamera->firstVisTextIndex = frameData->NumVisTexts();
 
     visCamera->worldAABB.Clear();
 
@@ -748,97 +765,78 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     }
 }
 
-void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints) {
-    if (numVisObjects == 0 || numSkinningJoints == 0) {
+void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, const VisObject **objects, uint32_t numObjects, uint32_t numSkinningJoints) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCaches");
+
+    if (numObjects == 0 || numSkinningJoints == 0) {
         return;
     }
 
 #ifdef USE_RENDER_TASK
+    static constexpr uint32_t MaxSkinningJointsPerTask = 8192;
+
     uint32_t numTasks = (numSkinningJoints + MaxSkinningJointsPerTask - 1) / MaxSkinningJointsPerTask;
     numTasks = BE1::Min(frameData->NumRenderTaskThreads(), numTasks);
 
     if (numTasks > 1) {
-        UpdateSkinningJointCachesWithTask(frameData, firstVisObject, numVisObjects, numSkinningJoints, numTasks);
+        UpdateSkinningJointCachesWithTask(objects, numObjects, numSkinningJoints, numTasks);
     } else {
-        UpdateSkinningJointCachesWithoutTask(frameData, firstVisObject, numVisObjects);
+        UpdateSkinningJointCachesWithoutTask(objects, numObjects);
     }
 #else
-    UpdateSkinningJointCachesWithoutTask(frameData, firstVisObject, numVisObjects);
+    UpdateSkinningJointCachesWithoutTask(objects, numObjects);
 #endif
 }
 
-void RenderWorld::UpdateSkinningJointCachesWithoutTask(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects) {
+void RenderWorld::UpdateSkinningJointCachesWithoutTask(const VisObject **objects, uint32_t numObjects) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesWithoutTask");
 
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
-    VisObject *visObject = firstVisObject;
-
-    for (uint32_t visObjectIndex = 0; visObjectIndex < numVisObjects; ++visObjectIndex) {
-        visObject->meshInstance->UpdateSkinningJointCache(frameThreadData, visObject->skeleton);
-        visObject = visObject->nextSkinnedObject;
+    for (uint32_t i = 0; i < numObjects; ++i) {
+        const VisObject *visObject = objects[i];
+        visObject->meshInstance->UpdateSkinningJointCache(visObject->skeleton);
     }
 }
 
-void RenderWorld::UpdateSkinningJointCachesByTask(RenderWorld::SkinningJointCacheTaskDesc *taskDesc) {
+void RenderWorld::UpdateSkinningJointCachesByTask(RenderWorld::UpdateSkinningJointCachesTaskDesc *taskDesc) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesByTask");
 
-    RHI::FrameThreadData *frameThreadData = taskDesc->frameData->GetThreadData(taskDesc->threadIndex);
-    VisObject *visObject = taskDesc->firstVisObject;
-
-    for (uint32_t visObjectIndex = 0; visObjectIndex < taskDesc->numVisObjects; ++visObjectIndex) {
-        visObject->meshInstance->UpdateSkinningJointCache(frameThreadData, visObject->skeleton);
-        visObject = visObject->nextSkinnedObject;
+    for (uint32_t i = 0; i < taskDesc->numSkinnedMeshObjects; ++i) {
+        const VisObject *visObject = taskDesc->skinnedMeshObjects[i];
+        visObject->meshInstance->UpdateSkinningJointCache(visObject->skeleton);
     }
 }
 
 void RenderWorld::UpdateSkinningJointCachesByTaskFunction(void *data) {
-    RenderWorld::SkinningJointCacheTaskDesc *taskDesc = reinterpret_cast<RenderWorld::SkinningJointCacheTaskDesc *>(data);
+    RenderWorld::UpdateSkinningJointCachesTaskDesc *taskDesc = reinterpret_cast<RenderWorld::UpdateSkinningJointCachesTaskDesc *>(data);
     taskDesc->renderWorld->UpdateSkinningJointCachesByTask(taskDesc);
 }
 
-void RenderWorld::UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, VisObject *firstVisObject, uint32_t numVisObjects, uint32_t numSkinningJoints, uint32_t numTasks) {
+void RenderWorld::UpdateSkinningJointCachesWithTask(const VisObject **objects, uint32_t numObjects, uint32_t numSkinningJoints, uint32_t numTasks) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesWithTask");
 
-    uint32_t targetJointsPerTask = (numSkinningJoints + numTasks - 1) / numTasks;
-    VisObject *startVisObject = firstVisObject;
-    uint32_t remainingVisObjects = numVisObjects;
+    const uint32_t targetJointsPerTask = (numSkinningJoints + numTasks - 1) / numTasks;
+    uint32_t firstIndex = 0;
 
-    skinningJointCacheTaskDescs.Reserve(numTasks);
-    skinningJointCacheTaskDescs.SetCount(0, false);
+    updateSkinningJointCachesTaskDescs.Reserve(numTasks);
+    updateSkinningJointCachesTaskDescs.SetCount(0, false);
 
-    while (startVisObject && skinningJointCacheTaskDescs.Count() + 1 < (int)numTasks) {
-        VisObject *endVisObject = startVisObject;
-        uint32_t numTaskVisObjects = 0;
+    while (firstIndex < numObjects) {
+        uint32_t endIndex = firstIndex;
         uint32_t numTaskJoints = 0;
-
+        const bool lastTask = updateSkinningJointCachesTaskDescs.Count() + 1 == static_cast<int>(numTasks);
         do {
-            numTaskJoints += BE1::Max(1, endVisObject->meshInstance->NumSkinningMatrices());
-            endVisObject = endVisObject->nextSkinnedObject;
-            numTaskVisObjects++;
-        } while (numTaskVisObjects < remainingVisObjects && numTaskJoints < targetJointsPerTask);
+            numTaskJoints += objects[endIndex++]->meshInstance->NumJointMats();
+        } while (endIndex < numObjects && (lastTask || numTaskJoints < targetJointsPerTask));
 
-        SkinningJointCacheTaskDesc &taskDesc = skinningJointCacheTaskDescs.Alloc();
-        taskDesc.threadIndex = skinningJointCacheTaskDescs.Count() - 1;
+        UpdateSkinningJointCachesTaskDesc &taskDesc = updateSkinningJointCachesTaskDescs.Alloc();
         taskDesc.renderWorld = this;
-        taskDesc.frameData = frameData;
-        taskDesc.firstVisObject = startVisObject;
-        taskDesc.numVisObjects = numTaskVisObjects;
-
-        startVisObject = endVisObject;
-        remainingVisObjects -= numTaskVisObjects;
+        taskDesc.skinnedMeshObjects = objects + firstIndex;
+        taskDesc.numSkinnedMeshObjects = endIndex - firstIndex;
+        firstIndex = endIndex;
     }
 
-    if (startVisObject) {
-        SkinningJointCacheTaskDesc &taskDesc = skinningJointCacheTaskDescs.Alloc();
-        taskDesc.threadIndex = skinningJointCacheTaskDescs.Count() - 1;
-        taskDesc.renderWorld = this;
-        taskDesc.frameData = frameData;
-        taskDesc.firstVisObject = startVisObject;
-        taskDesc.numVisObjects = remainingVisObjects;
-    }
-
-    for (int taskIndex = 0; taskIndex < skinningJointCacheTaskDescs.Count(); ++taskIndex) {
-        SkinningJointCacheTaskDesc &taskDesc = skinningJointCacheTaskDescs[taskIndex];
+    for (int taskIndex = 0; taskIndex < updateSkinningJointCachesTaskDescs.Count(); ++taskIndex) {
+        UpdateSkinningJointCachesTaskDesc &taskDesc = updateSkinningJointCachesTaskDescs[taskIndex];
         if (!BE1::Engine::taskManager->AddTask(RenderWorld::UpdateSkinningJointCachesByTaskFunction, &taskDesc, renderWorldGroupId, false)) {
             UpdateSkinningJointCachesByTask(&taskDesc);
         }
@@ -847,55 +845,148 @@ void RenderWorld::UpdateSkinningJointCachesWithTask(RenderFrameData *frameData, 
     BE1::Engine::taskManager->WaitFinish(renderWorldGroupId, true);
 }
 
-void RenderWorld::UpdateVisibleSkinningJointCaches(RenderFrameData *frameData) {
-    const uint32_t numVisObjects = frameData->NumVisObjects();
-    if (numVisObjects == 0) {
-        return;
-    }
+int RenderWorld::CountSkinningUploadJoints(const RenderFrameData::ChunkRange<VisObject> &visObjects, bool needVelocityOutput, uint64_t currentFrameSerial) const {
+    uint32_t numTotalUploadJoints = 0;
 
-    uint32_t numSkinnedVisObjects = 0;
-    uint32_t numSkinningJoints = 0;
-    VisObject *firstSkinnedObject = nullptr;
-    VisObject *lastSkinnedObject = nullptr;
-
-    for (VisObject &visObjectRef : frameData->GetVisObjects()) {
-        VisObject *visObject = &visObjectRef;
-        if (!visObject->cameraVisible ||
-            !visObject->skeleton ||
-            !visObject->meshInstance ||
-            !visObject->meshInstance->EnsureCurrent()) {
+    for (const VisObject &visObject : visObjects) {
+        if (!visObject.cameraVisible || !visObject.meshInstance) {
             continue;
         }
 
-        visObject->nextSkinnedObject = nullptr;
-        if (lastSkinnedObject) {
-            lastSkinnedObject->nextSkinnedObject = visObject;
-        } else {
-            firstSkinnedObject = visObject;
+        const SkinningJointCache *skinningJointCache = visObject.meshInstance->GetSkinningJointCache();
+        if (!skinningJointCache) {
+            continue;
         }
-        lastSkinnedObject = visObject;
 
-        numSkinnedVisObjects++;
-        numSkinningJoints += visObject->meshInstance->NumSkinningMatrices();
+        // 캐시가 최신 상태가 아니라면 업로드를 하지 않는다.
+        if (!skinningJointCache->IsUpToDate(visObject.skeleton, visObject.meshInstance->GetJointMatsSerial())) {
+            continue;
+        }
+
+        const uint32_t numJoints = static_cast<uint32_t>(skinningJointCache->NumJoints());
+        const uint32_t numPoses = needVelocityOutput && skinningJointCache->HasPreviousPose(currentFrameSerial) ? 2u : 1u;
+        const uint32_t numUploadJoints = numJoints * numPoses;
+
+        if (numUploadJoints > (UINT32_MAX / sizeof(ShaderSkinningJoint) - numTotalUploadJoints)) {
+            return -1;
+        }
+
+        numTotalUploadJoints += numUploadJoints;
+    }
+    return static_cast<int>(numTotalUploadJoints);
+}
+
+void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera *visCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildSkinningJointBuffer");
+
+    skinningJointCacheUpdateObjects.SetCount(0, false);
+
+    uint32_t numTotalJoints = 0;
+
+    const auto visObjects = frameData->GetVisObjects(visCamera->firstVisObjectIndex);
+    const uint64_t currentFrameSerial = frameData->GetFrameSerial();
+
+    for (VisObject &visObject : visObjects) {
+        if (!visObject.cameraVisible) {
+            continue;
+        }
+
+        if (!visObject.skeleton || !visObject.skeleton->IsReady() ||
+            !visObject.meshInstance || !visObject.meshInstance->IsSkinned() || !visObject.meshInstance->EnsureCurrent()) {
+            continue;
+        }
+
+        SkinningJointCache *skinningJointCache = visObject.meshInstance->GetSkinningJointCache();
+        if (!skinningJointCache) {
+            continue;
+        }
+
+        // 캐시의 joint pose 나 skeleton 이 변경되었다면 업데이트를 예약한다.
+        // 캐시 업데이트가 예약된 상태이거나 이미 업데이트된 상태라면 건너뛴다.
+        if (!skinningJointCache->PrepareUpdate(visObject.skeleton, visObject.meshInstance->GetJointMatsSerial(), currentFrameSerial)) {
+            continue;
+        }
+
+        skinningJointCacheUpdateObjects.Alloc() = &visObject;
+
+        numTotalJoints += skinningJointCache->NumJoints();
     }
 
-    UpdateSkinningJointCaches(frameData, firstSkinnedObject, numSkinnedVisObjects, numSkinningJoints);
+    if (numTotalJoints == 0) {
+        return;
+    }
+
+    UpdateSkinningJointCaches(frameData, skinningJointCacheUpdateObjects.Ptr(), skinningJointCacheUpdateObjects.Count(), numTotalJoints);
+
+    // jointBuffer 에 업로드할 전체 joint pose 개수를 계산한다. (이전 프레임 pose 도 필요하면 포함한다)
+    const int numTotalUploadJoints = CountSkinningUploadJoints(visObjects, visCamera->needVelocityOutput, currentFrameSerial);
+    if (numTotalUploadJoints < 0) {
+        BE_WARNLOG("RenderWorld::BuildSkinningJointBuffer: too many skinning joints\n");
+        return;
+    }
+
+    if (numTotalUploadJoints == 0) {
+        return;
+    }
+
+    // 전체 joint pose 를 한 번에 업로드하기 위해서 업로드 버퍼를 할당한다.
+    RHI::Buffer *jointBuffer = frameData->GetThreadData(0)->AllocStructuredBuffer(sizeof(ShaderSkinningJoint), static_cast<uint32_t>(numTotalUploadJoints));
+    if (!jointBuffer) {
+        return;
+    }
+
+    // 업로드 버퍼에는 메인 스레드에서 연속으로 복사한다.
+    BE1::Mat3x4 *dst = static_cast<BE1::Mat3x4 *>(jointBuffer->mappedPtr);
+    uint32_t jointOffset = 0;
+    for (VisObject &visObject : visObjects) {
+        if (!visObject.cameraVisible || !visObject.meshInstance) {
+            continue;
+        }
+
+        const SkinningJointCache *skinningJointCache = visObject.meshInstance->GetSkinningJointCache();
+        if (!skinningJointCache) {
+            continue;
+        }
+
+        if (!skinningJointCache->IsUpToDate(visObject.skeleton, visObject.meshInstance->GetJointMatsSerial())) {
+            continue;
+        }
+
+        const uint32_t numJoints = static_cast<uint32_t>(skinningJointCache->NumJoints());
+        const uint32_t byteSize = numJoints * sizeof(ShaderSkinningJoint);
+
+        BE1::simdProcessor->Memcpy(dst + jointOffset, skinningJointCache->GetSkinningJoints(), byteSize);
+        visObject.skinningJointOffset = jointOffset;
+        jointOffset += numJoints;
+
+        visObject.prevSkinningJointOffset = visObject.skinningJointOffset;
+
+        if (visCamera->needVelocityOutput && skinningJointCache->HasPreviousPose(currentFrameSerial)) {
+            BE1::simdProcessor->Memcpy(dst + jointOffset, skinningJointCache->GetPrevSkinningJoints(), byteSize);
+            visObject.prevSkinningJointOffset = jointOffset;
+            jointOffset += numJoints;
+        }
+    }
+
+    assert(jointOffset == static_cast<uint32_t>(numTotalUploadJoints));
+    visCamera->skinningJointBuffer = jointBuffer;
 }
 
 void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddMeshes");
 
+    // 현재 카메라에서 새로 등록된 VisObject 가 없으면 메시 처리를 생략한다.
+    if (frameData->NumVisObjects() == visCamera->firstVisObjectIndex) {
+        return;
+    }
+
+    BuildSkinningJointBuffer(frameData, visCamera);
+
     const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
 
-    UpdateVisibleSkinningJointCaches(frameData);
-
-    for (VisObject &visObjectRef : frameData->GetVisObjects()) {
+    for (VisObject &visObjectRef : frameData->GetVisObjects(visCamera->firstVisObjectIndex)) {
         VisObject *visObject = &visObjectRef;
-        if (!visObject->cameraVisible) {
-            continue;
-        }
-
-        if (!visObject->meshInstance) {
+        if (!visObject->cameraVisible || !visObject->meshInstance) {
             continue;
         }
 
@@ -903,7 +994,6 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
             continue;
         }
 
-        VisSurfFlag flags = VisSurfFlag::CameraVisible;
         const int numSurfaces = visObject->meshInstance->NumSurfaces();
         const bool cullSurfaces = !skipViewCulling && numSurfaces > 1;
 
@@ -924,7 +1014,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
                     }
                 }
             }
-            AddVisSurf(frameData, visCamera, nullptr, visObject, GetVisObjectMaterial(visObject, meshSurf->materialIndex), meshSurf->subMesh, flags);
+            AddVisSurf(frameData, visCamera, nullptr, visObject, GetVisObjectMaterial(visObject, meshSurf->materialIndex), meshSurf->subMesh, VisSurfFlag::CameraVisible);
         }
     }
 }
@@ -932,7 +1022,8 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddTextMeshes");
 
-    for (VisText &visText : frameData->GetVisTexts()) {
+    // 이전 카메라에서 등록한 VisText 는 제외하고 현재 카메라의 시작 위치부터 순회한다.
+    for (VisText &visText : frameData->GetVisTexts(visCamera->firstVisTextIndex)) {
         VisObject *visObject = visText.space;
         if (!visObject->cameraVisible) {
             continue;

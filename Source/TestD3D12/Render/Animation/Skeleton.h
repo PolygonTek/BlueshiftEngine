@@ -54,6 +54,9 @@ public:
     const char *                    GetName() const { return name.c_str(); }
     const char *                    GetHashName() const { return hashName.c_str(); }
 
+    uint64_t                        GetRetainedFrameSerial() const { return retainedFrameSerial; }
+    void                            SetRetainedFrameSerial(uint64_t frameSerial) { retainedFrameSerial = frameSerial; }
+
     State                           GetState() const { return state.load(); }
     void                            SetState(State newState) { state.store(newState); }
     bool                            IsReady() const { State s = GetState(); return s == State::Ready || s == State::Reloading; }
@@ -64,6 +67,12 @@ public:
 
                                     // 이미 진행 중인 로딩 completion 무효화
     uint32_t                        BumpLoadSerial() { return loadSerial.fetch_add(1) + 1; }
+
+                                    // 현재 적용된 스켈레톤 데이터의 시리얼 번호.
+    uint32_t                        GetDataSerial() const { return dataSerial.load(); }
+
+                                    // 실제 메시 데이터가 교체되었음을 표시한다.
+    uint32_t                        BumpDataSerial() { return dataSerial.fetch_add(1) + 1; }
 
     int                             NumJoints() const { assert(IsReady()); return internalData.numJoints; }
     const Joint *                   GetJoints() const { assert(IsReady()); return internalData.joints; }
@@ -110,7 +119,7 @@ private:
         Joint *                     joints = nullptr;           ///< Joint information array
         int *                       jointParents = nullptr;     ///< Parent indexes for each joint
         BE1::JointPose *            bindPoses = nullptr;        ///< Local joint transforms of bindpose (quaternion based)
-        BE1::Mat3x4 *               invBindPoseMats = nullptr;  ///< World inverse transform of bindpose (for use in HW skinning)
+        BE1::Mat3x4 *               invBindPoseMats = nullptr;  ///< World inverse transform of bindpose
     };
 
     void                            Purge();
@@ -127,6 +136,8 @@ private:
     BE1::Str                        name;
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           loadSerial = 0;
+    std::atomic<uint32_t>           dataSerial = 0;
+    uint64_t                        retainedFrameSerial = 0;
     InternalData                    internalData;
 };
 

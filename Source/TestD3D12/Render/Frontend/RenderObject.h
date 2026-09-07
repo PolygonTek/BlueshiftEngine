@@ -16,6 +16,7 @@
 
 struct VisObject;
 class MeshInstance;
+class Skeleton;
 class Texture;
 class Material;
 class Font;
@@ -109,7 +110,7 @@ public:
             Font                    = BIT(6),
             Text                    = BIT(7),
             TextStyle               = BIT(8),
-            
+            Skeleton                = BIT(9),
         };
 
         friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
@@ -123,6 +124,7 @@ public:
         BE1::AABB                   aabb = BE1::AABB::empty;    ///< non-scaled AABB in local space
 
         SharedPtr<MeshInstance>     meshInstance;
+        SharedPtr<Skeleton>         skeleton;
         UniquePtr<TextDesc>         text;
         BE1::Array<SharedPtr<Material>> materials;
     };
@@ -153,6 +155,7 @@ private:
     void                            UpdateTransform(const BE1::Mat3x4 &worldMatrix);
     void                            UpdateBounds(const BE1::AABB &aabb);
     void                            UpdateMesh(const SharedPtr<MeshInstance> &meshInstance);
+    void                            UpdateSkeleton(const SharedPtr<Skeleton> &skeleton);
     void                            UpdateMaterials(const BE1::Array<SharedPtr<Material>> &materials);
     void                            UpdateFont(const SharedPtr<Font> &font);
     void                            UpdateText(const BE1::Str &text);

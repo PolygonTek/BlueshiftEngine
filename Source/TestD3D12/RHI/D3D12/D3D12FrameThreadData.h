@@ -51,6 +51,9 @@ public:
                                     // 프레임이 초기화 될 때 호출되어야 한다.
     virtual void                    Reset() override;
 
+                                    // 정렬 패딩을 포함한 다이나믹 버퍼 사용량을 반환한다.
+    virtual uint64_t                GetUsedBytes() const override;
+
                                     // 다이나믹 버텍스 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
     virtual RHI::VertexBuffer *     AllocVertex(uint32_t vertexSize, uint32_t count, const void *data = nullptr) override;
 

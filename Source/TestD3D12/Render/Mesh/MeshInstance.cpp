@@ -20,7 +20,8 @@ void MeshInstance::Reset() {
     sourceMesh.reset();
     sourceDataSerial = InvalidDataSerial;
 
-    skinningMatrices.Clear();
+    jointMats.Clear();
+    jointMatsSerial = 0;
     skinningJointCache.reset();
 }
 
@@ -76,11 +77,11 @@ bool MeshInstance::EnsureCurrent() {
     }
 
     // 원본 메시가 수정되었는지 확인
-    if (sourceDataSerial != sourceMesh->GetDataSerial()) {
+    if (sourceDataSerial == sourceMesh->GetDataSerial()) {
         return true;
     }
 
-    // 원본 메시가 수정되었으면, 인스턴스의 skinning matrix 와 joint cache 를 갱신
+    // 원본 메시가 수정되었으면, 인스턴스의 skinning matrix 배열을 갱신하고 포즈 이력을 초기화
     return RefreshFromSource();
 }
 
@@ -94,9 +95,10 @@ bool MeshInstance::RefreshFromSource() {
             return false;
         }
 
-        ResizeSkinningMatrices(sourceMesh->NumJoints());
+        ResizeJointMats(sourceMesh->NumJoints());
+        InvalidateSkinningJointCache();
     } else {
-        skinningMatrices.Clear();
+        jointMats.Clear();
         skinningJointCache.reset();
     }
 
@@ -116,6 +118,7 @@ const Mesh::Surface *MeshInstance::GetSurface(int surfaceIndex) const {
     if (!sourceMesh || sourceMesh->GetState() != Mesh::State::Ready) {
         return nullptr;
     }
+
     if (surfaceIndex < 0 || surfaceIndex >= sourceMesh->NumSurfaces()) {
         return nullptr;
     }
@@ -137,7 +140,6 @@ const BE1::AABB &MeshInstance::GetAABB() const {
     if (!sourceMesh || sourceMesh->GetState() != Mesh::State::Ready) {
         return BE1::AABB::empty;
     }
-
     return sourceMesh->GetAABB();
 }
 
@@ -157,37 +159,43 @@ bool MeshInstance::HasSkinningData() const {
     return false;
 }
 
-void MeshInstance::ResizeSkinningMatrices(int numMatrices) {
-    int oldCount = skinningMatrices.Count();
+void MeshInstance::ResizeJointMats(int numMatrices) {
+    int oldCount = jointMats.Count();
     if (oldCount == numMatrices) {
-        if (!skinningJointCache) {
-            skinningJointCache = numMatrices > 0 ? MakeUnique<SkinningJointCache>(numMatrices) : nullptr;
-        }
         return;
     }
 
-    skinningMatrices.SetCount(numMatrices, false);
+    jointMats.SetCount(numMatrices, false);
 
+    // 추가된 jointMats 는 단위 행렬로 초기화한다.
     for (int i = oldCount; i < numMatrices; ++i) {
-        skinningMatrices[i].SetIdentity();
+        jointMats[i].SetIdentity();
     }
 
+    // SkinningJointCache 를 재생성한다.
     skinningJointCache = numMatrices > 0 ? MakeUnique<SkinningJointCache>(numMatrices) : nullptr;
 }
 
-bool MeshInstance::SetSkinningMatrices(const BE1::Mat3x4 *matrices, int numMatrices) {
-    if (type != Type::Skinned || !matrices || numMatrices != skinningMatrices.Count()) {
+bool MeshInstance::SetJointMats(const BE1::Mat3x4 *matrices, int numMatrices) {
+    if (type != Type::Skinned || !matrices || numMatrices != jointMats.Count()) {
         return false;
     }
 
-    BE1::simdProcessor->Memcpy(skinningMatrices.Ptr(), matrices, sizeof(BE1::Mat3x4) * numMatrices);
+    BE1::simdProcessor->Memcpy(jointMats.Ptr(), matrices, sizeof(BE1::Mat3x4) * numMatrices);
+    jointMatsSerial++;
     return true;
 }
 
-bool MeshInstance::UpdateSkinningJointCache(RHI::FrameThreadData *frameThreadData, const Skeleton *skeleton) {
+bool MeshInstance::UpdateSkinningJointCache(const Skeleton *skeleton) {
     if (type != Type::Skinned || !skinningJointCache) {
         return false;
     }
 
-    return skinningJointCache->Update(frameThreadData, skeleton, skinningMatrices.Ptr());
+    return skinningJointCache->Update(skeleton, jointMats.Ptr());
+}
+
+void MeshInstance::InvalidateSkinningJointCache() {
+    if (skinningJointCache) {
+        skinningJointCache->Invalidate();
+    }
 }

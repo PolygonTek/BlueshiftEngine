@@ -63,6 +63,10 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **dr
             RHI::renderer->SetPSO(mainCommandList, currentPSO);
             RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
             RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
+
+            if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
+                RHI::renderer->SetBuffer(mainCommandList, 1, false, currentVisCamera->skinningJointBuffer);
+            }
         }
 
         if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
@@ -125,6 +129,10 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
             RHI::renderer->SetPSO(commandList, currentPSO);
             RHI::renderer->SetConstantBuffer(commandList, 0, frameConstantBuffer);
             RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
+
+            if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
+                RHI::renderer->SetBuffer(commandList, 1, false, currentVisCamera->skinningJointBuffer);
+            }
         }
 
         if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {

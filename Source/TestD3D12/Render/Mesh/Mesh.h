@@ -17,6 +17,7 @@
 #include "SubMesh.h"
 
 class Joint;
+class Skeleton;
 class MeshInstance;
 class MeshManager;
 class LoadingSystem;
@@ -94,11 +95,16 @@ public:
                                     // 현재 적용된 메시 데이터의 시리얼 번호.
     uint32_t                        GetDataSerial() const { return dataSerial.load(); }
 
+                                    // 실제 메시 데이터가 교체되었음을 표시한다.
+    uint32_t                        BumpDataSerial() { return dataSerial.fetch_add(1) + 1; }
+
     int                             NumSurfaces() const { assert(IsReady()); return internalData.surfaces.Count(); }
     Surface *                       GetSurface(int index) const { assert(IsReady()); return internalData.surfaces[index]; }
 
     int                             NumJoints() const { assert(IsReady()); return internalData.numJoints; }
     const Joint *                   GetJoints() const { assert(IsReady()); return internalData.joints; }
+
+    bool                            IsCompatibleSkeleton(const Skeleton *skeleton) const { assert(IsReady()); return internalData.IsCompatibleSkeleton(skeleton); }
 
                                     /// Returns local axis-aligned bounding box (AABB).
     const BE1::AABB &               GetAABB() const { assert(IsReady()); return internalData.aabb; }
@@ -163,6 +169,8 @@ private:
 
         void                        GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::Array<BE1::AABB> &jointAabbs) const;
 
+        bool                        IsCompatibleSkeleton(const Skeleton *skeleton) const;
+
         void                        SortAndMerge();
         void                        ComputeAABB();
         void                        ComputeNormals();
@@ -182,9 +190,6 @@ private:
 
     bool                            Load(const char *filename);
     bool                            LoadAsync(const char *filename);
-
-                                    // 실제 메시 데이터가 교체되었음을 표시한다.
-    uint32_t                        BumpDataSerial() { return dataSerial.fetch_add(1) + 1; }
 
     void                            CreateDefaultBox();
     void                            CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float size, int numSegments);

@@ -68,10 +68,17 @@ void RenderWorld::ClearScene(ClearFlag clearFlags) {
             SAFE_DELETE(renderLight);
         }
         renderLights.Clear();
+    }
 
+    if (BE1::HasFlag(clearFlags, ClearFlag::EnvironmentLight) && hasEnvironmentLight) {
         renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
         environmentLight.Reset();
         hasEnvironmentLight = false;
+    }
+
+    if (BE1::HasFlag(clearFlags, ClearFlag::OceanSurface) && hasOceanSurface) {
+        oceanSurface = OceanSurface();
+        hasOceanSurface = false;
     }
 }
 
@@ -174,6 +181,13 @@ void RenderWorld::UpdateRenderObjectMesh(int index, const SharedPtr<MeshInstance
     RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectMesh");
     if (renderObject) {
         renderObject->UpdateMesh(meshInstance);
+    }
+}
+
+void RenderWorld::UpdateRenderObjectSkeleton(int index, const SharedPtr<Skeleton> &skeleton) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectSkeleton");
+    if (renderObject) {
+        renderObject->UpdateSkeleton(skeleton);
     }
 }
 

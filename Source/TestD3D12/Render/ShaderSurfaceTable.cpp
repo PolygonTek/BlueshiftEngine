@@ -145,6 +145,6 @@ void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderS
 
     outShaderSurface.shaderMaterialIndex = visSurf->shaderMaterialIndex;
     outShaderSurface.flags = 0;
-    outShaderSurface.padding1 = 0;
-    outShaderSurface.padding2 = 0;
+    outShaderSurface.skinningJointOffset = visSurf->space->skinningJointOffset;
+    outShaderSurface.prevSkinningJointOffset = visSurf->space->prevSkinningJointOffset;
 }

@@ -5,9 +5,11 @@
 #include "CommonBindless.hlsli"
 #include "CameraPassOutputCommon.hlsli"
 #include "PackedTangentFrame.hlsli"
+#include "Skinning.hlsli"
 
 #define ROOT_SIGNATURE_SURFACE_DRAW_RESOURCES \
     "SRV(t0), " \
+    ROOT_SIGNATURE_SKINNING_RESOURCES \
     "CBV(b0), " \
     "CBV(b1), " \
     "RootConstants(num32BitConstants=1, b2), "

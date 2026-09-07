@@ -64,6 +64,7 @@ class RenderContext {
         Value<uint64_t>             drawTriangleCount = 0;
         Value<uint32_t>             instanceTableAllocCount = 0;
         Value<uint32_t>             instanceTableUploadBytes = 0;
+        Value<uint64_t>             dynamicBufferUsedBytes = 0;
         Value<uint32_t>             lightCullingZBinCount = 0;
         Value<uint32_t>             lightCullingWordCount = 0;
         Value<uint64_t>             lightCullingThreadGroupCount = 0;

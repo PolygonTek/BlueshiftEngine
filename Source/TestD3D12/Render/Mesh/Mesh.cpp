@@ -26,6 +26,7 @@ void Mesh::Reset() {
     state = State::Empty;
 
     Purge();
+    BumpDataSerial();
 }
 
 Mesh::Surface *Mesh::AllocSurface(int numVerts, int numIndexes) {

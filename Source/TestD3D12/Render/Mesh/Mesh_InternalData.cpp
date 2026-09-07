@@ -423,6 +423,35 @@ void Mesh::InternalData::GetJointAABBs(const BE1::Mat3x4 *invBindPoseMats, BE1::
     }
 }
 
+bool Mesh::InternalData::IsCompatibleSkeleton(const Skeleton *skeleton) const {
+    if (!skeleton || !skeleton->IsReady()) {
+        return false;
+    }
+
+    if (numJoints != skeleton->NumJoints()) {
+        return false;
+    }
+
+    const Joint *otherJoints = skeleton->GetJoints();
+
+    for (int jointIndex = 0; jointIndex < numJoints; ++jointIndex) {
+        const Joint *joint = &joints[jointIndex];
+        const Joint *otherJoint = &otherJoints[jointIndex];
+
+        if (joint->name != otherJoint->name) {
+            return false;
+        }
+
+        const int parentIndex = joint->parent ? static_cast<int>(joint->parent - joints) : -1;
+        const int otherParentIndex = otherJoint->parent ? static_cast<int>(otherJoint->parent - otherJoints) : -1;
+        if (parentIndex != otherParentIndex) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void Mesh::InternalData::ComputeAABB() {
     aabb.Clear();
 

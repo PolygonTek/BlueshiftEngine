@@ -30,6 +30,7 @@ class RenderWork;
 class Texture;
 class Material;
 class MeshInstance;
+class Skeleton;
 class Font;
 struct VisCamera;
 struct VisObject;
@@ -151,7 +152,7 @@ public:
     class ChunkIterator {
     public:
         ChunkIterator() = default;
-        explicit ChunkIterator(Chunk *chunk) { SetChunk(chunk); }
+        explicit ChunkIterator(Chunk *chunk, uint32_t offset = 0) { SetChunk(chunk, offset); }
 
         T &                         operator*() const { return *current; }
         T *                         operator->() const { return current; }
@@ -162,7 +163,7 @@ public:
         bool                        operator!=(const ChunkIterator &rhs) const { return current != rhs.current; }
 
     private:
-        void                        SetChunk(Chunk *chunk);
+        void                        SetChunk(Chunk *chunk, uint32_t offset = 0);
 
         T *                         current = nullptr;
         T *                         end = nullptr;
@@ -172,13 +173,14 @@ public:
     template<typename T>
     class ChunkRange {
     public:
-        explicit ChunkRange(Chunk *firstChunk) : firstChunk(firstChunk) {}
+        explicit ChunkRange(Chunk *firstChunk, uint32_t firstOffset = 0) : firstChunk(firstChunk), firstOffset(firstOffset) {}
 
-        ChunkIterator<T>            begin() const { return ChunkIterator<T>(firstChunk); }
+        ChunkIterator<T>            begin() const { return ChunkIterator<T>(firstChunk, firstOffset); }
         ChunkIterator<T>            end() const { return ChunkIterator<T>(); }
 
     private:
         Chunk *                     firstChunk;
+        uint32_t                    firstOffset;
     };
 
     void                            Init(int32_t frameIndex, int32_t numFrames);
@@ -197,10 +199,12 @@ public:
 
     uint32_t                        NumVisObjects() const { return numVisObjects; }
     ChunkRange<VisObject>           GetVisObjects() const { return ChunkRange<VisObject>(firstVisObjectChunk); }
+    ChunkRange<VisObject>           GetVisObjects(uint32_t firstIndex) const;
     [[nodiscard]] VisObject *       AllocVisObject();
 
     uint32_t                        NumVisTexts() const { return numVisTexts; }
     ChunkRange<VisText>             GetVisTexts() const { return ChunkRange<VisText>(firstVisTextChunk); }
+    ChunkRange<VisText>             GetVisTexts(uint32_t firstIndex) const;
     [[nodiscard]] VisText *         AllocVisText();
 
     uint32_t                        NumVisLights() const { return numVisLights; }
@@ -210,6 +214,7 @@ public:
     uint32_t                        NumVisBoxDirLights() const { return numVisBoxDirLights; }
     const VisLight *                GetPrimaryDirectionalLight() const { return primaryDirectionalLight; }
     ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
+    ChunkRange<VisLight>            GetVisLights(uint32_t firstIndex) const;
     [[nodiscard]] VisSpotLightData *AllocVisSpotLightData();
     [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
 
@@ -245,6 +250,7 @@ public:
     float                           GetElapsedTime() const { return elapsedTime; }
     float                           GetElapsedPrevTime() const { return elapsedPrevTime; }
     uint32_t                        GetFrameCount() const { return frameCount; }
+    uint64_t                        GetFrameSerial() const { return frameSerial; }
     void                            SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount);
 
     const RenderFrameSettings &     GetRenderFrameSettings() const { return renderFrameSettings; }
@@ -257,6 +263,7 @@ public:
 
     Material *                      RetainMaterial(const SharedPtr<Material> &material);
     MeshInstance *                  RetainMeshInstance(const SharedPtr<MeshInstance> &meshInstance);
+    Skeleton *                      RetainSkeleton(const SharedPtr<Skeleton> &skeleton);
     Font *                          RetainFont(const SharedPtr<Font> &font);
     Texture *                       RetainTexture(const SharedPtr<Texture> &texture);
 
@@ -302,6 +309,7 @@ private:
 
     void                            ClearRetainedMaterials();
     void                            ClearRetainedMeshInstances();
+    void                            ClearRetainedSkeletons();
     void                            ClearRetainedFonts();
     void                            ClearRetainedTextures();
 
@@ -362,6 +370,7 @@ private:
 
     BE1::Array<SharedPtr<Material>> retainedMaterials;
     BE1::Array<SharedPtr<MeshInstance>> retainedMeshInstances;
+    BE1::Array<SharedPtr<Skeleton>> retainedSkeletons;
     BE1::Array<SharedPtr<Font>>     retainedFonts;
     BE1::Array<SharedPtr<Texture>>  retainedTextures;
 };
@@ -376,7 +385,7 @@ BE_INLINE RenderFrameData::ChunkIterator<T> &RenderFrameData::ChunkIterator<T>::
 }
 
 template<typename T>
-BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chunk *chunk) {
+BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chunk *chunk, uint32_t offset) {
     if (!chunk) {
         current = nullptr;
         end = nullptr;
@@ -384,8 +393,10 @@ BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chun
         return;
     }
 
-    current = static_cast<T *>(chunk->elements);
-    end = current + chunk->count;
+    assert(offset < chunk->count);
+    T *elements = static_cast<T *>(chunk->elements);
+    current = elements + offset;
+    end = elements + chunk->count;
     nextChunk = chunk->next;
 }
 

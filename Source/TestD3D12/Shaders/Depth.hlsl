@@ -10,6 +10,9 @@ struct VSInput {
     float2 texCoord : TEXCOORD0;
     float4 color : COLOR;
     uint instanceID : SV_InstanceID;
+#if GPU_SKINNING
+    SkinningVertexInput skinning;
+#endif
 };
 
 struct PSInput {
@@ -25,7 +28,12 @@ PSInput VSMain(VSInput input) {
 
     ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID);
 
-    float4 positionWS = float4(mul(shaderSurface.worldMatrix, input.position), 1.0);
+    float4 localPosition = input.position;
+#if GPU_SKINNING
+    const float3x4 skinningMatrix = GetSkinningMatrix(input.skinning, shaderSurface.skinningJointOffset);
+    localPosition = float4(mul(skinningMatrix, localPosition), 1.0f);
+#endif
+    float4 positionWS = float4(mul(shaderSurface.worldMatrix, localPosition), 1.0);
     result.position = mul(cameraConstants.viewProjMatrix, positionWS);
     result.texCoord = input.texCoord;
     result.color = input.color;

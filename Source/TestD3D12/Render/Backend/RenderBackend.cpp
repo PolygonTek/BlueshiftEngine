@@ -131,6 +131,11 @@ void RenderBackend::UpdateFrameStats() {
     stats.lightCullingZBinCount = frameData->NumLightCullingZBins();
     stats.lightCullingWordCount = frameData->NumLightCullingWords();
 
+    // 모든 렌더 태스크가 완료된 현재 프레임의 다이나믹 버퍼 사용량을 합산한다.
+    for (uint32_t threadIndex = 0; threadIndex < frameData->NumRenderTaskThreads(); ++threadIndex) {
+        stats.dynamicBufferUsedBytes += frameData->GetThreadData(static_cast<int32_t>(threadIndex))->GetUsedBytes();
+    }
+
     const VisCamera *visCameras = frameData->GetVisCameras();
     for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
         const VisCamera &visCamera = visCameras[cameraIndex];
@@ -1195,16 +1200,6 @@ void RenderBackend::DrawCamera2D() {
     }
 }
 
-void RenderBackend::UploadStaticDataToGPU(const RenderPass *renderPass) const {
-    for (uint32_t drawSurfIndex = 0; drawSurfIndex < renderPass->numDrawSurfs; ++drawSurfIndex) {
-        const VisSurf *visSurf = renderPass->drawSurfs[drawSurfIndex]->visSurf;
-
-        if (!visSurf->subMesh->vertexBuffer) {
-            visSurf->subMesh->UploadStaticDataToGPU();
-        }
-    }
-}
-
 void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const {
     const SubMesh *subMesh = drawSurf->visSurf->subMesh;
 
@@ -1245,8 +1240,6 @@ void RenderBackend::DrawGenericPass(const RenderPass *renderPass) {
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTagForRenderPass(renderPass->type));
 
-    UploadStaticDataToGPU(renderPass);
-
     const SurfaceInstanceBatch *hiZCullBatches = nullptr;
     uint32_t hiZCullBatchCount = 0;
 
@@ -1275,8 +1268,6 @@ void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
     }
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SkyPass);
-
-    UploadStaticDataToGPU(renderPass);
 
     DrawSkySurfaces(renderPass->drawSurfs, numDrawSurfs);
 }

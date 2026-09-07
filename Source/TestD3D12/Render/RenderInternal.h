@@ -15,6 +15,7 @@
 #pragma once
 
 #include "RHI/RHI.h"
+#include "Shaders/ShaderInterop.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 #include "Render/Material/Material.h"
 #include "Render/Font/Font.h"
@@ -147,9 +148,14 @@ struct VisCamera {
 
     uint32_t                    index = ~0;
 
+    uint32_t                    firstVisObjectIndex = 0;   // 현재 카메라를 위해 등록된 VisObject 범위의 시작
+    uint32_t                    firstVisTextIndex = 0;     // 현재 카메라를 위해 등록된 VisText 범위의 시작
+
     uint32_t                    maxVisSurfs = 0;
     uint32_t                    numVisSurfs = 0;
     const VisSurf **            visSurfs = nullptr;         // 카메라에 보이는 모든 surfaces 와 shadow surfaces
+
+    RHI::Buffer *               skinningJointBuffer = nullptr;
 
     uint32_t                    maxVisLocalLights = 0;
     uint32_t                    numVisLocalLights = 0;
@@ -289,10 +295,12 @@ struct VisObject {
     MeshInstance *              meshInstance = nullptr;     ///< Mesh instance
     const Material **           materials = nullptr;
     const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
-    VisObject *                 nextSkinnedObject = nullptr;
 
     uint32_t                    index;                      ///< VisObject index
     uint32_t                    numMaterials = 0;
+
+    uint32_t                    skinningJointOffset = ShaderSkinningJointOffsetInvalid; ///< Joint element offset in the camera buffer.
+    uint32_t                    prevSkinningJointOffset = ShaderSkinningJointOffsetInvalid;
 
     bool                        cameraVisible = false;
     bool                        shadowVisible = false;

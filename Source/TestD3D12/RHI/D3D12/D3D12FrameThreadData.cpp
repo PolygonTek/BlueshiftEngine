@@ -66,6 +66,8 @@ void D3D12FrameThreadData::Init(D3D12Renderer *renderer, int32_t frameIndex, int
     assert(numResDescriptorsPerThread > 0);
     assert(numSamDescriptorsPerThread > 0);
 
+    // shader-visible 힙의 임시 영역 (후반 절반 영역) 을 프레임/스레드별로 나누어 descriptor table pool 로 관리한다.
+    // 이곳에서 소유하는 풀을 AllocGraphicsCommandList() / AllocComputeCommandList() 에서 커맨드 리스트에 전달한다.
     resDescriptorTablePool = new D3D12DescriptorTablePool;
     resDescriptorTablePool->Init({
         &renderer->resShaderVisibleDescriptorHeap,
@@ -144,6 +146,14 @@ void D3D12FrameThreadData::Reset() {
     if (computeCommandListPool) {
         computeCommandListPool->Clear();
     }
+}
+
+uint64_t D3D12FrameThreadData::GetUsedBytes() const {
+    uint64_t totalUsedBytes = 0;
+    for (const DynamicBufferBlock *block : dynamicBufferBlocks) {
+        totalUsedBytes += block->usedBytes;
+    }
+    return totalUsedBytes;
 }
 
 D3D12FrameThreadData::DynamicBufferBlock *D3D12FrameThreadData::FindFreeDynamicBufferBlock(uint32_t size, uint32_t alignSize, uint32_t *outOffset) const {

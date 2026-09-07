@@ -72,7 +72,7 @@ RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const VisSur
     result.inputLayoutId = baseInputLayoutId;
 
     const int maxVertexWeights = visSurf->subMesh->MaxVertexWeights();
-    if (maxVertexWeights > 0) {
+    if (maxVertexWeights > 0 && (featureSet.flags & ShaderFeatureSet::GpuSkinningWeightMask) != 0) {
         result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
     }
 

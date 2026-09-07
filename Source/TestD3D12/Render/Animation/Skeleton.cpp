@@ -18,44 +18,6 @@
 #include "Render/Mesh/BModel.h"
 #include "LoadingSystem.h"
 
-Skeleton::InternalData &Skeleton::InternalData::operator=(InternalData &&rhs) noexcept {
-    if (this != &rhs) {
-        Purge();
-        Swap(rhs);
-    }
-    return *this;
-}
-
-void Skeleton::InternalData::Purge() {
-    SAFE_DELETE_ARRAY(joints);
-    numJoints = 0;
-
-    if (jointParents) {
-        Mem_AlignedFree(jointParents);
-        jointParents = nullptr;
-    }
-    if (bindPoses) {
-        Mem_AlignedFree(bindPoses);
-        bindPoses = nullptr;
-    }
-    if (invBindPoseMats) {
-        Mem_AlignedFree(invBindPoseMats);
-        invBindPoseMats = nullptr;
-    }
-}
-
-void Skeleton::InternalData::Swap(InternalData &rhs) {
-    BE1::Swap(numJoints, rhs.numJoints);
-    BE1::Swap(joints, rhs.joints);
-    BE1::Swap(jointParents, rhs.jointParents);
-    BE1::Swap(bindPoses, rhs.bindPoses);
-    BE1::Swap(invBindPoseMats, rhs.invBindPoseMats);
-}
-
-bool Skeleton::IsDefaultSkeleton() const {
-    return (this == skeletonManager.defaultSkeleton.get());
-}
-
 void Skeleton::Purge() {
     internalData.Purge();
 }
@@ -65,6 +27,11 @@ void Skeleton::Reset() {
     state = State::Empty;
 
     Purge();
+    BumpDataSerial();
+}
+
+bool Skeleton::IsDefaultSkeleton() const {
+    return (this == skeletonManager.defaultSkeleton.get());
 }
 
 void Skeleton::CreateDefaultSkeleton() {
@@ -87,6 +54,7 @@ void Skeleton::CreateDefaultSkeleton() {
     internalData.jointParents = (int *)Mem_Alloc16(sizeof(int));
     internalData.jointParents[0] = -1;
 
+    BumpDataSerial();
     state = State::Ready;
 }
 
@@ -170,6 +138,7 @@ void Skeleton::ApplyPrepared(InternalData &newInternalData) {
     Purge();
 
     internalData.Swap(newInternalData);
+    BumpDataSerial();
 }
 
 bool Skeleton::Load(const char *filename) {
@@ -325,20 +294,8 @@ bool Skeleton::CheckHierarchy(const Skeleton *otherSkeleton) const {
             return false;
         }
 
-        int	parentIndex;
-        if (joint->parent) {
-            parentIndex = (int)(joint->parent - internalData.joints);
-        } else {
-            parentIndex = -1;
-        }
-
-        int otherParentIndex;
-        if (otherJoint->parent) {
-            otherParentIndex = (int)(otherJoint->parent - otherJoints);
-        } else {
-            otherParentIndex = -1;
-        }
-
+        const int parentIndex = joint->parent ? static_cast<int>(joint->parent - internalData.joints) : -1;
+        const int otherParentIndex = otherJoint->parent ? static_cast<int>(otherJoint->parent - otherJoints) : -1;
         if (parentIndex != otherParentIndex) {
             return false;
         }

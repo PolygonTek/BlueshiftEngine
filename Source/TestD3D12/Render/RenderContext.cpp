@@ -521,6 +521,7 @@ RenderContext::Stats RenderContext::GetStats() const {
         snapshot.drawTriangleCount = stats.drawTriangleCount.load();
         snapshot.instanceTableAllocCount = stats.instanceTableAllocCount.load();
         snapshot.instanceTableUploadBytes = stats.instanceTableUploadBytes.load();
+        snapshot.dynamicBufferUsedBytes = stats.dynamicBufferUsedBytes.load();
         snapshot.lightCullingZBinCount = stats.lightCullingZBinCount.load();
         snapshot.lightCullingWordCount = stats.lightCullingWordCount.load();
         snapshot.lightCullingThreadGroupCount = stats.lightCullingThreadGroupCount.load();
@@ -545,6 +546,7 @@ void RenderContext::SetStats(const Stats &snapshot) {
     stats.drawTriangleCount.store(snapshot.drawTriangleCount);
     stats.instanceTableAllocCount.store(snapshot.instanceTableAllocCount);
     stats.instanceTableUploadBytes.store(snapshot.instanceTableUploadBytes);
+    stats.dynamicBufferUsedBytes.store(snapshot.dynamicBufferUsedBytes);
     stats.lightCullingZBinCount.store(snapshot.lightCullingZBinCount);
     stats.lightCullingWordCount.store(snapshot.lightCullingWordCount);
     stats.lightCullingThreadGroupCount.store(snapshot.lightCullingThreadGroupCount);
