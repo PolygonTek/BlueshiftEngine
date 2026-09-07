@@ -17,7 +17,6 @@
 #include "RenderInternal.h"
 #include "SIMD/SIMD.h"
 #include "Core/Heap.h"
-#include "NvTriStrip.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -1393,39 +1392,6 @@ const Mat3 SubMesh::CalculateInertiaTensor(const Vec3 &centroid, float mass) con
 }
 
 void SubMesh::OptimizeIndexedTriangles() {
-#if 0
-    // NOTE: consider if size of the index is greater than 16 bit number or not
-    PrimitiveGroup *srcPrimGroup = BE_NEW PrimitiveGroup;
-    srcPrimGroup->type = PrimType::PT_LIST;
-    srcPrimGroup->numIndices = numIndexes;
-    srcPrimGroup->indices = BE_NEW unsigned short [numIndexes];
-
-    for (int i = 0; i < numIndexes; i++) {
-        srcPrimGroup->indices[i] = indexes[i];
-    }
-
-    PrimitiveGroup *dstPrimGroup;
-
-    // remap indices
-    RemapIndices(srcPrimGroup, 1, numVerts, &dstPrimGroup);
-
-    for (int i = 0; i < numIndexes; i++) {
-        indexes[i] = dstPrimGroup->indices[i];
-    }
-
-    // remap vertices
-    VertexGenericLit *remappedVerts = (VertexGenericLit *)Mem_Alloc16(sizeof(verts[0]) * numVerts);
-
-    for (int i = 0; i < numIndexes; i++) {
-        remappedVerts[dstPrimGroup->indices[i]] = verts[srcPrimGroup->indices[i]];
-    }
-
-    Mem_AlignedFree(verts);
-    verts = remappedVerts;
-    
-    delete srcPrimGroup;
-    delete [] dstPrimGroup;
-#endif
 }
 
 BE_NAMESPACE_END

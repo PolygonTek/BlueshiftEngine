@@ -1086,7 +1086,6 @@ target_link_libraries(${PROJECT_NAME}
     STB
     luasocket
     LuaCpp
-    NvTriStrip
     delabella
     Tracy::TracyClient
     SDL3::SDL3-static)
