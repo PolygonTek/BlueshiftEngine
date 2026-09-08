@@ -29,6 +29,7 @@ struct VisSurf;
 struct VisCamera;
 struct VisLight;
 struct VisObject;
+struct VisSkinnedMesh;
 struct DebugDrawData;
 class RenderCamera;
 class Texture;
@@ -205,7 +206,7 @@ private:
 
     struct UpdateSkinningJointCachesTaskDesc {
         RenderWorld *           renderWorld = nullptr;
-        const VisObject **      skinnedMeshObjects = nullptr;
+        const VisSkinnedMesh ** skinnedMeshObjects = nullptr;
         uint32_t                numSkinnedMeshObjects = 0;
     };
 
@@ -218,18 +219,18 @@ private:
     void                        SetVisObjectWorldMatrices(const RenderObject *renderObject, VisObject *visObject);
     void                        FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    int                         CountSkinningUploadJoints(const RenderFrameData::ChunkRange<VisObject> &visObjects, bool needVelocityOutput, uint64_t currentFrameSerial) const;
+    int                         CountSkinningUploadJoints(const RenderFrameData::ChunkRange<VisSkinnedMesh> &visSkinnedMeshes, bool needVelocityOutput, uint64_t currentFrameSerial) const;
     void                        BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera *visCamera);
-    void                        UpdateSkinningJointCaches(RenderFrameData *frameData, const VisObject **objects, uint32_t numObjects, uint32_t numSkinningJoints);
-    void                        UpdateSkinningJointCachesWithoutTask(const VisObject **objects, uint32_t numObjects);
-    void                        UpdateSkinningJointCachesWithTask(const VisObject **objects, uint32_t numObjects, uint32_t numSkinningJoints, uint32_t numTasks);
+    void                        UpdateSkinningJointCaches(RenderFrameData *frameData, const VisSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints);
+    void                        UpdateSkinningJointCachesWithoutTask(const VisSkinnedMesh **objects, uint32_t numObjects);
+    void                        UpdateSkinningJointCachesWithTask(const VisSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints, uint32_t numTasks);
     void                        UpdateSkinningJointCachesByTask(RenderWorld::UpdateSkinningJointCachesTaskDesc *taskDesc);
     static void                 UpdateSkinningJointCachesByTaskFunction(void *data);
     void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     SkyboxState                 GetSkyboxState() const;
     void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint32_t &packedTileMin, uint32_t &packedTileMax);
+    static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax);
     static void                 BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     bool                        IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const;
@@ -263,7 +264,7 @@ private:
 
     uint32_t                    renderWorldGroupId = -1;
     BE1::Array<UpdateSkinningJointCachesTaskDesc> updateSkinningJointCachesTaskDescs;
-    BE1::Array<const VisObject *> skinningJointCacheUpdateObjects = BE1::Array<const VisObject *>(256); // Reused across cameras/frames.
+    BE1::Array<const VisSkinnedMesh *> skinningJointCacheUpdateObjects = BE1::Array<const VisSkinnedMesh *>(256); // Reused across cameras/frames.
 
     GuiMesh                     textMesh;           ///< 3D text mesh
     SharedPtr<Material>         skyboxMaterial;

@@ -279,13 +279,20 @@ void ShaderLightCullingTable::DestroyBuffer(TableBuffer &tableBuffer) {
     tableBuffer.bindlessIndex = 0;
 }
 
+static BE_INLINE uint32_t PackShaderLightTileCoord(uint16_t packedTileCoord) {
+    // Expand VisLight's 8-bit X/Y coordinates to the shader's 16-bit X/Y layout.
+    const uint32_t x = packedTileCoord & VisLight::TileCoordMask;
+    const uint32_t y = packedTileCoord >> VisLight::TileCoordBitCount;
+    return x | (y << ShaderLightTileCoordBitCount);
+}
+
 void ShaderLightCullingTable::BuildLightRef(const VisLight *visLight, ShaderLightRef &outShaderLightRef) const {
     const uint32_t lightType = static_cast<uint32_t>(visLight->type);
     assert(lightType <= ShaderLightTypeMask);
 
     // 하위 비트: 라이트 타입
     // 상위 비트: 라이트 타입 별 인덱스
-    outShaderLightRef.packedLightRef = (visLight->typeIndex << ShaderLightTypeBitCount) | lightType;
-    outShaderLightRef.packedTileMin = visLight->packedTileMin;
-    outShaderLightRef.packedTileMax = visLight->packedTileMax;
+    outShaderLightRef.packedLightRef = (static_cast<uint32_t>(visLight->typeIndex) << ShaderLightTypeBitCount) | lightType;
+    outShaderLightRef.packedTileMin = PackShaderLightTileCoord(visLight->packedTileMin);
+    outShaderLightRef.packedTileMax = PackShaderLightTileCoord(visLight->packedTileMax);
 }

@@ -34,6 +34,7 @@ class Skeleton;
 class Font;
 struct VisCamera;
 struct VisObject;
+struct VisSkinnedMesh;
 struct VisText;
 struct VisSpotLightData;
 struct VisLight;
@@ -202,6 +203,10 @@ public:
     ChunkRange<VisObject>           GetVisObjects(uint32_t firstIndex) const;
     [[nodiscard]] VisObject *       AllocVisObject();
 
+    uint32_t                        NumVisSkinnedMeshes() const { return numVisSkinnedMeshes; }
+    ChunkRange<VisSkinnedMesh>      GetVisSkinnedMeshes(uint32_t firstIndex) const;
+    [[nodiscard]] VisSkinnedMesh *  AllocVisSkinnedMesh();
+
     uint32_t                        NumVisTexts() const { return numVisTexts; }
     ChunkRange<VisText>             GetVisTexts() const { return ChunkRange<VisText>(firstVisTextChunk); }
     ChunkRange<VisText>             GetVisTexts(uint32_t firstIndex) const;
@@ -302,6 +307,7 @@ private:
     void                            InitVisCameras(uint32_t maxVisCameras);
     void                            FreeVisCameras();
     void                            FreeVisObjects();
+    void                            FreeVisSkinnedMeshes();
     void                            FreeVisTexts();
     void                            FreeVisLights();
 
@@ -324,6 +330,10 @@ private:
     uint32_t                        numVisObjects = 0;
     Chunk *                         firstVisObjectChunk = nullptr;
     Chunk *                         lastVisObjectChunk = nullptr;
+
+    uint32_t                        numVisSkinnedMeshes = 0;
+    Chunk *                         firstVisSkinnedMeshChunk = nullptr;
+    Chunk *                         lastVisSkinnedMeshChunk = nullptr;
 
     uint32_t                        numVisTexts = 0;
     Chunk *                         firstVisTextChunk = nullptr;

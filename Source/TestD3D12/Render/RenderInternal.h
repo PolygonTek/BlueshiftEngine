@@ -28,6 +28,7 @@
 
 class Texture;
 struct VisLight;
+struct VisSkinnedMesh;
 
 enum class VisSurfFlag : uint8_t {
     None                        = 0,
@@ -152,6 +153,7 @@ struct VisCamera {
     uint32_t                    index = ~0;
 
     uint32_t                    firstVisObjectIndex = 0;   // 현재 카메라를 위해 등록된 VisObject 범위의 시작
+    uint32_t                    firstVisSkinnedMeshIndex = 0; // 현재 카메라를 위해 등록된 VisSkinnedMesh 범위의 시작
     uint32_t                    firstVisTextIndex = 0;     // 현재 카메라를 위해 등록된 VisText 범위의 시작
 
     uint32_t                    maxVisSurfs = 0;
@@ -301,16 +303,13 @@ struct VisObject {
 
     ALIGN_AS32 BE1::Mat3x4      worldMatrix;                ///< World transform matrix
     MeshInstance *              meshInstance = nullptr;     ///< Mesh instance
-    const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
+    VisSkinnedMesh *            skinnedMesh = nullptr;      ///< Per-view skinning data, if present.
     ALIGN_AS32 BE1::Mat3x4      prevWorldMatrix;            ///< Previous world transform matrix
 
     union {
         const Material *        baseMaterials[2] = {};      ///< Base materials for the object, used when numMaterials <= 2.
         const Material **       materials;                  ///< External material array, used when numMaterials > 2.
     };
-
-    uint32_t                    skinningJointOffset = ShaderSkinningJointOffsetInvalid; ///< Joint element offset in the camera joint buffer.
-    uint32_t                    prevSkinningJointOffset = ShaderSkinningJointOffsetInvalid; ///< Previous joint element offset in the camera joint buffer.
 
     uint16_t                    numMaterials = 0;           ///< Material 개수
     int8_t                      meshLOD = -1;               ///< 요청 LOD. -1 은 자동 선택, 0~127 은 지정 LOD.
@@ -325,8 +324,21 @@ static_assert(sizeof(VisObject) == 160, "VisObject layout changed");
 static_assert(SubMesh::MaxLODLevel <= INT8_MAX, "VisObject meshLOD must represent every LOD level");
 static_assert(RenderObject::MaxMaterials <= UINT16_MAX, "VisObject numMaterials must represent every material slot");
 
+// 한 프레임 렌더링에서만 유효한 카메라별 skinned mesh 데이터.
+// skinned mesh 가 있는 VisObject 대해서만 생성하여 일반 VisObject 의 크기와 skinned mesh 의 순회 비용을 줄인다.
+struct VisSkinnedMesh {
+    VisObject *                 space = nullptr;            ///< Object visibility and transform data.
+    MeshInstance *              meshInstance = nullptr;
+    const Skeleton *            skeleton = nullptr;         ///< Skeleton information for skeletal mesh
+
+    uint32_t                    skinningJointOffset = ShaderSkinningJointOffsetInvalid; ///< Joint element offset in the camera joint buffer.
+    uint32_t                    prevSkinningJointOffset = ShaderSkinningJointOffsetInvalid; ///< Previous joint element offset in the camera joint buffer.
+};
+
+static_assert(sizeof(VisSkinnedMesh) == 32, "VisSkinnedMesh layout changed");
+
 // 한 프레임 렌더링에서만 유효한 카메라별 텍스트 렌더링 데이터.
-// 텍스트가 있는 VisObject 에 대해서만 생성하여 일반 VisObject 의 크기와 텍스트 패스의 순회 비용을 줄인다.
+// 텍스트가 있는 VisObject 에 대해서만 생성하여 일반 VisObject 의 크기와 텍스트의 순회 비용을 줄인다.
 struct VisText {
     VisObject *                 space = nullptr;
     Font *                      font = nullptr;
@@ -352,14 +364,18 @@ static_assert(sizeof(VisSpotLightData) == 64, "VisSpotLightData layout changed")
 // 하나의 RenderLight 가 여러 카메라에 보이면 각 카메라 (view) 마다 별도의 VisLight 로 등록된다.
 // RenderLight 의 렌더링 데이터를 프레임 메모리에 복사하여 생성하므로 별도의 힙 할당은 발생하지 않는다.
 struct VisLight {
+    static constexpr uint32_t   TileCoordBitCount = 8;
+    static constexpr uint32_t   TileCoordMask = (1u << TileCoordBitCount) - 1;
+    static constexpr uint32_t   MaxRenderDimension = (TileCoordMask + 1) * ShaderLightTileSize;
+
     ALIGN_AS32 BE1::Mat4        viewProjScaleBiasMatrix;
 
     const VisSpotLightData *    spotLightData = nullptr;
 
-    uint32_t                    index;                      ///< VisLight index
-    uint32_t                    typeIndex;                  ///< VisLight index for same light type
-    uint32_t                    packedTileMin;              ///< Packed minimum light-culling tile coordinate
-    uint32_t                    packedTileMax;              ///< Packed maximum light-culling tile coordinate
+    uint16_t                    index;                      ///< VisLight index
+    uint16_t                    typeIndex;                  ///< VisLight index for same light type
+    uint16_t                    packedTileMin;              ///< Packed minimum light-culling tile coordinate: low 8 bits X, high 8 bits Y
+    uint16_t                    packedTileMax;              ///< Packed maximum light-culling tile coordinate: low 8 bits X, high 8 bits Y
 
     BE1::Mat3                   axis;
     BE1::Vec3                   origin;

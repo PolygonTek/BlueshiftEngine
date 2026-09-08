@@ -27,8 +27,9 @@ static constexpr int        FrameMemoryAlignment = 32;
 static constexpr uint32_t   MaxVisCamera = 1u << 3;
 static constexpr uint32_t   MaxVisObjects = 1u << 20;
 static constexpr uint32_t   MaxVisTexts = MaxVisObjects;
-static constexpr uint32_t   MaxVisLights = 1u << 17;
+static constexpr uint32_t   MaxVisLights = static_cast<uint32_t>(UINT16_MAX) + 1u; // All cameras combined; indices are uint16_t.
 static constexpr uint32_t   VisObjectChunkCapacity = 8192;
+static constexpr uint32_t   VisSkinnedMeshChunkCapacity = 256;
 static constexpr uint32_t   VisTextChunkCapacity = 256;
 static constexpr uint32_t   VisLightChunkCapacity = 1024;
 
@@ -80,6 +81,8 @@ void RenderFrameData::Shutdown() {
     FreeVisLights();
 
     FreeVisTexts();
+
+    FreeVisSkinnedMeshes();
 
     FreeVisObjects();
 
@@ -177,6 +180,8 @@ void RenderFrameData::ResetFrameData() {
 
     FreeVisTexts();
 
+    FreeVisSkinnedMeshes();
+
     FreeVisObjects();
 
     ClearRetainedMaterials();
@@ -231,6 +236,14 @@ void RenderFrameData::FreeVisObjects() {
     firstVisObjectChunk = nullptr;
     lastVisObjectChunk = nullptr;
     numVisObjects = 0;
+}
+
+void RenderFrameData::FreeVisSkinnedMeshes() {
+    // 공유 자원의 수명은 retained 배열이 관리하므로 개별 소멸자 호출 없이 청크를 초기화한다.
+    static_assert(std::is_trivially_destructible<VisSkinnedMesh>::value, "VisSkinnedMesh must not require destruction");
+    firstVisSkinnedMeshChunk = nullptr;
+    lastVisSkinnedMeshChunk = nullptr;
+    numVisSkinnedMeshes = 0;
 }
 
 void RenderFrameData::FreeVisTexts() {
@@ -469,6 +482,45 @@ VisObject *RenderFrameData::AllocVisObject() {
     return newVisObject;
 }
 
+RenderFrameData::ChunkRange<VisSkinnedMesh> RenderFrameData::GetVisSkinnedMeshes(uint32_t firstIndex) const {
+    assert(firstIndex <= numVisSkinnedMeshes);
+    if (firstIndex >= numVisSkinnedMeshes) {
+        return ChunkRange<VisSkinnedMesh>(nullptr);
+    }
+
+    // 앞선 카메라의 스키닝 메시를 개별 순회하지 않고 chunk 단위로 건너뛴다.
+    Chunk *firstChunk = firstVisSkinnedMeshChunk;
+    while (firstIndex >= firstChunk->count) {
+        firstIndex -= firstChunk->count;
+        firstChunk = firstChunk->next;
+    }
+    return ChunkRange<VisSkinnedMesh>(firstChunk, firstIndex);
+}
+
+VisSkinnedMesh *RenderFrameData::AllocVisSkinnedMesh() {
+    // VisObject 하나당 최대 한 개의 스키닝 레코드만 등록한다.
+    if (numVisSkinnedMeshes >= numVisObjects) {
+        assert(0);
+        return nullptr;
+    }
+
+    if (!lastVisSkinnedMeshChunk || lastVisSkinnedMeshChunk->count >= VisSkinnedMeshChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(VisSkinnedMesh), VisSkinnedMeshChunkCapacity);
+        if (lastVisSkinnedMeshChunk) {
+            lastVisSkinnedMeshChunk->next = newChunk;
+        } else {
+            firstVisSkinnedMeshChunk = newChunk;
+        }
+        lastVisSkinnedMeshChunk = newChunk;
+    }
+
+    VisSkinnedMesh *visSkinnedMeshes = static_cast<VisSkinnedMesh *>(lastVisSkinnedMeshChunk->elements);
+    VisSkinnedMesh *newVisSkinnedMesh = &visSkinnedMeshes[lastVisSkinnedMeshChunk->count++];
+    new (newVisSkinnedMesh) VisSkinnedMesh();
+    ++numVisSkinnedMeshes;
+    return newVisSkinnedMesh;
+}
+
 RenderFrameData::ChunkRange<VisText> RenderFrameData::GetVisTexts(uint32_t firstIndex) const {
     assert(firstIndex <= numVisTexts);
     if (firstIndex >= numVisTexts) {
@@ -558,21 +610,21 @@ VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
     // placement new 생성자 호출
     new (newVisLight) VisLight();
 
-    newVisLight->index = numVisLights++;
+    newVisLight->index = static_cast<uint16_t>(numVisLights++);
     newVisLight->type = type;
 
     switch (type) {
     case RenderLight::Type::Point:
         numVisLocalLights++;
-        newVisLight->typeIndex = numVisPointLights++;
+        newVisLight->typeIndex = static_cast<uint16_t>(numVisPointLights++);
         break;
     case RenderLight::Type::Spot:
         numVisLocalLights++;
-        newVisLight->typeIndex = numVisSpotLights++;
+        newVisLight->typeIndex = static_cast<uint16_t>(numVisSpotLights++);
         break;
     case RenderLight::Type::BoxDir:
         numVisLocalLights++;
-        newVisLight->typeIndex = numVisBoxDirLights++;
+        newVisLight->typeIndex = static_cast<uint16_t>(numVisBoxDirLights++);
         break;
     case RenderLight::Type::Directional:
         newVisLight->typeIndex = 0;
