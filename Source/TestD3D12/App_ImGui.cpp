@@ -581,23 +581,6 @@ void App::BuildImGuiOverlay() {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
             }
 
-            bool vsync = r_vsync.GetBool();
-            if (ImGui::Checkbox("VSync", &vsync)) {
-                r_vsync.SetBool(vsync);
-            }
-
-            bool hdrOutput = r_hdrOutput.GetBool();
-            if (ImGui::Checkbox("HDR output", &hdrOutput)) {
-                r_hdrOutput.SetBool(hdrOutput);
-            }
-            if (hdrOutput) {
-                float hdrPaperWhiteNits = BE1::Clamp(r_hdrPaperWhiteNits.GetFloat(), r_hdrPaperWhiteNits.GetMinValue(), r_hdrPaperWhiteNits.GetMaxValue());
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("HDR paper white", &hdrPaperWhiteNits, r_hdrPaperWhiteNits.GetMinValue(), r_hdrPaperWhiteNits.GetMaxValue(), "%.0f nits")) {
-                    r_hdrPaperWhiteNits.SetFloat(hdrPaperWhiteNits);
-                }
-            }
-
             bool depthPrepass = r_depthPrepass.GetBool();
             if (ImGui::Checkbox("Depth prepass", &depthPrepass)) {
                 r_depthPrepass.SetBool(depthPrepass);
@@ -670,6 +653,27 @@ void App::BuildImGuiOverlay() {
                 bool skipDrawCamera3D = r_skipDrawCamera3D.GetBool();
                 if (ImGui::Checkbox("Skip draw camera 3D", &skipDrawCamera3D)) {
                     r_skipDrawCamera3D.SetBool(skipDrawCamera3D);
+                }
+            }
+
+            if (roundedCollapsingHeader("Display##DisplayHeader")) {
+                bool vsync = r_vsync.GetBool();
+                if (ImGui::Checkbox("VSync", &vsync)) {
+                    r_vsync.SetBool(vsync);
+                }
+
+                bool hdrOutput = r_hdrOutput.GetBool();
+                if (ImGui::Checkbox("HDR output", &hdrOutput)) {
+                    r_hdrOutput.SetBool(hdrOutput);
+                }
+                if (hdrOutput) {
+                    ImGui::Indent();
+                    float hdrPaperWhiteNits = BE1::Clamp(r_hdrPaperWhiteNits.GetFloat(), r_hdrPaperWhiteNits.GetMinValue(), r_hdrPaperWhiteNits.GetMaxValue());
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("HDR paper white", &hdrPaperWhiteNits, r_hdrPaperWhiteNits.GetMinValue(), r_hdrPaperWhiteNits.GetMaxValue(), "%.0f nits")) {
+                        r_hdrPaperWhiteNits.SetFloat(hdrPaperWhiteNits);
+                    }
+                    ImGui::Unindent();
                 }
             }
 
