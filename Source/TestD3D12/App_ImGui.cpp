@@ -625,6 +625,14 @@ void App::BuildImGuiOverlay() {
                 r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
             }
 
+            float meshLODPixelError = r_meshLODPixelError2.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Mesh LOD Pixel Error", &meshLODPixelError, 0.0f, 16.0f, "%.1f px", ImGuiSliderFlags_AlwaysClamp)) {
+                r_meshLODPixelError2.SetFloat(meshLODPixelError);
+            }
+            ImGui::SetItemTooltip("Automatic LOD only. Higher values allow coarser meshes.\n"
+                "0 uses LOD0; explicitly selected LODs are unchanged.");
+
             const bool snapshotColorHalfResAvailable = msaaSampleCounts[msaaSampleCountIndex] == 1;
             ImGui::BeginDisabled(!snapshotColorHalfResAvailable);
             bool snapshotColorHalfRes = r_snapshotColorHalfRes.GetBool();
