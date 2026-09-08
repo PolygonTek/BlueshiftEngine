@@ -134,7 +134,7 @@ public:
                     /// Converts to OBB.
     OBB             ToOBB() const;
                     /// Converts to minimum sphere enclosing frustum.
-    Sphere          ToMinimumSphere() const;
+    Sphere          ToSphere() const;
                     /// Calculates planes point outwards.
     void            ToPlanes(Plane planes[6]) const;
                     /// Calculates 8 corners of the frustum.

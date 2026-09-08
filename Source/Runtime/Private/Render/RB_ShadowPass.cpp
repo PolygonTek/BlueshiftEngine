@@ -648,7 +648,7 @@ static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frust
                 return false;
             }
         } else {
-            Sphere viewSphere = splitViewFrustum.ToMinimumSphere();
+            Sphere viewSphere = splitViewFrustum.ToSphere();
             float viewSize = viewSphere.Radius() * 2;
             float texelsPerCenti = r_shadowMapSize.GetFloat() / UnitToCm(viewSize);
             backEnd.shadowMapFilterSize[cascadeIndex] = Max(r_shadowMapFilterSize.GetFloat() * texelsPerCenti, 1.0f);

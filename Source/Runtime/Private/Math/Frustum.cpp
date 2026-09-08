@@ -1286,7 +1286,7 @@ OBB Frustum::ToOBB() const {
 }
 
 // http://www.gamedev.net/topic/604797-minimum-bounding-sphere-of-a-frustum/
-Sphere Frustum::ToMinimumSphere() const {
+Sphere Frustum::ToSphere() const {
     float u = dUp * invFar;
     float r = dLeft * invFar;
     float u2pr2 = u * u + r * r;
