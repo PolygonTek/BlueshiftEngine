@@ -134,7 +134,11 @@ void Mesh::CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float siz
         }
     }
 
-    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges);
+    FinishFlag finishFlags = FinishFlag::ComputeAABB | FinishFlag::ComputeEdges;
+    if (numSegments > 1) {
+        finishFlags |= FinishFlag::OptimizeIndices;
+    }
+    internalData.FinishSurfaces(finishFlags);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         internalData.TransformVerts(axis, BE1::Vec3::one, origin);
@@ -281,7 +285,7 @@ void Mesh::CreateSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float ra
         }
     }
 
-    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges);
+    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::OptimizeIndices);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         internalData.TransformVerts(axis, BE1::Vec3::one, origin);
@@ -342,7 +346,7 @@ void Mesh::CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivi
     Mem_Free(mesh.texcoords);
     Mem_Free(mesh.indices);
 
-    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents);
+    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents | FinishFlag::OptimizeIndices);
 
     if (!origin.IsZero()) {
         internalData.TransformVerts(BE1::Mat3::identity, BE1::Vec3::one, origin);
@@ -395,7 +399,7 @@ void Mesh::CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivi
         }
     }
 
-    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents);
+    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents | FinishFlag::OptimizeIndices);
 
     if (!origin.IsZero()) {
         internalData.TransformVerts(BE1::Mat3::identity, BE1::Vec3::one, origin);
@@ -508,7 +512,7 @@ void Mesh::CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float 
         *idx++ = offset + b + 1;
     }
 
-    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges);
+    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::OptimizeIndices);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         internalData.TransformVerts(axis, BE1::Vec3::one, origin);
@@ -613,7 +617,7 @@ void Mesh::CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float r
         }
     }
 
-    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges);
+    internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::OptimizeIndices);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         internalData.TransformVerts(axis, BE1::Vec3::one, origin);

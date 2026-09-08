@@ -38,6 +38,9 @@ void Mesh::Purge() {
     } else {
         SAFE_DELETE_ARRAY(joints);
     }
+
+    numJoints = 0;
+    aabb = AABB::empty;
 }
 
 Mesh::Surface *Mesh::AllocSurface(int numVerts, int numIndexes) {

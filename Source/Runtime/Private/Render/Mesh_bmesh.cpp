@@ -15,10 +15,54 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "BModel.h"
+#include "meshoptimizer.h"
 #include "Core/Heap.h"
 #include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
+
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+// Direct decoding requires the disk layout to match every runtime vertex field.
+static_assert(sizeof(BMeshVert) == sizeof(VertexGenericLit), "Mismatched bmesh vertex size");
+static_assert(offsetof(BMeshVert, position) == offsetof(VertexGenericLit, xyz), "Mismatched bmesh position offset");
+static_assert(offsetof(BMeshVert, texCoord) == offsetof(VertexGenericLit, st), "Mismatched bmesh UV offset");
+static_assert(offsetof(BMeshVert, color) == offsetof(VertexGenericLit, color), "Mismatched bmesh color offset");
+static_assert(offsetof(BMeshVert, tangentFrame) == offsetof(VertexGenericLit, tangentFrame), "Mismatched bmesh tangent offset");
+#endif
+
+static bool ReadBMeshVertices(VertexGenericLit *verts, int numVerts, const byte *data, size_t dataSize, bool compressed) {
+    if (numVerts == 0) {
+        return true;
+    }
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+    if (compressed) {
+        return meshopt_decodeVertexBuffer(verts, numVerts, sizeof(BMeshVert), data, dataSize) == 0;
+    }
+    memcpy(verts, data, dataSize);
+#else
+    Array<BMeshVert> decodedVerts;
+    if (compressed) {
+        decodedVerts.SetCount(numVerts);
+        if (meshopt_decodeVertexBuffer(decodedVerts.Ptr(), numVerts, sizeof(BMeshVert), data, dataSize) != 0) {
+            return false;
+        }
+        data = reinterpret_cast<const byte *>(decodedVerts.Ptr());
+    }
+    const BMeshVert *bMeshVerts = reinterpret_cast<const BMeshVert *>(data);
+    for (int i = 0; i < numVerts; i++) {
+        const BMeshVert &bMeshVert = bMeshVerts[i];
+        verts[i].SetPosition(bMeshVert.position);
+        verts[i].st[0] = bMeshVert.texCoord[0];
+        verts[i].st[1] = bMeshVert.texCoord[1];
+        verts[i].SetColor(bMeshVert.color);
+        Vec3 normal, tangent;
+        float bitangentSign;
+        PackedTangentFrame::Unpack(bMeshVert.tangentFrame, normal, tangent, bitangentSign);
+        verts[i].SetTangentFrame(normal, tangent, bitangentSign);
+    }
+#endif
+    return true;
+}
 
 bool Mesh::LoadBinaryMesh(const char *filename) {
     byte *data;
@@ -42,10 +86,30 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
         return false;
     }
 
-    if (bMeshHeader->version != 1 && bMeshHeader->version != BMESH_VERSION) {
+    if (bMeshHeader->version < 1 || bMeshHeader->version > BMESH_VERSION) {
         BE_WARNLOG("Mesh::LoadBinaryMesh: unsupported version %i in %s\n", bMeshHeader->version, filename);
         fileSystem.FreeFile(data);
         return false;
+    }
+
+    const byte *end = data + fileSize;
+
+    auto fail = [&](const char *reason) {
+        BE_WARNLOG("Mesh::LoadBinaryMesh: %s in %s\n", reason, filename);
+        fileSystem.FreeFile(data);
+        Purge();
+        return false;
+    };
+
+    if (bMeshHeader->numJoints > INT_MAX / sizeof(Joint) ||
+        bMeshHeader->numJoints > size_t(end - ptr) / sizeof(BJoint)) {
+        return fail("invalid joint count");
+    }
+    const size_t jointDataSize = size_t(bMeshHeader->numJoints) * sizeof(BJoint);
+    const size_t surfaceHeaderSize = sizeof(BMeshSurf) + (bMeshHeader->version >= 3 ? sizeof(BMeshSurfCompression) : 0);
+    if (bMeshHeader->numSurfs > INT_MAX ||
+        bMeshHeader->numSurfs > (size_t(end - ptr) - jointDataSize) / surfaceHeaderSize) {
+        return fail("invalid surface count");
     }
 
     numJoints = bMeshHeader->numJoints;
@@ -55,6 +119,11 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
         // --- joints ---
         for (int jointIndexes = 0; jointIndexes < numJoints; jointIndexes++) {
             const BJoint *bJoint = (const BJoint *)ptr;
+
+            if (!memchr(bJoint->name, 0, sizeof(bJoint->name)) ||
+                bJoint->parentIndex < -1 || bJoint->parentIndex >= numJoints) {
+                return fail("invalid joint data");
+            }
 
             joints[jointIndexes].name = bJoint->name;
             joints[jointIndexes].parent = bJoint->parentIndex >= 0 ? &this->joints[bJoint->parentIndex] : nullptr;
@@ -67,8 +136,59 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 
     // --- surfaces ---
     for (int surfaceIndex = 0; surfaceIndex < bMeshHeader->numSurfs; surfaceIndex++) {
-        const BMeshSurf *bMeshSurf = (const BMeshSurf *)ptr;
+        if (size_t(end - ptr) < surfaceHeaderSize) {
+            return fail("truncated surface header");
+        }
+        const BMeshSurf *bMeshSurf = reinterpret_cast<const BMeshSurf *>(ptr);
         ptr += sizeof(BMeshSurf);
+
+        const size_t vertexSize = bMeshHeader->version == 1 ? sizeof(BMeshVertV1) : sizeof(BMeshVert);
+        if (bMeshSurf->numVerts > INT_MAX / Max(vertexSize, sizeof(VertexGenericLit)) ||
+            bMeshSurf->numIndexes > INT_MAX / sizeof(VertIndex) ||
+            bMeshSurf->numIndexes % 3 != 0 || (bMeshSurf->numIndexes > 0 && bMeshSurf->numVerts == 0) ||
+            (bMeshSurf->indexSize != 2 && bMeshSurf->indexSize != 4) || bMeshSurf->maxWeights > 8) {
+            return fail("invalid surface layout");
+        }
+
+        const size_t vertexDataSize = size_t(bMeshSurf->numVerts) * vertexSize;
+        const size_t indexDataSize = size_t(bMeshSurf->numIndexes) * bMeshSurf->indexSize;
+        const size_t weightSize = bMeshSurf->maxWeights == 0 ? 0 : (bMeshSurf->maxWeights == 1 ? 1 : (bMeshSurf->maxWeights <= 4 ? 8 : 16));
+        const size_t weightDataSize = size_t(bMeshSurf->numVerts) * weightSize;
+        BMeshSurfCompression compression = {};
+        size_t storedVertexSize = vertexDataSize;
+        size_t storedIndexSize = indexDataSize;
+
+        if (bMeshHeader->version >= 3) {
+            memcpy(&compression, ptr, sizeof(compression));
+            ptr += sizeof(compression);
+            storedVertexSize = compression.vertexDataSize;
+            storedIndexSize = compression.indexDataSize;
+            if (compression.flags & ~(BMeshSurfCompression::VertexBuffer | BMeshSurfCompression::IndexBuffer)) {
+                return fail("unsupported compression flags");
+            }
+
+            if (compression.flags & BMeshSurfCompression::VertexBuffer) {
+                if (bMeshSurf->numVerts == 0 || storedVertexSize == 0) {
+                    return fail("invalid compressed vertex size");
+                }
+            } else if (storedVertexSize != vertexDataSize) {
+                return fail("invalid raw vertex size");
+            }
+
+            if (compression.flags & BMeshSurfCompression::IndexBuffer) {
+                if (bMeshSurf->numIndexes == 0 || storedIndexSize == 0) {
+                    return fail("invalid compressed index size");
+                }
+            } else if (storedIndexSize != indexDataSize) {
+                return fail("invalid raw index size");
+            }
+        }
+
+        const size_t remaining = size_t(end - ptr);
+        if (storedVertexSize > remaining || weightDataSize > remaining - storedVertexSize ||
+            storedIndexSize > remaining - storedVertexSize - weightDataSize) {
+            return fail("truncated surface data");
+        }
 
         Surface *meshSurf = Mesh::AllocSurface(bMeshSurf->numVerts, bMeshSurf->numIndexes);
         surfaces.Append(meshSurf);
@@ -90,24 +210,11 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
             }
             ptr += sizeof(BMeshVertV1) * bMeshSurf->numVerts;
         } else {
-            const BMeshVert *bMeshVerts = (const BMeshVert *)ptr;
-            for (int i = 0; i < bMeshSurf->numVerts; i++) {
-                VertexGenericLit *v = &subMesh->verts[i];
-                const BMeshVert &bMeshVert = bMeshVerts[i];
-                v->SetPosition(bMeshVert.position);
-                v->st[0] = bMeshVert.texCoord[0];
-                v->st[1] = bMeshVert.texCoord[1];
-                v->SetColor(bMeshVert.color);
-#ifdef PACKED_VERTEX_TANGENT_FRAME
-                v->tangentFrame = bMeshVert.tangentFrame;
-#else
-                Vec3 normal, tangent;
-                float bitangentSign;
-                PackedTangentFrame::Unpack(bMeshVert.tangentFrame, normal, tangent, bitangentSign);
-                v->SetTangentFrame(normal, tangent, bitangentSign);
-#endif
+            if (!ReadBMeshVertices(subMesh->verts, bMeshSurf->numVerts, ptr, storedVertexSize,
+                (compression.flags & BMeshSurfCompression::VertexBuffer) != 0)) {
+                return fail("invalid compressed vertex data");
             }
-            ptr += sizeof(BMeshVert) * bMeshSurf->numVerts;
+            ptr += storedVertexSize;
         }
 
         // --- vertex weights ---
@@ -171,21 +278,36 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
         }
 
         // --- indexes ---
-        if (bMeshSurf->indexSize == 4) {
-            for (int i = 0; i < bMeshSurf->numIndexes; i++) {
-                subMesh->indexes[i] = *(uint32_t *)ptr;
-                ptr += sizeof(uint32_t);
+        if (compression.flags & BMeshSurfCompression::IndexBuffer) {
+            if (meshopt_decodeIndexBuffer(subMesh->indexes, bMeshSurf->numIndexes, sizeof(VertIndex), ptr, storedIndexSize) != 0) {
+                return fail("invalid compressed index data");
             }
-        } else if (bMeshSurf->indexSize == 2) {
+        } else if (bMeshSurf->indexSize == sizeof(VertIndex)) {
+            if (storedIndexSize > 0) {
+                memcpy(subMesh->indexes, ptr, storedIndexSize);
+            }
+        } else {
             for (int i = 0; i < bMeshSurf->numIndexes; i++) {
-                subMesh->indexes[i] = *(uint16_t *)ptr;
-                ptr += sizeof(uint16_t);
+                uint16_t index;
+                memcpy(&index, ptr + size_t(i) * sizeof(index), sizeof(index));
+                subMesh->indexes[i] = index;
+            }
+        }
+        ptr += storedIndexSize;
+
+        // A successful codec decode does not guarantee that indices reference existing vertices.
+        for (int i = 0; i < bMeshSurf->numIndexes; i++) {
+            if (subMesh->indexes[i] >= bMeshSurf->numVerts) {
+                return fail("vertex index out of range");
             }
         }
 
         // guarantee 8 bytes aligned read
-        long offset = (intptr_t)ptr;
-        ptr += AlignUp(offset, 8) - offset;
+        const size_t padding = (8 - (size_t(ptr - data) & 7)) & 7;
+        if (padding > size_t(end - ptr)) {
+            return fail("truncated surface padding");
+        }
+        ptr += padding;
     }
 
     fileSystem.FreeFile(data);
@@ -216,12 +338,15 @@ void Mesh::WriteBinaryMesh(const char *filename) {
         for (int jointIndexes = 0; jointIndexes < bMeshHeader.numJoints; jointIndexes++) {
             const Joint *joint = &joints[jointIndexes];
 
-            BJoint bJoint;
+            BJoint bJoint = {};
             Str::Copynz(bJoint.name, joint->name, sizeof(bJoint.name));
             bJoint.parentIndex = !joint->parent ? -1 : (int32_t)(joint->parent - joints);
             fp->Write(&bJoint, sizeof(bJoint));
         }
     }
+
+    std::unique_ptr<byte[]> encodedData;
+    size_t encodedCapacity = 0;
 
     // --- surfaces ---
     for (int surfaceIndex = 0; surfaceIndex < bMeshHeader.numSurfs; surfaceIndex++) {
@@ -232,27 +357,73 @@ void Mesh::WriteBinaryMesh(const char *filename) {
         bMeshSurf.materialIndex     = meshSurf->materialIndex;
         bMeshSurf.numVerts          = subMesh->numVerts;
         bMeshSurf.numIndexes        = subMesh->numIndexes;
-        bMeshSurf.indexSize         = subMesh->numIndexes < BIT(16) ? sizeof(uint16_t) : sizeof(uint32_t);
+        bMeshSurf.indexSize         = subMesh->numVerts <= BIT(16) ? sizeof(uint16_t) : sizeof(uint32_t);
         bMeshSurf.maxWeights        = subMesh->MaxVertexWeights();
         bMeshSurf.aabbMin           = subMesh->GetAABB()[0];
         bMeshSurf.aabbMax           = subMesh->GetAABB()[1];
-        fp->Write(&bMeshSurf, sizeof(bMeshSurf));
 
-        // --- vertexes ---
+        BMeshSurfCompression compression = {};
+        const size_t vertexDataSize = size_t(subMesh->numVerts) * sizeof(BMeshVert);
+        const size_t indexDataSize = size_t(subMesh->numIndexes) * bMeshSurf.indexSize;
+
+        if (vertexDataSize > UINT32_MAX || indexDataSize > UINT32_MAX || subMesh->numIndexes % 3 != 0) {
+            BE_WARNLOG("Mesh::WriteBinaryMesh: invalid surface size\n");
+            fileSystem.CloseFile(fp);
+            return;
+        }
+        compression.vertexDataSize = static_cast<uint32_t>(vertexDataSize);
+        compression.indexDataSize = static_cast<uint32_t>(indexDataSize);
+
+        // Reuse uninitialized scratch storage across surfaces; the encoder writes every stored byte.
+        const size_t vertexBound = subMesh->numVerts > 0 ? meshopt_encodeVertexBufferBound(subMesh->numVerts, sizeof(BMeshVert)) : 0;
+        const size_t indexBound = subMesh->numIndexes > 0 ? meshopt_encodeIndexBufferBound(subMesh->numIndexes, subMesh->numVerts) : 0;
+        const size_t requiredCapacity = vertexBound + indexBound;
+        if (requiredCapacity > encodedCapacity) {
+            encodedData.reset(new byte[requiredCapacity]);
+            encodedCapacity = requiredCapacity;
+        }
+
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+        const void *vertexData = subMesh->verts;
+#else
+        Array<BMeshVert> packedVerts;
+        packedVerts.SetCount(subMesh->numVerts);
         for (int i = 0; i < subMesh->numVerts; i++) {
             const VertexGenericLit *v = &subMesh->verts[i];
-
-            BMeshVert bMeshVert;
+            BMeshVert &bMeshVert = packedVerts[i];
             bMeshVert.position = v->GetPosition();
             bMeshVert.texCoord[0] = v->st[0];
             bMeshVert.texCoord[1] = v->st[1];
             bMeshVert.color = v->GetColor();
-#ifdef PACKED_VERTEX_TANGENT_FRAME
-            bMeshVert.tangentFrame = v->tangentFrame;
-#else
             bMeshVert.tangentFrame = PackedTangentFrame::Pack(v->GetNormal(), v->GetTangent(), v->GetBiTangentSign());
+        }
+        const void *vertexData = packedVerts.Ptr();
 #endif
-            fp->Write(&bMeshVert, sizeof(bMeshVert));
+        if (vertexBound > 0) {
+            // Pin the codec format per call; global encoder settings are unsafe during parallel imports.
+            const size_t encodedSize = meshopt_encodeVertexBufferLevel(encodedData.get(), vertexBound,
+                vertexData, subMesh->numVerts, sizeof(BMeshVert), 2, 1);
+            if (encodedSize > 0 && encodedSize < vertexDataSize) {
+                compression.flags |= BMeshSurfCompression::VertexBuffer;
+                compression.vertexDataSize = static_cast<uint32_t>(encodedSize);
+                vertexData = encodedData.get();
+            }
+        }
+        if (indexBound > 0) {
+            // Triangle order and winding are preserved, but the codec may rotate triangle corners.
+            const size_t encodedSize = meshopt_encodeIndexBuffer(encodedData.get() + vertexBound, indexBound,
+                subMesh->indexes, subMesh->numIndexes);
+            if (encodedSize > 0 && encodedSize < indexDataSize) {
+                compression.flags |= BMeshSurfCompression::IndexBuffer;
+                compression.indexDataSize = static_cast<uint32_t>(encodedSize);
+            }
+        }
+        fp->Write(&bMeshSurf, sizeof(bMeshSurf));
+        fp->Write(&compression, sizeof(compression));
+
+        // --- vertexes ---
+        if (compression.vertexDataSize > 0) {
+            fp->Write(vertexData, compression.vertexDataSize);
         }
 
         // --- vertex weights ---
@@ -300,13 +471,15 @@ void Mesh::WriteBinaryMesh(const char *filename) {
         }
 
         // --- indexes ---
-        if (subMesh->numIndexes < BIT(16)) {
-            for (int i = 0; i < subMesh->numIndexes; i++) {
-                fp->WriteUInt16(subMesh->indexes[i]);
+        if (compression.flags & BMeshSurfCompression::IndexBuffer) {
+            fp->Write(encodedData.get() + vertexBound, compression.indexDataSize);
+        } else if (bMeshSurf.indexSize == sizeof(VertIndex)) {
+            if (indexDataSize > 0) {
+                fp->Write(subMesh->indexes, indexDataSize);
             }
         } else {
             for (int i = 0; i < subMesh->numIndexes; i++) {
-                fp->WriteUInt32(subMesh->indexes[i]);
+                fp->WriteUInt16(subMesh->indexes[i]);
             }
         }
 

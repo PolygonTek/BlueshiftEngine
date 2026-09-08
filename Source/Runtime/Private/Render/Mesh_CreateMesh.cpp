@@ -38,37 +38,37 @@ void Mesh::CreateDefaultBox() {
     v[1].SetPosition(-extent, +extent, 0.0f); v[1].SetTexCoord(1.0f, 1.0f); v[1].SetColor(0xffffffff);
     v[2].SetPosition(+extent, +extent, 0.0f); v[2].SetTexCoord(1.0f, 0.0f); v[2].SetColor(0xffffffff);
     v[3].SetPosition(+extent, -extent, 0.0f); v[3].SetTexCoord(0.0f, 0.0f); v[3].SetColor(0xffffffff);
-    
+
     // top face
     v[4].SetPosition(+extent, -extent, extent * 2); v[4].SetTexCoord(0.0f, 1.0f); v[4].SetColor(0xffffffff);
     v[5].SetPosition(+extent, +extent, extent * 2); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetColor(0xffffffff);
     v[6].SetPosition(-extent, +extent, extent * 2); v[6].SetTexCoord(1.0f, 0.0f); v[6].SetColor(0xffffffff);
     v[7].SetPosition(-extent, -extent, extent * 2); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetColor(0xffffffff);
-    
+
     // front face
     v[8].SetPosition(+extent, -extent, 0.0f); v[8].SetTexCoord(0.0f, 1.0f); v[8].SetColor(0xffffffff);
     v[9].SetPosition(+extent, +extent, 0.0f); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetColor(0xffffffff);
     v[10].SetPosition(+extent, +extent, extent * 2); v[10].SetTexCoord(1.0f, 0.0f); v[10].SetColor(0xffffffff);
     v[11].SetPosition(+extent, -extent, extent * 2); v[11].SetTexCoord(0.0f, 0.0f); v[11].SetColor(0xffffffff);
-    
+
     // right face
-    v[12].SetPosition(+extent, +extent,  0.0f); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetColor(0xffffffff);
-    v[13].SetPosition(-extent, +extent,  0.0f); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetColor(0xffffffff);
+    v[12].SetPosition(+extent, +extent, 0.0f); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetColor(0xffffffff);
+    v[13].SetPosition(-extent, +extent, 0.0f); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetColor(0xffffffff);
     v[14].SetPosition(-extent, +extent, extent * 2); v[14].SetTexCoord(1.0f, 0.0f); v[14].SetColor(0xffffffff);
     v[15].SetPosition(+extent, +extent, extent * 2); v[15].SetTexCoord(0.0f, 0.0f); v[15].SetColor(0xffffffff);
-    
+
     // back face
-    v[16].SetPosition(-extent, +extent,  0.0f); v[16].SetTexCoord(0.0f, 1.0f); v[16].SetColor(0xffffffff);
-    v[17].SetPosition(-extent, -extent,  0.0f); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetColor(0xffffffff);
+    v[16].SetPosition(-extent, +extent, 0.0f); v[16].SetTexCoord(0.0f, 1.0f); v[16].SetColor(0xffffffff);
+    v[17].SetPosition(-extent, -extent, 0.0f); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetColor(0xffffffff);
     v[18].SetPosition(-extent, -extent, extent * 2); v[18].SetTexCoord(1.0f, 0.0f); v[18].SetColor(0xffffffff);
     v[19].SetPosition(-extent, +extent, extent * 2); v[19].SetTexCoord(0.0f, 0.0f); v[19].SetColor(0xffffffff);
-    
+
     // left face
-    v[20].SetPosition(-extent, -extent,  0.0f); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetColor(0xffffffff);
-    v[21].SetPosition(+extent, -extent,  0.0f); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetColor(0xffffffff);
+    v[20].SetPosition(-extent, -extent, 0.0f); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetColor(0xffffffff);
+    v[21].SetPosition(+extent, -extent, 0.0f); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetColor(0xffffffff);
     v[22].SetPosition(+extent, -extent, extent * 2); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetColor(0xffffffff);
     v[23].SetPosition(-extent, -extent, extent * 2); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetColor(0xffffffff);
-        
+
     VertIndex *idx = surf->subMesh->indexes;
     idx[0] = 0;     idx[1] = 1;     idx[2] = 2;
     idx[3] = 2;     idx[4] = 3;     idx[5] = 0;
@@ -82,7 +82,7 @@ void Mesh::CreateDefaultBox() {
     idx[27] = 18;   idx[28] = 19;   idx[29] = 16;
     idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
     idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
-    
+
     FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeNormals | FinishFlag::ComputeTangents | Mesh::FinishFlag::ComputeEdges | FinishFlag::UseUnsmoothedTangents);
 }
 
@@ -134,7 +134,11 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
         }
     }
     
-    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges);
+    int finishFlags = FinishFlag::ComputeAABB | FinishFlag::ComputeEdges;
+    if (numSegments > 1) {
+        finishFlags |= FinishFlag::OptimizeIndices;
+    }
+    FinishSurfaces(finishFlags);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -259,7 +263,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions
         }
     }
 
-    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents | FinishFlag::OptimizeIndices);
 
     if (!origin.IsZero()) {
         TransformVerts(Mat3::identity, Vec3::one, origin);
@@ -314,7 +318,7 @@ void Mesh::CreateRoundedBox(const Vec3 &origin, const Mat3 &axis, const Vec3 ext
     Mem_Free(mesh.texcoords);
     Mem_Free(mesh.indices);
 
-    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::ComputeTangents | FinishFlag::OptimizeIndices);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -421,7 +425,7 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
         *idx++ = offset + b + 1;
     }
 
-    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::OptimizeIndices);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -520,7 +524,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
         }
     }
 
-    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeEdges | FinishFlag::OptimizeIndices);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
