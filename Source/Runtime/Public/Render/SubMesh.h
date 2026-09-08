@@ -81,11 +81,22 @@ public:
 
     int                     NumVerts() const { return numVerts; }
     int                     NumOriginalVerts() const { return numVerts - numMirroredVerts; }
-
     VertexGenericLit *      Verts() const { return verts; }
 
-    int                     NumIndexes() const { return numIndexes; }
+    int                     NumIndexes(int lodLevel = 0) const;
     VertIndex *             Indexes() const { return indexes; }
+    const VertIndex *       Indexes(int lodLevel) const;
+
+                            /// LOD 0 는 원본이며, 모든 LOD 는 같은 vertex 와 skinning weights 를 공유한다.
+    int                     NumLODs() const { return 1 + (refSubMesh ? refSubMesh->lods : lods).Count(); }
+
+                            /// 원본 대비 LOD 의 단순화 오차 추정값을 로컬 공간 단위로 반환한다.
+                            /// 노멀, UV, 색상 등의 속성 오차도 포함하며 LOD 0 은 0 을 반환한다.
+    float                   GetLODError(int level) const;
+
+                            /// 메시의 LOD 를 생성한다. LOD 0 는 보존한다.
+                            /// maxLevels 는 최대 개수를 의미하며, 0 은 제한 없음을 의미한다.
+    void                    GenerateLODs(int maxLevels);
 
     int                     VertexWeightSize() const;
     int                     MaxVertexWeights() const;
@@ -121,13 +132,20 @@ public:
 
     bool                    IsGpuSkinningEnabled() const { return gpuSkinningEnabled; }
 
-    void                    CacheStaticDataToGpu();
+                            /// vertices 와 지정한 LOD indices 를 캐시하고 해당 인덱스 캐시를 반환한다.
+    const BufferCache *     CacheStaticDataToGpu(int lodLevel = 0);
     void                    CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *material);
 
 private:
+    struct LOD {
+        Array<VertIndex>    indexes;
+        float               error = 0.0f;   ///< 로컬 공간 단위의 속성 오차를 포함한 단순화 오차.
+    };
+
     void                    AllocSubMesh(int numVerts, int numIndexes);
     void                    AllocInstantiatedSubMesh(const SubMesh *refMesh, int meshType);
     void                    FreeSubMesh();
+    void                    FreeLODIndexCaches();
 
     void                    SplitMirroredVerts();
     void                    FixMirroredVerts();
@@ -155,6 +173,7 @@ private:
 
     int                     numIndexes;                 // number of triangle indexes
     VertIndex *             indexes;                    // counter clock-wise order triangle indexes
+    Array<LOD>              lods{ 1 };                  // LOD 0 를 제외한 LOD 정보
                             
     int                     numEdges;                   // number of edges that is not including shared edges
     Edge *                  edges;                      // shared edges are not stored explicitly
@@ -172,14 +191,31 @@ private:
 
     BufferCache *           vertexCache;
     BufferCache *           indexCache;
+    mutable BufferCache *   lodIndexCaches = nullptr;   // 참조 메시가 소유하며, 해당 LOD 렌더링 시 지연 할당한다.
 };
 
 BE_INLINE SubMesh::SubMesh() {
     alloced = false;
+    refSubMesh = nullptr;
 }
 
 BE_INLINE SubMesh::~SubMesh() {
     FreeSubMesh();
+}
+
+BE_INLINE int SubMesh::NumIndexes(int lodLevel) const {
+    assert(lodLevel >= 0 && lodLevel < NumLODs());
+    return lodLevel == 0 ? numIndexes : (refSubMesh ? refSubMesh->lods : lods)[lodLevel - 1].indexes.Count();
+}
+
+BE_INLINE const VertIndex *SubMesh::Indexes(int lodLevel) const {
+    assert(lodLevel >= 0 && lodLevel < NumLODs());
+    return lodLevel == 0 ? indexes : (refSubMesh ? refSubMesh->lods : lods)[lodLevel - 1].indexes.Ptr();
+}
+
+BE_INLINE float SubMesh::GetLODError(int level) const {
+    assert(level >= 0 && level < NumLODs());
+    return level == 0 ? 0.0f : (refSubMesh ? refSubMesh->lods : lods)[level - 1].error;
 }
 
 BE_INLINE int SubMesh::VertexWeightSize() const {

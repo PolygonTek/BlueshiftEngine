@@ -1328,6 +1328,7 @@ static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, con
     return drawSurf->pso &&
         drawSurf->pso == baseDrawSurf->pso &&
         drawSurf->visSurf->subMesh == baseDrawSurf->visSurf->subMesh &&
+        drawSurf->visSurf->lodLevel == baseDrawSurf->visSurf->lodLevel &&
         drawSurf->inputLayoutId == baseDrawSurf->inputLayoutId;
 }
 
@@ -1396,9 +1397,9 @@ void RenderBackend::DrawSurfaceInstanceBatch(RHI::CommandList *commandList, cons
     if (batch.indirectArgsBuffer) {
         RHI::renderer->DrawIndexedInstancedIndirect(commandList, batch.indirectArgsBuffer, batch.indirectArgsOffset);
     } else {
-        RHI::renderer->DrawIndexedInstanced(commandList, firstVisSurf->subMesh->numIndexes, batch.instanceCount, 0, 0, 0);
+        RHI::renderer->DrawIndexedInstanced(commandList, firstVisSurf->numIndexes, batch.instanceCount, 0, 0, 0);
 
-        drawTriangleCount += firstVisSurf->subMesh->numIndexes / 3 * batch.instanceCount;
+        drawTriangleCount += firstVisSurf->numIndexes / 3 * batch.instanceCount;
     }
 
     drawCount++;

@@ -53,13 +53,13 @@ public:
     void                    SetCurrentLight(const VisLight *surfLight);
     void                    Begin(Flush::Enum flushType, const Material *material, const float *materialRegisters, const VisObject *surfSpace);
     void                    AddInstance(const DrawSurf *drawSurf);
-    void                    DrawSubMesh(SubMesh *subMesh);
+    void                    DrawSubMesh(const DrawSurf *drawSurf);
 
     void                    Flush();
 
 private:
-    void                    DrawDynamicSubMesh(SubMesh *subMesh);
-    void                    DrawStaticSubMesh(SubMesh *subMesh);
+    void                    DrawDynamicSubMesh(const DrawSurf *drawSurf);
+    void                    DrawStaticSubMesh(const DrawSurf *drawSurf);
 
     void                    Flush_SelectionPass();
     void                    Flush_BackgroundPass();

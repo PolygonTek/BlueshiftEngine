@@ -23,12 +23,13 @@ BE_NAMESPACE_BEGIN
 // Add visObject from renderObject.
 // Prevent to add multiple times in same visCamera.
 VisObject *RenderWorld::RegisterVisObject(VisCamera *camera, RenderObject *renderObject) {
-    // Already registered for this frame
+    // Already registered for this view
     if (renderObject->viewCount == viewCount) {
         return renderObject->visObject;
     }
 
     VisObject *visObject = (VisObject *)frameData.ClearedAlloc(sizeof(*visObject));
+    visObject->squaredLODErrorLimit = -1.0f;
 
     new (&visObject->node) LinkList<VisObject>();
     visObject->node.SetOwner(visObject);
@@ -1020,6 +1021,43 @@ void RenderWorld::DrawSubCamera(const VisObject *visObject, const DrawSurf *draw
     BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::DrawSubCamera");
 }
 
+static int SelectMeshLOD(const RenderCamera &camera, VisObject &visObject, const SubMesh &subMesh) {
+    const int requestedLOD = visObject.def->GetState().meshLOD;
+
+    // Soft Body 등 Dynamic 메시에는 항상 LOD 0 를 사용한다.
+    if (requestedLOD == 0 || (subMesh.GetType() != Mesh::Type::Static &&
+        (subMesh.GetType() != Mesh::Type::Skinned || !subMesh.IsGpuSkinningEnabled()))) {
+        return 0;
+    }
+
+    const int numLODs = subMesh.NumLODs();
+    if (numLODs <= 1) {
+        return 0;
+    }
+
+    if (requestedLOD > 0) {
+        return Min(requestedLOD, numLODs - 1);
+    }
+
+    // 동일한 카메라/객체의 여러 SubMesh 에서 허용 오차 계산을 공유하기 위해서 한번만 계산한다.
+    if (visObject.squaredLODErrorLimit < 0.0f) {
+        visObject.squaredLODErrorLimit = camera.CalcLocalSquaredLODErrorLimit(visObject.def->GetWorldAABB(), visObject.def->GetWorldMatrix(), r_meshLODPixelError.GetFloat());
+    }
+
+    if (visObject.squaredLODErrorLimit <= 0.0f) {
+        return 0;
+    }
+
+    for (int level = numLODs - 1; level > 0; level--) {
+        const float error = subMesh.GetLODError(level);
+        if (error * error <= visObject.squaredLODErrorLimit) {
+            return level;
+        }
+    }
+
+    return 0;
+}
+
 void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, int flags) {
     if (camera->numDrawSurfs + 1 > camera->maxDrawSurfs) {
         BE_WARNLOG("RenderWorld::AddDrawSurf: not enough renderable surfaces\n");
@@ -1042,13 +1080,15 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
 
     actualMaterial->GetExprChunk()->Evaluate(localParms, outputValues);*/
 
-    if (!bufferCacheManager.IsCached(subMesh->vertexCache)) {
-        Mesh::Type::Enum subMeshType = (Mesh::Type::Enum)subMesh->GetType();
+    const Mesh::Type::Enum subMeshType = (Mesh::Type::Enum)subMesh->GetType();
+    const int lodLevel = SelectMeshLOD(*camera->def, *visObject, *subMesh);
+    const BufferCache *indexCache = subMesh->indexCache;
 
+    if (lodLevel > 0 || !bufferCacheManager.IsCached(subMesh->vertexCache) || !bufferCacheManager.IsCached(indexCache)) {
         if (subMeshType == Mesh::Type::Reference ||
             subMeshType == Mesh::Type::Static ||
             subMeshType == Mesh::Type::Skinned) {
-            subMesh->CacheStaticDataToGpu();
+            indexCache = subMesh->CacheStaticDataToGpu(lodLevel);
         } else if (subMeshType == Mesh::Type::Dynamic) {
             subMesh->CacheDynamicDataToGpu(visObject->def->state.joints, actualMaterial);
         } else {
@@ -1074,6 +1114,9 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
     drawSurf->material = actualMaterial;
     drawSurf->materialRegisters = nullptr;//outputValues;
     drawSurf->subMesh = subMesh;
+    drawSurf->lodLevel = lodLevel;
+    drawSurf->indexCache = indexCache;
+    drawSurf->numIndexes = subMesh->NumIndexes(lodLevel);
     drawSurf->flags = flags;
 
     uint64_t visLightIndex = visLight ? visLight->index + 1 : 0;
@@ -1143,6 +1186,9 @@ void RenderWorld::AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *visL
     drawSurf->material = visibleDrawSurf->material;
     drawSurf->materialRegisters = visibleDrawSurf->materialRegisters;
     drawSurf->subMesh = visibleDrawSurf->subMesh;
+    drawSurf->lodLevel = visibleDrawSurf->lodLevel;
+    drawSurf->indexCache = visibleDrawSurf->indexCache;
+    drawSurf->numIndexes = visibleDrawSurf->numIndexes;
 
     camera->drawSurfs[camera->numDrawSurfs++] = drawSurf;
 }

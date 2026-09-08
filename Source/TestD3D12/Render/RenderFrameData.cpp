@@ -464,7 +464,7 @@ VisObject *RenderFrameData::AllocVisObject() {
     // placement new 생성자 호출
     new (newVisObject) VisObject();
     
-    newVisObject->index = numVisObjects++;
+    ++numVisObjects;
 
     return newVisObject;
 }

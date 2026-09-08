@@ -30,6 +30,7 @@ struct RenderFrameSettings {
 
     float                   hdrPaperWhiteNits = 200.0f;
     float                   hdrPeakNits = 0.0f;
+    float                   meshLODPixelError = 2.0f;
 
     uint32_t                taaJitterSampleCount = 16;
     float                   taaHistoryWeight = 0.9f;

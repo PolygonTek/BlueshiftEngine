@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Render/SubMesh.h"
+
 BE_NAMESPACE_BEGIN
 
 class DrawSurf {
@@ -28,12 +30,18 @@ public:
         };
     };
 
+                            /// 같은 SubMesh 면서 선택한 LOD 도 같은지 검사한다.
+    bool                    IsSameGeometry(const DrawSurf *other) const { return subMesh->IsShared(other->subMesh) && lodLevel == other->lodLevel; }
+
     uint64_t                sortKey;
     uint32_t                flags;
+    int                     lodLevel;           ///< 해당 뷰에서 사용할 LOD
     SubMesh *               subMesh;
+    const BufferCache *     indexCache;         ///< 해당 LOD 의 공유 GPU 인덱스 캐시
     const VisObject *       space;              ///< Parent of this surface
     const Material *        material;           ///< Material of this surface
     const float *           materialRegisters;
+    int                     numIndexes;         ///< 해당 LOD 의 인덱스 개수
     int                     instanceIndex;
 };
 

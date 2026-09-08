@@ -33,6 +33,8 @@ CVAR(r_hdrOutput, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable
 CVAR_MINMAX(r_hdrPaperWhiteNits, "200", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR paper white luminance in nits", 80.0f, 500.0f);
 CVAR_MINMAX(r_hdrPeakNits, "0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR peak luminance in nits (0 = use the display value)", 0.0f, 10000.0f);
 
+CVAR(r_meshLODPixelError2, "2.0", BE1::CVar::Flag::Float, "estimated mesh LOD pixel error tolerance, <= 0 uses LOD0");
+
 CVAR(r_depthPrepass, "0", BE1::CVar::Flag::Bool, "enable depth prepass");
 CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
 CVAR(r_specularAA, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space specular anti-aliasing");
@@ -157,6 +159,8 @@ RenderFrameSettings CaptureRenderFrameSettings() {
 
     settings.hdrPaperWhiteNits = r_hdrPaperWhiteNits.GetFloat();
     settings.hdrPeakNits = r_hdrPeakNits.GetFloat();
+
+    settings.meshLODPixelError = r_meshLODPixelError2.GetFloat();
 
     settings.toneMapLuminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
     settings.toneMapLuminanceLogMax = BE1::Max(r_toneMapLuminanceLogMax.GetFloat(), settings.toneMapLuminanceLogMin + 0.0001f);

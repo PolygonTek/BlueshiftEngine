@@ -22,7 +22,7 @@ BE_NAMESPACE_BEGIN
 
 static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *light) {
     const VisObject *   prevSpace = nullptr;
-    const SubMesh *     prevSubMesh = nullptr;
+    const DrawSurf *    prevDrawSurf = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -41,7 +41,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentSubMesh = prevDrawSurf ? !drawSurf->IsSameGeometry(prevDrawSurf) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
         bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
@@ -53,7 +53,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
 
             backEnd.batch.Begin(drawSurf->material->IsSkySurface() ? Batch::Flush::Background : Batch::Flush::Base, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = drawSurf->subMesh;
+            prevDrawSurf = drawSurf;
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
@@ -86,7 +86,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
             backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch

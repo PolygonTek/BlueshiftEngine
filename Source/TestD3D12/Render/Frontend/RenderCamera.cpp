@@ -734,6 +734,48 @@ bool RenderCamera::CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const
     return CalcDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
 
+float RenderCamera::CalcLocalSquaredLODErrorLimit(const BE1::AABB &worldBounds, const BE1::Mat3x4 &worldMatrix, float pixelErrorLimit) const {
+    if (!(pixelErrorLimit > 0.0f) || renderWidth == 0 || renderHeight == 0) {
+        return 0.0f;
+    }
+
+    // 지터가 없는 투영 행렬과 내부 렌더링 해상도를 사용한다.
+    float projectionScale = 0.5f * BE1::Max(
+        BE1::Math::Abs(projMatrix[0][0]) * renderWidth,
+        BE1::Math::Abs(projMatrix[1][1]) * renderHeight);
+
+    if (!desc.orthogonal) {
+        // 중심보다 카메라에 가까운 경계를 기준으로 평가한다.
+        const BE1::Vec3 &forward = desc.axis[0];
+        const float depth = (worldBounds.Center() - desc.origin).Dot(forward) - worldBounds.Extents().AbsDot(forward);
+
+        // near plane 에 걸치거나 카메라 뒤에 있는 경우 LOD 0 를 사용한다.
+        if (!(depth > desc.zNear)) {
+            return 0.0f;
+        }
+
+        projectionScale /= depth;
+    }
+
+    const BE1::Vec3 x(worldMatrix[0][0], worldMatrix[1][0], worldMatrix[2][0]);
+    const BE1::Vec3 y(worldMatrix[0][1], worldMatrix[1][1], worldMatrix[2][1]);
+    const BE1::Vec3 z(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2]);
+
+    // 월드 변환의 최대 확대율 제곱을 보수적으로 계산한다.
+    // 축이 직교하면 최대 스케일의 제곱이며, 전단도 반영한다.
+    const float xy = BE1::Math::Abs(x.Dot(y));
+    const float xz = BE1::Math::Abs(x.Dot(z));
+    const float yz = BE1::Math::Abs(y.Dot(z));
+    const float worldScaleSqr = BE1::Max(x.LengthSqr() + xy + xz, BE1::Max(y.LengthSqr() + xy + yz, z.LengthSqr() + xz + yz));
+    const float pixelScaleSqr = projectionScale * projectionScale * worldScaleSqr;
+
+    if (!(pixelScaleSqr > 0.0f)) {
+        return 0.0f;
+    }
+
+    return pixelErrorLimit * pixelErrorLimit / pixelScaleSqr;
+}
+
 void RenderCamera::CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
     const float tanFovX = BE1::Math::Tan(DEG2RAD(fromFovX * 0.5f));
     const float tanFovY = tanFovX / fromAspectRatio;

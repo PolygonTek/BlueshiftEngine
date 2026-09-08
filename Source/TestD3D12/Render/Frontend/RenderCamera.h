@@ -149,6 +149,11 @@ public:
     bool                        CalcDepthBoundsFromOBB(const BE1::OBB &box, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                        CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const BE1::Mat4 &mvp, float *depthMin, float *depthMax) const;
 
+                                /// 화면상 픽셀 단위 허용 오차 (pixelErrorLimit) 를 메시 로컬 공간의 허용 오차 제곱으로 환산한다.
+                                /// Update() 와 EnsureRenderTextures() 이후 내부 렌더링 해상도를 기준으로 평가한다.
+                                /// pixelErrorLimit 가 0 이하이거나 유효한 투영 평가가 불가능하면 0 을 반환한다.
+    float                       CalcLocalSquaredLODErrorLimit(const BE1::AABB &worldBounds, const BE1::Mat3x4 &worldMatrix, float pixelErrorLimit) const;
+
     void                        Update(const Desc &desc);
 
                                 /// Calculates the effective normalized extents and inverse average luminance of a convolution bloom kernel image.

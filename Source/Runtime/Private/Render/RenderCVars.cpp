@@ -76,6 +76,7 @@ CVAR(r_offsetUnits, "2", CVar::Flag::Float, "polygon offset parameter");
 CVAR(r_queryWaitFrames, "10", CVar::Flag::Integer, "");
 CVAR(r_instancing, "2", CVar::Flag::Integer | CVar::Flag::Archive, "");
 CVAR(r_maxInstancingCount, "1024", CVar::Flag::Integer | CVar::Flag::Archive, "");
+CVAR(r_meshLODPixelError, "2.0", CVar::Flag::Float, "estimated mesh LOD pixel error tolerance, <= 0 uses LOD0");
 
 CVAR(r_HDR, "2", CVar::Flag::Integer | CVar::Flag::Archive, "HDR rendering type, 0 = no HDR, 1 = FP11 or FP16, 2 = FP16, 3 = FP32");
 CVAR(r_HDR_debug, "0", CVar::Flag::Integer, "");

@@ -54,6 +54,8 @@ class SubMesh {
     friend class RenderBackend;
 
 public:
+    static constexpr int    MaxLODLevel = 127;               ///< LOD 0 을 포함하여 최대 128 단계를 지원한다.
+
     enum class Flag : uint8_t {
         None                = 0,
         NormalsCalculated   = BIT(0),   ///< Normals have been calculated.
@@ -70,8 +72,21 @@ public:
     uint32_t                NumVerts() const { return numVerts; }
     BE1::VertexGenericLit * Verts() const { return verts; }
 
-    uint32_t                NumIndexes() const { return numIndexes; }
+    uint32_t                NumIndexes(int lodLevel = 0) const;
     BE1::VertIndex *        Indexes() const { return indexes; }
+    const BE1::VertIndex *  Indexes(int lodLevel) const;
+
+                            /// LOD 0 는 원본이며, 모든 LOD 는 같은 vertex 와 skinning weights 를 공유한다.
+    int                     NumLODs() const { return 1 + lods.Count(); }
+
+                            /// 원본 대비 LOD 의 단순화 오차 추정값을 로컬 공간 단위로 반환한다.
+                            /// 노멀, UV, 색상 등의 속성 오차도 포함하며 LOD 0 은 0 을 반환한다.
+    float                   GetLODError(int level) const;
+
+                            /// 메시의 LOD 를 생성한다. LOD 0 는 보존한다.
+                            /// maxLevels 는 추가 LOD 의 최대 개수이며, 0 은 MaxLODLevel 까지 생성을 허용한다.
+                            /// 양수도 MaxLODLevel 을 넘지 않도록 제한한다.
+    void                    GenerateLODs(int maxLevels);
 
     int                     VertexWeightSize() const;
     int                     MaxVertexWeights() const;
@@ -112,13 +127,20 @@ public:
                             /// Invalidates edge data; recompute edges before using edge-dependent operations.
     void                    OptimizeIndexedTriangles();
 
-    void                    UploadStaticDataToGPU() const;
+                            /// 공유 vertex/weight buffer 와 요청한 LOD 의 index buffer 를 준비하고 해당 index buffer 를 반환한다.
+                            /// 이미 생성된 버퍼는 재사용하며, 생성에 실패하면 nullptr 을 반환한다.
+    RHI::IndexBuffer *      UploadStaticDataToGPU(int lodLevel = 0) const;
 
 private:
+    struct LOD {
+        BE1::Array<BE1::VertIndex> indexes;
+        float               error = 0.0f;   ///< 로컬 공간 단위의 속성 오차를 포함한 단순화 오차.
+    };
+
     void                    Alloc(uint32_t numVerts, uint32_t numIndexes);
     void                    Purge();
 
-                            /// Copies sub-mesh data from another sub-mesh. The destination should already be allocated.
+                            /// Copies CPU sub-mesh data. The destination should be allocated but not uploaded to the GPU.
     void                    CopyFrom(const SubMesh *other);
 
                             /// Computes local-space bounds (AABB + bounding sphere).
@@ -140,20 +162,40 @@ private:
     BE1::DominantTri *      dominantTris = nullptr;             ///< Dominant triangles for each vertex.
     uint32_t                numIndexes = 0;                     ///< Number of triangle indices.
     BE1::VertIndex *        indexes = nullptr;                  ///< Triangle indices in counter-clockwise order.
+    BE1::Array<LOD>         lods{ 1 };                          ///< LOD 0 를 제외한 LOD 정보.
+
     uint32_t                numEdges = 0;                       ///< Number of edges that is not including shared edges.
     Edge *                  edges = nullptr;                    ///< Pointer to edges (shared edges are not stored explicitly).
     int32_t *               edgeIndexes = nullptr;              ///< Mapping from triangle edge indices to edge indices (negative values indicate shared edges).
+
     BE1::AABB               boundingBox = BE1::AABB::empty;     ///< Local axis-aligned bounding box (bounding box) for this sub-mesh.
     BE1::Sphere             boundingSphere = BE1::Sphere(BE1::Vec3::zero, 0.0f); ///< Local bounding sphere for this sub-mesh.
+
     void *                  vertWeights = nullptr;              ///< vertex weights for GPU skinning (numVerts * sizeof(VertexWeightX))
     int                     gpuSkinningVersionIndex;            ///< 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 
     mutable RHI::VertexBuffer *vertexBuffer = nullptr;          ///< RHI vertex buffer.
     mutable RHI::VertexBuffer *vertexWeightBuffer = nullptr;    ///< RHI vertex weight buffer for GPU skinning.
     mutable RHI::IndexBuffer *indexBuffer = nullptr;            ///< RHI index buffer.
+    mutable RHI::IndexBuffer **lodIndexBuffers = nullptr;       ///< LOD 0 를 제외한 index buffer. 추가 LOD 를 처음 업로드할 때 할당한다.
 
     Flag                    flags = Flag::None;
 };
+
+BE_INLINE uint32_t SubMesh::NumIndexes(int lodLevel) const {
+    assert(lodLevel >= 0 && lodLevel < NumLODs());
+    return lodLevel == 0 ? numIndexes : lods[lodLevel - 1].indexes.Count();
+}
+
+BE_INLINE const BE1::VertIndex *SubMesh::Indexes(int lodLevel) const {
+    assert(lodLevel >= 0 && lodLevel < NumLODs());
+    return lodLevel == 0 ? indexes : lods[lodLevel - 1].indexes.Ptr();
+}
+
+BE_INLINE float SubMesh::GetLODError(int level) const {
+    assert(level >= 0 && level < NumLODs());
+    return level == 0 ? 0.0f : lods[level - 1].error;
+}
 
 BE_INLINE int SubMesh::VertexWeightSize() const {
     if (!vertWeights) {

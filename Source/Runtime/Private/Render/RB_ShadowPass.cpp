@@ -197,7 +197,7 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const Frustu
 
 static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &lightViewMatrix, const Frustum &lightFrustum, const Frustum &viewFrustum, bool forceClear, int cubeMapFace) {
     const VisObject *   prevSpace = nullptr;
-    const SubMesh *     prevSubMesh = nullptr;
+    const DrawSurf *    prevDrawSurf = nullptr;
     const VisObject *   skipObject = nullptr;
     const VisObject *   entity2 = nullptr;
     const Material *    prevMaterial = nullptr;
@@ -222,7 +222,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentSubMesh = prevDrawSurf ? !drawSurf->IsSameGeometry(prevDrawSurf) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
         bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
@@ -233,7 +233,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
 
             backEnd.batch.Begin(Batch::Flush::Shadow, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = drawSurf->subMesh;
+            prevDrawSurf = drawSurf;
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
@@ -296,7 +296,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
             entity2 = drawSurf->space;
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     if (!firstDraw) {
@@ -396,7 +396,7 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
 // TODO: To be culled by for each cascades.
 static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustum, int cascadeIndex, bool forceClear) {
     const VisObject *   prevSpace = nullptr;
-    const SubMesh *     prevSubMesh = nullptr;
+    const DrawSurf *    prevDrawSurf = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                firstDraw = true;
     Rect                prevScissorRect;
@@ -441,7 +441,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentSubMesh = prevDrawSurf ? !drawSurf->IsSameGeometry(prevDrawSurf) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
         bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
@@ -453,7 +453,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
             backEnd.batch.Begin(Batch::Flush::Shadow, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = drawSurf->subMesh;
+            prevDrawSurf = drawSurf;
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
@@ -470,7 +470,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
             backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     if (!firstDraw) {

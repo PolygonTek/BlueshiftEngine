@@ -113,7 +113,7 @@ void RenderBackend::DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32
             currentInputLayoutId = drawSurf->inputLayoutId;
 
             RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
-            RHI::renderer->SetIndexBuffer(mainCommandList, currentSubMesh->indexBuffer);
+            RHI::renderer->SetIndexBuffer(mainCommandList, drawSurf->visSurf->indexBuffer);
         }
 
         if (!BindSkyboxTextures(mainCommandList, drawSurf->visSurf->material)) {

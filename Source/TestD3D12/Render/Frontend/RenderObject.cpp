@@ -53,7 +53,16 @@ void RenderObject::UpdateSkeleton(const SharedPtr<Skeleton> &skeleton) {
     desc.skeleton = skeleton;
 }
 
+void RenderObject::UpdateMeshLOD(int lodLevel) {
+    desc.meshLOD = static_cast<int8_t>(BE1::Clamp(lodLevel, -1, SubMesh::MaxLODLevel));
+}
+
 void RenderObject::UpdateMaterials(const BE1::Array<SharedPtr<Material>> &materials) {
+    if (materials.Count() > MaxMaterials) {
+        BE_WARNLOG("RenderObject::UpdateMaterials: too many materials (%i, maximum %i)\n", materials.Count(), MaxMaterials);
+        return;
+    }
+
     desc.materials = materials;
 }
 
@@ -105,12 +114,16 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
         desc.meshInstance = src.meshInstance;
     }
 
+    if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::MeshLOD)) {
+        UpdateMeshLOD(src.meshLOD);
+    }
+
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Skeleton)) {
         desc.skeleton = src.skeleton;
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Materials)) {
-        desc.materials = src.materials;
+        UpdateMaterials(src.materials);
     }
 
     if (src.text) {

@@ -191,6 +191,13 @@ void RenderWorld::UpdateRenderObjectSkeleton(int index, const SharedPtr<Skeleton
     }
 }
 
+void RenderWorld::UpdateRenderObjectMeshLOD(int index, int lodLevel) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectMeshLOD");
+    if (renderObject) {
+        renderObject->UpdateMeshLOD(lodLevel);
+    }
+}
+
 void RenderWorld::UpdateRenderObjectMaterials(int index, const BE1::Array<SharedPtr<Material>> &materials) {
     RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectMaterials");
     if (renderObject) {

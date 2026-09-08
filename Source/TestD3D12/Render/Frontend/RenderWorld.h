@@ -103,6 +103,7 @@ public:
     void                        UpdateRenderObjectTransform(int index, const BE1::Mat3x4 &worldMatrix);
     void                        UpdateRenderObjectBounds(int index, const BE1::AABB &aabb);
     void                        UpdateRenderObjectMesh(int index, const SharedPtr<MeshInstance> &meshInstance);
+    void                        UpdateRenderObjectMeshLOD(int index, int lodLevel);
     void                        UpdateRenderObjectSkeleton(int index, const SharedPtr<Skeleton> &skeleton);
     void                        UpdateRenderObjectMaterials(int index, const BE1::Array<SharedPtr<Material>> &materials);
     void                        UpdateRenderObjectFont(int index, const SharedPtr<Font> &font);
@@ -247,7 +248,7 @@ private:
     void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
-    void                        AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags);
+    void                        AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, int lodLevel = 0);
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.

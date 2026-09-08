@@ -161,6 +161,7 @@ public:
         // static/skinned mesh
         //
         Mesh *              mesh = nullptr;             ///< Instantiated mesh
+        int                 meshLOD = -1;               ///< 요청 LOD. -1 은 자동 선택
         const Skeleton *    skeleton = nullptr;         ///< Skeleton information for skeletal mesh
         int                 numJoints = 0;              ///< Number of joints
         Mat3x4 *            joints = nullptr;           ///< Joint transform matrices to animate skeletal mesh

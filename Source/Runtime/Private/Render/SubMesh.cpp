@@ -43,6 +43,15 @@ int SubMesh::Allocated() const {
         size += sizeof(BufferCache);
     }
 
+    size += static_cast<int>(lods.Allocated());
+    for (const LOD &lod : lods) {
+        size += static_cast<int>(lod.indexes.Allocated());
+    }
+
+    if (lodIndexCaches) {
+        size += lods.Count() * sizeof(BufferCache);
+    }
+
     return size;
 }
 
@@ -144,6 +153,8 @@ void SubMesh::FreeSubMesh() {
     }
 
     alloced = false;
+    FreeLODIndexCaches();
+    lods.Clear();
 
     if (type == Mesh::Type::Reference) {
         if (vertexCache->buffer != Graphics::NullBuffer) {
@@ -178,6 +189,20 @@ void SubMesh::FreeSubMesh() {
     }
 }
 
+void SubMesh::FreeLODIndexCaches() {
+    if (!lodIndexCaches) {
+        return;
+    }
+
+    for (int i = 0; i < lods.Count(); i++) {
+        if (lodIndexCaches[i].buffer != Graphics::NullBuffer) {
+            graphics.DestroyBuffer(lodIndexCaches[i].buffer);
+        }
+    }
+    Mem_Free(lodIndexCaches);
+    lodIndexCaches = nullptr;
+}
+
 void SubMesh::CopyFrom(const SubMesh *other) {
     if (!alloced) {
         BE_ERRLOG("SubMesh::CopyFrom: Should be allocated first");
@@ -195,9 +220,15 @@ void SubMesh::CopyFrom(const SubMesh *other) {
 
     simdProcessor->Memcpy(verts, other->verts, sizeof(verts[0]) * other->numVerts);
     simdProcessor->Memcpy(indexes, other->indexes, sizeof(indexes[0]) * other->numIndexes);
+    if (type == Mesh::Type::Reference) {
+        FreeLODIndexCaches();
+        lods = other->refSubMesh ? other->refSubMesh->lods : other->lods;
+    }
 }
 
-void SubMesh::CacheStaticDataToGpu() {
+const BufferCache *SubMesh::CacheStaticDataToGpu(int lodLevel) {
+    assert(lodLevel >= 0 && lodLevel < NumLODs());
+
     // Fill in static vertex buffer.
     if (!bufferCacheManager.IsCached(vertexCache)) {
         int sizeVerts = sizeof(VertexGenericLit) * numVerts;
@@ -224,10 +255,21 @@ void SubMesh::CacheStaticDataToGpu() {
         }
     }
 
-    // Fill in static index buffer.
-    if (!bufferCacheManager.IsCached(indexCache)) {
-        bufferCacheManager.AllocStaticIndex(numIndexes * sizeof(VertIndex), indexes, indexCache);
+    BufferCache *lodIndexCache = indexCache;
+    if (lodLevel > 0) {
+        // 인스턴스마다 버퍼를 만들지 않고 참조 메시의 LOD 캐시를 공유한다.
+        const SubMesh *source = refSubMesh ? refSubMesh : this;
+        if (!source->lodIndexCaches) {
+            source->lodIndexCaches = (BufferCache *)Mem_ClearedAlloc(source->lods.Count() * sizeof(BufferCache));
+        }
+        lodIndexCache = &source->lodIndexCaches[lodLevel - 1];
     }
+
+    // Fill in the requested LOD index buffer; the vertex buffer is shared across all LODs.
+    if (!bufferCacheManager.IsCached(lodIndexCache)) {
+        bufferCacheManager.AllocStaticIndex(NumIndexes(lodLevel) * sizeof(VertIndex), Indexes(lodLevel), lodIndexCache);
+    }
+    return lodIndexCache;
 }
 
 static void TransformJointWeightedVerts(VertexGenericLit *verts, const int numVerts, const Mat3x4 *joints, const Vec4 *weights, const int *index) {
@@ -1392,12 +1434,166 @@ const Mat3 SubMesh::CalculateInertiaTensor(const Vec3 &centroid, float mass) con
 #endif
 }
 
+// LOD 생성용 스킨 가중치 속성과 vertex lock (LOD 단순화 시 해당 vertex 가 다른 vertex 로 합쳐지는 것을 막는 제약) 을 만든다.
+// verts 와 vertWeights 는 읽기만 하며, 결과는 skinAttributes 와 vertexLocks 에 저장한다.
+// skinAttributes 는 vertex마다 8 개의 float 를 쓰며 attributeStride 는 float 단위다.
+// vertexLocks 는 numVerts 크기이며 각 vertex의 meshoptimizer 잠금 플래그를 저장한다.
+static void BuildSkinningLODAttributes(const VertexGenericLit *verts, uint32_t numVerts, const VertIndex *indexes, uint32_t numIndexes, const void *vertWeights, int maxWeights, float *skinAttributes, int attributeStride, byte *vertexLocks) {
+    struct SkinningInfluences {
+        uint32_t joints[8] = {};
+        uint16_t weights[8] = {};
+        int count = 0;
+
+        void Add(uint32_t joint, uint16_t weight) {
+            if (weight == 0) {
+                return;
+            }
+
+            int slot = 0;
+            while (slot < count && joints[slot] < joint) {
+                slot++;
+            }
+            if (slot < count && joints[slot] == joint) {
+                weights[slot] += weight;
+                return;
+            }
+            for (int i = count; i > slot; i--) {
+                joints[i] = joints[i - 1];
+                weights[i] = weights[i - 1];
+            }
+            joints[slot] = joint;
+            weights[slot] = weight;
+            count++;
+        }
+
+        bool HasSameJoints(const SkinningInfluences &other) const {
+            return count == other.count && memcmp(joints, other.joints, count * sizeof(joints[0])) == 0;
+        }
+    };
+
+    assert(vertWeights && (maxWeights == 1 || maxWeights == 4 || maxWeights == 8));
+    assert(attributeStride >= 8);
+
+    std::unique_ptr<SkinningInfluences[]> influences(new SkinningInfluences[numVerts]);
+    memset(vertexLocks, 0, numVerts);
+
+    // 슬롯 순서와 0 가중치를 무시하고 실제 본 ID 순으로 정렬한다. 중복 본의 가중치는 합친다.
+    for (uint32_t i = 0; i < numVerts; i++) {
+        SkinningInfluences &skin = influences[i];
+        if (maxWeights == 1) {
+            skin.Add(static_cast<const VertexWeight1 *>(vertWeights)[i].jointIndex, 255);
+        } else if (maxWeights == 4) {
+            const VertexWeight4 &weights = static_cast<const VertexWeight4 *>(vertWeights)[i];
+            for (int j = 0; j < 4; j++) {
+                skin.Add(weights.jointIndexes[j], weights.jointWeights[j]);
+            }
+        } else {
+            const VertexWeight8 &weights = static_cast<const VertexWeight8 *>(vertWeights)[i];
+            for (int j = 0; j < 8; j++) {
+                skin.Add(weights.jointIndexes[j], weights.jointWeights[j]);
+            }
+        }
+
+        float *attributes = skinAttributes + size_t(i) * attributeStride;
+        for (int j = 0; j < 8; j++) {
+            attributes[j] = skin.weights[j] / 255.0f;
+        }
+    }
+
+    // 서로 다른 본 구성의 경계를 고정하므로, 단순화 가능한 영역에서는 같은 속성 슬롯이 같은 본을 뜻한다.
+    // 본 ID 자체는 수치 속성으로 비교하지 않는다. 전체 스켈레톤의 본 수와 무관하게 8개 속성만 사용한다.
+    for (uint32_t i = 0; i < numIndexes; i += 3) {
+        for (int edge = 0; edge < 3; edge++) {
+            const VertIndex a = indexes[i + edge];
+            const VertIndex b = indexes[i + (edge + 1) % 3];
+
+            if (!influences[a].HasSameJoints(influences[b])) {
+                vertexLocks[a] = vertexLocks[b] = meshopt_SimplifyVertex_Lock;
+            }
+        }
+    }
+
+    // 같은 위치의 UV/노멀 분리 vertex도 스킨 변형이 다르면 고정한다. 위치 용접으로 경계를 넘지 않게 한다.
+    std::unique_ptr<unsigned int[]> positionRemap(new unsigned int[numVerts]);
+    meshopt_generatePositionRemap(positionRemap.get(), &verts[0].xyz.x, numVerts, sizeof(verts[0]));
+
+    for (uint32_t i = 0; i < numVerts; i++) {
+        const unsigned int source = positionRemap[i];
+        const SkinningInfluences &a = influences[i];
+        const SkinningInfluences &b = influences[source];
+
+        if (!a.HasSameJoints(b) || memcmp(a.weights, b.weights, a.count * sizeof(a.weights[0])) != 0) {
+            vertexLocks[i] = vertexLocks[source] = meshopt_SimplifyVertex_Lock;
+        }
+    }
+}
+
+void SubMesh::GenerateLODs(int maxLevels) {
+    if (!alloced || type != Mesh::Type::Reference || vertexCache->buffer != Graphics::NullBuffer ||
+        indexCache->buffer != Graphics::NullBuffer || lodIndexCaches || (numJointWeights > 0 && !vertWeights) || maxLevels < 0) {
+        BE_WARNLOG("SubMesh::GenerateLODs: requires a reference mesh with GPU skin weights for skinned data before GPU upload and a nonnegative limit\n");
+        return;
+    }
+
+    lods.Clear();
+
+    if (numVerts == 0 || numIndexes < 6 || numIndexes % 3 != 0) {
+        return;
+    }
+
+    // 공유 vertex는 변경하지 않는다. UV, 노멀, vertex 색상도 단순화 비용에 반영한다.
+    const int attributeCount = vertWeights ? 17 : 9;
+    std::unique_ptr<float[]> attributes(new float[size_t(numVerts) * attributeCount]);
+    std::unique_ptr<byte[]> vertexLocks;
+
+    for (int i = 0; i < numVerts; i++) {
+        const Vec3 normal = verts[i].GetNormal();
+        const Vec2 texCoord = verts[i].GetTexCoord();
+        const Color4 color = verts[i].GetFloatColor();
+        const float geometry[] = {normal.x, normal.y, normal.z, texCoord.x, texCoord.y, color.r, color.g, color.b, color.a};
+        memcpy(attributes.get() + size_t(i) * attributeCount, geometry, sizeof(geometry));
+    }
+
+    if (vertWeights) {
+        vertexLocks.reset(new byte[numVerts]);
+        BuildSkinningLODAttributes(verts, numVerts, indexes, numIndexes, vertWeights, MaxVertexWeights(), attributes.get() + 9, attributeCount, vertexLocks.get());
+    }
+
+    // 스킨 가중치도 단순화 비용에 반영한다. 오차는 바인드 포즈 기준이며 애니메이션의 최대 변형 오차는 아니다.
+    const float attributeWeights[] = {0.5f, 0.5f, 0.5f, 0.1f, 0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+    const float *positions = &verts[0].xyz.x;
+    const float errorScale = meshopt_simplifyScale(positions, numVerts, sizeof(verts[0]));
+    std::unique_ptr<VertIndex[]> simplifiedIndexes(new VertIndex[numIndexes]);
+    int previousCount = numIndexes;
+
+    // 원본에서 50%, 25%, ...를 목표로 각각 생성하며 오차/토폴로지 제약을 우선한다.
+    // 머티리얼별로 분리된 표면 사이에 틈이 생기지 않도록 경계 vertex를 고정한다.
+    for (int targetTriangles = numIndexes / 6; targetTriangles > 0; targetTriangles /= 2) {
+        if (maxLevels > 0 && lods.Count() >= maxLevels) {
+            break;
+        }
+
+        float error = 0.0f;
+        const size_t count = meshopt_simplifyWithAttributes(simplifiedIndexes.get(), indexes, numIndexes, positions, numVerts, sizeof(verts[0]), attributes.get(), attributeCount * sizeof(float),
+            attributeWeights, attributeCount, vertexLocks.get(), targetTriangles * 3, 0.01f, meshopt_SimplifyLockBorder, &error);
+        if (count == 0 || count >= size_t(previousCount)) {
+            break;
+        }
+
+        LOD &lod = lods.Alloc();
+        lod.indexes.SetCount(static_cast<int>(count));
+        lod.error = Max(error * errorScale, lods.Count() > 1 ? lods[lods.Count() - 2].error : 0.0f);
+        meshopt_optimizeVertexCache(lod.indexes.Ptr(), simplifiedIndexes.get(), count, numVerts);
+        previousCount = static_cast<int>(count);
+    }
+}
+
 void SubMesh::OptimizeIndexedTriangles() {
     if (!alloced || numVerts == 0 || numIndexes == 0) {
         return;
     }
 
-    if (type != Mesh::Type::Reference || vertexCache->buffer != Graphics::NullBuffer || indexCache->buffer != Graphics::NullBuffer) {
+    if (type != Mesh::Type::Reference || vertexCache->buffer != Graphics::NullBuffer || indexCache->buffer != Graphics::NullBuffer || lodIndexCaches) {
         BE_WARNLOG("SubMesh::OptimizeIndexedTriangles: requires a reference mesh before GPU upload\n");
         return;
     }
@@ -1513,6 +1709,9 @@ void SubMesh::OptimizeIndexedTriangles() {
         }
 
         meshopt_remapIndexBuffer(indexes, indexes, numIndexes, remap);
+        for (LOD &lod : lods) {
+            meshopt_remapIndexBuffer(lod.indexes.Ptr(), lod.indexes.Ptr(), lod.indexes.Count(), remap);
+        }
     }
     Mem_AlignedFree(remap);
 

@@ -16,6 +16,7 @@
 #include "Mesh.h"
 #include "BModel.h"
 #include "meshoptimizer.h"
+#include <cmath>
 #include "Render/Animation/Skeleton.h"
 
 static BE1::AABB mergeAABB;
@@ -77,12 +78,14 @@ void Mesh::InternalData::Purge() {
     SAFE_DELETE_ARRAY(joints);
 
     numJoints = 0;
+    hasLODs = false;
     aabb = BE1::AABB::empty;
 }
 
 void Mesh::InternalData::Swap(InternalData &rhs) {
     surfaces.Swap(rhs.surfaces);
     BE1::Swap(numJoints, rhs.numJoints);
+    BE1::Swap(hasLODs, rhs.hasLODs);
     BE1::Swap(joints, rhs.joints);
     BE1::Swap(aabb, rhs.aabb);
 }
@@ -137,7 +140,7 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
     }
 
     const size_t jointDataSize = size_t(bMeshHeader->numJoints) * sizeof(BJoint);
-    const size_t surfaceHeaderSize = sizeof(BMeshSurf) + (bMeshHeader->version >= 3 ? sizeof(BMeshSurfCompression) : 0);
+    const size_t surfaceHeaderSize = sizeof(BMeshSurf) + (bMeshHeader->version >= 3 ? sizeof(BMeshSurfCompression) : 0) + (bMeshHeader->version >= 4 ? sizeof(BMeshSurfLods) : 0);
     if (bMeshHeader->numSurfs > INT_MAX ||
         bMeshHeader->numSurfs > (size_t(end - ptr) - jointDataSize) / surfaceHeaderSize) {
         return fail("invalid surface count");
@@ -212,6 +215,16 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
                 }
             } else if (storedIndexSize != indexDataSize) {
                 return fail("invalid raw index size");
+            }
+        }
+
+        BMeshSurfLods lodHeader = {};
+        if (bMeshHeader->version >= 4) {
+            memcpy(&lodHeader, ptr, sizeof(lodHeader));
+            ptr += sizeof(lodHeader);
+
+            if (lodHeader.numLods > SubMesh::MaxLODLevel || (lodHeader.numLods > 0 && (lodHeader.numLods >= bMeshSurf->numIndexes / 3 || lodHeader.numLods > size_t(end - ptr) / sizeof(BMeshLod)))) {
+                return fail("invalid LOD count");
             }
         }
 
@@ -335,6 +348,58 @@ bool Mesh::InternalData::LoadBinaryMesh(const char *filename) {
             }
         }
 
+        // LOD 정점은 따로 할당하지 않고 인덱스만 읽는다.
+        uint32_t previousIndexCount = bMeshSurf->numIndexes;
+        float previousError = 0.0f;
+        for (uint32_t level = 0; level < lodHeader.numLods; level++) {
+            if (size_t(end - ptr) < sizeof(BMeshLod)) {
+                return fail("truncated LOD header");
+            }
+
+            BMeshLod bMeshLod;
+            memcpy(&bMeshLod, ptr, sizeof(bMeshLod));
+            ptr += sizeof(bMeshLod);
+
+            if (bMeshLod.numIndexes == 0 || bMeshLod.numIndexes >= previousIndexCount || bMeshLod.numIndexes % 3 != 0 ||
+                (bMeshLod.flags & ~BMeshLod::Compressed) || !std::isfinite(bMeshLod.error) || bMeshLod.error < previousError) {
+                return fail("invalid LOD layout");
+            }
+
+            const size_t rawSize = size_t(bMeshLod.numIndexes) * bMeshSurf->indexSize;
+            if (bMeshLod.indexDataSize > size_t(end - ptr) ||
+                ((bMeshLod.flags & BMeshLod::Compressed) ? bMeshLod.indexDataSize == 0 : bMeshLod.indexDataSize != rawSize)) {
+                return fail("invalid LOD index size");
+            }
+
+            SubMesh::LOD &lod = subMesh->lods.Alloc();
+            lod.indexes.SetCount(static_cast<int>(bMeshLod.numIndexes));
+            lod.error = bMeshLod.error;
+
+            if (bMeshLod.flags & BMeshLod::Compressed) {
+                if (meshopt_decodeIndexBuffer(lod.indexes.Ptr(), bMeshLod.numIndexes, sizeof(BE1::VertIndex), ptr, bMeshLod.indexDataSize) != 0) {
+                    return fail("invalid compressed LOD index data");
+                }
+            } else if (bMeshSurf->indexSize == sizeof(BE1::VertIndex)) {
+                memcpy(lod.indexes.Ptr(), ptr, rawSize);
+            } else {
+                for (uint32_t i = 0; i < bMeshLod.numIndexes; i++) {
+                    uint16_t index;
+                    memcpy(&index, ptr + size_t(i) * sizeof(index), sizeof(index));
+                    lod.indexes[i] = index;
+                }
+            }
+
+            for (BE1::VertIndex index : lod.indexes) {
+                if (index >= bMeshSurf->numVerts) {
+                    return fail("LOD vertex index out of range");
+                }
+            }
+
+            ptr += bMeshLod.indexDataSize;
+            previousIndexCount = bMeshLod.numIndexes;
+            previousError = bMeshLod.error;
+        }
+
         // guarantee 8 bytes aligned read
         const size_t padding = (8 - (size_t(ptr - data) & 7)) & 7;
         if (padding > size_t(end - ptr)) {
@@ -401,6 +466,30 @@ void Mesh::InternalData::WriteBinaryMesh(const char *filename) {
             BE1::fileSystem.CloseFile(fp);
             return;
         }
+
+        if (subMesh->NumLODs() > SubMesh::MaxLODLevel + 1) {
+            BE_WARNLOG("Mesh::InternalData::WriteBinaryMesh: too many LOD levels\n");
+            BE1::fileSystem.CloseFile(fp);
+            return;
+        }
+
+        int previousIndexCount = subMesh->NumIndexes();
+        float previousError = 0.0f;
+
+        for (int level = 1; level < subMesh->NumLODs(); level++) {
+            const int indexCount = subMesh->NumIndexes(level);
+            const float error = subMesh->GetLODError(level);
+
+            if (indexCount <= 0 || indexCount >= previousIndexCount || indexCount % 3 != 0 || !std::isfinite(error) || error < previousError) {
+                BE_WARNLOG("Mesh::WriteBinaryMesh: invalid LOD layout\n");
+                BE1::fileSystem.CloseFile(fp);
+                return;
+            }
+
+            previousIndexCount = indexCount;
+            previousError = error;
+        }
+
         compression.vertexDataSize = static_cast<uint32_t>(vertexDataSize);
         compression.indexDataSize = static_cast<uint32_t>(indexDataSize);
 
@@ -408,6 +497,7 @@ void Mesh::InternalData::WriteBinaryMesh(const char *filename) {
         const size_t vertexBound = subMesh->numVerts > 0 ? meshopt_encodeVertexBufferBound(subMesh->numVerts, sizeof(BMeshVert)) : 0;
         const size_t indexBound = subMesh->numIndexes > 0 ? meshopt_encodeIndexBufferBound(subMesh->numIndexes, subMesh->numVerts) : 0;
         const size_t requiredCapacity = vertexBound + indexBound;
+
         if (requiredCapacity > encodedCapacity) {
             encodedData.reset(new byte[requiredCapacity]);
             encodedCapacity = requiredCapacity;
@@ -450,6 +540,8 @@ void Mesh::InternalData::WriteBinaryMesh(const char *filename) {
         }
         fp->Write(&bMeshSurf, sizeof(bMeshSurf));
         fp->Write(&compression, sizeof(compression));
+        const BMeshSurfLods lodHeader = {static_cast<uint32_t>(subMesh->NumLODs() - 1)};
+        fp->Write(&lodHeader, sizeof(lodHeader));
 
         // --- vertexes ---
         if (compression.vertexDataSize > 0) {
@@ -513,6 +605,34 @@ void Mesh::InternalData::WriteBinaryMesh(const char *filename) {
             }
         }
 
+        // 정점/LOD 0 블록을 쓴 뒤 기존 압축 임시 버퍼를 LOD 인덱스에 재사용한다.
+        for (int level = 1; level < subMesh->NumLODs(); level++) {
+            const BE1::VertIndex *lodIndexes = subMesh->Indexes(level);
+
+            BMeshLod bMeshLod = {};
+            bMeshLod.numIndexes = subMesh->NumIndexes(level);
+            bMeshLod.indexDataSize = bMeshLod.numIndexes * bMeshSurf.indexSize;
+            bMeshLod.error = subMesh->GetLODError(level);
+
+            const size_t encodedSize = meshopt_encodeIndexBuffer(encodedData.get(), encodedCapacity, lodIndexes, bMeshLod.numIndexes);
+            if (encodedSize > 0 && encodedSize < bMeshLod.indexDataSize) {
+                bMeshLod.flags = BMeshLod::Compressed;
+                bMeshLod.indexDataSize = static_cast<uint32_t>(encodedSize);
+            }
+
+            fp->Write(&bMeshLod, sizeof(bMeshLod));
+
+            if (bMeshLod.flags & BMeshLod::Compressed) {
+                fp->Write(encodedData.get(), bMeshLod.indexDataSize);
+            } else if (bMeshSurf.indexSize == sizeof(BE1::VertIndex)) {
+                fp->Write(lodIndexes, bMeshLod.indexDataSize);
+            } else {
+                for (uint32_t i = 0; i < bMeshLod.numIndexes; i++) {
+                    fp->WriteUInt16(lodIndexes[i]);
+                }
+            }
+        }
+
         // guarantee 8 bytes aligned write
         byte dummy[8] = { 0, };
         int offset = fp->Tell();
@@ -546,6 +666,15 @@ void Mesh::InternalData::FinishSurfaces(FinishFlag finishFlags) {
 
     if (BE1::HasFlag(finishFlags, FinishFlag::ComputeEdges)) {
         ComputeEdges();
+    }
+
+    // 프레임마다 LOD 유무를 확인하기 위해 surface 들을 순회하지 않도록 저장한다.
+    hasLODs = false;
+    for (const Surface *surface : surfaces) {
+        if (surface && surface->subMesh && surface->subMesh->NumLODs() > 1) {
+            hasLODs = true;
+            break;
+        }
     }
 }
 

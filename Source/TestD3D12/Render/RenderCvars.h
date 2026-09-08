@@ -36,6 +36,8 @@ extern BE1::CVar    r_hdrOutput;
 extern BE1::CVar    r_hdrPaperWhiteNits;
 extern BE1::CVar    r_hdrPeakNits;
 
+extern BE1::CVar    r_meshLODPixelError2;
+
 extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_specularEnergyCompensation2;
 extern BE1::CVar    r_specularAA;

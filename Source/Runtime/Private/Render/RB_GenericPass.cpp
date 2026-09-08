@@ -54,7 +54,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch
@@ -121,7 +121,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch
@@ -192,7 +192,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch
@@ -215,7 +215,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     }
 
     const VisObject *   prevSpace = nullptr;
-    const SubMesh *     prevSubMesh = nullptr;
+    const DrawSurf *    prevDrawSurf = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
     Batch::Flush::Enum  drawType;
@@ -242,7 +242,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentSubMesh = prevDrawSurf ? !drawSurf->IsSameGeometry(prevDrawSurf) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
         bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
@@ -254,7 +254,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
             backEnd.batch.Begin(drawType, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = drawSurf->subMesh;
+            prevDrawSurf = drawSurf;
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
@@ -287,7 +287,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
             backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch
@@ -314,7 +314,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     BE_PROFILE_GPU_SCOPE_STATIC("RB_BlendPass");
 
     const VisObject *   prevSpace = nullptr;
-    const SubMesh *     prevSubMesh = nullptr;
+    const DrawSurf *    prevDrawSurf = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
     Batch::Flush::Enum  flushType = Batch::Flush::Unlit;
@@ -333,7 +333,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentSubMesh = prevDrawSurf ? !drawSurf->IsSameGeometry(prevDrawSurf) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
         bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
@@ -345,7 +345,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
             backEnd.batch.Begin(flushType, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = drawSurf->subMesh;
+            prevDrawSurf = drawSurf;
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
@@ -378,7 +378,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch
@@ -467,7 +467,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             graphics.Clear(Graphics::ClearBit::Color | Graphics::ClearBit::Depth, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     if (!firstDraw) {
@@ -502,7 +502,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     BE_PROFILE_GPU_SCOPE_STATIC("RB_FinalPass");
 
     const VisObject *   prevSpace = nullptr;
-    const SubMesh *     prevSubMesh = nullptr;
+    const DrawSurf *    prevDrawSurf = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -525,7 +525,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentSubMesh = prevDrawSurf ? !drawSurf->IsSameGeometry(prevDrawSurf) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
         bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
@@ -537,7 +537,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
             backEnd.batch.Begin(Batch::Flush::Final, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = drawSurf->subMesh;
+            prevDrawSurf = drawSurf;
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
@@ -570,7 +570,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch
@@ -626,7 +626,7 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
         
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch

@@ -37,8 +37,8 @@ static BE_INLINE bool IsRenderLayerVisible(uint32_t layerMask, uint8_t layer) {
 }
 
 static const Material *GetVisObjectMaterial(const VisObject *visObject, int materialIndex) {
-    if (visObject->materials && materialIndex >= 0 && static_cast<uint32_t>(materialIndex) < visObject->numMaterials) {
-        return visObject->materials[materialIndex];
+    if (materialIndex >= 0 && static_cast<uint32_t>(materialIndex) < visObject->numMaterials) {
+        return visObject->GetMaterials()[materialIndex];
     }
     return materialManager.defaultLitMaterial.get();
 }
@@ -62,7 +62,7 @@ static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubM
     return featureSet;
 }
 
-void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags) {
+void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, int lodLevel) {
     if (visCamera->numVisSurfs + 1 > visCamera->maxVisSurfs) {
         BE_WARNLOG("RenderWorld::AddVisSurf: not enough available visible surfaces\n");
         return;
@@ -70,12 +70,14 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
 
     assert(material);
     assert(subMesh);
+    assert(lodLevel >= 0 && lodLevel < subMesh->NumLODs());
 
-    if (!subMesh->vertexBuffer || !subMesh->indexBuffer || (subMesh->vertWeights && !subMesh->vertexWeightBuffer)) {
-        subMesh->UploadStaticDataToGPU();
+    const RHI::IndexBuffer *indexBuffer = lodLevel == 0 ? subMesh->indexBuffer : (subMesh->lodIndexBuffers ? subMesh->lodIndexBuffers[lodLevel - 1] : nullptr);
+    if (!subMesh->vertexBuffer || !indexBuffer || (subMesh->vertWeights && !subMesh->vertexWeightBuffer)) {
+        indexBuffer = subMesh->UploadStaticDataToGPU(lodLevel);
     }
 
-    if (!subMesh->vertexBuffer || !subMesh->indexBuffer || (subMesh->vertWeights && !subMesh->vertexWeightBuffer)) {
+    if (!subMesh->vertexBuffer || !indexBuffer || (subMesh->vertWeights && !subMesh->vertexWeightBuffer)) {
         BE_WARNLOG("RenderWorld::AddVisSurf: failed to prepare static submesh buffers\n");
         return;
     }
@@ -84,6 +86,9 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
     drawSurf->index = visCamera->numVisSurfs;
     drawSurf->space = visObject;
     drawSurf->subMesh = subMesh;
+    drawSurf->indexBuffer = indexBuffer;
+    drawSurf->numIndexes = subMesh->NumIndexes(lodLevel);
+    drawSurf->lodLevel = lodLevel;
     drawSurf->material = material;
     drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh, visObject->skinningJointOffset != ShaderSkinningJointOffsetInvalid);
     drawSurf->shaderMaterialIndex = frameData->RegisterShaderMaterial(material);
@@ -662,6 +667,7 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
         return nullptr;
     }
     renderObject->viewCount = viewCount;
+    visObject->meshLOD = renderObject->GetMeshLOD();
 
     if (renderObject->desc.meshInstance) {
         visObject->meshInstance = frameData->RetainMeshInstance(renderObject->desc.meshInstance);
@@ -672,15 +678,17 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
     }
 
     const int numMaterials = renderObject->desc.materials.Count();
-    visObject->numMaterials = static_cast<uint32_t>(numMaterials);
+    visObject->numMaterials = static_cast<uint16_t>(numMaterials);
     if (numMaterials > 0) {
-        if (numMaterials > 4) {
-            visObject->materials = (const Material **)frameData->MemAlloc(numMaterials * sizeof(visObject->materials[0]));
+        const Material **materials;
+        if (numMaterials > COUNT_OF(visObject->baseMaterials)) {
+            materials = (const Material **)frameData->MemAlloc(numMaterials * sizeof(materials[0]));
+            visObject->materials = materials;
         } else {
-            visObject->materials = visObject->baseMaterials;
+            materials = visObject->baseMaterials;
         }
         for (int i = 0; i < numMaterials; ++i) {
-            visObject->materials[i] = frameData->RetainMaterial(renderObject->desc.materials[i]);
+            materials[i] = frameData->RetainMaterial(renderObject->desc.materials[i]);
         }
     }
     if (renderObject->desc.text && !renderObject->desc.text->text.IsEmpty()) {
@@ -721,6 +729,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
     const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
+    const float meshLODPixelError = frameData->GetRenderFrameSettings().meshLODPixelError;
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
 
@@ -759,7 +768,15 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
         renderObject->visibleFrameIndex = frameIndex;
 
         SetVisObjectWorldMatrices(renderObject, visObject);
-        visObject->cameraVisible = true;
+        visObject->flags |= VisObject::Flag::CameraVisible;
+
+        if (visObject->meshInstance && visObject->meshLOD < 0 && meshLODPixelError > 0.0f) {
+            const Mesh *mesh = visObject->meshInstance->GetSourceMesh().get();
+            if (mesh && mesh->HasLODs()) {
+                // 같은 카메라/객체의 SubMesh 들이 사용할 허용 오차를 한 번 계산한다.
+                visObject->squaredLODErrorLimit = renderCamera->CalcLocalSquaredLODErrorLimit(renderObject->GetWorldAABB(), visObject->worldMatrix, meshLODPixelError);
+            }
+        }
 
         visCamera->worldAABB.AddAABB(renderObject->worldAABB);
     }
@@ -849,7 +866,7 @@ int RenderWorld::CountSkinningUploadJoints(const RenderFrameData::ChunkRange<Vis
     uint32_t numTotalUploadJoints = 0;
 
     for (const VisObject &visObject : visObjects) {
-        if (!visObject.cameraVisible || !visObject.meshInstance) {
+        if (!BE1::HasFlag(visObject.flags, VisObject::Flag::CameraVisible) || !visObject.meshInstance) {
             continue;
         }
 
@@ -887,7 +904,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     const uint64_t currentFrameSerial = frameData->GetFrameSerial();
 
     for (VisObject &visObject : visObjects) {
-        if (!visObject.cameraVisible) {
+        if (!BE1::HasFlag(visObject.flags, VisObject::Flag::CameraVisible)) {
             continue;
         }
 
@@ -939,7 +956,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     BE1::Mat3x4 *dst = static_cast<BE1::Mat3x4 *>(jointBuffer->mappedPtr);
     uint32_t jointOffset = 0;
     for (VisObject &visObject : visObjects) {
-        if (!visObject.cameraVisible || !visObject.meshInstance) {
+        if (!BE1::HasFlag(visObject.flags, VisObject::Flag::CameraVisible) || !visObject.meshInstance) {
             continue;
         }
 
@@ -972,6 +989,27 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     visCamera->skinningJointBuffer = jointBuffer;
 }
 
+static int SelectMeshLOD(const SubMesh *subMesh, int requestedLOD, float squaredLODErrorLimit) {
+    const int numLODs = subMesh->NumLODs();
+    if (requestedLOD == 0 || numLODs <= 1) {
+        return 0;
+    }
+    if (requestedLOD > 0) {
+        return BE1::Min(requestedLOD, numLODs - 1);
+    }
+
+    if (squaredLODErrorLimit <= 0.0f) {
+        return 0;
+    }
+    for (int level = numLODs - 1; level > 0; level--) {
+        const float error = subMesh->GetLODError(level);
+        if (error * error <= squaredLODErrorLimit) {
+            return level;
+        }
+    }
+    return 0;
+}
+
 void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddMeshes");
 
@@ -986,7 +1024,7 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 
     for (VisObject &visObjectRef : frameData->GetVisObjects(visCamera->firstVisObjectIndex)) {
         VisObject *visObject = &visObjectRef;
-        if (!visObject->cameraVisible || !visObject->meshInstance) {
+        if (!BE1::HasFlag(visObject->flags, VisObject::Flag::CameraVisible) || !visObject->meshInstance) {
             continue;
         }
 
@@ -1014,7 +1052,10 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
                     }
                 }
             }
-            AddVisSurf(frameData, visCamera, nullptr, visObject, GetVisObjectMaterial(visObject, meshSurf->materialIndex), meshSurf->subMesh, VisSurfFlag::CameraVisible);
+
+            const int lodLevel = SelectMeshLOD(meshSurf->subMesh, visObject->meshLOD, visObject->squaredLODErrorLimit);
+
+            AddVisSurf(frameData, visCamera, nullptr, visObject, GetVisObjectMaterial(visObject, meshSurf->materialIndex), meshSurf->subMesh, VisSurfFlag::CameraVisible, lodLevel);
         }
     }
 }
@@ -1025,7 +1066,7 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
     // 이전 카메라에서 등록한 VisText 는 제외하고 현재 카메라의 시작 위치부터 순회한다.
     for (VisText &visText : frameData->GetVisTexts(visCamera->firstVisTextIndex)) {
         VisObject *visObject = visText.space;
-        if (!visObject->cameraVisible) {
+        if (!BE1::HasFlag(visObject->flags, VisObject::Flag::CameraVisible)) {
             continue;
         }
 
@@ -1086,7 +1127,7 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera
 
     visObject->worldMatrix.SetTRS(renderCamera->GetDesc().origin, BE1::Mat3::identity, BE1::Vec3(10, 10, 10));
     visObject->prevWorldMatrix = visObject->worldMatrix;
-    visObject->cameraVisible = true;
+    visObject->flags |= VisObject::Flag::CameraVisible;
     Material *material = frameData->RetainMaterial(skyboxMaterial);
 
     AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, VisSurfFlag::CameraVisible | VisSurfFlag::SkipSelection | VisSurfFlag::Skybox);

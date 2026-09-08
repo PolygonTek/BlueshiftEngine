@@ -48,6 +48,10 @@ public:
     Mesh *                  GetMesh() const;
     void                    SetMesh(const Mesh *mesh);
 
+                            /// 요청한 렌더링 LOD. -1 은 자동 선택, 0 이상은 각 서브메시의 사용 가능한 단계로 제한된다.
+    int                     GetLODLevel() const { return renderObjectDef.meshLOD; }
+    void                    SetLODLevel(int level);
+
     int                     GetMaterialCount() const;
     void                    SetMaterialCount(int count);
     Guid                    GetMaterialGuid(int index) const;

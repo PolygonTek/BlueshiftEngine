@@ -26,6 +26,8 @@ class RenderObject {
     friend class RenderWorld;
 
 public:
+    static constexpr int            MaxMaterials = UINT16_MAX;  ///< 객체 하나에 지정할 수 있는 머티리얼의 최대 개수.
+
     enum class Flag : uint8_t {
         None                        = 0,
         CastShadows                 = BIT(0),
@@ -111,6 +113,7 @@ public:
             Text                    = BIT(7),
             TextStyle               = BIT(8),
             Skeleton                = BIT(9),
+            MeshLOD                 = BIT(10),
         };
 
         friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
@@ -119,6 +122,7 @@ public:
 
         Flag                        flags = Flag::None;
         uint8_t                     layer = 0;                  ///< Render layer bit index in [0, 31]
+        int8_t                      meshLOD = -1;               ///< 요청 LOD. -1 은 자동 선택, 0~127 은 지정 LOD.
 
         BE1::Mat3x4                 worldMatrix = BE1::Mat3x4::identity;
         BE1::AABB                   aabb = BE1::AABB::empty;    ///< non-scaled AABB in local space
@@ -134,6 +138,8 @@ public:
 
                                     /// Returns object index in world.
     int                             GetIndex() const { return index; }
+
+    int8_t                          GetMeshLOD() const { return desc.meshLOD; }
 
                                     /// Returns local to world matrix.
     const BE1::Mat3x4 &             GetWorldMatrix() const { return desc.worldMatrix; }
@@ -155,7 +161,9 @@ private:
     void                            UpdateTransform(const BE1::Mat3x4 &worldMatrix);
     void                            UpdateBounds(const BE1::AABB &aabb);
     void                            UpdateMesh(const SharedPtr<MeshInstance> &meshInstance);
+    void                            UpdateMeshLOD(int lodLevel);
     void                            UpdateSkeleton(const SharedPtr<Skeleton> &skeleton);
+                                    /// MaxMaterials 를 초과하면 경고를 출력하고 기존 머티리얼을 유지한다.
     void                            UpdateMaterials(const BE1::Array<SharedPtr<Material>> &materials);
     void                            UpdateFont(const SharedPtr<Font> &font);
     void                            UpdateText(const BE1::Str &text);

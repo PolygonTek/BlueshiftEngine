@@ -102,6 +102,9 @@ public:
     int                             NumSurfaces() const { assert(IsReady()); return internalData.surfaces.Count(); }
     Surface *                       GetSurface(int index) const { assert(IsReady()); return internalData.surfaces[index]; }
 
+                                    /// LOD 0 외에 추가 LOD 가 있는지 반환한다.
+    bool                            HasLODs() const { return IsReady() && internalData.hasLODs; }
+
     int                             NumJoints() const { assert(IsReady()); return internalData.numJoints; }
     const Joint *                   GetJoints() const { assert(IsReady()); return internalData.joints; }
 
@@ -184,6 +187,7 @@ private:
 
         BE1::Array<Surface *>       surfaces = BE1::Array<Surface *>(16);
         int32_t                     numJoints = 0;
+        bool                        hasLODs = false;
         Joint *                     joints = nullptr;
         BE1::AABB                   aabb = BE1::AABB::empty;
     };

@@ -539,7 +539,7 @@ static void RB_DrawDebugText() {
 
 void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
     const VisObject *   prevSpace = nullptr;
-    const SubMesh *     prevSubMesh = nullptr;
+    const DrawSurf *    prevDrawSurf = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
@@ -557,7 +557,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
         }
 
         bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentSubMesh = prevDrawSurf ? !surf->IsSameGeometry(prevDrawSurf) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
         bool isDifferentInstance = !(surf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
@@ -569,7 +569,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
 
             backEnd.batch.Begin(Batch::Flush::Wire, surf->material, surf->materialRegisters, surf->space);
 
-            prevSubMesh = surf->subMesh;
+            prevDrawSurf = surf;
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
@@ -600,7 +600,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             backEnd.batch.AddInstance(surf);
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(surf);
     }
 
     // Flush previous batch.

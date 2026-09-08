@@ -22,7 +22,7 @@ BE_NAMESPACE_BEGIN
 
 static void RB_LitPass(const VisLight *visLight) {
     const VisObject *   prevSpace = nullptr;
-    const SubMesh *     prevSubMesh = nullptr;
+    const DrawSurf *    prevDrawSurf = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
     Rect                prevScissorRect;
@@ -54,7 +54,7 @@ static void RB_LitPass(const VisLight *visLight) {
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentSubMesh = prevDrawSurf ? !drawSurf->IsSameGeometry(prevDrawSurf) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
         bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
@@ -66,7 +66,7 @@ static void RB_LitPass(const VisLight *visLight) {
 
             backEnd.batch.Begin(Batch::Flush::Lit, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = drawSurf->subMesh;
+            prevDrawSurf = drawSurf;
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
@@ -99,7 +99,7 @@ static void RB_LitPass(const VisLight *visLight) {
             backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf);
     }
 
     // Flush previous batch

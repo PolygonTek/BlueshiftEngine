@@ -41,6 +41,15 @@ void SubMesh::Purge() {
         RHI::renderer->DestroyIndexBuffer(indexBuffer);
         indexBuffer = nullptr;
     }
+    if (lodIndexBuffers) {
+        for (int i = 0; i < lods.Count(); i++) {
+            if (lodIndexBuffers[i]) {
+                RHI::renderer->DestroyIndexBuffer(lodIndexBuffers[i]);
+            }
+        }
+        Mem_Free(lodIndexBuffers);
+        lodIndexBuffers = nullptr;
+    }
 
     if (verts) {
         Mem_AlignedFree(verts);
@@ -66,6 +75,8 @@ void SubMesh::Purge() {
         Mem_AlignedFree(vertWeights);
         vertWeights = nullptr;
     }
+
+    lods.Clear();
 }
 
 void SubMesh::CopyFrom(const SubMesh *other) {
@@ -79,6 +90,11 @@ void SubMesh::CopyFrom(const SubMesh *other) {
         return;
     }
 
+    if (vertexBuffer || vertexWeightBuffer || indexBuffer || lodIndexBuffers) {
+        BE_WARNLOG("SubMesh::CopyFrom: requires a destination before GPU upload\n");
+        return;
+    }
+
     flags = other->flags;
     flags &= ~Flag::EdgesCalculated;
 
@@ -87,6 +103,7 @@ void SubMesh::CopyFrom(const SubMesh *other) {
 
     BE1::simdProcessor->Memcpy(verts, other->verts, sizeof(verts[0]) * other->numVerts);
     BE1::simdProcessor->Memcpy(indexes, other->indexes, sizeof(indexes[0]) * other->numIndexes);
+    lods = other->lods;
 }
 
 void SubMesh::ComputeBounds() {
@@ -1037,12 +1054,167 @@ const BE1::Mat3 SubMesh::CalculateInertiaTensor(const BE1::Vec3 &centroid, float
 #endif
 }
 
+// LOD 생성용 스킨 가중치 속성과 vertex lock (LOD 단순화 시 해당 vertex 가 다른 vertex 로 합쳐지는 것을 막는 제약) 을 만든다.
+// verts 와 vertWeights 는 읽기만 하며, 결과는 skinAttributes 와 vertexLocks 에 저장한다.
+// skinAttributes 는 vertex마다 8 개의 float 를 쓰며 attributeStride 는 float 단위다.
+// vertexLocks 는 numVerts 크기이며 각 vertex의 meshoptimizer 잠금 플래그를 저장한다.
+static void BuildSkinningLODAttributes(const BE1::VertexGenericLit *verts, uint32_t numVerts, const BE1::VertIndex *indexes, uint32_t numIndexes, const void *vertWeights, int maxWeights, float *skinAttributes, int attributeStride, byte *vertexLocks) {
+    struct SkinningInfluences {
+        uint32_t joints[8] = {};
+        uint16_t weights[8] = {};
+        int count = 0;
+
+        void Add(uint32_t joint, uint16_t weight) {
+            if (weight == 0) {
+                return;
+            }
+
+            int slot = 0;
+            while (slot < count && joints[slot] < joint) {
+                slot++;
+            }
+            if (slot < count && joints[slot] == joint) {
+                weights[slot] += weight;
+                return;
+            }
+            for (int i = count; i > slot; i--) {
+                joints[i] = joints[i - 1];
+                weights[i] = weights[i - 1];
+            }
+            joints[slot] = joint;
+            weights[slot] = weight;
+            count++;
+        }
+
+        bool HasSameJoints(const SkinningInfluences &other) const {
+            return count == other.count && memcmp(joints, other.joints, count * sizeof(joints[0])) == 0;
+        }
+    };
+
+    assert(vertWeights && (maxWeights == 1 || maxWeights == 4 || maxWeights == 8));
+    assert(attributeStride >= 8);
+
+    std::unique_ptr<SkinningInfluences[]> influences(new SkinningInfluences[numVerts]);
+    memset(vertexLocks, 0, numVerts);
+
+    // 슬롯 순서와 0 가중치를 무시하고 실제 본 ID 순으로 정렬한다. 중복 본의 가중치는 합친다.
+    for (uint32_t i = 0; i < numVerts; i++) {
+        SkinningInfluences &skin = influences[i];
+        if (maxWeights == 1) {
+            skin.Add(static_cast<const BE1::VertexWeight1 *>(vertWeights)[i].jointIndex, 255);
+        } else if (maxWeights == 4) {
+            const BE1::VertexWeight4 &weights = static_cast<const BE1::VertexWeight4 *>(vertWeights)[i];
+            for (int j = 0; j < 4; j++) {
+                skin.Add(weights.jointIndexes[j], weights.jointWeights[j]);
+            }
+        } else {
+            const BE1::VertexWeight8 &weights = static_cast<const BE1::VertexWeight8 *>(vertWeights)[i];
+            for (int j = 0; j < 8; j++) {
+                skin.Add(weights.jointIndexes[j], weights.jointWeights[j]);
+            }
+        }
+
+        float *attributes = skinAttributes + size_t(i) * attributeStride;
+        for (int j = 0; j < 8; j++) {
+            attributes[j] = skin.weights[j] / 255.0f;
+        }
+    }
+
+    // 서로 다른 본 구성의 경계를 고정하므로, 단순화 가능한 영역에서는 같은 속성 슬롯이 같은 본을 뜻한다.
+    // 본 ID 자체는 수치 속성으로 비교하지 않는다. 전체 스켈레톤의 본 수와 무관하게 8개 속성만 사용한다.
+    for (uint32_t i = 0; i < numIndexes; i += 3) {
+        for (int edge = 0; edge < 3; edge++) {
+            const BE1::VertIndex a = indexes[i + edge];
+            const BE1::VertIndex b = indexes[i + (edge + 1) % 3];
+
+            if (!influences[a].HasSameJoints(influences[b])) {
+                vertexLocks[a] = vertexLocks[b] = meshopt_SimplifyVertex_Lock;
+            }
+        }
+    }
+
+    // 같은 위치의 UV/노멀 분리 vertex도 스킨 변형이 다르면 고정한다. 위치 용접으로 경계를 넘지 않게 한다.
+    std::unique_ptr<unsigned int[]> positionRemap(new unsigned int[numVerts]);
+    meshopt_generatePositionRemap(positionRemap.get(), &verts[0].xyz.x, numVerts, sizeof(verts[0]));
+
+    for (uint32_t i = 0; i < numVerts; i++) {
+        const unsigned int source = positionRemap[i];
+        const SkinningInfluences &a = influences[i];
+        const SkinningInfluences &b = influences[source];
+
+        if (!a.HasSameJoints(b) || memcmp(a.weights, b.weights, a.count * sizeof(a.weights[0])) != 0) {
+            vertexLocks[i] = vertexLocks[source] = meshopt_SimplifyVertex_Lock;
+        }
+    }
+}
+
+void SubMesh::GenerateLODs(int maxLevels) {
+    if (!verts || !indexes || vertexBuffer || vertexWeightBuffer || indexBuffer || lodIndexBuffers || maxLevels < 0) {
+        BE_WARNLOG("SubMesh::GenerateLODs: requires mesh data before GPU upload and a nonnegative limit\n");
+        return;
+    }
+
+    lods.Clear();
+
+    const int maxGeneratedLODs = maxLevels == 0 ? MaxLODLevel : BE1::Min(maxLevels, MaxLODLevel);
+
+    if (numVerts == 0 || numIndexes < 6 || numIndexes > INT_MAX || numIndexes % 3 != 0) {
+        return;
+    }
+
+    // 공유 vertex는 변경하지 않는다. UV, 노멀, vertex 색상도 단순화 비용에 반영한다.
+    const int attributeCount = vertWeights ? 17 : 9;
+    std::unique_ptr<float[]> attributes(new float[size_t(numVerts) * attributeCount]);
+    std::unique_ptr<byte[]> vertexLocks;
+
+    for (uint32_t i = 0; i < numVerts; i++) {
+        const BE1::Vec3 normal = verts[i].GetNormal();
+        const BE1::Vec2 texCoord = verts[i].GetTexCoord();
+        const BE1::Color4 color = verts[i].GetFloatColor();
+        const float geometry[] = {normal.x, normal.y, normal.z, texCoord.x, texCoord.y, color.r, color.g, color.b, color.a};
+        memcpy(attributes.get() + size_t(i) * attributeCount, geometry, sizeof(geometry));
+    }
+
+    if (vertWeights) {
+        vertexLocks.reset(new byte[numVerts]);
+        BuildSkinningLODAttributes(verts, numVerts, indexes, numIndexes, vertWeights, MaxVertexWeights(), attributes.get() + 9, attributeCount, vertexLocks.get());
+    }
+
+    // 스킨 가중치도 단순화 비용에 반영한다. 오차는 바인드 포즈 기준이며 애니메이션의 최대 변형 오차는 아니다.
+    const float attributeWeights[] = {0.5f, 0.5f, 0.5f, 0.1f, 0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+    const float *positions = &verts[0].xyz.x;
+    const float errorScale = meshopt_simplifyScale(positions, numVerts, sizeof(verts[0]));
+    std::unique_ptr<BE1::VertIndex[]> simplifiedIndexes(new BE1::VertIndex[numIndexes]);
+    uint32_t previousCount = numIndexes;
+
+    // 원본에서 50%, 25%, ...를 목표로 각각 생성하며 오차/토폴로지 제약을 우선한다.
+    // 머티리얼별로 분리된 표면 사이에 틈이 생기지 않도록 경계 vertex를 고정한다.
+    for (uint32_t targetTriangles = numIndexes / 6; targetTriangles > 0; targetTriangles /= 2) {
+        if (lods.Count() >= maxGeneratedLODs) {
+            break;
+        }
+
+        float error = 0.0f;
+        const size_t count = meshopt_simplifyWithAttributes(simplifiedIndexes.get(), indexes, numIndexes, positions, numVerts, sizeof(verts[0]), attributes.get(), attributeCount * sizeof(float),
+            attributeWeights, attributeCount, vertexLocks.get(), targetTriangles * 3, 0.01f, meshopt_SimplifyLockBorder, &error);
+        if (count == 0 || count >= size_t(previousCount)) {
+            break;
+        }
+
+        LOD &lod = lods.Alloc();
+        lod.indexes.SetCount(static_cast<int>(count));
+        lod.error = BE1::Max(error * errorScale, lods.Count() > 1 ? lods[lods.Count() - 2].error : 0.0f);
+        meshopt_optimizeVertexCache(lod.indexes.Ptr(), simplifiedIndexes.get(), count, numVerts);
+        previousCount = static_cast<uint32_t>(count);
+    }
+}
+
 void SubMesh::OptimizeIndexedTriangles() {
     if (!verts || !indexes || numVerts == 0 || numIndexes == 0) {
         return;
     }
 
-    if (vertexBuffer || vertexWeightBuffer || indexBuffer) {
+    if (vertexBuffer || vertexWeightBuffer || indexBuffer || lodIndexBuffers) {
         BE_WARNLOG("SubMesh::OptimizeIndexedTriangles: requires a mesh before GPU upload\n");
         return;
     }
@@ -1090,6 +1262,10 @@ void SubMesh::OptimizeIndexedTriangles() {
         }
 
         meshopt_remapIndexBuffer(indexes, indexes, numIndexes, remap);
+
+        for (LOD &lod : lods) {
+            meshopt_remapIndexBuffer(lod.indexes.Ptr(), lod.indexes.Ptr(), lod.indexes.Count(), remap);
+        }
     }
     Mem_AlignedFree(remap);
 
@@ -1105,14 +1281,28 @@ void SubMesh::OptimizeIndexedTriangles() {
     }
 }
 
-void SubMesh::UploadStaticDataToGPU() const {
+RHI::IndexBuffer *SubMesh::UploadStaticDataToGPU(int lodLevel) const {
+    assert(lodLevel >= 0 && lodLevel < NumLODs());
+
     if (!vertexBuffer) {
         vertexBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, sizeof(verts[0]), numVerts, verts);
     }
+
     if (!vertexWeightBuffer && vertWeights) {
         vertexWeightBuffer = RHI::renderer->CreateVertexBuffer(RHI::BufferUsage::Default, VertexWeightSize(), numVerts, vertWeights);
     }
-    if (!indexBuffer) {
-        indexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), numIndexes, indexes);
+
+    if (!vertexBuffer || (vertWeights && !vertexWeightBuffer)) {
+        return nullptr;
     }
+
+    if (lodLevel > 0 && !lodIndexBuffers) {
+        lodIndexBuffers = (RHI::IndexBuffer **)Mem_ClearedAlloc(lods.Count() * sizeof(lodIndexBuffers[0]));
+    }
+
+    RHI::IndexBuffer *&lodIndexBuffer = lodLevel == 0 ? indexBuffer : lodIndexBuffers[lodLevel - 1];
+    if (!lodIndexBuffer) {
+        lodIndexBuffer = RHI::renderer->CreateIndexBuffer(RHI::BufferUsage::Default, sizeof(indexes[0]), NumIndexes(lodLevel), Indexes(lodLevel));
+    }
+    return lodIndexBuffer;
 }

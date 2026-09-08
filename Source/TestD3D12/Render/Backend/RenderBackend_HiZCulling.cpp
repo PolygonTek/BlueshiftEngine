@@ -120,7 +120,7 @@ bool RenderBackend::PrepareHiZCulling() {
 
             // indirectArgsUploadBuffer 에 배치별로 DrawIndexedInstancedIndirect 를 위한 인자들을 기록한다.
             uint32_t *batchIndirectArgs = indirectArgs + (batch.indirectArgsOffset / sizeof(uint32_t));
-            batchIndirectArgs[0] = firstVisSurf->subMesh->numIndexes; // IndexCountPerInstance
+            batchIndirectArgs[0] = firstVisSurf->numIndexes; // IndexCountPerInstance
             batchIndirectArgs[1] = 0; // InstanceCount
             batchIndirectArgs[2] = 0; // StartIndexLocation
             batchIndirectArgs[3] = 0; // BaseVertexLocation

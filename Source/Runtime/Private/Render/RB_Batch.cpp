@@ -110,7 +110,7 @@ void Batch::AddInstance(const DrawSurf *drawSurf) {
             }
         }
 
-        indirectCommands[numIndirectCommands].vertexCount = drawSurf->subMesh->numIndexes;
+        indirectCommands[numIndirectCommands].vertexCount = drawSurf->numIndexes;
         indirectCommands[numIndirectCommands].instanceCount = 1;
         indirectCommands[numIndirectCommands].firstIndex = 0;
         indirectCommands[numIndirectCommands].baseVertex = 0;
@@ -135,54 +135,57 @@ void Batch::AddInstance(const DrawSurf *drawSurf) {
     }
 }
 
-void Batch::DrawSubMesh(SubMesh *subMesh) {
+void Batch::DrawSubMesh(const DrawSurf *drawSurf) {
+    SubMesh *subMesh = drawSurf->subMesh;
+
     if (subMesh->GetType() == Mesh::Type::Reference ||
         subMesh->GetType() == Mesh::Type::Static ||
         subMesh->GetType() == Mesh::Type::Skinned) {
-        DrawStaticSubMesh(subMesh);
+        DrawStaticSubMesh(drawSurf);
     } else {
-        DrawDynamicSubMesh(subMesh);
+        DrawDynamicSubMesh(drawSurf);
     }
 }
 
-void Batch::DrawStaticSubMesh(SubMesh *subMesh) {
-    if (this->subMesh && this->subMesh->refSubMesh != subMesh->refSubMesh) {
+void Batch::DrawStaticSubMesh(const DrawSurf *drawSurf) {
+    if (subMesh) {
+        if (subMesh->IsShared(drawSurf->subMesh) && indexBuffer == drawSurf->indexCache->buffer) {
+            return;
+        }
         Flush();
     }
 
-    if (!this->subMesh || this->subMesh->refSubMesh != subMesh->refSubMesh) {
-        this->subMesh = subMesh;
+    subMesh = drawSurf->subMesh;
+    vertexBuffer = subMesh->vertexCache->buffer;
+    indexBuffer = drawSurf->indexCache->buffer;
 
-        vertexBuffer = subMesh->vertexCache->buffer;
-        indexBuffer = subMesh->indexCache->buffer;
+    numVerts = subMesh->numVerts;
+    numIndexes = drawSurf->numIndexes;
 
-        numVerts = subMesh->numVerts;
-        numIndexes = subMesh->numIndexes;
-
-        startIndex = 0;
-    }
+    startIndex = 0;
 }
 
-void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
+void Batch::DrawDynamicSubMesh(const DrawSurf *drawSurf) {
+    SubMesh *subMesh = drawSurf->subMesh;
     if (startIndex < 0) {
         // startIndex is set to -1 after Flush()
-        startIndex = subMesh->indexCache->offset / sizeof(VertIndex);
+        startIndex = drawSurf->indexCache->offset / sizeof(VertIndex);
     } else {
         // Flush because indexCache cannot be drawn all at once unless they are connected in sequence.
-        if (startIndex + numIndexes != subMesh->indexCache->offset / sizeof(VertIndex) ||
+        if (startIndex + numIndexes != drawSurf->indexCache->offset / sizeof(VertIndex) ||
             vertexBuffer != subMesh->vertexCache->buffer ||
-            indexBuffer != subMesh->indexCache->buffer) {
+            indexBuffer != drawSurf->indexCache->buffer) {
             Flush();
 
-            startIndex = subMesh->indexCache->offset / sizeof(VertIndex);
+            startIndex = drawSurf->indexCache->offset / sizeof(VertIndex);
         }
     }
 
     vertexBuffer = subMesh->vertexCache->buffer;
-    indexBuffer = subMesh->indexCache->buffer;
+    indexBuffer = drawSurf->indexCache->buffer;
 
     numVerts += subMesh->numVerts;
-    numIndexes += subMesh->numIndexes;
+    numIndexes += drawSurf->numIndexes;
 
     this->subMesh = subMesh;
 }

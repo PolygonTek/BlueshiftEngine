@@ -24,6 +24,7 @@ public:
     ALIGN_AS32 Mat3x4       modelViewMatrix;
 
     int                     instanceIndex;
+    float                   squaredLODErrorLimit;    ///< 로컬 공간의 LOD 허용 오차 제곱. -1: 미계산, 0: LOD0 사용.
 
     EnvProbeBlendInfo       envProbeInfo[2];
 

@@ -182,6 +182,16 @@ void ComMeshRenderer::SetMesh(const Mesh *mesh) {
     SetMeshGuid(meshGuid);
 }
 
+void ComMeshRenderer::SetLODLevel(int level) {
+    level = Max(level, -1);
+    if (renderObjectDef.meshLOD == level) {
+        return;
+    }
+
+    renderObjectDef.meshLOD = level;
+    UpdateVisuals();
+}
+
 int ComMeshRenderer::GetMaterialCount() const {
     return renderObjectDef.materials.Count();
 }

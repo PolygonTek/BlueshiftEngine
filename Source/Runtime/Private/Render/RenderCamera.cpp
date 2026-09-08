@@ -453,6 +453,47 @@ bool RenderCamera::CalcDepthBoundsFromLight(const RenderLight *light, const Mat4
     return true;
 }
 
+float RenderCamera::CalcLocalSquaredLODErrorLimit(const AABB &worldBounds, const Mat3x4 &worldMatrix, float pixelErrorLimit) const {
+    if (!(pixelErrorLimit > 0.0f) || state.renderRect.w <= 0 || state.renderRect.h <= 0) {
+        return 0.0f;
+    }
+
+    float projectionScale = 0.5f * Max(
+        Math::Abs(projMatrix[0][0]) * state.renderRect.w,
+        Math::Abs(projMatrix[1][1]) * state.renderRect.h);
+
+    if (!state.orthogonal) {
+        // 중심보다 카메라에 가까운 경계를 기준으로 평가한다.
+        const Vec3 &forward = state.axis[0];
+        const float depth = (worldBounds.Center() - state.origin).Dot(forward) - worldBounds.Extents().AbsDot(forward);
+
+        // near plane 에 걸치거나 카메라 뒤에 있는 경우 LOD 0 를 사용한다.
+        if (!(depth > zNear)) {
+            return 0.0f;
+        }
+
+        projectionScale /= depth;
+    }
+
+    const Vec3 x(worldMatrix[0][0], worldMatrix[1][0], worldMatrix[2][0]);
+    const Vec3 y(worldMatrix[0][1], worldMatrix[1][1], worldMatrix[2][1]);
+    const Vec3 z(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2]);
+
+    // 월드 변환의 최대 확대율 제곱을 보수적으로 계산한다.
+    // 축이 직교하면 최대 스케일의 제곱이며, 전단도 반영한다.
+    const float xy = Math::Abs(x.Dot(y));
+    const float xz = Math::Abs(x.Dot(z));
+    const float yz = Math::Abs(y.Dot(z));
+    const float worldScaleSqr = Max(x.LengthSqr() + xy + xz, Max(y.LengthSqr() + xy + yz, z.LengthSqr() + xz + yz));
+    const float pixelScaleSqr = projectionScale * projectionScale * worldScaleSqr;
+
+    if (!(pixelScaleSqr > 0.0f)) {
+        return 0.0f;
+    }
+
+    return pixelErrorLimit * pixelErrorLimit / pixelScaleSqr;
+}
+
 float RenderCamera::CalcViewScale(const Vec3 &position) const {
     if (state.renderRect.w == 0.0f) {
         return 0.0f;
