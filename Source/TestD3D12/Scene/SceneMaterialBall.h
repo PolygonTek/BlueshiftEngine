@@ -48,8 +48,8 @@ private:
 
     float                       directionalLightAzimuth = 145.0f;
     float                       directionalLightElevation = 55.0f;
-    float                       environmentLightRotation = 0.0f;
+    float                       envLightRotation = 0.0f;
     bool                        indirectLightingEnabled = true;
     bool                        directionalLightEnabled = false;
-    bool                        environmentLightAdded = false;
+    bool                        envLightAdded = false;
 };

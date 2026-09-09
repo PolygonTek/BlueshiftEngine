@@ -133,11 +133,11 @@ float3 SampleOceanDisplacement(float2 worldPositionXY, float4 cascadeLodWeights,
 
 // 환경광 specular cubemap 을 거칠기에 맞는 mip 에서 샘플링하여 수면 반사광을 계산한다.
 float3 SampleOceanReflection(float3 reflectionDir, float roughness) {
-    if (cameraConstants.environmentLightSpecularCubeMapIndex != 0u && cameraConstants.environmentLightSpecularMipCount > 0u) {
-        const TextureCube<float4> specularCubeMap = GetTextureCube(cameraConstants.environmentLightSpecularCubeMapIndex);
-        const float3 cubeMapDirection = mul(cameraConstants.environmentLightAxis, float4(reflectionDir, 0.0f));
-        const float mipLevel = roughness * float(cameraConstants.environmentLightSpecularMipCount - 1u);
-        return specularCubeMap.SampleLevel(linearClampSampler, cubeMapDirection, mipLevel).rgb * cameraConstants.environmentLightColor * cameraConstants.environmentLightIntensity;
+    if (cameraConstants.envLightSpecularCubeMapIndex != 0u && cameraConstants.envLightSpecularMipCount > 0u) {
+        const TextureCube<float4> specularCubeMap = GetTextureCube(cameraConstants.envLightSpecularCubeMapIndex);
+        const float3 cubeMapDirection = mul(cameraConstants.envLightAxis, float4(reflectionDir, 0.0f));
+        const float mipLevel = roughness * float(cameraConstants.envLightSpecularMipCount - 1u);
+        return specularCubeMap.SampleLevel(linearClampSampler, cubeMapDirection, mipLevel).rgb * cameraConstants.envLightColor * cameraConstants.envLightIntensity;
     }
 
     const float skyGradient = saturate(reflectionDir.z * 0.5f + 0.5f);

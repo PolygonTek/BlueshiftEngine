@@ -53,7 +53,7 @@ private:
     void                            CompleteBake(uint64_t bakeSerial, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap);
     void                            ApplyEnvironmentLightBakeResult(RenderWorld *renderWorld, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap);
 
-    BE1::Array<EnvironmentLightBakeRequest> environmentLightRequests;
+    BE1::Array<EnvironmentLightBakeRequest> envLightRequests;
     EnvironmentLightBakeRequest     activeEnvironmentLightRequest;
     uint64_t                        nextBakeSerial = 0;
     uint64_t                        activeBakeSerial = 0;

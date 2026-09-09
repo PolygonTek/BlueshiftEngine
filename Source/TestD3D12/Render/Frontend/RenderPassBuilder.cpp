@@ -136,7 +136,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     const bool useDepthPrepass = frameData->GetRenderFrameSettings().depthPrepass;
     const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
     const bool directLighting = visCamera->directionalLightVisible || visCamera->numVisLocalLights > 0;
-    const bool indirectLighting = visCamera->environmentLightDiffuseIrradianceCubeMap && visCamera->environmentLightSpecularCubeMap;
+    const bool indirectLighting = visCamera->envLightDiffuseIrradianceCubeMap && visCamera->envLightSpecularCubeMap;
 
     int numDepthDrawSurfs = 0;
     int numOpaqueDrawSurfs = 0;
@@ -145,6 +145,10 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
 
     for (int i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
+
+        if (!BE1::HasFlag(visSurf->flags, VisSurfFlag::CameraVisible)) {
+            continue;
+        }
 
         if (BE1::HasFlag(visSurf->flags, VisSurfFlag::Skybox)) {
             numSkyboxDrawSurfs++;
@@ -158,8 +162,14 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         }
     }
 
+    // Shadow 전용 surface 만 있다면 메인 패스용 메모리를 할당하지 않는다.
+    const uint32_t numMainDrawSurfs = numDepthDrawSurfs + numOpaqueDrawSurfs + numSkyboxDrawSurfs + numBlendDrawSurfs;
+    if (numMainDrawSurfs == 0) {
+        return;
+    }
+
     // RenderPass 에서 필요한 모든 RenderPassDrawSurf 를 미리 할당한다.
-    AllocRenderPassDrawSurfs(frameData, visCamera, numDepthDrawSurfs + numOpaqueDrawSurfs + numSkyboxDrawSurfs + numBlendDrawSurfs);
+    AllocRenderPassDrawSurfs(frameData, visCamera, numMainDrawSurfs);
 
     // AllocRenderPass 호출 순서대로 백엔드에서 RenderPass 가 렌더링된다.
     // 1. DepthPrepass RenderPass 를 할당한다.
@@ -213,6 +223,10 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     // 카메라에 보이는 모든 surfaces 를 순회하면서, 각 render pass 에 visible surfaces 를 추가한다.
     for (int i = 0; i < visCamera->numVisSurfs; ++i) {
         const VisSurf *visSurf = visCamera->visSurfs[i];
+
+        if (!BE1::HasFlag(visSurf->flags, VisSurfFlag::CameraVisible)) {
+            continue;
+        }
 
         // 각 surface 의 특성 (material, featureSet, maxVertexWeights) 에 따라 PSO, inputLayoutId 를 얻고, RenderPassDrawSurf 를 추가한다.
         if (BE1::HasFlag(visSurf->flags, VisSurfFlag::Skybox)) {

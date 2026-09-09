@@ -270,17 +270,17 @@ bool RenderBackend::UploadCameraConstants() {
 
     constants->cameraOrigin = float3(currentVisCamera->origin.x, currentVisCamera->origin.y, currentVisCamera->origin.z);
 
-    const BE1::Mat3 &environmentLightAxis = currentVisCamera->environmentLightAxis;
-    constants->environmentLightAxis = float3x4(
-        environmentLightAxis[0].x, environmentLightAxis[0].y, environmentLightAxis[0].z, 0.0f,
-        environmentLightAxis[1].x, environmentLightAxis[1].y, environmentLightAxis[1].z, 0.0f,
-        environmentLightAxis[2].x, environmentLightAxis[2].y, environmentLightAxis[2].z, 0.0f);
-    constants->environmentLightColor = float3(currentVisCamera->environmentLightColor.r, currentVisCamera->environmentLightColor.g, currentVisCamera->environmentLightColor.b);
-    constants->environmentLightIntensity = currentVisCamera->environmentLightIntensity;
+    const BE1::Mat3 &envLightAxis = currentVisCamera->envLightAxis;
+    constants->envLightAxis = float3x4(
+        envLightAxis[0].x, envLightAxis[0].y, envLightAxis[0].z, 0.0f,
+        envLightAxis[1].x, envLightAxis[1].y, envLightAxis[1].z, 0.0f,
+        envLightAxis[2].x, envLightAxis[2].y, envLightAxis[2].z, 0.0f);
+    constants->envLightColor = float3(currentVisCamera->envLightColor.r, currentVisCamera->envLightColor.g, currentVisCamera->envLightColor.b);
+    constants->envLightIntensity = currentVisCamera->envLightIntensity;
 
-    constants->environmentLightDiffuseIrradianceCubeMapIndex = currentVisCamera->environmentLightDiffuseIrradianceCubeMap ? currentVisCamera->environmentLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    constants->environmentLightSpecularCubeMapIndex = currentVisCamera->environmentLightSpecularCubeMap ? currentVisCamera->environmentLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    constants->environmentLightSpecularMipCount = currentVisCamera->environmentLightSpecularMipCount;
+    constants->envLightDiffuseIrradianceCubeMapIndex = currentVisCamera->envLightDiffuseIrradianceCubeMap ? currentVisCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->envLightSpecularCubeMapIndex = currentVisCamera->envLightSpecularCubeMap ? currentVisCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->envLightSpecularMipCount = currentVisCamera->envLightSpecularMipCount;
     constants->padding2 = 0;
 
     constants->cameraForward = float3(currentVisCamera->axis[0].x, currentVisCamera->axis[0].y, currentVisCamera->axis[0].z);

@@ -84,7 +84,7 @@ private:
     float                           playbackSpeed = 1.0f;
     bool                            playing = true;
     bool                            showBounds = false;
-    bool                            environmentLightAdded = false;
+    bool                            envLightAdded = false;
 
 #ifdef ENABLE_IMGUI
     uint64_t                        imguiTrianglesPerObject = 0;

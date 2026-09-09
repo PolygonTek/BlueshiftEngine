@@ -56,9 +56,9 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
         return;
     }
 
-    EnvironmentLight::Desc environmentLightDesc;
-    environmentLightAdded = renderWorld->AddEnvironmentLight(environmentLightDesc);
-    if (environmentLightAdded) {
+    EnvironmentLight::Desc envLightDesc;
+    envLightAdded = renderWorld->AddEnvironmentLight(envLightDesc);
+    if (envLightAdded) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
     }
 }
@@ -67,7 +67,7 @@ void SceneSkinnedMesh::Shutdown() {
     if (renderWorld) {
         renderWorld->ClearScene();
     }
-    environmentLightAdded = false;
+    envLightAdded = false;
     gameObjects.Clear();
 
     for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {

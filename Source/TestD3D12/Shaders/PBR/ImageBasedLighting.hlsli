@@ -39,15 +39,15 @@ ImageBasedLightingDFG SampleImageBasedLightingDFG(in ShadingParams shading) {
 
 // Environment Light cubemap 에서 diffuse irradiance 와 prefiltered specular radiance 를 샘플링한다.
 ImageBasedLightingSample SampleEnvironmentLight(in ShadingParams shading) {
-    const TextureCube<float4> diffuseIrradianceCubeMap = GetTextureCube(cameraConstants.environmentLightDiffuseIrradianceCubeMapIndex);
-    const TextureCube<float4> specularCubeMap = GetTextureCube(cameraConstants.environmentLightSpecularCubeMapIndex);
-    const float maxSpecularMipLevel = (float)(cameraConstants.environmentLightSpecularMipCount - 1u);
-    const float3 radianceScale = cameraConstants.environmentLightColor * cameraConstants.environmentLightIntensity;
+    const TextureCube<float4> diffuseIrradianceCubeMap = GetTextureCube(cameraConstants.envLightDiffuseIrradianceCubeMapIndex);
+    const TextureCube<float4> specularCubeMap = GetTextureCube(cameraConstants.envLightSpecularCubeMapIndex);
+    const float maxSpecularMipLevel = (float)(cameraConstants.envLightSpecularMipCount - 1u);
+    const float3 radianceScale = cameraConstants.envLightColor * cameraConstants.envLightIntensity;
 
     // Environment Light axis 의 역회전으로 world space 방향을 cubemap local space 로 변환한다.
-    const float3 diffuseDirection = mul(cameraConstants.environmentLightAxis, float4(shading.normal, 0.0f));
+    const float3 diffuseDirection = mul(cameraConstants.envLightAxis, float4(shading.normal, 0.0f));
     const float3 specularDominantDirection = GetSpecularDominantDir(shading.normal, shading.reflectionDir, shading.linearRoughness);
-    const float3 specularDirection = mul(cameraConstants.environmentLightAxis, float4(specularDominantDirection, 0.0f));
+    const float3 specularDirection = mul(cameraConstants.envLightAxis, float4(specularDominantDirection, 0.0f));
 
     ImageBasedLightingSample sample;
     sample.diffuseIrradiance = diffuseIrradianceCubeMap.SampleLevel(linearClampSampler, diffuseDirection, 0.0f).rgb * radianceScale;
@@ -56,7 +56,7 @@ ImageBasedLightingSample SampleEnvironmentLight(in ShadingParams shading) {
 #if _CLEARCOAT != 0
     const float3 clearCoatReflectionDirection = reflect(-shading.viewDir, shading.clearCoatNormal);
     const float3 clearCoatDominantDirection = GetSpecularDominantDir(shading.clearCoatNormal, clearCoatReflectionDirection, shading.clearCoatLinearRoughness);
-    const float3 clearCoatDirection = mul(cameraConstants.environmentLightAxis, float4(clearCoatDominantDirection, 0.0f));
+    const float3 clearCoatDirection = mul(cameraConstants.envLightAxis, float4(clearCoatDominantDirection, 0.0f));
 
     sample.clearCoatSpecularRadiance = specularCubeMap.SampleLevel(linearClampSampler, clearCoatDirection, LinearRoughnessToMipLevel(shading.clearCoatLinearRoughness, maxSpecularMipLevel)).rgb * radianceScale;
 #endif

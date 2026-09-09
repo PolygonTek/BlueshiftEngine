@@ -72,7 +72,7 @@ void RenderWorld::ClearScene(ClearFlag clearFlags) {
 
     if (BE1::HasFlag(clearFlags, ClearFlag::EnvironmentLight) && hasEnvironmentLight) {
         renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
-        environmentLight.Reset();
+        envLight.Reset();
         hasEnvironmentLight = false;
     }
 
@@ -414,7 +414,7 @@ bool RenderWorld::AddEnvironmentLight(const EnvironmentLight::Desc &desc) {
         return false;
     }
 
-    environmentLight.Update(desc);
+    envLight.Update(desc);
     hasEnvironmentLight = true;
     return true;
 }
@@ -428,8 +428,8 @@ void RenderWorld::UpdateEnvironmentLight(const EnvironmentLight::Desc &desc) {
         return;
     }
 
-    const bool radianceCubeMapChanged = environmentLight.GetDesc().radianceCubeMap != desc.radianceCubeMap;
-    environmentLight.Update(desc);
+    const bool radianceCubeMapChanged = envLight.GetDesc().radianceCubeMap != desc.radianceCubeMap;
+    envLight.Update(desc);
 
     if (radianceCubeMapChanged) {
         renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
@@ -445,7 +445,7 @@ bool RenderWorld::SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &dif
         return false;
     }
 
-    environmentLight.SetBakedCubeMaps(diffuseIrradianceCubeMap, specularPrefilteredCubeMap);
+    envLight.SetBakedCubeMaps(diffuseIrradianceCubeMap, specularPrefilteredCubeMap);
     renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
     return true;
 }
@@ -459,7 +459,7 @@ void RenderWorld::RequestEnvironmentLightCubemapRegeneration(const BE1::Vec3 &ca
         return;
     }
 
-    environmentLight.MarkRegenerationNeeded();
+    envLight.MarkRegenerationNeeded();
     renderSystem->GetProbeBakeSystem().ScheduleEnvironmentLightProbeBake(this, captureOrigin);
 }
 
@@ -473,7 +473,7 @@ void RenderWorld::RemoveEnvironmentLight() {
     }
 
     renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
-    environmentLight.Reset();
+    envLight.Reset();
     hasEnvironmentLight = false;
 }
 

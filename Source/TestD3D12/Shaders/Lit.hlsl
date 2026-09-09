@@ -202,8 +202,8 @@ CameraPassPSOutput PSMain(PSInput input) {
 #endif
 
 #ifdef INDIRECT_LIGHTING
-    const ImageBasedLightingSample environmentLightSample = SampleEnvironmentLight(shading);
-    lighting += EvaluateStandardImageBasedLighting(shading, environmentLightSample, dfg);
+    const ImageBasedLightingSample envLightSample = SampleEnvironmentLight(shading);
+    lighting += EvaluateStandardImageBasedLighting(shading, envLightSample, dfg);
 #endif
 
     result.color.rgb = lighting + shading.emission;

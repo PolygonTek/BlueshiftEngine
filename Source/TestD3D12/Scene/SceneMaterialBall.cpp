@@ -62,9 +62,9 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physic
     directionalLight.intensity = 2.0f;
     UpdateDirectionalLightDirection();
 
-    EnvironmentLight::Desc environmentLightDesc;
-    environmentLightAdded = renderWorld->AddEnvironmentLight(environmentLightDesc);
-    if (environmentLightAdded) {
+    EnvironmentLight::Desc envLightDesc;
+    envLightAdded = renderWorld->AddEnvironmentLight(envLightDesc);
+    if (envLightAdded) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
     }
 }
@@ -78,7 +78,7 @@ void SceneMaterialBall::Shutdown() {
     renderWorld->ClearScene();
     materialBall.renderObjectHandle = -1;
     directionalLight.renderLightHandle = -1;
-    environmentLightAdded = false;
+    envLightAdded = false;
 
     testMesh.reset();
     testMaterial.reset();
@@ -101,14 +101,14 @@ void SceneMaterialBall::UpdateDirectionalLightDirection() {
 }
 
 void SceneMaterialBall::UpdateEnvironmentLightRotation() {
-    const EnvironmentLight *environmentLight = renderWorld->GetEnvironmentLight();
-    if (!environmentLight) {
+    const EnvironmentLight *envLight = renderWorld->GetEnvironmentLight();
+    if (!envLight) {
         return;
     }
 
-    EnvironmentLight::Desc environmentLightDesc = environmentLight->GetDesc();
-    environmentLightDesc.axis = BE1::Mat3::FromRotationZ(DEG2RAD(environmentLightRotation));
-    renderWorld->UpdateEnvironmentLight(environmentLightDesc);
+    EnvironmentLight::Desc envLightDesc = envLight->GetDesc();
+    envLightDesc.axis = BE1::Mat3::FromRotationZ(DEG2RAD(envLightRotation));
+    renderWorld->UpdateEnvironmentLight(envLightDesc);
 }
 
 #ifdef ENABLE_IMGUI
@@ -315,9 +315,9 @@ void SceneMaterialBall::BuildImGui() {
     ImGui::Separator();
     ImGui::Text("Environment Light");
 
-    ImGui::BeginDisabled(!environmentLightAdded);
+    ImGui::BeginDisabled(!envLightAdded);
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Rotation##EnvironmentLight", &environmentLightRotation, 0.0f, 360.0f, "%.1f deg")) {
+    if (ImGui::SliderFloat("Rotation##EnvironmentLight", &envLightRotation, 0.0f, 360.0f, "%.1f deg")) {
         UpdateEnvironmentLightRotation();
     }
     ImGui::EndDisabled();

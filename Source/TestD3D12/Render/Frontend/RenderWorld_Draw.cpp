@@ -101,8 +101,8 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
 void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
     assert(!frameActive);
 
-    if (this->skyboxMaterial != skyboxMaterial && hasEnvironmentLight && !environmentLight.GetDesc().radianceCubeMap) {
-        environmentLight.MarkRegenerationNeeded();
+    if (this->skyboxMaterial != skyboxMaterial && hasEnvironmentLight && !envLight.GetDesc().radianceCubeMap) {
+        envLight.MarkRegenerationNeeded();
         renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
     }
 
@@ -354,22 +354,22 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->axis = renderCamera->desc.axis;
 
     if (hasEnvironmentLight) {
-        const EnvironmentLight::Desc &environmentLightDesc = environmentLight.GetDesc();
-        visCamera->environmentLightAxis = environmentLightDesc.axis;
-        visCamera->environmentLightColor = environmentLightDesc.linearColor;
-        visCamera->environmentLightIntensity = environmentLightDesc.intensity;
+        const EnvironmentLight::Desc &envLightDesc = envLight.GetDesc();
+        visCamera->envLightAxis = envLightDesc.axis;
+        visCamera->envLightColor = envLightDesc.linearColor;
+        visCamera->envLightIntensity = envLightDesc.intensity;
 
-        Texture *diffuseIrradianceCubeMap = frameData->RetainTexture(environmentLight.GetDiffuseIrradianceCubeMap());
+        Texture *diffuseIrradianceCubeMap = frameData->RetainTexture(envLight.GetDiffuseIrradianceCubeMap());
         RHI::Texture *rhiDiffuseIrradianceCubeMap = diffuseIrradianceCubeMap ? diffuseIrradianceCubeMap->GetReadyRHITexture() : nullptr;
         if (rhiDiffuseIrradianceCubeMap && rhiDiffuseIrradianceCubeMap->type == RHI::TextureType::TextureCube) {
-            visCamera->environmentLightDiffuseIrradianceCubeMap = rhiDiffuseIrradianceCubeMap;
+            visCamera->envLightDiffuseIrradianceCubeMap = rhiDiffuseIrradianceCubeMap;
         }
 
-        Texture *specularCubeMap = frameData->RetainTexture(environmentLight.GetSpecularPrefilteredCubeMap());
+        Texture *specularCubeMap = frameData->RetainTexture(envLight.GetSpecularPrefilteredCubeMap());
         RHI::Texture *rhiSpecularCubeMap = specularCubeMap ? specularCubeMap->GetReadyRHITexture() : nullptr;
         if (rhiSpecularCubeMap && rhiSpecularCubeMap->type == RHI::TextureType::TextureCube) {
-            visCamera->environmentLightSpecularCubeMap = rhiSpecularCubeMap;
-            visCamera->environmentLightSpecularMipCount = rhiSpecularCubeMap->GetMipLevelCount();
+            visCamera->envLightSpecularCubeMap = rhiSpecularCubeMap;
+            visCamera->envLightSpecularMipCount = rhiSpecularCubeMap->GetMipLevelCount();
         }
     }
 
@@ -992,7 +992,7 @@ int RenderWorld::CountSkinningUploadJoints(const RenderFrameData::ChunkRange<Vis
     uint32_t numTotalUploadJoints = 0;
 
     for (const VisSkinnedMesh &visSkinnedMesh : visSkinnedMeshes) {
-        if (!BE1::HasFlag(visSkinnedMesh.space->flags, VisObject::Flag::CameraVisible)) {
+        if ((visSkinnedMesh.space->flags & (VisObject::Flag::CameraVisible | VisObject::Flag::ShadowVisible)) == VisObject::Flag::None) {
             continue;
         }
 
@@ -1007,7 +1007,8 @@ int RenderWorld::CountSkinningUploadJoints(const RenderFrameData::ChunkRange<Vis
         }
 
         const uint32_t numJoints = static_cast<uint32_t>(skinningJointCache->NumJoints());
-        const uint32_t numPoses = needVelocityOutput && skinningJointCache->HasPreviousPose(currentFrameSerial) ? 2u : 1u;
+        const bool needPreviousPose = needVelocityOutput && BE1::HasFlag(visSkinnedMesh.space->flags, VisObject::Flag::CameraVisible);
+        const uint32_t numPoses = needPreviousPose && skinningJointCache->HasPreviousPose(currentFrameSerial) ? 2u : 1u;
         const uint32_t numUploadJoints = numJoints * numPoses;
 
         if (numUploadJoints > (UINT32_MAX / sizeof(ShaderSkinningJoint) - numTotalUploadJoints)) {
@@ -1034,7 +1035,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     const uint64_t currentFrameSerial = frameData->GetFrameSerial();
 
     for (const VisSkinnedMesh &visSkinnedMesh : visSkinnedMeshes) {
-        if (!BE1::HasFlag(visSkinnedMesh.space->flags, VisObject::Flag::CameraVisible)) {
+        if ((visSkinnedMesh.space->flags & (VisObject::Flag::CameraVisible | VisObject::Flag::ShadowVisible)) == VisObject::Flag::None) {
             continue;
         }
 
@@ -1061,7 +1062,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     // 앞선 카메라나 프레임에서 이미 갱신된 캐시도 현재 카메라의 jointBuffer 에 업로드해야 한다.
     UpdateSkinningJointCaches(frameData, skinningJointCacheUpdateObjects.Ptr(), skinningJointCacheUpdateObjects.Count(), numTotalJoints);
 
-    // jointBuffer 에 업로드할 전체 joint pose 개수를 계산한다. (이전 프레임 pose 도 필요하면 포함한다)
+    // jointBuffer 에 업로드할 전체 joint pose 개수를 계산한다. 카메라 velocity 에 필요한 이전 pose 만 포함한다.
     const int numTotalUploadJoints = CountSkinningUploadJoints(visSkinnedMeshes, visCamera->needVelocityOutput, currentFrameSerial);
     if (numTotalUploadJoints < 0) {
         BE_WARNLOG("RenderWorld::BuildSkinningJointBuffer: too many skinning joints\n");
@@ -1082,7 +1083,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     BE1::Mat3x4 *dst = static_cast<BE1::Mat3x4 *>(jointBuffer->mappedPtr);
     uint32_t jointOffset = 0;
     for (VisSkinnedMesh &visSkinnedMesh : visSkinnedMeshes) {
-        if (!BE1::HasFlag(visSkinnedMesh.space->flags, VisObject::Flag::CameraVisible)) {
+        if ((visSkinnedMesh.space->flags & (VisObject::Flag::CameraVisible | VisObject::Flag::ShadowVisible)) == VisObject::Flag::None) {
             continue;
         }
 
@@ -1104,7 +1105,8 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
 
         visSkinnedMesh.prevSkinningJointOffset = visSkinnedMesh.skinningJointOffset;
 
-        if (visCamera->needVelocityOutput && skinningJointCache->HasPreviousPose(currentFrameSerial)) {
+        const bool needPreviousPose = visCamera->needVelocityOutput && BE1::HasFlag(visSkinnedMesh.space->flags, VisObject::Flag::CameraVisible);
+        if (needPreviousPose && skinningJointCache->HasPreviousPose(currentFrameSerial)) {
             BE1::simdProcessor->Memcpy(dst + jointOffset, skinningJointCache->GetPrevSkinningJoints(), byteSize);
             visSkinnedMesh.prevSkinningJointOffset = jointOffset;
             jointOffset += numJoints;
@@ -1150,7 +1152,9 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
 
     for (VisObject &visObjectRef : frameData->GetVisObjects(visCamera->firstVisObjectIndex)) {
         VisObject *visObject = &visObjectRef;
-        if (!BE1::HasFlag(visObject->flags, VisObject::Flag::CameraVisible) || !visObject->meshInstance) {
+        const bool cameraVisible = BE1::HasFlag(visObject->flags, VisObject::Flag::CameraVisible);
+        const bool shadowVisible = visCamera->directionalShadowView && BE1::HasFlag(visObject->flags, VisObject::Flag::ShadowVisible);
+        if ((!cameraVisible && !shadowVisible) || !visObject->meshInstance) {
             continue;
         }
 
@@ -1158,8 +1162,15 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
             continue;
         }
 
+        const bool skinned = visObject->meshInstance->IsSkinned();
+        // Pose 준비에 실패한 skinned mesh 를 bind pose 상태로 등록하지 않는다.
+        if (skinned && (!visObject->skinnedMesh || visObject->skinnedMesh->skinningJointOffset == ShaderSkinningJointOffsetInvalid)) {
+            continue;
+        }
+
         const int numSurfaces = visObject->meshInstance->NumSurfaces();
-        const bool cullSurfaces = !skipViewCulling && numSurfaces > 1;
+        // Skinned submesh 의 bounds 는 bind pose 기준이므로 오브젝트 수집 단계의 bounds 판정을 유지한다.
+        const bool cullSurfaces = numSurfaces > 1 && !skinned;
 
         for (int meshSurfIndex = 0; meshSurfIndex < numSurfaces; ++meshSurfIndex) {
             const Mesh::Surface *meshSurf = visObject->meshInstance->GetSurface(meshSurfIndex);
@@ -1167,21 +1178,43 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
                 continue;
             }
 
-            if (cullSurfaces) {
+            const Material *material = GetVisObjectMaterial(visObject, meshSurf->materialIndex);
+            bool cameraSurfaceVisible = cameraVisible;
+            bool shadowSurfaceVisible = shadowVisible && !BE1::HasFlag(material->GetFlags(), Material::Flag::NoShadow) && material->GetRenderingMode() != Material::RenderingMode::Blend;
+            if (!cameraSurfaceVisible && !shadowSurfaceVisible) {
+                continue;
+            }
+
+            // Static submesh 의 world bounds 는 카메라와 shadow 컬링에 한 번만 계산하여 공유한다.
+            if (cullSurfaces && ((!skipViewCulling && cameraSurfaceVisible) || shadowSurfaceVisible)) {
                 const BE1::AABB &localAABB = meshSurf->subMesh->GetBoundingBox();
                 if (!localAABB.IsCleared()) {
                     BE1::AABB worldAABB;
                     worldAABB.SetFromTransformedAABB(localAABB, visObject->worldMatrix);
 
-                    if (renderCamera->frustum.CullAABB(worldAABB)) {
-                        continue;
+                    if (cameraSurfaceVisible && !skipViewCulling) {
+                        cameraSurfaceVisible = !renderCamera->Cull(worldAABB);
+                    }
+                    if (shadowSurfaceVisible) {
+                        shadowSurfaceVisible = !CullDirectionalShadowCaster(worldAABB, visCamera->directionalShadowView->worldBox);
                     }
                 }
             }
 
-            const int lodLevel = SelectMeshLOD(meshSurf->subMesh, visObject->meshLOD, visObject->squaredLODErrorLimit);
+            VisSurfFlag flags = VisSurfFlag::None;
+            if (cameraSurfaceVisible) {
+                flags |= VisSurfFlag::CameraVisible;
+            }
+            if (shadowSurfaceVisible) {
+                flags |= VisSurfFlag::ShadowVisible;
+            }
+            if (flags == VisSurfFlag::None) {
+                continue;
+            }
 
-            AddVisSurf(frameData, visCamera, nullptr, visObject, GetVisObjectMaterial(visObject, meshSurf->materialIndex), meshSurf->subMesh, VisSurfFlag::CameraVisible, lodLevel);
+            // 두 패스는 같은 surface 와 LOD 를 공유한다. Shadow 전용 오브젝트의 자동 LOD 는 기본값 0 을 사용한다.
+            const int lodLevel = SelectMeshLOD(meshSurf->subMesh, visObject->meshLOD, visObject->squaredLODErrorLimit);
+            AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, flags, lodLevel);
         }
     }
 }
@@ -1226,7 +1259,7 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
             subMesh->vertexBuffer = guiSurf->vertexBuffer;
             subMesh->indexBuffer = guiSurf->indexBuffer;
 
-            AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::None);
+            AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::CameraVisible);
         }
     }
 }

@@ -696,13 +696,13 @@ struct CameraConstants {
     float3 cameraOrigin;
     uint lightCullingDebugMode;
 
-    row_major float3x4 environmentLightAxis;
-    float3 environmentLightColor;
-    float environmentLightIntensity;
+    row_major float3x4 envLightAxis;
+    float3 envLightColor;
+    float envLightIntensity;
 
-    uint environmentLightDiffuseIrradianceCubeMapIndex;
-    uint environmentLightSpecularCubeMapIndex;
-    uint environmentLightSpecularMipCount;
+    uint envLightDiffuseIrradianceCubeMapIndex;
+    uint envLightSpecularCubeMapIndex;
+    uint envLightSpecularMipCount;
     uint padding2;
 
     float3 cameraForward;
@@ -714,9 +714,9 @@ struct CameraConstants {
 #ifdef __cplusplus
 static_assert(offsetof(CameraConstants, ndcDepthScaleBias) == 464, "CameraConstants NDC depth conversion must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, cameraOrigin) == 512, "CameraConstants camera data must follow the existing layout");
-static_assert(offsetof(CameraConstants, environmentLightAxis) == 528, "CameraConstants environment axis must match the HLSL constant-buffer layout");
-static_assert(offsetof(CameraConstants, environmentLightColor) == 576, "CameraConstants environment color must match the HLSL constant-buffer layout");
-static_assert(offsetof(CameraConstants, environmentLightDiffuseIrradianceCubeMapIndex) == 592, "CameraConstants environment texture indices must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, envLightAxis) == 528, "CameraConstants environment axis must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, envLightColor) == 576, "CameraConstants environment color must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, envLightDiffuseIrradianceCubeMapIndex) == 592, "CameraConstants environment texture indices must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, cameraForward) == 608, "CameraConstants camera direction must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, directionalShadow) == 624, "CameraConstants directional shadow layout mismatch");
 static_assert(sizeof(CameraConstants) == 688, "CameraConstants must match the HLSL constant-buffer layout");

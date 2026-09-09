@@ -163,12 +163,12 @@ struct VisCamera {
     BE1::Frustum                viewFrustum;                // Perspective view culling volume
     BE1::OBB                    viewBox;                    // Orthographic view culling volume
 
-    BE1::Mat3                   environmentLightAxis = BE1::Mat3::identity;
-    BE1::Color3                 environmentLightColor = BE1::Color3::white;
-    float                       environmentLightIntensity = 0.0f;
-    RHI::Texture *              environmentLightDiffuseIrradianceCubeMap = nullptr;
-    RHI::Texture *              environmentLightSpecularCubeMap = nullptr;
-    uint32_t                    environmentLightSpecularMipCount = 0;
+    BE1::Mat3                   envLightAxis = BE1::Mat3::identity;
+    BE1::Color3                 envLightColor = BE1::Color3::white;
+    float                       envLightIntensity = 0.0f;
+    RHI::Texture *              envLightDiffuseIrradianceCubeMap = nullptr;
+    RHI::Texture *              envLightSpecularCubeMap = nullptr;
+    uint32_t                    envLightSpecularMipCount = 0;
 
     BE1::Vec2                   jitterNDC = BE1::Vec2::zero;
     BE1::Vec2                   prevJitterNDC = BE1::Vec2::zero;

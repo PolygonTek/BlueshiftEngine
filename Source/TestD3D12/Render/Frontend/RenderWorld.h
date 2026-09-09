@@ -125,7 +125,7 @@ public:
     void                        UpdateRenderLightShadow(int index, float shadowOffsetFactor, float shadowOffsetUnits);
     void                        RemoveRenderLight(int index);
 
-    const EnvironmentLight *    GetEnvironmentLight() const { return hasEnvironmentLight ? &environmentLight : nullptr; }
+    const EnvironmentLight *    GetEnvironmentLight() const { return hasEnvironmentLight ? &envLight : nullptr; }
     bool                        AddEnvironmentLight(const EnvironmentLight::Desc &desc);
     void                        UpdateEnvironmentLight(const EnvironmentLight::Desc &desc);
     bool                        SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap);
@@ -256,7 +256,7 @@ private:
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
-    EnvironmentLight            environmentLight;
+    EnvironmentLight            envLight;
     bool                        hasEnvironmentLight = false;
     OceanSurface                oceanSurface;
     bool                        hasOceanSurface = false;

@@ -23,7 +23,7 @@
 #include "Image/Image.h"
 
 void ProbeBakeSystem::Init() {
-    environmentLightRequests.Clear();
+    envLightRequests.Clear();
     activeEnvironmentLightRequest = {};
 
     nextBakeSerial = 0;
@@ -31,7 +31,7 @@ void ProbeBakeSystem::Init() {
 }
 
 void ProbeBakeSystem::Shutdown() {
-    environmentLightRequests.Clear();
+    envLightRequests.Clear();
     activeEnvironmentLightRequest = {};
 
     nextBakeSerial = 0;
@@ -42,7 +42,7 @@ void ProbeBakeSystem::ScheduleEnvironmentLightProbeBake(RenderWorld *renderWorld
     assert(BE1::Engine::IsInMainThread());
 
     // 이미 같은 renderWorld 에 요청했었다면 리턴
-    for (EnvironmentLightBakeRequest &request : environmentLightRequests) {
+    for (EnvironmentLightBakeRequest &request : envLightRequests) {
         if (request.renderWorld == renderWorld) {
             request.captureOrigin = captureOrigin;
             return;
@@ -52,15 +52,15 @@ void ProbeBakeSystem::ScheduleEnvironmentLightProbeBake(RenderWorld *renderWorld
     EnvironmentLightBakeRequest request;
     request.renderWorld = renderWorld;
     request.captureOrigin = captureOrigin;
-    environmentLightRequests.Append(request);
+    envLightRequests.Append(request);
 }
 
 void ProbeBakeSystem::CancelEnvironmentLightProbeBake(RenderWorld *renderWorld) {
     assert(BE1::Engine::IsInMainThread());
 
-    for (int32_t index = environmentLightRequests.Count() - 1; index >= 0; --index) {
-        if (environmentLightRequests[index].renderWorld == renderWorld) {
-            environmentLightRequests.RemoveIndex(index);
+    for (int32_t index = envLightRequests.Count() - 1; index >= 0; --index) {
+        if (envLightRequests[index].renderWorld == renderWorld) {
+            envLightRequests.RemoveIndex(index);
         }
     }
 
@@ -98,16 +98,16 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
     EnvironmentLightBakeRequest request;
     int32_t requestIndex = -1;
 
-    for (int32_t index = 0; index < environmentLightRequests.Count(); ) {
-        const EnvironmentLightBakeRequest &candidate = environmentLightRequests[index];
-        const EnvironmentLight *environmentLight = candidate.renderWorld ? candidate.renderWorld->GetEnvironmentLight() : nullptr;
+    for (int32_t index = 0; index < envLightRequests.Count(); ) {
+        const EnvironmentLightBakeRequest &candidate = envLightRequests[index];
+        const EnvironmentLight *envLight = candidate.renderWorld ? candidate.renderWorld->GetEnvironmentLight() : nullptr;
 
-        if (!environmentLight) {
-            environmentLightRequests.RemoveIndex(index);
+        if (!envLight) {
+            envLightRequests.RemoveIndex(index);
             continue;
         }
 
-        const SharedPtr<Texture> &radianceCubeMap = environmentLight->GetDesc().radianceCubeMap;
+        const SharedPtr<Texture> &radianceCubeMap = envLight->GetDesc().radianceCubeMap;
         if (radianceCubeMap) {
             const RHI::Texture *rhiTexture = radianceCubeMap->GetRHITexture();
             const bool preparationPending = radianceCubeMap->GetState() == Texture::State::Loading || (rhiTexture && rhiTexture->GetStatus() == RHI::GPUResourceStatus::Pending);
@@ -132,8 +132,8 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
         return;
     }
 
-    const EnvironmentLight *environmentLight = request.renderWorld->GetEnvironmentLight();
-    SharedPtr<Texture> radianceCubeMap = environmentLight->GetDesc().radianceCubeMap;
+    const EnvironmentLight *envLight = request.renderWorld->GetEnvironmentLight();
+    SharedPtr<Texture> radianceCubeMap = envLight->GetDesc().radianceCubeMap;
     bool radiancePrepared = true;
     bool generateRadianceMipChain = false;
 
@@ -149,7 +149,7 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
         generateRadianceMipChain = radiancePrepared;
     }
 
-    environmentLightRequests.RemoveIndex(requestIndex);
+    envLightRequests.RemoveIndex(requestIndex);
 
     if (!radiancePrepared) {
         ApplyEnvironmentLightBakeResult(request.renderWorld, false, nullptr, nullptr);
@@ -184,7 +184,7 @@ void ProbeBakeSystem::CompleteBake(uint64_t bakeSerial, bool succeeded, const Sh
     activeBakeSerial = 0;
 
     // 더 최신 요청이 쌓여있으면 bake 결과를 폐기한다.
-    for (const EnvironmentLightBakeRequest &request : environmentLightRequests) {
+    for (const EnvironmentLightBakeRequest &request : envLightRequests) {
         if (request.renderWorld == renderWorld) {
             return;
         }
@@ -201,5 +201,5 @@ void ProbeBakeSystem::ApplyEnvironmentLightBakeResult(RenderWorld *renderWorld, 
         return;
     }
 
-    renderWorld->environmentLight.ApplyBakeResult(succeeded, diffuseCubeMap, specularCubeMap);
+    renderWorld->envLight.ApplyBakeResult(succeeded, diffuseCubeMap, specularCubeMap);
 }

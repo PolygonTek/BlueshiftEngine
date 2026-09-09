@@ -173,9 +173,9 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     directionalLightDesc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
     directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLightDesc);
 
-    EnvironmentLight::Desc environmentLightDesc;
-    environmentLightAdded = renderWorld->AddEnvironmentLight(environmentLightDesc);
-    if (environmentLightAdded) {
+    EnvironmentLight::Desc envLightDesc;
+    envLightAdded = renderWorld->AddEnvironmentLight(envLightDesc);
+    if (envLightAdded) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
     }
 }
@@ -185,7 +185,7 @@ void SceneOcean::Shutdown() {
         renderWorld->ClearScene();
     }
     directionalLight.renderLightHandle = -1;
-    environmentLightAdded = false;
+    envLightAdded = false;
     oceanAdded = false;
 
     for (BuoyantObject &object : buoyantObjects) {

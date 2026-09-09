@@ -64,5 +64,5 @@ private:
     float                       directionalLightElevation = 35.0f;
     bool                        showPontoons = false;
     bool                        oceanAdded = false;
-    bool                        environmentLightAdded = false;
+    bool                        envLightAdded = false;
 };
