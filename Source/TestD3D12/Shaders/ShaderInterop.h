@@ -647,6 +647,24 @@ static_assert(offsetof(FrameConstants, directionalLight) == 64, "FrameConstants 
 static_assert(sizeof(FrameConstants) == 96, "FrameConstants must match the HLSL constant-buffer layout");
 #endif
 
+// Directional light 의 단일 shadow map 을 샘플링하는 데 필요한 데이터.
+struct ShaderDirectionalShadowData {
+    // World position -> shadow texture coordinate. XY 는 UV, Z 는 비교할 depth [0, 1].
+    // 직교 투영이므로 perspective divide 없이 float3x4 로 표현할 수 있다.
+    row_major float3x4 worldToShadowCoordMatrix;
+
+    float2 texelSize;
+    uint textureIndex;             // Texture2D<float> 의 bindless SRV index.
+    uint enabled;                  // 0 이면 shadow texture 에 접근하지 않는다.
+};
+
+#ifdef __cplusplus
+static_assert(offsetof(ShaderDirectionalShadowData, texelSize) == 48, "Directional shadow texel size layout mismatch");
+static_assert(offsetof(ShaderDirectionalShadowData, textureIndex) == 56, "Directional shadow texture index layout mismatch");
+static_assert(offsetof(ShaderDirectionalShadowData, enabled) == 60, "Directional shadow enabled flag layout mismatch");
+static_assert(sizeof(ShaderDirectionalShadowData) == 64, "Directional shadow data must match the HLSL constant-buffer layout");
+#endif
+
 struct CameraConstants {
     row_major float4x4 viewProjMatrix;
     row_major float4x4 invViewProjMatrix;
@@ -689,6 +707,8 @@ struct CameraConstants {
 
     float3 cameraForward;
     float padding3;
+
+    ShaderDirectionalShadowData directionalShadow;
 };
 
 #ifdef __cplusplus
@@ -698,7 +718,8 @@ static_assert(offsetof(CameraConstants, environmentLightAxis) == 528, "CameraCon
 static_assert(offsetof(CameraConstants, environmentLightColor) == 576, "CameraConstants environment color must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, environmentLightDiffuseIrradianceCubeMapIndex) == 592, "CameraConstants environment texture indices must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, cameraForward) == 608, "CameraConstants camera direction must match the HLSL constant-buffer layout");
-static_assert(sizeof(CameraConstants) == 624, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, directionalShadow) == 624, "CameraConstants directional shadow layout mismatch");
+static_assert(sizeof(CameraConstants) == 688, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {

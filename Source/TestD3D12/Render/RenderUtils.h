@@ -16,6 +16,9 @@
 #include "Math/Matrix4.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
+#include "Math/AABB.h"
+#include "Math/OBB.h"
+#include "Math/Sphere.h"
 #include "RHI/RHI.h"
 
 namespace EngineAxis {
@@ -29,6 +32,14 @@ namespace EngineAxis {
 
 // 엔진 좌표계의 뷰 축과 원점으로 뷰 행렬을 만든다.
 void SetViewMatrixFromEngineAxis(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, BE1::Mat4 &viewMatrix);
+
+// Receiver sphere 에 맞춘 단일 directional shadow 투영 계산.
+// Caster bounds 가 비어 있으면 receiver 만으로 깊이를 잡고, 주어지면 XY 를 유지하며 깊이를 확장한다.
+bool ComputeDirectionalShadowProjection(const BE1::Mat3 &lightAxis, const BE1::Sphere &receiverSphere, const BE1::AABB &casterBounds, uint32_t resolution, BE1::OBB &shadowWorldBox, BE1::Mat4 &shadowViewProjMatrix);
+
+// Shadow box 를 광원 쪽으로 무한히 연장한 영역에 caster AABB 가 닿지 않으면 true.
+// Near 경계는 검사하지 않으며, shadow far 경계 뒤에 완전히 놓인 caster 만 제외한다.
+bool CullDirectionalShadowCaster(const BE1::AABB &casterBounds, const BE1::OBB &shadowBox);
 
 // 2D 영역을 정규화된 크롭 행렬로 만든다.
 void Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, BE1::Mat4 &cropMatrix);

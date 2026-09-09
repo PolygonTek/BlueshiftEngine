@@ -286,6 +286,9 @@ bool RenderBackend::UploadCameraConstants() {
     constants->cameraForward = float3(currentVisCamera->axis[0].x, currentVisCamera->axis[0].y, currentVisCamera->axis[0].z);
     constants->padding3 = 0.0f;
 
+    // Shadow pass 가 연결되기 전에는 비활성 상태로 전달한다.
+    constants->directionalShadow = {};
+
     return true;
 }
 

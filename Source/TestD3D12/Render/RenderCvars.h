@@ -43,6 +43,7 @@ extern BE1::CVar    r_specularEnergyCompensation2;
 extern BE1::CVar    r_specularAA;
 
 extern BE1::CVar    r_csmResolution;
+extern BE1::CVar    r_directionalShadowDistance;
 extern BE1::CVar    r_csmConstantDepthBias0;
 extern BE1::CVar    r_csmConstantDepthBias1;
 extern BE1::CVar    r_csmConstantDepthBias2;

@@ -26,6 +26,7 @@ enum RenderBloomMode {
 struct RenderFrameSettings {
     uint32_t                mainRTSampleCount = 1;
     uint32_t                csmResolution = 1024;
+    float                   directionalShadowDistance = 150.0f;
     uint32_t                lightCullingDebugMode = 0;
 
     float                   hdrPaperWhiteNits = 200.0f;

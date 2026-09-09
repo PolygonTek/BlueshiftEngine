@@ -545,11 +545,14 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     // RenderObject 중에서 컬링한 오브젝트를 프레임 데이터에 VisObject 로 등록한다.
     FindVisObjects(frameData, renderCamera, visCamera);
 
-    // visObjects 중에서 mesh surface 들을 visCamera->visSurfs 에 추가한다.
-    AddMeshes(frameData, renderCamera, visCamera);
-
     // RenderLight 중에서 컬링한 라이트를 프레임 데이터에 VisLight 로 등록한다.
     FindVisLights(frameData, renderCamera, visCamera);
+
+    // 단일 directional shadow 의 receiver 영역을 준비하고 caster 수집 후 투영 깊이를 확장한다.
+    SetupDirectionalShadowView(frameData, renderCamera, visCamera);
+
+    // visObjects 중에서 mesh surface 들을 visCamera->visSurfs 에 추가한다.
+    AddMeshes(frameData, renderCamera, visCamera);
 
     // visibleLights 들로 GPU light culling 데이터를 구성한다.
     BuildLightCullingData(frameData, renderCamera, visCamera);
@@ -578,6 +581,119 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     frameData->CmdDrawCamera(visCamera);
 
     viewCount++;
+}
+
+void RenderWorld::SetupDirectionalShadowView(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+    if (!visCamera->directionalLightVisible) {
+        return;
+    }
+
+    const VisLight *directionalLight = frameData->GetPrimaryDirectionalLight();
+    if (!directionalLight || !BE1::HasFlag(directionalLight->flags, RenderLight::Flag::CastShadows)) {
+        return;
+    }
+
+    const RenderFrameSettings &settings = frameData->GetRenderFrameSettings();
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    const float receiverFar = BE1::Min(cameraDesc.zFar, settings.directionalShadowDistance);
+    if (settings.directionalShadowDistance <= 0.0f || receiverFar <= cameraDesc.zNear) {
+        return;
+    }
+
+    // view bounding volume 으로 directional shadow receiver 영역 (receiver sphere) 을 구한다.
+    BE1::Sphere receiverSphere;
+    if (cameraDesc.orthogonal) {
+        BE1::OBB receiverBox = renderCamera->GetBox();
+        const float halfDepth = (receiverFar - cameraDesc.zNear) * 0.5f;
+        receiverBox.SetCenter(cameraDesc.origin + cameraDesc.axis[EngineAxis::Forward] * (cameraDesc.zNear + halfDepth));
+        receiverBox.SetExtents(BE1::Vec3(halfDepth, cameraDesc.sizeX, cameraDesc.sizeY));
+        receiverSphere = receiverBox.ToSphere();
+    } else {
+        BE1::Frustum receiverFrustum = renderCamera->GetFrustum();
+        receiverFrustum.MoveFarDistance(receiverFar);
+        receiverSphere = receiverFrustum.ToSphere();
+    }
+
+    // receiver sphere 를 포함하는 directional shadow world box 와 view-projection 행렬을 구한다.
+    BE1::OBB shadowWorldBox;
+    BE1::Mat4 shadowViewProjMatrix;
+    if (!ComputeDirectionalShadowProjection(directionalLight->axis, receiverSphere, BE1::AABB::empty, settings.csmResolution, shadowWorldBox, shadowViewProjMatrix)) {
+        return;
+    }
+
+    // directional shadow world box 를 이용해서 caster 를 컬링/수집하고 caster bounds 를 리턴한다.
+    const BE1::AABB casterBounds = FindDirectionalShadowCasters(frameData, renderCamera, shadowWorldBox);
+
+    if (!casterBounds.IsCleared()) {
+        // 수집된 caster 의 광원 쪽 깊이만 확장하고 receiver 기준 XY 와 far 범위를 유지한다.
+        if (!ComputeDirectionalShadowProjection(directionalLight->axis, receiverSphere, casterBounds, settings.csmResolution, shadowWorldBox, shadowViewProjMatrix)) {
+            return;
+        }
+    }
+
+    DirectionalShadowView *shadowView = new (frameData->MemAlloc(sizeof(DirectionalShadowView))) DirectionalShadowView();
+    shadowView->receiverSphere = receiverSphere;
+    shadowView->worldBox = shadowWorldBox;
+    shadowView->viewProjMatrix = shadowViewProjMatrix;
+
+    // worldToShadowCoordMatrix * worldPos = shadowCoord
+    // shadowCoord.xy : shadow texture UV
+    // shadowCoord.z  : shadow depth
+    for (int column = 0; column < 4; column++) {
+        // D3D texture UV: clip XY [-1, 1] -> [0, 1], Y 는 반전. Depth 는 이미 [0, 1] 이다.
+        shadowView->shaderData.worldToShadowCoordMatrix.m[0][column] = 0.5f * (shadowViewProjMatrix[0][column] + shadowViewProjMatrix[3][column]);
+        shadowView->shaderData.worldToShadowCoordMatrix.m[1][column] = 0.5f * (-shadowViewProjMatrix[1][column] + shadowViewProjMatrix[3][column]);
+        shadowView->shaderData.worldToShadowCoordMatrix.m[2][column] = shadowViewProjMatrix[2][column];
+    }
+
+    const float texelSize = 1.0f / settings.csmResolution;
+    shadowView->shaderData.texelSize = float2(texelSize, texelSize);
+
+    visCamera->directionalShadowView = shadowView;
+}
+
+BE1::AABB RenderWorld::FindDirectionalShadowCasters(RenderFrameData *frameData, const RenderCamera *renderCamera, const BE1::OBB &shadowWorldBox) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindDirectionalShadowCasters");
+
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
+    BE1::AABB casterBounds = BE1::AABB::empty;
+
+    for (RenderObject *renderObject : renderObjects) {
+        if (!renderObject || !renderObject->desc.meshInstance || !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::CastShadows)) {
+            continue;
+        }
+
+        if (!IsRenderLayerVisible(cameraDesc.layerMask, renderObject->desc.layer)) {
+            continue;
+        }
+
+        if (staticOnly && !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::Static)) {
+            continue;
+        }
+
+        if (CullDirectionalShadowCaster(renderObject->worldAABB, shadowWorldBox)) {
+            continue;
+        }
+
+        VisObject *visObject = RegisterVisObject(frameData, renderObject);
+        if (!visObject) {
+            continue;
+        }
+
+        // 카메라에 안 보이는 caster 는 shadow 에 현재 world matrix 만 필요하다.
+        // 공용 ShaderSurface 가 prevWorldMatrix 도 업로드하므로 현재 행렬로 초기화한다.
+        if (!BE1::HasFlag(visObject->flags, VisObject::Flag::CameraVisible)) {
+            visObject->worldMatrix = renderObject->GetWorldMatrix();
+            visObject->prevWorldMatrix = visObject->worldMatrix;
+        }
+
+        visObject->flags |= VisObject::Flag::ShadowVisible;
+
+        casterBounds.AddAABB(renderObject->worldAABB);
+    }
+
+    return casterBounds;
 }
 
 void RenderWorld::PrepareOceanSurfacePipeline(VisCamera *visCamera) {
@@ -661,7 +777,7 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
     assert(frameActive);
 
     if (IsVisObjectRegisteredInCurrentView(renderObject)) {
-        return nullptr;
+        return renderObject->visObject;
     }
 
     VisObject *visObject = frameData->AllocVisObject();
@@ -669,6 +785,7 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
         return nullptr;
     }
     renderObject->viewCount = viewCount;
+    renderObject->visObject = visObject;
     visObject->meshLOD = renderObject->GetMeshLOD();
 
     if (renderObject->desc.meshInstance) {

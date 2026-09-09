@@ -30,6 +30,7 @@ struct VisCamera;
 struct VisLight;
 struct VisObject;
 struct VisSkinnedMesh;
+struct DirectionalShadowView;
 struct DebugDrawData;
 class RenderCamera;
 class Texture;
@@ -230,6 +231,8 @@ private:
     SkyboxState                 GetSkyboxState() const;
     void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        SetupDirectionalShadowView(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    BE1::AABB                   FindDirectionalShadowCasters(RenderFrameData *frameData, const RenderCamera *renderCamera, const BE1::OBB &shadowWorldBox);
     static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax);
     static void                 BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);

@@ -163,7 +163,6 @@ private:
     void                            UpdateMesh(const SharedPtr<MeshInstance> &meshInstance);
     void                            UpdateMeshLOD(int lodLevel);
     void                            UpdateSkeleton(const SharedPtr<Skeleton> &skeleton);
-                                    /// MaxMaterials 를 초과하면 경고를 출력하고 기존 머티리얼을 유지한다.
     void                            UpdateMaterials(const BE1::Array<SharedPtr<Material>> &materials);
     void                            UpdateFont(const SharedPtr<Font> &font);
     void                            UpdateText(const BE1::Str &text);
@@ -179,6 +178,7 @@ private:
 
     int                             index = -1;                     // RenderWorld::renderObjects 의 인덱스
     uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 VisObject 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
+    VisObject *                     visObject = nullptr;            // viewCount 가 현재 view 와 일치할 때만 유효한 프레임 메모리 참조.
 };
 
 BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {

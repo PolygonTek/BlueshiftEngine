@@ -86,6 +86,29 @@ struct RenderPass {
     RenderPassDrawSurf *        drawSurfStorage;
 };
 
+// 한 프레임 동안 한 카메라의 directional shadow 렌더링에 사용하는 데이터.
+struct DirectionalShadowView {
+    // Jitter 를 제외한 카메라의 [zNear, shadowDistance] 영역을 감싸는 구.
+    BE1::Sphere                 receiverSphere;
+
+    // 현재 투영 영역. Caster 수집 후 깊이를 확장하기 전에는 receiver 만 포함한다.
+    BE1::OBB                    worldBox;
+
+    // World position -> light clip position. Shadow depth 를 그릴 때 사용하며 texture scale/bias 는 없다.
+    ALIGN_AS32 BE1::Mat4        viewProjMatrix;
+
+    // 메인 조명 패스에서 사용할 샘플링 데이터.
+    ShaderDirectionalShadowData shaderData {};
+
+    // 카메라의 shadow texture 에 대한 비소유 참조.
+    RHI::Texture *              depthTexture = nullptr;
+
+    // Caster draw 목록과 PSO 설정. Depth bias 는 graphicsPipelineDesc 에 포함된다.
+    RenderPass                  renderPass {};
+
+    DirectionalShadowView() { renderPass.type = RenderPassType::Shadow; }
+};
+
 // 같은 debug draw pipeline 을 사용하는 프리미티브들을 하나의 배치로 묶는다.
 struct DebugDrawBatch {
     DebugDrawPipelineId         pipelineId = DebugDrawPipelineId::DepthTestedOneSidedFill;
@@ -165,6 +188,8 @@ struct VisCamera {
     uint32_t                    maxVisLocalLights = 0;
     uint32_t                    numVisLocalLights = 0;
     const VisLight **           visLocalLights = nullptr;   // 카메라에 보이는 local light 포인터 배열
+
+    const DirectionalShadowView *directionalShadowView = nullptr; // Directional shadow 를 준비한 경우에만 존재하며 frame arena 에 저장된다.
 
     const DebugDrawData *       debugDrawData = nullptr;
     RHI::PipelineState *        debugDrawPSOs[DebugDrawData::MaxBatches] = {};

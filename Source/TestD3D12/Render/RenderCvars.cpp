@@ -40,6 +40,7 @@ CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag
 CVAR(r_specularAA, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space specular anti-aliasing");
 
 CVAR_MINMAX(r_csmResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "cascade shadow map resolution", 128, 8192);
+CVAR_MINMAX(r_directionalShadowDistance, "150", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "directional shadow distance in world units (0 = disabled)", 0.0f, 1000000.0f);
 CVAR(r_csmConstantDepthBias0, "1000.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 0");
 CVAR(r_csmConstantDepthBias1, "500.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 1");
 CVAR(r_csmConstantDepthBias2, "250.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 2");
@@ -148,6 +149,7 @@ RenderFrameSettings CaptureRenderFrameSettings() {
 
     settings.mainRTSampleCount = NormalizeMainRTSampleCount(r_msaa.GetInteger());
     settings.csmResolution = static_cast<uint32_t>(r_csmResolution.GetInteger());
+    settings.directionalShadowDistance = r_directionalShadowDistance.GetFloat();
     settings.taaJitterSampleCount = static_cast<uint32_t>(r_taaJitterSampleCount.GetInteger());
     settings.hiZDebugPreviewMipLevel = static_cast<uint32_t>(r_hiZDebugPreviewMipLevel.GetInteger());
     settings.lightCullingDebugMode = static_cast<uint32_t>(r_lightCullingDebug.GetInteger());

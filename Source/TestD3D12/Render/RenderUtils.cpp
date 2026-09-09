@@ -101,6 +101,94 @@ void Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, BE1::Mat4 &
     cropMatrix[3][3] = 1.0f;
 }
 
+bool ComputeDirectionalShadowProjection(const BE1::Mat3 &lightAxis, const BE1::Sphere &receiverSphere, const BE1::AABB &casterBounds, uint32_t resolution, BE1::OBB &dirShadowBox, BE1::Mat4 &shadowViewProjMatrix) {
+    constexpr uint32_t borderTexels = 2;
+    const float radius = receiverSphere.Radius();
+    if (radius <= 0.0f || resolution <= 2 * borderTexels) {
+        return false;
+    }
+
+    // receiver sphere radius 로 shadow view XY 크기를 계산한다.
+    const float shadowViewExtent = radius * (static_cast<float>(resolution) / (resolution - 2 * borderTexels));
+    const float worldUnitsPerTexel = 2.0f * shadowViewExtent / resolution;
+    if (worldUnitsPerTexel <= 0.0f) {
+        return false;
+    }
+
+    // Directional light 의 위치와 무관한 world-space 원점 기준 격자에 정렬한다.
+    const BE1::Vec3 &center = receiverSphere.Center();
+
+    // recever sphere center 의 light space 좌표를 구한다 (XY 는 snap)
+    const float distLeft = BE1::Math::Snap(lightAxis[EngineAxis::Left].Dot(center), worldUnitsPerTexel);
+    const float distUp = BE1::Math::Snap(lightAxis[EngineAxis::Up].Dot(center), worldUnitsPerTexel);
+    const float distForward = lightAxis[EngineAxis::Forward].Dot(center);
+
+    float depthMin = distForward - radius;
+    float depthMax = distForward + radius;
+
+    // caster bounds 가 존재하면 depthMin 을 caster bounds 의 최소값으로 확장한다.
+    if (!casterBounds.IsCleared()) {
+        float casterMin, casterMax;
+        casterBounds.ProjectOnAxis(lightAxis[EngineAxis::Forward], casterMin, casterMax);
+        depthMin = BE1::Min(depthMin, casterMin);
+    }
+
+    // 경계면에서의 부동소수점 오차로 receiver/caster 가 잘리지 않도록 깊이 여유를 둔다.
+    const float depthPadding = BE1::Max(0.001f, (depthMax - depthMin) * 0.0001f);
+    depthMin -= depthPadding;
+    depthMax += depthPadding;
+    const float depthRange = depthMax - depthMin;
+    if (depthRange <= 0.0f) {
+        return false;
+    }
+
+    // shadow view matrix 를 계산한다.
+    BE1::Mat4 shadowViewMatrix;
+    SetViewMatrixFromEngineAxis(lightAxis, BE1::Vec3::origin, shadowViewMatrix);
+    shadowViewMatrix[0][3] = distLeft;
+    shadowViewMatrix[1][3] = -distUp;
+    shadowViewMatrix[2][3] = depthMin;
+
+    // shadow projection matrix 를 계산한다.
+    BE1::Mat4 shadowProjMatrix;
+    shadowProjMatrix.SetOrthoRH(-shadowViewExtent, shadowViewExtent, -shadowViewExtent, shadowViewExtent, 0.0f, depthRange, false, false);
+    shadowViewProjMatrix = shadowProjMatrix * shadowViewMatrix;
+
+    // shadow world box 를 계산한다.
+    const BE1::Vec3 shadowBoxCenter = lightAxis[EngineAxis::Forward] * (depthMin + depthRange * 0.5f) + lightAxis[EngineAxis::Left] * distLeft + lightAxis[EngineAxis::Up] * distUp;
+    dirShadowBox = BE1::OBB(shadowBoxCenter, BE1::Vec3(depthRange * 0.5f, shadowViewExtent, shadowViewExtent), lightAxis);
+    return true;
+}
+
+bool CullDirectionalShadowCaster(const BE1::AABB &casterBounds, const BE1::OBB &dirShadowBox) {
+    if (casterBounds.IsCleared()) {
+        return true;
+    }
+
+    const BE1::Vec3 casterCenter = casterBounds.Center();
+    const BE1::Vec3 casterExtents = casterBounds[1] - casterCenter;
+    const BE1::Vec3 relativeCenter = casterCenter - dirShadowBox.Center();
+    const BE1::Vec3 &shadowExtents = dirShadowBox.Extents();
+    const BE1::Mat3 &shadowAxis = dirShadowBox.Axis();
+
+    // shadow box X 축 컬링
+    const BE1::Vec3 &left = shadowAxis[EngineAxis::Left];
+    if (BE1::Math::Abs(left.Dot(relativeCenter)) > shadowExtents[EngineAxis::Left] + casterExtents.AbsDot(left)) {
+        return true;
+    }
+
+    // shadow box Y 축 컬링
+    const BE1::Vec3 &up = shadowAxis[EngineAxis::Up];
+    if (BE1::Math::Abs(up.Dot(relativeCenter)) > shadowExtents[EngineAxis::Up] + casterExtents.AbsDot(up)) {
+        return true;
+    }
+
+    // shadow box far 컬링
+    const BE1::Vec3 &forward = shadowAxis[EngineAxis::Forward];
+    const float depthMin = forward.Dot(relativeCenter) - casterExtents.AbsDot(forward);
+    return depthMin > shadowExtents[EngineAxis::Forward];
+}
+
 void CubeMapFaceToViewAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis) {
     switch (cubemapFace) {
     case RHI::CubemapFace::PositiveX:
