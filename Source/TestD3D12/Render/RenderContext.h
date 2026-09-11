@@ -17,6 +17,7 @@
 #include "RHI/RHI.h"
 #include "GpuTiming.h"
 #include "RenderFrameData.h"
+#include "RenderFrameSettings.h"
 #include "Render/Texture/TextureStreamingFeedback.h"
 #include "Render/Mesh/GuiMesh.h"
 
@@ -73,7 +74,7 @@ class RenderContext {
 public:
     using Stats = StatsT<PlainStatValue>;
 
-    static constexpr uint32_t       CSMCascadeCount = 4;
+    static constexpr uint32_t       CSMCascadeCount = RenderFrameSettings::CSMCascadeCount;
 
     struct DisplayOutputSettings {
         float                       paperWhiteNits = 200.0f;            // 출력 1.0 이 의미하는 절대 휘도

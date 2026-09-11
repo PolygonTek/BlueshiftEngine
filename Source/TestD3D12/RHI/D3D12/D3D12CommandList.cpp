@@ -100,10 +100,11 @@ void D3D12CommandList::SetBindlessRootDescriptorTables(D3D12_GPU_DESCRIPTOR_HAND
 void D3D12CommandList::SetShadingRate(RHI::ShadingRate shadingRate) {
     D3D12_SHADING_RATE rate = ToD3D12ShadingRate(shadingRate);
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedShadingRate == rate) {
+    if (cachedShadingRateValid && cachedShadingRate == rate) {
         return;
     }
     cachedShadingRate = rate;
+    cachedShadingRateValid = true;
 #endif
     D3D12_SHADING_RATE_COMBINER combiners[] = {
         D3D12_SHADING_RATE_COMBINER_MAX,
@@ -112,8 +113,7 @@ void D3D12CommandList::SetShadingRate(RHI::ShadingRate shadingRate) {
     GetGraphicsCommandList()->RSSetShadingRate(rate, combiners);
 }
 
-void D3D12CommandList::Reset(bool resetCacheStates, const RHI::CommandList *primaryCommandList) {
-    assert(!!primaryCommandList ^ !isSecondary);
+void D3D12CommandList::Reset() {
     // BeginRenderPass/EndRenderPass 중간에 Reset 하면 assert 가 발생한다.
     assert(endRenderPassBarriers.Count() == 0);
     assert(!shadingRateImage);
@@ -126,45 +126,12 @@ void D3D12CommandList::Reset(bool resetCacheStates, const RHI::CommandList *prim
     // command list 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     GetGraphicsCommandList()->Reset(commandAllocator, nullptr);
 
-    currentPSO = nullptr;
-    InvalidateRootSignatureDependentBindings();
-
-#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (resetCacheStates) {
-        if (!primaryCommandList) {
-            // primary command list 라면, 모든 캐시된 상태들을 초기값으로 변경한다.
-            cachedGraphicsRootSignature = nullptr;
-            cachedComputeRootSignature = nullptr;
-
-            for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
-                cachedVertexBufferViews[i] = {};
-            }
-            cachedIndexBufferView = {};
-            cachedBlendFactor = BE1::Color4(1, 1, 1, 1);
-            cachedStencilRef = 0;
-            cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
-        } else {
-            // secondary command list 는 primary command list 의 상태를 그대로 사용하므로,
-            // 모든 캐시된 상태들을 primary command list 의 것과 같도록 초기화한다.
-            const D3D12CommandList *_primaryCommandList = static_cast<const D3D12CommandList *>(primaryCommandList);
-            cachedGraphicsRootSignature = _primaryCommandList->cachedGraphicsRootSignature;
-            cachedComputeRootSignature = _primaryCommandList->cachedComputeRootSignature;
-
-            for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
-                cachedVertexBufferViews[i] = _primaryCommandList->cachedVertexBufferViews[i];
-            }
-            cachedIndexBufferView = _primaryCommandList->cachedIndexBufferView;
-            cachedBlendFactor = _primaryCommandList->cachedBlendFactor;
-            cachedStencilRef = _primaryCommandList->cachedStencilRef;
-            cachedShadingRate = _primaryCommandList->cachedShadingRate;
-        }
-
-        // primary 든 secondary 는 상관없이 SetDescriptorHeaps() 와 IASetPrimitiveTopology() 는 따로 세팅해야 하므로,
-        // 그와 관련된 캐시 상태는 항상 초기값으로 세팅한다.
-        cachedRootDescriptorHeaps.SetCount(0);
-        cachedPrimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    }
-#endif
+    // D3D12 bundle 로 구현되는 secondary 는 root binding 변경 전에 root signature 를 직접 설정해야 한다.
+    // primary 와 같은 signature 여도 첫 SetGraphics/ComputeRootSignature 호출을 생략하면 안된다.
+    // secondary 실행 시점의 primary 상태는 앞선 secondary 에 의해 변경될 수 있으므로,
+    // 기록 시점의 primary 캐시를 기준으로 첫 바인딩을 생략하면 안된다.
+    // 디스크립터 힙과 primitive topology 도 각 command list 에서 명시적으로 설정한다.
+    InvalidateStateCache();
 }
 
 void D3D12CommandList::Execute() {
@@ -175,7 +142,7 @@ void D3D12CommandList::Execute() {
     D3D12Renderer::GetRenderer()->commandQueues[queueIndex]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
-// 실제로 Execute 하는 건 아니고, primary command list 에 secondary command list 를 끼워 넣는다.
+// secondary command list 의 실행을 현재 primary command list 에 기록한다.
 void D3D12CommandList::ExecuteSecondary(RHI::CommandList *secondaryCommandList) {
     D3D12CommandList *_secondaryCommandList = static_cast<D3D12CommandList *>(secondaryCommandList);
     assert(_secondaryCommandList->isSecondary);
@@ -188,6 +155,10 @@ void D3D12CommandList::ExecuteSecondary(RHI::CommandList *secondaryCommandList) 
     // ExecuteBundle 을 호출하기 전에 primary 의 디스크립터 힙을 secondary 의 것과 동일하게 맞춘다.
     SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
-    // primary command list 에 secondary command list 를 끼워 넣는다.
+    // D3D12 ExecuteBundle 호출을 primary command list 에 기록한다.
     GetGraphicsCommandList()->ExecuteBundle(_secondaryCommandList->GetGraphicsCommandList());
+
+    // secondary 가 변경한 상태는 다음 primary 바인딩에서 다시 설정한다.
+    // 디스크립터 힙은 실행 직전에 맞췄으므로 캐시를 유지한다.
+    InvalidateStateCache(false);
 }

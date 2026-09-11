@@ -72,6 +72,26 @@ void ShaderTemplateManager::ProcessPendingGlobalDefineChanges() {
         }
     }
 
+    if (r_shadowMapQuality2.IsModified()) {
+        r_shadowMapQuality2.ClearModified();
+        const int quality = r_shadowMapQuality2.GetInteger();
+        if (shadowMapQuality != quality) {
+            shadowMapQuality = quality;
+            RemoveGlobalDefine("SHADOW_MAP_QUALITY");
+            AddGlobalDefine(BE1::va("SHADOW_MAP_QUALITY=%i", shadowMapQuality));
+        }
+    }
+
+    if (r_shadowDebug.IsModified()) {
+        r_shadowDebug.ClearModified();
+        const int debugMode = r_shadowDebug.GetInteger();
+        if (shadowDebugMode != debugMode) {
+            shadowDebugMode = debugMode;
+            RemoveGlobalDefine("DEBUG_CASCADED_SHADOW_MAP");
+            AddGlobalDefine(BE1::va("DEBUG_CASCADED_SHADOW_MAP=%i", shadowDebugMode));
+        }
+    }
+
     uint32_t globalDefineModCountSnapshot;
     {
         BE1::ScopedLock lock(globalDefinesMutex);
@@ -183,9 +203,15 @@ void ShaderTemplateManager::InitGlobalDefines() {
     AddGlobalDefine(BE1::va("CSM_COUNT=%i", static_cast<int>(RenderContext::CSMCascadeCount)));
     AddGlobalDefine(BE1::va("CASCADE_SELECTION_METHOD=%i", 1));
 
+    shadowMapQuality = r_shadowMapQuality2.GetInteger();
+    AddGlobalDefine(BE1::va("SHADOW_MAP_QUALITY=%i", shadowMapQuality));
+
     if (r_specularEnergyCompensation2.GetBool()) {
         AddGlobalDefine(SpecularEnergyCompensationDefine);
     }
+
+    shadowDebugMode = r_shadowDebug.GetInteger();
+    AddGlobalDefine(BE1::va("DEBUG_CASCADED_SHADOW_MAP=%i", shadowDebugMode));
 }
 
 static int GetDefineNameLength(const char *define) {
@@ -327,6 +353,11 @@ void ShaderTemplateManager::CreateEngineShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load depth shader template");
     }
 
+    shadowDepthShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/ShadowDepth");
+    if (!shadowDepthShaderTemplate) {
+        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load shadow depth shader template");
+    }
+
     unlitShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Unlit");
     if (!unlitShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load unlit shader template");
@@ -359,6 +390,9 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     }
     if (depthShaderTemplate) {
         depthShaderTemplate.reset();
+    }
+    if (shadowDepthShaderTemplate) {
+        shadowDepthShaderTemplate.reset();
     }
     if (unlitShaderTemplate) {
         unlitShaderTemplate.reset();

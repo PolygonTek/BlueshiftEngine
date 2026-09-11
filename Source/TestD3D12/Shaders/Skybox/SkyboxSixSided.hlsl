@@ -1,5 +1,9 @@
 #include "../SurfaceDrawCommon.hlsli"
 
+cbuffer CameraCB : register(b1) {
+    CameraConstants cameraConstants;
+};
+
 #define SKYBOX_SIX_SIDED_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
     ROOT_SIGNATURE_SURFACE_DRAW_RESOURCES \
@@ -35,7 +39,7 @@ struct PSInput {
 PSInput VSMain(VSInput input) {
     PSInput result;
 
-    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID);
+    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID, cameraConstants.surfaceTableIndex);
 
     float3 v = input.position.xyz;
 

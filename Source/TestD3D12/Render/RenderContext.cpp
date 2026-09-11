@@ -344,7 +344,6 @@ bool RenderContext::CreateCSMDepthTexture(uint32_t resolution) {
 
     RHI::renderer->SetName(newTexture, "RenderContext::csmDepthTexture");
 
-    // 기존 텍스쳐를 파괴하고 새 텍스쳐와 뷰를 설정한다.
     DestroyCSMDepthTexture();
 
     csmDepthTexture = newTexture;

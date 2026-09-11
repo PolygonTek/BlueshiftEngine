@@ -1041,7 +1041,7 @@ static int SelectMeshLOD(const RenderCamera &camera, VisObject &visObject, const
 
     // 동일한 카메라/객체의 여러 SubMesh 에서 허용 오차 계산을 공유하기 위해서 한번만 계산한다.
     if (visObject.squaredLODErrorLimit < 0.0f) {
-        visObject.squaredLODErrorLimit = camera.CalcLocalSquaredLODErrorLimit(visObject.def->GetWorldAABB(), visObject.def->GetWorldMatrix(), r_meshLODPixelError.GetFloat());
+        visObject.squaredLODErrorLimit = camera.CalcLocalLODErrorLimitSqr(visObject.def->GetWorldMatrix(), visObject.def->GetWorldAABB(), r_meshLODPixelError.GetFloat());
     }
 
     if (visObject.squaredLODErrorLimit <= 0.0f) {

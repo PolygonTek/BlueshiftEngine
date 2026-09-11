@@ -40,6 +40,13 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physic
     indirectLightingEnabled = true;
     directionalLightEnabled = false;
 
+    directionalLight.type = RenderLight::Type::Directional;
+    directionalLight.flags = RenderLight::Flag::CastShadows;
+    directionalLight.linearColor = BE1::Color3::white;
+    directionalLight.intensity = 2.0f;
+    UpdateDirectionalLightDirection();
+    directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
+
     testMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/materialBall.material");
     litShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Lit");
     litDirectShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/LitDirect");
@@ -49,18 +56,13 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physic
     materialBall.worldMatrix.SetTranslationRotation(BE1::Vec3(0, 0, -testMesh->GetAABB().Center().z), BE1::Mat3::FromRotationZ(DEG2RAD(180.0f)), false);
 
     RenderObject::Desc materialBallDesc;
+    materialBallDesc.flags = RenderObject::Flag::CastShadows;
     materialBallDesc.worldMatrix = materialBall.worldMatrix;
     materialBallDesc.meshInstance = testMesh->GetStaticInstance();
     materialBallDesc.aabb = testMesh->GetAABB();
     materialBallDesc.materials.SetCount(1);
     materialBallDesc.materials[0] = testMaterial;
     materialBall.renderObjectHandle = renderWorld->AddRenderObject(materialBallDesc);
-
-    directionalLight.type = RenderLight::Type::Directional;
-    directionalLight.flags = RenderLight::Flag::None;
-    directionalLight.linearColor = BE1::Color3::white;
-    directionalLight.intensity = 2.0f;
-    UpdateDirectionalLightDirection();
 
     EnvironmentLight::Desc envLightDesc;
     envLightAdded = renderWorld->AddEnvironmentLight(envLightDesc);
@@ -253,26 +255,7 @@ void SceneMaterialBall::BuildImGui() {
     ImGui::Text("Directional Light");
 
     if (ImGui::Checkbox("Enabled##DirectionalLight", &directionalLightEnabled)) {
-        if (directionalLightEnabled) {
-            RenderLight::Desc desc;
-            desc.type = directionalLight.type;
-            desc.flags = directionalLight.flags;
-            desc.layer = directionalLight.layer;
-            desc.origin = directionalLight.origin;
-            desc.axis = directionalLight.axis;
-            desc.size = directionalLight.size;
-            desc.zNear = directionalLight.zNear;
-            desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
-            desc.linearColor = directionalLight.linearColor;
-            desc.intensity = directionalLight.intensity;
-            desc.fallOffExponent = directionalLight.fallOffExponent;
-            desc.shadowOffsetFactor = directionalLight.shadowOffsetFactor;
-            desc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
-            directionalLight.renderLightHandle = renderWorld->AddRenderLight(desc);
-        } else if (directionalLight.renderLightHandle >= 0) {
-            renderWorld->RemoveRenderLight(directionalLight.renderLightHandle);
-            directionalLight.renderLightHandle = -1;
-        }
+        directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
     }
 
     ImGui::BeginDisabled(!directionalLightEnabled);

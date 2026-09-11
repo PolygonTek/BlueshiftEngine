@@ -18,24 +18,25 @@
 #include "Render/RenderInternal.h"
 #include "Render/RenderFrameData.h"
 
-void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
+void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfaces");
 
     assert(numDrawSurfs > 0);
+    assert(viewConstantBuffer);
 
 #ifdef USE_RENDER_TASK
     // numDrawSurfs 가 많으면 태스크로 나눠서 그린다.
     if (numDrawSurfs > MaxInstancesPerDraw && frameData->NumRenderTaskThreads() > 1) {
-        DrawGenericSurfacesWithTask(drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
+        DrawGenericSurfacesWithTask(drawSurfs, numDrawSurfs, viewConstantBuffer, hiZCullBatches, hiZCullBatchCount);
     } else {
-        DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
+        DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs, viewConstantBuffer, hiZCullBatches, hiZCullBatchCount);
     }
 #else
-    DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
+    DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs, viewConstantBuffer, hiZCullBatches, hiZCullBatchCount);
 #endif
 }
 
-void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
+void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithoutTask");
 
     RHI::PipelineState *currentPSO = nullptr;
@@ -63,7 +64,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **dr
 
             RHI::renderer->SetPSO(mainCommandList, currentPSO);
             RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
-            RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
+            RHI::renderer->SetConstantBuffer(mainCommandList, 1, viewConstantBuffer);
 
             if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
                 RHI::renderer->SetBuffer(mainCommandList, 1, false, currentVisCamera->skinningJointBuffer);
@@ -113,7 +114,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
 
     // 세컨더리 커맨드 리스트를 시작한다.
     RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(taskDesc->threadIndex);
-    RHI::CommandList *commandList = frameThreadData->BeginSecondaryCommandList(mainCommandList);
+    RHI::CommandList *commandList = frameThreadData->BeginSecondaryCommandList();
 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
@@ -134,7 +135,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
 
             RHI::renderer->SetPSO(commandList, currentPSO);
             RHI::renderer->SetConstantBuffer(commandList, 0, frameConstantBuffer);
-            RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
+            RHI::renderer->SetConstantBuffer(commandList, 1, taskDesc->viewConstantBuffer);
 
             if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
                 RHI::renderer->SetBuffer(commandList, 1, false, currentVisCamera->skinningJointBuffer);
@@ -190,7 +191,7 @@ void RenderBackend::DrawGenericSurfacesByTaskFunction(void *data) {
     renderSystem->GetBackend()->DrawGenericSurfacesByTask(taskDesc);
 }
 
-void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
+void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithTask");
 
     // numDrawSurfs 로 만들어 질 수 있는 최대 태스크 개수를 계산한다.
@@ -232,6 +233,7 @@ void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawS
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.drawSurfs = &drawSurfs[startIndex];
         currentThreadDesc.numDrawSurfs = endIndex - startIndex;
+        currentThreadDesc.viewConstantBuffer = viewConstantBuffer;
         currentThreadDesc.firstDrawSurfIndex = startIndex;
         currentThreadDesc.hiZCullBatches = nullptr;
         currentThreadDesc.numHiZCullBatches = hiZCullBatchCursor - taskHiZCullBatchStart;

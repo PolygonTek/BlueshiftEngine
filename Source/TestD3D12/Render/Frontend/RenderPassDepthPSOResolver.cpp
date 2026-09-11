@@ -55,15 +55,16 @@ const GraphicsPipelineDesc &RenderPassDepthPSOResolver::GetGraphicsPipelineDesc(
     return pipelineDescs[inputLayoutIndex];
 }
 
-RenderPassDepthPSOResolver::PSOEntry *RenderPassDepthPSOResolver::FindPSOEntry(const ShaderFeatureSet &featureSet, VertexInputLayoutId inputLayoutId, int &hashKey) {
-    // featureSet, input layout id 로 hash 키를 만든다.
+RenderPassDepthPSOResolver::PSOEntry *RenderPassDepthPSOResolver::FindPSOEntry(const ShaderFeatureSet &featureSet, VertexInputLayoutId inputLayoutId, RHI::CullMode cullMode, int &hashKey) {
+    // featureSet, input layout id, cull mode 로 hash 키를 만든다.
     uint64_t hash = featureSet.flags;
     hash = hash_combine(hash, static_cast<int>(inputLayoutId));
+    hash = hash_combine(hash, static_cast<int>(cullMode));
 
     hashKey = psoEntriesHash.GenerateHash(hash);
     for (int index = psoEntriesHash.First(hashKey); index != -1; index = psoEntriesHash.Next(index)) {
         PSOEntry &entry = psoEntries[index];
-        if (entry.featureFlags == featureSet.flags && entry.inputLayoutId == inputLayoutId) {
+        if (entry.featureFlags == featureSet.flags && entry.inputLayoutId == inputLayoutId && entry.cullMode == cullMode) {
             return &entry;
         }
     }
@@ -95,6 +96,7 @@ ShaderPermutationKey RenderPassDepthPSOResolver::GetPermutationKey(ShaderTemplat
 RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(const VisSurf *visSurf, bool async) {
     assert(visSurf);
     assert(visSurf->subMesh);
+    assert(visSurf->material);
 
     ResolveResult result;
     result.inputLayoutId = baseInputLayoutId;
@@ -111,22 +113,41 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
         result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
     }
 
+    const RHI::CullMode cullMode = visSurf->material->GetCullMode();
     int hashKey;
-    if (PSOEntry *entry = FindPSOEntry(featureSet, result.inputLayoutId, hashKey)) {
+    if (PSOEntry *entry = FindPSOEntry(featureSet, result.inputLayoutId, cullMode, hashKey)) {
         result.pso = entry->pso;
         return result;
     }
 
     // hash 에 존재하지 않는다면, input layout 에 맞는 graphics pipeline desc 를 준비하고,
-    const GraphicsPipelineDesc &graphicsPipelineDesc = GetGraphicsPipelineDesc(result.inputLayoutId);
+    GraphicsPipelineDesc graphicsPipelineDesc = GetGraphicsPipelineDesc(result.inputLayoutId);
+
+    // Opaque depth surface 는 fragment shader 없이 depth 를 기록할 수 있다.
+    // Alpha cutoff surface 는 clip 처리가 필요하므로 fragment shader 를 유지한다.
+    graphicsPipelineDesc.fragmentShaderEnabled = featureSet.HasFeature(ShaderFeature::Perforated);
+
+    // 재질별 cull mode 를 유지한다. 양면 alpha-cutoff surface 도 양쪽에서 depth 를 기록해야 한다.
+    switch (cullMode) {
+    case RHI::CullMode::Back:
+        graphicsPipelineDesc.rasterizerStateType = RHI::RasterizerStateType::SolidFrontSided;
+        break;
+    case RHI::CullMode::Front:
+        graphicsPipelineDesc.rasterizerStateType = RHI::RasterizerStateType::SolidBackSided;
+        break;
+    case RHI::CullMode::None:
+        graphicsPipelineDesc.rasterizerStateType = RHI::RasterizerStateType::SolidTwoSided;
+        break;
+    }
 
     ShaderPermutationKey permutationKey = GetPermutationKey(shaderTemplate.get(), featureSet);
     result.pso = ShaderPipeline::GetReadyPSO(shaderPipelineCache.GetGraphicsPipeline(shaderTemplate, permutationKey, graphicsPipelineDesc, async));
 
-    // featureSet, input layout id 로 새 PSO entry 를 추가한다.
+    // featureSet, input layout id, cull mode 로 새 PSO entry 를 추가한다.
     RenderPassDepthPSOResolver::PSOEntry &entry = psoEntries.Alloc();
     entry.featureFlags = featureSet.flags;
     entry.inputLayoutId = result.inputLayoutId;
+    entry.cullMode = cullMode;
     entry.pso = result.pso;
     psoEntriesHash.Add(hashKey, psoEntries.Count() - 1);
 

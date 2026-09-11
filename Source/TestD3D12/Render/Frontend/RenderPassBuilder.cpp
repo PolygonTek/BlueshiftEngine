@@ -126,6 +126,85 @@ static RHI::DepthStencilStateType GetDepthState(const RHI::ProjectionPolicy &pro
     return write ? RHI::DepthStencilStateType::LEqualWrite : RHI::DepthStencilStateType::LEqualNoWrite;
 }
 
+void RenderPassBuilder::BuildCascadedShadow(RenderFrameData *frameData, VisCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const VisSurf *const *visSurfs, uint32_t numVisSurfs, bool allowAsyncPSOBuild) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildCascadedShadow");
+
+    assert(cascadedShadow);
+    assert(cascadedShadow->depthTexture);
+    assert(cascadeIndex < cascadedShadow->cascadeCount);
+
+    CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
+    assert(cascade.depthDSV.IsValid());
+
+    RenderPass *shadowPass = &cascade.renderPass;
+    assert(!shadowPass->drawSurfs && !shadowPass->drawSurfStorage);
+
+    GraphicsPipelineDesc &pipelineDesc = shadowPass->graphicsPipelineDesc;
+    pipelineDesc = {};
+    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualWrite;
+    pipelineDesc.renderDest.renderTargetCount = 0;
+    pipelineDesc.renderDest.depthStencilFormat = RenderContext::activeContext->GetCSMDepthFormat();
+    pipelineDesc.renderDest.sampleCount = cascadedShadow->depthTexture->GetSampleCount();
+
+    // CSM 패스에서만 depth clipping 을 꺼 near 밖 caster 를 depth 0 에 clamp 한다 (shadow pancaking).
+    pipelineDesc.depthClipEnabled = false;
+
+    // 각 cascade 는 독립된 view/DSV/draw 목록과 해당 프레임에 캡처한 bias 를 사용한다.
+    const RenderFrameSettings &settings = frameData->GetRenderFrameSettings();
+    pipelineDesc.depthBiasOverride = true;
+    pipelineDesc.constantDepthBias = settings.csmConstantDepthBias[cascadeIndex];
+    pipelineDesc.slopeScaledDepthBias = settings.csmSlopeScaledDepthBias[cascadeIndex];
+
+    BuildShadow(frameData, shadowPass, static_cast<uint8_t>(1u << cascadeIndex), visSurfs, numVisSurfs, allowAsyncPSOBuild);
+}
+
+void RenderPassBuilder::BuildShadow(RenderFrameData *frameData, RenderPass *shadowPass, uint8_t shadowCascadeMask, const VisSurf *const *visSurfs, uint32_t numVisSurfs, bool allowAsyncPSOBuild) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildShadow");
+
+    assert(shadowPass);
+    assert(!shadowPass->drawSurfs && !shadowPass->drawSurfStorage);
+    assert(visSurfs || numVisSurfs == 0);
+    assert(shadowPass->graphicsPipelineDesc.renderDest.renderTargetCount == 0);
+    assert(shadowPass->graphicsPipelineDesc.renderDest.depthStencilFormat != RHI::Format::Unknown);
+    assert(shadowCascadeMask != 0);
+
+    shadowPass->type = RenderPassType::Shadow;
+    shadowPass->baseInputLayoutId = VertexInputLayoutId::XyzStColor;
+    // Depth 대상과 bias 등 호출자가 준비한 설정은 유지한다.
+    shadowPass->graphicsPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(shadowPass->baseInputLayoutId);
+
+    uint32_t numShadowDrawSurfs = 0;
+    for (uint32_t i = 0; i < numVisSurfs; ++i) {
+        if ((visSurfs[i]->shadowCascadeMask & shadowCascadeMask) != 0) {
+            numShadowDrawSurfs++;
+        }
+    }
+
+    // Caster 가 없는 패스도 depth clear 에 사용할 수 있도록 설정은 유지하고 draw 메모리만 생략한다.
+    if (numShadowDrawSurfs == 0) {
+        return;
+    }
+
+    shadowPass->maxDrawSurfs = numShadowDrawSurfs;
+    shadowPass->drawSurfs = (const RenderPassDrawSurf **)frameData->MemAlloc(numShadowDrawSurfs * sizeof(RenderPassDrawSurf *));
+    shadowPass->drawSurfStorage = (RenderPassDrawSurf *)frameData->MemAlloc(numShadowDrawSurfs * sizeof(RenderPassDrawSurf));
+
+    // ShadowViewCB 에 광원 행렬과 surface table 을 전달하는 전용 셰이더를 사용한다.
+    shadowPSOResolver.Begin(shadowPass, BE1::Min(numShadowDrawSurfs, 24u), shaderTemplateManager.shadowDepthShaderTemplate);
+
+    for (uint32_t i = 0; i < numVisSurfs; ++i) {
+        const VisSurf *visSurf = visSurfs[i];
+        if ((visSurf->shadowCascadeMask & shadowCascadeMask) == 0) {
+            continue;
+        }
+
+        const RenderPassDepthPSOResolver::ResolveResult rr = shadowPSOResolver.Resolve(visSurf, allowAsyncPSOBuild);
+        AddRenderPassDrawSurf(shadowPass, visSurf, BuildOpaqueSortKey(visSurf, rr.pso), rr.inputLayoutId, rr.pso);
+    }
+
+    SortRenderPassDrawSurfs(frameData, shadowPass);
+}
+
 void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildMain");
 
@@ -134,9 +213,6 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     }
 
     const bool useDepthPrepass = frameData->GetRenderFrameSettings().depthPrepass;
-    const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
-    const bool directLighting = visCamera->directionalLightVisible || visCamera->numVisLocalLights > 0;
-    const bool indirectLighting = visCamera->envLightDiffuseIrradianceCubeMap && visCamera->envLightSpecularCubeMap;
 
     int numDepthDrawSurfs = 0;
     int numOpaqueDrawSurfs = 0;
@@ -167,6 +243,10 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     if (numMainDrawSurfs == 0) {
         return;
     }
+
+    const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
+    const bool directLighting = visCamera->directionalLightVisible || visCamera->numVisLocalLights > 0;
+    const bool indirectLighting = visCamera->envLightDiffuseIrradianceCubeMap && visCamera->envLightSpecularCubeMap;
 
     // RenderPass 에서 필요한 모든 RenderPassDrawSurf 를 미리 할당한다.
     AllocRenderPassDrawSurfs(frameData, visCamera, numMainDrawSurfs);

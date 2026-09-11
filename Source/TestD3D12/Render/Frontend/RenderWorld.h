@@ -30,7 +30,7 @@ struct VisCamera;
 struct VisLight;
 struct VisObject;
 struct VisSkinnedMesh;
-struct DirectionalShadowView;
+struct VisCascadedShadow;
 struct DebugDrawData;
 class RenderCamera;
 class Texture;
@@ -231,8 +231,8 @@ private:
     SkyboxState                 GetSkyboxState() const;
     void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        SetupDirectionalShadowView(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    BE1::AABB                   FindDirectionalShadowCasters(RenderFrameData *frameData, const RenderCamera *renderCamera, const BE1::OBB &shadowWorldBox);
+    void                        SetupCascadedShadow(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        FindDirectionalShadowCasters(RenderFrameData *frameData, const RenderCamera *renderCamera, const VisCascadedShadow *cascadedShadow);
     static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax);
     static void                 BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
@@ -252,7 +252,7 @@ private:
     void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
-    void                        AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, int lodLevel = 0);
+    void                        AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel = 0);
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.

@@ -101,92 +101,148 @@ void Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, BE1::Mat4 &
     cropMatrix[3][3] = 1.0f;
 }
 
-bool ComputeDirectionalShadowProjection(const BE1::Mat3 &lightAxis, const BE1::Sphere &receiverSphere, const BE1::AABB &casterBounds, uint32_t resolution, BE1::OBB &dirShadowBox, BE1::Mat4 &shadowViewProjMatrix) {
-    constexpr uint32_t borderTexels = 2;
-    const float radius = receiverSphere.Radius();
-    if (radius <= 0.0f || resolution <= 2 * borderTexels) {
-        return false;
+void ComputeCSMSplitDistances(float nearDistance, float farDistance, float splitLambda, uint32_t cascadeCount, bool orthogonal, float *splitDistances) {
+    assert(farDistance > nearDistance);
+    assert(splitLambda >= 0.0f && splitLambda <= 1.0f);
+
+    splitDistances[0] = nearDistance;
+    splitDistances[cascadeCount] = farDistance;
+    if (cascadeCount == 1) {
+        return;
     }
 
-    // receiver sphere radius 로 shadow view XY 크기를 계산한다.
-    const float shadowViewExtent = radius * (static_cast<float>(resolution) / (resolution - 2 * borderTexels));
-    const float worldUnitsPerTexel = 2.0f * shadowViewExtent / resolution;
-    if (worldUnitsPerTexel <= 0.0f) {
-        return false;
+    const float invCascadeCount = 1.0f / cascadeCount;
+    const float distanceRange = farDistance - nearDistance;
+
+    // 직교 투영과 균등 분할에는 logarithmic split 계산이 필요하지 않다.
+    if (orthogonal || nearDistance <= 0.0f || splitLambda == 0.0f) {
+        for (uint32_t i = 1; i < cascadeCount; ++i) {
+            splitDistances[i] = nearDistance + distanceRange * (i * invCascadeCount);
+        }
+        return;
     }
 
-    // Directional light 의 위치와 무관한 world-space 원점 기준 격자에 정렬한다.
-    const BE1::Vec3 &center = receiverSphere.Center();
-
-    // recever sphere center 의 light space 좌표를 구한다 (XY 는 snap)
-    const float distLeft = BE1::Math::Snap(lightAxis[EngineAxis::Left].Dot(center), worldUnitsPerTexel);
-    const float distUp = BE1::Math::Snap(lightAxis[EngineAxis::Up].Dot(center), worldUnitsPerTexel);
-    const float distForward = lightAxis[EngineAxis::Forward].Dot(center);
-
-    float depthMin = distForward - radius;
-    float depthMax = distForward + radius;
-
-    // caster bounds 가 존재하면 depthMin 을 caster bounds 의 최소값으로 확장한다.
-    if (!casterBounds.IsCleared()) {
-        float casterMin, casterMax;
-        casterBounds.ProjectOnAxis(lightAxis[EngineAxis::Forward], casterMin, casterMax);
-        depthMin = BE1::Min(depthMin, casterMin);
+    // practical split scheme.
+    const float distanceRatio = farDistance / nearDistance;
+    const float uniformWeight = 1.0f - splitLambda;
+    for (uint32_t i = 1; i < cascadeCount; ++i) {
+        const float fraction = i * invCascadeCount;
+        const float uniformSplit = nearDistance + distanceRange * fraction;
+        const float logarithmicSplit = nearDistance * BE1::Math::Pow(distanceRatio, fraction);
+        splitDistances[i] = logarithmicSplit * splitLambda + uniformSplit * uniformWeight;
     }
-
-    // 경계면에서의 부동소수점 오차로 receiver/caster 가 잘리지 않도록 깊이 여유를 둔다.
-    const float depthPadding = BE1::Max(0.001f, (depthMax - depthMin) * 0.0001f);
-    depthMin -= depthPadding;
-    depthMax += depthPadding;
-    const float depthRange = depthMax - depthMin;
-    if (depthRange <= 0.0f) {
-        return false;
-    }
-
-    // shadow view matrix 를 계산한다.
-    BE1::Mat4 shadowViewMatrix;
-    SetViewMatrixFromEngineAxis(lightAxis, BE1::Vec3::origin, shadowViewMatrix);
-    shadowViewMatrix[0][3] = distLeft;
-    shadowViewMatrix[1][3] = -distUp;
-    shadowViewMatrix[2][3] = depthMin;
-
-    // shadow projection matrix 를 계산한다.
-    BE1::Mat4 shadowProjMatrix;
-    shadowProjMatrix.SetOrthoRH(-shadowViewExtent, shadowViewExtent, -shadowViewExtent, shadowViewExtent, 0.0f, depthRange, false, false);
-    shadowViewProjMatrix = shadowProjMatrix * shadowViewMatrix;
-
-    // shadow world box 를 계산한다.
-    const BE1::Vec3 shadowBoxCenter = lightAxis[EngineAxis::Forward] * (depthMin + depthRange * 0.5f) + lightAxis[EngineAxis::Left] * distLeft + lightAxis[EngineAxis::Up] * distUp;
-    dirShadowBox = BE1::OBB(shadowBoxCenter, BE1::Vec3(depthRange * 0.5f, shadowViewExtent, shadowViewExtent), lightAxis);
-    return true;
 }
 
-bool CullDirectionalShadowCaster(const BE1::AABB &casterBounds, const BE1::OBB &dirShadowBox) {
+// 픽셀 단위의 LOD 허용 오차 (pixelErrorLimit) 를 모델 로컬 공간의 허용 오차 제곱으로 변환한다.
+float CalcLocalLODErrorLimitSqr(const BE1::Mat3x4 &worldMatrix, float pixelsPerWorldUnit, float pixelErrorLimit) {
+    if (pixelsPerWorldUnit <= 0.0f || pixelErrorLimit <= 0.0f) {
+        return 0.0f;
+    }
+
+    const BE1::Vec3 x(worldMatrix[0][0], worldMatrix[1][0], worldMatrix[2][0]);
+    const BE1::Vec3 y(worldMatrix[0][1], worldMatrix[1][1], worldMatrix[2][1]);
+    const BE1::Vec3 z(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2]);
+
+    // 월드 변환의 최대 확대율 제곱을 보수적으로 계산한다.
+    // 축이 직교하면 최대 스케일의 제곱이며, shearing 도 반영한다.
+    const float xy = BE1::Math::Abs(x.Dot(y));
+    const float xz = BE1::Math::Abs(x.Dot(z));
+    const float yz = BE1::Math::Abs(y.Dot(z));
+    const float worldScaleSqr = BE1::Max(x.LengthSqr() + xy + xz, BE1::Max(y.LengthSqr() + xy + yz, z.LengthSqr() + xz + yz));
+    const float pixelsPerLocalUnitSqr = pixelsPerWorldUnit * pixelsPerWorldUnit * worldScaleSqr;
+    if (pixelsPerLocalUnitSqr <= 0.0f) {
+        return 0.0f;
+    }
+
+    return pixelErrorLimit * pixelErrorLimit / pixelsPerLocalUnitSqr;
+}
+
+bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::OBB &shadowMapBounds, const BE1::AABB &casterBounds) {
     if (casterBounds.IsCleared()) {
         return true;
     }
 
-    const BE1::Vec3 casterCenter = casterBounds.Center();
-    const BE1::Vec3 casterExtents = casterBounds[1] - casterCenter;
-    const BE1::Vec3 relativeCenter = casterCenter - dirShadowBox.Center();
-    const BE1::Vec3 &shadowExtents = dirShadowBox.Extents();
-    const BE1::Mat3 &shadowAxis = dirShadowBox.Axis();
+    const BE1::Vec3 casterBoundsCenter = casterBounds.Center();
+    const BE1::Vec3 casterBoundsExtents = casterBounds[1] - casterBoundsCenter;
+    const BE1::Vec3 &shadowBoundsCenter = shadowMapBounds.Center();
+    const BE1::Vec3 &shadowBoundsExtents = shadowMapBounds.Extents();
+    const BE1::Mat3 &shadowBoundsAxis = shadowMapBounds.Axis();
 
-    // shadow box X 축 컬링
-    const BE1::Vec3 &left = shadowAxis[EngineAxis::Left];
-    if (BE1::Math::Abs(left.Dot(relativeCenter)) > shadowExtents[EngineAxis::Left] + casterExtents.AbsDot(left)) {
+    // casterBounds 가 shadowMapBounds 의 x 축 범위에 포함되는지 검사
+    const BE1::Vec3 &left = shadowBoundsAxis[EngineAxis::Left];
+    const float casterLeftRadius = casterBoundsExtents.AbsDot(left);
+    const float casterLeftDistance = left.Dot(casterBoundsCenter);
+    const float shadowLeftDistance = left.Dot(shadowBoundsCenter);
+    if (BE1::Math::Abs(casterLeftDistance - shadowLeftDistance) > shadowBoundsExtents[EngineAxis::Left] + casterLeftRadius) {
         return true;
     }
 
-    // shadow box Y 축 컬링
-    const BE1::Vec3 &up = shadowAxis[EngineAxis::Up];
-    if (BE1::Math::Abs(up.Dot(relativeCenter)) > shadowExtents[EngineAxis::Up] + casterExtents.AbsDot(up)) {
+    // casterBounds 가 shadowMapBounds 의 y 축 범위에 포함되는지 검사
+    const BE1::Vec3 &up = shadowBoundsAxis[EngineAxis::Up];
+    const float casterUpRadius = casterBoundsExtents.AbsDot(up);
+    const float casterUpDistance = up.Dot(casterBoundsCenter);
+    const float shadowUpDistance = up.Dot(shadowBoundsCenter);
+    if (BE1::Math::Abs(casterUpDistance - shadowUpDistance) > shadowBoundsExtents[EngineAxis::Up] + casterUpRadius) {
         return true;
     }
 
-    // shadow box far 컬링
-    const BE1::Vec3 &forward = shadowAxis[EngineAxis::Forward];
-    const float depthMin = forward.Dot(relativeCenter) - casterExtents.AbsDot(forward);
-    return depthMin > shadowExtents[EngineAxis::Forward];
+    // 모든 receiver 보다 먼 caster 만 제거한다. 광원 near 밖의 caster 는 pancaking 을 위해 유지한다.
+    const BE1::Vec3 &forward = shadowBoundsAxis[EngineAxis::Forward];
+    const float casterForwardRadius = casterBoundsExtents.AbsDot(forward);
+    const float casterForwardDistance = forward.Dot(casterBoundsCenter);
+    const float shadowForwardDistance = forward.Dot(shadowBoundsCenter);
+    const float casterDepthMin = casterForwardDistance - shadowForwardDistance - casterForwardRadius;
+    if (casterDepthMin > shadowBoundsExtents[EngineAxis::Forward]) {
+        return true;
+    }
+
+    // caster 에서 far 까지 뻗는 shadow volume 을 receiver 영역으로 잘라 shadow axis 좌표계 AABB 를 만든다.
+    // near 밖 caster 자체를 제거하는 검사가 아니므로 광원 쪽 외부 caster 의 그림자도 남는다.
+    BE1::AABB lightSpaceCasterShadowBounds;
+    lightSpaceCasterShadowBounds[0][EngineAxis::Left] = BE1::Max(casterLeftDistance - casterLeftRadius, shadowLeftDistance - shadowBoundsExtents[EngineAxis::Left]);
+    lightSpaceCasterShadowBounds[1][EngineAxis::Left] = BE1::Min(casterLeftDistance + casterLeftRadius, shadowLeftDistance + shadowBoundsExtents[EngineAxis::Left]);
+    lightSpaceCasterShadowBounds[0][EngineAxis::Up] = BE1::Max(casterUpDistance - casterUpRadius, shadowUpDistance - shadowBoundsExtents[EngineAxis::Up]);
+    lightSpaceCasterShadowBounds[1][EngineAxis::Up] = BE1::Min(casterUpDistance + casterUpRadius, shadowUpDistance + shadowBoundsExtents[EngineAxis::Up]);
+    lightSpaceCasterShadowBounds[0][EngineAxis::Forward] = BE1::Max(casterForwardDistance - casterForwardRadius, shadowForwardDistance - shadowBoundsExtents[EngineAxis::Forward]);
+    lightSpaceCasterShadowBounds[1][EngineAxis::Forward] = shadowForwardDistance + shadowBoundsExtents[EngineAxis::Forward];
+
+    const BE1::OBB worldSpaceCasterShadowBounds(lightSpaceCasterShadowBounds, BE1::Vec3::origin, shadowBoundsAxis);
+
+    // World-space caster shadow bounds 가 view volume 바깥에 있으면 컬링한다.
+    for (int planeIndex = 0; planeIndex < 6; planeIndex++) {
+        if (worldSpaceCasterShadowBounds.PlaneSide(viewVolumePlanes[planeIndex]) == BE1::Plane::Side::Front) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::Frustum &shadowFrustum, const BE1::AABB &casterBounds) {
+    if (casterBounds.IsCleared()) {
+        return true;
+    }
+
+    // caster bounds 를 shadow frustum 원점에서 투영한 caster shadow volume 을 만든다.
+    BE1::Frustum projectedCasterFrustum;
+    if (!projectedCasterFrustum.FromProjection(casterBounds, shadowFrustum.GetOrigin(), shadowFrustum.GetFarDistance())) {
+        return false;
+    }
+
+    if (shadowFrustum.CullFrustum(projectedCasterFrustum)) {
+        return true;
+    }
+
+    // 실제 caster shadow volume 은 shadowFrustum 과 projectedCasterFrustum 의 교집합이다.
+    // 두 frustum 중 하나라도 view volume plane 바깥에 있으면 교집합도 해당 plane 바깥에 있다.
+    for (int planeIndex = 0; planeIndex < 6; planeIndex++) {
+        const BE1::Plane &viewPlane = viewVolumePlanes[planeIndex];
+        if (shadowFrustum.PlaneSide(viewPlane) == BE1::Plane::Side::Front || projectedCasterFrustum.PlaneSide(viewPlane) == BE1::Plane::Side::Front) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void CubeMapFaceToViewAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis) {

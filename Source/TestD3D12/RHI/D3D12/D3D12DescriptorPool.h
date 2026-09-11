@@ -76,6 +76,7 @@ private:
     D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle = {};
     UINT                            descriptorHandleSize;
     UINT                            maxDescriptorCount;
+    const char *                    heapTypeName = "Unknown";
     BE1::IDAllocator                idAllocator;
     BE1::Mutex                      mutex;
 };

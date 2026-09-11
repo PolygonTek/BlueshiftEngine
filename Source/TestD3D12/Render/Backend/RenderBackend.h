@@ -61,6 +61,7 @@ private:
         int32_t                     threadIndex = -1;
         const RenderPassDrawSurf ** drawSurfs = nullptr;
         uint32_t                    numDrawSurfs = 0;
+        const RHI::ConstantBuffer * viewConstantBuffer = nullptr;
         uint32_t                    firstDrawSurfIndex = 0;
         const SurfaceInstanceBatch *hiZCullBatches = nullptr;
         uint32_t                    numHiZCullBatches = 0;
@@ -84,6 +85,7 @@ private:
 
     void                            ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor);
     void                            ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
+    void                            ExecuteDrawCamera3DShadowPass();
     void                            ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            CaptureSceneSnapshot();
@@ -99,7 +101,7 @@ private:
                                         RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destinationRect, RHI::PipelineState *imagePSO);
     void                            BlitTextureToSwapChain(const RHI::Texture *texture, const BE1::Rect &destinationRect);
 
-    void                            DrawGenericPass(const RenderPass *renderPass);
+    void                            DrawGenericPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer);
     void                            DrawSkyPass(const RenderPass *renderPass);
     void                            DrawGpuOcean();
     void                            DrawGuiPass(const RenderPass *renderPass);
@@ -108,11 +110,11 @@ private:
 
     void                            SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const;
 
-    void                            DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
+    void                            DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
     void                            DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
 
-    void                            DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
-    void                            DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
+    void                            DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
+    void                            DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
     void                            DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawGenericSurfacesByTaskFunction(void *data);
 

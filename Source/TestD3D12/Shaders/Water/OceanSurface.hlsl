@@ -40,6 +40,8 @@ Texture2D<float4> foamDetailMap : register(t3);
 Texture2D<float4> sceneColorTexture : register(t4);
 Texture2D<float> sceneDepthTexture : register(t5);
 
+#include "../Lighting/ShadowLibrary.hlsli"
+
 static const float OceanCascadeLodThreshold = 0.05f;
 static const float2 OceanRefractionHistoryRejectVelocity = float2(2.0f, 2.0f);
 
@@ -345,6 +347,9 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
         const float3 L = -frameConstants.directionalLight.direction;
         const float NdotL = saturate(dot(normal, L));
 
+        const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition);
+        const float3 lightColor = frameConstants.directionalLight.lightColor * shadowLighting;
+
         // 얇은 파도 마루를 통과한 직접광은 광원이 시선 반대편에 있을수록 강하게 보인다.
         const float normalizedCrestHeight = saturate((input.worldPosition.z - oceanSurfaceParams.surfaceHeight) / oceanSurfaceParams.scatterHeight);
         const float crestScatter = normalizedCrestHeight * normalizedCrestHeight;
@@ -352,10 +357,10 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
         const float scatterPhase = backLight * backLight;
         const float scatterAmount = (1.0f - fresnel) * crestScatter * scatterPhase;
         const float3 relativeScatter = oceanSurfaceParams.scatterColor * (1.0f - oceanSurfaceParams.waterColor);
-        color += frameConstants.directionalLight.lightColor * relativeScatter * scatterAmount;
+        color += lightColor * relativeScatter * scatterAmount;
         
         if (NdotL > 0.0f) {
-            color += frameConstants.directionalLight.lightColor * oceanSurfaceParams.waterColor * (0.02f * NdotL);
+            color += lightColor * oceanSurfaceParams.waterColor * (0.02f * NdotL);
 
             const float3 halfVectorUnnormalized = L + V;
             const float halfVectorLengthSquared = dot(halfVectorUnnormalized, halfVectorUnnormalized);
@@ -369,7 +374,7 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
                 const float sunFresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - VdotH);
                 const float sunSpecular = distribution * visibility * sunFresnel * NdotL * PI;
 
-                color += frameConstants.directionalLight.lightColor * sunSpecular;
+                color += lightColor * sunSpecular;
             }
         }
     }

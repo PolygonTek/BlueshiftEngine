@@ -530,22 +530,38 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
     if (!BE1::HasFlag(texture->flags, RHI::TextureFlag::SkipDefaultViews) && !BE1::HasFlag(texture->flags, RHI::TextureFlag::Typeless)) {
         // 전체 텍스쳐 리소스에 대한 SRV 생성
         if (BE1::HasFlag(texture->flags, RHI::TextureFlag::ShaderResource)) {
-            CreateSRV(texture, RHI::Format::Auto);
+            if (!CreateSRV(texture, RHI::Format::Auto).IsValid()) {
+                BE_WARNLOG("D3D12Renderer::CreateTexture: failed to create default SRV\n");
+                delete texture;
+                return nullptr;
+            }
             texture->hasDefaultSRV = true;
         }
         // 전체 텍스쳐 리소스에 대한 UAV 생성
         if (BE1::HasFlag(texture->flags, RHI::TextureFlag::UnorderedAccess)) {
-            CreateUAV(texture, RHI::Format::Auto);
+            if (!CreateUAV(texture, RHI::Format::Auto).IsValid()) {
+                BE_WARNLOG("D3D12Renderer::CreateTexture: failed to create default UAV\n");
+                delete texture;
+                return nullptr;
+            }
             texture->hasDefaultUAV = true;
         }
         // 전체 텍스쳐 리소스에 대한 RTV 생성
         if (BE1::HasFlag(texture->flags, RHI::TextureFlag::RenderTarget)) {
-            CreateRTV(texture, RHI::Format::Auto);
+            if (!CreateRTV(texture, RHI::Format::Auto).IsValid()) {
+                BE_WARNLOG("D3D12Renderer::CreateTexture: failed to create default RTV\n");
+                delete texture;
+                return nullptr;
+            }
             texture->hasDefaultRTV = true;
         }
         // 전체 텍스쳐 리소스에 대한 DSV 생성
         if (BE1::HasFlag(texture->flags, RHI::TextureFlag::DepthStencil)) {
-            CreateDSV(texture, RHI::Format::Auto);
+            if (!CreateDSV(texture, RHI::Format::Auto).IsValid()) {
+                BE_WARNLOG("D3D12Renderer::CreateTexture: failed to create default DSV\n");
+                delete texture;
+                return nullptr;
+            }
             texture->hasDefaultDSV = true;
         }
     }

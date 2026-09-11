@@ -36,6 +36,15 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     app.SetCameraPitchYaw(10, 145);
     app.SetCameraDistance(80.0f);
 
+    directionalLight.type = RenderLight::Type::Directional;
+    directionalLight.flags = RenderLight::Flag::CastShadows;
+    directionalLight.linearColor = BE1::Color3::white;
+    directionalLight.intensity = 2.0f;
+    directionalLightElevation = 20;
+    directionalLightEnabled = true;
+    UpdateDirectionalLightDirection();
+    directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
+
     enum class BuoyantShape : uint32_t {
         Box,
         Sphere,
@@ -87,6 +96,7 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
         object.gameObject.worldMatrix.SetTRS(initDesc.position, initDesc.axis, initDesc.scale);
 
         RenderObject::Desc renderObjectDesc;
+        renderObjectDesc.flags = RenderObject::Flag::CastShadows;
         renderObjectDesc.worldMatrix = object.gameObject.worldMatrix;
         renderObjectDesc.meshInstance = mesh->GetStaticInstance();
         renderObjectDesc.aabb = mesh->GetAABB();
@@ -149,29 +159,6 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     }
 
     oceanAdded = renderWorld->AddOceanSurface(oceanDesc);
-
-    directionalLight.type = RenderLight::Type::Directional;
-    directionalLight.flags = RenderLight::Flag::None;
-    directionalLight.linearColor = BE1::Color3::white;
-    directionalLight.intensity = 2.0f;
-    directionalLightElevation = 20;
-    UpdateDirectionalLightDirection();
-
-    RenderLight::Desc directionalLightDesc;
-    directionalLightDesc.type = directionalLight.type;
-    directionalLightDesc.flags = directionalLight.flags;
-    directionalLightDesc.layer = directionalLight.layer;
-    directionalLightDesc.origin = directionalLight.origin;
-    directionalLightDesc.axis = directionalLight.axis;
-    directionalLightDesc.size = directionalLight.size;
-    directionalLightDesc.zNear = directionalLight.zNear;
-    directionalLightDesc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
-    directionalLightDesc.linearColor = directionalLight.linearColor;
-    directionalLightDesc.intensity = directionalLight.intensity;
-    directionalLightDesc.fallOffExponent = directionalLight.fallOffExponent;
-    directionalLightDesc.shadowOffsetFactor = directionalLight.shadowOffsetFactor;
-    directionalLightDesc.shadowOffsetUnits = directionalLight.shadowOffsetUnits;
-    directionalLight.renderLightHandle = renderWorld->AddRenderLight(directionalLightDesc);
 
     EnvironmentLight::Desc envLightDesc;
     envLightAdded = renderWorld->AddEnvironmentLight(envLightDesc);
@@ -665,6 +652,12 @@ void SceneOcean::BuildImGui() {
 
     ImGui::Separator();
     ImGui::TextUnformatted("Directional Light");
+
+    if (ImGui::Checkbox("Enabled##OceanDirectionalLight", &directionalLightEnabled)) {
+        directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
+    }
+
+    ImGui::BeginDisabled(!directionalLightEnabled);
     ImGui::TextDisabled("Azimuth: 0 = +X, 90 = +Y; Elevation: 0 = horizon");
 
     const float directionalLightItemWidth = fontSize * 17.0f;
@@ -686,17 +679,17 @@ void SceneOcean::BuildImGui() {
         lightingChanged = true;
     }
 
-    if (directionalLight.renderLightHandle < 0) {
-        return;
+    if (directionalLight.renderLightHandle >= 0) {
+        if (directionChanged) {
+            UpdateDirectionalLightDirection();
+            renderWorld->UpdateRenderLightTransform(directionalLight.renderLightHandle, directionalLight.origin, directionalLight.axis);
+        }
+
+        if (lightingChanged) {
+            renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
+        }
     }
 
-    if (directionChanged) {
-        UpdateDirectionalLightDirection();
-        renderWorld->UpdateRenderLightTransform(directionalLight.renderLightHandle, directionalLight.origin, directionalLight.axis);
-    }
-
-    if (lightingChanged) {
-        renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
-    }
+    ImGui::EndDisabled();
 }
 #endif

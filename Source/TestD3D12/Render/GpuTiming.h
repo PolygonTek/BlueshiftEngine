@@ -31,6 +31,7 @@ class GpuTiming {
 public:
     enum class Tag : uint8_t {
         GpuFrame,
+        ShadowPass,
         DepthPrepass,
         OpaquePass,
         SkyPass,

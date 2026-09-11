@@ -62,6 +62,7 @@ private:
 
     float                       directionalLightAzimuth = 145.0f;
     float                       directionalLightElevation = 35.0f;
+    bool                        directionalLightEnabled = true;
     bool                        showPontoons = false;
     bool                        oceanAdded = false;
     bool                        envLightAdded = false;

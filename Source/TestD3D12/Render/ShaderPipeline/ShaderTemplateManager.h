@@ -54,6 +54,7 @@ public:
     SharedPtr<ShaderTemplate>       displayP3EDROutputShaderTemplate;
     SharedPtr<ShaderTemplate>       debugDrawShaderTemplate;
     SharedPtr<ShaderTemplate>       depthShaderTemplate;
+    SharedPtr<ShaderTemplate>       shadowDepthShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
 
@@ -68,6 +69,8 @@ private:
     BE1::StrArray                   globalDefines;
     uint32_t                        globalDefineModCount = 0;
     uint32_t                        lastInvalidatedGlobalDefineModCount = 0;
+    int                             shadowMapQuality = 2;
+    int                             shadowDebugMode = 0;
     mutable BE1::Mutex              globalDefinesMutex;
 };
 

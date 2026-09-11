@@ -194,6 +194,24 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
     Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::NormalMap | Texture::Flag::NoScaleDown);
 }
 
+void Texture::CreateRandomRotMatTexture(int size, Texture::Flag flags) {
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    byte *dstPtr = image->GetPixels();
+
+    BE1::RNG rng(23119);
+    for (int i = 0; i < size * size; ++i) {
+        float s, c;
+        BE1::Math::SinCos(rng.GetNextFloat(0.0f, 1.0f) * BE1::Math::TwoPi, s, c);
+        // Store (cos, sin) and reconstruct the rotation matrix in the shader.
+        dstPtr[0] = BE1::ClampByte((c + 1.0f) * 0.5f * 255.0f + 0.5f);
+        dstPtr[1] = BE1::ClampByte((s + 1.0f) * 0.5f * 255.0f + 0.5f);
+        dstPtr += 2;
+    }
+
+    Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace);
+}
+
 RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState) {
     BE1::Image::Format srcFormat = srcImage->GetFormat();
     bool srcCompressed = BE1::Image::IsCompressed(srcFormat);

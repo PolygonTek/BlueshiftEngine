@@ -608,6 +608,13 @@ void App::BuildImGuiOverlay() {
                 r_msaa.SetInteger(msaaSampleCounts[msaaSampleCountIndex]);
             }
 
+            bool meshLOD = r_meshLOD.GetBool();
+            if (ImGui::Checkbox("Mesh LOD", &meshLOD)) {
+                r_meshLOD.SetBool(meshLOD);
+            }
+            ImGui::SetItemTooltip("When disabled, meshes and shadows use LOD0, including explicitly selected LODs.");
+
+            ImGui::BeginDisabled(!meshLOD);
             float meshLODPixelError = r_meshLODPixelError2.GetFloat();
             ImGui::SetNextItemWidth(fontSize * 12.0f);
             if (ImGui::SliderFloat("Mesh LOD Pixel Error", &meshLODPixelError, 0.0f, 16.0f, "%.1f px", ImGuiSliderFlags_AlwaysClamp)) {
@@ -615,6 +622,7 @@ void App::BuildImGuiOverlay() {
             }
             ImGui::SetItemTooltip("Automatic LOD only. Higher values allow coarser meshes.\n"
                 "0 uses LOD0; explicitly selected LODs are unchanged.");
+            ImGui::EndDisabled();
 
             const bool snapshotColorHalfResAvailable = msaaSampleCounts[msaaSampleCountIndex] == 1;
             ImGui::BeginDisabled(!snapshotColorHalfResAvailable);
@@ -759,6 +767,159 @@ void App::BuildImGuiOverlay() {
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::DragFloat("TAA depth fallback threshold", &taaDepthFallbackThreshold, 0.05f, r_taaDepthFallbackThreshold.GetMinValue(), r_taaDepthFallbackThreshold.GetMaxValue(), "%.3f")) {
                     r_taaDepthFallbackThreshold.SetFloat(taaDepthFallbackThreshold);
+                }
+            }
+
+            if (roundedCollapsingHeader("Shadows##ShadowsHeader")) {
+                bool shadows = r_shadows2.GetBool();
+                if (ImGui::Checkbox("Enabled##Shadows", &shadows)) {
+                    r_shadows2.SetBool(shadows);
+                }
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                int shadowQuality = r_shadowMapQuality2.GetInteger();
+                if (ImGui::Combo("Shadow map quality##Shadows", &shadowQuality,
+                    "1 comparison\0"
+                    "5 comparisons\0"
+                    "9 comparisons\0"
+                    "16 Poisson comparisons\0")) {
+                    r_shadowMapQuality2.SetInteger(shadowQuality);
+                }
+
+                ImGui::BeginDisabled(shadowQuality != 3);
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                float filterRadius = r_shadowMapFilterRadius.GetFloat();
+                if (ImGui::SliderFloat("Poisson filter radius", &filterRadius,
+                    r_shadowMapFilterRadius.GetMinValue(), r_shadowMapFilterRadius.GetMaxValue(), "%.4f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_shadowMapFilterRadius.SetFloat(filterRadius);
+                }
+                ImGui::SetItemTooltip("Q3 filter radius at 1024x1024. The effective texel radius scales with CSM resolution.");
+                ImGui::EndDisabled();
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::BeginCombo("CSM resolution##Shadows", r_csmResolution.GetString())) {
+                    static constexpr int resolutions[] = { 256, 512, 1024, 2048, 4096 };
+                    const int currentResolution = r_csmResolution.GetInteger();
+                    for (int resolution : resolutions) {
+                        const bool selected = resolution == currentResolution;
+                        if (ImGui::Selectable(BE1::va("%d", resolution), selected)) {
+                            r_csmResolution.SetInteger(resolution);
+                        }
+                        if (selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                int cascadeCount = r_csmCount.GetInteger();
+                if (ImGui::SliderInt("CSM cascade count##Shadows", &cascadeCount,
+                    static_cast<int>(r_csmCount.GetMinValue()), static_cast<int>(r_csmCount.GetMaxValue()), "%d", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_csmCount.SetInteger(cascadeCount);
+                }
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                float distance = r_csmMaxDistance.GetFloat();
+                if (ImGui::DragFloat("CSM max distance##Shadows", &distance, 1.0f, 0.0f, 1000000.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_csmMaxDistance.SetFloat(distance);
+                }
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                float splitLambda = r_csmSplitLambda.GetFloat();
+                if (ImGui::SliderFloat("CSM split lambda##Shadows", &splitLambda,
+                    r_csmSplitLambda.GetMinValue(), r_csmSplitLambda.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_csmSplitLambda.SetFloat(splitLambda);
+                }
+                ImGui::SetItemTooltip("0 = uniform, 1 = logarithmic.");
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                float blendFraction = r_csmBlendFraction.GetFloat();
+                if (ImGui::SliderFloat("CSM blend fraction##Shadows", &blendFraction,
+                    r_csmBlendFraction.GetMinValue(), r_csmBlendFraction.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_csmBlendFraction.SetFloat(blendFraction);
+                }
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                float fadeFraction = r_csmFadeFraction.GetFloat();
+                if (ImGui::SliderFloat("CSM distance fade fraction", &fadeFraction, 0.01f, 1.0f, "%.2f")) {
+                    r_csmFadeFraction.SetFloat(fadeFraction);
+                }
+
+                if (ImGui::TreeNode("CSM depth bias")) {
+                    static constexpr BE1::CVar *constantBiasCvars[RenderFrameSettings::CSMCascadeCount] = {
+                        &r_csmConstantDepthBias0,
+                        &r_csmConstantDepthBias1,
+                        &r_csmConstantDepthBias2,
+                        &r_csmConstantDepthBias3
+                    };
+                    static constexpr BE1::CVar *slopeBiasCvars[RenderFrameSettings::CSMCascadeCount] = {
+                        &r_csmSlopeScaledDepthBias0,
+                        &r_csmSlopeScaledDepthBias1,
+                        &r_csmSlopeScaledDepthBias2,
+                        &r_csmSlopeScaledDepthBias3
+                    };
+
+                    const ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV;
+                    if (ImGui::BeginTable("CSMDepthBiasTable", 3, tableFlags)) {
+                        ImGui::TableSetupColumn("Cascade", ImGuiTableColumnFlags_WidthFixed, fontSize * 5.0f);
+                        ImGui::TableSetupColumn("Constant", ImGuiTableColumnFlags_WidthFixed, fontSize * 8.0f);
+                        ImGui::TableSetupColumn("Slope-scaled", ImGuiTableColumnFlags_WidthFixed, fontSize * 9.0f);
+                        ImGui::TableHeadersRow();
+
+                        for (int cascadeIndex = 0; cascadeIndex < static_cast<int>(RenderFrameSettings::CSMCascadeCount); ++cascadeIndex) {
+                            ImGui::PushID(cascadeIndex);
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::AlignTextToFramePadding();
+                            ImGui::Text("%d", cascadeIndex);
+
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::SetNextItemWidth(fontSize * 8.0f);
+                            float constantBias = constantBiasCvars[cascadeIndex]->GetFloat();
+                            if (ImGui::DragFloat("##ConstantDepthBias", &constantBias, 1.0f, 0.0f, 0.0f, "%.0f")) {
+                                constantBiasCvars[cascadeIndex]->SetFloat(constantBias);
+                            }
+                            ImGui::SetItemTooltip("r_csmConstantDepthBias%d\nCtrl+click to enter a value. D24 depth units, rounded to an integer.", cascadeIndex);
+
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::SetNextItemWidth(fontSize * 9.0f);
+                            float slopeBias = slopeBiasCvars[cascadeIndex]->GetFloat();
+                            if (ImGui::DragFloat("##SlopeScaledDepthBias", &slopeBias, 0.05f, 0.0f, 0.0f, "%.2f")) {
+                                slopeBiasCvars[cascadeIndex]->SetFloat(slopeBias);
+                            }
+                            ImGui::SetItemTooltip("r_csmSlopeScaledDepthBias%d\nCtrl+click to enter a value.", cascadeIndex);
+
+                            ImGui::PopID();
+                        }
+                        ImGui::EndTable();
+                    }
+                    ImGui::TreePop();
+                }
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                int debugMode = r_shadowDebug.GetInteger();
+                if (ImGui::Combo("Debug view##Shadows", &debugMode, "Off\0Visibility\0Coverage\0")) {
+                    r_shadowDebug.SetInteger(debugMode);
+                }
+                ImGui::SetItemTooltip("Visibility: black = shadow, white = lit.\nCoverage: cascade 0 = sky blue, 1 = green, 2 = yellow, 3 = violet; red = outside, gray = inactive.");
+
+                if (ImGui::TreeNode("Shadow map depth")) {
+                    const RHI::Texture *shadowTexture = mainRenderContext->GetCSMDepthTexture();
+                    static int selectedCascade = 0;
+                    const int cascadeCount = BE1::Clamp(r_csmCount.GetInteger(), 1, static_cast<int>(RenderFrameSettings::CSMCascadeCount));
+                    selectedCascade = BE1::Clamp(selectedCascade, 0, cascadeCount - 1);
+
+                    if (cascadeCount > 1) {
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        ImGui::SliderInt("Cascade##ShadowMapDepth", &selectedCascade, 0, cascadeCount - 1);
+                    }
+
+                    ImGui::TextDisabled("Cascade %d. Red = depth (0 near, 1 far).", selectedCascade);
+                    if (!DrawImGuiTexturePreview(shadowTexture, mainRenderContext->GetCSMDepthSRV(), fontSize * 24.0f, true, static_cast<uint32_t>(selectedCascade))) {
+                        ImGui::TextDisabled("Shadow map is unavailable.");
+                    }
+                    ImGui::TreePop();
                 }
             }
 

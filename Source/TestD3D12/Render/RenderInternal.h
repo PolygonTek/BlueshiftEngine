@@ -24,6 +24,10 @@
 #include "Render/Frontend/RenderObject.h"
 #include "Render/Frontend/RenderCamera.h"
 #include "Render/Frontend/RenderLight.h"
+#include "Render/RenderFrameSettings.h"
+#include "Math/Matrix4.h"
+#include "Math/OBB.h"
+#include "Math/Plane.h"
 #include "DebugDrawPipeline.h"
 
 class Texture;
@@ -33,10 +37,9 @@ struct VisSkinnedMesh;
 enum class VisSurfFlag : uint8_t {
     None                        = 0,
     CameraVisible               = BIT(0),           ///< Surface is visible by camera
-    ShadowVisible               = BIT(1),           ///< Shadow of surface is visible by camera
-    ShowWires                   = BIT(2),
-    SkipSelection               = BIT(3),
-    Skybox                      = BIT(4)
+    ShowWires                   = BIT(1),
+    SkipSelection               = BIT(2),
+    Skybox                      = BIT(3)
 };
 
 template<>
@@ -55,6 +58,7 @@ struct VisSurf {
     ShaderFeatureSet            baseFeatureSet;
     uint32_t                    shaderMaterialIndex;
     VisSurfFlag                 flags;
+    uint8_t                     shadowCascadeMask;  ///< 이 surface 를 그릴 directional shadow cascade bit mask.
 };
 
 struct RenderPassDrawSurf {
@@ -86,28 +90,33 @@ struct RenderPass {
     RenderPassDrawSurf *        drawSurfStorage;
 };
 
-// 한 프레임 동안 한 카메라의 directional shadow 렌더링에 사용하는 데이터.
-struct DirectionalShadowView {
-    // Jitter 를 제외한 카메라의 [zNear, shadowDistance] 영역을 감싸는 구.
-    BE1::Sphere                 receiverSphere;
-
-    // 현재 투영 영역. Caster 수집 후 깊이를 확장하기 전에는 receiver 만 포함한다.
-    BE1::OBB                    worldBox;
-
-    // World position -> light clip position. Shadow depth 를 그릴 때 사용하며 texture scale/bias 는 없다.
-    ALIGN_AS32 BE1::Mat4        viewProjMatrix;
-
-    // 메인 조명 패스에서 사용할 샘플링 데이터.
-    ShaderDirectionalShadowData shaderData {};
-
-    // 카메라의 shadow texture 에 대한 비소유 참조.
-    RHI::Texture *              depthTexture = nullptr;
-
-    // Caster draw 목록과 PSO 설정. Depth bias 는 graphicsPipelineDesc 에 포함된다.
+// 한 cascade 의 광원 투영과 depth pass 데이터.
+struct CSMCascade {
+    // XY 는 border 를 포함하여 texel grid 에 snap 되고, Z 범위는 receiver sphere 와 깊이 여유분으로 정한다.
+    BE1::OBB                    shadowMapBounds;            ///< shadow-map 투영 영역의 world space OBB.
+    float                       worldUnitsPerTexel = 0.0f;  ///< shadow-map texel 하나가 차지하는 world-space 길이.
+    ALIGN_AS32 BE1::Mat4        viewProjMatrix;             ///< shadow-map view-projection matrix.
+    RHI::ViewID                 depthDSV = RHI::ViewID::InvalidID;
     RenderPass                  renderPass {};
 
-    DirectionalShadowView() { renderPass.type = RenderPassType::Shadow; }
+    CSMCascade() { renderPass.type = RenderPassType::Shadow; }
 };
+
+// 한 프레임 동안 한 카메라의 cascaded shadow 렌더링에 사용하는 공통 데이터.
+struct VisCascadedShadow {
+    uint32_t                    cascadeCount = 0;
+    float                       splitDistances[RenderFrameSettings::CSMCascadeCount + 1] = {};
+    BE1::Plane                  viewVolumePlanes[6];        ///< 전체 CSM 카메라 view volume. 모든 cascade caster 컬링에 공유한다.
+    CSMCascade                  cascades[RenderFrameSettings::CSMCascadeCount];
+
+    // 메인 조명 패스에서 사용할 샘플링 데이터.
+    ShaderCSMData               shaderData {};
+
+    // RenderContext 소유 shadow texture 에 대한 비소유 참조.
+    RHI::Texture *              depthTexture = nullptr;
+};
+
+static_assert(ShaderCSMCount == RenderFrameSettings::CSMCascadeCount, "CPU and shader cascade counts must match");
 
 // 같은 debug draw pipeline 을 사용하는 프리미티브들을 하나의 배치로 묶는다.
 struct DebugDrawBatch {
@@ -189,7 +198,7 @@ struct VisCamera {
     uint32_t                    numVisLocalLights = 0;
     const VisLight **           visLocalLights = nullptr;   // 카메라에 보이는 local light 포인터 배열
 
-    const DirectionalShadowView *directionalShadowView = nullptr; // Directional shadow 를 준비한 경우에만 존재하며 frame arena 에 저장된다.
+    VisCascadedShadow *         cascadedShadow = nullptr;
 
     const DebugDrawData *       debugDrawData = nullptr;
     RHI::PipelineState *        debugDrawPSOs[DebugDrawData::MaxBatches] = {};
@@ -320,8 +329,7 @@ struct VisCamera {
 struct VisObject {
     enum class Flag : uint8_t {
         None                    = 0,
-        CameraVisible           = BIT(0),
-        ShadowVisible           = BIT(1)
+        CameraVisible           = BIT(0)
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
@@ -339,9 +347,11 @@ struct VisObject {
     uint16_t                    numMaterials = 0;           ///< Material 개수
     int8_t                      meshLOD = -1;               ///< 요청 LOD. -1 은 자동 선택, 0~127 은 지정 LOD.
     Flag                        flags = Flag::None;
+    uint8_t                     shadowCascadeMask = 0;      ///< 이 object 가 투영되는 directional shadow cascade bit mask.
 
-    float                       squaredLODErrorLimit = 0.0f;///< 현재 카메라의 로컬 공간 LOD 허용 오차 제곱.
+    float                       squaredLODErrorLimit = 0.0f;///< 현재 view 에서 공유 LOD 를 선택하는 로컬 공간 허용 오차 제곱.
 
+    bool                        IsRenderable() const { return BE1::HasFlag(flags, Flag::CameraVisible) || shadowCascadeMask != 0; }
     const Material *const *     GetMaterials() const { return numMaterials <= COUNT_OF(baseMaterials) ? baseMaterials : materials; }
 };
 

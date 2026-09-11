@@ -138,9 +138,9 @@ public:
     bool                    CalcDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                    CalcDepthBoundsFromLight(const RenderLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
 
-                            /// 화면상 픽셀 단위 허용 오차 (pixelErrorLimit) 를 메시 로컬 공간의 허용 오차 제곱으로 환산한다.
+                            /// 픽셀 단위 LOD 허용 오차 (pixelErrorLimit) 를 모델 로컬 공간의 허용 오차 제곱으로 변환한다.
                             /// pixelErrorLimit 가 0 이하이거나 유효한 투영 평가가 불가능하면 0 을 반환한다.
-    float                   CalcLocalSquaredLODErrorLimit(const AABB &worldBounds, const Mat3x4 &worldMatrix, float pixelErrorLimit) const;
+    float                   CalcLocalLODErrorLimitSqr(const Mat3x4 &worldMatrix, const AABB &worldBounds, float pixelErrorLimit) const;
 
     float                   CalcViewScale(const Vec3 &position) const;
     float                   CalcClampedViewScale(const Vec3 &position, float viewScaleMin = 0.001f, float viewScaleMax = 0.01f) const { return Clamp(CalcViewScale(position), viewScaleMin, viewScaleMax); }

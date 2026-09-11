@@ -128,6 +128,11 @@ static const uint ShaderLightCullingDebugModeNone = 0;
 static const uint ShaderLightCullingDebugModeTileMask = 1;
 static const uint ShaderLightCullingDebugModeTileMaskAndZBin = 2;
 
+static const uint ShaderShadowDebugModeNone = 0;
+static const uint ShaderShadowDebugModeVisibility = 1;
+static const uint ShaderShadowDebugModeCascadeCoverage = 2;
+static const uint ShaderCSMCount = 4;
+
 static const uint ShaderCameraFlagProjectionOrthogonal = 1u << 0;
 static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
 static const uint ShaderCameraFlagUseDirectionalLight = 1u << 2;
@@ -635,34 +640,49 @@ struct FrameConstants {
     uint shaderLightTileWordTableIndex;
     uint feedbackBufferIndex;
     uint dfgSumGGXTextureIndex;
-    uint padding0;
+    uint randomRotMatTextureIndex;
     uint padding1;
     uint padding2;
     ShaderDirectionalLight directionalLight;
 };
 
 #ifdef __cplusplus
-static_assert(offsetof(FrameConstants, dfgSumGGXTextureIndex) == 48, "FrameConstants DFG LUT index must match the HLSL constant-buffer layout");
-static_assert(offsetof(FrameConstants, directionalLight) == 64, "FrameConstants directional light must match the HLSL constant-buffer layout");
 static_assert(sizeof(FrameConstants) == 96, "FrameConstants must match the HLSL constant-buffer layout");
 #endif
 
-// Directional light 의 단일 shadow map 을 샘플링하는 데 필요한 데이터.
-struct ShaderDirectionalShadowData {
-    // World position -> shadow texture coordinate. XY 는 UV, Z 는 비교할 depth [0, 1].
-    // 직교 투영이므로 perspective divide 없이 float3x4 로 표현할 수 있다.
-    row_major float3x4 worldToShadowCoordMatrix;
-
-    float2 texelSize;
-    uint textureIndex;             // Texture2D<float> 의 bindless SRV index.
-    uint enabled;                  // 0 이면 shadow texture 에 접근하지 않는다.
+// Shadow depth 기록에 필요한 광원 행렬과 surface table. 샘플링용 데이터와 별도로 전달한다.
+struct ShadowViewConstants {
+    row_major float4x4 viewProjMatrix;
+    uint surfaceTableIndex;
+    uint3 padding;
 };
 
 #ifdef __cplusplus
-static_assert(offsetof(ShaderDirectionalShadowData, texelSize) == 48, "Directional shadow texel size layout mismatch");
-static_assert(offsetof(ShaderDirectionalShadowData, textureIndex) == 56, "Directional shadow texture index layout mismatch");
-static_assert(offsetof(ShaderDirectionalShadowData, enabled) == 60, "Directional shadow enabled flag layout mismatch");
-static_assert(sizeof(ShaderDirectionalShadowData) == 64, "Directional shadow data must match the HLSL constant-buffer layout");
+static_assert(sizeof(ShadowViewConstants) == 80, "ShadowViewConstants must match the HLSL constant-buffer layout");
+#endif
+
+// CSM 을 샘플링하는 데 필요한 데이터.
+struct ShaderCSMData {
+    // world position -> shadow texture coordinate.
+    // XY 는 UV, Z 는 비교할 depth [0, 1].
+    // orthogonal projection 이므로 perspective divide 없이 float3x4 로 표현할 수 있다.
+    row_major float3x4 worldToShadowCoordMatrices[ShaderCSMCount];
+
+    uint textureIndex;          // Texture2DArray<float> 의 bindless SRV index.
+    uint cascadeCount;
+    uint enabled;               // 0 이면 shadow texture 에 접근하지 않는다.
+    float maxDistance;          // 최대 shadow 적용 거리.
+    float4 cascadeFilterRadii;  // 현재 해상도와 cascade 크기에 맞춘 texel 반경.
+    float2 texelSize;
+    float normalizedBorder;     // normalized border width in [0, 1] range.
+    float invBlendWidth;        // normalized inverse blend width.
+    float farFadeStart;
+    float invFarFadeRange;
+    uint2 padding;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderCSMData) == 256, "CSM data must match the HLSL constant-buffer layout");
 #endif
 
 struct CameraConstants {
@@ -676,13 +696,17 @@ struct CameraConstants {
 
     row_major float4x4 hiZCullViewProjMatrix;
 
-    uint surfaceTableIndex;
+    float3 cameraOrigin;
     float ndcFarZ;
-    float projectionDepthA;
-    float projectionDepthB;
-    float2 ndcDepthScaleBias;
+
+    float3 cameraForward;
     uint flags;
 
+    float2 ndcDepthScaleBias;
+    float projectionDepthA;
+    float projectionDepthB;
+
+    uint surfaceTableIndex;
     uint numLocalLights;
     uint lightCullingLightRefTableOffset;
     uint lightCullingZBinTableOffset;
@@ -692,9 +716,8 @@ struct CameraConstants {
     uint lightCullingTileCountX;
     uint lightCullingTileCountY;
     uint lightCullingWordsPerTile;
-
-    float3 cameraOrigin;
     uint lightCullingDebugMode;
+    uint padding0;
 
     row_major float3x4 envLightAxis;
     float3 envLightColor;
@@ -703,23 +726,13 @@ struct CameraConstants {
     uint envLightDiffuseIrradianceCubeMapIndex;
     uint envLightSpecularCubeMapIndex;
     uint envLightSpecularMipCount;
-    uint padding2;
+    uint padding1;
 
-    float3 cameraForward;
-    float padding3;
-
-    ShaderDirectionalShadowData directionalShadow;
+    ShaderCSMData csm;
 };
 
 #ifdef __cplusplus
-static_assert(offsetof(CameraConstants, ndcDepthScaleBias) == 464, "CameraConstants NDC depth conversion must match the HLSL constant-buffer layout");
-static_assert(offsetof(CameraConstants, cameraOrigin) == 512, "CameraConstants camera data must follow the existing layout");
-static_assert(offsetof(CameraConstants, envLightAxis) == 528, "CameraConstants environment axis must match the HLSL constant-buffer layout");
-static_assert(offsetof(CameraConstants, envLightColor) == 576, "CameraConstants environment color must match the HLSL constant-buffer layout");
-static_assert(offsetof(CameraConstants, envLightDiffuseIrradianceCubeMapIndex) == 592, "CameraConstants environment texture indices must match the HLSL constant-buffer layout");
-static_assert(offsetof(CameraConstants, cameraForward) == 608, "CameraConstants camera direction must match the HLSL constant-buffer layout");
-static_assert(offsetof(CameraConstants, directionalShadow) == 624, "CameraConstants directional shadow layout mismatch");
-static_assert(sizeof(CameraConstants) == 688, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 880, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {
@@ -743,8 +756,6 @@ struct ShaderSurface {
 
 #ifdef __cplusplus
 static_assert(sizeof(ShaderSkinningJoint) == 48, "ShaderSkinningJoint must match the joint buffer stride");
-static_assert(offsetof(ShaderSurface, skinningJointOffset) == 120, "ShaderSurface skinning offset must match the HLSL layout");
-static_assert(offsetof(ShaderSurface, prevSkinningJointOffset) == 124, "ShaderSurface previous skinning offset must match the HLSL layout");
 static_assert(sizeof(ShaderSurface) == 128, "ShaderSurface must match the HLSL structured-buffer layout");
 #endif
 

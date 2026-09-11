@@ -349,6 +349,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocStructuredBuffer(uint32_t stride, uint32
     if (stride == 0 || count == 0 || count > UINT32_MAX / stride) {
         return nullptr;
     }
+
     if (!BE1::IsAligned(stride, 4) || stride >= 2048) {
         return nullptr;
     }
@@ -363,7 +364,8 @@ RHI::Buffer *D3D12FrameThreadData::AllocRawBuffer(uint32_t size, uint32_t alignS
         return nullptr;
     }
 
-    return AllocShaderResourceBuffer(size, BE1::Max(alignSize, 4u), 0, data);
+    // RAW SRV 의 시작 오프셋은 D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT (16) 로 정렬되어야 한다.
+    return AllocShaderResourceBuffer(size, BE1::Max(alignSize, static_cast<uint32_t>(D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT)), 0, data);
 }
 
 void *D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data) {
@@ -446,12 +448,12 @@ RHI::CommandList *D3D12FrameThreadData::BeginCommandList(RHI::CommandQueueType q
     return commandList;
 }
 
-RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) {
+RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList() {
     // secondary command list 를 얻어온다.
     D3D12CommandList *commandList = static_cast<D3D12CommandList *>(AllocGraphicsCommandList(RHI::CommandListKind::Secondary));
 
     // command allocator 를 재사용하도록 리셋하고, command list 를 command allocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset(true, primaryCommandList);
+    commandList->Reset();
 
     // secondary command list 의 디스크립터 힙을 지정한다. (디스크립터 힙의 지정 상태는 primary command list 에서 자동으로 이어지지 않음)
     // 반드시 primary command list 와 동일한 디스크립터 힙을 사용해야 한다.

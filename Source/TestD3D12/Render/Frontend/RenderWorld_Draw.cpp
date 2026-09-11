@@ -27,6 +27,7 @@
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 #include "Render/Texture/Texture.h"
 #include "Shaders/ShaderInterop.h"
+#include "Math/Sphere.h"
 
 static_assert(static_cast<uint32_t>(RenderLight::Type::Point) == ShaderLightTypePoint);
 static_assert(static_cast<uint32_t>(RenderLight::Type::Spot) == ShaderLightTypeSpot);
@@ -36,11 +37,24 @@ static BE_INLINE bool IsRenderLayerVisible(uint32_t layerMask, uint8_t layer) {
     return layer < 32 && (layerMask & BIT(layer)) != 0;
 }
 
-static const Material *GetVisObjectMaterial(const VisObject *visObject, int materialIndex) {
-    if (materialIndex >= 0 && static_cast<uint32_t>(materialIndex) < visObject->numMaterials) {
-        return visObject->GetMaterials()[materialIndex];
+static uint32_t CalcShadowMapBorderTexels(uint32_t resolution, uint32_t shadowMapQuality) {
+    constexpr uint32_t fixedKernelMaxOffsetTexels = 1;
+    constexpr uint32_t fixedKernelBorderTexels = fixedKernelMaxOffsetTexels + 1; // bilinear comparison footprint 를 위해 1 texel border 를 추가한다.
+    assert(resolution > 2 * fixedKernelBorderTexels);
+
+    // Q0~Q2 의 fixed kernel offset 의 최대 크기는 1 이다.
+    if (shadowMapQuality < 3) {
+        return fixedKernelBorderTexels;
     }
-    return materialManager.defaultLitMaterial.get();
+
+    constexpr float usableResolution = static_cast<float>(RenderFrameSettings::ShadowMapFilterReferenceResolution - 2 * RenderFrameSettings::ShadowMapFilterReferenceBorderTexels);
+    constexpr float maxFilterRadiusScale = RenderFrameSettings::ShadowMapFilterRadiusMax / usableResolution;
+    constexpr float maxPoissonKernelRadiusScale = RenderFrameSettings::ShadowMapPoissonKernelMaxRadius * maxFilterRadiusScale;
+
+    // effective radius 가 border 로 줄어드는 관계까지 풀어서 필요한 최소 border 를 계산한다.
+    const float requiredBorder = (maxPoissonKernelRadiusScale * resolution + 1.0f) / (1.0f + 2.0f * maxPoissonKernelRadiusScale);
+
+    return BE1::Max(fixedKernelBorderTexels, static_cast<uint32_t>(BE1::Math::Ceil(requiredBorder)));
 }
 
 static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubMesh *subMesh, bool skinning) {
@@ -62,7 +76,7 @@ static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubM
     return featureSet;
 }
 
-void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, int lodLevel) {
+void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel) {
     if (visCamera->numVisSurfs + 1 > visCamera->maxVisSurfs) {
         BE_WARNLOG("RenderWorld::AddVisSurf: not enough available visible surfaces\n");
         return;
@@ -82,6 +96,8 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
         return;
     }
 
+    const VisSkinnedMesh *visSkinnedMesh = visObject->skinnedMesh;
+
     VisSurf *drawSurf = (VisSurf *)frameData->MemAlloc(sizeof(VisSurf));
     drawSurf->index = visCamera->numVisSurfs;
     drawSurf->space = visObject;
@@ -90,10 +106,10 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
     drawSurf->numIndexes = subMesh->NumIndexes(lodLevel);
     drawSurf->lodLevel = lodLevel;
     drawSurf->material = material;
-    const VisSkinnedMesh *visSkinnedMesh = visObject->skinnedMesh;
     drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh, visSkinnedMesh && visSkinnedMesh->skinningJointOffset != ShaderSkinningJointOffsetInvalid);
     drawSurf->shaderMaterialIndex = frameData->RegisterShaderMaterial(material);
     drawSurf->flags = flags;
+    drawSurf->shadowCascadeMask = shadowCascadeMask;
 
     visCamera->visSurfs[visCamera->numVisSurfs++] = drawSurf;
 }
@@ -300,7 +316,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     const bool skipPostProcess = renderFrameSettings.skipPostProcess || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
     const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableTemporalHistory);
-    const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess;
+    const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess && renderFrameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
     const bool needColorHistory = useTAA;
     const bool needDepthHistory = useTAA;
     const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && renderFrameSettings.hiZOcclusionCulling;
@@ -548,8 +564,8 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     // RenderLight 중에서 컬링한 라이트를 프레임 데이터에 VisLight 로 등록한다.
     FindVisLights(frameData, renderCamera, visCamera);
 
-    // 단일 directional shadow 의 receiver 영역을 준비하고 caster 수집 후 투영 깊이를 확장한다.
-    SetupDirectionalShadowView(frameData, renderCamera, visCamera);
+    // 각 CSM split 의 receiver 영역으로 directional shadow 투영을 준비하고 caster 를 수집한다.
+    SetupCascadedShadow(frameData, renderCamera, visCamera);
 
     // visObjects 중에서 mesh surface 들을 visCamera->visSurfs 에 추가한다.
     AddMeshes(frameData, renderCamera, visCamera);
@@ -569,6 +585,13 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     }
 
     // 렌더 패스를 구성한다.
+    if (visCamera->cascadedShadow) {
+        const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
+        for (uint32_t cascadeIndex = 0; cascadeIndex < visCamera->cascadedShadow->cascadeCount; cascadeIndex++) {
+            renderPassBuilder.BuildCascadedShadow(frameData, visCamera->cascadedShadow, cascadeIndex, visCamera->visSurfs, visCamera->numVisSurfs, allowAsyncPSOBuild);
+        }
+    }
+
     renderPassBuilder.BuildMain(frameData, visCamera);
 
     // Post-Opaque 단계에서 그릴 ocean surface pipeline 을 준비한다.
@@ -583,7 +606,68 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     viewCount++;
 }
 
-void RenderWorld::SetupDirectionalShadowView(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+// Receiver sphere 로 cascade 투영 영역을 계산한다. near 밖 caster 는 depth clamp 로 처리한다.
+static bool CalcCSMCascadeProjection(CSMCascade &cascade, const BE1::Mat3 &lightAxis, const BE1::Sphere &receiverSphere, uint32_t resolution, uint32_t borderTexels) {
+    const float radius = receiverSphere.Radius();
+    if (radius <= 0.0f) {
+        return false;
+    }
+
+    if (resolution <= 2 * borderTexels) {
+        return false;
+    }
+
+    const uint32_t usableResolution = resolution - 2 * borderTexels;
+    cascade.worldUnitsPerTexel = 2.0f * radius / static_cast<float>(usableResolution);
+    if (cascade.worldUnitsPerTexel <= 0.0f) {
+        return false;
+    }
+
+    // sphere radius 가 차지하는 (border 를 포함한) shadow map XY 크기를 계산한다.
+    const float shadowMapExtent = static_cast<float>(resolution) * cascade.worldUnitsPerTexel * 0.5f;
+
+    const BE1::Vec3 &sphereCenter = receiverSphere.Center();
+
+    // world-space sphere center 의 light-space 좌표를 구한다. XY 는 texel grid 에 snap 한다.
+    const float distLeft = BE1::Math::Snap(lightAxis[EngineAxis::Left].Dot(sphereCenter), cascade.worldUnitsPerTexel);
+    const float distUp = BE1::Math::Snap(lightAxis[EngineAxis::Up].Dot(sphereCenter), cascade.worldUnitsPerTexel);
+    const float distForward = lightAxis[EngineAxis::Forward].Dot(sphereCenter);
+
+    // snap 된 light-space 좌표를 다시 world-space 좌표로 변환한다.
+    const BE1::Vec3 shadowCenter = lightAxis[EngineAxis::Forward] * distForward + lightAxis[EngineAxis::Left] * distLeft + lightAxis[EngineAxis::Up] * distUp;
+
+    // sphere 경계가 부동소수점 오차로 잘리지 않도록 depth 범위에 여유를 둔다.
+    // caster 출입이나 sphere 중심 이동이 depthRange 를 바꾸지 않도록 반경에서 직접 계산한다.
+    const float depthPadding = BE1::Max(0.001f, 2.0f * radius * 0.0001f);
+    const float depthExtent = radius + depthPadding;
+    const float depthMin = distForward - depthExtent;
+    const float invDepthRange = 0.5f / depthExtent;
+
+    // world-space sphere center 로 OBB 를 만든다. 광원 near 밖의 caster 는 depth clamp 로 보존한다.
+    cascade.shadowMapBounds = BE1::OBB(shadowCenter, BE1::Vec3(depthExtent, shadowMapExtent, shadowMapExtent), lightAxis);
+
+    // receiver sphere 만으로 view-projection matrix 를 완성한다.
+    const float invExtent = 1.0f / shadowMapExtent;
+    cascade.viewProjMatrix[0] = BE1::Vec4(lightAxis[EngineAxis::Left] * -invExtent, distLeft * invExtent);
+    cascade.viewProjMatrix[1] = BE1::Vec4(lightAxis[EngineAxis::Up] * invExtent, -distUp * invExtent);
+    cascade.viewProjMatrix[2] = BE1::Vec4(lightAxis[EngineAxis::Forward] * invDepthRange, -depthMin * invDepthRange);
+    cascade.viewProjMatrix[3] = BE1::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    return true;
+}
+
+static float3x4 BuildWorldToShadowCoordMatrix(const BE1::Mat4 &viewProjMatrix) {
+    float3x4 matrix;
+    for (int column = 0; column < 4; column++) {
+        // D3D texture UV: clip XY [-1, 1] -> [0, 1], Y 는 반전. Depth 는 이미 [0, 1] 이다.
+        matrix.m[0][column] = 0.5f * (viewProjMatrix[0][column] + viewProjMatrix[3][column]);
+        matrix.m[1][column] = 0.5f * (-viewProjMatrix[1][column] + viewProjMatrix[3][column]);
+        matrix.m[2][column] = viewProjMatrix[2][column];
+    }
+    return matrix;
+}
+
+void RenderWorld::SetupCascadedShadow(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     if (!visCamera->directionalLightVisible) {
         return;
     }
@@ -595,69 +679,118 @@ void RenderWorld::SetupDirectionalShadowView(RenderFrameData *frameData, const R
 
     const RenderFrameSettings &settings = frameData->GetRenderFrameSettings();
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
-    const float receiverFar = BE1::Min(cameraDesc.zFar, settings.directionalShadowDistance);
-    if (settings.directionalShadowDistance <= 0.0f || receiverFar <= cameraDesc.zNear) {
+    const float csmMaxDistance = BE1::Min(cameraDesc.zFar, settings.csmMaxDistance); // CSM 최대 거리
+    if (!settings.shadows || csmMaxDistance <= cameraDesc.zNear) {
         return;
     }
 
-    // view bounding volume 으로 directional shadow receiver 영역 (receiver sphere) 을 구한다.
-    BE1::Sphere receiverSphere;
-    if (cameraDesc.orthogonal) {
-        BE1::OBB receiverBox = renderCamera->GetBox();
-        const float halfDepth = (receiverFar - cameraDesc.zNear) * 0.5f;
-        receiverBox.SetCenter(cameraDesc.origin + cameraDesc.axis[EngineAxis::Forward] * (cameraDesc.zNear + halfDepth));
-        receiverBox.SetExtents(BE1::Vec3(halfDepth, cameraDesc.sizeX, cameraDesc.sizeY));
-        receiverSphere = receiverBox.ToSphere();
-    } else {
-        BE1::Frustum receiverFrustum = renderCamera->GetFrustum();
-        receiverFrustum.MoveFarDistance(receiverFar);
-        receiverSphere = receiverFrustum.ToSphere();
-    }
-
-    // receiver sphere 를 포함하는 directional shadow world box 와 view-projection 행렬을 구한다.
-    BE1::OBB shadowWorldBox;
-    BE1::Mat4 shadowViewProjMatrix;
-    if (!ComputeDirectionalShadowProjection(directionalLight->axis, receiverSphere, BE1::AABB::empty, settings.csmResolution, shadowWorldBox, shadowViewProjMatrix)) {
+    const RenderContext *renderContext = RenderContext::activeContext;
+    RHI::Texture *depthTexture = renderContext->GetCSMDepthTexture();
+    if (!depthTexture) {
         return;
     }
 
-    // directional shadow world box 를 이용해서 caster 를 컬링/수집하고 caster bounds 를 리턴한다.
-    const BE1::AABB casterBounds = FindDirectionalShadowCasters(frameData, renderCamera, shadowWorldBox);
+    const uint32_t shadowMapResolution = renderContext->GetCSMResolution();
+    const uint32_t shadowMapBorderTexels = CalcShadowMapBorderTexels(shadowMapResolution, settings.shadowMapQuality);
+    constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapFilterReferenceResolution - 2 * RenderFrameSettings::ShadowMapFilterReferenceBorderTexels);
+    const float usableShadowResolution = static_cast<float>(shadowMapResolution - 2 * shadowMapBorderTexels);
+    const float filterResolutionScale = usableShadowResolution / referenceUsableResolution;
 
-    if (!casterBounds.IsCleared()) {
-        // 수집된 caster 의 광원 쪽 깊이만 확장하고 receiver 기준 XY 와 far 범위를 유지한다.
-        if (!ComputeDirectionalShadowProjection(directionalLight->axis, receiverSphere, casterBounds, settings.csmResolution, shadowWorldBox, shadowViewProjMatrix)) {
+    VisCascadedShadow *cascadedShadow = new (frameData->MemAlloc(sizeof(VisCascadedShadow))) VisCascadedShadow();
+    cascadedShadow->cascadeCount = settings.csmCascadeCount;
+
+    // cascade 별 distance 를 계산한다.
+    ComputeCSMSplitDistances(cameraDesc.zNear, csmMaxDistance, settings.csmSplitLambda, cascadedShadow->cascadeCount, cameraDesc.orthogonal, cascadedShadow->splitDistances);
+
+    // 모든 cascade 의 caster shadow volume 검사에 사용할 전체 CSM 카메라 view planes 를 구한다.
+    renderCamera->CalcSlicedViewVolume(cameraDesc.zNear, csmMaxDistance, nullptr, cascadedShadow->viewVolumePlanes);
+
+    // 각 cascade 의 receiver 범위로 projection 과 caster 컬링 경계를 함께 정한다.
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
+        // blending 중인 cascade 는 이전 receiver 구간까지 포함하여 map coverage overlap 을 보장한다.
+        const float cascadeNear = (cascadeIndex == 0 || settings.csmBlendFraction <= 0.0f) ? cascadedShadow->splitDistances[cascadeIndex] : cascadedShadow->splitDistances[cascadeIndex - 1];
+        const float cascadeFar = cascadedShadow->splitDistances[cascadeIndex + 1];
+
+        BE1::Sphere cascadeSphere;
+        renderCamera->CalcSlicedViewVolume(cascadeNear, cascadeFar, &cascadeSphere);
+
+        CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
+        if (!CalcCSMCascadeProjection(cascade, directionalLight->axis, cascadeSphere, shadowMapResolution, shadowMapBorderTexels)) {
             return;
+        }
+
+        cascade.depthDSV = renderContext->GetCSMDepthSliceDSV(cascadeIndex);
+
+        // worldToShadowCoordMatrix * worldPos = shadowCoord (UV.xy, depth.z).
+        // near 밖 caster 는 depth clamp 로 처리하므로 caster 수집 후 projection 을 바꾸지 않는다.
+        cascadedShadow->shaderData.worldToShadowCoordMatrices[cascadeIndex] = BuildWorldToShadowCoordMatrix(cascade.viewProjMatrix);
+    }
+
+    float cascadeFilterRadii[RenderFrameSettings::CSMCascadeCount] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    const float cascade0WorldUnitsPerTexel = cascadedShadow->cascades[0].worldUnitsPerTexel;
+    const float cascade0FilterRadius = settings.shadowMapFilterRadius * filterResolutionScale;
+    const float minFilterRadius = RenderFrameSettings::ShadowMapFilterRadiusMin * filterResolutionScale;
+    const float worldFilterRadius = cascade0FilterRadius * cascade0WorldUnitsPerTexel;
+
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
+        const float worldUnitsPerTexel = cascadedShadow->cascades[cascadeIndex].worldUnitsPerTexel;
+        cascadeFilterRadii[cascadeIndex] = BE1::Clamp(worldFilterRadius / worldUnitsPerTexel, minFilterRadius, cascade0FilterRadius);
+    }
+
+    // RenderObject 를 한 번 순회하여 caster 와 cascade mask 를 수집한다.
+    FindDirectionalShadowCasters(frameData, renderCamera, cascadedShadow);
+
+    cascadedShadow->depthTexture = depthTexture;
+
+    cascadedShadow->shaderData.textureIndex = depthTexture->GetBindlessIndex(RHI::ViewType::SRV, renderContext->GetCSMDepthSRV());
+    cascadedShadow->shaderData.cascadeCount = cascadedShadow->cascadeCount;
+    cascadedShadow->shaderData.maxDistance = csmMaxDistance;
+
+    cascadedShadow->shaderData.cascadeFilterRadii = float4(cascadeFilterRadii[0], cascadeFilterRadii[1], cascadeFilterRadii[2], cascadeFilterRadii[3]);
+
+    const float texelSize = 1.0f / shadowMapResolution;
+    cascadedShadow->shaderData.texelSize = float2(texelSize, texelSize);
+    cascadedShadow->shaderData.normalizedBorder = shadowMapBorderTexels * texelSize;
+    const float usableMapWidth = 1.0f - 2.0f * cascadedShadow->shaderData.normalizedBorder;
+    const float cascadeBlendWidth = usableMapWidth * settings.csmBlendFraction;
+    cascadedShadow->shaderData.invBlendWidth = cascadeBlendWidth > 0.0f ? 1.0f / cascadeBlendWidth : 0.0f;
+
+    const float farFadeRange = (csmMaxDistance - cameraDesc.zNear) * settings.csmFadeFraction;
+    cascadedShadow->shaderData.farFadeStart = csmMaxDistance - farFadeRange;
+    cascadedShadow->shaderData.invFarFadeRange = 1.0f / farFadeRange;
+
+    visCamera->cascadedShadow = cascadedShadow;
+}
+
+static float CalcDirectionalShadowSquaredLODErrorLimit(const VisCascadedShadow *cascadedShadow, uint8_t shadowCascadeMask, const BE1::Mat3x4 &worldMatrix, float shadowTexelErrorLimit) {
+    float finestWorldUnitsPerTexel = 0.0f;
+
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
+        const uint8_t cascadeBit = static_cast<uint8_t>(BIT(cascadeIndex));
+        if ((shadowCascadeMask & cascadeBit) == 0) {
+            continue;
+        }
+
+        const float worldUnitsPerTexel = cascadedShadow->cascades[cascadeIndex].worldUnitsPerTexel;
+        if (finestWorldUnitsPerTexel == 0.0f || worldUnitsPerTexel < finestWorldUnitsPerTexel) {
+            finestWorldUnitsPerTexel = worldUnitsPerTexel;
         }
     }
 
-    DirectionalShadowView *shadowView = new (frameData->MemAlloc(sizeof(DirectionalShadowView))) DirectionalShadowView();
-    shadowView->receiverSphere = receiverSphere;
-    shadowView->worldBox = shadowWorldBox;
-    shadowView->viewProjMatrix = shadowViewProjMatrix;
-
-    // worldToShadowCoordMatrix * worldPos = shadowCoord
-    // shadowCoord.xy : shadow texture UV
-    // shadowCoord.z  : shadow depth
-    for (int column = 0; column < 4; column++) {
-        // D3D texture UV: clip XY [-1, 1] -> [0, 1], Y 는 반전. Depth 는 이미 [0, 1] 이다.
-        shadowView->shaderData.worldToShadowCoordMatrix.m[0][column] = 0.5f * (shadowViewProjMatrix[0][column] + shadowViewProjMatrix[3][column]);
-        shadowView->shaderData.worldToShadowCoordMatrix.m[1][column] = 0.5f * (-shadowViewProjMatrix[1][column] + shadowViewProjMatrix[3][column]);
-        shadowView->shaderData.worldToShadowCoordMatrix.m[2][column] = shadowViewProjMatrix[2][column];
+    if (finestWorldUnitsPerTexel <= 0.0f) {
+        return 0.0f;
     }
 
-    const float texelSize = 1.0f / settings.csmResolution;
-    shadowView->shaderData.texelSize = float2(texelSize, texelSize);
-
-    visCamera->directionalShadowView = shadowView;
+    float cascadePixelsPerWorldUnit = 1.0f / finestWorldUnitsPerTexel;
+    return CalcLocalLODErrorLimitSqr(worldMatrix, cascadePixelsPerWorldUnit, shadowTexelErrorLimit);
 }
 
-BE1::AABB RenderWorld::FindDirectionalShadowCasters(RenderFrameData *frameData, const RenderCamera *renderCamera, const BE1::OBB &shadowWorldBox) {
+void RenderWorld::FindDirectionalShadowCasters(RenderFrameData *frameData, const RenderCamera *renderCamera, const VisCascadedShadow *cascadedShadow) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindDirectionalShadowCasters");
 
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
-    BE1::AABB casterBounds = BE1::AABB::empty;
+    const float meshLODPixelError = frameData->GetRenderFrameSettings().meshLODPixelError;
 
     for (RenderObject *renderObject : renderObjects) {
         if (!renderObject || !renderObject->desc.meshInstance || !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::CastShadows)) {
@@ -672,7 +805,17 @@ BE1::AABB RenderWorld::FindDirectionalShadowCasters(RenderFrameData *frameData, 
             continue;
         }
 
-        if (CullDirectionalShadowCaster(renderObject->worldAABB, shadowWorldBox)) {
+        uint8_t shadowCascadeMask = 0;
+        for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
+            const CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
+
+            if (!CullShadowCaster(cascadedShadow->viewVolumePlanes, cascade.shadowMapBounds, renderObject->worldAABB)) {
+                shadowCascadeMask |= (uint8_t)BIT(cascadeIndex);
+            }
+        }
+
+        // 오브젝트가 모든 캐스캐이드에서 컬링되면 shadow-map 에 그릴 필요가 없다.
+        if (shadowCascadeMask == 0) {
             continue;
         }
 
@@ -686,14 +829,18 @@ BE1::AABB RenderWorld::FindDirectionalShadowCasters(RenderFrameData *frameData, 
         if (!BE1::HasFlag(visObject->flags, VisObject::Flag::CameraVisible)) {
             visObject->worldMatrix = renderObject->GetWorldMatrix();
             visObject->prevWorldMatrix = visObject->worldMatrix;
+
+            if (visObject->meshLOD < 0 && meshLODPixelError > 0.0f) {
+                const Mesh *mesh = visObject->meshInstance->GetSourceMesh().get();
+                if (mesh && mesh->HasLODs()) {
+                    // 카메라 픽셀과 같은 허용 오차를 가장 정밀한 관련 cascade 의 shadow-map texel 단위로 적용한다.
+                    visObject->squaredLODErrorLimit = CalcDirectionalShadowSquaredLODErrorLimit(cascadedShadow, shadowCascadeMask, visObject->worldMatrix, meshLODPixelError);
+                }
+            }
         }
 
-        visObject->flags |= VisObject::Flag::ShadowVisible;
-
-        casterBounds.AddAABB(renderObject->worldAABB);
+        visObject->shadowCascadeMask |= shadowCascadeMask;
     }
-
-    return casterBounds;
 }
 
 void RenderWorld::PrepareOceanSurfacePipeline(VisCamera *visCamera) {
@@ -786,7 +933,7 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
     }
     renderObject->viewCount = viewCount;
     renderObject->visObject = visObject;
-    visObject->meshLOD = renderObject->GetMeshLOD();
+    visObject->meshLOD = frameData->GetRenderFrameSettings().meshLOD ? renderObject->GetMeshLOD() : 0;
 
     if (renderObject->desc.meshInstance) {
         visObject->meshInstance = frameData->RetainMeshInstance(renderObject->desc.meshInstance);
@@ -900,7 +1047,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             const Mesh *mesh = visObject->meshInstance->GetSourceMesh().get();
             if (mesh && mesh->HasLODs()) {
                 // 같은 카메라/객체의 SubMesh 들이 사용할 허용 오차를 한 번 계산한다.
-                visObject->squaredLODErrorLimit = renderCamera->CalcLocalSquaredLODErrorLimit(renderObject->GetWorldAABB(), visObject->worldMatrix, meshLODPixelError);
+                visObject->squaredLODErrorLimit = renderCamera->CalcLocalLODErrorLimitSqr(visObject->worldMatrix, renderObject->GetWorldAABB(), meshLODPixelError);
             }
         }
 
@@ -992,7 +1139,7 @@ int RenderWorld::CountSkinningUploadJoints(const RenderFrameData::ChunkRange<Vis
     uint32_t numTotalUploadJoints = 0;
 
     for (const VisSkinnedMesh &visSkinnedMesh : visSkinnedMeshes) {
-        if ((visSkinnedMesh.space->flags & (VisObject::Flag::CameraVisible | VisObject::Flag::ShadowVisible)) == VisObject::Flag::None) {
+        if (!visSkinnedMesh.space->IsRenderable()) {
             continue;
         }
 
@@ -1035,7 +1182,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     const uint64_t currentFrameSerial = frameData->GetFrameSerial();
 
     for (const VisSkinnedMesh &visSkinnedMesh : visSkinnedMeshes) {
-        if ((visSkinnedMesh.space->flags & (VisObject::Flag::CameraVisible | VisObject::Flag::ShadowVisible)) == VisObject::Flag::None) {
+        if (!visSkinnedMesh.space->IsRenderable()) {
             continue;
         }
 
@@ -1083,7 +1230,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     BE1::Mat3x4 *dst = static_cast<BE1::Mat3x4 *>(jointBuffer->mappedPtr);
     uint32_t jointOffset = 0;
     for (VisSkinnedMesh &visSkinnedMesh : visSkinnedMeshes) {
-        if ((visSkinnedMesh.space->flags & (VisObject::Flag::CameraVisible | VisObject::Flag::ShadowVisible)) == VisObject::Flag::None) {
+        if (!visSkinnedMesh.space->IsRenderable()) {
             continue;
         }
 
@@ -1138,6 +1285,36 @@ static int SelectMeshLOD(const SubMesh *subMesh, int requestedLOD, float squared
     return 0;
 }
 
+static BE_INLINE void CullMeshSurface(const BE1::AABB &localAABB, const BE1::Mat3x4 &worldMatrix, const RenderCamera *renderCamera, const VisCascadedShadow *cascadedShadow, bool cullCamera, bool &surfaceCameraVisible, uint8_t &surfaceShadowCascadeMask) {
+    if (localAABB.IsCleared()) {
+        return;
+    }
+
+    // Static submesh 의 world bounds 는 카메라와 shadow 컬링에 한 번만 계산하여 공유한다.
+    BE1::AABB surfaceWorldAABB;
+    surfaceWorldAABB.SetFromTransformedAABB(localAABB, worldMatrix);
+
+    if (cullCamera) {
+        surfaceCameraVisible = !renderCamera->Cull(surfaceWorldAABB);
+    }
+
+    if (surfaceShadowCascadeMask == 0) {
+        return;
+    }
+
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; ++cascadeIndex) {
+        const uint8_t cascadeBit = static_cast<uint8_t>(BIT(cascadeIndex));
+        if ((surfaceShadowCascadeMask & cascadeBit) == 0) {
+            continue;
+        }
+
+        const CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
+        if (CullShadowCaster(cascadedShadow->viewVolumePlanes, cascade.shadowMapBounds, surfaceWorldAABB)) {
+            surfaceShadowCascadeMask &= ~cascadeBit;
+        }
+    }
+}
+
 void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddMeshes");
 
@@ -1149,72 +1326,67 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
     BuildSkinningJointBuffer(frameData, visCamera);
 
     const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
+    const VisCascadedShadow *cascadedShadow = visCamera->cascadedShadow;
 
-    for (VisObject &visObjectRef : frameData->GetVisObjects(visCamera->firstVisObjectIndex)) {
-        VisObject *visObject = &visObjectRef;
-        const bool cameraVisible = BE1::HasFlag(visObject->flags, VisObject::Flag::CameraVisible);
-        const bool shadowVisible = visCamera->directionalShadowView && BE1::HasFlag(visObject->flags, VisObject::Flag::ShadowVisible);
-        if ((!cameraVisible && !shadowVisible) || !visObject->meshInstance) {
+    for (VisObject &visObject : frameData->GetVisObjects(visCamera->firstVisObjectIndex)) {
+        const bool objectCameraVisible = BE1::HasFlag(visObject.flags, VisObject::Flag::CameraVisible);
+        const uint8_t objectShadowCascadeMask = cascadedShadow ? visObject.shadowCascadeMask : 0;
+        if (!objectCameraVisible && objectShadowCascadeMask == 0) {
             continue;
         }
 
-        if (!visObject->meshInstance->EnsureCurrent()) {
+        MeshInstance *meshInstance = visObject.meshInstance;
+        if (!meshInstance || !meshInstance->EnsureCurrent()) {
             continue;
         }
 
-        const bool skinned = visObject->meshInstance->IsSkinned();
+        const bool skinned = meshInstance->IsSkinned();
+
         // Pose 준비에 실패한 skinned mesh 를 bind pose 상태로 등록하지 않는다.
-        if (skinned && (!visObject->skinnedMesh || visObject->skinnedMesh->skinningJointOffset == ShaderSkinningJointOffsetInvalid)) {
+        if (skinned && (!visObject.skinnedMesh ||
+            visObject.skinnedMesh->skinningJointOffset == ShaderSkinningJointOffsetInvalid)) {
             continue;
         }
 
-        const int numSurfaces = visObject->meshInstance->NumSurfaces();
+        const int numSurfaces = meshInstance->NumSurfaces();
+
         // Skinned submesh 의 bounds 는 bind pose 기준이므로 오브젝트 수집 단계의 bounds 판정을 유지한다.
         const bool cullSurfaces = numSurfaces > 1 && !skinned;
+        const bool cullCameraSurfaces = objectCameraVisible && !skipViewCulling;
 
         for (int meshSurfIndex = 0; meshSurfIndex < numSurfaces; ++meshSurfIndex) {
-            const Mesh::Surface *meshSurf = visObject->meshInstance->GetSurface(meshSurfIndex);
+            const Mesh::Surface *meshSurf = meshInstance->GetSurface(meshSurfIndex);
             if (!meshSurf || !meshSurf->subMesh) {
                 continue;
             }
 
-            const Material *material = GetVisObjectMaterial(visObject, meshSurf->materialIndex);
-            bool cameraSurfaceVisible = cameraVisible;
-            bool shadowSurfaceVisible = shadowVisible && !BE1::HasFlag(material->GetFlags(), Material::Flag::NoShadow) && material->GetRenderingMode() != Material::RenderingMode::Blend;
-            if (!cameraSurfaceVisible && !shadowSurfaceVisible) {
+            const Material *material = materialManager.defaultLitMaterial.get();
+            if (meshSurf->materialIndex >= 0 && static_cast<uint32_t>(meshSurf->materialIndex) < visObject.numMaterials) {
+                material = visObject.GetMaterials()[meshSurf->materialIndex];
+            }
+
+            const bool castsShadow = !BE1::HasFlag(material->GetFlags(), Material::Flag::NoShadow) && material->GetRenderingMode() != Material::RenderingMode::Blend;
+
+            bool surfaceCameraVisible = objectCameraVisible;
+            uint8_t surfaceShadowCascadeMask = castsShadow ? objectShadowCascadeMask : 0;
+            if (!surfaceCameraVisible && surfaceShadowCascadeMask == 0) {
                 continue;
             }
 
-            // Static submesh 의 world bounds 는 카메라와 shadow 컬링에 한 번만 계산하여 공유한다.
-            if (cullSurfaces && ((!skipViewCulling && cameraSurfaceVisible) || shadowSurfaceVisible)) {
-                const BE1::AABB &localAABB = meshSurf->subMesh->GetBoundingBox();
-                if (!localAABB.IsCleared()) {
-                    BE1::AABB worldAABB;
-                    worldAABB.SetFromTransformedAABB(localAABB, visObject->worldMatrix);
-
-                    if (cameraSurfaceVisible && !skipViewCulling) {
-                        cameraSurfaceVisible = !renderCamera->Cull(worldAABB);
-                    }
-                    if (shadowSurfaceVisible) {
-                        shadowSurfaceVisible = !CullDirectionalShadowCaster(worldAABB, visCamera->directionalShadowView->worldBox);
-                    }
-                }
+            if (cullSurfaces && (cullCameraSurfaces || surfaceShadowCascadeMask != 0)) {
+                CullMeshSurface(meshSurf->subMesh->GetBoundingBox(), visObject.worldMatrix, renderCamera, cascadedShadow, cullCameraSurfaces, surfaceCameraVisible, surfaceShadowCascadeMask);
             }
 
-            VisSurfFlag flags = VisSurfFlag::None;
-            if (cameraSurfaceVisible) {
-                flags |= VisSurfFlag::CameraVisible;
-            }
-            if (shadowSurfaceVisible) {
-                flags |= VisSurfFlag::ShadowVisible;
-            }
-            if (flags == VisSurfFlag::None) {
+            if (!surfaceCameraVisible && surfaceShadowCascadeMask == 0) {
                 continue;
             }
 
-            // 두 패스는 같은 surface 와 LOD 를 공유한다. Shadow 전용 오브젝트의 자동 LOD 는 기본값 0 을 사용한다.
-            const int lodLevel = SelectMeshLOD(meshSurf->subMesh, visObject->meshLOD, visObject->squaredLODErrorLimit);
-            AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, flags, lodLevel);
+            const VisSurfFlag flags = surfaceCameraVisible ? VisSurfFlag::CameraVisible : VisSurfFlag::None;
+
+            // 카메라에 보이는 surface 는 카메라 기준, shadow 전용 surface 는 가장 정밀한 관련 cascade 기준 LOD 를 사용한다.
+            // 한 surface 가 여러 cascade 에 투영되어도 같은 LOD 를 공유하여 blend 영역의 caster silhouette 를 일치시킨다.
+            const int lodLevel = SelectMeshLOD(meshSurf->subMesh, visObject.meshLOD, visObject.squaredLODErrorLimit);
+            AddVisSurf(frameData, visCamera, nullptr, &visObject, material, meshSurf->subMesh, flags, surfaceShadowCascadeMask, lodLevel);
         }
     }
 }
@@ -1259,7 +1431,7 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
             subMesh->vertexBuffer = guiSurf->vertexBuffer;
             subMesh->indexBuffer = guiSurf->indexBuffer;
 
-            AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::CameraVisible);
+            AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::CameraVisible, 0);
         }
     }
 }
@@ -1289,7 +1461,7 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera
     visObject->flags |= VisObject::Flag::CameraVisible;
     Material *material = frameData->RetainMaterial(skyboxMaterial);
 
-    AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, VisSurfFlag::CameraVisible | VisSurfFlag::SkipSelection | VisSurfFlag::Skybox);
+    AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, VisSurfFlag::CameraVisible | VisSurfFlag::SkipSelection | VisSurfFlag::Skybox, 0);
 }
 
 void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
@@ -1765,7 +1937,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
         subMesh->vertexBuffer = guiSurf->vertexBuffer;
         subMesh->indexBuffer = guiSurf->indexBuffer;
 
-        AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::None);
+        AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::None, 0);
     }
 
     guiMesh.Clear();

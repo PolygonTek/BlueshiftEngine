@@ -40,6 +40,8 @@ uint64_t GraphicsPipelineDesc::GeneratePipelineDescHash() const {
         uint8_t     blendStateType;
         uint8_t     primitiveTopology;
         uint32_t    sampleMask;
+        uint8_t     fragmentShaderEnabled;
+        uint8_t     depthClipEnabled;
         uint8_t     depthBiasOverride;
         float       constantDepthBias;
         float       depthBiasClamp;
@@ -56,7 +58,10 @@ uint64_t GraphicsPipelineDesc::GeneratePipelineDescHash() const {
     hashData.blendStateType = static_cast<uint8_t>(blendStateType);
     hashData.primitiveTopology = static_cast<uint8_t>(primitiveTopology);
     hashData.sampleMask = sampleMask;
+    hashData.fragmentShaderEnabled = fragmentShaderEnabled;
+    hashData.depthClipEnabled = depthClipEnabled;
     hashData.depthBiasOverride = depthBiasOverride;
+
     if (depthBiasOverride) {
         hashData.constantDepthBias = constantDepthBias;
         hashData.depthBiasClamp = depthBiasClamp;
@@ -88,7 +93,7 @@ static bool PrepareStageShader(const ShaderCompileData &compileData, RHI::Shader
     return true;
 }
 
-static bool PreparePipelineGraphicsShaders(const ShaderCompileData &compileData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
+static bool PreparePipelineGraphicsShaders(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
     static constexpr RHI::ShaderStage GraphicsShaderStages[] = {
         RHI::ShaderStage::Vertex,
         RHI::ShaderStage::Hull,
@@ -100,6 +105,10 @@ static bool PreparePipelineGraphicsShaders(const ShaderCompileData &compileData,
     bool hasGraphicsStage = false;
 
     for (RHI::ShaderStage shaderStage : GraphicsShaderStages) {
+        if (shaderStage == RHI::ShaderStage::Fragment && !pipelineDesc.fragmentShaderEnabled) {
+            continue;
+        }
+
         const ShaderStageSource &stageSource = compileData.stageSources[to_int(shaderStage)];
         if (stageSource.filename.IsEmpty()) {
             continue;
@@ -141,26 +150,34 @@ static bool PreparePipelineComputeShader(const ShaderCompileData &compileData, R
 }
 
 static RHI::PipelineState *CreateGraphicsPSO(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    if (!PreparePipelineGraphicsShaders(compileData, stageShaders)) {
+    if (!PreparePipelineGraphicsShaders(compileData, pipelineDesc, stageShaders)) {
         return nullptr;
     }
 
     RHI::PipelineStateDesc psoDesc;
-    RHI::RasterizerState rasterizerState;
     psoDesc.vs = stageShaders[to_int(RHI::ShaderStage::Vertex)];
-    psoDesc.ps = stageShaders[to_int(RHI::ShaderStage::Fragment)];
+    psoDesc.ps = pipelineDesc.fragmentShaderEnabled ? stageShaders[to_int(RHI::ShaderStage::Fragment)] : nullptr;
     psoDesc.ds = stageShaders[to_int(RHI::ShaderStage::Domain)];
     psoDesc.hs = stageShaders[to_int(RHI::ShaderStage::Hull)];
     psoDesc.gs = stageShaders[to_int(RHI::ShaderStage::Geometry)];
     psoDesc.inputLayout = pipelineDesc.inputLayout;
     psoDesc.rasterizerState = RHI::renderer->GetRasterizerState(pipelineDesc.rasterizerStateType);
-    if (pipelineDesc.depthBiasOverride) {
+
+    RHI::RasterizerState rasterizerState;
+    if (pipelineDesc.depthBiasOverride || pipelineDesc.depthClipEnabled != psoDesc.rasterizerState->depthClipEnabled) {
         rasterizerState = *psoDesc.rasterizerState;
-        rasterizerState.constantDepthBias = pipelineDesc.constantDepthBias;
-        rasterizerState.depthBiasClamp = pipelineDesc.depthBiasClamp;
-        rasterizerState.slopeScaledDepthBias = pipelineDesc.slopeScaledDepthBias;
+
+        if (pipelineDesc.depthClipEnabled != psoDesc.rasterizerState->depthClipEnabled) {
+            rasterizerState.depthClipEnabled = pipelineDesc.depthClipEnabled;
+        }
+        if (pipelineDesc.depthBiasOverride) {
+            rasterizerState.constantDepthBias = pipelineDesc.constantDepthBias;
+            rasterizerState.depthBiasClamp = pipelineDesc.depthBiasClamp;
+            rasterizerState.slopeScaledDepthBias = pipelineDesc.slopeScaledDepthBias;
+        }
         psoDesc.rasterizerState = &rasterizerState;
     }
+
     psoDesc.depthStencilState = RHI::renderer->GetDepthStencilState(pipelineDesc.depthStencilStateType);
     psoDesc.blendState = RHI::renderer->GetBlendState(pipelineDesc.blendStateType);
     psoDesc.renderDest = &pipelineDesc.renderDest;

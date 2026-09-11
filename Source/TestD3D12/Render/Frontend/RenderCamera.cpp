@@ -74,6 +74,46 @@ void RenderCamera::Update(const Desc &desc) {
     jitteredInvViewProjMatrix = invViewProjMatrix;
 }
 
+void RenderCamera::CalcSlicedViewVolume(float nearDistance, float farDistance, BE1::Sphere *boundingSphere, BE1::Plane *planes) const {
+    assert(farDistance > nearDistance);
+    assert(boundingSphere || planes);
+
+    if (desc.orthogonal) {
+        BE1::OBB viewBox = box;
+        const float halfDepth = (farDistance - nearDistance) * 0.5f;
+        viewBox.SetCenter(desc.origin + desc.axis[EngineAxis::Forward] * (nearDistance + halfDepth));
+        viewBox.SetExtents(BE1::Vec3(halfDepth, desc.sizeX, desc.sizeY));
+
+        if (planes) {
+            const BE1::Vec3 &center = viewBox.Center();
+            const BE1::Vec3 &extents = viewBox.Extents();
+            const BE1::Mat3 &axis = viewBox.Axis();
+
+            planes[0] = BE1::Plane(-axis[EngineAxis::Forward], center - axis[EngineAxis::Forward] * extents[EngineAxis::Forward]);
+            planes[1] = BE1::Plane( axis[EngineAxis::Forward], center + axis[EngineAxis::Forward] * extents[EngineAxis::Forward]);
+            planes[2] = BE1::Plane(-axis[EngineAxis::Left], center - axis[EngineAxis::Left] * extents[EngineAxis::Left]);
+            planes[3] = BE1::Plane( axis[EngineAxis::Left], center + axis[EngineAxis::Left] * extents[EngineAxis::Left]);
+            planes[4] = BE1::Plane(-axis[EngineAxis::Up], center - axis[EngineAxis::Up] * extents[EngineAxis::Up]);
+            planes[5] = BE1::Plane( axis[EngineAxis::Up], center + axis[EngineAxis::Up] * extents[EngineAxis::Up]);
+        }
+
+        if (boundingSphere) {
+            *boundingSphere = viewBox.ToSphere();
+        }
+        return;
+    }
+
+    BE1::Frustum viewFrustum = frustum;
+    viewFrustum.MoveNearDistance(nearDistance);
+    viewFrustum.MoveFarDistance(farDistance);
+    if (planes) {
+        viewFrustum.ToPlanes(planes);
+    }
+    if (boundingSphere) {
+        *boundingSphere = viewFrustum.ToSphere();
+    }
+}
+
 bool RenderCamera::Cull(const BE1::AABB &bounds) const {
     if (desc.orthogonal) {
         return !box.IsIntersectAABB(bounds);
@@ -734,15 +774,13 @@ bool RenderCamera::CalcDepthBoundsFromFrustum(const BE1::Frustum &frustum, const
     return CalcDepthBoundsFromPoints(8, points, mvp, depthMin, depthMax);
 }
 
-float RenderCamera::CalcLocalSquaredLODErrorLimit(const BE1::AABB &worldBounds, const BE1::Mat3x4 &worldMatrix, float pixelErrorLimit) const {
+float RenderCamera::CalcLocalLODErrorLimitSqr(const BE1::Mat3x4 &worldMatrix, const BE1::AABB &worldBounds, float pixelErrorLimit) const {
     if (!(pixelErrorLimit > 0.0f) || renderWidth == 0 || renderHeight == 0) {
         return 0.0f;
     }
 
-    // 지터가 없는 투영 행렬과 내부 렌더링 해상도를 사용한다.
-    float projectionScale = 0.5f * BE1::Max(
-        BE1::Math::Abs(projMatrix[0][0]) * renderWidth,
-        BE1::Math::Abs(projMatrix[1][1]) * renderHeight);
+    // 투영 행렬과 내부 렌더링 해상도를 사용한다.
+    float pixelsPerWorldUnit = 0.5f * BE1::Max(BE1::Math::Abs(projMatrix[0][0]) * renderWidth, BE1::Math::Abs(projMatrix[1][1]) * renderHeight);
 
     if (!desc.orthogonal) {
         // 중심보다 카메라에 가까운 경계를 기준으로 평가한다.
@@ -754,26 +792,10 @@ float RenderCamera::CalcLocalSquaredLODErrorLimit(const BE1::AABB &worldBounds, 
             return 0.0f;
         }
 
-        projectionScale /= depth;
+        pixelsPerWorldUnit /= depth;
     }
 
-    const BE1::Vec3 x(worldMatrix[0][0], worldMatrix[1][0], worldMatrix[2][0]);
-    const BE1::Vec3 y(worldMatrix[0][1], worldMatrix[1][1], worldMatrix[2][1]);
-    const BE1::Vec3 z(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2]);
-
-    // 월드 변환의 최대 확대율 제곱을 보수적으로 계산한다.
-    // 축이 직교하면 최대 스케일의 제곱이며, 전단도 반영한다.
-    const float xy = BE1::Math::Abs(x.Dot(y));
-    const float xz = BE1::Math::Abs(x.Dot(z));
-    const float yz = BE1::Math::Abs(y.Dot(z));
-    const float worldScaleSqr = BE1::Max(x.LengthSqr() + xy + xz, BE1::Max(y.LengthSqr() + xy + yz, z.LengthSqr() + xz + yz));
-    const float pixelScaleSqr = projectionScale * projectionScale * worldScaleSqr;
-
-    if (!(pixelScaleSqr > 0.0f)) {
-        return 0.0f;
-    }
-
-    return pixelErrorLimit * pixelErrorLimit / pixelScaleSqr;
+    return ::CalcLocalLODErrorLimitSqr(worldMatrix, pixelsPerWorldUnit, pixelErrorLimit);
 }
 
 void RenderCamera::CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {

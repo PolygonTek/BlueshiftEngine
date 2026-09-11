@@ -36,14 +36,23 @@ extern BE1::CVar    r_hdrOutput;
 extern BE1::CVar    r_hdrPaperWhiteNits;
 extern BE1::CVar    r_hdrPeakNits;
 
+extern BE1::CVar    r_meshLOD;
 extern BE1::CVar    r_meshLODPixelError2;
 
 extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_specularEnergyCompensation2;
 extern BE1::CVar    r_specularAA;
 
+extern BE1::CVar    r_shadows2;
+extern BE1::CVar    r_shadowDebug;
+extern BE1::CVar    r_shadowMapQuality2;
+extern BE1::CVar    r_shadowMapFilterRadius;
 extern BE1::CVar    r_csmResolution;
-extern BE1::CVar    r_directionalShadowDistance;
+extern BE1::CVar    r_csmCount;
+extern BE1::CVar    r_csmSplitLambda;
+extern BE1::CVar    r_csmMaxDistance;
+extern BE1::CVar    r_csmBlendFraction;
+extern BE1::CVar    r_csmFadeFraction;
 extern BE1::CVar    r_csmConstantDepthBias0;
 extern BE1::CVar    r_csmConstantDepthBias1;
 extern BE1::CVar    r_csmConstantDepthBias2;

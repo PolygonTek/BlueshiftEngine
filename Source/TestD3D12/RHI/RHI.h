@@ -422,7 +422,7 @@ namespace RHI {
         float                           constantDepthBias = 0;
         float                           depthBiasClamp = 0;
         float                           slopeScaledDepthBias = 0;
-        bool                            depthClipEnabled = false;
+        bool                            depthClipEnabled = true;
         bool                            smoothLineEnabled = false;
         bool                            conservativeRasterization = false;
     };
@@ -990,7 +990,7 @@ namespace RHI {
         virtual ~CommandList() = default;
 
                                         // 커맨드 리스트를 재사용하기 위해 Reset() 함수를 호출하여 초기화한다.
-        virtual void                    Reset(bool resetCacheStates = true, const CommandList *primaryCommandList = nullptr) = 0;
+        virtual void                    Reset() = 0;
 
         virtual void                    Close() = 0;
         virtual void                    Execute() = 0;
@@ -1033,7 +1033,7 @@ namespace RHI {
         virtual CommandList *           AllocComputeCommandList() = 0;
 
         virtual CommandList *           BeginCommandList(RHI::CommandQueueType queueType) = 0;
-        virtual CommandList *           BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) = 0;
+        virtual CommandList *           BeginSecondaryCommandList() = 0;
     };
 
     enum class RasterizerStateType : uint8_t {

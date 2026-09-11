@@ -1,4 +1,9 @@
 #include "SurfaceDrawCommon.hlsli"
+
+cbuffer CameraCB : register(b1) {
+    CameraConstants cameraConstants;
+};
+
 #include "TextureStreamingFeedback.hlsli"
 #include "Lighting/LightCullingCommon.hlsli"
 #include "Lighting/LightCullingDebug.hlsli"
@@ -57,7 +62,7 @@ struct PSInput {
 PSInput VSMain(VSInput input) {
     PSInput result;
 
-    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID);
+    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID, cameraConstants.surfaceTableIndex);
 
     float4 localPosition = input.position;
 #if GPU_SKINNING
@@ -176,6 +181,11 @@ CameraPassPSOutput PSMain(PSInput input) {
 #endif
 #ifdef OUTPUT_VELOCITY
     result.velocity = CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
+#endif
+
+#if DEBUG_CASCADED_SHADOW_MAP == 1
+    result.color.rgb = EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition);
+    return result;
 #endif
 
     if (cameraConstants.lightCullingDebugMode != ShaderLightCullingDebugModeNone) {

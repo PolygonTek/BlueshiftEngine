@@ -3,6 +3,7 @@
 
 #include "../ShaderInterop.h"
 #include "LightCullingCommon.hlsli"
+#include "ShadowLibrary.hlsli"
 #include "../PBR/StandardBRDF.hlsli"
 
 bool GetLightVolumePosition(float4 projectedPosition, out float3 volumePosition) {
@@ -136,7 +137,8 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcDepth, float3 worldPosi
 
     float3 directLighting = 0.0f;
     if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0) {
-        directLighting = EvaluateDirectionalLight(frameConstants.directionalLight, shading);
+        const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting(pixelCoord, worldPosition);
+        directLighting = shadowLighting * EvaluateDirectionalLight(frameConstants.directionalLight, shading);
     }
 
 #if SHADER_LIGHT_USE_WAVE_OPS

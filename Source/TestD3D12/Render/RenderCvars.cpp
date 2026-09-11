@@ -33,22 +33,31 @@ CVAR(r_hdrOutput, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable
 CVAR_MINMAX(r_hdrPaperWhiteNits, "200", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR paper white luminance in nits", 80.0f, 500.0f);
 CVAR_MINMAX(r_hdrPeakNits, "0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR peak luminance in nits (0 = use the display value)", 0.0f, 10000.0f);
 
+CVAR(r_meshLOD, "1", BE1::CVar::Flag::Bool, "enable mesh LOD selection (0 = force LOD0, including explicit LOD requests)");
 CVAR(r_meshLODPixelError2, "2.0", BE1::CVar::Flag::Float, "estimated mesh LOD pixel error tolerance, <= 0 uses LOD0");
 
 CVAR(r_depthPrepass, "0", BE1::CVar::Flag::Bool, "enable depth prepass");
 CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
 CVAR(r_specularAA, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space specular anti-aliasing");
 
+CVAR(r_shadows2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable shadows");
+CVAR_MINMAX(r_shadowDebug, "0", BE1::CVar::Flag::Integer, "shadow debug view (0 = off, 1 = visibility, 2 = coverage)", 0, 2);
+CVAR_MINMAX(r_shadowMapQuality2, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "shadow map filter quality (0 = 1, 1 = 5, 2 = 9, 3 = 16 rotated Poisson comparisons)", 0, 3);
+CVAR_MINMAX(r_shadowMapFilterRadius, "2.0", BE1::CVar::Flag::Float, "Q3 Poisson filter radius in texels at 1024 resolution; adjusted for CSM resolution and cascade scale (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::ShadowMapFilterRadiusMin, RenderFrameSettings::ShadowMapFilterRadiusMax);
 CVAR_MINMAX(r_csmResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "cascade shadow map resolution", 128, 8192);
-CVAR_MINMAX(r_directionalShadowDistance, "150", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "directional shadow distance in world units (0 = disabled)", 0.0f, 1000000.0f);
-CVAR(r_csmConstantDepthBias0, "1000.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 0");
-CVAR(r_csmConstantDepthBias1, "500.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 1");
-CVAR(r_csmConstantDepthBias2, "250.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 2");
-CVAR(r_csmConstantDepthBias3, "125.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 3");
-CVAR(r_csmSlopeScaledDepthBias0, "5.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 0");
-CVAR(r_csmSlopeScaledDepthBias1, "4.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 1");
-CVAR(r_csmSlopeScaledDepthBias2, "3.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 2");
-CVAR(r_csmSlopeScaledDepthBias3, "2.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 3");
+CVAR_MINMAX(r_csmCount, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "active CSM cascade count", 1, RenderFrameSettings::CSMCascadeCount);
+CVAR_MINMAX(r_csmSplitLambda, "0.9", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "CSM split distribution (0 = uniform, 1 = logarithmic; orthographic cameras use uniform)", 0.0f, 1.0f);
+CVAR_MINMAX(r_csmMaxDistance, "150", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "maximum CSM distance in world units (0 = disabled)", 0.0f, 10000.0f);
+CVAR_MINMAX(r_csmBlendFraction, "0.05", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "fraction of each CSM map's normalized safe coverage used for cascade blending", 0.0f, 0.16f);
+CVAR_MINMAX(r_csmFadeFraction, "0.1", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "fraction of CSM receiver range used for distance fading", 0.01f, 1.0f);
+CVAR(r_csmConstantDepthBias0, "60000.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 0");
+CVAR(r_csmConstantDepthBias1, "22500.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 1");
+CVAR(r_csmConstantDepthBias2, "7800.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 2");
+CVAR(r_csmConstantDepthBias3, "2100.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 3");
+CVAR(r_csmSlopeScaledDepthBias0, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 0");
+CVAR(r_csmSlopeScaledDepthBias1, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 1");
+CVAR(r_csmSlopeScaledDepthBias2, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 2");
+CVAR(r_csmSlopeScaledDepthBias3, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 3");
 
 CVAR_MINMAX(r_msaa, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "MSAA sample count (1 = off, 2/4/8 = enabled)", 0, 8);
 CVAR(r_snapshotColorHalfRes, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "capture non-MSAA scene snapshot color and depth at half resolution");
@@ -148,8 +157,27 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     RenderFrameSettings settings;
 
     settings.mainRTSampleCount = NormalizeMainRTSampleCount(r_msaa.GetInteger());
+
+    settings.shadows = r_shadows2.GetBool();
+    settings.shadowDebugMode = static_cast<uint32_t>(r_shadowDebug.GetInteger());
+    settings.shadowMapQuality = static_cast<uint32_t>(r_shadowMapQuality2.GetInteger());
+    settings.shadowMapFilterRadius = r_shadowMapFilterRadius.GetFloat();
+
     settings.csmResolution = static_cast<uint32_t>(r_csmResolution.GetInteger());
-    settings.directionalShadowDistance = r_directionalShadowDistance.GetFloat();
+    settings.csmCascadeCount = static_cast<uint32_t>(r_csmCount.GetInteger());
+    settings.csmSplitLambda = r_csmSplitLambda.GetFloat();
+    settings.csmMaxDistance = r_csmMaxDistance.GetFloat();
+    settings.csmBlendFraction = r_csmBlendFraction.GetFloat();
+    settings.csmFadeFraction = r_csmFadeFraction.GetFloat();
+    settings.csmConstantDepthBias[0] = r_csmConstantDepthBias0.GetFloat();
+    settings.csmConstantDepthBias[1] = r_csmConstantDepthBias1.GetFloat();
+    settings.csmConstantDepthBias[2] = r_csmConstantDepthBias2.GetFloat();
+    settings.csmConstantDepthBias[3] = r_csmConstantDepthBias3.GetFloat();
+    settings.csmSlopeScaledDepthBias[0] = r_csmSlopeScaledDepthBias0.GetFloat();
+    settings.csmSlopeScaledDepthBias[1] = r_csmSlopeScaledDepthBias1.GetFloat();
+    settings.csmSlopeScaledDepthBias[2] = r_csmSlopeScaledDepthBias2.GetFloat();
+    settings.csmSlopeScaledDepthBias[3] = r_csmSlopeScaledDepthBias3.GetFloat();
+
     settings.taaJitterSampleCount = static_cast<uint32_t>(r_taaJitterSampleCount.GetInteger());
     settings.hiZDebugPreviewMipLevel = static_cast<uint32_t>(r_hiZDebugPreviewMipLevel.GetInteger());
     settings.lightCullingDebugMode = static_cast<uint32_t>(r_lightCullingDebug.GetInteger());
@@ -162,6 +190,7 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.hdrPaperWhiteNits = r_hdrPaperWhiteNits.GetFloat();
     settings.hdrPeakNits = r_hdrPeakNits.GetFloat();
 
+    settings.meshLOD = r_meshLOD.GetBool();
     settings.meshLODPixelError = r_meshLODPixelError2.GetFloat();
 
     settings.toneMapLuminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();

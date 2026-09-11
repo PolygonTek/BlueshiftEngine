@@ -23,15 +23,19 @@ void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type t
     switch (type) {
     case Type::CBV_SRV_UAV:
         descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        heapTypeName = "CBV_SRV_UAV";
         break;
     case Type::RTV:
         descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        heapTypeName = "RTV";
         break;
     case Type::DSV:
         descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+        heapTypeName = "DSV";
         break;
     case Type::Sampler:
         descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+        heapTypeName = "Sampler";
         break;
     default:
         assert(0);
@@ -76,7 +80,8 @@ uint32_t D3D12DescriptorPool::AllocIndex() {
 
         if (!idAllocator.AllocateID(newIndex)) {
             // TODO: 확장 가능하도록 수정할 것
-            BE_WARNLOG("D3D12DescriptorPool::AllocIndex: no usable descriptors\n");
+            BE_WARNLOG("D3D12DescriptorPool::AllocIndex: no usable descriptors (type=%s, capacity=%u, heap=%p)\n",
+                heapTypeName, maxDescriptorCount, static_cast<void *>(descriptorHeap));
         }
     }
     return newIndex;
@@ -91,6 +96,12 @@ void D3D12DescriptorPool::FreeIndex(uint32_t descriptorIndex) {
 bool D3D12DescriptorPool::Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
     uint32_t newIndex = AllocIndex();
     if (newIndex == static_cast<uint32_t>(-1)) {
+        if (outCpuDescriptorHandle) {
+            *outCpuDescriptorHandle = {};
+        }
+        if (outGpuDescriptorHandle) {
+            *outGpuDescriptorHandle = {};
+        }
         return false;
     }
 
@@ -118,7 +129,8 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::AllocRange(int count) {
         BE1::ScopedLock lock(mutex);
 
         if (!idAllocator.AllocateRange(newId, count)) {
-            BE_WARNLOG("D3D12DescriptorPool::AllocRange: no usable consecutive descriptors\n");
+            BE_WARNLOG("D3D12DescriptorPool::AllocRange: no usable consecutive descriptors (type=%s, capacity=%u, requested=%i, available=%u, heap=%p)\n",
+                heapTypeName, maxDescriptorCount, count, static_cast<uint32_t>(idAllocator.GetAvailableCount()), static_cast<void *>(descriptorHeap));
             return descriptorHandle;
         }
     }

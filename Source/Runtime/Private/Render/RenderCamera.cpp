@@ -453,14 +453,13 @@ bool RenderCamera::CalcDepthBoundsFromLight(const RenderLight *light, const Mat4
     return true;
 }
 
-float RenderCamera::CalcLocalSquaredLODErrorLimit(const AABB &worldBounds, const Mat3x4 &worldMatrix, float pixelErrorLimit) const {
-    if (!(pixelErrorLimit > 0.0f) || state.renderRect.w <= 0 || state.renderRect.h <= 0) {
+float RenderCamera::CalcLocalLODErrorLimitSqr(const Mat3x4 &worldMatrix, const AABB &worldBounds, float pixelErrorLimit) const {
+    if (pixelErrorLimit <= 0.0f || state.renderRect.w <= 0 || state.renderRect.h <= 0) {
         return 0.0f;
     }
 
-    float projectionScale = 0.5f * Max(
-        Math::Abs(projMatrix[0][0]) * state.renderRect.w,
-        Math::Abs(projMatrix[1][1]) * state.renderRect.h);
+    // 투영 행렬과 내부 렌더링 해상도를 사용한다.
+    float pixelsPerWorldUnit = 0.5f * Max(Math::Abs(projMatrix[0][0]) * state.renderRect.w, Math::Abs(projMatrix[1][1]) * state.renderRect.h);
 
     if (!state.orthogonal) {
         // 중심보다 카메라에 가까운 경계를 기준으로 평가한다.
@@ -468,11 +467,11 @@ float RenderCamera::CalcLocalSquaredLODErrorLimit(const AABB &worldBounds, const
         const float depth = (worldBounds.Center() - state.origin).Dot(forward) - worldBounds.Extents().AbsDot(forward);
 
         // near plane 에 걸치거나 카메라 뒤에 있는 경우 LOD 0 를 사용한다.
-        if (!(depth > zNear)) {
+        if (depth <= zNear) {
             return 0.0f;
         }
 
-        projectionScale /= depth;
+        pixelsPerWorldUnit /= depth;
     }
 
     const Vec3 x(worldMatrix[0][0], worldMatrix[1][0], worldMatrix[2][0]);
@@ -480,18 +479,17 @@ float RenderCamera::CalcLocalSquaredLODErrorLimit(const AABB &worldBounds, const
     const Vec3 z(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2]);
 
     // 월드 변환의 최대 확대율 제곱을 보수적으로 계산한다.
-    // 축이 직교하면 최대 스케일의 제곱이며, 전단도 반영한다.
+    // 축이 직교하면 최대 스케일의 제곱이며, shearing 도 반영한다.
     const float xy = Math::Abs(x.Dot(y));
     const float xz = Math::Abs(x.Dot(z));
     const float yz = Math::Abs(y.Dot(z));
     const float worldScaleSqr = Max(x.LengthSqr() + xy + xz, Max(y.LengthSqr() + xy + yz, z.LengthSqr() + xz + yz));
-    const float pixelScaleSqr = projectionScale * projectionScale * worldScaleSqr;
-
-    if (!(pixelScaleSqr > 0.0f)) {
+    const float pixelsPerLocalUnitSqr = pixelsPerWorldUnit * pixelsPerWorldUnit * worldScaleSqr;
+    if (pixelsPerLocalUnitSqr <= 0.0f) {
         return 0.0f;
     }
 
-    return pixelErrorLimit * pixelErrorLimit / pixelScaleSqr;
+    return pixelErrorLimit * pixelErrorLimit / pixelsPerLocalUnitSqr;
 }
 
 float RenderCamera::CalcViewScale(const Vec3 &position) const {

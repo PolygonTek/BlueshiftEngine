@@ -944,6 +944,10 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
         globalIdxOffset += drawList->IdxBuffer.Size;
         globalVtxOffset += drawList->VtxBuffer.Size;
     }
+
+    // ImGui 는 native PSO / root argument / blend factor 를 직접 설정한다.
+    // 이후 RHI draw 가 ImGui 이전의 캐시를 믿고 필요한 설정을 생략하지 않도록 한다.
+    _commandList->InvalidateStateCache(false);
 }
 
 void D3D12ImGuiRenderer::FreeDrawData(RHI::ImGuiOverlay *overlay, void *userData) {

@@ -145,7 +145,13 @@ void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderS
 
     outShaderSurface.shaderMaterialIndex = visSurf->shaderMaterialIndex;
     outShaderSurface.flags = 0;
+
     const VisSkinnedMesh *visSkinnedMesh = visSurf->space->skinnedMesh;
-    outShaderSurface.skinningJointOffset = visSkinnedMesh ? visSkinnedMesh->skinningJointOffset : ShaderSkinningJointOffsetInvalid;
-    outShaderSurface.prevSkinningJointOffset = visSkinnedMesh ? visSkinnedMesh->prevSkinningJointOffset : ShaderSkinningJointOffsetInvalid;
+    if (visSkinnedMesh) {
+        outShaderSurface.skinningJointOffset = visSkinnedMesh->skinningJointOffset;
+        outShaderSurface.prevSkinningJointOffset = visSkinnedMesh->prevSkinningJointOffset;
+    } else {
+        outShaderSurface.skinningJointOffset = ShaderSkinningJointOffsetInvalid;
+        outShaderSurface.prevSkinningJointOffset = ShaderSkinningJointOffsetInvalid;
+    }
 }

@@ -13,11 +13,14 @@
 
 #pragma once
 
+#include "Math/Matrix3x4.h"
 #include "Math/Matrix4.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/AABB.h"
+#include "Math/Frustum.h"
 #include "Math/OBB.h"
+#include "Math/Plane.h"
 #include "Math/Sphere.h"
 #include "RHI/RHI.h"
 
@@ -33,16 +36,23 @@ namespace EngineAxis {
 // 엔진 좌표계의 뷰 축과 원점으로 뷰 행렬을 만든다.
 void SetViewMatrixFromEngineAxis(const BE1::Mat3 &viewAxis, const BE1::Vec3 &viewOrigin, BE1::Mat4 &viewMatrix);
 
-// Receiver sphere 에 맞춘 단일 directional shadow 투영 계산.
-// Caster bounds 가 비어 있으면 receiver 만으로 깊이를 잡고, 주어지면 XY 를 유지하며 깊이를 확장한다.
-bool ComputeDirectionalShadowProjection(const BE1::Mat3 &lightAxis, const BE1::Sphere &receiverSphere, const BE1::AABB &casterBounds, uint32_t resolution, BE1::OBB &shadowWorldBox, BE1::Mat4 &shadowViewProjMatrix);
-
-// Shadow box 를 광원 쪽으로 무한히 연장한 영역에 caster AABB 가 닿지 않으면 true.
-// Near 경계는 검사하지 않으며, shadow far 경계 뒤에 완전히 놓인 caster 만 제외한다.
-bool CullDirectionalShadowCaster(const BE1::AABB &casterBounds, const BE1::OBB &shadowBox);
-
 // 2D 영역을 정규화된 크롭 행렬로 만든다.
 void Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, BE1::Mat4 &cropMatrix);
+
+// Uniform/logarithmic 혼합으로 cascadeCount + 1 개의 카메라 forward 거리 경계를 계산한다.
+// farDistance 는 min(camera.zFar, shadowDistance). 직교 투영 또는 nearDistance <= 0 이면 균등 분할한다.
+// splitDistances 는 cascadeCount + 1 개 이상의 원소를 저장할 수 있어야 한다.
+void ComputeCSMSplitDistances(float nearDistance, float farDistance, float splitLambda, uint32_t cascadeCount, bool orthogonal, float *splitDistances);
+
+// 월드 단위당 픽셀 수와 world transform 을 반영하여 로컬 공간의 LOD 허용 오차 제곱을 계산한다.
+float CalcLocalLODErrorLimitSqr(const BE1::Mat3x4 &worldMatrix, float pixelsPerWorldUnit, float pixelErrorLimit);
+
+// view volume 과 광원 방향 shadow cull bounds 에 의한 caster bounds 의 컬링 검사.
+// Shadow bounds 의 XY/far 만 검사하며, near 밖 caster 는 depth clamp 를 위해 유지한다.
+bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::OBB &shadowMapBounds, const BE1::AABB &casterBounds);
+
+// view volume 과 광원 방향 shadow frustum 에 의한 caster bounds 의 컬링 검사.
+bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::Frustum &shadowFrustum, const BE1::AABB &casterBounds);
 
 // EngineAxis cubemap face 를 렌더링할 view axis 를 만든다.
 void CubeMapFaceToViewAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis);

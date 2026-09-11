@@ -1,6 +1,10 @@
 #include "SurfaceDrawCommon.hlsli"
 #include "TextureStreamingFeedback.hlsli"
 
+cbuffer CameraCB : register(b1) {
+    CameraConstants cameraConstants;
+};
+
 #define COMMON_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
     ROOT_SIGNATURE_SURFACE_DRAW_RESOURCES \
@@ -41,7 +45,7 @@ struct PSInput {
 PSInput VSMain(VSInput input) {
     PSInput result;
 
-    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID);
+    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID, cameraConstants.surfaceTableIndex);
 
     float4 localPosition = input.position;
 #if GPU_SKINNING

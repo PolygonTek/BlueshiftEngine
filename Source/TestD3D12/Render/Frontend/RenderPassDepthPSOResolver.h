@@ -41,6 +41,7 @@ private:
     struct PSOEntry {
         uint32_t                    featureFlags = 0;
         VertexInputLayoutId         inputLayoutId;
+        RHI::CullMode               cullMode;
         RHI::PipelineState *        pso = nullptr;
     };
 
@@ -55,7 +56,7 @@ private:
                                     // basePipelineDesc 를 기반으로 input layout 별 graphics pipeline desc 를 얻는다.
     const GraphicsPipelineDesc &    GetGraphicsPipelineDesc(VertexInputLayoutId inputLayoutId);
 
-    PSOEntry *                      FindPSOEntry(const ShaderFeatureSet &featureSet, VertexInputLayoutId inputLayoutId, int &hashKey);
+    PSOEntry *                      FindPSOEntry(const ShaderFeatureSet &featureSet, VertexInputLayoutId inputLayoutId, RHI::CullMode cullMode, int &hashKey);
     ShaderPermutationKey            GetPermutationKey(ShaderTemplate *shaderTemplate, const ShaderFeatureSet &featureSet);
 
     static constexpr int            NumInputLayouts = static_cast<int>(VertexInputLayoutId::Count);

@@ -19,6 +19,7 @@
 #include "Math/AABB.h"
 #include "Scene/Scene.h"
 #include "Scene/GameObject.h"
+#include "Scene/GameLight.h"
 
 class Anim;
 class Mesh;
@@ -40,6 +41,7 @@ private:
     static constexpr int            MeshCount = 2;
     static constexpr int            AnimCount = 3;
     static constexpr int            MaxObjectCountPerAxis = 50;
+    static constexpr float          ObjectSpacing = 2.5f;
 
     struct SkinnedMeshObject {
         GameObject                  gameObject;
@@ -58,11 +60,13 @@ private:
 
     bool                            LoadCharacter();
     bool                            InitGameObjects(int countX, int countY);
+    void                            InitGround();
     void                            ClearGameObjects();
     void                            ChangeGameObjectCount(int countX, int countY);
     bool                            EvaluateAnimationPose(int animIndex, int animationTimeMsec);
     bool                            UpdateAnimationPoses(double deltaMsec);
     void                            DrawBounds() const;
+    void                            UpdateDirectionalLightDirection();
 
     RenderWorld *                   renderWorld = nullptr;
     BE1::PhysicsWorld *             physicsWorld = nullptr;
@@ -76,6 +80,14 @@ private:
     BE1::Vec3                       characterOffset = BE1::Vec3::zero;
     int                             objectCountX = 1;
     int                             objectCountY = 1;
+
+    SharedPtr<MeshInstance>         groundMeshInstance;
+    float                           groundHeight = 0.0f;
+
+    GameLight                       directionalLight;
+    float                           directionalLightAzimuth = 145.0f;
+    float                           directionalLightElevation = 55.0f;
+    bool                            directionalLightEnabled = false;
 
     BE1::Array<int>                 jointIndexes;
     BE1::Array<BE1::JointPose>      jointPoses;

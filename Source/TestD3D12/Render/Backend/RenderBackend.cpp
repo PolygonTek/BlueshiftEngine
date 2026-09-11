@@ -20,6 +20,7 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
 #include "Render/Texture/Texture.h"
+#include "Render/Texture/TextureManager.h"
 #include "Shaders/ShaderInterop.h"
 
 void RenderBackend::Init() {
@@ -174,7 +175,8 @@ bool RenderBackend::UploadFrameConstants() {
 
     const RHI::Texture *dfgSumGGXTexture = renderSystem->dfgSumGGXTexture ? renderSystem->dfgSumGGXTexture->GetReadyRHITexture() : nullptr;
     constants->dfgSumGGXTextureIndex = dfgSumGGXTexture ? dfgSumGGXTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    constants->padding0 = 0;
+    const RHI::Texture *randomRotMatTexture = textureManager.randomRotMatTexture->GetRHITexture();
+    constants->randomRotMatTextureIndex = randomRotMatTexture->GetBindlessIndex(RHI::ViewType::SRV);
     constants->padding1 = 0;
     constants->padding2 = 0;
 
@@ -251,12 +253,16 @@ bool RenderBackend::UploadCameraConstants() {
     BE1::simdProcessor->Memcpy(&constants->prevUnjitteredViewProjMatrix, &prevUnjitteredViewProjMatrix, sizeof(constants->prevUnjitteredViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->hiZCullViewProjMatrix, &currentVisCamera->hiZCullViewProjMatrix, sizeof(constants->hiZCullViewProjMatrix));
 
-    constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
+    constants->cameraOrigin = float3(currentVisCamera->origin.x, currentVisCamera->origin.y, currentVisCamera->origin.z);
     constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
+    constants->cameraForward = float3(currentVisCamera->axis[0].x, currentVisCamera->axis[0].y, currentVisCamera->axis[0].z);
+    constants->flags = flags;
+
+    constants->ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
     constants->projectionDepthA = currentVisCamera->projectionDepthA;
     constants->projectionDepthB = currentVisCamera->projectionDepthB;
-    constants->ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
-    constants->flags = flags;
+
+    constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
     constants->numLocalLights = currentVisCamera->numVisLocalLights;
     constants->lightCullingLightRefTableOffset = currentVisCamera->lightCulling.lightRefTableOffset;
     constants->lightCullingZBinTableOffset = currentVisCamera->lightCulling.zBinTableOffset;
@@ -267,8 +273,7 @@ bool RenderBackend::UploadCameraConstants() {
     constants->lightCullingTileCountY = currentVisCamera->lightCulling.tileCountY;
     constants->lightCullingWordsPerTile = currentVisCamera->lightCulling.wordsPerTile;
     constants->lightCullingDebugMode = renderFrameSettings.lightCullingDebugMode;
-
-    constants->cameraOrigin = float3(currentVisCamera->origin.x, currentVisCamera->origin.y, currentVisCamera->origin.z);
+    constants->padding0 = 0;
 
     const BE1::Mat3 &envLightAxis = currentVisCamera->envLightAxis;
     constants->envLightAxis = float3x4(
@@ -281,13 +286,10 @@ bool RenderBackend::UploadCameraConstants() {
     constants->envLightDiffuseIrradianceCubeMapIndex = currentVisCamera->envLightDiffuseIrradianceCubeMap ? currentVisCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularCubeMapIndex = currentVisCamera->envLightSpecularCubeMap ? currentVisCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularMipCount = currentVisCamera->envLightSpecularMipCount;
-    constants->padding2 = 0;
+    constants->padding1 = 0;
 
-    constants->cameraForward = float3(currentVisCamera->axis[0].x, currentVisCamera->axis[0].y, currentVisCamera->axis[0].z);
-    constants->padding3 = 0.0f;
-
-    // Shadow pass 가 연결되기 전에는 비활성 상태로 전달한다.
-    constants->directionalShadow = {};
+    // Shadow depth 기록을 마친 뒤 해당 카메라의 샘플링 데이터를 활성화한다.
+    constants->csm = {};
 
     return true;
 }
@@ -543,12 +545,17 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         return (const void *)(cmd + 1);
     }
 
+    // 컨텍스트의 CSM 자원을 공유하므로 카메라마다 shadow depth 를 기록한 뒤 메인 패스를 실행한다.
+    if (!currentVisCamera->is2D) {
+        ExecuteDrawCamera3DShadowPass();
+    }
+
     BE1::Rect viewportRect = currentVisCamera->outputRect;
     if (!currentVisCamera->is2D) {
         viewportRect.Set(0, 0, currentVisCamera->renderWidth, currentVisCamera->renderHeight);
     }
 
-    // 뷰포트 & ScissorRect 의 초기값 설정
+    // Shadow 패스에서 사용한 viewport/scissor 를 메인 카메라 영역으로 설정한다.
     RHI::renderer->SetViewport(mainCommandList, viewportRect);
     RHI::renderer->SetScissorRect(mainCommandList, viewportRect);
 
@@ -654,8 +661,80 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     }
 
     const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
-    const RHI::Texture *outputOverrideTexture = renderFrameSettings.ssrDebug && ssrTraceReady ? currentVisCamera->ssrTraceTexture : nullptr;
+    const RHI::Texture *outputOverrideTexture = nullptr;
+
+    if (renderFrameSettings.ssrDebug && ssrTraceReady) {
+        outputOverrideTexture = currentVisCamera->ssrTraceTexture;
+    }
+
+    if (renderFrameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
+        outputOverrideTexture = currentVisCamera->rtColorTexture;
+    }
+
     PostProcessAndBlitToOutput(surfaceOutputsReady, outputOverrideTexture);
+}
+
+void RenderBackend::ExecuteDrawCamera3DShadowPass() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera3DShadowPass");
+
+    const VisCascadedShadow *cascadedShadow = currentVisCamera->cascadedShadow;
+    if (!cascadedShadow) {
+        return;
+    }
+    assert(cascadedShadow->depthTexture);
+
+    RHI::ConstantBuffer *shadowViewConstantBuffers[RenderFrameSettings::CSMCascadeCount] = {};
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
+        const CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
+        assert(cascade.depthDSV.IsValid());
+
+        if (cascade.renderPass.numDrawSurfs == 0) {
+            continue;
+        }
+
+        RHI::ConstantBuffer *shadowViewConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(ShadowViewConstants));
+        if (!shadowViewConstantBuffer) {
+            BE_WARNLOG("RenderBackend::ExecuteDrawCamera3DShadowPass: failed to allocate cascade constants\n");
+            return;
+        }
+
+        // 모든 상수를 resource transition 전에 준비하여 cascade 중간 실패를 방지한다.
+        ShadowViewConstants *constants = reinterpret_cast<ShadowViewConstants *>(shadowViewConstantBuffer->mappedPtr);
+        BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &cascade.viewProjMatrix, sizeof(constants->viewProjMatrix));
+        constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
+        constants->padding = uint3(0, 0, 0);
+
+        shadowViewConstantBuffers[cascadeIndex] = shadowViewConstantBuffer;
+    }
+
+    const BE1::Rect shadowRect(0, 0, cascadedShadow->depthTexture->GetWidth(), cascadedShadow->depthTexture->GetHeight());
+    RHI::renderer->SetViewport(mainCommandList, shadowRect);
+    RHI::renderer->SetScissorRect(mainCommandList, shadowRect);
+
+    // Texture2DArray 전체를 한 번만 DepthWrite 로 전환하여 cascade 사이의 SRV 왕복 barrier 를 없앤다.
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(cascadedShadow->depthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite));
+
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
+        const CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
+
+        // Caster 가 없어도 active slice 를 far depth 로 지워 이전 카메라/프레임의 그림자를 제거한다.
+        RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(cascadedShadow->depthTexture, cascade.depthDSV,
+            RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite);
+        depthImage = depthImage.WithClearValue(RHI::ClearValue::DepthStencil(1.0f, 0));
+        RHI::renderer->BeginRenderPass(mainCommandList, &depthImage, 1);
+
+        DrawGenericPass(&cascade.renderPass, shadowViewConstantBuffers[cascadeIndex]);
+
+        RHI::renderer->EndRenderPass(mainCommandList);
+    }
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(cascadedShadow->depthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource));
+
+    // 메인 카메라 CB 를 사용하는 GPU 명령은 아직 기록하지 않았다. Depth 기록 후에만 활성화한다.
+    CameraConstants *cameraConstants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
+    cameraConstants->csm = cascadedShadow->shaderData;
+    cameraConstants->csm.enabled = 1;
 }
 
 void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
@@ -1162,7 +1241,7 @@ void RenderBackend::DrawCamera3DDepthPrepass() {
     for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
         const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
         if (renderPass->type == RenderPassType::DepthPrepass) {
-            DrawGenericPass(renderPass);
+            DrawGenericPass(renderPass, cameraConstantBuffer);
         }
     }
 }
@@ -1171,7 +1250,7 @@ void RenderBackend::DrawCamera3DScenePass() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3DScenePass");
 
     if (const RenderPass *opaquePass = FindRenderPass(currentVisCamera, RenderPassType::Opaque)) {
-        DrawGenericPass(opaquePass);
+        DrawGenericPass(opaquePass, cameraConstantBuffer);
     }
 
     if (const RenderPass *skyboxPass = FindRenderPass(currentVisCamera, RenderPassType::Skybox)) {
@@ -1186,7 +1265,7 @@ void RenderBackend::DrawCamera3DPostOpaquePass() {
     DrawGpuOcean();
 
     if (const RenderPass *transparentPass = FindRenderPass(currentVisCamera, RenderPassType::Transparent)) {
-        DrawGenericPass(transparentPass);
+        DrawGenericPass(transparentPass, cameraConstantBuffer);
     }
 
     DrawDebugPrimitives();
@@ -1218,6 +1297,8 @@ static bool IsHiZCullRenderPass(RenderPassType passType) {
 
 static GpuTiming::Tag GpuTagForRenderPass(RenderPassType passType) {
     switch (passType) {
+    case RenderPassType::Shadow:
+        return GpuTiming::Tag::ShadowPass;
     case RenderPassType::DepthPrepass:
         return GpuTiming::Tag::DepthPrepass;
     case RenderPassType::Opaque:
@@ -1233,7 +1314,7 @@ static GpuTiming::Tag GpuTagForRenderPass(RenderPassType passType) {
     }
 }
 
-void RenderBackend::DrawGenericPass(const RenderPass *renderPass) {
+void RenderBackend::DrawGenericPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericPass");
 
     const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
@@ -1259,7 +1340,7 @@ void RenderBackend::DrawGenericPass(const RenderPass *renderPass) {
         }
     }
 
-    DrawGenericSurfaces(renderPass->drawSurfs, numDrawSurfs, hiZCullBatches, hiZCullBatchCount);
+    DrawGenericSurfaces(renderPass->drawSurfs, numDrawSurfs, viewConstantBuffer, hiZCullBatches, hiZCullBatchCount);
 }
 
 void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
@@ -1318,7 +1399,7 @@ void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::GuiPass);
 
-    DrawGenericSurfacesWithoutTask(renderPass->drawSurfs, numDrawSurfs);
+    DrawGenericSurfacesWithoutTask(renderPass->drawSurfs, numDrawSurfs, cameraConstantBuffer);
 }
 
 bool RenderBackend::DispatchLightCulling() {

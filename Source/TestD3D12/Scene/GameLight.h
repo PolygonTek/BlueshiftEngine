@@ -16,8 +16,12 @@
 
 #include "Render/Frontend/RenderLight.h"
 
+class RenderWorld;
+
 class GameLight {
 public:
+    bool                        SetEnabled(RenderWorld *renderWorld, bool enabled);
+
     RenderLight::Type           type = RenderLight::Type::Point;
     RenderLight::Flag           flags = RenderLight::Flag::None;
     uint8_t                     layer = 0;

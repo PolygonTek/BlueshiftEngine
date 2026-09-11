@@ -33,7 +33,7 @@ class D3D12DescriptorTablePool;
     - 커맨드 리스트는 Reset() 함수로 초기화한 후, 커맨드를 기록하고 Close() 함수로 닫는다.
     - 닫힌 커맨드 리스트는 Execute() 함수를 호출하여 실행할 수 있다.
     - 각종 상태 변수들은 커맨드 리스트 단위로 캐싱한다. (같은 상태로 중복 세팅 코드가 호출되는 것을 방지를 위함)
-    - 커맨드 리스트는 부모 (커맨드 리스트 풀) 의 D3D12BindingData 객체를 참조하여, 같은 풀에서 할당한 커맨드 리스트들이 동일한 바인딩 데이터를 공유하도록 한다.
+    - 커맨드 리스트는 자신을 관리하는 커맨드 리스트 풀의 D3D12RootBindingData 객체를 참조하여, 같은 풀에서 할당한 커맨드 리스트들이 동일한 바인딩 데이터를 공유하도록 한다.
     - dirtyMask 의 각 비트는 루트 파라미터 하나에 대응하며, 그래픽스/컴퓨트 루트 시그니쳐 설정 이후 해당 루트 파라미터의 바인딩 상태가 변경되어 현재 command list 에 commit 되어야 함을 나타낸다.
 
 ---------------------------------------------------------------------------------------------------
@@ -45,20 +45,19 @@ class D3D12CommandList : public RHI::CommandList {
 
 public:
 
-                                    // command list 를 재사용하기 위해 초기화한다.
-                                    // secondary (bundle) command list 의 경우 primaryCommandList 를 전달받아 primary 와 동일한 캐시 상태를 기준으로 초기화한다.
-    virtual void                    Reset(bool resetCacheStates = true, const RHI::CommandList *primaryCommandList = nullptr) override;
+                                    // command list 와 상태 캐시를 초기화하여 재사용을 준비한다.
+    virtual void                    Reset() override;
 
     virtual void                    Close() override;
     virtual void                    Execute() override;
     virtual void                    CloseAndExecute() override;
 
-                                    // secondary (bundle) command list 를 현재 primary command list 에 기록한다.
+                                    // secondary command list 의 실행을 현재 primary command list 에 기록한다.
     virtual void                    ExecuteSecondary(RHI::CommandList *secondaryCommandList) override;
 
     D3D12_COMMAND_LIST_TYPE         GetCommandListType() const;
 
-                                    // 부모 (커맨드 리스트 풀) 객체를 리턴한다.
+                                    // 이 command list 를 관리하는 command list pool 을 리턴한다.
     D3D12CommandListPool *          GetParentPool() const { return parentPool; }
 
     D3D12RootBindingData *          GetRootBindingData() const;
@@ -72,6 +71,7 @@ public:
     ID3D12GraphicsCommandList6 *&   GetGraphicsCommandList() { return reinterpret_cast<ID3D12GraphicsCommandList6 *&>(commandList); }
 
     void                            ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
+                                    // 다른 descriptor heap 을 설정한 뒤에는 PSO 와 필요한 리소스 바인딩을 다시 설정해야 한다.
     void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
     void                            SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature);
     void                            SetComputeRootSignature(ID3D12RootSignature *computeRootSignature);
@@ -85,7 +85,9 @@ public:
     void                            SetStencilRef(uint32_t value);
     void                            SetShadingRate(RHI::ShadingRate shadingRate);
 
-    void                            InvalidateStateCache();
+                                    // 다음 상태 설정을 생략하지 않도록 캐시를 무효화한다.
+                                    // 실제 디스크립터 힙을 알고 있다면 invalidateDescriptorHeaps 를 false 로 지정하여 힙 캐시를 유지한다.
+    void                            InvalidateStateCache(bool invalidateDescriptorHeaps = true);
 
 private:
     void                            InvalidateRootSignatureDependentBindings();
@@ -115,6 +117,11 @@ private:
     D3D12_PRIMITIVE_TOPOLOGY        cachedPrimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     D3D12_VERTEX_BUFFER_VIEW        cachedVertexBufferViews[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
     D3D12_INDEX_BUFFER_VIEW         cachedIndexBufferView = {};
+    uint32_t                        cachedVertexBufferValidMask = 0;
+    bool                            cachedIndexBufferValid = false;
+    bool                            cachedBlendFactorValid = false;
+    bool                            cachedStencilRefValid = false;
+    bool                            cachedShadingRateValid = false;
     BE1::Color4                     cachedBlendFactor = BE1::Color4(1, 1, 1, 1);
     uint32_t                        cachedStencilRef = 0;
     D3D12_SHADING_RATE              cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
@@ -139,19 +146,24 @@ BE_INLINE void D3D12CommandList::InvalidateRootSignatureDependentBindings() {
     bindlessSamplerDescriptorGpuBaseHandle = {};
 }
 
-BE_INLINE void D3D12CommandList::InvalidateStateCache() {
+BE_INLINE void D3D12CommandList::InvalidateStateCache(bool invalidateDescriptorHeaps) {
     currentPSO = nullptr;
     InvalidateRootSignatureDependentBindings();
+    graphicsRootParametersDirtyMask = 0;
+    computeRootParametersDirtyMask = 0;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    cachedRootDescriptorHeaps.SetCount(0);
+    if (invalidateDescriptorHeaps) {
+        cachedRootDescriptorHeaps.SetCount(0);
+    }
     cachedGraphicsRootSignature = nullptr;
     cachedComputeRootSignature = nullptr;
     cachedPrimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
-        cachedVertexBufferViews[i] = {};
-    }
-    cachedIndexBufferView = {};
+    cachedVertexBufferValidMask = 0;
+    cachedIndexBufferValid = false;
+    cachedBlendFactorValid = false;
+    cachedStencilRefValid = false;
+    cachedShadingRateValid = false;
 #endif
 }
 
@@ -185,12 +197,25 @@ BE_INLINE void D3D12CommandList::SetDescriptorHeaps(int numDescriptorHeaps, ID3D
     if (IsSameDescriptorHeaps(numDescriptorHeaps, descriptorHeaps)) {
         return;
     }
+
     cachedRootDescriptorHeaps.SetCount(numDescriptorHeaps);
     for (int i = 0; i < numDescriptorHeaps; ++i) {
         cachedRootDescriptorHeaps[i] = descriptorHeaps[i];
     }
 #endif
     GetGraphicsCommandList()->SetDescriptorHeaps(numDescriptorHeaps, descriptorHeaps);
+
+    // 디스크립터 힙 변경은 descriptor table 바인딩을 무효화한다.
+    // 다음 SetPSO 에서 root signature 와 fallback bindless table 을 다시 설정하고, 일반 리소스는 호출자가 다시 바인딩해야 한다.
+    // 다른 command list / 패스와 공유하는 임시 바인딩 데이터를 자동으로 재사용하지 않는다.
+    InvalidateRootSignatureDependentBindings();
+    graphicsRootParametersDirtyMask = 0;
+    computeRootParametersDirtyMask = 0;
+
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    cachedGraphicsRootSignature = nullptr;
+    cachedComputeRootSignature = nullptr;
+#endif
 }
 
 BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature) {
@@ -223,30 +248,20 @@ BE_INLINE void D3D12CommandList::SetPipelineState(const RHI::PipelineState *pipe
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (_pipelineState != currentPSO) {
         GetGraphicsCommandList()->SetPipelineState(_pipelineState->pso);
-
-        if (pipelineState->isGraphics) {
-            SetGraphicsRootSignature(_pipelineState->rootSignature);
-            SetPrimitiveTopology(_pipelineState->primitiveTopology);
-        } else {
-            SetComputeRootSignature(_pipelineState->rootSignature);
-        }
-        currentPSO = _pipelineState;
     }
 #else
     GetGraphicsCommandList()->SetPipelineState(_pipelineState->pso);
+#endif
 
+    // Root signature 와 topology 는 PSO 외부에서도 바뀔 수 있으므로 각각의 캐시로 확인한다.
+    // 같은 PSO 여도 직접 변경되거나 heap 변경으로 무효화된 바인딩 상태를 복구해야 한다.
     if (pipelineState->isGraphics) {
-        GetGraphicsCommandList()->SetGraphicsRootSignature(_pipelineState->rootSignature);
-        InvalidateRootSignatureDependentBindings();
-        GetGraphicsCommandList()->IASetPrimitiveTopology(_pipelineState->primitiveTopology);
-        graphicsRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
+        SetGraphicsRootSignature(_pipelineState->rootSignature);
+        SetPrimitiveTopology(_pipelineState->primitiveTopology);
     } else {
-        GetGraphicsCommandList()->SetComputeRootSignature(_pipelineState->rootSignature);
-        InvalidateRootSignatureDependentBindings();
-        computeRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
+        SetComputeRootSignature(_pipelineState->rootSignature);
     }
     currentPSO = _pipelineState;
-#endif
 }
 
 BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology) {
@@ -269,11 +284,14 @@ BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int count, cons
     bool needsUpdate = false;
     for (int i = 0; i < count; ++i) {
         int slot = startSlot + i;
+        const uint32_t slotMask = uint32_t(1) << slot;
 
-        if (cachedVertexBufferViews[slot].BufferLocation != vbv[i].BufferLocation ||
+        if (!(cachedVertexBufferValidMask & slotMask) ||
+            cachedVertexBufferViews[slot].BufferLocation != vbv[i].BufferLocation ||
             cachedVertexBufferViews[slot].SizeInBytes != vbv[i].SizeInBytes ||
             cachedVertexBufferViews[slot].StrideInBytes != vbv[i].StrideInBytes) {
             cachedVertexBufferViews[slot] = vbv[i];
+            cachedVertexBufferValidMask |= slotMask;
             needsUpdate = true;
         }
     }
@@ -289,10 +307,13 @@ BE_INLINE void D3D12CommandList::SetVertexBuffer(int slot, const RHI::VertexBuff
     const D3D12_VERTEX_BUFFER_VIEW &vbv = static_cast<const D3D12VertexBuffer *>(vertexBuffer)->vbv;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedVertexBufferViews[slot].BufferLocation != vbv.BufferLocation ||
+    const uint32_t slotMask = uint32_t(1) << slot;
+    if (!(cachedVertexBufferValidMask & slotMask) ||
+        cachedVertexBufferViews[slot].BufferLocation != vbv.BufferLocation ||
         cachedVertexBufferViews[slot].SizeInBytes != vbv.SizeInBytes ||
         cachedVertexBufferViews[slot].StrideInBytes != vbv.StrideInBytes) {
         cachedVertexBufferViews[slot] = vbv;
+        cachedVertexBufferValidMask |= slotMask;
         GetGraphicsCommandList()->IASetVertexBuffers(slot, 1, &vbv);
     }
 #else
@@ -304,10 +325,12 @@ BE_INLINE void D3D12CommandList::SetIndexBuffer(const RHI::IndexBuffer *indexBuf
     const D3D12_INDEX_BUFFER_VIEW &ibv = static_cast<const D3D12IndexBuffer *>(indexBuffer)->ibv;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedIndexBufferView.BufferLocation != ibv.BufferLocation ||
+    if (!cachedIndexBufferValid ||
+        cachedIndexBufferView.BufferLocation != ibv.BufferLocation ||
         cachedIndexBufferView.SizeInBytes != ibv.SizeInBytes ||
         cachedIndexBufferView.Format != ibv.Format) {
         cachedIndexBufferView = ibv;
+        cachedIndexBufferValid = true;
         GetGraphicsCommandList()->IASetIndexBuffer(&ibv);
     }
 #else
@@ -317,20 +340,22 @@ BE_INLINE void D3D12CommandList::SetIndexBuffer(const RHI::IndexBuffer *indexBuf
 
 BE_INLINE void D3D12CommandList::SetBlendFactor(const BE1::Color4 &rgba) {
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedBlendFactor == rgba) {
+    if (cachedBlendFactorValid && cachedBlendFactor == rgba) {
         return;
     }
     cachedBlendFactor = rgba;
+    cachedBlendFactorValid = true;
 #endif
     GetGraphicsCommandList()->OMSetBlendFactor(rgba.Ptr());
 }
 
 BE_INLINE void D3D12CommandList::SetStencilRef(uint32_t value) {
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedStencilRef == value) {
+    if (cachedStencilRefValid && cachedStencilRef == value) {
         return;
     }
     cachedStencilRef = value;
+    cachedStencilRefValid = true;
 #endif
     GetGraphicsCommandList()->OMSetStencilRef(value);
 }

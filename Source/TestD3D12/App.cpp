@@ -712,7 +712,7 @@ void App::RenderScene() {
     cameraDesc.renderHeight = h;
     GetCameraOriginAxis(cameraDesc.origin, cameraDesc.axis);
     RenderCamera::CalculateFov(60, 16.0f / 9.0f, aspectRatio, &cameraDesc.fovX, &cameraDesc.fovY);
-    cameraDesc.zNear = BE1::MeterToUnit(0.1f);
+    cameraDesc.zNear = BE1::MeterToUnit(0.3f);
     cameraDesc.zFar = BE1::MeterToUnit(2000.0f);
     if (cameraDesc.orthogonal) {
         cameraDesc.sizeX = cameraDistance * BE1::Math::Tan(cameraDesc.fovX * 0.5f) * 0.5f;

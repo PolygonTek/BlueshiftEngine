@@ -3,10 +3,11 @@
 
 #include "Common.hlsli"
 #include "CommonBindless.hlsli"
+#include "Skinning.hlsli"
 #include "CameraPassOutputCommon.hlsli"
 #include "PackedTangentFrame.hlsli"
-#include "Skinning.hlsli"
 
+// b1 은 각 패스가 선언하는 CameraCB 또는 ShadowViewCB 에 사용한다.
 #define ROOT_SIGNATURE_SURFACE_DRAW_RESOURCES \
     "SRV(t0), " \
     ROOT_SIGNATURE_SKINNING_RESOURCES \
@@ -22,20 +23,16 @@ cbuffer FrameCB : register(b0) {
     FrameConstants frameConstants;
 };
 
-cbuffer CameraCB : register(b1) {
-    CameraConstants cameraConstants;
-};
-
 cbuffer SurfaceDrawCB : register(b2) {
     SurfaceDrawParams surfaceDrawParams;
 };
 
-ShaderSurface GetShaderSurface(uint shaderSurfaceIndex) {
-    return GetShaderSurfaceTable(cameraConstants.surfaceTableIndex)[shaderSurfaceIndex];
+ShaderSurface GetShaderSurface(uint shaderSurfaceIndex, uint surfaceTableIndex) {
+    return GetShaderSurfaceTable(surfaceTableIndex)[shaderSurfaceIndex];
 }
 
-ShaderSurface GetShaderSurfaceByInstanceID(uint instanceID) {
-    return GetShaderSurface(instanceToShaderSurfaceTable[surfaceDrawParams.instanceBaseOffset + instanceID]);
+ShaderSurface GetShaderSurfaceByInstanceID(uint instanceID, uint surfaceTableIndex) {
+    return GetShaderSurface(instanceToShaderSurfaceTable[surfaceDrawParams.instanceBaseOffset + instanceID], surfaceTableIndex);
 }
 
 ShaderMaterial GetShaderMaterial(uint shaderMaterialIndex) {

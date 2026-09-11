@@ -874,7 +874,7 @@ RHI::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *rootSigna
     psoDesc.RasterizerState.FrontCounterClockwise = TRUE;
     psoDesc.RasterizerState.DepthBias = 0;
     psoDesc.RasterizerState.DepthBiasClamp = 0;
-    psoDesc.RasterizerState.DepthClipEnable = FALSE;
+    psoDesc.RasterizerState.DepthClipEnable = TRUE;
     psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
     psoDesc.DepthStencilState.DepthEnable = TRUE;

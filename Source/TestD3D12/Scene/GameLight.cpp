@@ -14,3 +14,39 @@
 
 #include "Precompiled.h"
 #include "Scene/GameLight.h"
+#include "Render/Frontend/RenderWorld.h"
+#include "RHI/RHI.h"
+
+bool GameLight::SetEnabled(RenderWorld *renderWorld, bool enabled) {
+    assert(renderWorld);
+
+    if (!enabled) {
+        if (renderLightHandle >= 0) {
+            renderWorld->RemoveRenderLight(renderLightHandle);
+            renderLightHandle = -1;
+        }
+        return false;
+    }
+
+    if (renderLightHandle >= 0) {
+        return true;
+    }
+
+    RenderLight::Desc desc;
+    desc.type = type;
+    desc.flags = flags;
+    desc.layer = layer;
+    desc.origin = origin;
+    desc.axis = axis;
+    desc.size = size;
+    desc.zNear = zNear;
+    desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
+    desc.linearColor = linearColor;
+    desc.intensity = intensity;
+    desc.fallOffExponent = fallOffExponent;
+    desc.shadowOffsetFactor = shadowOffsetFactor;
+    desc.shadowOffsetUnits = shadowOffsetUnits;
+
+    renderLightHandle = renderWorld->AddRenderLight(desc);
+    return renderLightHandle >= 0;
+}

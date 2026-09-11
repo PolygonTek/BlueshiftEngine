@@ -79,7 +79,7 @@ public:
     virtual RHI::CommandList *      AllocComputeCommandList() override;
 
     virtual RHI::CommandList *      BeginCommandList(RHI::CommandQueueType queueType) override;
-    virtual RHI::CommandList *      BeginSecondaryCommandList(const RHI::CommandList *primaryCommandList) override;
+    virtual RHI::CommandList *      BeginSecondaryCommandList() override;
 
 private:
     // 다이나믹 버퍼를 블럭 단위로 관리하기 위한 블럭

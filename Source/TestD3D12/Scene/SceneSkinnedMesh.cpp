@@ -36,6 +36,14 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     app.SetCameraPitchYaw(30.0f, 0.0f);
     app.SetCameraDistance(104.0f);
 
+    directionalLight.type = RenderLight::Type::Directional;
+    directionalLight.flags = RenderLight::Flag::CastShadows;
+    directionalLight.linearColor = BE1::Color3::white;
+    directionalLight.intensity = 2.0f;
+    directionalLightEnabled = true;
+    UpdateDirectionalLightDirection();
+    directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
+
     previousUpdateUsec = 0;
     playbackSpeed = 1.0f;
     playing = true;
@@ -52,6 +60,25 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     }
 
     characterOffset = -characterAABB.Center();
+
+    // Keep the ground fixed at the lowest sampled foot height across all animation clips.
+    float minCharacterZ = characterAABB[0].z;
+    for (const AnimState &animState : animStates) {
+        for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
+            for (const BE1::AABB &frameAABB : animState.frameAABBs[meshIndex]) {
+                minCharacterZ = BE1::Min(minCharacterZ, frameAABB[0].z);
+            }
+        }
+    }
+    groundHeight = characterOffset.z + minCharacterZ;
+
+    // Retain the shared two-triangle quad instance across object-count changes.
+    groundMeshInstance = meshManager.defaultQuadMesh->GetStaticInstance();
+    if (!groundMeshInstance) {
+        BE_WARNLOG("SceneSkinnedMesh::Init: failed to instantiate the ground plane");
+        return;
+    }
+
     if (!InitGameObjects(32, 32)) {
         return;
     }
@@ -61,14 +88,17 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     if (envLightAdded) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
     }
+
 }
 
 void SceneSkinnedMesh::Shutdown() {
     if (renderWorld) {
         renderWorld->ClearScene();
     }
+    directionalLight.renderLightHandle = -1;
     envLightAdded = false;
     gameObjects.Clear();
+    groundMeshInstance.reset();
 
     for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
         meshes[meshIndex].reset();
@@ -180,12 +210,12 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
 
     gameObjects.SetCount(objectCountX * objectCountY);
 
-    constexpr float spacing = 2.5f;
-    const float startX = -spacing * (objectCountX - 1) * 0.5f;
-    const float startY = -spacing * (objectCountY - 1) * 0.5f;
+    const float startX = -ObjectSpacing * (objectCountX - 1) * 0.5f;
+    const float startY = -ObjectSpacing * (objectCountY - 1) * 0.5f;
     const BE1::Mat3 characterRotation = BE1::Mat3::FromRotationZ(DEG2RAD(180.0f));
 
     RenderObject::Desc desc;
+    desc.flags = RenderObject::Flag::CastShadows;
     desc.skeleton = skeleton;
     desc.materials.SetCount(1);
     desc.materials[0] = materialManager.whiteLitMaterial;
@@ -210,7 +240,7 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
             }
             const AnimState &animState = animStates[object.animIndex];
 
-            const BE1::Vec3 position = characterOffset + BE1::Vec3(startX + spacing * x, startY + spacing * y, 0.0f);
+            const BE1::Vec3 position = characterOffset + BE1::Vec3(startX + ObjectSpacing * x, startY + ObjectSpacing * y, 0.0f);
             object.gameObject.worldMatrix.SetTranslationRotation(position, characterRotation, false);
             desc.worldMatrix = object.gameObject.worldMatrix;
 
@@ -230,7 +260,27 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
         }
     }
 
+    InitGround();
     return true;
+}
+
+void SceneSkinnedMesh::InitGround() {
+    // Extend one object spacing beyond the outermost character centers on each side.
+    const float sizeX = ObjectSpacing * (objectCountX + 1);
+    const float sizeY = ObjectSpacing * (objectCountY + 1);
+    const BE1::AABB &quadAABB = groundMeshInstance->GetAABB();
+    const BE1::Vec3 quadSize = quadAABB[1] - quadAABB[0];
+
+    RenderObject::Desc desc;
+    desc.flags = RenderObject::Flag::ReceiveShadows;
+    // The engine quad lies in YZ; rotate it back onto XY with its normal pointing up.
+    desc.worldMatrix.SetTRS(BE1::Vec3(characterOffset.x, characterOffset.y, groundHeight),
+        BE1::Angles(0.0f, -90.0f, 0.0f).ToMat3(), BE1::Vec3(1.0f, sizeY / quadSize.y, sizeX / quadSize.z));
+    desc.meshInstance = groundMeshInstance;
+    desc.aabb = quadAABB;
+    desc.materials.SetCount(1);
+    desc.materials[0] = materialManager.whiteLitMaterial;
+    renderWorld->AddRenderObject(desc);
 }
 
 void SceneSkinnedMesh::ClearGameObjects() {
@@ -351,6 +401,11 @@ void SceneSkinnedMesh::DrawBounds() const {
     renderWorld->SetDebugColor(BE1::Color4::zero, BE1::Color4::zero);
 }
 
+void SceneSkinnedMesh::UpdateDirectionalLightDirection() {
+    // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
+    directionalLight.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
+}
+
 #ifdef ENABLE_IMGUI
 void SceneSkinnedMesh::BuildImGui() {
     const float itemWidth = ImGui::GetFontSize() * 17.0f;
@@ -400,5 +455,49 @@ void SceneSkinnedMesh::BuildImGui() {
     ImGui::SliderFloat("Playback Speed", &playbackSpeed, 0.0f, 2.0f, "%.2fx");
 
     ImGui::Checkbox("Show Bounds", &showBounds);
+
+    ImGui::Separator();
+    ImGui::Text("Directional Light");
+
+    if (ImGui::Checkbox("Enabled##DirectionalLight", &directionalLightEnabled)) {
+        directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
+    }
+
+    ImGui::BeginDisabled(!directionalLightEnabled);
+    ImGui::TextDisabled("Azimuth: 0 = +X, 90 = +Y; Elevation: 0 = horizon");
+
+    bool directionalLightLightingChanged = false;
+    bool directionalLightDirectionChanged = false;
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Azimuth##DirectionalLight", &directionalLightAzimuth, 0.0f, 360.0f, "%.1f deg")) {
+        directionalLightDirectionChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Elevation##DirectionalLight", &directionalLightElevation, -90.0f, 90.0f, "%.1f deg")) {
+        directionalLightDirectionChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::ColorEdit3("Color##DirectionalLight", directionalLight.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
+        directionalLightLightingChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLight.intensity, 0.0f, 10.0f, "%.3f")) {
+        directionalLightLightingChanged = true;
+    }
+
+    if (directionalLightDirectionChanged) {
+        UpdateDirectionalLightDirection();
+        renderWorld->UpdateRenderLightTransform(directionalLight.renderLightHandle, directionalLight.origin, directionalLight.axis);
+    }
+
+    if (directionalLightLightingChanged) {
+        renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
+    }
+
+    ImGui::EndDisabled();
 }
 #endif
