@@ -101,7 +101,7 @@ public:
         : key(key), value(value), next(next) {}
 
     static int GenerateHash(const Str &key, const int tableMask) {
-        return Str::Hash(key) & tableMask;
+        return Str::Hash32(key) & tableMask;
     }
 
     static int Compare(const Str &key1, const Str &key2) {
@@ -123,7 +123,7 @@ public:
         : key(key), value(value), next(next) {}
 
     static int GenerateHash(const char * const &key, const int tableMask) {
-        return Str::Hash(key) & tableMask;
+        return Str::Hash32(key) & tableMask;
     }
 
     static int Compare(const char * const &key1, const char * const &key2) {

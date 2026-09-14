@@ -71,7 +71,9 @@ ComTransform *ComTransform::GetParent() const {
 void ComTransform::Init() {
     Component::Init();
 
+#if WITH_EDITOR
     entity->Connect(&Entity::SIG_ParentChanged, this, (SignalCallback)&ComTransform::ParentChanged, SignalObject::ConnectionType::Unique);
+#endif
 
     UpdateWorldMatrix();
 
