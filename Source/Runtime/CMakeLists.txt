@@ -113,6 +113,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/RGBE9995.h
     Public/Math/Rotation.h
     Public/Math/CovarianceAccumulator.h
+    Public/Math/SamplingPDF.h
     Public/Math/Size.h
     Public/Math/Sphere.h
     Public/Math/SphericalHarmonics.h
