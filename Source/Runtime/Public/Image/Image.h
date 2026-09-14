@@ -488,6 +488,7 @@ public:
     static bool         HasOneBitAlpha(Format imageFormat);
     static bool         IsPacked(Format imageFormat);
     static bool         IsCompressed(Format imageFormat);
+    static bool         IsUNormFormat(Format imageFormat);
     static bool         IsFloatFormat(Format imageFormat);
     static bool         IsHalfFormat(Format imageFormat);
     static bool         IsDepthFormat(Format imageFormat);

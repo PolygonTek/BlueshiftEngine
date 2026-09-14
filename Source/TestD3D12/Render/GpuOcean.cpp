@@ -282,7 +282,8 @@ bool GpuOcean::EnsureResources() {
 
     const BE1::Image::Format initialSpectrumFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16G16B16A16_FLOAT);
     const BE1::Image::Format outputFieldFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16G16B16A16_FLOAT);
-    const BE1::Image::Format foamHistoryFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16_FLOAT);
+    // Foam history 는 UAV 를 통해 이전 값을 읽고 갱신하므로 typed load/store 가 모두 필요하다.
+    const BE1::Image::Format foamHistoryFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16_FLOAT, RHI::UAVAccessFlag::Load | RHI::UAVAccessFlag::Store);
 
     // 각 cascade 의 initial spectrum 을 동일한 index 의 slice 에 저장하며 graphics/compute SRV 상태로 유지한다.
     initialSpectrumTextureArray = CreateOceanTexture("GpuOcean::initialSpectrumTextureArray", spectrumSize, initialSpectrumFormat, CascadeCount, RHI::TextureMipInitMode::FromImage, RHI::GPUResourceState::ShaderResource);

@@ -956,6 +956,10 @@ bool Image::IsCompressed(Image::Format imageFormat) {
     return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::Compressed);
 }
 
+bool Image::IsUNormFormat(Image::Format imageFormat) {
+    return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::UNorm);
+}
+
 bool Image::IsFloatFormat(Image::Format imageFormat) {
     return HasFlag(GetImageFormatInfo(imageFormat)->type, FormatType::Float);
 }
@@ -965,6 +969,7 @@ bool Image::IsHalfFormat(Image::Format imageFormat) {
     if (!HasFlag(formatInfo->type, FormatType::Float)) {
         return false;
     }
+
     return (formatInfo->redBits == 16 || formatInfo->redBits == 0) &&
            (formatInfo->greenBits == 16 || formatInfo->greenBits == 0) &&
            (formatInfo->blueBits == 16 || formatInfo->blueBits == 0) &&
@@ -988,15 +993,18 @@ bool Image::NeedFloatConversion(Image::Format imageFormat) {
         HasFlag(formatInfo->type, FormatType::UInt)) {
         return true;
     }
+
     if (formatInfo->redBits > 8 || formatInfo->greenBits > 8 || formatInfo->blueBits > 8 || formatInfo->alphaBits > 8) {
         return true;
     }
+
     if (imageFormat == Format::EACR11 ||
         imageFormat == Format::EACRG11 ||
         imageFormat == Format::EACR11_SNORM ||
         imageFormat == Format::EACRG11_SNORM) {
         return true;
     }
+
     return false;
 }
 

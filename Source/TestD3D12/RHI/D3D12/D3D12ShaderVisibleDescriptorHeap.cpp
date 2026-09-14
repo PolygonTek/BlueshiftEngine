@@ -31,8 +31,8 @@ void D3D12ShaderVisibleDescriptorHeap::Init(ID3D12Device *device, D3D12_DESCRIPT
     HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
     assert(SUCCEEDED(hr));
 
-    baseCpuDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    baseGpuDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    cpuDescriptorHandleBase = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    gpuDescriptorHandleBase = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
 }
 
 void D3D12ShaderVisibleDescriptorHeap::Shutdown() {

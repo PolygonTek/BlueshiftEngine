@@ -51,13 +51,13 @@ void D3D12DescriptorPool::Init(ID3D12Device *device, D3D12DescriptorPool::Type t
     device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap));
 
     // 디스크립터 힙을 만들 때 D3D12_DESCRIPTOR_HEAP_FLAG_NONE 이라면, 디스크립터 핸들은 CPU 에서만 접근 가능하게 된다.
-    baseCpuDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    cpuDescriptorHandleBase = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
     if (isGpuHeap) {
         // GPU 에서 접근 가능한 힙일 때는 디스크립터의 GPU 핸들도 얻을 수 있다.
         // 힙은 하나지만, 접근할 때 CPU 에서 사용하는 핸들과 GPU 에서 사용하는 핸들로 나뉜다.
         // NOTE: CPU 접근 전용 힙일 때 GPU 핸들을 얻으려고 하면 즉, descriptorHeap->GetGPUDescriptorHandleForHeapStart() 를 호출하면 크래시 발생함.
-        baseGpuDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+        gpuDescriptorHandleBase = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
     }
 
     idAllocator.Init(maxDescriptorCount);
@@ -96,12 +96,12 @@ bool D3D12DescriptorPool::Alloc(D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHan
     }
 
     if (outCpuDescriptorHandle) {
-        assert(baseCpuDescriptorHandle.ptr);
-        *outCpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, newIndex, handleIncrement);
+        assert(cpuDescriptorHandleBase.ptr);
+        *outCpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cpuDescriptorHandleBase, newIndex, handleIncrement);
     }
     if (outGpuDescriptorHandle) {
-        assert(baseGpuDescriptorHandle.ptr);
-        *outGpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, newIndex, handleIncrement);
+        assert(gpuDescriptorHandleBase.ptr);
+        *outGpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(gpuDescriptorHandleBase, newIndex, handleIncrement);
     }
     return true;
 }
@@ -125,12 +125,12 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::AllocRange(int count) {
         }
     }
 
-    descriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, (INT)newId, handleIncrement);
+    descriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cpuDescriptorHandleBase, (INT)newId, handleIncrement);
     return descriptorHandle;
 }
 
 void D3D12DescriptorPool::FreeRange(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHandle, int count) {
-    uint32_t freeId = (uint32_t)(descriptorHandle.ptr - baseCpuDescriptorHandle.ptr) / handleIncrement;
+    uint32_t freeId = (uint32_t)(descriptorHandle.ptr - cpuDescriptorHandleBase.ptr) / handleIncrement;
     {
         BE1::ScopedLock lock(mutex);
 
@@ -139,31 +139,31 @@ void D3D12DescriptorPool::FreeRange(const D3D12_CPU_DESCRIPTOR_HANDLE &descripto
 }
 
 uint32_t D3D12DescriptorPool::GetIndexFromCPUDescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle) const {
-    assert(baseCpuDescriptorHandle.ptr);
-    assert(baseCpuDescriptorHandle.ptr <= handle.ptr);
+    assert(cpuDescriptorHandleBase.ptr);
+    assert(cpuDescriptorHandleBase.ptr <= handle.ptr);
 
-    uint32_t descriptorIndex = (uint32_t)(handle.ptr - baseCpuDescriptorHandle.ptr) / handleIncrement;
+    uint32_t descriptorIndex = (uint32_t)(handle.ptr - cpuDescriptorHandleBase.ptr) / handleIncrement;
     return descriptorIndex;
 }
 
 uint32_t D3D12DescriptorPool::GetIndexFromGPUDescriptorHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle) const {
-    assert(baseGpuDescriptorHandle.ptr);
-    assert(baseGpuDescriptorHandle.ptr <= handle.ptr);
+    assert(gpuDescriptorHandleBase.ptr);
+    assert(gpuDescriptorHandleBase.ptr <= handle.ptr);
 
-    uint32_t descriptorIndex = (uint32_t)(handle.ptr - baseGpuDescriptorHandle.ptr) / handleIncrement;
+    uint32_t descriptorIndex = (uint32_t)(handle.ptr - gpuDescriptorHandleBase.ptr) / handleIncrement;
     return descriptorIndex;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::GetCPUDescriptorHandleFromIndex(uint32_t index) const {
-    assert(baseCpuDescriptorHandle.ptr);
+    assert(cpuDescriptorHandleBase.ptr);
     assert(index < maxDescriptorCount);
 
-    return CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, index, handleIncrement);
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(cpuDescriptorHandleBase, index, handleIncrement);
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::GetGPUDescriptorHandleFromIndex(uint32_t index) const {
-    assert(baseGpuDescriptorHandle.ptr);
+    assert(gpuDescriptorHandleBase.ptr);
     assert(index < maxDescriptorCount);
 
-    return CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, index, handleIncrement);
+    return CD3DX12_GPU_DESCRIPTOR_HANDLE(gpuDescriptorHandleBase, index, handleIncrement);
 }

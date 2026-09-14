@@ -35,8 +35,8 @@ public:
 
 private:
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle = {};
-    D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     cpuDescriptorHandleBase = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     gpuDescriptorHandleBase = {};
     UINT                            handleIncrement = 0;
     UINT                            maxDescriptorCount = 0;
 };
@@ -45,14 +45,14 @@ BE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE D3D12ShaderVisibleDescriptorHeap::GetCPUDe
     assert(descriptorHeap);
     assert(index < maxDescriptorCount);
 
-    return CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, index, handleIncrement);
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(cpuDescriptorHandleBase, index, handleIncrement);
 }
 
 BE_INLINE D3D12_GPU_DESCRIPTOR_HANDLE D3D12ShaderVisibleDescriptorHeap::GetGPUDescriptorHandleFromIndex(UINT index) const {
     assert(descriptorHeap);
     assert(index < maxDescriptorCount);
 
-    return CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, index, handleIncrement);
+    return CD3DX12_GPU_DESCRIPTOR_HANDLE(gpuDescriptorHandleBase, index, handleIncrement);
 }
 
 struct D3D12DescriptorHeapRegion {

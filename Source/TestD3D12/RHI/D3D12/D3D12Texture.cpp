@@ -1118,8 +1118,8 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Texture *texture, RHI::Format typeless
         newUavEntry.viewDesc.Format = texture->textureDesc.Format;
     }
 
-    // UAV 호환 포맷인지 검사한다.
-    if (!IsSupportedUAVFormat(newUavEntry.viewDesc.Format)) {
+    // UAV 쓰기를 지원하는 포맷인지 검사한다. typed load 지원은 해당 기능을 사용하는 경로에서 확인한다.
+    if (!IsSupportedUAVFormat(newUavEntry.viewDesc.Format, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE)) {
         BE_ERRLOG("D3D12Renderer::CreateUAV: Unsupported UAV format (%i)\n", newUavEntry.viewDesc.Format);
         return RHI::ViewID::InvalidID;
     }
@@ -1716,7 +1716,7 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
         return;
     }
 
-    // 포맷과 장치의 typed UAV load/store 지원 여부를 함께 확인한다.
+    // 포맷과 장치의 typed UAV store 지원 여부를 함께 확인한다.
     if (!CanGenerateMipmapsOnGPU(_texture->type, _texture->srcFormat, _texture->GetArraySize())) {
         return;
     }

@@ -201,6 +201,11 @@ namespace RHI {
         GenerateOnGPU
     };
 
+    enum class UAVAccessFlag : uint8_t {
+        Load                            = BIT(0),
+        Store                           = BIT(1)
+    };
+
     enum class BufferType : uint8_t {
         Static,
         Dynamic
@@ -1110,7 +1115,7 @@ namespace RHI {
         virtual BE1::Image::Format      ToUncompressedImageFormat(BE1::Image::Format imageFormat) const = 0;
         virtual BE1::Image::Format      ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const = 0;
         virtual BE1::Image::Format      ToSupportedImageFormat(BE1::Image::Format imageFormat) const = 0;
-        virtual BE1::Image::Format      ToUAVImageFormat(BE1::Image::Format inFormat) const = 0;
+        virtual BE1::Image::Format      ToUAVImageFormat(BE1::Image::Format inFormat, UAVAccessFlag requiredAccess = UAVAccessFlag::Store) const = 0;
         virtual bool                    CanGenerateMipmapsOnGPU(TextureType textureType, BE1::Image::Format imageFormat, int arraySize) const = 0;
 
         virtual SwapChain::ColorSpace   GetHDRColorSpace() const = 0;
@@ -1297,6 +1302,11 @@ struct BE1::enable_bitmask_operators<RHI::BufferFlag> {
 
 template<>
 struct BE1::enable_bitmask_operators<RHI::TextureFlag> {
+    static constexpr bool enable = true;
+};
+
+template<>
+struct BE1::enable_bitmask_operators<RHI::UAVAccessFlag> {
     static constexpr bool enable = true;
 };
 

@@ -375,10 +375,7 @@ void D3D12Renderer::CheckFeatures() {
         // More info about UAV format load support: https://docs.microsoft.com/en-us/windows/win32/direct3d12/typed-unordered-access-view-loads
         // UAV 포맷은 어떤 포맷도 sRGB 를 지원하지 않는다.
         //
-        // Common (D3D11.3) UAV Formats:
-        // R32_FLOAT
-        // R32_UINT
-        // R32_SINT
+        // Common (D3D11.3) UAV (load) Formats:
         // R32G32B32A32_FLOAT
         // R32G32B32A32_UINT
         // R32G32B32A32_SINT
@@ -394,45 +391,46 @@ void D3D12Renderer::CheckFeatures() {
         // R8_UNORM
         // R8_UINT
         // R8_SINT
-        supportsUAVFormatCommon = true;
+        supportsCommonUAVLoadFormats = true;
+    }
 
-        const DXGI_FORMAT optionalUAVFormats[] = {
-            DXGI_FORMAT_R16G16B16A16_UNORM,
-            DXGI_FORMAT_R16G16B16A16_SNORM,
-            DXGI_FORMAT_R32G32_FLOAT,
-            DXGI_FORMAT_R32G32_UINT,
-            DXGI_FORMAT_R32G32_SINT,
-            DXGI_FORMAT_R10G10B10A2_UNORM,
-            DXGI_FORMAT_R10G10B10A2_UINT,
-            DXGI_FORMAT_R11G11B10_FLOAT,
-            DXGI_FORMAT_R8G8B8A8_SNORM,
-            DXGI_FORMAT_R16G16_FLOAT,
-            DXGI_FORMAT_R16G16_UNORM,
-            DXGI_FORMAT_R16G16_UINT,
-            DXGI_FORMAT_R16G16_SNORM,
-            DXGI_FORMAT_R16G16_SINT,
-            DXGI_FORMAT_R8G8_UNORM,
-            DXGI_FORMAT_R8G8_UINT,
-            DXGI_FORMAT_R8G8_SNORM,
-            DXGI_FORMAT_R8G8_SINT,
-            DXGI_FORMAT_R16_UNORM,
-            DXGI_FORMAT_R16_SNORM,
-            DXGI_FORMAT_R8_SNORM,
-            DXGI_FORMAT_A8_UNORM,
-            DXGI_FORMAT_B5G6R5_UNORM,
-            DXGI_FORMAT_B5G5R5A1_UNORM,
-            DXGI_FORMAT_B4G4R4A4_UNORM
-        };
+    const DXGI_FORMAT optionalUAVFormats[] = {
+        DXGI_FORMAT_R16G16B16A16_UNORM,
+        DXGI_FORMAT_R16G16B16A16_SNORM,
+        DXGI_FORMAT_R32G32_FLOAT,
+        DXGI_FORMAT_R32G32_UINT,
+        DXGI_FORMAT_R32G32_SINT,
+        DXGI_FORMAT_R10G10B10A2_UNORM,
+        DXGI_FORMAT_R10G10B10A2_UINT,
+        DXGI_FORMAT_R11G11B10_FLOAT,
+        DXGI_FORMAT_R8G8B8A8_SNORM,
+        DXGI_FORMAT_R16G16_FLOAT,
+        DXGI_FORMAT_R16G16_UNORM,
+        DXGI_FORMAT_R16G16_UINT,
+        DXGI_FORMAT_R16G16_SNORM,
+        DXGI_FORMAT_R16G16_SINT,
+        DXGI_FORMAT_R8G8_UNORM,
+        DXGI_FORMAT_R8G8_UINT,
+        DXGI_FORMAT_R8G8_SNORM,
+        DXGI_FORMAT_R8G8_SINT,
+        DXGI_FORMAT_R16_UNORM,
+        DXGI_FORMAT_R16_SNORM,
+        DXGI_FORMAT_R8_SNORM,
+        DXGI_FORMAT_A8_UNORM,
+        DXGI_FORMAT_B5G6R5_UNORM,
+        DXGI_FORMAT_B5G5R5A1_UNORM,
+        DXGI_FORMAT_B4G4R4A4_UNORM
+    };
 
-        for (DXGI_FORMAT uavFormat : optionalUAVFormats) {
-            D3D12_FORMAT_SUPPORT1 formatSupport1 = D3D12_FORMAT_SUPPORT1_NONE;
-            D3D12_FORMAT_SUPPORT2 formatSupport2 = D3D12_FORMAT_SUPPORT2_NONE;
+    // 선택적 UAV 포맷의 typed load/store 지원 비트를 캐시한다. 추가 typed load 미지원 장치에서도 store 지원을 조회한다.
+    for (DXGI_FORMAT uavFormat : optionalUAVFormats) {
+        D3D12_FORMAT_SUPPORT1 formatSupport1 = D3D12_FORMAT_SUPPORT1_NONE;
+        D3D12_FORMAT_SUPPORT2 formatSupport2 = D3D12_FORMAT_SUPPORT2_NONE;
 
-            hr = features.FormatSupport(uavFormat, formatSupport1, formatSupport2);
-            const D3D12_FORMAT_SUPPORT2 requiredSupport = D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD | D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
-            if (SUCCEEDED(hr) && (formatSupport2 & requiredSupport) == requiredSupport) {
-                optionalUAVFormatMap.insert(uavFormat);
-            }
+        hr = features.FormatSupport(uavFormat, formatSupport1, formatSupport2);
+        const D3D12_FORMAT_SUPPORT2 uavSupport = formatSupport2 & (D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD | D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
+        if (SUCCEEDED(hr) && uavSupport != D3D12_FORMAT_SUPPORT2_NONE) {
+            optionalUAVFormatSupportMap.emplace(uavFormat, uavSupport);
         }
     }
 }
@@ -997,7 +995,7 @@ void D3D12Renderer::CreateDevice(IDXGIAdapter1 **adapterPtr) {
             }
 
             for (const D3D_FEATURE_LEVEL &featureLevel : featurelevels) {
-                // D3D12 디바이스 생성
+                // 디바이스 생성
                 if (SUCCEEDED(D3D12CreateDevice(currentAdapter, featureLevel, IID_PPV_ARGS(&device)))) {
                     break;
                 }
@@ -2841,9 +2839,17 @@ BE1::Image::Format D3D12Renderer::ToSupportedImageFormat(BE1::Image::Format inFo
     return outFormat;
 }
 
-BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) const {
+BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format, RHI::UAVAccessFlag requiredAccess) const {
+    D3D12_FORMAT_SUPPORT2 requiredSupport = D3D12_FORMAT_SUPPORT2_NONE;
+    if (BE1::HasFlag(requiredAccess, RHI::UAVAccessFlag::Load)) {
+        requiredSupport |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD;
+    }
+    if (BE1::HasFlag(requiredAccess, RHI::UAVAccessFlag::Store)) {
+        requiredSupport |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
+    }
+
     DXGI_FORMAT dxgiFormat = DXGI_FORMAT_UNKNOWN;
-    if (ImageFormatToDXGIFormat(format, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat)) {
+    if (ImageFormatToDXGIFormat(format, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat, requiredSupport)) {
         return format;
     }
 
@@ -2867,7 +2873,9 @@ BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) co
         candidateFormat = BE1::Image::Format::R32G32B32A32_SINT;
         break;
     case BE1::Image::Format::R16:
-        candidateFormat = BE1::Image::Format::R16_FLOAT;
+    case BE1::Image::Format::R16_FLOAT:
+        // R16_FLOAT 의 typed load 가 불가능하면 기본 load/store 포맷인 R32_FLOAT 로 폴백한다.
+        candidateFormat = IsSupportedUAVFormat(DXGI_FORMAT_R16_FLOAT, requiredSupport) ? BE1::Image::Format::R16_FLOAT : BE1::Image::Format::R32_FLOAT;
         break;
     case BE1::Image::Format::R16G16_FLOAT:
     case BE1::Image::Format::R16G16B16_FLOAT:
@@ -2905,7 +2913,7 @@ BE1::Image::Format D3D12Renderer::ToUAVImageFormat(BE1::Image::Format format) co
     }
 
     dxgiFormat = DXGI_FORMAT_UNKNOWN;
-    if (ImageFormatToDXGIFormat(candidateFormat, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat)) {
+    if (ImageFormatToDXGIFormat(candidateFormat, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat, requiredSupport)) {
         return candidateFormat;
     }
 
@@ -2928,6 +2936,10 @@ bool D3D12Renderer::CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::I
         return false;
     }
 
+    if (imageFormat == BE1::Image::Format::A8) {
+        return false;
+    }
+
     const bool isR11G11B10Float = imageFormat == BE1::Image::Format::R11G11B10_FLOAT;
 
     if (BE1::Image::IsCompressed(imageFormat) ||
@@ -2943,44 +2955,47 @@ bool D3D12Renderer::CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::I
         return false;
     }
 
-    if (!BE1::Image::IsFloatFormat(imageFormat) && BE1::Image::NeedFloatConversion(imageFormat)) {
+    // 현재 밉 생성 셰이더는 Float 또는 UNorm 포맷을 처리한다.
+    if (!BE1::Image::IsFloatFormat(imageFormat) &&
+        !BE1::Image::IsUNormFormat(imageFormat)) {
         return false;
     }
 
     DXGI_FORMAT dxgiFormat = DXGI_FORMAT_UNKNOWN;
-    return ImageFormatToDXGIFormat(imageFormat, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat);
+    return ImageFormatToDXGIFormat(imageFormat, false, &dxgiFormat) && IsSupportedUAVFormat(dxgiFormat, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
 }
 
-bool D3D12Renderer::IsSupportedUAVFormat(DXGI_FORMAT format) const {
-    // D3D11.0 부터 지원하는 포맷
+bool D3D12Renderer::IsSupportedUAVFormat(DXGI_FORMAT format, D3D12_FORMAT_SUPPORT2 requiredSupport) const {
+    assert(requiredSupport != D3D12_FORMAT_SUPPORT2_NONE);
+    assert((requiredSupport & ~(D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD | D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE)) == D3D12_FORMAT_SUPPORT2_NONE);
+
+    // FL 11_0 부터 typed load/store 를 모두 지원하는 포맷
     if (format == DXGI_FORMAT_R32_FLOAT ||
         format == DXGI_FORMAT_R32_UINT ||
         format == DXGI_FORMAT_R32_SINT) {
         return true;
     }
 
-    if (supportsUAVFormatCommon) {
-        // D3D11.3 부터 지원하는 포맷
-        if (format == DXGI_FORMAT_R32G32B32A32_FLOAT ||
-            format == DXGI_FORMAT_R32G32B32A32_UINT ||
-            format == DXGI_FORMAT_R32G32B32A32_SINT ||
-            format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
-            format == DXGI_FORMAT_R16G16B16A16_UINT ||
-            format == DXGI_FORMAT_R16G16B16A16_SINT ||
-            format == DXGI_FORMAT_R8G8B8A8_UNORM ||
-            format == DXGI_FORMAT_R8G8B8A8_UINT ||
-            format == DXGI_FORMAT_R8G8B8A8_SINT ||
-            format == DXGI_FORMAT_R16_FLOAT ||
-            format == DXGI_FORMAT_R16_UINT ||
-            format == DXGI_FORMAT_R16_SINT ||
-            format == DXGI_FORMAT_R8_UNORM ||
-            format == DXGI_FORMAT_R8_UINT ||
-            format == DXGI_FORMAT_R8_SINT) {
-            return true;
-        }
+    // FL 11_0 부터 typed store 를 지원하며, D3D11.3 에서 추가된 typed load 지원은 별도로 확인한다.
+    if (format == DXGI_FORMAT_R32G32B32A32_FLOAT ||
+        format == DXGI_FORMAT_R32G32B32A32_UINT ||
+        format == DXGI_FORMAT_R32G32B32A32_SINT ||
+        format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+        format == DXGI_FORMAT_R16G16B16A16_UINT ||
+        format == DXGI_FORMAT_R16G16B16A16_SINT ||
+        format == DXGI_FORMAT_R8G8B8A8_UNORM ||
+        format == DXGI_FORMAT_R8G8B8A8_UINT ||
+        format == DXGI_FORMAT_R8G8B8A8_SINT ||
+        format == DXGI_FORMAT_R16_FLOAT ||
+        format == DXGI_FORMAT_R16_UINT ||
+        format == DXGI_FORMAT_R16_SINT ||
+        format == DXGI_FORMAT_R8_UNORM ||
+        format == DXGI_FORMAT_R8_UINT ||
+        format == DXGI_FORMAT_R8_SINT) {
+        return (requiredSupport & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) == 0 || supportsCommonUAVLoadFormats;
     }
 
-    // Optional UAV formats:
+    // Optional UAV formats (typed load/store 지원 비트를 개별 조회):
     // DXGI_FORMAT_R16G16B16A16_UNORM,
     // DXGI_FORMAT_R16G16B16A16_SNORM,
     // DXGI_FORMAT_R32G32_FLOAT,
@@ -3006,9 +3021,6 @@ bool D3D12Renderer::IsSupportedUAVFormat(DXGI_FORMAT format) const {
     // DXGI_FORMAT_B5G6R5_UNORM,
     // DXGI_FORMAT_B5G5R5A1_UNORM,
     // DXGI_FORMAT_B4G4R4A4_UNORM
-    if (optionalUAVFormatMap.find(format) != optionalUAVFormatMap.end()) {
-        return true;
-    }
-
-    return false;
+    const auto it = optionalUAVFormatSupportMap.find(format);
+    return it != optionalUAVFormatSupportMap.end() && (it->second & requiredSupport) == requiredSupport;
 }

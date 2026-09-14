@@ -65,9 +65,9 @@ public:
     virtual BE1::Image::Format          ToUncompressedImageFormat(BE1::Image::Format imageFormat) const override;
     virtual BE1::Image::Format          ToCompressedImageFormat(BE1::Image::Format inFormat, bool useNormalMap) const override;
     virtual BE1::Image::Format          ToSupportedImageFormat(BE1::Image::Format imageFormat) const override;
-    virtual BE1::Image::Format          ToUAVImageFormat(BE1::Image::Format inFormat) const override;
+    virtual BE1::Image::Format          ToUAVImageFormat(BE1::Image::Format inFormat, RHI::UAVAccessFlag requiredAccess = RHI::UAVAccessFlag::Store) const override;
     virtual bool                        CanGenerateMipmapsOnGPU(RHI::TextureType textureType, BE1::Image::Format imageFormat, int arraySize) const override;
-    bool                                IsSupportedUAVFormat(DXGI_FORMAT format) const;
+    bool                                IsSupportedUAVFormat(DXGI_FORMAT format, D3D12_FORMAT_SUPPORT2 requiredSupport) const;
 
     virtual RHI::SwapChain::ColorSpace  GetHDRColorSpace() const override { return RHI::SwapChain::ColorSpace::BT2020PQ; }
     virtual RHI::SwapChain *            CreateSwapChain(HWND hwnd, uint32_t width, uint32_t height, RHI::Format format) override;
@@ -330,8 +330,8 @@ public:
     bool                                supportsMeshShader = false;
     bool                                supportsDepthBoundsTest = false;
     bool                                supportsCastingFullyTypedFormat = false;
-    bool                                supportsUAVFormatCommon = false;
-    std::unordered_set<DXGI_FORMAT>     optionalUAVFormatMap;
+    bool                                supportsCommonUAVLoadFormats = false;
+    std::unordered_map<DXGI_FORMAT, D3D12_FORMAT_SUPPORT2> optionalUAVFormatSupportMap;
 
     D3D12DescriptorPool *               resourceStagingDescriptorPool = nullptr;
     D3D12DescriptorPool *               samplerStagingDescriptorPool = nullptr;

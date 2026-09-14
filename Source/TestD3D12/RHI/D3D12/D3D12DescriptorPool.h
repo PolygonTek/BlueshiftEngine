@@ -49,9 +49,9 @@ public:
     void                            Shutdown();
 
                                     // 디스크립터 힙의 시작 CPU 핸들을 리턴 
-    D3D12_CPU_DESCRIPTOR_HANDLE     GetBaseCPUDescriptorHandle() const { return baseCpuDescriptorHandle; }
+    D3D12_CPU_DESCRIPTOR_HANDLE     GetCPUDescriptorHandleBase() const { return cpuDescriptorHandleBase; }
                                     // 디스크립터 힙의 시작 GPU 핸들을 리턴
-    D3D12_GPU_DESCRIPTOR_HANDLE     GetBaseGPUDescriptorHandle() const { return baseGpuDescriptorHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE     GetGPUDescriptorHandleBase() const { return gpuDescriptorHandleBase; }
 
     void                            Clear();
 
@@ -72,8 +72,8 @@ private:
     void                            FreeIndex(uint32_t descriptorIndex);
 
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle = {};
-    D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE     cpuDescriptorHandleBase = {};
+    D3D12_GPU_DESCRIPTOR_HANDLE     gpuDescriptorHandleBase = {};
     UINT                            handleIncrement;
     UINT                            maxDescriptorCount;
     const char *                    heapTypeName = "Unknown";
