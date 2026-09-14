@@ -55,11 +55,6 @@ set(ALL_FILES
 
 auto_source_group(${ALL_FILES})
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}
-    ${ENGINE_INCLUDE_DIR}/Runtime/Public
-    ${ENGINE_INCLUDE_DIR}/ThirdParty)
-
 enable_precompiled_header(Precompiled.h Precompiled.cpp ALL_FILES)
 
 if (ANDROID)
@@ -73,6 +68,9 @@ elseif (APPLE)
 elseif (WIN32)
     add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
 endif ()
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}")
 
 if (NOT ANDROID AND NOT IOS)
     set_target_properties(${PROJECT_NAME} PROPERTIES

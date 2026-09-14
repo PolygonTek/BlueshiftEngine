@@ -249,17 +249,16 @@ auto_source_group(${ALL_FILES})
 include(FindDXC)
 include(FindPIX)
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}
-    ${ENGINE_INCLUDE_DIR}/Runtime/Public
-    ${ENGINE_INCLUDE_DIR}/ThirdParty
-    ${ENGINE_INCLUDE_DIR}/ThirdParty/DirectX12/include
-    ${ENGINE_INCLUDE_DIR}/ThirdParty/DirectX12/include/d3dx12
-    ${PIX_INCLUDE_DIR})
-
 enable_precompiled_header(Precompiled.h Precompiled.cpp SRC_FILES)
 
 add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${ENGINE_INCLUDE_DIR}/ThirdParty/DirectX12/include"
+    "${ENGINE_INCLUDE_DIR}/ThirdParty/DirectX12/include/d3dx12"
+    "${PIX_INCLUDE_DIR}"
+    "${DXC_INCLUDE_DIR}")
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     PREFIX ""
@@ -269,8 +268,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Test)
-
-target_include_directories(${PROJECT_NAME} PUBLIC ${DXC_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} winmm.lib dxgi.lib dxguid.lib d3d12.lib d3dcompiler.lib)
 target_link_libraries(${PROJECT_NAME} D3D12MemAlloc imgui_win32_dx12)

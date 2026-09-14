@@ -18,12 +18,6 @@ set(ALL_FILES
 
 auto_source_group(${ALL_FILES})
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}
-    ${ENGINE_INCLUDE_DIR}/Runtime/Public
-    ${ENGINE_INCLUDE_DIR}/ThirdParty
-)
-
 if (ANDROID)
     # Export ANativeActivity_onCreate(),
     # Refer to: https://github.com/android-ndk/ndk/issues/381.
@@ -33,6 +27,9 @@ if (ANDROID)
 else ()
     add_executable(${PROJECT_NAME} ${ALL_FILES})
 endif ()
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(${PROJECT_NAME} BlueshiftRuntime LuaCpp)
 

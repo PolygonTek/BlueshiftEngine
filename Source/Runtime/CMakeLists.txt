@@ -973,12 +973,6 @@ set(ALL_FILES
 
 auto_source_group(${ALL_FILES})
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}
-    ${ENGINE_INCLUDE_DIR}/Runtime/Public
-    ${ENGINE_INCLUDE_DIR}/ThirdParty
-    ${ENGINE_INCLUDE_DIR}/ThirdParty/asio/include)
-
 enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES)
 
 if (PLATFORM_WINDOWS)
@@ -1065,6 +1059,14 @@ elseif (APPLE)
 
     add_framework(${PROJECT_NAME} OpenAL)
 endif ()
+
+target_include_directories(${PROJECT_NAME}
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+    PUBLIC
+        "${ENGINE_INCLUDE_DIR}/Runtime/Public"
+        "${ENGINE_INCLUDE_DIR}/ThirdParty"
+        "${ENGINE_INCLUDE_DIR}/ThirdParty/asio/include")
 
 target_link_libraries(${PROJECT_NAME}
     zlib
