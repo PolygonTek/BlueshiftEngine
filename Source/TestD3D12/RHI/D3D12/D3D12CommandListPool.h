@@ -18,7 +18,7 @@
 #include "D3D12Common.h"
 #include "D3D12CommandList.h"
 
-class D3D12RootBindingData;
+struct D3D12RootBindingData;
 
 /*
 ---------------------------------------------------------------------------------------------------

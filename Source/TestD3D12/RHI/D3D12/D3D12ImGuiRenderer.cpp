@@ -14,8 +14,6 @@
 
 #include "Precompiled.h"
 #include "D3D12ImGuiRenderer.h"
-#include "D3D12Buffer.h"
-#include "D3D12RootBindingData.h"
 #include "D3D12CommandList.h"
 #include "D3D12ImGuiOverlay.h"
 #include "D3D12Renderer.h"
@@ -738,7 +736,7 @@ bool D3D12ImGuiRenderer::InitOverlay(D3D12ImGuiOverlay *overlay, RHI::Format ren
     initInfo.RTVFormat = D3D12Renderer::RHIFormatToDXGIFormat(renderTargetFormat);
     initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
     initInfo.UserData = overlay;
-    initInfo.SrvDescriptorHeap = renderer->resShaderVisibleDescriptorHeap.GetDescriptorHeap();
+    initInfo.SrvDescriptorHeap = renderer->resourceShaderVisibleDescriptorHeap.GetDescriptorHeap();
     initInfo.SrvDescriptorAllocFn = AllocImGuiSrvDescriptor;
     initInfo.SrvDescriptorFreeFn = FreeImGuiSrvDescriptor;
 
@@ -866,7 +864,7 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
     }
 
     D3D12Renderer *renderer = D3D12Renderer::GetRenderer();
-    if (!renderer || !renderer->resShaderVisibleDescriptorHeap.GetDescriptorHeap()) {
+    if (!renderer || !renderer->resourceShaderVisibleDescriptorHeap.GetDescriptorHeap()) {
         return;
     }
 
@@ -874,7 +872,7 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
     ID3D12GraphicsCommandList *graphicsCommandList = _commandList->GetGraphicsCommandList();
 
     ID3D12DescriptorHeap *descriptorHeaps[] = {
-        renderer->resShaderVisibleDescriptorHeap.GetDescriptorHeap()
+        renderer->resourceShaderVisibleDescriptorHeap.GetDescriptorHeap()
     };
     _commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 

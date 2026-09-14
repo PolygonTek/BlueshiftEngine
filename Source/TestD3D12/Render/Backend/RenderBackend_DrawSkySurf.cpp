@@ -27,7 +27,7 @@ static RHI::Texture *GetReadyMaterialRHITexture(const Material *material, Shader
     return texture && *texture ? (*texture)->GetReadyRHITexture() : nullptr;
 }
 
-static bool BindTextureProperty(RHI::CommandList *commandList, int shaderRegister, const Material *material, ShaderTemplate::StandardProperty standardProperty) {
+static bool BindTextureProperty(RHI::CommandList *commandList, uint32_t shaderRegister, const Material *material, ShaderTemplate::StandardProperty standardProperty) {
     RHI::Texture *texture = GetReadyMaterialRHITexture(material, standardProperty);
     if (!texture) {
         texture = textureManager.defaultTexture ? textureManager.defaultTexture->GetReadyRHITexture() : nullptr;

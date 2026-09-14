@@ -28,7 +28,7 @@ public:
     void                            Shutdown();
 
     ID3D12DescriptorHeap *          GetDescriptorHeap() const { return descriptorHeap; }
-    UINT                            GetDescriptorHandleSize() const { return descriptorHandleSize; }
+    UINT                            GetHandleIncrement() const { return handleIncrement; }
 
     D3D12_CPU_DESCRIPTOR_HANDLE     GetCPUDescriptorHandleFromIndex(UINT index) const;
     D3D12_GPU_DESCRIPTOR_HANDLE     GetGPUDescriptorHandleFromIndex(UINT index) const;
@@ -37,7 +37,7 @@ private:
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle = {};
     D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle = {};
-    UINT                            descriptorHandleSize = 0;
+    UINT                            handleIncrement = 0;
     UINT                            maxDescriptorCount = 0;
 };
 
@@ -45,14 +45,14 @@ BE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE D3D12ShaderVisibleDescriptorHeap::GetCPUDe
     assert(descriptorHeap);
     assert(index < maxDescriptorCount);
 
-    return CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, index, descriptorHandleSize);
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, index, handleIncrement);
 }
 
 BE_INLINE D3D12_GPU_DESCRIPTOR_HANDLE D3D12ShaderVisibleDescriptorHeap::GetGPUDescriptorHandleFromIndex(UINT index) const {
     assert(descriptorHeap);
     assert(index < maxDescriptorCount);
 
-    return CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, index, descriptorHandleSize);
+    return CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, index, handleIncrement);
 }
 
 struct D3D12DescriptorHeapRegion {
@@ -115,13 +115,13 @@ BE_INLINE D3D12_GPU_DESCRIPTOR_HANDLE D3D12BindlessDescriptorAllocator::GetGPUDe
     return region.GetGPUDescriptorHandleFromOffset(index);
 }
 
-class D3D12DescriptorTablePool {
+class D3D12DescriptorRangePool {
     friend class D3D12Renderer;
 
 public:
-    D3D12DescriptorTablePool() = default;
-    D3D12DescriptorTablePool(const D3D12DescriptorHeapRegion &region) { Init(region); }
-    ~D3D12DescriptorTablePool() { Shutdown(); }
+    D3D12DescriptorRangePool() = default;
+    D3D12DescriptorRangePool(const D3D12DescriptorHeapRegion &region) { Init(region); }
+    ~D3D12DescriptorRangePool() { Shutdown(); }
 
     void                            Init(const D3D12DescriptorHeapRegion &region);
     void                            Shutdown();
@@ -132,7 +132,7 @@ public:
     bool                            AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
 
     ID3D12DescriptorHeap *          GetDescriptorHeap() const { return region.descriptorHeap->GetDescriptorHeap(); }
-    UINT                            GetDescriptorHandleSize() const { return region.descriptorHeap->GetDescriptorHandleSize(); }
+    UINT                            GetHandleIncrement() const { return region.descriptorHeap->GetHandleIncrement(); }
 
 private:
     D3D12DescriptorHeapRegion       region = {};

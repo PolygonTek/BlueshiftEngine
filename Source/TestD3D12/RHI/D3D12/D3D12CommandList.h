@@ -21,8 +21,8 @@
 
 class D3D12Renderer;
 class D3D12CommandListPool;
-class D3D12RootBindingData;
-class D3D12DescriptorTablePool;
+class D3D12DescriptorRangePool;
+struct D3D12RootBindingData;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ class D3D12DescriptorTablePool;
     - 닫힌 커맨드 리스트는 Execute() 함수를 호출하여 실행할 수 있다.
     - 각종 상태 변수들은 커맨드 리스트 단위로 캐싱한다. (같은 상태로 중복 세팅 코드가 호출되는 것을 방지를 위함)
     - 커맨드 리스트는 자신을 관리하는 커맨드 리스트 풀의 D3D12RootBindingData 객체를 참조하여, 같은 풀에서 할당한 커맨드 리스트들이 동일한 바인딩 데이터를 공유하도록 한다.
-    - dirtyMask 의 각 비트는 루트 파라미터 하나에 대응하며, 그래픽스/컴퓨트 루트 시그니쳐 설정 이후 해당 루트 파라미터의 바인딩 상태가 변경되어 현재 command list 에 commit 되어야 함을 나타낸다.
+    - dirtyMask 의 각 비트는 루트 파라미터 하나에 대응하며, 그래픽스/컴퓨트 루트 시그니처 설정 이후 해당 루트 파라미터의 바인딩 상태가 변경되어 현재 command list 에 commit 되어야 함을 나타낸다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -62,9 +62,9 @@ public:
 
     D3D12RootBindingData *          GetRootBindingData() const;
 
-    void                            SetDescriptorTablePools(D3D12DescriptorTablePool *resDescriptorTablePool, D3D12DescriptorTablePool *samDescriptorTablePool);
-    D3D12DescriptorTablePool *      GetResDescriptorTablePool() const { return resDescriptorTablePool; }
-    D3D12DescriptorTablePool *      GetSamDescriptorTablePool() const { return samDescriptorTablePool; }
+    void                            SetDescriptorTablePools(D3D12DescriptorRangePool *resourceDescriptorRangePool, D3D12DescriptorRangePool *samplerDescriptorRangePool);
+    D3D12DescriptorRangePool *      GetResourceDescriptorRangePool() const { return resourceDescriptorRangePool; }
+    D3D12DescriptorRangePool *      GetSamplerDescriptorRangePool() const { return samplerDescriptorRangePool; }
 
                                     // NOTE: PIX_SCOPED_EVENT 매크로에서 사용하기 위해, 포인터가 아닌 포인터 참조를 리턴하도록 한다.
     ID3D12CommandList *&            GetCommandList() { return commandList; }
@@ -80,7 +80,9 @@ public:
     void                            SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology);
     void                            SetVertexBuffers(int startSlot, int count, const RHI::VertexBuffer *vertexBuffers[]);
     void                            SetVertexBuffer(int slot, const RHI::VertexBuffer *vertexBuffer);
+    void                            SetVertexBufferView(int slot, const D3D12_VERTEX_BUFFER_VIEW &vbv);
     void                            SetIndexBuffer(const RHI::IndexBuffer *indexBuffer);
+    void                            SetIndexBufferView(const D3D12_INDEX_BUFFER_VIEW &ibv);
     void                            SetBlendFactor(const BE1::Color4 &rgba);
     void                            SetStencilRef(uint32_t value);
     void                            SetShadingRate(RHI::ShadingRate shadingRate);
@@ -100,31 +102,34 @@ private:
     const D3D12PipelineState *      currentPSO = nullptr;
     uint64_t                        graphicsRootParametersDirtyMask = 0;
     uint64_t                        computeRootParametersDirtyMask = 0;
-    D3D12DescriptorTablePool *      resDescriptorTablePool = nullptr;
-    D3D12DescriptorTablePool *      samDescriptorTablePool = nullptr;
+    D3D12DescriptorRangePool *      resourceDescriptorRangePool = nullptr;
+    D3D12DescriptorRangePool *      samplerDescriptorRangePool = nullptr;
     ID3D12Resource *                shadingRateImage = nullptr;
     BE1::Array<D3D12_RESOURCE_BARRIER> endRenderPassBarriers;
-    ID3D12RootSignature *           bindlessRootSignature = nullptr;
-    D3D12_GPU_DESCRIPTOR_HANDLE     bindlessResourceDescriptorGpuBaseHandle = {};
-    D3D12_GPU_DESCRIPTOR_HANDLE     bindlessSamplerDescriptorGpuBaseHandle = {};
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
 
-    BE1::StaticArray<ID3D12DescriptorHeap*, 16> cachedRootDescriptorHeaps;
-    ID3D12RootSignature *           cachedGraphicsRootSignature = nullptr;
-    ID3D12RootSignature *           cachedComputeRootSignature = nullptr;
-    D3D12_PRIMITIVE_TOPOLOGY        cachedPrimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    D3D12_VERTEX_BUFFER_VIEW        cachedVertexBufferViews[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
-    D3D12_INDEX_BUFFER_VIEW         cachedIndexBufferView = {};
-    uint32_t                        cachedVertexBufferValidMask = 0;
-    bool                            cachedIndexBufferValid = false;
-    bool                            cachedBlendFactorValid = false;
-    bool                            cachedStencilRefValid = false;
-    bool                            cachedShadingRateValid = false;
-    BE1::Color4                     cachedBlendFactor = BE1::Color4(1, 1, 1, 1);
-    uint32_t                        cachedStencilRef = 0;
-    D3D12_SHADING_RATE              cachedShadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
+    struct Cache {
+        BE1::StaticArray<ID3D12DescriptorHeap *, 2> rootDescriptorHeaps;
+        ID3D12RootSignature *       graphicsRootSignature = nullptr;
+        ID3D12RootSignature *       computeRootSignature = nullptr;
+        ID3D12RootSignature *       bindlessRootSignature = nullptr;
+        D3D12_GPU_DESCRIPTOR_HANDLE bindlessResourceDescriptorGpuBaseHandle = {};
+        D3D12_GPU_DESCRIPTOR_HANDLE bindlessSamplerDescriptorGpuBaseHandle = {};
+        D3D12_PRIMITIVE_TOPOLOGY    primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+        D3D12_VERTEX_BUFFER_VIEW    vertexBufferViews[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
+        D3D12_INDEX_BUFFER_VIEW     indexBufferView = {};
+        uint32_t                    vertexBufferValidMask = 0;
+        bool                        indexBufferValid = false;
+        bool                        blendFactorValid = false;
+        bool                        stencilRefValid = false;
+        bool                        shadingRateValid = false;
+        BE1::Color4                 blendFactor = BE1::Color4(1, 1, 1, 1);
+        uint32_t                    stencilRef = 0;
+        D3D12_SHADING_RATE          shadingRate = D3D12_SHADING_RATE::D3D12_SHADING_RATE_1X1;
+    };
+    Cache                           cache;
 #endif
 
     bool                            isSecondary = false;
@@ -135,15 +140,17 @@ BE_INLINE void D3D12CommandList::Close() {
     assert(SUCCEEDED(hr));
 }
 
-BE_INLINE void D3D12CommandList::SetDescriptorTablePools(D3D12DescriptorTablePool *resDescriptorTablePool, D3D12DescriptorTablePool *samDescriptorTablePool) {
-    this->resDescriptorTablePool = resDescriptorTablePool;
-    this->samDescriptorTablePool = samDescriptorTablePool;
+BE_INLINE void D3D12CommandList::SetDescriptorTablePools(D3D12DescriptorRangePool *resourceDescriptorRangePool, D3D12DescriptorRangePool *samplerDescriptorRangePool) {
+    this->resourceDescriptorRangePool = resourceDescriptorRangePool;
+    this->samplerDescriptorRangePool = samplerDescriptorRangePool;
 }
 
 BE_INLINE void D3D12CommandList::InvalidateRootSignatureDependentBindings() {
-    bindlessRootSignature = nullptr;
-    bindlessResourceDescriptorGpuBaseHandle = {};
-    bindlessSamplerDescriptorGpuBaseHandle = {};
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    cache.bindlessRootSignature = nullptr;
+    cache.bindlessResourceDescriptorGpuBaseHandle = {};
+    cache.bindlessSamplerDescriptorGpuBaseHandle = {};
+#endif
 }
 
 BE_INLINE void D3D12CommandList::InvalidateStateCache(bool invalidateDescriptorHeaps) {
@@ -154,16 +161,16 @@ BE_INLINE void D3D12CommandList::InvalidateStateCache(bool invalidateDescriptorH
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (invalidateDescriptorHeaps) {
-        cachedRootDescriptorHeaps.SetCount(0);
+        cache.rootDescriptorHeaps.SetCount(0);
     }
-    cachedGraphicsRootSignature = nullptr;
-    cachedComputeRootSignature = nullptr;
-    cachedPrimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    cachedVertexBufferValidMask = 0;
-    cachedIndexBufferValid = false;
-    cachedBlendFactorValid = false;
-    cachedStencilRefValid = false;
-    cachedShadingRateValid = false;
+    cache.graphicsRootSignature = nullptr;
+    cache.computeRootSignature = nullptr;
+    cache.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY::D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    cache.vertexBufferValidMask = 0;
+    cache.indexBufferValid = false;
+    cache.blendFactorValid = false;
+    cache.stencilRefValid = false;
+    cache.shadingRateValid = false;
 #endif
 }
 
@@ -180,11 +187,11 @@ BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
 BE_INLINE bool D3D12CommandList::IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]) {
-    if (numDescriptorHeaps != cachedRootDescriptorHeaps.Count()) {
+    if (numDescriptorHeaps != cache.rootDescriptorHeaps.Count()) {
         return false;
     }
     for (int i = 0; i < numDescriptorHeaps; ++i) {
-        if (descriptorHeaps[i] != cachedRootDescriptorHeaps[i]) {
+        if (descriptorHeaps[i] != cache.rootDescriptorHeaps[i]) {
             return false;
         }
     }
@@ -198,9 +205,9 @@ BE_INLINE void D3D12CommandList::SetDescriptorHeaps(int numDescriptorHeaps, ID3D
         return;
     }
 
-    cachedRootDescriptorHeaps.SetCount(numDescriptorHeaps);
+    cache.rootDescriptorHeaps.SetCount(numDescriptorHeaps);
     for (int i = 0; i < numDescriptorHeaps; ++i) {
-        cachedRootDescriptorHeaps[i] = descriptorHeaps[i];
+        cache.rootDescriptorHeaps[i] = descriptorHeaps[i];
     }
 #endif
     GetGraphicsCommandList()->SetDescriptorHeaps(numDescriptorHeaps, descriptorHeaps);
@@ -213,33 +220,33 @@ BE_INLINE void D3D12CommandList::SetDescriptorHeaps(int numDescriptorHeaps, ID3D
     computeRootParametersDirtyMask = 0;
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    cachedGraphicsRootSignature = nullptr;
-    cachedComputeRootSignature = nullptr;
+    cache.graphicsRootSignature = nullptr;
+    cache.computeRootSignature = nullptr;
 #endif
 }
 
 BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature) {
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (graphicsRootSignature == cachedGraphicsRootSignature) {
+    if (graphicsRootSignature == cache.graphicsRootSignature) {
         return;
     }
-    cachedGraphicsRootSignature = graphicsRootSignature;
+    cache.graphicsRootSignature = graphicsRootSignature;
 #endif
     GetGraphicsCommandList()->SetGraphicsRootSignature(graphicsRootSignature);
     InvalidateRootSignatureDependentBindings();
-    graphicsRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
+    graphicsRootParametersDirtyMask = 0; // 루트 시그니처를 바꿀 때 마다 리셋
 }
 
 BE_INLINE void D3D12CommandList::SetComputeRootSignature(ID3D12RootSignature *computeRootSignature) {
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (computeRootSignature == cachedComputeRootSignature) {
+    if (computeRootSignature == cache.computeRootSignature) {
         return;
     }
-    cachedComputeRootSignature = computeRootSignature;
+    cache.computeRootSignature = computeRootSignature;
 #endif
     GetGraphicsCommandList()->SetComputeRootSignature(computeRootSignature);
     InvalidateRootSignatureDependentBindings();
-    computeRootParametersDirtyMask = 0; // 루트 시그니쳐를 바꿀 때 마다 리셋
+    computeRootParametersDirtyMask = 0; // 루트 시그니처를 바꿀 때 마다 리셋
 }
 
 BE_INLINE void D3D12CommandList::SetPipelineState(const RHI::PipelineState *pipelineState) {
@@ -266,10 +273,10 @@ BE_INLINE void D3D12CommandList::SetPipelineState(const RHI::PipelineState *pipe
 
 BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology) {
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedPrimitiveTopology == primitiveTopology) {
+    if (cache.primitiveTopology == primitiveTopology) {
         return;
     }
-    cachedPrimitiveTopology = primitiveTopology;
+    cache.primitiveTopology = primitiveTopology;
 #endif
     GetGraphicsCommandList()->IASetPrimitiveTopology(primitiveTopology);
 }
@@ -286,12 +293,12 @@ BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int count, cons
         int slot = startSlot + i;
         const uint32_t slotMask = uint32_t(1) << slot;
 
-        if (!(cachedVertexBufferValidMask & slotMask) ||
-            cachedVertexBufferViews[slot].BufferLocation != vbv[i].BufferLocation ||
-            cachedVertexBufferViews[slot].SizeInBytes != vbv[i].SizeInBytes ||
-            cachedVertexBufferViews[slot].StrideInBytes != vbv[i].StrideInBytes) {
-            cachedVertexBufferViews[slot] = vbv[i];
-            cachedVertexBufferValidMask |= slotMask;
+        if (!(cache.vertexBufferValidMask & slotMask) ||
+            cache.vertexBufferViews[slot].BufferLocation != vbv[i].BufferLocation ||
+            cache.vertexBufferViews[slot].SizeInBytes != vbv[i].SizeInBytes ||
+            cache.vertexBufferViews[slot].StrideInBytes != vbv[i].StrideInBytes) {
+            cache.vertexBufferViews[slot] = vbv[i];
+            cache.vertexBufferValidMask |= slotMask;
             needsUpdate = true;
         }
     }
@@ -304,16 +311,20 @@ BE_INLINE void D3D12CommandList::SetVertexBuffers(int startSlot, int count, cons
 }
 
 BE_INLINE void D3D12CommandList::SetVertexBuffer(int slot, const RHI::VertexBuffer *vertexBuffer) {
-    const D3D12_VERTEX_BUFFER_VIEW &vbv = static_cast<const D3D12VertexBuffer *>(vertexBuffer)->vbv;
+    SetVertexBufferView(slot, static_cast<const D3D12VertexBuffer *>(vertexBuffer)->vbv);
+}
+
+BE_INLINE void D3D12CommandList::SetVertexBufferView(int slot, const D3D12_VERTEX_BUFFER_VIEW &vbv) {
+    assert(slot >= 0 && slot < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT);
 
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     const uint32_t slotMask = uint32_t(1) << slot;
-    if (!(cachedVertexBufferValidMask & slotMask) ||
-        cachedVertexBufferViews[slot].BufferLocation != vbv.BufferLocation ||
-        cachedVertexBufferViews[slot].SizeInBytes != vbv.SizeInBytes ||
-        cachedVertexBufferViews[slot].StrideInBytes != vbv.StrideInBytes) {
-        cachedVertexBufferViews[slot] = vbv;
-        cachedVertexBufferValidMask |= slotMask;
+    if (!(cache.vertexBufferValidMask & slotMask) ||
+        cache.vertexBufferViews[slot].BufferLocation != vbv.BufferLocation ||
+        cache.vertexBufferViews[slot].SizeInBytes != vbv.SizeInBytes ||
+        cache.vertexBufferViews[slot].StrideInBytes != vbv.StrideInBytes) {
+        cache.vertexBufferViews[slot] = vbv;
+        cache.vertexBufferValidMask |= slotMask;
         GetGraphicsCommandList()->IASetVertexBuffers(slot, 1, &vbv);
     }
 #else
@@ -322,15 +333,17 @@ BE_INLINE void D3D12CommandList::SetVertexBuffer(int slot, const RHI::VertexBuff
 }
 
 BE_INLINE void D3D12CommandList::SetIndexBuffer(const RHI::IndexBuffer *indexBuffer) {
-    const D3D12_INDEX_BUFFER_VIEW &ibv = static_cast<const D3D12IndexBuffer *>(indexBuffer)->ibv;
+    SetIndexBufferView(static_cast<const D3D12IndexBuffer *>(indexBuffer)->ibv);
+}
 
+BE_INLINE void D3D12CommandList::SetIndexBufferView(const D3D12_INDEX_BUFFER_VIEW &ibv) {
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (!cachedIndexBufferValid ||
-        cachedIndexBufferView.BufferLocation != ibv.BufferLocation ||
-        cachedIndexBufferView.SizeInBytes != ibv.SizeInBytes ||
-        cachedIndexBufferView.Format != ibv.Format) {
-        cachedIndexBufferView = ibv;
-        cachedIndexBufferValid = true;
+    if (!cache.indexBufferValid ||
+        cache.indexBufferView.BufferLocation != ibv.BufferLocation ||
+        cache.indexBufferView.SizeInBytes != ibv.SizeInBytes ||
+        cache.indexBufferView.Format != ibv.Format) {
+        cache.indexBufferView = ibv;
+        cache.indexBufferValid = true;
         GetGraphicsCommandList()->IASetIndexBuffer(&ibv);
     }
 #else
@@ -340,22 +353,22 @@ BE_INLINE void D3D12CommandList::SetIndexBuffer(const RHI::IndexBuffer *indexBuf
 
 BE_INLINE void D3D12CommandList::SetBlendFactor(const BE1::Color4 &rgba) {
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedBlendFactorValid && cachedBlendFactor == rgba) {
+    if (cache.blendFactorValid && cache.blendFactor == rgba) {
         return;
     }
-    cachedBlendFactor = rgba;
-    cachedBlendFactorValid = true;
+    cache.blendFactor = rgba;
+    cache.blendFactorValid = true;
 #endif
     GetGraphicsCommandList()->OMSetBlendFactor(rgba.Ptr());
 }
 
 BE_INLINE void D3D12CommandList::SetStencilRef(uint32_t value) {
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedStencilRefValid && cachedStencilRef == value) {
+    if (cache.stencilRefValid && cache.stencilRef == value) {
         return;
     }
-    cachedStencilRef = value;
-    cachedStencilRefValid = true;
+    cache.stencilRef = value;
+    cache.stencilRefValid = true;
 #endif
     GetGraphicsCommandList()->OMSetStencilRef(value);
 }

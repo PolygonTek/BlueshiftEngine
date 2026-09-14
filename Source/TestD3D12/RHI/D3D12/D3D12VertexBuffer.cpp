@@ -55,3 +55,16 @@ void D3D12Renderer::SetVertexBuffer(RHI::CommandList *commandList, int slot, con
 
     _commandList->SetVertexBuffer(slot, vertexBuffer);
 }
+
+void D3D12Renderer::SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::Buffer *buffer, uint32_t stride, uint64_t offset, uint32_t size) {
+    const D3D12Buffer *_buffer = static_cast<const D3D12Buffer *>(buffer);
+    assert(offset <= _buffer->size);
+    assert(size <= _buffer->size - offset);
+
+    D3D12_VERTEX_BUFFER_VIEW view = {};
+    view.BufferLocation = _buffer->GetResource()->GetGPUVirtualAddress() + _buffer->resourceOffset + offset;
+    view.StrideInBytes = stride;
+    view.SizeInBytes = size;
+
+    static_cast<D3D12CommandList *>(commandList)->SetVertexBufferView(slot, view);
+}

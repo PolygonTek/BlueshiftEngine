@@ -110,23 +110,23 @@ SamplerState GetSampler(uint index) { return SamplerDescriptorHeap[index]; }
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 31, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 32, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 33, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 40, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 41, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 42, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 43, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 44, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 45, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 46, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 47, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 48, flags = DESCRIPTORS_VOLATILE)), " \
+    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 49, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 50, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 51, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 52, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 53, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 54, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 55, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 56, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 57, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 58, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 59, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 60, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 61, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 62, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 63, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 64, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(UAV(u0, numDescriptors = unbounded, space = 65, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(Sampler(s0, numDescriptors = unbounded, space = 66, flags = DESCRIPTORS_VOLATILE)), "
+    "DescriptorTable(Sampler(s0, numDescriptors = unbounded, space = 56, flags = DESCRIPTORS_VOLATILE)), "
 
 Texture1D<float4> bindlessTexture1DTable[] : register(t0, space1);
 Texture1D<half4> bindlessTexture1DHalf4Table[] : register(t0, space2);
@@ -161,23 +161,23 @@ StructuredBuffer<ShaderPointLight> bindlessShaderPointLightTable[] : register(t0
 StructuredBuffer<ShaderSpotLight> bindlessShaderSpotLightTable[] : register(t0, space30);
 StructuredBuffer<ShaderBoxDirLight> bindlessShaderBoxDirLightTable[] : register(t0, space31);
 StructuredBuffer<ShaderLightRef> bindlessShaderLightRefTable[] : register(t0, space32);
-RWTexture2D<float4> bindlessRWTexture2DTable[] : register(u0, space50);
-RWTexture2D<uint> bindlessRWTexture2DUIntTable[] : register(u0, space51);
-RWTexture2D<uint2> bindlessRWTexture2DUInt2Table[] : register(u0, space52);
-RWTexture2D<uint3> bindlessRWTexture2DUInt3Table[] : register(u0, space53);
-RWTexture2D<uint4> bindlessRWTexture2DUInt4Table[] : register(u0, space54);
-RWTexture3D<float4> bindlessRWTexture3DTable[] : register(u0, space55);
-RWTexture2DArray<float4> bindlessRWTexture2DArrayTable[] : register(u0, space56);
-RWByteAddressBuffer bindlessRWBufferTable[] : register(u0, space57);
-RWBuffer<float> bindlessRWBufferFloatTable[] : register(u0, space58);
-RWBuffer<float2> bindlessRWBufferFloat2Table[] : register(u0, space59);
-RWBuffer<float3> bindlessRWBufferFloat3Table[] : register(u0, space60);
-RWBuffer<float4> bindlessRWBufferFloat4Table[] : register(u0, space61);
-RWBuffer<uint> bindlessRWBufferUIntTable[] : register(u0, space62);
-RWBuffer<uint2> bindlessRWBufferUInt2Table[] : register(u0, space63);
-RWBuffer<uint3> bindlessRWBufferUInt3Table[] : register(u0, space64);
-RWBuffer<uint4> bindlessRWBufferUInt4Table[] : register(u0, space65);
-SamplerState bindlessSamplerTable[] : register(s0, space66);
+RWTexture2D<float4> bindlessRWTexture2DTable[] : register(u0, space40);
+RWTexture2D<uint> bindlessRWTexture2DUIntTable[] : register(u0, space41);
+RWTexture2D<uint2> bindlessRWTexture2DUInt2Table[] : register(u0, space42);
+RWTexture2D<uint3> bindlessRWTexture2DUInt3Table[] : register(u0, space43);
+RWTexture2D<uint4> bindlessRWTexture2DUInt4Table[] : register(u0, space44);
+RWTexture3D<float4> bindlessRWTexture3DTable[] : register(u0, space45);
+RWTexture2DArray<float4> bindlessRWTexture2DArrayTable[] : register(u0, space46);
+RWByteAddressBuffer bindlessRWBufferTable[] : register(u0, space47);
+RWBuffer<float> bindlessRWBufferFloatTable[] : register(u0, space48);
+RWBuffer<float2> bindlessRWBufferFloat2Table[] : register(u0, space49);
+RWBuffer<float3> bindlessRWBufferFloat3Table[] : register(u0, space50);
+RWBuffer<float4> bindlessRWBufferFloat4Table[] : register(u0, space51);
+RWBuffer<uint> bindlessRWBufferUIntTable[] : register(u0, space52);
+RWBuffer<uint2> bindlessRWBufferUInt2Table[] : register(u0, space53);
+RWBuffer<uint3> bindlessRWBufferUInt3Table[] : register(u0, space54);
+RWBuffer<uint4> bindlessRWBufferUInt4Table[] : register(u0, space55);
+SamplerState bindlessSamplerTable[] : register(s0, space56);
 
 Texture1D<float4> GetTexture1D(uint index) { return bindlessTexture1DTable[index]; }
 Texture1D<half4> GetTexture1DHalf4(uint index) { return bindlessTexture1DHalf4Table[index]; }

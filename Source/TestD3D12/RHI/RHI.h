@@ -1188,12 +1188,14 @@ namespace RHI {
         virtual void                    DestroyQueryHeap(QueryHeap *queryHeap, bool immediate = false) = 0;
 
         virtual void                    SetVertexBuffer(CommandList *commandList, int slot, const VertexBuffer *vertexBuffer) = 0;
+        virtual void                    SetVertexBuffer(CommandList *commandList, int slot, const Buffer *buffer, uint32_t stride, uint64_t offset, uint32_t size) = 0;
         virtual void                    SetIndexBuffer(CommandList *commandList, const IndexBuffer *indexBuffer) = 0;
-        virtual void                    SetConstantBuffer(CommandList *commandList, int shaderRegister, const ConstantBuffer *constantBuffer) = 0;
-        virtual void                    SetConstants(CommandList *commandList, int shaderRegister, const void *data, uint32_t size, uint32_t offset) = 0;
-        virtual void                    SetTexture(CommandList *commandList, int shaderRegister, bool shaderWritable, const Texture *texture, ViewID viewID = ViewID::PrimaryID) = 0;
-        virtual void                    SetBuffer(CommandList *commandList, int shaderRegister, bool shaderWritable, const Buffer *buffer, ViewID viewID = ViewID::PrimaryID) = 0;
-        virtual void                    SetSampler(CommandList *commandList, int shaderRegister, Sampler *sampler) = 0;
+        virtual void                    SetIndexBuffer(CommandList *commandList, const Buffer *buffer, uint32_t indexSize, uint64_t offset, uint32_t size) = 0;
+        virtual void                    SetConstantBuffer(CommandList *commandList, uint32_t shaderRegister, const ConstantBuffer *constantBuffer) = 0;
+        virtual void                    SetConstants(CommandList *commandList, uint32_t shaderRegister, const void *data, uint32_t size, uint32_t offset) = 0;
+        virtual void                    SetTexture(CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const Texture *texture, ViewID viewID = ViewID::PrimaryID) = 0;
+        virtual void                    SetBuffer(CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const Buffer *buffer, ViewID viewID = ViewID::PrimaryID) = 0;
+        virtual void                    SetSampler(CommandList *commandList, uint32_t shaderRegister, Sampler *sampler) = 0;
         virtual void                    SetPSO(CommandList *commandList, const PipelineState *pipelineState) = 0;
         virtual void                    SetBlendFactor(CommandList *commandList, const BE1::Color4 &rgba) = 0;
         virtual void                    SetStencilRef(CommandList *commandList, uint32_t value) = 0;

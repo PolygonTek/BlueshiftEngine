@@ -107,23 +107,23 @@ private:
     D3D12CommandListPool *          graphicsCommandListPool = nullptr;
     D3D12CommandListPool *          computeCommandListPool = nullptr;
     D3D12RootBindingData            rootBindingData = {}; // 루트 파라미터들에 대한 바인딩 리소스 정보
-    D3D12DescriptorTablePool *      resDescriptorTablePool = nullptr; // CBV/SRV/UAV 디스크립터 테이블 풀
-    D3D12DescriptorTablePool *      samDescriptorTablePool = nullptr; // 샘플러 디스크립터 테이블 풀
+    D3D12DescriptorRangePool *      resourceDescriptorRangePool = nullptr; // Common resource (CBV/SRV/UAV) 디스크립터 테이블 풀
+    D3D12DescriptorRangePool *      samplerDescriptorRangePool = nullptr; // Sampler 디스크립터 테이블 풀
 
 };
 
 BE_INLINE RHI::CommandList *D3D12FrameThreadData::AllocGraphicsCommandList(RHI::CommandListKind kind) {
     D3D12CommandList *commandList = graphicsCommandListPool->Alloc(kind);
 
-    // 커맨드 리스트에서 사용할 디스크립터 테이블 풀을 지정한다.
-    commandList->SetDescriptorTablePools(resDescriptorTablePool, samDescriptorTablePool);
+    // 커맨드 리스트에서 사용할 디스크립터 레인지 풀을 지정한다.
+    commandList->SetDescriptorTablePools(resourceDescriptorRangePool, samplerDescriptorRangePool);
     return commandList;
 }
 
 BE_INLINE RHI::CommandList *D3D12FrameThreadData::AllocComputeCommandList() {
     D3D12CommandList *commandList = computeCommandListPool->Alloc();
 
-    // 커맨드 리스트에서 사용할 디스크립터 테이블 풀을 지정한다.
-    commandList->SetDescriptorTablePools(resDescriptorTablePool, samDescriptorTablePool);
+    // 커맨드 리스트에서 사용할 디스크립터 레인지 풀을 지정한다.
+    commandList->SetDescriptorTablePools(resourceDescriptorRangePool, samplerDescriptorRangePool);
     return commandList;
 }

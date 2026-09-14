@@ -74,7 +74,7 @@ private:
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle = {};
     D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle = {};
-    UINT                            descriptorHandleSize;
+    UINT                            handleIncrement;
     UINT                            maxDescriptorCount;
     const char *                    heapTypeName = "Unknown";
     BE1::IDAllocator                idAllocator;

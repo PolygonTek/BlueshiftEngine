@@ -17,7 +17,6 @@
 #include "D3D12Buffer.h"
 #include "D3D12CommandList.h"
 #include "D3D12DescriptorPool.h"
-#include "D3D12FrameThreadData.h"
 
 static uint64_t D3D12BufferViewByteStride(DXGI_FORMAT format, uint32_t structureByteStride, bool raw) {
     if (raw) {
@@ -59,7 +58,7 @@ void D3D12Buffer::Release() {
 
         for (const D3D12SRVEntry &srvEntry : srvEntries) {
             if (srvEntry.cpuDescriptorHandle.ptr != 0) {
-                D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
+                D3D12Renderer::GetRenderer()->resourceStagingDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
             }
             if (srvEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
                 D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(srvEntry.bindlessIndex);
@@ -68,7 +67,7 @@ void D3D12Buffer::Release() {
 
         for (const D3D12UAVEntry &uavEntry : uavEntries) {
             if (uavEntry.cpuDescriptorHandle.ptr != 0) {
-                D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
+                D3D12Renderer::GetRenderer()->resourceStagingDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
             }
             if (uavEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
                 D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(uavEntry.bindlessIndex);
@@ -119,22 +118,18 @@ uint32_t D3D12Buffer::GetViewCount(RHI::ViewType viewType) const {
 }
 
 RHI::ViewID D3D12Buffer::GetViewID(RHI::ViewType viewType, uint32_t viewIndex) const {
-    auto makeViewID = [](uint32_t value) -> RHI::ViewID {
-        RHI::ViewID viewID;
-        viewID.value = value;
-        return viewID;
-    };
-
     if (viewType == RHI::ViewType::SRV) {
-        for (uint32_t entryIndex = 0; entryIndex < uint32_t(srvEntries.Count()); entryIndex++) {
+        const uint32_t numEntries = srvEntries.Count();
+        for (uint32_t entryIndex = 0; entryIndex < numEntries; entryIndex++) {
             if (srvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && viewIndex-- == 0) {
-                return makeViewID(entryIndex);
+                return RHI::ViewID{ entryIndex };
             }
         }
     } else if (viewType == RHI::ViewType::UAV) {
-        for (uint32_t entryIndex = 0; entryIndex < uint32_t(uavEntries.Count()); entryIndex++) {
+        const uint32_t numEntries = uavEntries.Count();
+        for (uint32_t entryIndex = 0; entryIndex < numEntries; entryIndex++) {
             if (uavEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && viewIndex-- == 0) {
-                return makeViewID(entryIndex);
+                return RHI::ViewID{ entryIndex };
             }
         }
     }
@@ -385,6 +380,10 @@ bool D3D12Renderer::ExecuteUploadBuffer(D3D12ResourceCommandContext &commandCont
     D3D12_RESOURCE_STATES afterResourceState = D3D12_RESOURCE_STATE_COMMON;
     if (BE1::HasAnyFlag(buffer->flags, RHI::BufferFlag::ConstantBuffer | RHI::BufferFlag::VertexBuffer)) {
         afterResourceState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+        if (BE1::HasFlag(buffer->flags, RHI::BufferFlag::ShaderResource)) {
+            // 업로드 후 vertex/constant buffer 바인딩과 CS 읽기에 공통으로 사용할 읽기 상태를 유지한다.
+            afterResourceState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        }
     } else if (BE1::HasFlag(buffer->flags, RHI::BufferFlag::IndexBuffer)) {
         afterResourceState = D3D12_RESOURCE_STATE_INDEX_BUFFER;
     } else if (BE1::HasFlag(buffer->flags, RHI::BufferFlag::UnorderedAccess)) {
@@ -424,7 +423,7 @@ void D3D12Renderer::DestroyView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI
         }
         D3D12SRVEntry *srvEntryPtr = &_buffer->srvEntries[viewID.value];
         if (srvEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            resStagingDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
+            resourceStagingDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
         }
         if (srvEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             FreeBindlessResourceDescriptor(srvEntryPtr->bindlessIndex);
@@ -439,7 +438,7 @@ void D3D12Renderer::DestroyView(RHI::Buffer *buffer, RHI::ViewType viewType, RHI
         }
         D3D12UAVEntry *uavEntryPtr = &_buffer->uavEntries[viewID.value];
         if (uavEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            resStagingDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
+            resourceStagingDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
         }
         if (uavEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             FreeBindlessResourceDescriptor(uavEntryPtr->bindlessIndex);
@@ -501,7 +500,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     newSrvEntry.viewDesc.Buffer.NumElements = viewSize / byteStride;
 
     // 디스크립터 슬롯 할당
-    if (!resStagingDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
+    if (!resourceStagingDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
@@ -516,7 +515,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     // bindless index 할당
     newSrvEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newSrvEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        resStagingDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
+        resourceStagingDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
         return RHI::ViewID::InvalidID;
     }
 
@@ -590,7 +589,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
     newUavEntry.viewDesc.Buffer.NumElements = viewSize / byteStride;
 
     // 디스크립터 슬롯 할당
-    if (!resStagingDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
+    if (!resourceStagingDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
@@ -605,7 +604,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
     // bindless index 할당
     newUavEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newUavEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        resStagingDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
+        resourceStagingDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
         return RHI::ViewID::InvalidID;
     }
 
@@ -716,13 +715,13 @@ bool D3D12Renderer::ExecuteUploadBufferSubData(D3D12ResourceCommandContext &comm
     return true;
 }
 
-void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID) {
+void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     D3D12RootBindingData *rootBindingData = _commandList->GetRootBindingData();
 
     const D3D12Buffer *_buffer = static_cast<const D3D12Buffer *>(buffer);
 
-    // 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
+    // 현재 세팅된 PSO 의 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
     const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
     uint8_t rootParameterIndex = 0xFF;
     uint8_t indexInTable = 0xFF;
@@ -745,10 +744,10 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int shaderRegister,
         const D3D12UAVEntry &uavEntry = _buffer->uavEntries[viewID.value];
 
         // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
-        indexInTable = binder.descriptorTableIndexLUT.uav[shaderRegister];
+        indexInTable = binder.descriptorIndexInTableLUT.uav[shaderRegister];
         if (indexInTable != 0xFF) {
-            rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = uavEntry.cpuDescriptorHandle;
-            if (rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable].ptr == 0) {
+            rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = uavEntry.cpuDescriptorHandle;
+            if (rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid UAV descriptor handle\n");
                 return;
             }
@@ -778,10 +777,10 @@ void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, int shaderRegister,
         const D3D12SRVEntry &srvEntry = _buffer->srvEntries[viewID.value];
 
         // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
-        indexInTable = binder.descriptorTableIndexLUT.srv[shaderRegister];
+        indexInTable = binder.descriptorIndexInTableLUT.srv[shaderRegister];
         if (indexInTable != 0xFF) {
-            rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = srvEntry.cpuDescriptorHandle;
-            if (rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable].ptr == 0) {
+            rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = srvEntry.cpuDescriptorHandle;
+            if (rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid SRV descriptor handle\n");
                 return;
             }

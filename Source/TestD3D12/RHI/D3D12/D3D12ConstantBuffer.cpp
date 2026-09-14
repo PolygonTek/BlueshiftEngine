@@ -17,12 +17,11 @@
 #include "D3D12ConstantBuffer.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandList.h"
-#include "D3D12FrameThreadData.h"
 
 void D3D12ConstantBuffer::Release() {
     if (dynamicBlockIndex == -1) {
         if (descriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(descriptorHandle);
+            D3D12Renderer::GetRenderer()->resourceStagingDescriptorPool->Free(descriptorHandle);
             descriptorHandle = {};
         }
     }
@@ -48,7 +47,7 @@ RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage,
 
     // 디스크립터 핸들 생성
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (!resStagingDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+    if (!resourceStagingDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         DestroyBuffer(buffer);
         return nullptr;
     }
@@ -76,11 +75,11 @@ void D3D12Renderer::DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, b
     }
 }
 
-void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, int shaderRegister, const RHI::ConstantBuffer *constantBuffer) {
+void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, uint32_t shaderRegister, const RHI::ConstantBuffer *constantBuffer) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     D3D12RootBindingData *rootBindingData = _commandList->GetRootBindingData();
 
-    // 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
+    // 현재 세팅된 PSO 의 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
     const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
     assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.cbv));
     uint8_t rootParameterIndex = binder.rootParameterIndexLUT.cbv[shaderRegister];
@@ -92,10 +91,10 @@ void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, int shaderR
     const D3D12ConstantBuffer *_constantBuffer = static_cast<const D3D12ConstantBuffer *>(constantBuffer);
 
     // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
-    uint8_t indexInTable = binder.descriptorTableIndexLUT.cbv[shaderRegister];
+    uint8_t indexInTable = binder.descriptorIndexInTableLUT.cbv[shaderRegister];
     if (indexInTable != 0xFF) {
         // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
-        rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = _constantBuffer->descriptorHandle;
+        rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = _constantBuffer->descriptorHandle;
     }
     // 셰이더 레지스터에 대한 상수 버퍼 GPU 주소도 저장한다.
     rootBindingData->cbvGpuAddresses[shaderRegister] = _constantBuffer->gpuAddress;

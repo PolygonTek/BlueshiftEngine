@@ -17,7 +17,6 @@
 #include "D3D12CommandList.h"
 #include "D3D12CommandListPool.h"
 #include "D3D12ShaderVisibleDescriptorHeap.h"
-#include "D3D12FrameThreadData.h"
 
 static constexpr D3D12_SHADING_RATE ToD3D12ShadingRate(RHI::ShadingRate shadingRate) {
     switch (shadingRate) {
@@ -52,59 +51,62 @@ D3D12RootBindingData *D3D12CommandList::GetRootBindingData() const {
 
 void D3D12CommandList::SetBindlessRootDescriptorTables(D3D12_GPU_DESCRIPTOR_HANDLE resourceDescriptorGpuBaseHandle, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptorGpuBaseHandle) {
     assert(currentPSO);
-
     const D3D12PipelineState::RegisterBinder &binder = currentPSO->binder;
-    const uint64_t bindlessResRootParameterMask = binder.bindlessResourceRootParameterMask;
-    const uint64_t bindlessSamRootParameterMask = binder.bindlessSamplerRootParameterMask;
+    const uint64_t bindlessResourceRootParameterMask = binder.bindlessResourceRootParameterMask;
+    const uint64_t bindlessSamplerRootParameterMask = binder.bindlessSamplerRootParameterMask;
 
-    // 루트 시그니쳐에서 fallback bindless 디스크립터 테이블을 사용하지 않는다면 세팅할 필요가 없다.
-    if (bindlessResRootParameterMask == 0 && bindlessSamRootParameterMask == 0) {
+    // 루트 시그니처에서 fallback bindless 디스크립터 테이블을 사용하지 않는다면 세팅할 필요가 없다.
+    if (bindlessResourceRootParameterMask == 0 && bindlessSamplerRootParameterMask == 0) {
         return;
     }
 
-    // 루트 시그니쳐가 동일하다면, fallback bindless 디스크립터 테이블을 중복 세팅하지 않도록 한다.
-    if (bindlessRootSignature == currentPSO->rootSignature &&
-        bindlessResourceDescriptorGpuBaseHandle.ptr == resourceDescriptorGpuBaseHandle.ptr &&
-        bindlessSamplerDescriptorGpuBaseHandle.ptr == samplerDescriptorGpuBaseHandle.ptr) {
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    // 루트 시그니처와 GPU 베이스 핸들이 동일하다면, fallback bindless 디스크립터 테이블을 중복 세팅하지 않도록 한다.
+    if (cache.bindlessRootSignature == currentPSO->rootSignature &&
+        cache.bindlessResourceDescriptorGpuBaseHandle.ptr == resourceDescriptorGpuBaseHandle.ptr &&
+        cache.bindlessSamplerDescriptorGpuBaseHandle.ptr == samplerDescriptorGpuBaseHandle.ptr) {
         return;
     }
+#endif
 
     ID3D12GraphicsCommandList6 *cmd = GetGraphicsCommandList();
 
-    // 루트 시그니쳐에 존재하는 모든 fallback bindless (리소스 or 샘플러) 디스크립터 테이블들을 세팅한다.
+    // 루트 시그니처에 존재하는 모든 fallback bindless 디스크립터 테이블들을 세팅한다.
     if (currentPSO->isGraphics) {
         for (int rootParameterIndex = 0; rootParameterIndex < 64; ++rootParameterIndex) {
-            if (bindlessResRootParameterMask & BIT64(rootParameterIndex)) {
+            if (bindlessResourceRootParameterMask & BIT64(rootParameterIndex)) {
                 cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, resourceDescriptorGpuBaseHandle);
             }
-            if (bindlessSamRootParameterMask & BIT64(rootParameterIndex)) {
+            if (bindlessSamplerRootParameterMask & BIT64(rootParameterIndex)) {
                 cmd->SetGraphicsRootDescriptorTable(rootParameterIndex, samplerDescriptorGpuBaseHandle);
             }
         }
     } else {
         for (int rootParameterIndex = 0; rootParameterIndex < 64; ++rootParameterIndex) {
-            if (bindlessResRootParameterMask & BIT64(rootParameterIndex)) {
+            if (bindlessResourceRootParameterMask & BIT64(rootParameterIndex)) {
                 cmd->SetComputeRootDescriptorTable(rootParameterIndex, resourceDescriptorGpuBaseHandle);
             }
-            if (bindlessSamRootParameterMask & BIT64(rootParameterIndex)) {
+            if (bindlessSamplerRootParameterMask & BIT64(rootParameterIndex)) {
                 cmd->SetComputeRootDescriptorTable(rootParameterIndex, samplerDescriptorGpuBaseHandle);
             }
         }
     }
 
-    bindlessRootSignature = currentPSO->rootSignature;
-    bindlessResourceDescriptorGpuBaseHandle = resourceDescriptorGpuBaseHandle;
-    bindlessSamplerDescriptorGpuBaseHandle = samplerDescriptorGpuBaseHandle;
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
+    cache.bindlessRootSignature = currentPSO->rootSignature;
+    cache.bindlessResourceDescriptorGpuBaseHandle = resourceDescriptorGpuBaseHandle;
+    cache.bindlessSamplerDescriptorGpuBaseHandle = samplerDescriptorGpuBaseHandle;
+#endif
 }
 
 void D3D12CommandList::SetShadingRate(RHI::ShadingRate shadingRate) {
     D3D12_SHADING_RATE rate = ToD3D12ShadingRate(shadingRate);
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
-    if (cachedShadingRateValid && cachedShadingRate == rate) {
+    if (cache.shadingRateValid && cache.shadingRate == rate) {
         return;
     }
-    cachedShadingRate = rate;
-    cachedShadingRateValid = true;
+    cache.shadingRate = rate;
+    cache.shadingRateValid = true;
 #endif
     D3D12_SHADING_RATE_COMBINER combiners[] = {
         D3D12_SHADING_RATE_COMBINER_MAX,
@@ -126,11 +128,6 @@ void D3D12CommandList::Reset() {
     // command list 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     GetGraphicsCommandList()->Reset(commandAllocator, nullptr);
 
-    // D3D12 bundle 로 구현되는 secondary 는 root binding 변경 전에 root signature 를 직접 설정해야 한다.
-    // primary 와 같은 signature 여도 첫 SetGraphics/ComputeRootSignature 호출을 생략하면 안된다.
-    // secondary 실행 시점의 primary 상태는 앞선 secondary 에 의해 변경될 수 있으므로,
-    // 기록 시점의 primary 캐시를 기준으로 첫 바인딩을 생략하면 안된다.
-    // 디스크립터 힙과 primitive topology 도 각 command list 에서 명시적으로 설정한다.
     InvalidateStateCache();
 }
 
@@ -142,23 +139,24 @@ void D3D12CommandList::Execute() {
     D3D12Renderer::GetRenderer()->commandQueues[queueIndex]->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
-// secondary command list 의 실행을 현재 primary command list 에 기록한다.
+// 부모 커맨드 리스트에 번들의 실행을 기록한다.
 void D3D12CommandList::ExecuteSecondary(RHI::CommandList *secondaryCommandList) {
     D3D12CommandList *_secondaryCommandList = static_cast<D3D12CommandList *>(secondaryCommandList);
-    assert(_secondaryCommandList->isSecondary);
+    assert(!isSecondary && _secondaryCommandList->isSecondary);
 
-    ID3D12DescriptorHeap *descriptorHeaps[] = {
-        _secondaryCommandList->GetResDescriptorTablePool()->GetDescriptorHeap(),
-        _secondaryCommandList->GetSamDescriptorTablePool()->GetDescriptorHeap()
+    ID3D12DescriptorHeap *secondaryDescriptorHeaps[] = {
+        _secondaryCommandList->GetResourceDescriptorRangePool()->GetDescriptorHeap(),
+        _secondaryCommandList->GetSamplerDescriptorRangePool()->GetDescriptorHeap()
     };
 
-    // ExecuteBundle 을 호출하기 전에 primary 의 디스크립터 힙을 secondary 의 것과 동일하게 맞춘다.
-    SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+    // 번들이 사용할 디스크립터 힙을 부모에 바인딩하여, ExecuteBundle 실행 시 해당 힙을 상속받도록 한다.
+    SetDescriptorHeaps(COUNT_OF(secondaryDescriptorHeaps), secondaryDescriptorHeaps);
 
-    // D3D12 ExecuteBundle 호출을 primary command list 에 기록한다.
+    // 부모 커맨드 리스트에 번들을 기록한다.
+    // ExecuteBundle 시점에서 번들의 시작 상태는 PSO 와 PrimitiveTopology 를 제외하고 부모로부터 상속 받는다.
     GetGraphicsCommandList()->ExecuteBundle(_secondaryCommandList->GetGraphicsCommandList());
 
-    // secondary 가 변경한 상태는 다음 primary 바인딩에서 다시 설정한다.
+    // ExecuteBundle 이 실행되면 부모 커맨드 리스트의 상태가 번들로 인해 변경될 수 있으므로, 번들 실행 후 상태 캐시를 무효화한다.
     // 디스크립터 힙은 실행 직전에 맞췄으므로 캐시를 유지한다.
     InvalidateStateCache(false);
 }

@@ -17,13 +17,12 @@
 #include "D3D12Texture.h"
 #include "D3D12CommandList.h"
 #include "D3D12DescriptorPool.h"
-#include "D3D12FrameThreadData.h"
 #include "Shaders/ShaderInterop.h"
 
 void D3D12Texture::Release() {
     for (const D3D12SRVEntry &srvEntry : srvEntries) {
         if (srvEntry.cpuDescriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
+            D3D12Renderer::GetRenderer()->resourceStagingDescriptorPool->Free(srvEntry.cpuDescriptorHandle);
         }
         if (srvEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(srvEntry.bindlessIndex);
@@ -32,7 +31,7 @@ void D3D12Texture::Release() {
 
     for (const D3D12UAVEntry &uavEntry : uavEntries) {
         if (uavEntry.cpuDescriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resStagingDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
+            D3D12Renderer::GetRenderer()->resourceStagingDescriptorPool->Free(uavEntry.cpuDescriptorHandle);
         }
         if (uavEntry.bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             D3D12Renderer::GetRenderer()->FreeBindlessResourceDescriptor(uavEntry.bindlessIndex);
@@ -120,38 +119,32 @@ uint32_t D3D12Texture::GetViewCount(RHI::ViewType viewType) const {
 RHI::ViewID D3D12Texture::GetViewID(RHI::ViewType viewType, uint32_t viewIndex) const {
     uint32_t validViewIndex = 0;
 
-    auto makeViewID = [](uint32_t value) -> RHI::ViewID {
-        RHI::ViewID viewID;
-        viewID.value = value;
-        return viewID;
-    };
-
     if (viewType == RHI::ViewType::SRV) {
-        const int numEntries = srvEntries.Count();
-        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+        const uint32_t numEntries = srvEntries.Count();
+        for (uint32_t entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
             if (srvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && validViewIndex++ == viewIndex) {
-                return makeViewID(entryIndex);
+                return RHI::ViewID{ entryIndex };
             }
         }
     } else if (viewType == RHI::ViewType::UAV) {
-        const int numEntries = uavEntries.Count();
-        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+        const uint32_t numEntries = uavEntries.Count();
+        for (uint32_t entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
             if (uavEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && validViewIndex++ == viewIndex) {
-                return makeViewID(entryIndex);
+                return RHI::ViewID{ entryIndex };
             }
         }
     } else if (viewType == RHI::ViewType::RTV) {
-        const int numEntries = rtvEntries.Count();
-        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+        const uint32_t numEntries = rtvEntries.Count();
+        for (uint32_t entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
             if (rtvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && validViewIndex++ == viewIndex) {
-                return makeViewID(entryIndex);
+                return RHI::ViewID{ entryIndex };
             }
         }
     } else if (viewType == RHI::ViewType::DSV) {
-        const int numEntries = dsvEntries.Count();
-        for (int entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
+        const uint32_t numEntries = dsvEntries.Count();
+        for (uint32_t entryIndex = 0; entryIndex < numEntries; ++entryIndex) {
             if (dsvEntries[entryIndex].cpuDescriptorHandle.ptr != 0 && validViewIndex++ == viewIndex) {
-                return makeViewID(entryIndex);
+                return RHI::ViewID{ entryIndex };
             }
         }
     }
@@ -372,10 +365,6 @@ bool D3D12Texture::GetViewInfo(RHI::ViewType viewType, RHI::ViewID viewID, RHI::
 
     D3D12FinalizeTextureViewInfo(this, outInfo);
     return true;
-}
-
-RHI::Format D3D12Texture::GetFormat() const {
-    return D3D12Renderer::DXGIFormatToRHIFormat(textureDesc.Format);
 }
 
 RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, RHI::TextureMipInitMode mipInitMode, const RHI::ClearValue &clearValue, uint32_t sampleCount, RHI::GPUResourceState initialState) {
@@ -845,7 +834,7 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         }
         D3D12SRVEntry *srvEntryPtr = &_texture->srvEntries[viewID.value];
         if (srvEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            resStagingDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
+            resourceStagingDescriptorPool->Free(srvEntryPtr->cpuDescriptorHandle);
         }
         if (srvEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             FreeBindlessResourceDescriptor(srvEntryPtr->bindlessIndex);
@@ -860,7 +849,7 @@ void D3D12Renderer::DestroyView(RHI::Texture *texture, RHI::ViewType viewType, R
         }
         D3D12UAVEntry *uavEntryPtr = &_texture->uavEntries[viewID.value];
         if (uavEntryPtr->cpuDescriptorHandle.ptr != 0) {
-            resStagingDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
+            resourceStagingDescriptorPool->Free(uavEntryPtr->cpuDescriptorHandle);
         }
         if (uavEntryPtr->bindlessIndex != D3D12BindlessDescriptorAllocator::NullIndex) {
             FreeBindlessResourceDescriptor(uavEntryPtr->bindlessIndex);
@@ -1043,7 +1032,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Texture *texture, RHI::Format typeless
     }
 
     // non-shader-visible 디스크립터 슬롯 할당
-    if (!resStagingDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
+    if (!resourceStagingDescriptorPool->Alloc(&newSrvEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
@@ -1053,7 +1042,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Texture *texture, RHI::Format typeless
     // bindless index 할당
     newSrvEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newSrvEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        resStagingDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
+        resourceStagingDescriptorPool->Free(newSrvEntry.cpuDescriptorHandle);
         return RHI::ViewID::InvalidID;
     }
 
@@ -1167,7 +1156,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Texture *texture, RHI::Format typeless
     }
 
     // 디스크립터 슬롯 할당
-    if (!resStagingDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
+    if (!resourceStagingDescriptorPool->Alloc(&newUavEntry.cpuDescriptorHandle, nullptr)) {
         return RHI::ViewID::InvalidID;
     }
 
@@ -1177,7 +1166,7 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Texture *texture, RHI::Format typeless
     // bindless index 할당
     newUavEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newUavEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        resStagingDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
+        resourceStagingDescriptorPool->Free(newUavEntry.cpuDescriptorHandle);
         return RHI::ViewID::InvalidID;
     }
 
@@ -1959,14 +1948,14 @@ void D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, const RHI::T
     }
 }
 
-void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int shaderRegister, bool shaderWritable, const RHI::Texture *texture, RHI::ViewID viewID) {
+void D3D12Renderer::SetTexture(RHI::CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const RHI::Texture *texture, RHI::ViewID viewID) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     D3D12RootBindingData *rootBindingData = _commandList->GetRootBindingData();
 
     const D3D12Texture *_texture = static_cast<const D3D12Texture *>(texture);
     assert(_texture);
 
-    // 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
+    // 현재 세팅된 PSO 의 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
     const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
     uint8_t rootParameterIndex = 0xFF;
     uint8_t indexInTable = 0xFF;
@@ -1981,7 +1970,7 @@ void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int shaderRegister
         }
 
         // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
-        indexInTable = binder.descriptorTableIndexLUT.uav[shaderRegister];
+        indexInTable = binder.descriptorIndexInTableLUT.uav[shaderRegister];
         if (indexInTable != 0xFF) {
             if (!_texture->HasValidView(RHI::ViewType::UAV, viewID)) {
                 BE_ERRLOG("D3D12Renderer::SetTexture: Invalid UAV view ID (%i)\n", viewID.value);
@@ -1990,8 +1979,8 @@ void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int shaderRegister
 
             // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
             const D3D12UAVEntry &uavEntry = _texture->uavEntries[viewID.value];
-            rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = uavEntry.cpuDescriptorHandle;
-            if (rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable].ptr == 0) {
+            rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = uavEntry.cpuDescriptorHandle;
+            if (rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetTexture: Texture has no valid UAV descriptor handle\n");
                 return;
             }
@@ -2009,7 +1998,7 @@ void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int shaderRegister
         }
 
         // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
-        indexInTable = binder.descriptorTableIndexLUT.srv[shaderRegister];
+        indexInTable = binder.descriptorIndexInTableLUT.srv[shaderRegister];
         if (indexInTable != 0xFF) {
             if (!_texture->HasValidView(RHI::ViewType::SRV, viewID)) {
                 BE_ERRLOG("D3D12Renderer::SetTexture: Invalid SRV view ID (%i)\n", viewID.value);
@@ -2018,8 +2007,8 @@ void D3D12Renderer::SetTexture(RHI::CommandList *commandList, int shaderRegister
 
             // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
             const D3D12SRVEntry &srvEntry = _texture->srvEntries[viewID.value];
-            rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable] = srvEntry.cpuDescriptorHandle;
-            if (rootBindingData->descriptorTableHandles[rootParameterIndex][indexInTable].ptr == 0) {
+            rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = srvEntry.cpuDescriptorHandle;
+            if (rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable].ptr == 0) {
                 BE_ERRLOG("D3D12Renderer::SetTexture: Texture has no valid SRV descriptor handle\n");
                 return;
             }

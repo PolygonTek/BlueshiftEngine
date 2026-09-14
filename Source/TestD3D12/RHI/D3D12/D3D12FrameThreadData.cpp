@@ -57,30 +57,25 @@ void D3D12FrameThreadData::Init(D3D12Renderer *renderer, int32_t frameIndex, int
     constexpr uint32_t maxPrimaryCommandLists = 8;
     constexpr uint32_t maxSecondaryCommandLists = 8;
 
-    const uint32_t numResDescriptorsPerFrame = D3D12Renderer::MaxTransientResourceDescriptors / numFrames;
-    const uint32_t numSamDescriptorsPerFrame = D3D12Renderer::MaxTransientSamplerDescriptors / numFrames;
+    const uint32_t numResourceDescriptorsPerFrame = D3D12Renderer::MaxTransientResourceDescriptors / numFrames;
+    const uint32_t numSamplerDescriptorsPerFrame = D3D12Renderer::MaxTransientSamplerDescriptors / numFrames;
 
-    const uint32_t numResDescriptorsPerThread = numResDescriptorsPerFrame / numThreads;
-    const uint32_t numSamDescriptorsPerThread = numSamDescriptorsPerFrame / numThreads;
+    const uint32_t numResourceDescriptorsPerThread = numResourceDescriptorsPerFrame / numThreads;
+    assert(numResourceDescriptorsPerThread > 0);
 
-    assert(numResDescriptorsPerThread > 0);
-    assert(numSamDescriptorsPerThread > 0);
+    const uint32_t numSamplerDescriptorsPerThread = numSamplerDescriptorsPerFrame / numThreads;
+    assert(numSamplerDescriptorsPerThread > 0);
 
-    // shader-visible 힙의 임시 영역 (후반 절반 영역) 을 프레임/스레드별로 나누어 descriptor table pool 로 관리한다.
+    UINT baseResourceDescriptorIndex = D3D12Renderer::MaxBindlessResourceDescriptors + frameIndex * numResourceDescriptorsPerFrame + threadIndex * numResourceDescriptorsPerThread;
+    UINT baseSamplerDescriptorIndex = D3D12Renderer::MaxBindlessSamplerDescriptors + frameIndex * numSamplerDescriptorsPerFrame + threadIndex * numSamplerDescriptorsPerThread;
+
+    // shader-visible 힙의 임시 영역 (후반 절반 영역) 을 프레임/스레드별로 나누어 descriptor range pool 로 관리한다.
     // 이곳에서 소유하는 풀을 AllocGraphicsCommandList() / AllocComputeCommandList() 에서 커맨드 리스트에 전달한다.
-    resDescriptorTablePool = new D3D12DescriptorTablePool;
-    resDescriptorTablePool->Init({
-        &renderer->resShaderVisibleDescriptorHeap,
-        D3D12Renderer::MaxBindlessResourceDescriptors + frameIndex * numResDescriptorsPerFrame + threadIndex * numResDescriptorsPerThread,
-        numResDescriptorsPerThread
-    });
+    resourceDescriptorRangePool = new D3D12DescriptorRangePool;
+    resourceDescriptorRangePool->Init({&renderer->resourceShaderVisibleDescriptorHeap, baseResourceDescriptorIndex, numResourceDescriptorsPerThread});
 
-    samDescriptorTablePool = new D3D12DescriptorTablePool;
-    samDescriptorTablePool->Init({
-        &renderer->samShaderVisibleDescriptorHeap,
-        D3D12Renderer::MaxBindlessSamplerDescriptors + frameIndex * numSamDescriptorsPerFrame + threadIndex * numSamDescriptorsPerThread,
-        numSamDescriptorsPerThread
-    });
+    samplerDescriptorRangePool = new D3D12DescriptorRangePool;
+    samplerDescriptorRangePool->Init({&renderer->samplerShaderVisibleDescriptorHeap, baseSamplerDescriptorIndex, numSamplerDescriptorsPerThread});
 
     if (threadIndex == 0) {
         // 그래픽스 (Direct) 커맨드 리스트 풀을 생성한다.
@@ -117,8 +112,8 @@ void D3D12FrameThreadData::Shutdown() {
     SAFE_DELETE(dynamicResDescriptorPool);
     SAFE_DELETE(graphicsCommandListPool);
     SAFE_DELETE(computeCommandListPool);
-    SAFE_DELETE(resDescriptorTablePool);
-    SAFE_DELETE(samDescriptorTablePool);
+    SAFE_DELETE(resourceDescriptorRangePool);
+    SAFE_DELETE(samplerDescriptorRangePool);
 }
 
 void D3D12FrameThreadData::Reset() {
@@ -138,8 +133,8 @@ void D3D12FrameThreadData::Reset() {
     dynamicBuffers.Reset();
 
     // 디스크립터 테이블 풀을 비운다.
-    resDescriptorTablePool->Reset();
-    samDescriptorTablePool->Reset();
+    resourceDescriptorRangePool->Reset();
+    samplerDescriptorRangePool->Reset();
 
     // 커맨드 리스트 풀을 비운다.
     graphicsCommandListPool->Clear();
@@ -440,8 +435,8 @@ RHI::CommandList *D3D12FrameThreadData::BeginCommandList(RHI::CommandQueueType q
     commandList->Reset();
 
     ID3D12DescriptorHeap *descriptorHeaps[] = {
-        commandList->GetResDescriptorTablePool()->GetDescriptorHeap(),
-        commandList->GetSamDescriptorTablePool()->GetDescriptorHeap()
+        commandList->GetResourceDescriptorRangePool()->GetDescriptorHeap(),
+        commandList->GetSamplerDescriptorRangePool()->GetDescriptorHeap()
     };
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
@@ -455,11 +450,11 @@ RHI::CommandList *D3D12FrameThreadData::BeginSecondaryCommandList() {
     // command allocator 를 재사용하도록 리셋하고, command list 를 command allocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
 
-    // secondary command list 의 디스크립터 힙을 지정한다. (디스크립터 힙의 지정 상태는 primary command list 에서 자동으로 이어지지 않음)
-    // 반드시 primary command list 와 동일한 디스크립터 힙을 사용해야 한다.
+    // 번들의 디스크립터 힙을 지정한다. (디스크립터 힙 바인딩은 실행 시 부모 커맨드 리스트로부터 상속되며, 여기서 지정한 힙과 일치해야 함)
+    // 반드시 부모와 동일한 디스크립터 힙을 사용해야 한다.
     ID3D12DescriptorHeap *descriptorHeaps[] = {
-        commandList->GetResDescriptorTablePool()->GetDescriptorHeap(),
-        commandList->GetSamDescriptorTablePool()->GetDescriptorHeap()
+        commandList->GetResourceDescriptorRangePool()->GetDescriptorHeap(),
+        commandList->GetSamplerDescriptorRangePool()->GetDescriptorHeap()
     };
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 

@@ -21,7 +21,7 @@ void D3D12ShaderVisibleDescriptorHeap::Init(ID3D12Device *device, D3D12_DESCRIPT
     assert(!descriptorHeap);
 
     maxDescriptorCount = maxCount;
-    descriptorHandleSize = device->GetDescriptorHandleIncrementSize(type);
+    handleIncrement = device->GetDescriptorHandleIncrementSize(type);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.NumDescriptors = maxCount;
@@ -80,7 +80,7 @@ void D3D12BindlessDescriptorAllocator::Free(uint32_t index) {
     idAllocator.FreeID(index - 1);
 }
 
-void D3D12DescriptorTablePool::Init(const D3D12DescriptorHeapRegion &region) {
+void D3D12DescriptorRangePool::Init(const D3D12DescriptorHeapRegion &region) {
     assert(region.descriptorHeap);
     assert(region.descriptorCount > 0);
 
@@ -88,14 +88,14 @@ void D3D12DescriptorTablePool::Init(const D3D12DescriptorHeapRegion &region) {
     usedCount = 0;
 }
 
-void D3D12DescriptorTablePool::Shutdown() {
+void D3D12DescriptorRangePool::Shutdown() {
     region = {};
     usedCount = 0;
 }
 
-bool D3D12DescriptorTablePool::AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
+bool D3D12DescriptorRangePool::AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
     if (usedCount + count > region.descriptorCount) {
-        BE_WARNLOG("D3D12DescriptorTablePool::AllocRange: exceeds the descriptor region count\n");
+        BE_WARNLOG("D3D12DescriptorRangePool::AllocRange: exceeds the descriptor region count\n");
         return false;
     }
 

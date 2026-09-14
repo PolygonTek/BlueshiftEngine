@@ -56,3 +56,18 @@ void D3D12Renderer::SetIndexBuffer(RHI::CommandList *commandList, const RHI::Ind
 
     _commandList->SetIndexBuffer(indexBuffer);
 }
+
+void D3D12Renderer::SetIndexBuffer(RHI::CommandList *commandList, const RHI::Buffer *buffer, uint32_t indexSize, uint64_t offset, uint32_t size) {
+    assert(indexSize == 2 || indexSize == 4);
+
+    const D3D12Buffer *_buffer = static_cast<const D3D12Buffer *>(buffer);
+    assert(offset <= _buffer->size);
+    assert(size <= _buffer->size - offset);
+
+    D3D12_INDEX_BUFFER_VIEW view = {};
+    view.BufferLocation = _buffer->GetResource()->GetGPUVirtualAddress() + _buffer->resourceOffset + offset;
+    view.Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
+    view.SizeInBytes = size;
+
+    static_cast<D3D12CommandList *>(commandList)->SetIndexBufferView(view);
+}

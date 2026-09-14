@@ -17,7 +17,6 @@
 #include "D3D12Sampler.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandList.h"
-#include "D3D12FrameThreadData.h"
 
 static constexpr D3D12_FILTER ToD3D12TextureFilter(RHI::TextureFilter filter) {
     switch (filter) {
@@ -79,7 +78,7 @@ static void ToD3D12TextureBorderColor(RHI::TextureBorderColor borderColor, FLOAT
 
 void D3D12Sampler::Release() {
     if (descriptorHandle.ptr != 0) {
-        D3D12Renderer::GetRenderer()->samStagingDescriptorPool->Free(descriptorHandle);
+        D3D12Renderer::GetRenderer()->samplerStagingDescriptorPool->Free(descriptorHandle);
         descriptorHandle = {};
     }
 
@@ -91,7 +90,7 @@ void D3D12Sampler::Release() {
 
 RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
     D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (!samStagingDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
+    if (!samplerStagingDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
         return nullptr;
     }
 
@@ -100,7 +99,7 @@ RHI::Sampler *D3D12Renderer::CreateSampler(const RHI::SamplerDesc *desc) {
     sampler->descriptorHandle = descriptorHandle;
     sampler->bindlessIndex = AllocBindlessSamplerDescriptor();
     if (sampler->bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
-        samStagingDescriptorPool->Free(descriptorHandle);
+        samplerStagingDescriptorPool->Free(descriptorHandle);
         sampler->descriptorHandle = {};
         delete sampler;
         return nullptr;
@@ -138,10 +137,10 @@ void D3D12Renderer::RecreateSampler(RHI::Sampler* sampler, const RHI::SamplerDes
     device->CopyDescriptorsSimple(1, bindlessCpuDescriptorHandle, _sampler->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 
-void D3D12Renderer::SetSampler(RHI::CommandList *commandList, int shaderRegister, RHI::Sampler *sampler) {
+void D3D12Renderer::SetSampler(RHI::CommandList *commandList, uint32_t shaderRegister, RHI::Sampler *sampler) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
 
-    // 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
+    // 현재 세팅된 PSO 의 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
     const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
     assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.samplers));
     uint8_t rootParameterIndex = binder.rootParameterIndexLUT.samplers[shaderRegister];
@@ -151,7 +150,7 @@ void D3D12Renderer::SetSampler(RHI::CommandList *commandList, int shaderRegister
     }
 
     // 일반 Sampler 는 디스크립터 테이블로만 전달될 수 있으므로, 디스크립터 테이블 내의 인덱스를 얻어온다.
-    int indexInTable = binder.descriptorTableIndexLUT.samplers[shaderRegister];
+    int indexInTable = binder.descriptorIndexInTableLUT.samplers[shaderRegister];
     if (indexInTable == 0xFF) {
         BE_ERRLOG("D3D12Renderer::SetSampler: Invalid descriptor index in descriptor table\n");
         return;
@@ -159,7 +158,7 @@ void D3D12Renderer::SetSampler(RHI::CommandList *commandList, int shaderRegister
 
     // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
     const D3D12Sampler *_sampler = static_cast<const D3D12Sampler *>(sampler);
-    _commandList->GetRootBindingData()->descriptorTableHandles[rootParameterIndex][indexInTable] = _sampler->descriptorHandle;
+    _commandList->GetRootBindingData()->tableDescriptorHandles[rootParameterIndex][indexInTable] = _sampler->descriptorHandle;
 
     // 변경할 루트 파라미터 인덱스에 대한 dirty mask 를 설정한다.
     if (_commandList->currentPSO->isGraphics) {

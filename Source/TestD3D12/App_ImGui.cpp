@@ -68,11 +68,11 @@ void App::BuildImGuiStatsPlotWindow() {
         "GPU"
     };
     static const ImVec4 statColors[ImGuiStatsPlotSeriesCount] = {
-        ImVec4(0.90f, 0.35f, 0.25f, 1.00f),
-        ImVec4(0.30f, 0.75f, 0.35f, 1.00f),
-        ImVec4(0.25f, 0.55f, 1.00f, 1.00f),
-        ImVec4(0.95f, 0.75f, 0.25f, 1.00f),
-        ImVec4(0.75f, 0.45f, 1.00f, 1.00f)
+        ImVec4(0.65f, 0.65f, 0.65f, 1.00f), // Frame
+        ImVec4(0.95f, 0.85f, 0.25f, 1.00f), // Game
+        ImVec4(0.25f, 0.55f, 1.00f, 1.00f), // Frontend
+        ImVec4(0.90f, 0.35f, 0.25f, 1.00f), // Backend
+        ImVec4(0.30f, 0.75f, 0.35f, 1.00f)  // GPU
     };
 
     const float fontSize = ImGui::GetFontSize();

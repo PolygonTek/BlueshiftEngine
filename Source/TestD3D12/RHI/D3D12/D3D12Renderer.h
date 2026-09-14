@@ -17,7 +17,6 @@
 #include "../RHI.h"
 #include "D3D12Common.h"
 #include "D3D12ShaderVisibleDescriptorHeap.h"
-#include "D3D12RootBindingData.h"
 #include "D3D12ResourceRequest.h"
 
 #ifdef USE_D3D12_MEMALLOC
@@ -60,7 +59,7 @@ public:
     virtual uint64_t                    SignalFence(RHI::CommandQueueType queueType) override;
     virtual bool                        IsFenceComplete(RHI::CommandQueueType queueType, uint64_t checkFenceValue) override;
     virtual void                        WaitFence(RHI::CommandQueueType queueType, uint64_t expectedFenceValue) override;
-    virtual void                        Finish(RHI::CommandQueueType queueType) override;
+    virtual void                        Finish(RHI::CommandQueueType queueType) override { WaitFence(queueType, SignalFence(queueType)); }
 
     virtual bool                        IsSupportedImageFormat(BE1::Image::Format imageFormat) const override { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
     virtual BE1::Image::Format          ToUncompressedImageFormat(BE1::Image::Format imageFormat) const override;
@@ -172,12 +171,14 @@ public:
     void                                EndUtilityCommandList(RHI::CommandList *commandList);
 
     virtual void                        SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::VertexBuffer *vertexBuffer) override;
+    virtual void                        SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::Buffer *buffer, uint32_t stride, uint64_t offset, uint32_t size) override;
     virtual void                        SetIndexBuffer(RHI::CommandList *commandList, const RHI::IndexBuffer *indexBuffer) override;
-    virtual void                        SetConstantBuffer(RHI::CommandList *commandList, int shaderRegister, const RHI::ConstantBuffer *constantBuffer) override;
-    virtual void                        SetConstants(RHI::CommandList *commandList, int shaderRegister, const void *data, uint32_t size, uint32_t offset = 0) override;
-    virtual void                        SetTexture(RHI::CommandList *commandList, int shaderRegister, bool shaderWritable, const RHI::Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID) override;
-    virtual void                        SetBuffer(RHI::CommandList *commandList, int shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID = RHI::ViewID::PrimaryID) override;
-    virtual void                        SetSampler(RHI::CommandList *commandList, int shaderRegister, RHI::Sampler *sampler) override;
+    virtual void                        SetIndexBuffer(RHI::CommandList *commandList, const RHI::Buffer *buffer, uint32_t indexSize, uint64_t offset, uint32_t size) override;
+    virtual void                        SetConstantBuffer(RHI::CommandList *commandList, uint32_t shaderRegister, const RHI::ConstantBuffer *constantBuffer) override;
+    virtual void                        SetConstants(RHI::CommandList *commandList, uint32_t shaderRegister, const void *data, uint32_t size, uint32_t offset = 0) override;
+    virtual void                        SetTexture(RHI::CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const RHI::Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID) override;
+    virtual void                        SetBuffer(RHI::CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID = RHI::ViewID::PrimaryID) override;
+    virtual void                        SetSampler(RHI::CommandList *commandList, uint32_t shaderRegister, RHI::Sampler *sampler) override;
     virtual void                        SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) override;
     virtual void                        SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) override;
     virtual void                        SetStencilRef(RHI::CommandList *commandList, uint32_t value) override;
@@ -332,17 +333,17 @@ public:
     bool                                supportsUAVFormatCommon = false;
     std::unordered_set<DXGI_FORMAT>     optionalUAVFormatMap;
 
-    D3D12DescriptorPool *               resStagingDescriptorPool = nullptr;
-    D3D12DescriptorPool *               samStagingDescriptorPool = nullptr;
+    D3D12DescriptorPool *               resourceStagingDescriptorPool = nullptr;
+    D3D12DescriptorPool *               samplerStagingDescriptorPool = nullptr;
     D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
     D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
 
     D3D12ImGuiRenderer *                imguiRenderer = nullptr;
 
-    D3D12ShaderVisibleDescriptorHeap    resShaderVisibleDescriptorHeap;
-    D3D12ShaderVisibleDescriptorHeap    samShaderVisibleDescriptorHeap;
-    D3D12BindlessDescriptorAllocator    bindlessResDescriptorAllocator;
-    D3D12BindlessDescriptorAllocator    bindlessSamDescriptorAllocator;
+    D3D12ShaderVisibleDescriptorHeap    resourceShaderVisibleDescriptorHeap;
+    D3D12ShaderVisibleDescriptorHeap    samplerShaderVisibleDescriptorHeap;
+    D3D12BindlessDescriptorAllocator    bindlessRessourceDescriptorAllocator;
+    D3D12BindlessDescriptorAllocator    bindlessSamplerDescriptorAllocator;
 
     BE1::SharedLib                      dxcompilerLibrary = nullptr;
     BE1::Str                            shaderCacheDir;

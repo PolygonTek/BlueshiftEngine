@@ -809,7 +809,7 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
         assert(rootSignatureDesc->Version == D3D_ROOT_SIGNATURE_VERSION_1_1);
     }
 
-    // 컴파일된 쉐이더 바이너리로부터 루트 시그니쳐 객체를 생성한다.
+    // 컴파일된 쉐이더 바이너리로부터 루트 시그니처 객체를 생성한다.
     ID3D12RootSignature *rootSignature = nullptr;
     if (FAILED(device->CreateRootSignature(0, compiledShaderData, compiledShaderDataSize, IID_PPV_ARGS(&rootSignature)))) {
         rootSignatureDeserializer->Release();
