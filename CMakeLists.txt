@@ -38,6 +38,7 @@ option(BUILD_PLAYER "Build Blueshift Player executable" OFF)
 option(BUILD_EDITOR "Build Blueshift Editor executable" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 option(BUILD_TESTD3D12 "Build Direct3D 12 test projects" OFF)
+option(BUILD_TESTTRACER "Build the Windows CPU path tracer" OFF)
 
 set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
 set(VERSION_MINOR 8 CACHE INTERNAL "Project minor version number.")
@@ -407,8 +408,14 @@ endif ()
 
 if (BUILD_TESTD3D12)
     if (MSVC)
-        add_subdirectory(Source/TestD3D12)
         add_subdirectory(Source/ThirdParty/D3D12MemoryAllocator)
+        add_subdirectory(Source/TestD3D12)
+    endif ()
+endif ()
+
+if (BUILD_TESTTRACER)
+    if (MSVC)
+        add_subdirectory(Source/TestTracer)
     endif ()
 endif ()
 
