@@ -67,12 +67,17 @@
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), UAV(u0)), " \
     "CBV(b0), " \
+    "CBV(b1), " \
     "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)"
 
 SamplerState linearClampSampler : register(s100);
 
 cbuffer TAAResolveCB : register(b0) {
     TAAResolveParams taaResolveParams;
+}
+
+cbuffer CameraCB : register(b1) {
+    CameraConstants cameraConstants;
 }
 
 static const float TAAResolveDepthFallbackVelocityThreshold = 0.01;
@@ -213,7 +218,8 @@ void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out fl
 #endif
 
 float LinearizeDepth(float deviceDepth) {
-    return DeviceDepthToLinearDepth(deviceDepth, taaResolveParams.ndcDepthScaleBias, taaResolveParams.projectionDepthParams, taaResolveParams.orthogonal != 0);
+    const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
+    return ToLinearDepth(deviceDepth, cameraConstants.ndcDepthScaleBias, cameraConstants.projectionZ, orthogonal);
 }
 
 float LoadCurrentDepth(int2 pixelCoord, int2 maxPixelCoord) {
@@ -286,10 +292,23 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         if (all(previousUV >= 0.0) && all(previousUV <= 1.0)) {
 #if USE_DEPTH_DISOCCLUSION_FALLBACK
             if (length(velocity) > TAAResolveDepthFallbackVelocityThreshold) {
-                // 현재 픽셀의 depth 와 이전 프레임 depth 차이가 threshold 이상으로 차이가 나면 TAA 를 그만둔다.
-                const float currentLinearDepth = max(LinearizeDepth(currentDepth), 0.0);
-                const float previousLinearDepth = max(LinearizeDepth(LoadPreviousDepth(previousUV)), 0.0);
-                if (abs(currentLinearDepth - previousLinearDepth) > taaResolveParams.depthFallbackThreshold) {
+                const float previousDepth = LoadPreviousDepth(previousUV);
+                const float farPlaneDeviceDepth = taaResolveParams.useMinDepth != 0 ? 1.0f : 0.0f;
+                // 현재/이전 깊이는 보간 없이 읽으므로 clear 값만 배경으로 취급한다.
+                const bool currentBackground = currentDepth == farPlaneDeviceDepth;
+                const bool previousBackground = previousDepth == farPlaneDeviceDepth;
+
+                // 배경과 표면 사이의 전환에서는 이전 프레임 결과를 사용하지 않는다.
+                // 양쪽 모두 배경이면 깊이 비교를 생략해 무한대끼리 빼는 것을 피한다.
+                bool rejectHistory = currentBackground != previousBackground;
+                if (!currentBackground && !previousBackground) {
+                    // 현재/이전 표면의 깊이 차이가 임계값을 넘으면 이전 프레임 결과를 제외한다.
+                    const float currentLinearDepth = max(LinearizeDepth(currentDepth), 0.0f);
+                    const float previousLinearDepth = max(LinearizeDepth(previousDepth), 0.0f);
+                    rejectHistory = abs(currentLinearDepth - previousLinearDepth) > taaResolveParams.depthFallbackThreshold;
+                }
+
+                if (rejectHistory) {
                     outputColorHistoryTexture[pixelCoord] = currentColor;
                     return;
                 }

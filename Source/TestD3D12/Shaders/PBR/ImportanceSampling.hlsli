@@ -24,17 +24,10 @@ float3x3 GetLocalFrame(float3 tangentZ) {
     return float3x3(tangentX, tangentY, tangentZ);
 }
 
-// Returns an importance-sampled incident light direction for Lambert diffuse reflectance with respect to N.
+// Returns a cosine-weighted incident light direction about local +Z for Lambert diffuse reflectance.
 // xi must be in the [0, 1) range.
 float3 ImportanceSampleLambert(float2 xi) {
-    const float cosTheta = sqrt(1.0f - xi.x);
-    const float sinTheta = sqrt(xi.x);
-    const float phi = TWO_PI * xi.y;
-
-    float sinPhi;
-    float cosPhi;
-    sincos(phi, sinPhi, cosPhi);
-    return float3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
+    return SampleHemisphereCosine(xi);
 }
 
 // Returns an importance-sampled incident light direction for Phong specular reflectance with respect to S.

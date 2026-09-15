@@ -43,7 +43,8 @@ bool EvaluateScreenSpaceRayDeviceDepth(float3 rayStart, float3 rayDelta, float t
 
     const uint2 pixelCoord = min(uint2(rayPosition.xy * depthTextureSize), depthTextureSize - 1);
     sceneDeviceDepth = inputDepthTexture.Load(int3(pixelCoord, 0));
-    if (abs(sceneDeviceDepth - farPlaneDeviceDepth) <= FLT_EPSILON) {
+    // 원본 깊이를 보간 없이 읽으므로 clear 값만 배경으로 취급한다.
+    if (sceneDeviceDepth == farPlaneDeviceDepth) {
         depthDelta = -FLT_MAX;
         return false;
     }
@@ -56,7 +57,7 @@ bool EvaluateScreenSpaceRayDeviceDepth(float3 rayStart, float3 rayDelta, float t
 
 // Mip 0 cell 의 full-resolution depth crossing 을 확인하고 binary refinement 와 thickness 검사를 거쳐 hit 를 확정한다.
 bool TryRefineScreenSpaceRayHit(float3 rayStart, float3 rayDelta, float entryT, float exitT, uint2 depthTextureSize, uint binaryRefinementSteps,
-    float thickness, float farPlaneDeviceDepth, bool useMinDepth, float2 ndcDepthScaleBias, float2 projectionDepthParams, bool orthogonal,
+    float thickness, float farPlaneDeviceDepth, bool useMinDepth, float2 ndcDepthScaleBias, float2 projectionZ, bool orthogonal,
     inout ScreenSpaceRayTraceResult result) {
     float entryDepthDelta;
     float entrySceneDepth;
@@ -90,8 +91,14 @@ bool TryRefineScreenSpaceRayHit(float3 rayStart, float3 rayDelta, float entryT, 
         // 앞뒤 순서 판정과 binary refinement 에는 device depth 만으로 충분하다.
         // Thickness 는 world-space meter 단위이므로 최종 후보만 linear view depth 로 변환한다.
         const float3 hitRayPosition = rayStart + rayDelta * backT;
-        const float hitRayDepth = DeviceDepthToLinearDepth(hitRayPosition.z, ndcDepthScaleBias, projectionDepthParams, orthogonal);
-        const float hitSceneDepth = DeviceDepthToLinearDepth(backSceneDeviceDepth, ndcDepthScaleBias, projectionDepthParams, orthogonal);
+        const float hitRayDepth = ToLinearDepth(hitRayPosition.z, ndcDepthScaleBias, projectionZ, orthogonal);
+        const float hitSceneDepth = ToLinearDepth(backSceneDeviceDepth, ndcDepthScaleBias, projectionZ, orthogonal);
+
+        // 두께는 유한한 위치 사이에서만 비교한다.
+        if (!isfinite(hitRayDepth) || !isfinite(hitSceneDepth)) {
+            return false;
+        }
+
         const float hitDepthDelta = hitRayDepth - hitSceneDepth;
 
         if (hitDepthDelta >= 0.0f && hitDepthDelta <= thickness) {
@@ -111,7 +118,7 @@ bool TryRefineScreenSpaceRayHit(float3 rayStart, float3 rayDelta, float entryT, 
 // View space ray 구간은 perspective divide 전에 near/camera plane 으로 clipping 되어야 한다.
 // 이 함수는 이미 투영된 ray 를 순회한다.
 ScreenSpaceRayTraceResult TraceScreenSpaceRayHiZ(float3 rayStart, float3 rayEnd, uint2 depthTextureSize, uint depthPyramidMipCount, uint maxIterations, uint binaryRefinementSteps,
-    float thickness, float farPlaneDeviceDepth, bool useMinDepth, float2 ndcDepthScaleBias, float2 projectionDepthParams, bool orthogonal) {
+    float thickness, float farPlaneDeviceDepth, bool useMinDepth, float2 ndcDepthScaleBias, float2 projectionZ, bool orthogonal) {
     ScreenSpaceRayTraceResult result;
     result.hitUV = 0.0f;
     result.hitDeviceDepth = farPlaneDeviceDepth;
@@ -195,7 +202,7 @@ ScreenSpaceRayTraceResult TraceScreenSpaceRayHiZ(float3 rayStart, float3 rayEnd,
             const float refinementExitT = cellExitT < 1.0f ? max(currentT, cellExitT - parameterEpsilon) : cellExitT;
 
             if (TryRefineScreenSpaceRayHit(rayStart, rayDelta, currentT, refinementExitT, depthTextureSize, binaryRefinementSteps,
-                thickness, farPlaneDeviceDepth, useMinDepth, ndcDepthScaleBias, projectionDepthParams, orthogonal, result)) {
+                thickness, farPlaneDeviceDepth, useMinDepth, ndcDepthScaleBias, projectionZ, orthogonal, result)) {
                 return result;
             }
         }

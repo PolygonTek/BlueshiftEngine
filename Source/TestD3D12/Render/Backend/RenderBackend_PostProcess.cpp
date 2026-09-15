@@ -192,10 +192,18 @@ bool RenderBackend::DispatchCurrentDepthMSAAResolve() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchCurrentDepthMSAAResolve");
 
     assert(currentVisCamera->taaResolve);
+    return DispatchDepthMSAAResolve(currentVisCamera->depthHistoryTextures[currentVisCamera->currentHistoryTextureIndex], RHI::GPUResourceState::ShaderResource);
+}
+
+bool RenderBackend::DispatchDepthMSAAResolve(RHI::Texture *outputDepthTexture, RHI::GPUResourceState inputState) {
     assert(currentVisCamera->depthTexture->GetSampleCount() > 1);
 
     RHI::Texture *inputDepthTexture = currentVisCamera->depthTexture;
-    RHI::Texture *outputDepthTexture = currentVisCamera->depthHistoryTextures[currentVisCamera->currentHistoryTextureIndex];
+    if (!outputDepthTexture) {
+        return false;
+    }
+    assert(outputDepthTexture->GetSampleCount() == 1);
+    assert(outputDepthTexture->GetWidth() == inputDepthTexture->GetWidth() && outputDepthTexture->GetHeight() == inputDepthTexture->GetHeight());
 
     const uint32_t outputW = outputDepthTexture->GetWidth();
     const uint32_t outputH = outputDepthTexture->GetHeight();
@@ -218,7 +226,7 @@ bool RenderBackend::DispatchCurrentDepthMSAAResolve() {
     }
 
     RHI::GPUBarrier startBarriers[] = {
-        RHI::Renderer::MakeTextureBarrier(inputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(inputDepthTexture, inputState, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(outputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::DepthMSAAResolve);
@@ -235,7 +243,7 @@ bool RenderBackend::DispatchCurrentDepthMSAAResolve() {
     RHI::renderer->Dispatch(mainCommandList, threadGroupCountX, threadGroupCountY, 1);
 
     RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeTextureBarrier(inputDepthTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeTextureBarrier(inputDepthTexture, RHI::GPUResourceState::ShaderResourceCompute, inputState),
         RHI::Renderer::MakeTextureBarrier(outputDepthTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
@@ -246,7 +254,7 @@ bool RenderBackend::DispatchCurrentDepthMSAAResolve() {
 bool RenderBackend::DispatchTAAResolve() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchTAAResolve");
 
-    if (!currentVisCamera->taaResolve || !frameTAAResolvePSO) {
+    if (!currentVisCamera->taaResolve || !frameTAAResolvePSO || !cameraConstantBuffer) {
         return false;
     }
 
@@ -274,9 +282,6 @@ bool RenderBackend::DispatchTAAResolve() {
     taaResolveParams.historyWeight = renderFrameSettings.taaHistoryWeight;
     taaResolveParams.historyValid = historyValid ? 1u : 0u;
     taaResolveParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
-    taaResolveParams.orthogonal = currentVisCamera->projectionOrthogonal ? 1u : 0u;
-    taaResolveParams.projectionDepthParams = float2(currentVisCamera->projectionDepthA, currentVisCamera->projectionDepthB);
-    taaResolveParams.ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
     taaResolveParams.depthFallbackThreshold = renderFrameSettings.taaDepthFallbackThreshold;
     taaResolveParams.maxSubpixelCurrentWeight = renderFrameSettings.taaSubpixelWeight;
     taaResolveParams.luminanceWeight = renderFrameSettings.taaLuminanceWeight;
@@ -303,6 +308,7 @@ bool RenderBackend::DispatchTAAResolve() {
 
     RHI::renderer->SetPSO(mainCommandList, frameTAAResolvePSO);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, taaResolveConstantBuffer);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
     RHI::renderer->SetTexture(mainCommandList, 1, false, velocityTexture);
     RHI::renderer->SetTexture(mainCommandList, 2, false, depthTexture);

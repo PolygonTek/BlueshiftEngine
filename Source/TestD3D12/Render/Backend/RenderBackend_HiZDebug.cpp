@@ -22,6 +22,10 @@
 bool RenderBackend::DispatchHiZDebugPreview() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchHiZDebugPreview");
 
+    if (!cameraConstantBuffer) {
+        return false;
+    }
+
     // 실제 Hi-Z 리소스의 mip 수는 화면 크기에 따라 snapshot 의 전역 상한보다 작을 수 있다.
     const uint32_t mipLevel = BE1::Min(frameData->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentVisCamera->hiZMipCount - 1);
     const uint32_t inputWidth = currentVisCamera->hiZMipWidths[mipLevel];
@@ -36,10 +40,7 @@ bool RenderBackend::DispatchHiZDebugPreview() {
     HiZDebugPreviewParams hiZDebugPreviewParams = {};
     hiZDebugPreviewParams.inputSize = uint2(inputWidth, inputHeight);
     hiZDebugPreviewParams.outputSize = uint2(outputWidth, outputHeight);
-    hiZDebugPreviewParams.projectionDepthParams = float2(currentVisCamera->projectionDepthA, currentVisCamera->projectionDepthB);
-    hiZDebugPreviewParams.ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
     hiZDebugPreviewParams.linearDepthScale = currentVisCamera->hiZDebugLinearDepthScale;
-    hiZDebugPreviewParams.orthogonal = currentVisCamera->projectionOrthogonal ? 1u : 0u;
 
     RHI::ConstantBuffer *hiZDebugPreviewConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(HiZDebugPreviewParams), &hiZDebugPreviewParams);
     if (!hiZDebugPreviewConstantBuffer) {
@@ -58,6 +59,7 @@ bool RenderBackend::DispatchHiZDebugPreview() {
     RHI::renderer->SetTexture(mainCommandList, 0, false, currentVisCamera->hiZTexture, currentVisCamera->hiZMipSRVs[mipLevel]);
     RHI::renderer->SetTexture(mainCommandList, 0, true, currentVisCamera->hiZDebugPreviewTexture);
     RHI::renderer->SetConstantBuffer(mainCommandList, 0, hiZDebugPreviewConstantBuffer);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, HiZDebugPreviewBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, HiZDebugPreviewBlockSizeY);

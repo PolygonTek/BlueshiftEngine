@@ -125,6 +125,8 @@ private:
     bool                            DispatchHiZDebugPreview();
     bool                            DispatchGenScreenSpaceDepthPyramid();
     bool                            DispatchSSRTrace();
+    bool                            DispatchSSAO(RHI::GPUResourceState renderDepthState);
+    bool                            DispatchDepthMSAAResolve(RHI::Texture *outputTexture, RHI::GPUResourceState inputState);
     bool                            DispatchSurfaceOutputMSAAResolve();
     bool                            DispatchCurrentDepthMSAAResolve();
 
@@ -175,6 +177,7 @@ private:
     RHI::PipelineState *            frameScreenSpaceDepthPyramidFirstMSAAPSO = nullptr;
     RHI::PipelineState *            frameScreenSpaceDepthPyramidReducePSO = nullptr;
     RHI::PipelineState *            frameSSRTracePSO = nullptr;
+    RHI::PipelineState *            frameSSAOPSO = nullptr;
     RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalPSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveVelocityPSO = nullptr;

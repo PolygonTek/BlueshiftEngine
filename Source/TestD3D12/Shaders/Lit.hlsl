@@ -212,6 +212,15 @@ CameraPassPSOutput PSMain(PSInput input) {
 #endif
 
 #ifdef INDIRECT_LIGHTING
+    // Opaque and alpha-tested surfaces use SSAO from the depth prepass.
+    if ((cameraConstants.flags & ShaderCameraFlagUseSSAO) != 0 &&
+        (shaderMaterial.flags & ShaderMaterialFlagTransparent) == 0) {
+        const float screenAO = GetTexture2D(cameraConstants.ssaoTextureIndex).Load(int3(uint2(input.position.xy), 0)).r;
+        // Material AO and SSAO can describe the same cavity; use the stronger
+        // occlusion instead of counting it twice. The IBL path also derives
+        // roughness-aware specular/clear-coat occlusion from this value.
+        shading.ambientOcclusion = min(shading.ambientOcclusion, screenAO);
+    }
     const ImageBasedLightingSample envLightSample = SampleEnvironmentLight(shading);
     lighting += EvaluateStandardImageBasedLighting(shading, envLightSample, dfg);
 #endif

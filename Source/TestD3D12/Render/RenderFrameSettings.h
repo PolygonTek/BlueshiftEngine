@@ -62,6 +62,9 @@ struct RenderFrameSettings {
 
     uint32_t                    hiZDebugPreviewMipLevel = 0;
 
+    float                       ssaoRadius = 1.0f;
+    float                       ssaoPower = 1.0f;
+
     uint32_t                    ssrMaxIterations = 64;
     uint32_t                    ssrBinaryRefinementSteps = 5;
     float                       ssrMaxDistance = 48.0f;
@@ -129,6 +132,8 @@ struct RenderFrameSettings {
     bool                        hiZDebugPreview = false;
 
     bool                        ssr = false;
+    bool                        ssao = false;
+    bool                        ssaoDebug = false;
     bool                        ssrDebug = false;
 
     bool                        toneMapping = true;

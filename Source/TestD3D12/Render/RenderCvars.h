@@ -78,6 +78,11 @@ extern BE1::CVar    r_hiZOcclusionCullingFreeze;
 extern BE1::CVar    r_hiZDebugPreview;
 extern BE1::CVar    r_hiZDebugPreviewMipLevel;
 
+extern BE1::CVar    r_ssao2;
+extern BE1::CVar    r_ssaoDebug;
+extern BE1::CVar    r_ssaoRadius;
+extern BE1::CVar    r_ssaoPower;
+
 extern BE1::CVar    r_ssr;
 extern BE1::CVar    r_ssrDebug;
 extern BE1::CVar    r_ssrMaxDistance;

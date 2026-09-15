@@ -237,6 +237,9 @@ bool RenderBackend::UploadCameraConstants() {
     if (renderFrameSettings.specularAA) {
         flags |= ShaderCameraFlagUseSpecularAA;
     }
+    if (currentVisCamera->applySSAO) {
+        flags |= ShaderCameraFlagUseSSAO;
+    }
 
     ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentVisCamera->viewProjMatrix;
     ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentVisCamera->prevViewProjMatrix;
@@ -259,8 +262,15 @@ bool RenderBackend::UploadCameraConstants() {
     constants->flags = flags;
 
     constants->ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
-    constants->projectionDepthA = currentVisCamera->projectionDepthA;
-    constants->projectionDepthB = currentVisCamera->projectionDepthB;
+    constants->projectionZ = float2(currentVisCamera->projectionZ.x, currentVisCamera->projectionZ.y);
+
+    // Reconstruct directly in view space using the same jitter as the depth prepass.
+    const BE1::Vec4 &projectionXY = currentVisCamera->projectionXY;
+    constants->projectionXY = float4(projectionXY.x, projectionXY.y, projectionXY.z + currentVisCamera->jitterNDC.x, projectionXY.w + currentVisCamera->jitterNDC.y);
+    const float inverseProjectionScaleX = 1.0f / projectionXY.x;
+    const float inverseProjectionScaleY = 1.0f / projectionXY.y;
+    // Keep reconstruction in UV coordinates so passes can use their own resolution.
+    constants->uvToView = float4(2.0f * inverseProjectionScaleX, -2.0f * inverseProjectionScaleY, (-1.0f - constants->projectionXY.z) * inverseProjectionScaleX, (1.0f - constants->projectionXY.w) * inverseProjectionScaleY);
 
     constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
     constants->numLocalLights = currentVisCamera->numVisLocalLights;
@@ -286,7 +296,7 @@ bool RenderBackend::UploadCameraConstants() {
     constants->envLightDiffuseIrradianceCubeMapIndex = currentVisCamera->envLightDiffuseIrradianceCubeMap ? currentVisCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularCubeMapIndex = currentVisCamera->envLightSpecularCubeMap ? currentVisCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularMipCount = currentVisCamera->envLightSpecularMipCount;
-    constants->padding1 = 0;
+    constants->ssaoTextureIndex = currentVisCamera->applySSAO ? currentVisCamera->ssaoTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
 
     // Shadow depth 기록을 마친 뒤 해당 카메라의 샘플링 데이터를 활성화한다.
     constants->csm = {};
@@ -305,6 +315,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameScreenSpaceDepthPyramidFirstMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstMSAAPipeline);
     frameScreenSpaceDepthPyramidReducePSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidReducePipeline);
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
+    frameSSAOPSO = ShaderPipeline::GetReadyPSO(renderSystem->ssaoPipeline);
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
     frameSurfaceOutputMSAAResolveNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalPipeline);
@@ -616,9 +627,22 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     const RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
     const bool hasDepthPrepass = FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
 
+    bool ssaoReady = false;
+
     // depth prepass
     if (hasDepthPrepass) {
         ExecuteDrawCamera3DDepthPrepass(depthLoadAction);
+
+        if (currentVisCamera->applySSAO) {
+            ssaoReady = DispatchSSAO(RHI::GPUResourceState::ShaderResource);
+        }
+    }
+
+    // Disable SSAO if its commands were not recorded before opaque shading.
+    // The camera command list has not been submitted yet.
+    if (currentVisCamera->applySSAO && !ssaoReady) {
+        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
+        constants->flags &= ~ShaderCameraFlagUseSSAO;
     }
 
     // Opaque 와 Skybox 를 렌더링한다.
@@ -663,12 +687,12 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
     const RHI::Texture *outputOverrideTexture = nullptr;
 
-    if (renderFrameSettings.ssrDebug && ssrTraceReady) {
-        outputOverrideTexture = currentVisCamera->ssrTraceTexture;
-    }
-
-    if (renderFrameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
+    if (renderFrameSettings.ssaoDebug && ssaoReady) {
+        outputOverrideTexture = currentVisCamera->ssaoTexture;
+    } else if (renderFrameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
         outputOverrideTexture = currentVisCamera->rtColorTexture;
+    } else if (renderFrameSettings.ssrDebug && ssrTraceReady) {
+        outputOverrideTexture = currentVisCamera->ssrTraceTexture;
     }
 
     PostProcessAndBlitToOutput(surfaceOutputsReady, outputOverrideTexture);

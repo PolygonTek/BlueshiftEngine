@@ -20,9 +20,9 @@ struct ShaderLightIterator {
 
 float LinearizeLightCullingDepth(float ndcDepth) {
     if ((cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0) {
-        return LinearizeOrthogonalDepth(ndcDepth, cameraConstants.projectionDepthA, cameraConstants.projectionDepthB);
+        return LinearizeOrthogonalDepth(ndcDepth, cameraConstants.projectionZ.x, cameraConstants.projectionZ.y);
     }
-    return LinearizePerspectiveDepth(ndcDepth, cameraConstants.projectionDepthA, cameraConstants.projectionDepthB);
+    return LinearizePerspectiveDepth(ndcDepth, cameraConstants.projectionZ.x, cameraConstants.projectionZ.y);
 }
 
 uint LoadLightZBin(uint address, bool waveCoherent) {

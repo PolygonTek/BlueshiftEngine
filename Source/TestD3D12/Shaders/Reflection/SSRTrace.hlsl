@@ -75,7 +75,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float surfaceDepth;
     float3 surfaceNormal;
     LoadClosestDepthAndNormal(outputPixelCoord, inputPixelCoord, surfaceDepth, surfaceNormal);
-    if (abs(surfaceDepth - farPlaneDeviceDepth) <= FLT_EPSILON) {
+    // 원본 깊이에서 선택한 샘플이므로 clear 값만 배경으로 취급한다.
+    if (surfaceDepth == farPlaneDeviceDepth) {
         outputTraceTexture[outputPixelCoord] = 0.0f;
         return;
     }
@@ -119,7 +120,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         ssrTraceParams.inputSize, ssrTraceParams.depthPyramidMipCount, ssrTraceParams.maxIterations,
         ssrTraceParams.binaryRefinementSteps, ssrTraceParams.thickness,
         farPlaneDeviceDepth, ssrTraceParams.useMinDepth != 0, cameraConstants.ndcDepthScaleBias,
-        float2(cameraConstants.projectionDepthA, cameraConstants.projectionDepthB), orthogonal);
+        cameraConstants.projectionZ, orthogonal);
 
     outputTraceTexture[outputPixelCoord] = GetTraceDebugColor(traceResult.status);
 }

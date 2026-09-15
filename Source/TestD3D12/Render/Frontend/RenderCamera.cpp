@@ -23,6 +23,7 @@
 
 RenderCamera::~RenderCamera() {
     DestroyPostProcessResources();
+    DestroySSAOResources();
     DestroySSRTraceTexture();
     DestroySSRResolvedDepthTexture();
     DestroyScreenSpaceDepthPyramidTexture();
@@ -1428,6 +1429,59 @@ void RenderCamera::DestroySSRResolvedDepthTexture() {
     if (ssrResolvedDepthTexture) {
         RHI::renderer->DestroyTexture(ssrResolvedDepthTexture);
         ssrResolvedDepthTexture = nullptr;
+    }
+}
+
+void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, bool needed) {
+    if (!needed || width == 0 || height == 0) {
+        DestroySSAOResources();
+        return;
+    }
+
+    if (ssaoTexture && (ssaoTexture->GetWidth() != width || ssaoTexture->GetHeight() != height)) {
+        DestroySSAOResources();
+    }
+
+    if (!ssaoTexture) {
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        // L8 uses R8_UNORM storage and an (R, R, R, 1) SRV swizzle for the existing fullscreen blit.
+        image->InitFromMemory(width, height, 1, 1, 1, BE1::Image::Format::L8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        ssaoTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!ssaoTexture) {
+            BE_WARNLOG("RenderCamera::EnsureSSAOResources: failed to create AO texture\n");
+            DestroySSAOResources();
+            return;
+        }
+        RHI::renderer->SetName(ssaoTexture, "RenderCamera::ssaoTexture");
+    }
+
+    // SSR already owns a suitable full-resolution resolve target when enabled.
+    if (!needResolvedDepth) {
+        if (ssaoResolvedDepthTexture) {
+            RHI::renderer->DestroyTexture(ssaoResolvedDepthTexture);
+            ssaoResolvedDepthTexture = nullptr;
+        }
+    } else if (!ssaoResolvedDepthTexture) {
+        // MSAA 가 켜져있다면 resolve 된 SSAO 용 depth texture 가 필요하다.
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        image->InitFromMemory(width, height, 1, 1, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        ssaoResolvedDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!ssaoResolvedDepthTexture) {
+            BE_WARNLOG("RenderCamera::EnsureSSAOResources: failed to create resolved depth texture\n");
+            return;
+        }
+        RHI::renderer->SetName(ssaoResolvedDepthTexture, "RenderCamera::ssaoResolvedDepthTexture");
+    }
+}
+
+void RenderCamera::DestroySSAOResources() {
+    if (ssaoTexture) {
+        RHI::renderer->DestroyTexture(ssaoTexture);
+        ssaoTexture = nullptr;
+    }
+    if (ssaoResolvedDepthTexture) {
+        RHI::renderer->DestroyTexture(ssaoResolvedDepthTexture);
+        ssaoResolvedDepthTexture = nullptr;
     }
 }
 

@@ -212,7 +212,9 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
         return;
     }
 
-    const bool useDepthPrepass = frameData->GetRenderFrameSettings().depthPrepass;
+    // Forward lighting 에서 불투명 표면을 렌더링하려면 AO 가 필요하다.
+    // 따라서 SSAO 가 켜지면 depth prepass 를 강제로 켠다.
+    const bool useDepthPrepass = frameData->GetRenderFrameSettings().depthPrepass || visCamera->applySSAO;
 
     int numDepthDrawSurfs = 0;
     int numOpaqueDrawSurfs = 0;

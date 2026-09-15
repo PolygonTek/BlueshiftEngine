@@ -91,8 +91,12 @@ static const uint GenHiZMipBlockSizeY = 8;
 static const uint HiZDebugPreviewBlockSizeX = 16;
 static const uint HiZDebugPreviewBlockSizeY = 16;
 
+static const uint SSAOBlockSizeX = 8;
+static const uint SSAOBlockSizeY = 8;
+
 static const uint ScreenSpaceDepthPyramidBlockSizeX = 8;
 static const uint ScreenSpaceDepthPyramidBlockSizeY = 8;
+
 static const uint SSRTraceBlockSizeX = 8;
 static const uint SSRTraceBlockSizeY = 8;
 
@@ -106,6 +110,9 @@ static const uint HiZCullIndirectArgSize = 20;
 
 static const uint ShaderSurfaceFlagNonUniformScale = 1u << 0;
 static const uint ShaderSkinningJointOffsetInvalid = 0xFFFFFFFF;
+
+// Independent material properties shared by CPU and GPU code.
+static const uint ShaderMaterialFlagTransparent = 1u << 0;
 
 static const uint ShaderLightTypeBitCount = 2;
 static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
@@ -137,6 +144,7 @@ static const uint ShaderCameraFlagProjectionOrthogonal = 1u << 0;
 static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
 static const uint ShaderCameraFlagUseDirectionalLight = 1u << 2;
 static const uint ShaderCameraFlagUseSpecularAA = 1u << 3;
+static const uint ShaderCameraFlagUseSSAO = 1u << 4;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
@@ -259,14 +267,16 @@ struct TAAResolveParams {
     float historyWeight;
     uint historyValid;
     uint useMinDepth;
-    uint orthogonal;
-    float2 projectionDepthParams;
-    float2 ndcDepthScaleBias;
     float depthFallbackThreshold;
     float maxSubpixelCurrentWeight;
     float luminanceWeight;
     float colorBoxSigma;
+    uint padding0;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(TAAResolveParams) == 48, "TAAResolveParams must match the HLSL constant-buffer layout");
+#endif
 
 struct DepthMSAAResolveParams {
     uint2 outputSize;
@@ -343,6 +353,21 @@ struct HiZMipGenParams {
     uint useMinDepth;
 };
 
+struct SSAOParams {
+    uint2 outputSize;
+    float2 outputSizeRcp;
+    float power;
+    float radius;
+    float normalBias;
+    float depthBias;
+    float farPlaneDeviceDepth;
+    float3 padding0;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(SSAOParams) == 48, "SSAOParams must match the HLSL root constants");
+#endif
+
 struct ScreenSpaceDepthPyramidParams {
     uint2 inputSize;
     uint2 outputSize;
@@ -376,13 +401,13 @@ static_assert(sizeof(SSRTraceParams) == 44, "SSRTraceParams must match the HLSL 
 struct HiZDebugPreviewParams {
     uint2 inputSize;
     uint2 outputSize;
-    float2 projectionDepthParams;
-    float2 ndcDepthScaleBias;
     float linearDepthScale;
-    uint orthogonal;
-    uint padding0;
-    uint padding1;
+    uint3 padding0;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(HiZDebugPreviewParams) == 32, "HiZDebugPreviewParams must match the HLSL constant-buffer layout");
+#endif
 
 struct HiZCullInstancesParams {
     uint inputInstanceCount;
@@ -703,8 +728,9 @@ struct CameraConstants {
     uint flags;
 
     float2 ndcDepthScaleBias;
-    float projectionDepthA;
-    float projectionDepthB;
+    float2 projectionZ;     // clip.z = view.z * projectionZ.x + projectionZ.y
+    float4 projectionXY;    // clip.xy = view.xy * projectionXY.xy + clip.w * projectionXY.zw (including jitter).
+    float4 uvToView;        // view.xy = (uv * uvToView.xy + uvToView.zw) * clip.w (top-left UV in [0, 1], independent of pass resolution).
 
     uint surfaceTableIndex;
     uint numLocalLights;
@@ -726,13 +752,13 @@ struct CameraConstants {
     uint envLightDiffuseIrradianceCubeMapIndex;
     uint envLightSpecularCubeMapIndex;
     uint envLightSpecularMipCount;
-    uint padding1;
+    uint ssaoTextureIndex;
 
     ShaderCSMData csm;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(CameraConstants) == 880, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 912, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {
@@ -780,6 +806,7 @@ struct ShaderMaterial {
     float aoStrength;
     uint packedClearCoatFactors;
     float heightScale;
+    uint flags; // ShaderMaterialFlag* bitmask.
 
 #ifndef __cplusplus
     inline float4 GetBaseColorFactor() { return UnpackRGBA8UNormToFloat4(packedBaseColorFactor); }
@@ -790,7 +817,7 @@ struct ShaderMaterial {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderMaterial) == 80, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
+static_assert(sizeof(ShaderMaterial) == 84, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
 #endif
 
 struct ShaderLightRef {

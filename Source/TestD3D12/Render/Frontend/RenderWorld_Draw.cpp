@@ -292,6 +292,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     RenderContext *renderContext = RenderContext::activeContext;
     const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
     const BE1::Rect &outputRect = renderCamera->desc.outputRect;
+
     // VisLight stores each tile coordinate in 8 bits; limit internal render targets to 256 tiles per axis.
     const uint32_t renderWidth = BE1::Min(renderCamera->desc.renderWidth > 0 ? renderCamera->desc.renderWidth : (outputRect.w > 0 ? static_cast<uint32_t>(outputRect.w) : 0), VisLight::MaxRenderDimension);
     const uint32_t renderHeight = BE1::Min(renderCamera->desc.renderHeight > 0 ? renderCamera->desc.renderHeight : (outputRect.h > 0 ? static_cast<uint32_t>(outputRect.h) : 0), VisLight::MaxRenderDimension);
@@ -315,14 +316,14 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     const bool skipPostProcess = renderFrameSettings.skipPostProcess || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
+    const bool debugSSAO = renderFrameSettings.ssao && renderFrameSettings.ssaoDebug;
     const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableTemporalHistory);
-    const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess && renderFrameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
+    const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess && !debugSSAO && renderFrameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
     const bool needColorHistory = useTAA;
     const bool needDepthHistory = useTAA;
     const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && renderFrameSettings.hiZOcclusionCulling;
     const bool needHiZTexture = needHiZCullResources;
     const bool needHiZDebugPreview = needHiZTexture && renderFrameSettings.hiZDebugPreview;
-    const bool needSSR = renderFrameSettings.ssr && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
 
     const RenderBloomMode bloomMode = renderFrameSettings.bloomMode;
 
@@ -330,8 +331,11 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         return;
     }
 
-    renderCamera->EnsureScreenSpaceDepthPyramidResources(renderWidth, renderHeight, needSSR);
-    renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), needSSR);
+    renderCamera->EnsureScreenSpaceDepthPyramidResources(renderWidth, renderHeight, renderFrameSettings.ssr);
+    renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), renderFrameSettings.ssr);
+
+    const bool needSSAOResolvedDepth = renderContext->GetMainRTSampleCount() > 1 && !renderCamera->GetSSRResolvedDepthTexture();
+    renderCamera->EnsureSSAOResources(renderWidth, renderHeight, needSSAOResolvedDepth, renderFrameSettings.ssao);
 
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
     const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
@@ -353,7 +357,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
     const bool useMSAA = renderCamera->GetRTColorMSAATexture() != nullptr;
     const bool hasSSRInputs = renderCamera->GetRTNormalTexture() && (!useMSAA || renderCamera->GetSSRResolvedDepthTexture());
-    const bool requestScreenSpaceDepthPyramidGeneration = needSSR && hasSSRInputs && renderCamera->GetDepthTexture() && renderCamera->GetScreenSpaceDepthPyramidTexture();
+    const bool requestScreenSpaceDepthPyramidGeneration = renderFrameSettings.ssr && hasSSRInputs && renderCamera->GetDepthTexture() && renderCamera->GetScreenSpaceDepthPyramidTexture();
     const bool requestSSRTrace = requestScreenSpaceDepthPyramidGeneration && renderCamera->GetSSRTraceTexture();
 
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
@@ -401,13 +405,15 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->clearColorMode = renderCamera->desc.clearColorMode;
     visCamera->clearColor = renderCamera->desc.clearColor;
     visCamera->projectionPolicy = renderCamera->desc.projectionPolicy;
-    visCamera->projectionDepthA = renderCamera->projMatrix[2][2];
-    visCamera->projectionDepthB = renderCamera->projMatrix[2][3];
+    visCamera->projectionZ = BE1::Vec2(renderCamera->projMatrix[2][2], renderCamera->projMatrix[2][3]);
     visCamera->projectionOrthogonal = renderCamera->desc.orthogonal;
     visCamera->projectionInfiniteZFar = renderCamera->desc.infiniteZFar;
+
     if (visCamera->projectionOrthogonal) {
+        visCamera->projectionXY = BE1::Vec4(renderCamera->projMatrix[0][0], renderCamera->projMatrix[1][1], renderCamera->projMatrix[0][3], renderCamera->projMatrix[1][3]);
         visCamera->viewBox = renderCamera->GetBox();
     } else {
+        visCamera->projectionXY = BE1::Vec4(renderCamera->projMatrix[0][0], renderCamera->projMatrix[1][1], -renderCamera->projMatrix[0][2], -renderCamera->projMatrix[1][2]);
         visCamera->viewFrustum = renderCamera->GetFrustum();
     }
 
@@ -420,7 +426,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     visCamera->flags = renderCamera->desc.flags;
-    visCamera->needNormalOutput = needSSR;
+    visCamera->needNormalOutput = renderFrameSettings.ssr;
     visCamera->needVelocityOutput = useTAA;
     visCamera->rtColorTexture = renderCamera->GetRTColorTexture();
     visCamera->rtColorMSAATexture = renderCamera->GetRTColorMSAATexture();
@@ -429,11 +435,18 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->rtNormalMSAATexture = renderCamera->GetRTNormalMSAATexture();
     visCamera->rtVelocityTexture = renderCamera->GetRTVelocityTexture();
     visCamera->rtVelocityMSAATexture = renderCamera->GetRTVelocityMSAATexture();
+
     visCamera->sceneSnapshotDownsamplePSO = useHalfResSnapshot ? sceneSnapshotDownsamplePSO : nullptr;
     visCamera->snapshotColorTexture = renderCamera->GetSnapshotColorTexture();
     visCamera->snapshotDepthTexture = renderCamera->GetSnapshotDepthTexture();
 
+    visCamera->ssrResolvedDepthTexture = renderCamera->GetSSRResolvedDepthTexture();
+    visCamera->ssaoTexture = renderCamera->GetSSAOTexture();
+    visCamera->ssaoDepthTexture = useMSAA ? (visCamera->ssrResolvedDepthTexture ? visCamera->ssrResolvedDepthTexture : renderCamera->GetSSAOResolvedDepthTexture()) : visCamera->depthTexture;
+    visCamera->applySSAO = renderFrameSettings.ssao && visCamera->ssaoTexture && visCamera->ssaoDepthTexture;
+
     visCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;
+
     if (visCamera->generateScreenSpaceDepthPyramid) {
         visCamera->screenSpaceDepthPyramidTexture = renderCamera->GetScreenSpaceDepthPyramidTexture();
         visCamera->screenSpaceDepthPyramidMipCount = renderCamera->GetScreenSpaceDepthPyramidMipCount();
@@ -449,7 +462,6 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     visCamera->traceSSR = requestSSRTrace;
-    visCamera->ssrResolvedDepthTexture = renderCamera->GetSSRResolvedDepthTexture();
     visCamera->ssrTraceTexture = renderCamera->GetSSRTraceTexture();
 
     visCamera->generateHiZ = requestHiZGeneration;
@@ -1891,8 +1903,8 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->viewMatrix = BE1::Mat4::identity;
     visCamera->viewProjMatrix.SetOrthoRH(0, screenWidth, screenHeight, 0, -1.0, 1.0, true); // Y 를 뒤집는다.
     visCamera->invViewProjMatrix = visCamera->viewProjMatrix.Inverse();
-    visCamera->projectionDepthA = visCamera->viewProjMatrix[2][2];
-    visCamera->projectionDepthB = visCamera->viewProjMatrix[2][3];
+    visCamera->projectionXY = BE1::Vec4(visCamera->viewProjMatrix[0][0], visCamera->viewProjMatrix[1][1], visCamera->viewProjMatrix[0][3], visCamera->viewProjMatrix[1][3]);
+    visCamera->projectionZ = BE1::Vec2(visCamera->viewProjMatrix[2][2], visCamera->viewProjMatrix[2][3]);
     visCamera->projectionOrthogonal = true;
     visCamera->projectionInfiniteZFar = false;
 

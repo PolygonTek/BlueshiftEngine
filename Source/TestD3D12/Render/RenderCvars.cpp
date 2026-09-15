@@ -43,7 +43,7 @@ CVAR(r_specularAA, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enabl
 CVAR(r_shadows2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable shadows");
 CVAR_MINMAX(r_shadowDebug, "0", BE1::CVar::Flag::Integer, "shadow debug view (0 = off, 1 = visibility, 2 = coverage)", 0, 2);
 CVAR_MINMAX(r_shadowMapQuality2, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "shadow map filter quality (0 = 1, 1 = 5, 2 = 9, 3 = 16 rotated Poisson comparisons)", 0, 3);
-CVAR_MINMAX(r_shadowMapFilterRadius, "2.0", BE1::CVar::Flag::Float, "Q3 Poisson filter radius in texels at 1024 resolution; adjusted for CSM resolution and cascade scale (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::ShadowMapFilterRadiusMin, RenderFrameSettings::ShadowMapFilterRadiusMax);
+CVAR_MINMAX(r_shadowMapFilterRadius, "1.414", BE1::CVar::Flag::Float, "Q3 Poisson filter radius in texels at 1024 resolution; adjusted for CSM resolution and cascade scale (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::ShadowMapFilterRadiusMin, RenderFrameSettings::ShadowMapFilterRadiusMax);
 CVAR_MINMAX(r_csmResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "cascade shadow map resolution", 128, 8192);
 CVAR_MINMAX(r_csmCount, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "active CSM cascade count", 1, RenderFrameSettings::CSMCascadeCount);
 CVAR_MINMAX(r_csmSplitLambda, "0.9", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "CSM split distribution (0 = uniform, 1 = logarithmic; orthographic cameras use uniform)", 0.0f, 1.0f);
@@ -74,6 +74,11 @@ CVAR(r_hiZOcclusionCulling, "0", BE1::CVar::Flag::Bool, "enable Hi-Z occlusion c
 CVAR(r_hiZOcclusionCullingFreeze, "0", BE1::CVar::Flag::Bool, "freeze Hi-Z occlusion culling depth pyramid updates");
 CVAR(r_hiZDebugPreview, "0", BE1::CVar::Flag::Bool, "enable Hi-Z debug preview texture update");
 CVAR_MINMAX(r_hiZDebugPreviewMipLevel, "0", BE1::CVar::Flag::Integer, "Hi-Z debug preview mip level", 0, RenderHiZMaxLevelCount - 1);
+
+CVAR(r_ssao2, "1", BE1::CVar::Flag::Bool, "apply screen-space ambient occlusion to indirect lighting");
+CVAR(r_ssaoDebug, "0", BE1::CVar::Flag::Bool, "show full-resolution screen-space ambient occlusion");
+CVAR_MINMAX(r_ssaoRadius, "0.5", BE1::CVar::Flag::Float, "screen-space ambient occlusion radius in world units", 0.01f, 10.0f);
+CVAR_MINMAX(r_ssaoPower, "1.0", BE1::CVar::Flag::Float, "screen-space ambient occlusion power", 0.25f, 4.0f);
 
 CVAR(r_ssr, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
 CVAR(r_ssrDebug, "0", BE1::CVar::Flag::Bool, "show screen-space reflection trace debug output");
@@ -249,6 +254,11 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.hiZOcclusionCulling = r_hiZOcclusionCulling.GetBool();
     settings.hiZOcclusionCullingFreeze = r_hiZOcclusionCullingFreeze.GetBool();
     settings.hiZDebugPreview = r_hiZDebugPreview.GetBool();
+
+    settings.ssao = r_ssao2.GetBool();
+    settings.ssaoDebug = r_ssaoDebug.GetBool();
+    settings.ssaoRadius = r_ssaoRadius.GetFloat();
+    settings.ssaoPower = r_ssaoPower.GetFloat();
 
     settings.ssr = r_ssr.GetBool();
     settings.ssrDebug = r_ssrDebug.GetBool();

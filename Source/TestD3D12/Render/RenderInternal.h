@@ -229,8 +229,8 @@ struct VisCamera {
     RenderCamera::ClearColorMode clearColorMode;
     BE1::Color4                 clearColor;
     RHI::ProjectionPolicy       projectionPolicy;
-    float                       projectionDepthA = 0.0f;
-    float                       projectionDepthB = 0.0f;
+    BE1::Vec4                   projectionXY = BE1::Vec4::zero; // XY scale and NDC offset before jitter
+    BE1::Vec2                   projectionZ = BE1::Vec2::zero;
     bool                        projectionOrthogonal = false;
     bool                        projectionInfiniteZFar = false;
     float                       ndcDepthScale = 1.0f;
@@ -268,6 +268,10 @@ struct VisCamera {
     bool                        hiZDebugPreview = false;
     RHI::Texture *              hiZDebugPreviewTexture = nullptr;
     float                       hiZDebugLinearDepthScale = 1.0f;
+
+    bool                        applySSAO = false;
+    RHI::Texture *              ssaoTexture = nullptr;
+    RHI::Texture *              ssaoDepthTexture = nullptr;
 
     bool                        generateScreenSpaceDepthPyramid = false;
     RHI::Texture *              screenSpaceDepthPyramidTexture = nullptr;

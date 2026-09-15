@@ -45,6 +45,7 @@ public:
         HiZDebugPreview,
         GenScreenSpaceDepthPyramid,
         SSRTrace,
+        SSAO,
         SurfaceOutputMSAAResolve,
         DepthMSAAResolve,
         LuminancePass1,

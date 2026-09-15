@@ -124,7 +124,23 @@ inline float ComputeTextureLod(in uint2 textureSize, in float2 dFdx_uv, in float
     return log2(lengthMinor);
 }
 
-// Clip space position 을 좌상단 원점의 UV [0, 1] 와 device depth 로 변환한다.
+// 좌상단 원점의 UV [0, 1] 과 양의 선형 깊이로 뷰 위치를 복원한다.
+// 오른손 뷰 공간의 카메라 전방은 음의 Z 축이므로 선형 깊이는 -view.z 이다.
+// uvToView 는 깊이 생성에 사용한 투영과 일치해야 하며, 투영 지터를 포함한다.
+inline float3 ViewPositionFromLinearDepth(float2 uv, float linearDepth, float4 uvToView, bool orthogonal) {
+    const float2 viewXY = uv * uvToView.xy + uvToView.zw;
+    return float3(viewXY * (orthogonal ? 1.0f : linearDepth), -linearDepth);
+}
+
+// 뷰 위치를 원근 나눗셈 전의 클립 위치로 변환한다.
+// projectionXY 는 XY 투영 배율과 오프셋이다.
+// clip.z = view.z * projectionZ.x + projectionZ.y
+inline float4 ProjectViewPosition(float3 position, float4 projectionXY, float2 projectionZ, bool orthogonal) {
+    const float clipW = orthogonal ? 1.0f : -position.z;
+    return float4(position.xy * projectionXY.xy + clipW * projectionXY.zw, projectionZ.x * position.z + projectionZ.y, clipW);
+}
+
+// clip space position 을 좌상단 원점의 UV [0, 1] 와 device depth 로 변환한다.
 inline float3 ClipPositionToScreenPosition(float4 clipPosition, float2 ndcDepthScaleBias) {
     const float3 ndcPosition = clipPosition.xyz / clipPosition.w;
     const float2 uv = ndcPosition.xy * float2(0.5f, -0.5f) + 0.5f;
@@ -155,40 +171,76 @@ inline float ComputeReprojectedPreviousDepth(in float2 uv, in float currentDepth
     return previousClipPosition.z / previousClipPosition.w;
 }
 
-inline float SafeSignedDenominator(float value) {
-    const float minAbsValue = 1.0e-6;
-    if (abs(value) >= minAbsValue) {
-        return value;
-    }
-    return value < 0.0 ? -minAbsValue : minAbsValue;
-}
-
+// NDC Z 를 선형 Depth 로 변환한다.
 // projDepthA: projection matrix [2][2]
 // projDepthB: projection matrix [2][3]
 inline float LinearizePerspectiveDepth(float ndcDepth, float projDepthA, float projDepthB) {
     // ndcZ = (A * viewZ + B) / (-viewZ)
     // viewZ = -B / (ndcZ + A)
-    // projection matrix 는 오른손 좌표계이므로 음수 방향이 카메라 앞쪽이다. 그러므로 preview 를 위해서 뒤집는다.
+    // 오른손 뷰 공간에서 카메라 전방은 음의 Z 축이므로, -viewZ 를 양의 선형 깊이로 사용한다.
     // viewDistance = -viewZ = B / (ndcZ + A)
-    return projDepthB / SafeSignedDenominator(ndcDepth + projDepthA);
+    return projDepthB / (ndcDepth + projDepthA);
 }
 
+// NDC Z 를 선형 Depth 로 변환한다.
 // projDepthA: projection matrix [2][2]
 // projDepthB: projection matrix [2][3]
 inline float LinearizeOrthogonalDepth(float ndcDepth, float projDepthA, float projDepthB) {
     // ndcZ = (A * viewZ + B) / 1
     // viewZ = (ndcZ - B) / A
-    // projection matrix 는 오른손 좌표계이므로 음수 방향이 카메라 앞쪽이다. 그러므로 preview 를 위해서 뒤집는다.
+    // 오른손 뷰 공간에서 카메라 전방은 음의 Z 축이므로, -viewZ 를 양의 선형 깊이로 사용한다.
     // viewDistance = -viewZ = (B - ndcZ) / A
-    return (projDepthB - ndcDepth) / SafeSignedDenominator(projDepthA);
+    return (projDepthB - ndcDepth) / projDepthA;
 }
 
 // device depth 를 카메라 전방 축을 따르는 양의 linear view depth 로 변환한다.
-inline float DeviceDepthToLinearDepth(float deviceDepth, float2 ndcDepthScaleBias, float2 projectionDepthParams, bool orthogonal) {
+// 작은 분모도 유효한 원거리 표면을 나타낼 수 있으므로 분모의 최솟값을 제한하지 않는다.
+// 무한 원거리 투영의 배경은 무한 깊이가 될 수 있다. 호출부는 배경을 제외하거나,
+// 위치 복원과 깊이 차이 계산 전에 무한 깊이를 별도로 처리해야 한다.
+inline float ToLinearDepth(float deviceDepth, float2 ndcDepthScaleBias, float2 projectionZ, bool orthogonal) {
     const float ndcDepth = deviceDepth * ndcDepthScaleBias.x + ndcDepthScaleBias.y;
     return orthogonal ?
-        LinearizeOrthogonalDepth(ndcDepth, projectionDepthParams.x, projectionDepthParams.y) :
-        LinearizePerspectiveDepth(ndcDepth, projectionDepthParams.x, projectionDepthParams.y);
+        LinearizeOrthogonalDepth(ndcDepth, projectionZ.x, projectionZ.y) :
+        LinearizePerspectiveDepth(ndcDepth, projectionZ.x, projectionZ.y);
+}
+
+// Returns a uniformly sampled direction on the unit sphere.
+// xi must be in [0, 1)^2. PDF with respect to solid angle is 1 / (4 * PI).
+inline float3 SampleSphereUniform(float2 xi) {
+    const float cosTheta = 1.0f - 2.0f * xi.x;
+    const float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+    const float phi = TWO_PI * xi.y;
+
+    float sinPhi;
+    float cosPhi;
+    sincos(phi, sinPhi, cosPhi);
+    return float3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
+}
+
+// Returns a uniformly sampled direction on the unit hemisphere about local +Z.
+// xi must be in [0, 1)^2. PDF with respect to solid angle is 1 / (2 * PI).
+inline float3 SampleHemisphereUniform(float2 xi) {
+    const float cosTheta = 1.0f - xi.x;
+    const float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+    const float phi = TWO_PI * xi.y;
+
+    float sinPhi;
+    float cosPhi;
+    sincos(phi, sinPhi, cosPhi);
+    return float3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
+}
+
+// Returns a cosine-weighted direction on the unit hemisphere about local +Z.
+// xi must be in [0, 1)^2. PDF with respect to solid angle is cosTheta / PI.
+inline float3 SampleHemisphereCosine(float2 xi) {
+    const float cosTheta = sqrt(1.0f - xi.x);
+    const float sinTheta = sqrt(xi.x);
+    const float phi = TWO_PI * xi.y;
+
+    float sinPhi;
+    float cosPhi;
+    sincos(phi, sinPhi, cosPhi);
+    return float3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
 }
 
 #endif // __COMMON_HLSLI__

@@ -387,6 +387,7 @@ void App::BuildImGuiTextureViewer() {
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", depthTexture);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Depth Pyramid", renderCamera->GetScreenSpaceDepthPyramidTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Trace", renderCamera->GetSSRTraceTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSAO", renderCamera->GetSSAOTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", renderCamera->GetRTVelocityTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetRTNormalTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
@@ -921,6 +922,29 @@ void App::BuildImGuiOverlay() {
                     }
                     ImGui::TreePop();
                 }
+            }
+
+            if (roundedCollapsingHeader("Screen Space Ambient Occlusion##SSAOHeader")) {
+                bool ssao = r_ssao2.GetBool();
+                if (ImGui::Checkbox("Ambient occlusion", &ssao)) {
+                    r_ssao2.SetBool(ssao);
+                }
+                ImGui::BeginDisabled(!ssao);
+                bool ssaoDebug = r_ssaoDebug.GetBool();
+                if (ImGui::Checkbox("AO debug output", &ssaoDebug)) {
+                    r_ssaoDebug.SetBool(ssaoDebug);
+                }
+                float ssaoRadius = r_ssaoRadius.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Radius##SSAO", &ssaoRadius, r_ssaoRadius.GetMinValue(), r_ssaoRadius.GetMaxValue(), "%.2f m", ImGuiSliderFlags_Logarithmic)) {
+                    r_ssaoRadius.SetFloat(ssaoRadius);
+                }
+                float ssaoPower = r_ssaoPower.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Power##SSAO", &ssaoPower, r_ssaoPower.GetMinValue(), r_ssaoPower.GetMaxValue(), "%.2f")) {
+                    r_ssaoPower.SetFloat(ssaoPower);
+                }
+                ImGui::EndDisabled();
             }
 
             if (roundedCollapsingHeader("Screen Space Reflection##SSRHeader")) {

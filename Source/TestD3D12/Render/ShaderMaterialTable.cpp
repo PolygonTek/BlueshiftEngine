@@ -275,4 +275,10 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
         GetMaterialFactor(material, ShaderTemplate::StandardProperty::ClearCoatFactor),
         GetMaterialFactor(material, ShaderTemplate::StandardProperty::ClearCoatRoughnessFactor)));
     outShaderMaterial.heightScale = GetMaterialHeightScale(material);
+
+    uint32_t flags = 0;
+    if (material && material->GetRenderingMode() == Material::RenderingMode::Blend) {
+        flags |= ShaderMaterialFlagTransparent;
+    }
+    outShaderMaterial.flags = flags;
 }
