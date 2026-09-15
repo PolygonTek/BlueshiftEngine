@@ -35,8 +35,14 @@ bool Triangle::IsContainPoint(const Vec3 &point, float thicknessSq) const {
     return br.x >= -1e-3f && br.y >= -1e-3f && br.z >= -1e-3f; 
 }
 
-// Christer Ericson's Real-Time Collision Detection, pp. 191-192.
 bool Triangle::IntersectRay(const Ray &ray, float *hitDist) const {
+    return IntersectRay(ray, hitDist, nullptr);
+}
+
+// Christer Ericson's Real-Time Collision Detection, pp. 191-192.
+bool Triangle::IntersectRay(const Ray &ray, float *hitDist, Vec3 *hitBarycentric, float epsilon) const {
+    assert(epsilon >= 0.0f);
+
     // Find vectors for two edges sharing vertex a.
     Vec3 ab = b - a;
     Vec3 ac = c - a;
@@ -47,12 +53,12 @@ bool Triangle::IntersectRay(const Ray &ray, float *hitDist) const {
     // Compute denominator d.
     float d = -ray.dir.Dot(n);
 
-    // If d <= 0, ray is lies in plane of triangle, so exit early.
-    if (Math::Abs(d) < 1e-6f) {
+    // Reject back faces, parallel rays and positive denominators below the threshold.
+    if (d <= 0.0f || d < epsilon) {
         return false;
     }
 
-    // Compute intersection t value of ray.dir with plane of triangle. 
+    // Compute intersection t value of ray.dir with plane of triangle.
     // A ray intersects iff 0 <= t.
     // Delay dividing by d until intersection has been found to pierce triangle.
     Vec3 ap = ray.origin - a;
@@ -62,7 +68,7 @@ bool Triangle::IntersectRay(const Ray &ray, float *hitDist) const {
     }
 
     // Compute barycentric coordinate components (v, w) and test if within bounds.
-    Vec3 e = ap.Cross(ray.dir);
+    Vec3 e = -ray.dir.Cross(ap);
     float v = ac.Dot(e);
     if (v < 0.0f || v > d) {
         return false;
@@ -72,7 +78,15 @@ bool Triangle::IntersectRay(const Ray &ray, float *hitDist) const {
         return false;
     }
 
-    *hitDist = t / d;
+    if (hitBarycentric) {
+        const float invD = 1.0f / d;
+        *hitDist = t * invD;
+        hitBarycentric->y = v * invD;
+        hitBarycentric->z = w * invD;
+        hitBarycentric->x = 1.0f - hitBarycentric->y - hitBarycentric->z;
+    } else {
+        *hitDist = t / d;
+    }
     return true;
 }
 
@@ -83,6 +97,36 @@ float Triangle::IntersectRay(const Ray &ray) const {
         return hitDist;
     }
     return FLT_MAX;
+}
+
+bool Triangle::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
+    Vec3 ab = b - a;
+    Vec3 ac = c - a;
+    Vec3 n = ab.Cross(ac);
+
+    Vec3 qp = start - end;
+    float d = qp.Dot(n);
+    if (d <= 0.0f) {
+        return false;
+    }
+
+    Vec3 ap = start - a;
+    float t = ap.Dot(n);
+    if (t < 0.0f || t > d) {
+        return false;
+    }
+
+    Vec3 e = qp.Cross(ap);
+    float v = ac.Dot(e);
+    if (v < 0.0f || v > d) {
+        return false;
+    }
+    float w = -ab.Dot(e);
+    if (w < 0.0f || v + w > d) {
+        return false;
+    }
+
+    return true;
 }
 
 AABB Triangle::ToAABB() const {

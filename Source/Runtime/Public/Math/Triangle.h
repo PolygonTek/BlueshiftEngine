@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Math/Ray.h"
+
 /*
 -------------------------------------------------------------------------------
 
@@ -101,14 +103,26 @@ public:
                         /// point = u*a + v*b + w*c (u = 1-v-w)
     Vec3                ComputePointFromBarycentricCoords(const Vec3 &uvw) const;
 
+                        /// Maps a uniform sample in [0, 1]^2 to a point uniformly distributed by area.
+                        /// Requires u1 and u2 in [0, 1]; no clamping is performed.
+    Vec3                SampleUniform(float u1, float u2) const;
+
                         /// Tests if this triangle contain the given point.
     bool                IsContainPoint(const Vec3 &point, float thicknessSq = 1e-5f) const;
 
-                        /// Intersects a ray with this triangle.
+                        /// Intersects a ray with this triangle, rejecting back faces.
                         /// Returns false if there is no intersection.
     bool                IntersectRay(const Ray &ray, float *hitDist) const;
+                        /// Also returns barycentric weights for a, b, c if hitBarycentric is non-null.
+                        /// epsilon is the minimum accepted positive ray/normal denominator.
+                        /// Set epsilon to zero to accept all front-facing, non-parallel rays.
+    bool                IntersectRay(const Ray &ray, float *hitDist, Vec3 *hitBarycentric, float epsilon = 1e-6f) const;
                         /// Returns hit distance, but returns FLT_MAX if no intersection occurs.
     float               IntersectRay(const Ray &ray) const;
+
+                        /// Tests the segment [start, end] against the triangle, rejecting back faces.
+                        /// Includes both endpoints and performs no division or direction normalization.
+    bool                IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
 
                         /// Returns the tight AABB that encloses this triangle.
     AABB                ToAABB() const;
@@ -222,6 +236,12 @@ BE_INLINE Plane Triangle::PlaneCW() const {
 
 BE_INLINE Vec3 Triangle::ComputePointFromBarycentricCoords(const Vec3 &uvw) const {
     return uvw[0] * a + uvw[1] * b + uvw[2] * c;
+}
+
+BE_INLINE Vec3 Triangle::SampleUniform(float u1, float u2) const {
+    // The square root compensates for the quadratic growth of area away from vertex a.
+    const float su = sqrtf(u1);
+    return c + (1.0f - su) * (a - c) + (u2 * su) * (b - c);
 }
 
 BE_INLINE const char *Triangle::ToString(int precision) const {
