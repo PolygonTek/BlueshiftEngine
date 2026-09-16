@@ -1433,7 +1433,7 @@ void RenderCamera::DestroySSRResolvedDepthTexture() {
 }
 
 void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, const RenderFrameSettings &settings) {
-    if (!settings.ssao || width == 0 || height == 0) {
+    if (!settings.ao || width == 0 || height == 0) {
         DestroySSAOResources();
         return;
     }
@@ -1455,9 +1455,9 @@ void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool nee
         RHI::renderer->SetName(ssaoTexture, "RenderCamera::ssaoTexture");
     }
 
-    const uint32_t aoWidth = settings.ssaoHalfResolution ? BE1::DivCeil(width, 2u) : width;
-    const uint32_t aoHeight = settings.ssaoHalfResolution ? BE1::DivCeil(height, 2u) : height;
-    const bool needRaw = settings.ssaoHalfResolution || settings.ssaoBilateral;
+    const uint32_t aoWidth = settings.aoHalfResolution ? BE1::DivCeil(width, 2u) : width;
+    const uint32_t aoHeight = settings.aoHalfResolution ? BE1::DivCeil(height, 2u) : height;
+    const bool needRaw = settings.aoHalfResolution || settings.aoBilateral;
 
     // 해상도 옵션이 바뀌면 크기가 달라지는 중간 텍스처만 다시 만든다.
     if (ssaoRawTexture && (!needRaw || ssaoRawTexture->GetWidth() != aoWidth || ssaoRawTexture->GetHeight() != aoHeight)) {
@@ -1465,12 +1465,12 @@ void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool nee
         ssaoRawTexture = nullptr;
     }
 
-    if (ssaoHalfDepthTexture && (!settings.ssaoHalfResolution || ssaoHalfDepthTexture->GetWidth() != aoWidth || ssaoHalfDepthTexture->GetHeight() != aoHeight)) {
+    if (ssaoHalfDepthTexture && (!settings.aoHalfResolution || ssaoHalfDepthTexture->GetWidth() != aoWidth || ssaoHalfDepthTexture->GetHeight() != aoHeight)) {
         RHI::renderer->DestroyTexture(ssaoHalfDepthTexture);
         ssaoHalfDepthTexture = nullptr;
     }
 
-    if (ssaoFilterTexture && (!settings.ssaoBilateral || ssaoFilterTexture->GetWidth() != aoWidth || ssaoFilterTexture->GetHeight() != aoHeight)) {
+    if (ssaoFilterTexture && (!settings.aoBilateral || ssaoFilterTexture->GetWidth() != aoWidth || ssaoFilterTexture->GetHeight() != aoHeight)) {
         DestroySSAOFilterResources();
     }
 
@@ -1484,7 +1484,7 @@ void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool nee
         }
     }
 
-    if (settings.ssaoHalfResolution && !ssaoHalfDepthTexture) {
+    if (settings.aoHalfResolution && !ssaoHalfDepthTexture) {
         // AO 를 평가한 표면의 device depth 를 정확히 보존한다.
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
@@ -1494,7 +1494,7 @@ void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool nee
         }
     }
 
-    if (settings.ssaoBilateral && ssaoRawTexture && !ssaoFilterTexture) {
+    if (settings.aoBilateral && ssaoRawTexture && !ssaoFilterTexture) {
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, BE1::Image::Format::R16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
         ssaoFilterTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);

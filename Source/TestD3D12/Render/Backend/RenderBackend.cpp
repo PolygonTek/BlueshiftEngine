@@ -315,8 +315,9 @@ void RenderBackend::UpdateFramePSOs() {
     frameScreenSpaceDepthPyramidFirstMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstMSAAPipeline);
     frameScreenSpaceDepthPyramidReducePSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidReducePipeline);
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
-    frameSSAOPSO = ShaderPipeline::GetReadyPSO(renderSystem->ssaoPipeline);
-    frameSSAOHalfResolutionPSO = ShaderPipeline::GetReadyPSO(renderSystem->ssaoHalfResolutionPipeline);
+    const bool use8Samples = frameData->GetRenderFrameSettings().ssaoSampleCount == 8;
+    frameSSAOPSO = ShaderPipeline::GetReadyPSO(use8Samples ? renderSystem->ssao8FullResPipeline : renderSystem->ssao16FullResPipeline);
+    frameSSAOHalfResolutionPSO = ShaderPipeline::GetReadyPSO(use8Samples ? renderSystem->ssao8HalfResPipeline : renderSystem->ssao16HalfResPipeline);
     frameAOBilateralHorizontalPSO = ShaderPipeline::GetReadyPSO(renderSystem->aoBilateralHorizontalPipeline);
     frameAOBilateralVerticalPSO = ShaderPipeline::GetReadyPSO(renderSystem->aoBilateralVerticalPipeline);
     frameAOUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->aoUpsamplePipeline);
@@ -632,6 +633,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     // 불투명 surface 가 없는 프레임도 velocity 를 clear 해야 이전 프레임 값이 남지 않는다.
     const bool hasDepthPrepass = currentVisCamera->needVelocityOutput || FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
 
+    const bool useMSAA = currentVisCamera->rtColorMSAATexture != nullptr;
     bool ssaoReady = false;
 
     // depth prepass
@@ -671,9 +673,9 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     // Ocean, Transparent, Debug primitive 를 렌더링한다.
     ExecuteDrawCamera3DPostOpaquePass();
 
-    // MSAA resolve for normal/velocity texture
+    // Normal 과 velocity 는 shading 이 끝난 뒤 TAA 전에 resolve 한다.
     bool surfaceOutputsReady = true;
-    if (currentVisCamera->rtColorMSAATexture && (currentVisCamera->needNormalOutput || currentVisCamera->needVelocityOutput)) {
+    if (useMSAA && (currentVisCamera->needNormalOutput || currentVisCamera->needVelocityOutput)) {
         surfaceOutputsReady = DispatchSurfaceOutputMSAAResolve();
     }
 
@@ -692,7 +694,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
     const RHI::Texture *outputOverrideTexture = nullptr;
 
-    if (renderFrameSettings.ssaoDebug && ssaoReady) {
+    if (renderFrameSettings.aoDebug && ssaoReady) {
         outputOverrideTexture = currentVisCamera->ssaoTexture;
     } else if (renderFrameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
         outputOverrideTexture = currentVisCamera->rtColorTexture;

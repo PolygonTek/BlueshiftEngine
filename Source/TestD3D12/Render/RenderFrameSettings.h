@@ -62,8 +62,9 @@ struct RenderFrameSettings {
 
     uint32_t                    hiZDebugPreviewMipLevel = 0;
 
-    float                       ssaoRadius = 1.0f;
-    float                       ssaoPower = 1.0f;
+    uint32_t                    ssaoSampleCount = 16;
+    float                       aoRadius = 1.0f;
+    float                       aoPower = 1.0f;
 
     uint32_t                    ssrMaxIterations = 64;
     uint32_t                    ssrBinaryRefinementSteps = 5;
@@ -131,11 +132,11 @@ struct RenderFrameSettings {
     bool                        hiZOcclusionCullingFreeze = false;
     bool                        hiZDebugPreview = false;
 
-    bool                        ssao = false;
-    bool                        ssaoDebug = false;
-    bool                        ssaoHalfResolution = true;
-    bool                        ssaoTemporalRotation = true;
-    bool                        ssaoBilateral = true;
+    bool                        ao = false;
+    bool                        aoDebug = false;
+    bool                        aoHalfResolution = true;
+    bool                        aoTemporalRotation = true;
+    bool                        aoBilateral = true;
 
     bool                        ssr = false;
     bool                        ssrDebug = false;

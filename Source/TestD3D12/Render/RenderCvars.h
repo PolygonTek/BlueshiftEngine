@@ -36,12 +36,13 @@ extern BE1::CVar    r_hdrOutput;
 extern BE1::CVar    r_hdrPaperWhiteNits;
 extern BE1::CVar    r_hdrPeakNits;
 
-extern BE1::CVar    r_meshLOD;
-extern BE1::CVar    r_meshLODPixelError2;
-
 extern BE1::CVar    r_depthPrepass;
+extern BE1::CVar    r_snapshotColorHalfRes;
 extern BE1::CVar    r_specularEnergyCompensation2;
 extern BE1::CVar    r_specularAA;
+
+extern BE1::CVar    r_meshLOD;
+extern BE1::CVar    r_meshLODPixelError2;
 
 extern BE1::CVar    r_shadows2;
 extern BE1::CVar    r_shadowDebug;
@@ -63,7 +64,7 @@ extern BE1::CVar    r_csmSlopeScaledDepthBias2;
 extern BE1::CVar    r_csmSlopeScaledDepthBias3;
 
 extern BE1::CVar    r_msaa;
-extern BE1::CVar    r_snapshotColorHalfRes;
+
 extern BE1::CVar    r_taa;
 extern BE1::CVar    r_taaJitter;
 extern BE1::CVar    r_taaJitterSampleCount;
@@ -78,13 +79,14 @@ extern BE1::CVar    r_hiZOcclusionCullingFreeze;
 extern BE1::CVar    r_hiZDebugPreview;
 extern BE1::CVar    r_hiZDebugPreviewMipLevel;
 
-extern BE1::CVar    r_ssao2;
-extern BE1::CVar    r_ssaoDebug;
-extern BE1::CVar    r_ssaoRadius;
-extern BE1::CVar    r_ssaoPower;
-extern BE1::CVar    r_ssaoHalfResolution;
-extern BE1::CVar    r_ssaoBilateral;
-extern BE1::CVar    r_ssaoTemporalRotation;
+extern BE1::CVar    r_ao;
+extern BE1::CVar    r_aoDebug;
+extern BE1::CVar    r_ssaoSampleCount;
+extern BE1::CVar    r_aoRadius;
+extern BE1::CVar    r_aoPower;
+extern BE1::CVar    r_aoHalfResolution;
+extern BE1::CVar    r_aoTemporalRotation;
+extern BE1::CVar    r_aoBilateral;
 
 extern BE1::CVar    r_ssr;
 extern BE1::CVar    r_ssrDebug;

@@ -172,8 +172,10 @@ private:
     SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
     SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
 
-    SharedPtr<ShaderTemplate>       ssaoShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssaoHalfResolutionShaderTemplate;
+    SharedPtr<ShaderTemplate>       ssao16FullResShaderTemplate;
+    SharedPtr<ShaderTemplate>       ssao16HalfResShaderTemplate;
+    SharedPtr<ShaderTemplate>       ssao8FullResShaderTemplate;
+    SharedPtr<ShaderTemplate>       ssao8HalfResShaderTemplate;
     SharedPtr<ShaderTemplate>       aoBilateralHorizontalShaderTemplate;
     SharedPtr<ShaderTemplate>       aoBilateralVerticalShaderTemplate;
     SharedPtr<ShaderTemplate>       aoUpsampleShaderTemplate;
@@ -207,8 +209,10 @@ private:
     SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
     SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
 
-    SharedPtr<ShaderPipeline>       ssaoPipeline;
-    SharedPtr<ShaderPipeline>       ssaoHalfResolutionPipeline;
+    SharedPtr<ShaderPipeline>       ssao16FullResPipeline;
+    SharedPtr<ShaderPipeline>       ssao16HalfResPipeline;
+    SharedPtr<ShaderPipeline>       ssao8FullResPipeline;
+    SharedPtr<ShaderPipeline>       ssao8HalfResPipeline;
     SharedPtr<ShaderPipeline>       aoBilateralHorizontalPipeline;
     SharedPtr<ShaderPipeline>       aoBilateralVerticalPipeline;
     SharedPtr<ShaderPipeline>       aoUpsamplePipeline;

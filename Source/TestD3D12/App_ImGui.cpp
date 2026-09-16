@@ -924,38 +924,43 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
-            if (roundedCollapsingHeader("Screen Space Ambient Occlusion##SSAOHeader")) {
-                bool ssao = r_ssao2.GetBool();
-                if (ImGui::Checkbox("Ambient occlusion", &ssao)) {
-                    r_ssao2.SetBool(ssao);
+            if (roundedCollapsingHeader("Ambient Occlusion##AOHeader")) {
+                bool ao = r_ao.GetBool();
+                if (ImGui::Checkbox("Ambient occlusion", &ao)) {
+                    r_ao.SetBool(ao);
                 }
-                ImGui::BeginDisabled(!ssao);
-                bool ssaoHalfResolution = r_ssaoHalfResolution.GetBool();
-                if (ImGui::Checkbox("Half resolution##SSAO", &ssaoHalfResolution)) {
-                    r_ssaoHalfResolution.SetBool(ssaoHalfResolution);
+                ImGui::BeginDisabled(!ao);
+                int ssaoSampleCountIndex = r_ssaoSampleCount.GetInteger() < 16 ? 0 : 1;
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::Combo("SSAO samples", &ssaoSampleCountIndex, "8\0" "16\0")) {
+                    r_ssaoSampleCount.SetInteger(ssaoSampleCountIndex == 0 ? 8 : 16);
                 }
-                bool ssaoTemporalRotation = r_ssaoTemporalRotation.GetBool();
-                if (ImGui::Checkbox("Temporal rotation##SSAO", &ssaoTemporalRotation)) {
-                    r_ssaoTemporalRotation.SetBool(ssaoTemporalRotation);
+                bool aoHalfResolution = r_aoHalfResolution.GetBool();
+                if (ImGui::Checkbox("Half resolution##AO", &aoHalfResolution)) {
+                    r_aoHalfResolution.SetBool(aoHalfResolution);
                 }
-                bool ssaoBilateral = r_ssaoBilateral.GetBool();
-                if (ImGui::Checkbox("Bilateral filter##SSAO", &ssaoBilateral)) {
-                    r_ssaoBilateral.SetBool(ssaoBilateral);
+                bool aoTemporalRotation = r_aoTemporalRotation.GetBool();
+                if (ImGui::Checkbox("Temporal rotation##AO", &aoTemporalRotation)) {
+                    r_aoTemporalRotation.SetBool(aoTemporalRotation);
                 }
                 ImGui::SetItemTooltip("Requires TAA. Compare in the final rendered view; AO debug keeps a fixed pattern.");
-                bool ssaoDebug = r_ssaoDebug.GetBool();
-                if (ImGui::Checkbox("AO debug output", &ssaoDebug)) {
-                    r_ssaoDebug.SetBool(ssaoDebug);
+                bool aoBilateral = r_aoBilateral.GetBool();
+                if (ImGui::Checkbox("Bilateral filter##AO", &aoBilateral)) {
+                    r_aoBilateral.SetBool(aoBilateral);
                 }
-                float ssaoRadius = r_ssaoRadius.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Radius##SSAO", &ssaoRadius, r_ssaoRadius.GetMinValue(), r_ssaoRadius.GetMaxValue(), "%.2f m", ImGuiSliderFlags_Logarithmic)) {
-                    r_ssaoRadius.SetFloat(ssaoRadius);
+                bool aoDebug = r_aoDebug.GetBool();
+                if (ImGui::Checkbox("AO debug output", &aoDebug)) {
+                    r_aoDebug.SetBool(aoDebug);
                 }
-                float ssaoPower = r_ssaoPower.GetFloat();
+                float aoRadius = r_aoRadius.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Power##SSAO", &ssaoPower, r_ssaoPower.GetMinValue(), r_ssaoPower.GetMaxValue(), "%.2f")) {
-                    r_ssaoPower.SetFloat(ssaoPower);
+                if (ImGui::SliderFloat("Radius##AO", &aoRadius, r_aoRadius.GetMinValue(), r_aoRadius.GetMaxValue(), "%.2f m", ImGuiSliderFlags_Logarithmic)) {
+                    r_aoRadius.SetFloat(aoRadius);
+                }
+                float aoPower = r_aoPower.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Power##AO", &aoPower, r_aoPower.GetMinValue(), r_aoPower.GetMaxValue(), "%.2f")) {
+                    r_aoPower.SetFloat(aoPower);
                 }
                 ImGui::EndDisabled();
             }

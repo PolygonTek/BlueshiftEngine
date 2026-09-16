@@ -405,8 +405,10 @@ void RenderSystem::InitComputePipelines() {
     hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZ/HiZCullInstances.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZ/HiZDebugPreview.hlsl", baseDir);
 
-    ssaoShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssaoShader", computeShaderModel, "AO/SSAO.hlsl", baseDir);
-    ssaoHalfResolutionShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssaoHalfResolutionShader", computeShaderModel, "AO/SSAO.hlsl", baseDir, "CSMainHalfResolution");
+    ssao16FullResShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssao16FullResShader", computeShaderModel, "AO/SSAO.hlsl", baseDir);
+    ssao16HalfResShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssao16HalfResShader", computeShaderModel, "AO/SSAO.hlsl", baseDir, "CSMainHalfResolution");
+    ssao8FullResShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssao8FullResShader", computeShaderModel, "AO/SSAO.hlsl", baseDir, "CSMain", "SSAO_SAMPLE_COUNT=8");
+    ssao8HalfResShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssao8HalfResShader", computeShaderModel, "AO/SSAO.hlsl", baseDir, "CSMainHalfResolution", "SSAO_SAMPLE_COUNT=8");
     aoBilateralHorizontalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoBilateralHorizontalShader", computeShaderModel, "AO/AOBilateral.hlsl", baseDir, "CSMainHorizontal");
     aoBilateralVerticalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoBilateralVerticalShader", computeShaderModel, "AO/AOBilateral.hlsl", baseDir, "CSMainVertical");
     aoUpsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoUpsampleShader", computeShaderModel, "AO/AOUpsample.hlsl", baseDir);
@@ -455,8 +457,10 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline, shaderPipelineBootstrap);
 
-    EnsureComputePipeline(ssaoShaderTemplate, ssaoPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(ssaoHalfResolutionShaderTemplate, ssaoHalfResolutionPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(ssao16FullResShaderTemplate, ssao16FullResPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(ssao16HalfResShaderTemplate, ssao16HalfResPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(ssao8FullResShaderTemplate, ssao8FullResPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(ssao8HalfResShaderTemplate, ssao8HalfResPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(aoBilateralHorizontalShaderTemplate, aoBilateralHorizontalPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(aoBilateralVerticalShaderTemplate, aoBilateralVerticalPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(aoUpsampleShaderTemplate, aoUpsamplePipeline, shaderPipelineBootstrap);
@@ -498,8 +502,10 @@ void RenderSystem::ReleaseComputePipelines() {
     screenSpaceDepthPyramidFirstMSAAPipeline.reset();
     screenSpaceDepthPyramidReducePipeline.reset();
     ssrTracePipeline.reset();
-    ssaoPipeline.reset();
-    ssaoHalfResolutionPipeline.reset();
+    ssao16FullResPipeline.reset();
+    ssao16HalfResPipeline.reset();
+    ssao8FullResPipeline.reset();
+    ssao8HalfResPipeline.reset();
     aoBilateralHorizontalPipeline.reset();
     aoBilateralVerticalPipeline.reset();
     aoUpsamplePipeline.reset();
@@ -530,8 +536,10 @@ void RenderSystem::ReleaseComputePipelines() {
     hiZCullInstancesShaderTemplate.reset();
     hiZDebugPreviewShaderTemplate.reset();
 
-    ssaoShaderTemplate.reset();
-    ssaoHalfResolutionShaderTemplate.reset();
+    ssao16FullResShaderTemplate.reset();
+    ssao16HalfResShaderTemplate.reset();
+    ssao8FullResShaderTemplate.reset();
+    ssao8HalfResShaderTemplate.reset();
     aoBilateralHorizontalShaderTemplate.reset();
     aoBilateralVerticalShaderTemplate.reset();
     aoUpsampleShaderTemplate.reset();

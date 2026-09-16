@@ -24,6 +24,7 @@ CVAR(r_skipPostProcess, "0", BE1::CVar::Flag::Bool, "skip post process dispatche
 
 CVAR(r_debugDrawMaxPrimitives, "16384", BE1::CVar::Flag::Integer, "maximum number of debug draw primitives");
 CVAR(r_debugDrawMaxVertices, "262144", BE1::CVar::Flag::Integer, "maximum number of debug draw vertices");
+
 CVAR(r_showLights2, "0", BE1::CVar::Flag::Bool, "show visible light bounding volumes");
 CVAR(r_lightCullingZBin, "1", BE1::CVar::Flag::Bool, "enable light Z-bin culling in forward lighting");
 CVAR_MINMAX(r_lightCullingDebug, "0", BE1::CVar::Flag::Integer, "light culling debug view (0 = off, 1 = tile mask, 2 = tile mask and Z-bin)", 0, 2);
@@ -33,13 +34,16 @@ CVAR(r_hdrOutput, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable
 CVAR_MINMAX(r_hdrPaperWhiteNits, "200", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR paper white luminance in nits", 80.0f, 500.0f);
 CVAR_MINMAX(r_hdrPeakNits, "0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR peak luminance in nits (0 = use the display value)", 0.0f, 10000.0f);
 
-CVAR(r_meshLOD, "1", BE1::CVar::Flag::Bool, "enable mesh LOD selection (0 = force LOD0, including explicit LOD requests)");
-CVAR(r_meshLODPixelError2, "2.0", BE1::CVar::Flag::Float, "estimated mesh LOD pixel error tolerance, <= 0 uses LOD0");
-
 CVAR(r_depthPrepass, "0", BE1::CVar::Flag::Bool, "enable depth prepass");
+CVAR(r_snapshotColorHalfRes, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "capture non-MSAA scene snapshot color and depth at half resolution");
 CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
 CVAR(r_specularAA, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space specular anti-aliasing");
 
+// Mesh LOD
+CVAR(r_meshLOD, "1", BE1::CVar::Flag::Bool, "enable mesh LOD selection (0 = force LOD0, including explicit LOD requests)");
+CVAR(r_meshLODPixelError2, "2.0", BE1::CVar::Flag::Float, "estimated mesh LOD pixel error tolerance, <= 0 uses LOD0");
+
+// Shadows
 CVAR(r_shadows2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable shadows");
 CVAR_MINMAX(r_shadowDebug, "0", BE1::CVar::Flag::Integer, "shadow debug view (0 = off, 1 = visibility, 2 = coverage)", 0, 2);
 CVAR_MINMAX(r_shadowMapQuality2, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "shadow map filter quality (0 = 1, 1 = 5, 2 = 9, 3 = 16 rotated Poisson comparisons)", 0, 3);
@@ -59,8 +63,10 @@ CVAR(r_csmSlopeScaledDepthBias1, "1.0", BE1::CVar::Flag::Float, "slope-scaled de
 CVAR(r_csmSlopeScaledDepthBias2, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 2");
 CVAR(r_csmSlopeScaledDepthBias3, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 3");
 
+// MSAA
 CVAR_MINMAX(r_msaa, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "MSAA sample count (1 = off, 2/4/8 = enabled)", 0, 8);
-CVAR(r_snapshotColorHalfRes, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "capture non-MSAA scene snapshot color and depth at half resolution");
+
+// TAA
 CVAR(r_taa, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable temporal anti-aliasing");
 CVAR(r_taaJitter, "1", BE1::CVar::Flag::Bool, "enable temporal projection jitter");
 CVAR_MINMAX(r_taaJitterSampleCount, "16", BE1::CVar::Flag::Integer, "temporal projection jitter sample count", 1, 64);
@@ -70,19 +76,23 @@ CVAR_MINMAX(r_taaSubpixelWeight, "0.5", BE1::CVar::Flag::Float, "temporal anti-a
 CVAR_MINMAX(r_taaLuminanceWeight, "0.25", BE1::CVar::Flag::Float, "temporal anti-aliasing luminance mismatch history rejection weight", 0.0f, 1.0f);
 CVAR_MINMAX(r_taaDepthFallbackThreshold, "1.0", BE1::CVar::Flag::Float, "temporal anti-aliasing depth fallback linear depth threshold", 0.0f, 10000.0f);
 
+// Hi-Z Occlusion Culling
 CVAR(r_hiZOcclusionCulling, "0", BE1::CVar::Flag::Bool, "enable Hi-Z occlusion culling");
 CVAR(r_hiZOcclusionCullingFreeze, "0", BE1::CVar::Flag::Bool, "freeze Hi-Z occlusion culling depth pyramid updates");
 CVAR(r_hiZDebugPreview, "0", BE1::CVar::Flag::Bool, "enable Hi-Z debug preview texture update");
 CVAR_MINMAX(r_hiZDebugPreviewMipLevel, "0", BE1::CVar::Flag::Integer, "Hi-Z debug preview mip level", 0, RenderHiZMaxLevelCount - 1);
 
-CVAR(r_ssao2, "1", BE1::CVar::Flag::Bool, "apply screen-space ambient occlusion to indirect lighting");
-CVAR(r_ssaoDebug, "0", BE1::CVar::Flag::Bool, "show full-resolution screen-space ambient occlusion");
-CVAR_MINMAX(r_ssaoRadius, "0.5", BE1::CVar::Flag::Float, "screen-space ambient occlusion radius in world units", 0.01f, 10.0f);
-CVAR_MINMAX(r_ssaoPower, "1.0", BE1::CVar::Flag::Float, "screen-space ambient occlusion power", 0.25f, 4.0f);
-CVAR(r_ssaoHalfResolution, "1", BE1::CVar::Flag::Bool, "compute screen-space ambient occlusion at half resolution");
-CVAR(r_ssaoBilateral, "1", BE1::CVar::Flag::Bool, "apply depth-aware bilateral filtering to screen-space ambient occlusion");
-CVAR(r_ssaoTemporalRotation, "1", BE1::CVar::Flag::Bool, "rotate screen-space ambient occlusion samples each frame when TAA is active");
+// Ambient Occlusion
+CVAR(r_ao, "1", BE1::CVar::Flag::Bool, "apply ambient occlusion to indirect lighting");
+CVAR(r_aoDebug, "0", BE1::CVar::Flag::Bool, "show full-resolution ambient occlusion");
+CVAR_MINMAX(r_ssaoSampleCount, "16", BE1::CVar::Flag::Integer, "SSAO kernel sample count: 8 or 16 (values below 16 use 8)", 8, 16);
+CVAR_MINMAX(r_aoRadius, "0.5", BE1::CVar::Flag::Float, "ambient occlusion radius in world units", 0.01f, 10.0f);
+CVAR_MINMAX(r_aoPower, "1.0", BE1::CVar::Flag::Float, "ambient occlusion power", 0.25f, 4.0f);
+CVAR(r_aoHalfResolution, "1", BE1::CVar::Flag::Bool, "compute ambient occlusion at half resolution");
+CVAR(r_aoBilateral, "1", BE1::CVar::Flag::Bool, "apply depth-aware bilateral filtering to ambient occlusion");
+CVAR(r_aoTemporalRotation, "1", BE1::CVar::Flag::Bool, "rotate ambient occlusion samples each frame when TAA is active");
 
+// SSR
 CVAR(r_ssr, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
 CVAR(r_ssrDebug, "0", BE1::CVar::Flag::Bool, "show screen-space reflection trace debug output");
 CVAR_MINMAX(r_ssrMaxDistance, "48.0", BE1::CVar::Flag::Float, "screen-space reflection maximum trace distance", 0.1f, 1000.0f);
@@ -91,6 +101,7 @@ CVAR_MINMAX(r_ssrMaxIterations, "64", BE1::CVar::Flag::Integer, "screen-space re
 CVAR_MINMAX(r_ssrBinaryRefinementSteps, "3", BE1::CVar::Flag::Integer, "screen-space reflection binary refinement steps", 0, 8);
 CVAR_MINMAX(r_ssrNormalBias, "0.02", BE1::CVar::Flag::Float, "screen-space reflection world-space normal bias", 0.0f, 1.0f);
 
+// Texture
 CVAR_MINMAX(r_textureFilter, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "texture filtering mode for material samplers", 0, static_cast<int>(RHI::TextureFilter::Count) - 1);
 CVAR_MINMAX(r_textureMaxAnisotropy, "8", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "maximum anisotropy for material samplers", 1, 16);
 CVAR(r_textureStreamingStreamInDelay, "0", BE1::CVar::Flag::Integer, "texture streaming frame delay before loading higher-resolution mips");
@@ -98,6 +109,7 @@ CVAR(r_textureStreamingMaxRequestsPerFrame, "256", BE1::CVar::Flag::Integer, "ma
 CVAR_MINMAX(r_textureStreamingMaxLevelReduction, "6", BE1::CVar::Flag::Integer, "maximum mip level reduction for streaming textures", 0, 16);
 CVAR(r_textureStreamingMinResidentMaxDimension, "64", BE1::CVar::Flag::Integer, "minimum requested resident texture max dimension");
 
+// Tone Mapping
 CVAR(r_toneMapping, "1", BE1::CVar::Flag::Bool, "enable compute tone mapping");
 CVAR_MINMAX(r_toneMapOp, "7", BE1::CVar::Flag::Integer, "tone mapping operator", 0, 11);
 CVAR(r_toneMapLuminanceLogMin, "-10", BE1::CVar::Flag::Float, "tone mapping luminance histogram minimum log2 luminance");
@@ -109,6 +121,7 @@ CVAR_MINMAX(r_toneMapMinExposureEV, "-8", BE1::CVar::Flag::Float, "tone mapping 
 CVAR_MINMAX(r_toneMapMaxExposureEV, "2", BE1::CVar::Flag::Float, "tone mapping maximum automatic exposure in EV", -16.0f, 16.0f);
 CVAR_MINMAX(r_whiteBalanceTemperature, "6500", BE1::CVar::Flag::Float, "white balance color temperature in Kelvin", 1000.0f, 15000.0f);
 
+// Color Grading
 CVAR(r_colorGrading, "0", BE1::CVar::Flag::Bool, "enable 3D LUT color grading");
 CVAR_MINMAX(r_colorGradingSaturation, "1", BE1::CVar::Flag::Float, "color grading saturation", 0.0f, 2.0f);
 CVAR_MINMAX(r_colorGradingContrast, "1", BE1::CVar::Flag::Float, "color grading contrast", 0.0f, 2.0f);
@@ -118,17 +131,20 @@ CVAR_MINMAX(r_colorGradingTintR, "1", BE1::CVar::Flag::Float, "color grading tin
 CVAR_MINMAX(r_colorGradingTintG, "1", BE1::CVar::Flag::Float, "color grading tint green multiplier", 0.0f, 2.0f);
 CVAR_MINMAX(r_colorGradingTintB, "1", BE1::CVar::Flag::Float, "color grading tint blue multiplier", 0.0f, 2.0f);
 
+// Image Effects
 CVAR_MINMAX(r_lensDistortion, "0", BE1::CVar::Flag::Float, "lens distortion strength (positive = barrel, negative = pincushion)", -0.5f, 0.5f);
 CVAR_MINMAX(r_chromaticAberration, "0", BE1::CVar::Flag::Float, "chromatic aberration channel offset at the screen edge in pixels", 0.0f, 32.0f);
 CVAR_MINMAX(r_vignette, "0", BE1::CVar::Flag::Float, "vignette intensity", 0.0f, 1.0f);
 CVAR(r_dithering, "1", BE1::CVar::Flag::Bool, "enable final output dithering");
 
+// Bloom
 CVAR_MINMAX(r_bloom, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "bloom mode (0 = off, 1 = pyramid, 2 = convolution)", RenderBloomMode::Off, RenderBloomMode::Convolution);
 CVAR_MINMAX(r_bloomThreshold, "1.0", BE1::CVar::Flag::Float, "bloom luminance threshold", 0.0f, 100.0f);
 CVAR_MINMAX(r_bloomSoftThreshold, "0.5", BE1::CVar::Flag::Float, "bloom soft threshold width", 0.0f, 10.0f);
 CVAR_MINMAX(r_bloomIntensity, "0.15", BE1::CVar::Flag::Float, "final bloom composite intensity", 0.0f, 10.0f);
 CVAR_MINMAX(r_bloomDirtIntensity, "0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "bloom dirt mask intensity", 0.0f, 10.0f);
 
+// Pyramid Bloom
 CVAR_MINMAX(r_pyramidBloomPrefilterQuality, "1", BE1::CVar::Flag::Integer, "pyramid bloom prefilter quality (0 = low quality, 1 = high quality)", 0, 1);
 CVAR_MINMAX(r_pyramidBloomScatter, "0.67", BE1::CVar::Flag::Float, "pyramid bloom mip scatter weight", 0.0f, 1.0f);
 CVAR_MINMAX(r_pyramidBloomPrefilterRadius, "1.25", BE1::CVar::Flag::Float, "pyramid bloom prefilter sample radius", 0.0f, 10.0f);
@@ -136,6 +152,7 @@ CVAR_MINMAX(r_pyramidBloomDownsampleRadius, "1.0", BE1::CVar::Flag::Float, "pyra
 CVAR_MINMAX(r_pyramidBloomUpsampleRadius, "1.0", BE1::CVar::Flag::Float, "pyramid bloom upsample sample radius", 0.0f, 10.0f);
 CVAR_MINMAX(r_pyramidBloomMipCount, "6", BE1::CVar::Flag::Integer, "pyramid bloom mip level count", 1, RenderBloomDownMaxLevelCount);
 
+// Convolution Bloom
 CVAR_MINMAX(r_convolutionBloomFFTMaxSize, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "maximum convolution bloom FFT texture axis size", 256, 1024);
 CVAR_MINMAX(r_convolutionBloomPrefilterRadius, "1.5", BE1::CVar::Flag::Float, "convolution bloom prefilter sample radius", 0.0f, 10.0f);
 CVAR_MINMAX(r_convolutionBloomKernelScale, "1.0", BE1::CVar::Flag::Float, "convolution bloom kernel scale", 0.01f, 10.0f);
@@ -258,13 +275,14 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.hiZOcclusionCullingFreeze = r_hiZOcclusionCullingFreeze.GetBool();
     settings.hiZDebugPreview = r_hiZDebugPreview.GetBool();
 
-    settings.ssao = r_ssao2.GetBool();
-    settings.ssaoDebug = r_ssaoDebug.GetBool();
-    settings.ssaoRadius = r_ssaoRadius.GetFloat();
-    settings.ssaoPower = r_ssaoPower.GetFloat();
-    settings.ssaoHalfResolution = r_ssaoHalfResolution.GetBool();
-    settings.ssaoTemporalRotation = r_ssaoTemporalRotation.GetBool();
-    settings.ssaoBilateral = r_ssaoBilateral.GetBool();
+    settings.ao = r_ao.GetBool();
+    settings.aoDebug = r_aoDebug.GetBool();
+    settings.ssaoSampleCount = r_ssaoSampleCount.GetInteger() < 16 ? 8u : 16u;
+    settings.aoRadius = r_aoRadius.GetFloat();
+    settings.aoPower = r_aoPower.GetFloat();
+    settings.aoHalfResolution = r_aoHalfResolution.GetBool();
+    settings.aoTemporalRotation = r_aoTemporalRotation.GetBool();
+    settings.aoBilateral = r_aoBilateral.GetBool();
 
     settings.ssr = r_ssr.GetBool();
     settings.ssrDebug = r_ssrDebug.GetBool();

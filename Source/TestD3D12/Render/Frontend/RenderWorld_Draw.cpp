@@ -316,9 +316,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     const bool skipPostProcess = renderFrameSettings.skipPostProcess || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
-    const bool debugSSAO = renderFrameSettings.ssao && renderFrameSettings.ssaoDebug;
+    const bool debugAO = renderFrameSettings.ao && renderFrameSettings.aoDebug;
     const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableTemporalHistory);
-    const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess && !debugSSAO && renderFrameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
+    const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess && !debugAO && renderFrameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
     const bool needColorHistory = useTAA;
     const bool needDepthHistory = useTAA;
     const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && renderFrameSettings.hiZOcclusionCulling;
@@ -446,7 +446,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->ssaoFilterTexture = renderCamera->GetSSAOFilterTexture();
     visCamera->ssaoHalfDepthTexture = renderCamera->GetSSAOHalfDepthTexture();
     visCamera->ssaoDepthTexture = useMSAA ? (visCamera->ssrResolvedDepthTexture ? visCamera->ssrResolvedDepthTexture : renderCamera->GetSSAOResolvedDepthTexture()) : visCamera->depthTexture;
-    visCamera->applySSAO = renderFrameSettings.ssao && visCamera->ssaoTexture && visCamera->ssaoDepthTexture;
+    visCamera->applySSAO = renderFrameSettings.ao && visCamera->ssaoTexture && visCamera->ssaoDepthTexture;
 
     visCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;
 

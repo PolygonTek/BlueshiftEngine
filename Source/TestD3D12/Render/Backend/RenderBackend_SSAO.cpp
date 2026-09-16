@@ -47,13 +47,14 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
     };
 
     // Keep AO available while pipelines are compiling or allocation has failed.
-    const bool useHalfResolution = settings.ssaoHalfResolution && frameSSAOHalfResolutionPSO && frameAOUpsamplePSO && matchesSize(ssaoRawTexture, halfWidth, halfHeight) && matchesSize(halfDepthTexture, halfWidth, halfHeight);
+    const bool useHalfResolution = settings.aoHalfResolution && frameSSAOHalfResolutionPSO && frameAOUpsamplePSO && matchesSize(ssaoRawTexture, halfWidth, halfHeight) && matchesSize(halfDepthTexture, halfWidth, halfHeight);
     const uint32_t aoWidth = useHalfResolution ? halfWidth : width;
     const uint32_t aoHeight = useHalfResolution ? halfHeight : height;
 
     // Full-resolution fallback 에서는 half-resolution 중간 텍스처를 필터에 사용하지 않는다.
-    const bool useFilter = settings.ssaoBilateral && frameAOBilateralHorizontalPSO && frameAOBilateralVerticalPSO && matchesSize(ssaoRawTexture, aoWidth, aoHeight) && matchesSize(ssaoTempTexture, aoWidth, aoHeight);
-    RHI::Texture *ssaoComputeOutputTexture = (useHalfResolution || useFilter) ? ssaoRawTexture : ssaoTexture;
+    const bool useBlur = settings.aoBilateral && frameAOBilateralHorizontalPSO && frameAOBilateralVerticalPSO && matchesSize(ssaoRawTexture, aoWidth, aoHeight) && matchesSize(ssaoTempTexture, aoWidth, aoHeight);
+
+    RHI::Texture *ssaoComputeOutputTexture = (useHalfResolution || useBlur) ? ssaoRawTexture : ssaoTexture;
     if (!useHalfResolution && !frameSSAOPSO) {
         return false;
     }
@@ -67,11 +68,12 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
     const RHI::GPUResourceState depthInputState = useMSAA ? RHI::GPUResourceState::ShaderResource : renderDepthState;
     DispatchSSAOCompute(depthTexture, ssaoComputeOutputTexture, useHalfResolution ? halfDepthTexture : nullptr, depthInputState);
 
-    if (useFilter) {
-        DispatchAOBilateralFilter(useHalfResolution ? halfDepthTexture : depthTexture, ssaoRawTexture, ssaoTempTexture, useHalfResolution ? ssaoRawTexture : ssaoTexture, settings.ssaoRadius);
+    if (useBlur) {
+        DispatchAOBilateralFilter(useHalfResolution ? halfDepthTexture : depthTexture, ssaoRawTexture, ssaoTempTexture, useHalfResolution ? ssaoRawTexture : ssaoTexture, settings.aoRadius);
     }
+
     if (useHalfResolution) {
-        DispatchAOUpsample(depthTexture, ssaoRawTexture, halfDepthTexture, ssaoTexture, settings.ssaoRadius);
+        DispatchAOUpsample(depthTexture, ssaoRawTexture, halfDepthTexture, ssaoTexture, settings.aoRadius);
     }
 
     RHI::GPUBarrier endBarriers[] = {
@@ -95,14 +97,15 @@ void RenderBackend::DispatchSSAOCompute(RHI::Texture *depthTexture, RHI::Texture
     params.inputSize = uint2(depthTexture->GetWidth(), depthTexture->GetHeight());
     params.inputSizeRcp = float2(1.0f / params.inputSize.x, 1.0f / params.inputSize.y);
     params.outputSize = uint2(outputAOTexture->GetWidth(), outputAOTexture->GetHeight());
-    params.radius = settings.ssaoRadius;
-    params.power = settings.ssaoPower;
-    params.normalBias = params.radius * 0.01f;
-    params.depthBias = params.radius * 0.004f;
+    params.radius = settings.aoRadius;
+    params.power = settings.aoPower;
+    params.normalBias = params.radius * 0.005f;
+    params.depthBias = params.radius * 0.002f;
     params.farPlaneDeviceDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
 
-    // TAA history 를 사용할 수 있을 때만 회전한다. SSR debug 출력도 TAA 를 건너뛴다.
-    if (settings.ssaoTemporalRotation && currentVisCamera->taaResolve && currentVisCamera->historyValid && frameTAAResolvePSO && !(settings.ssrDebug && currentVisCamera->traceSSR)) {
+    // TAA history 를 사용할 수 있을 때 회전한다. SSR debug 출력은 TAA 를 건너뛴다.
+    const bool useTAAHistory = currentVisCamera->taaResolve && currentVisCamera->historyValid && frameTAAResolvePSO && settings.taaHistoryWeight > 0.0f && !(settings.ssrDebug && currentVisCamera->traceSSR);
+    if (settings.aoTemporalRotation && useTAAHistory) {
         // 8 프레임 동안 회전각을 고르게 분포시킨다. Camera jitter 를 꺼도 시퀀스는 진행한다.
         static constexpr float noisePhases[8] = {0.0f, 0.5f, 0.25f, 0.75f, 0.125f, 0.625f, 0.375f, 0.875f};
         params.noisePhase = noisePhases[frameData->GetFrameCount() % COUNT_OF(noisePhases)];

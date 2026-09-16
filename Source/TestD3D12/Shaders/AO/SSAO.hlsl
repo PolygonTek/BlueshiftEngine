@@ -24,8 +24,27 @@ Texture2D<float> inputDepthTexture : register(t0);
 RWTexture2D<float> outputAOTexture : register(u0);
 RWTexture2D<float> outputDepthTexture : register(u1);
 
-static const uint ssaoSampleCount = 16;
+#ifndef SSAO_SAMPLE_COUNT
+#define SSAO_SAMPLE_COUNT 16
+#endif
 
+static const uint ssaoSampleCount = SSAO_SAMPLE_COUNT;
+
+#if SSAO_SAMPLE_COUNT == 8
+// Hammersley(i, 8) + float2(0.5 / 8, 0) 로 반구 전체를 덮는 전용 cosine-weighted 커널.
+// 방향과 거리의 상관을 줄이도록 radius 의 순서를 { 3,7,1,5,2,6,0,4 } 로 섞는다.
+// W = lerp(0.05, 1, u*u), u = (permutedIndex + 0.5) / 8.
+static const float4 ssaoKernel[ssaoSampleCount] = {
+    float4(0.250000000f, 0.000000000f, 0.968245837f, 0.231835937f),
+    float4(-0.433012702f, 0.000000000f, 0.901387819f, 0.884960938f),
+    float4(0.000000000f, 0.559016994f, 0.829156198f, 0.083398438f),
+    float4(0.000000000f, -0.661437828f, 0.750000000f, 0.499023437f),
+    float4(0.530330086f, 0.530330086f, 0.661437828f, 0.142773437f),
+    float4(-0.586301970f, -0.586301970f, 0.559016994f, 0.677148437f),
+    float4(-0.637377439f, 0.637377439f, 0.433012702f, 0.053710938f),
+    float4(0.684653197f, -0.684653197f, 0.250000000f, 0.350585938f)
+};
+#elif SSAO_SAMPLE_COUNT == 16
 // Precomputed SampleHemisphereCosine(Hammersley(i, 16) + float2(0.5 / 16, 0)).
 // W = lerp(0.05, 1, u*u), u = (permutedIndex + 0.5) / 16. The independent
 // permutation is { 7,14,2,10,5,12,0,9,15,4,11,1,13,6,3,8 }.
@@ -48,6 +67,9 @@ static const float4 ssaoKernel[ssaoSampleCount] = {
     float4(-0.879507112f, 0.364303774f, 0.306186218f, 0.095458984f),
     float4(0.909329339f, -0.376656545f, 0.176776695f, 0.318115234f)
 };
+#else
+#error SSAO_SAMPLE_COUNT must be 8 or 16
+#endif
 
 bool IsBackgroundDepth(float depth) {
     // 원본 깊이와 min/max로 resolve한 깊이는 clear 값을 그대로 보존한다.
