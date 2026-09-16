@@ -476,7 +476,7 @@ void RenderContext::WaitAllFrameFences() {
     }
 }
 
-void RenderContext::UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)]) {
+void RenderContext::UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)], uint64_t measuredTagMask) {
     static constexpr int GpuStatUpdateSampleCount = 16;
 
     for (int tagIndex = 0; tagIndex < static_cast<int>(GpuTiming::Tag::Count); ++tagIndex) {
@@ -491,6 +491,9 @@ void RenderContext::UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<
             statGpuTagSampleCount[tagIndex] = 0;
         }
     }
+
+    // 최근에 읽은 GPU 프레임에서 측정한 태그만 표시한다. 측정 시간이 0 이어도 포함한다.
+    statGpuMeasuredTagMask.store(measuredTagMask);
 }
 
 float RenderContext::GetStatGpuTagAverageMsec(GpuTiming::Tag tag) const {
@@ -499,6 +502,15 @@ float RenderContext::GetStatGpuTagAverageMsec(GpuTiming::Tag tag) const {
         return 0.0f;
     }
     return statGpuTagAverageMsec[tagIndex].load();
+}
+
+bool RenderContext::IsGpuTagMeasured(GpuTiming::Tag tag) const {
+    const int tagIndex = static_cast<int>(tag);
+    if (tagIndex < 0 || tagIndex >= static_cast<int>(GpuTiming::Tag::Count)) {
+        return false;
+    }
+    const uint64_t tagMask = uint64_t{1} << tagIndex;
+    return (statGpuMeasuredTagMask.load() & tagMask) != 0;
 }
 
 RenderContext::Stats RenderContext::GetStats() const {

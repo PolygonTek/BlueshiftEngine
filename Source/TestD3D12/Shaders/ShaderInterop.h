@@ -93,6 +93,10 @@ static const uint HiZDebugPreviewBlockSizeY = 16;
 
 static const uint SSAOBlockSizeX = 8;
 static const uint SSAOBlockSizeY = 8;
+static const uint AOBilateralBlockSizeX = 8;
+static const uint AOBilateralBlockSizeY = 8;
+static const uint AOUpsampleBlockSizeX = 8;
+static const uint AOUpsampleBlockSizeY = 8;
 
 static const uint ScreenSpaceDepthPyramidBlockSizeX = 8;
 static const uint ScreenSpaceDepthPyramidBlockSizeY = 8;
@@ -347,25 +351,48 @@ struct BloomParams {
 
 struct HiZMipGenParams {
     uint2 inputSize;
-    uint2 outputSize;
     float2 inputSizeRcp;
+    uint2 outputSize;
     uint outputMipCount;
     uint useMinDepth;
 };
 
 struct SSAOParams {
+    uint2 inputSize;
+    float2 inputSizeRcp;
     uint2 outputSize;
-    float2 outputSizeRcp;
     float power;
     float radius;
     float normalBias;
     float depthBias;
     float farPlaneDeviceDepth;
-    float3 padding0;
+    float padding0;
 };
 
 #ifdef __cplusplus
 static_assert(sizeof(SSAOParams) == 48, "SSAOParams must match the HLSL root constants");
+#endif
+
+struct AOBilateralParams {
+    uint2 outputSize;
+    float depthSigmaRcp;
+    float farPlaneDeviceDepth;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(AOBilateralParams) == 16, "AOBilateralParams must match the HLSL root constants");
+#endif
+
+struct AOUpsampleParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    float depthSigmaRcp;
+    float farPlaneDeviceDepth;
+    float2 padding0;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(AOUpsampleParams) == 32, "AOUpsampleParams must match the HLSL root constants");
 #endif
 
 struct ScreenSpaceDepthPyramidParams {

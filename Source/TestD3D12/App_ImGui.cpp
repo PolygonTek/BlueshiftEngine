@@ -168,10 +168,10 @@ void App::BuildImGuiStatsPlotWindow() {
         int rowCount = 0;
         for (int tagIndex = 0; tagIndex < static_cast<int>(GpuTiming::Tag::Count); ++tagIndex) {
             const GpuTiming::Tag tag = static_cast<GpuTiming::Tag>(tagIndex);
-            const float tagMsec = mainRenderContext->GetStatGpuTagAverageMsec(tag);
-            if (tagMsec <= 0.001f) {
+            if (!mainRenderContext->IsGpuTagMeasured(tag)) {
                 continue;
             }
+            const float tagMsec = mainRenderContext->GetStatGpuTagAverageMsec(tag);
 
             GpuTimingTagRow &row = rows[rowCount++];
             row.tagIndex = tagIndex;
@@ -930,6 +930,14 @@ void App::BuildImGuiOverlay() {
                     r_ssao2.SetBool(ssao);
                 }
                 ImGui::BeginDisabled(!ssao);
+                bool ssaoHalfResolution = r_ssaoHalfResolution.GetBool();
+                if (ImGui::Checkbox("Half resolution##SSAO", &ssaoHalfResolution)) {
+                    r_ssaoHalfResolution.SetBool(ssaoHalfResolution);
+                }
+                bool ssaoBilateral = r_ssaoBilateral.GetBool();
+                if (ImGui::Checkbox("Bilateral filter##SSAO", &ssaoBilateral)) {
+                    r_ssaoBilateral.SetBool(ssaoBilateral);
+                }
                 bool ssaoDebug = r_ssaoDebug.GetBool();
                 if (ImGui::Checkbox("AO debug output", &ssaoDebug)) {
                     r_ssaoDebug.SetBool(ssaoDebug);

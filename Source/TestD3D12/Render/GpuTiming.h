@@ -46,6 +46,8 @@ public:
         GenScreenSpaceDepthPyramid,
         SSRTrace,
         SSAO,
+        AOBilateralFilter,
+        AOUpsample,
         SurfaceOutputMSAAResolve,
         DepthMSAAResolve,
         LuminancePass1,

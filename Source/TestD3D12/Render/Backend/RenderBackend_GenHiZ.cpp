@@ -50,8 +50,8 @@ static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData,
 
     HiZMipGenParams hiZMipGenParams = {};
     hiZMipGenParams.inputSize = uint2(inputWidth, inputHeight);
-    hiZMipGenParams.outputSize = uint2(outputWidth, outputHeight);
     hiZMipGenParams.inputSizeRcp = float2(1.0f / inputWidth, 1.0f / inputHeight);
+    hiZMipGenParams.outputSize = uint2(outputWidth, outputHeight);
     hiZMipGenParams.outputMipCount = outputMipCount;
     hiZMipGenParams.useMinDepth = useMinDepth;
 
@@ -107,8 +107,8 @@ static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RH
 
     HiZMipGenParams hiZMipGenParams = {};
     hiZMipGenParams.inputSize = uint2(inputWidth, inputHeight);
-    hiZMipGenParams.outputSize = uint2(outputWidth, outputHeight);
     hiZMipGenParams.inputSizeRcp = float2(1.0f / inputWidth, 1.0f / inputHeight);
+    hiZMipGenParams.outputSize = uint2(outputWidth, outputHeight);
     hiZMipGenParams.outputMipCount = 1;
     hiZMipGenParams.useMinDepth = useMinDepth;
 
@@ -164,8 +164,8 @@ bool RenderBackend::DispatchGenHiZ() {
 
     HiZMipGenParams hiZMipGenParams = {};
     hiZMipGenParams.inputSize = uint2(depthWidth, depthHeight);
-    hiZMipGenParams.outputSize = uint2(currentVisCamera->hiZMipWidths[0], currentVisCamera->hiZMipHeights[0]);
     hiZMipGenParams.inputSizeRcp = float2(1.0f / depthWidth, 1.0f / depthHeight);
+    hiZMipGenParams.outputSize = uint2(currentVisCamera->hiZMipWidths[0], currentVisCamera->hiZMipHeights[0]);
     hiZMipGenParams.outputMipCount = firstBatchMipCount;
     hiZMipGenParams.useMinDepth = useMinDepth;
 

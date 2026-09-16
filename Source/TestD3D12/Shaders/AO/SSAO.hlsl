@@ -1,10 +1,14 @@
-#include "ShaderInterop.h"
-#include "Common.hlsli"
-#include "Random.hlsli"
-#include "PBR/ImportanceSampling.hlsli"
+#include "../ShaderInterop.h"
+#include "../Common.hlsli"
+#include "../PBR/ImportanceSampling.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
+    "RootConstants(num32BitConstants=12, b0), " \
+    "CBV(b1)"
+
+#define HALF_ROOT_SIGNATURE "RootFlags(0), " \
+    "DescriptorTable(SRV(t0), UAV(u0), UAV(u1)), " \
     "RootConstants(num32BitConstants=12, b0), " \
     "CBV(b1)"
 
@@ -18,6 +22,7 @@ cbuffer CameraCB : register(b1) {
 
 Texture2D<float> inputDepthTexture : register(t0);
 RWTexture2D<float> outputAOTexture : register(u0);
+RWTexture2D<float> outputDepthTexture : register(u1);
 
 static const uint ssaoSampleCount = 16;
 
@@ -59,7 +64,7 @@ float LinearDepth(float depth) {
 // Select a neighbor on each axis from the same surface where possible.
 // Invalid/background neighbors must not participate in reconstruction, including
 // infinite-far depth. Only the two selected neighbor positions are reconstructed.
-bool ReconstructNormal(int2 pixelCoord, float3 viewPos, out float3 normal) {
+bool ReconstructNormal(int2 inputPixelCoord, float3 viewPos, out float3 normal) {
     const int2 offsets[4] = {int2(-1, 0), int2(1, 0), int2(0, -1), int2(0, 1)};
     float linearDepths[4];
     float errors[4];
@@ -67,8 +72,8 @@ bool ReconstructNormal(int2 pixelCoord, float3 viewPos, out float3 normal) {
 
     [unroll]
     for (uint i = 0; i < 4; ++i) {
-        const int2 neighbor = pixelCoord + offsets[i];
-        const bool inBounds = all(neighbor >= 0) && all(neighbor < int2(ssaoParams.outputSize));
+        const int2 neighbor = inputPixelCoord + offsets[i];
+        const bool inBounds = all(neighbor >= 0) && all(neighbor < int2(ssaoParams.inputSize));
         const float depth = inBounds ? inputDepthTexture.Load(int3(neighbor, 0)) : ssaoParams.farPlaneDeviceDepth;
         const bool background = IsBackgroundDepth(depth);
         linearDepths[i] = background ? 0.0f : LinearDepth(depth);
@@ -84,8 +89,8 @@ bool ReconstructNormal(int2 pixelCoord, float3 viewPos, out float3 normal) {
     }
 
     const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
-    const float2 horizontalUV = (float2(pixelCoord + offsets[horizontal]) + 0.5f) * ssaoParams.outputSizeRcp;
-    const float2 verticalUV = (float2(pixelCoord + offsets[vertical]) + 0.5f) * ssaoParams.outputSizeRcp;
+    const float2 horizontalUV = (float2(inputPixelCoord + offsets[horizontal]) + 0.5f) * ssaoParams.inputSizeRcp;
+    const float2 verticalUV = (float2(inputPixelCoord + offsets[vertical]) + 0.5f) * ssaoParams.inputSizeRcp;
     const float3 dx = ViewPositionFromLinearDepth(horizontalUV, linearDepths[horizontal], cameraConstants.uvToView, orthogonal) - viewPos;
     const float3 dy = ViewPositionFromLinearDepth(verticalUV, linearDepths[vertical], cameraConstants.uvToView, orthogonal) - viewPos;
     normal = cross(dx, dy);
@@ -100,33 +105,23 @@ bool ReconstructNormal(int2 pixelCoord, float3 viewPos, out float3 normal) {
     return true;
 }
 
-[RootSignature(COMMON_ROOT_SIGNATURE)]
-[numthreads(SSAOBlockSizeX, SSAOBlockSizeY, 1)]
-void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
-    const uint2 pixelCoord = dispatchThreadId.xy;
-    if (any(pixelCoord >= ssaoParams.outputSize)) {
-        return;
-    }
-
-    const float centerDepth = inputDepthTexture.Load(int3(pixelCoord, 0));
+float EvaluateSSAO(uint2 outputPixelCoord, uint2 inputPixelCoord, float centerDepth) {
     if (IsBackgroundDepth(centerDepth)) {
-        outputAOTexture[pixelCoord] = 1.0f;
-        return;
+        return 1.0f;
     }
 
     const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
-    const float2 uv = (float2(pixelCoord) + 0.5f) * ssaoParams.outputSizeRcp;
+    const float2 uv = (float2(inputPixelCoord) + 0.5f) * ssaoParams.inputSizeRcp;
     const float3 viewPos = ViewPositionFromLinearDepth(uv, LinearDepth(centerDepth), cameraConstants.uvToView, orthogonal);
 
     float3 normal;
-    if (!ReconstructNormal(int2(pixelCoord), viewPos, normal)) {
-        outputAOTexture[pixelCoord] = 1.0f;
-        return;
+    if (!ReconstructNormal(int2(inputPixelCoord), viewPos, normal)) {
+        return 1.0f;
     }
 
-    // Rotate the whole tangent frame once per pixel. The seed is frame-invariant
-    // because the raw AO preview has no temporal accumulation.
-    const float angle = TWO_PI * UintToUniform01(Hash(pixelCoord, 0x5353414fu).x);
+    // IGN 으로 주변 픽셀의 샘플 회전각을 고르게 분포시킨다.
+    // AO 자체의 temporal accumulation 이 없으므로 프레임마다 같은 패턴을 유지한다.
+    const float angle = TWO_PI * InterleavedGradientNoise(outputPixelCoord);
     float sinAngle;
     float cosAngle;
     sincos(angle, sinAngle, cosAngle);
@@ -153,8 +148,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             continue;
         }
 
-        const uint2 samplePixel = min(uint2(screenPosition.xy * ssaoParams.outputSize), ssaoParams.outputSize - 1u);
-        if (all(samplePixel == pixelCoord)) {
+        const uint2 samplePixel = min(uint2(screenPosition.xy * ssaoParams.inputSize), ssaoParams.inputSize - 1u);
+        if (all(samplePixel == inputPixelCoord)) {
             continue;
         }
 
@@ -170,7 +165,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         }
 
         // Reconstruct at the loaded texel center, not the projected sample UV.
-        const float2 sampleUV = (float2(samplePixel) + 0.5f) * ssaoParams.outputSizeRcp;
+        const float2 sampleUV = (float2(samplePixel) + 0.5f) * ssaoParams.inputSizeRcp;
         const float3 delta = ViewPositionFromLinearDepth(sampleUV, sceneLinearDepth, cameraConstants.uvToView, orthogonal) - viewPos;
         // Point sampling can place a sloped plane in front of Q. A point on the
         // receiver's tangent plane must not count as its own occluder.
@@ -184,6 +179,54 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     // Cosine-weighted directions already account for N dot L. Offscreen and
     // rejected samples remain unoccluded; keep the full sample count divisor.
-    const float ao = saturate(1.0f - occlusion / float(ssaoSampleCount));
-    outputAOTexture[pixelCoord] = pow(ao, ssaoParams.power);
+    float ao = saturate(1.0f - occlusion / float(ssaoSampleCount));
+    // Apply power here for both filtered and unfiltered AO; filtering consumes this result.
+    if (ssaoParams.power != 1.0f) {
+        ao = pow(ao, ssaoParams.power);
+    }
+    return ao;
+}
+
+[RootSignature(COMMON_ROOT_SIGNATURE)]
+[numthreads(SSAOBlockSizeX, SSAOBlockSizeY, 1)]
+void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
+    const uint2 pixelCoord = dispatchThreadId.xy;
+    if (any(pixelCoord >= ssaoParams.outputSize)) {
+        return;
+    }
+    outputAOTexture[pixelCoord] = EvaluateSSAO(pixelCoord, pixelCoord, inputDepthTexture.Load(int3(pixelCoord, 0)));
+}
+
+[RootSignature(HALF_ROOT_SIGNATURE)]
+[numthreads(SSAOBlockSizeX, SSAOBlockSizeY, 1)]
+void CSMainHalfResolution(uint3 dispatchThreadId : SV_DispatchThreadID) {
+    const uint2 outputPixelCoord = dispatchThreadId.xy;
+    if (any(outputPixelCoord >= ssaoParams.outputSize)) {
+        return;
+    }
+
+    // 2x2 블록의 가장 가까운 표면을 선택한다. 홀수 해상도의 마지막 블록은 유효 픽셀만 사용한다.
+    const uint2 blockOrigin = outputPixelCoord * 2u;
+    uint2 inputPixelCoord = blockOrigin;
+    float centerDepth = ssaoParams.farPlaneDeviceDepth;
+    const bool reverseZ = ssaoParams.farPlaneDeviceDepth == 0.0f;
+
+    [unroll]
+    for (uint y = 0; y < 2; ++y) {
+        [unroll]
+        for (uint x = 0; x < 2; ++x) {
+            const uint2 sampleCoord = blockOrigin + uint2(x, y);
+            if (all(sampleCoord < ssaoParams.inputSize)) {
+                const float depth = inputDepthTexture.Load(int3(sampleCoord, 0));
+                if (!IsBackgroundDepth(depth) && (IsBackgroundDepth(centerDepth) || (reverseZ ? depth > centerDepth : depth < centerDepth))) {
+                    centerDepth = depth;
+                    inputPixelCoord = sampleCoord;
+                }
+            }
+        }
+    }
+
+    // AO 와 동일한 표면의 device depth 를 보존해 blur 와 upsampling 에서 공유한다.
+    outputDepthTexture[outputPixelCoord] = centerDepth;
+    outputAOTexture[outputPixelCoord] = EvaluateSSAO(outputPixelCoord, inputPixelCoord, centerDepth);
 }

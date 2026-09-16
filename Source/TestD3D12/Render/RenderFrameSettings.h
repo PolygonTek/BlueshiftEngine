@@ -131,9 +131,12 @@ struct RenderFrameSettings {
     bool                        hiZOcclusionCullingFreeze = false;
     bool                        hiZDebugPreview = false;
 
-    bool                        ssr = false;
     bool                        ssao = false;
     bool                        ssaoDebug = false;
+    bool                        ssaoHalfResolution = true;
+    bool                        ssaoBilateral = true;
+
+    bool                        ssr = false;
     bool                        ssrDebug = false;
 
     bool                        toneMapping = true;

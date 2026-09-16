@@ -79,6 +79,8 @@ CVAR(r_ssao2, "1", BE1::CVar::Flag::Bool, "apply screen-space ambient occlusion 
 CVAR(r_ssaoDebug, "0", BE1::CVar::Flag::Bool, "show full-resolution screen-space ambient occlusion");
 CVAR_MINMAX(r_ssaoRadius, "0.5", BE1::CVar::Flag::Float, "screen-space ambient occlusion radius in world units", 0.01f, 10.0f);
 CVAR_MINMAX(r_ssaoPower, "1.0", BE1::CVar::Flag::Float, "screen-space ambient occlusion power", 0.25f, 4.0f);
+CVAR(r_ssaoHalfResolution, "1", BE1::CVar::Flag::Bool, "compute screen-space ambient occlusion at half resolution");
+CVAR(r_ssaoBilateral, "1", BE1::CVar::Flag::Bool, "apply depth-aware bilateral filtering to screen-space ambient occlusion");
 
 CVAR(r_ssr, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
 CVAR(r_ssrDebug, "0", BE1::CVar::Flag::Bool, "show screen-space reflection trace debug output");
@@ -259,6 +261,8 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.ssaoDebug = r_ssaoDebug.GetBool();
     settings.ssaoRadius = r_ssaoRadius.GetFloat();
     settings.ssaoPower = r_ssaoPower.GetFloat();
+    settings.ssaoHalfResolution = r_ssaoHalfResolution.GetBool();
+    settings.ssaoBilateral = r_ssaoBilateral.GetBool();
 
     settings.ssr = r_ssr.GetBool();
     settings.ssrDebug = r_ssrDebug.GetBool();

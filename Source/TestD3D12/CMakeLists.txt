@@ -196,6 +196,7 @@ set(SRC_FILES
     Render/Backend/RenderBackend_GenScreenSpaceDepthPyramid.cpp
     Render/Backend/RenderBackend_SSRTrace.cpp
     Render/Backend/RenderBackend_SSAO.cpp
+    Render/Backend/RenderBackend_Blur.cpp
     Render/Backend/RenderBackend_PostProcess.cpp
     Render/Backend/RenderBackend_DebugDraw.cpp
     Render/Backend/RenderBackend_DrawGenericSurf.cpp

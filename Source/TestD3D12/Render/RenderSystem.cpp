@@ -404,7 +404,13 @@ void RenderSystem::InitComputePipelines() {
     genHiZMipOddDimShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "HiZ/GenHiZMipOddDim.hlsl", baseDir);
     hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZ/HiZCullInstances.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZ/HiZDebugPreview.hlsl", baseDir);
-    ssaoShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssaoShader", computeShaderModel, "SSAO.hlsl", baseDir);
+
+    ssaoShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssaoShader", computeShaderModel, "AO/SSAO.hlsl", baseDir);
+    ssaoHalfResolutionShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssaoHalfResolutionShader", computeShaderModel, "AO/SSAO.hlsl", baseDir, "CSMainHalfResolution");
+    aoBilateralHorizontalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoBilateralHorizontalShader", computeShaderModel, "AO/AOBilateral.hlsl", baseDir, "CSMainHorizontal");
+    aoBilateralVerticalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoBilateralVerticalShader", computeShaderModel, "AO/AOBilateral.hlsl", baseDir, "CSMainVertical");
+    aoUpsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoUpsampleShader", computeShaderModel, "AO/AOUpsample.hlsl", baseDir);
+
     screenSpaceDepthPyramidFirstShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidFirst.hlsl", baseDir);
     screenSpaceDepthPyramidFirstMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstMSAAShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidFirstMSAA.hlsl", baseDir);
     screenSpaceDepthPyramidReduceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidReduceShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidReduce.hlsl", baseDir);
@@ -449,11 +455,16 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline, shaderPipelineBootstrap);
 
+    EnsureComputePipeline(ssaoShaderTemplate, ssaoPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(ssaoHalfResolutionShaderTemplate, ssaoHalfResolutionPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(aoBilateralHorizontalShaderTemplate, aoBilateralHorizontalPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(aoBilateralVerticalShaderTemplate, aoBilateralVerticalPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(aoUpsampleShaderTemplate, aoUpsamplePipeline, shaderPipelineBootstrap);
+
     EnsureComputePipeline(screenSpaceDepthPyramidFirstShaderTemplate, screenSpaceDepthPyramidFirstPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(screenSpaceDepthPyramidFirstMSAAShaderTemplate, screenSpaceDepthPyramidFirstMSAAPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(screenSpaceDepthPyramidReduceShaderTemplate, screenSpaceDepthPyramidReducePipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(ssrTraceShaderTemplate, ssrTracePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(ssaoShaderTemplate, ssaoPipeline, shaderPipelineBootstrap);
 
     EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(depthMSAAResolveShaderTemplate, depthMSAAResolvePipeline, shaderPipelineBootstrap);
@@ -488,6 +499,10 @@ void RenderSystem::ReleaseComputePipelines() {
     screenSpaceDepthPyramidReducePipeline.reset();
     ssrTracePipeline.reset();
     ssaoPipeline.reset();
+    ssaoHalfResolutionPipeline.reset();
+    aoBilateralHorizontalPipeline.reset();
+    aoBilateralVerticalPipeline.reset();
+    aoUpsamplePipeline.reset();
 
     lightCullingPipeline.reset();
     depthMSAAResolvePipeline.reset();
@@ -514,11 +529,18 @@ void RenderSystem::ReleaseComputePipelines() {
     genHiZMipOddDimShaderTemplate.reset();
     hiZCullInstancesShaderTemplate.reset();
     hiZDebugPreviewShaderTemplate.reset();
+
+    ssaoShaderTemplate.reset();
+    ssaoHalfResolutionShaderTemplate.reset();
+    aoBilateralHorizontalShaderTemplate.reset();
+    aoBilateralVerticalShaderTemplate.reset();
+    aoUpsampleShaderTemplate.reset();
+
     screenSpaceDepthPyramidFirstShaderTemplate.reset();
     screenSpaceDepthPyramidFirstMSAAShaderTemplate.reset();
     screenSpaceDepthPyramidReduceShaderTemplate.reset();
     ssrTraceShaderTemplate.reset();
-    ssaoShaderTemplate.reset();
+
     depthMSAAResolveShaderTemplate.reset();
     surfaceOutputMSAAResolveNormalShaderTemplate.reset();
     surfaceOutputMSAAResolveVelocityShaderTemplate.reset();

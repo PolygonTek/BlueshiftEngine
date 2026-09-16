@@ -335,7 +335,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), renderFrameSettings.ssr);
 
     const bool needSSAOResolvedDepth = renderContext->GetMainRTSampleCount() > 1 && !renderCamera->GetSSRResolvedDepthTexture();
-    renderCamera->EnsureSSAOResources(renderWidth, renderHeight, needSSAOResolvedDepth, renderFrameSettings.ssao);
+    renderCamera->EnsureSSAOResources(renderWidth, renderHeight, needSSAOResolvedDepth, renderFrameSettings);
 
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
     const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
@@ -442,6 +442,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     visCamera->ssrResolvedDepthTexture = renderCamera->GetSSRResolvedDepthTexture();
     visCamera->ssaoTexture = renderCamera->GetSSAOTexture();
+    visCamera->ssaoRawTexture = renderCamera->GetSSAORawTexture();
+    visCamera->ssaoFilterTexture = renderCamera->GetSSAOFilterTexture();
+    visCamera->ssaoHalfDepthTexture = renderCamera->GetSSAOHalfDepthTexture();
     visCamera->ssaoDepthTexture = useMSAA ? (visCamera->ssrResolvedDepthTexture ? visCamera->ssrResolvedDepthTexture : renderCamera->GetSSAOResolvedDepthTexture()) : visCamera->depthTexture;
     visCamera->applySSAO = renderFrameSettings.ssao && visCamera->ssaoTexture && visCamera->ssaoDepthTexture;
 

@@ -35,6 +35,8 @@ const char *GpuTiming::TagName(Tag tag) {
         "Gen Screen-Space Depth Pyramid",
         "SSR Trace",
         "SSAO",
+        "AO Bilateral Filter",
+        "AO Upsample",
         "Surface Output MSAA Resolve",
         "Depth MSAA Resolve",
         "Luminance Pass 1",
@@ -197,6 +199,7 @@ void GpuTiming::SetFrameFence(uint64_t fenceValue) {
 }
 
 void GpuTiming::ReadCompleted() {
+    static_assert(static_cast<int>(Tag::Count) <= 64, "GPU timing tags must fit in measuredTagMask");
     const uint64_t *timestamps = static_cast<const uint64_t *>(timestampReadbackBuffer->mappedPtr);
 
     // 모든 frame slot 들을 순회하면서, 완료된 슬롯들의 타임스탬프를 읽어서 renderContext 에 전달한다.
@@ -213,6 +216,7 @@ void GpuTiming::ReadCompleted() {
         const uint32_t baseTimestampIndex = FrameSlotBaseTimestampIndex(frameSlotIndex);
         if (slot.renderContext) {
             float tagFrameMsec[static_cast<int>(Tag::Count)] = {};
+            uint64_t measuredTagMask = 0;
             for (uint32_t tagSampleIndex = 0; tagSampleIndex < slot.sampleCount; ++tagSampleIndex) {
                 const int tagIndex = static_cast<int>(slot.samples[tagSampleIndex]);
                 if (tagIndex < 0 || tagIndex >= static_cast<int>(Tag::Count)) {
@@ -225,10 +229,11 @@ void GpuTiming::ReadCompleted() {
 
                 // 같은 tag 가 여러번 샘플되었을 수 있으므로, 같은 tag frame msec 을 누적한다.
                 if (tagEndTimestamp >= tagBeginTimestamp) {
+                    measuredTagMask |= uint64_t(1) << tagIndex;
                     tagFrameMsec[tagIndex] += TimestampToMsec(tagBeginTimestamp, tagEndTimestamp);
                 }
             }
-            slot.renderContext->UpdateGpuTagFrameTimes(tagFrameMsec);
+            slot.renderContext->UpdateGpuTagFrameTimes(tagFrameMsec, measuredTagMask);
         }
 
         ResetSlot(slot);

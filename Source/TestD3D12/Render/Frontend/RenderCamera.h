@@ -174,7 +174,7 @@ public:
     bool                        EnsureSceneSnapshotResources(bool needed, bool halfResolution);
     void                        EnsureScreenSpaceDepthPyramidResources(uint32_t width, uint32_t height, bool needed);
     void                        EnsureSSRTraceResources(uint32_t width, uint32_t height, uint32_t sampleCount, bool needed);
-    void                        EnsureSSAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, bool needed);
+    void                        EnsureSSAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, const RenderFrameSettings &settings);
     void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, const RenderFrameSettings &renderFrameSettings);
 
     void                        InvalidateTemporalHistory();
@@ -221,6 +221,9 @@ public:
     RHI::Texture *              GetSSRResolvedDepthTexture() const { return ssrResolvedDepthTexture; }
     RHI::Texture *              GetSSRTraceTexture() const { return ssrTraceTexture; }
     RHI::Texture *              GetSSAOTexture() const { return ssaoTexture; }
+    RHI::Texture *              GetSSAORawTexture() const { return ssaoRawTexture; }
+    RHI::Texture *              GetSSAOFilterTexture() const { return ssaoFilterTexture; }
+    RHI::Texture *              GetSSAOHalfDepthTexture() const { return ssaoHalfDepthTexture; }
     RHI::Texture *              GetSSAOResolvedDepthTexture() const { return ssaoResolvedDepthTexture; }
 
     RHI::Texture *              GetPostProcessColorTexture() const { return postProcessColorTexture; }
@@ -276,6 +279,7 @@ private:
     bool                        CreateSSRResolvedDepthTexture(uint32_t width, uint32_t height);
     void                        DestroySSRResolvedDepthTexture();
     void                        DestroySSAOResources();
+    void                        DestroySSAOFilterResources();
     void                        EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview);
     bool                        CreateHiZTexture(uint32_t width, uint32_t height);
     void                        DestroyHiZTexture();
@@ -368,6 +372,9 @@ private:
     RHI::Texture *              ssrResolvedDepthTexture = nullptr;
     RHI::Texture *              ssrTraceTexture = nullptr;
     RHI::Texture *              ssaoTexture = nullptr;
+    RHI::Texture *              ssaoRawTexture = nullptr;
+    RHI::Texture *              ssaoFilterTexture = nullptr;
+    RHI::Texture *              ssaoHalfDepthTexture = nullptr;
     RHI::Texture *              ssaoResolvedDepthTexture = nullptr;
 
     RHI::Texture *              colorHistoryTextures[2] = {};

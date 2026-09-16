@@ -316,6 +316,10 @@ void RenderBackend::UpdateFramePSOs() {
     frameScreenSpaceDepthPyramidReducePSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidReducePipeline);
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
     frameSSAOPSO = ShaderPipeline::GetReadyPSO(renderSystem->ssaoPipeline);
+    frameSSAOHalfResolutionPSO = ShaderPipeline::GetReadyPSO(renderSystem->ssaoHalfResolutionPipeline);
+    frameAOBilateralHorizontalPSO = ShaderPipeline::GetReadyPSO(renderSystem->aoBilateralHorizontalPipeline);
+    frameAOBilateralVerticalPSO = ShaderPipeline::GetReadyPSO(renderSystem->aoBilateralVerticalPipeline);
+    frameAOUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->aoUpsamplePipeline);
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
     frameSurfaceOutputMSAAResolveNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalPipeline);

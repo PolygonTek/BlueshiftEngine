@@ -1432,8 +1432,8 @@ void RenderCamera::DestroySSRResolvedDepthTexture() {
     }
 }
 
-void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, bool needed) {
-    if (!needed || width == 0 || height == 0) {
+void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, const RenderFrameSettings &settings) {
+    if (!settings.ssao || width == 0 || height == 0) {
         DestroySSAOResources();
         return;
     }
@@ -1453,6 +1453,54 @@ void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool nee
             return;
         }
         RHI::renderer->SetName(ssaoTexture, "RenderCamera::ssaoTexture");
+    }
+
+    const uint32_t aoWidth = settings.ssaoHalfResolution ? BE1::DivCeil(width, 2u) : width;
+    const uint32_t aoHeight = settings.ssaoHalfResolution ? BE1::DivCeil(height, 2u) : height;
+    const bool needRaw = settings.ssaoHalfResolution || settings.ssaoBilateral;
+
+    // 해상도 옵션이 바뀌면 크기가 달라지는 중간 텍스처만 다시 만든다.
+    if (ssaoRawTexture && (!needRaw || ssaoRawTexture->GetWidth() != aoWidth || ssaoRawTexture->GetHeight() != aoHeight)) {
+        RHI::renderer->DestroyTexture(ssaoRawTexture);
+        ssaoRawTexture = nullptr;
+    }
+
+    if (ssaoHalfDepthTexture && (!settings.ssaoHalfResolution || ssaoHalfDepthTexture->GetWidth() != aoWidth || ssaoHalfDepthTexture->GetHeight() != aoHeight)) {
+        RHI::renderer->DestroyTexture(ssaoHalfDepthTexture);
+        ssaoHalfDepthTexture = nullptr;
+    }
+
+    if (ssaoFilterTexture && (!settings.ssaoBilateral || ssaoFilterTexture->GetWidth() != aoWidth || ssaoFilterTexture->GetHeight() != aoHeight)) {
+        DestroySSAOFilterResources();
+    }
+
+    // Keep intermediate visibility in FP16 to avoid repeated R8 quantization.
+    if (needRaw && !ssaoRawTexture) {
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, BE1::Image::Format::R16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        ssaoRawTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (ssaoRawTexture) {
+            RHI::renderer->SetName(ssaoRawTexture, "RenderCamera::ssaoRawTexture");
+        }
+    }
+
+    if (settings.ssaoHalfResolution && !ssaoHalfDepthTexture) {
+        // AO 를 평가한 표면의 device depth 를 정확히 보존한다.
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        ssaoHalfDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (ssaoHalfDepthTexture) {
+            RHI::renderer->SetName(ssaoHalfDepthTexture, "RenderCamera::ssaoHalfDepthTexture");
+        }
+    }
+
+    if (settings.ssaoBilateral && ssaoRawTexture && !ssaoFilterTexture) {
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, BE1::Image::Format::R16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        ssaoFilterTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (ssaoFilterTexture) {
+            RHI::renderer->SetName(ssaoFilterTexture, "RenderCamera::ssaoFilterTexture");
+        }
     }
 
     // SSR already owns a suitable full-resolution resolve target when enabled.
@@ -1475,13 +1523,33 @@ void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool nee
 }
 
 void RenderCamera::DestroySSAOResources() {
+    DestroySSAOFilterResources();
+
+    if (ssaoRawTexture) {
+        RHI::renderer->DestroyTexture(ssaoRawTexture);
+        ssaoRawTexture = nullptr;
+    }
+
+    if (ssaoHalfDepthTexture) {
+        RHI::renderer->DestroyTexture(ssaoHalfDepthTexture);
+        ssaoHalfDepthTexture = nullptr;
+    }
+
     if (ssaoTexture) {
         RHI::renderer->DestroyTexture(ssaoTexture);
         ssaoTexture = nullptr;
     }
+
     if (ssaoResolvedDepthTexture) {
         RHI::renderer->DestroyTexture(ssaoResolvedDepthTexture);
         ssaoResolvedDepthTexture = nullptr;
+    }
+}
+
+void RenderCamera::DestroySSAOFilterResources() {
+    if (ssaoFilterTexture) {
+        RHI::renderer->DestroyTexture(ssaoFilterTexture);
+        ssaoFilterTexture = nullptr;
     }
 }
 

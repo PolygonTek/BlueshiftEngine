@@ -271,6 +271,9 @@ struct VisCamera {
 
     bool                        applySSAO = false;
     RHI::Texture *              ssaoTexture = nullptr;
+    RHI::Texture *              ssaoRawTexture = nullptr;
+    RHI::Texture *              ssaoFilterTexture = nullptr;
+    RHI::Texture *              ssaoHalfDepthTexture = nullptr;
     RHI::Texture *              ssaoDepthTexture = nullptr;
 
     bool                        generateScreenSpaceDepthPyramid = false;

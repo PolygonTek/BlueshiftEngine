@@ -126,6 +126,7 @@ public:
 
     float                           GetStatGpuAverageMsec() const { return GetStatGpuTagAverageMsec(GpuTiming::Tag::GpuFrame); }
     float                           GetStatGpuTagAverageMsec(GpuTiming::Tag tag) const;
+    bool                            IsGpuTagMeasured(GpuTiming::Tag tag) const;
     Stats                           GetStats() const;
 
     void                            OnResize(int width, int height);
@@ -195,7 +196,7 @@ private:
     void                            FlushPendingScreenshots(RenderFrameData *frameData);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
     void                            ResetGuiClipRect(int width, int height);
-    void                            UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)]);
+    void                            UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)], uint64_t measuredTagMask);
     void                            SetStats(const Stats &stats);
 
     void *                          windowHandle = nullptr;
@@ -247,6 +248,7 @@ private:
     float                           statGpuTagElapsedMsec[static_cast<int>(GpuTiming::Tag::Count)] = {};
     int                             statGpuTagSampleCount[static_cast<int>(GpuTiming::Tag::Count)] = {};
     std::atomic<float>              statGpuTagAverageMsec[static_cast<int>(GpuTiming::Tag::Count)] = {};
+    std::atomic<uint64_t>           statGpuMeasuredTagMask = 0;
 
     AtomicStats                     stats;
     std::atomic<uint32_t>           statSequence = 0;

@@ -171,17 +171,24 @@ private:
     SharedPtr<ShaderTemplate>       hiZCullInstancesShaderTemplate;
     SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
     SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
+
+    SharedPtr<ShaderTemplate>       ssaoShaderTemplate;
+    SharedPtr<ShaderTemplate>       ssaoHalfResolutionShaderTemplate;
+    SharedPtr<ShaderTemplate>       aoBilateralHorizontalShaderTemplate;
+    SharedPtr<ShaderTemplate>       aoBilateralVerticalShaderTemplate;
+    SharedPtr<ShaderTemplate>       aoUpsampleShaderTemplate;
+
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidFirstShaderTemplate;
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidFirstMSAAShaderTemplate;
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidReduceShaderTemplate;
     SharedPtr<ShaderTemplate>       ssrTraceShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssaoShaderTemplate;
     SharedPtr<ShaderTemplate>       depthMSAAResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveVelocityShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalVelocityShaderTemplate;
     SharedPtr<ShaderTemplate>       finalPostProcessShaderTemplate;
     SharedPtr<ShaderTemplate>       taaResolveShaderTemplate;
+
     SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
 
@@ -199,7 +206,13 @@ private:
     SharedPtr<ShaderPipeline>       genHiZMipOddDimPipeline;
     SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
     SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
+
     SharedPtr<ShaderPipeline>       ssaoPipeline;
+    SharedPtr<ShaderPipeline>       ssaoHalfResolutionPipeline;
+    SharedPtr<ShaderPipeline>       aoBilateralHorizontalPipeline;
+    SharedPtr<ShaderPipeline>       aoBilateralVerticalPipeline;
+    SharedPtr<ShaderPipeline>       aoUpsamplePipeline;
+
     SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidFirstPipeline;
     SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidFirstMSAAPipeline;
     SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidReducePipeline;
