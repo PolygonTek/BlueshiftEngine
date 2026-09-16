@@ -19,10 +19,6 @@ shader "LitIndirect" {
             OUTPUT_NORMAL=1
         }
 
-        outputVelocity {
-            OUTPUT_VELOCITY=1
-        }
-
         gpuSkinningWeight1 {
             GPU_SKINNING=1
             GPU_SKINNING_WEIGHTS=1

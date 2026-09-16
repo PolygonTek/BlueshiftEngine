@@ -52,10 +52,6 @@ struct PSInput {
 #if USE_SURFACE_TANGENT_FRAME
     float4 worldTangent : TEXCOORD4;
 #endif
-#ifdef OUTPUT_VELOCITY
-    float4 currentVelocityPosition : TEXCOORD5;
-    float4 prevVelocityPosition : TEXCOORD6;
-#endif
 };
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
@@ -102,15 +98,6 @@ PSInput VSMain(VSInput input) {
     result.worldNormal = TransformSurfaceNormal(vertexNormal, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
 #if USE_SURFACE_TANGENT_FRAME
     result.worldTangent = TransformSurfaceTangent(vertexTangent, shaderSurface.worldMatrix);
-#endif
-
-#ifdef OUTPUT_VELOCITY
-    result.currentVelocityPosition = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
-    float4 prevLocalPosition = localPosition;
-    #if GPU_SKINNING
-        prevLocalPosition = GetPreviousSkinnedPosition(input.skinning, input.position, localPosition, shaderSurface.skinningJointOffset, shaderSurface.prevSkinningJointOffset);
-    #endif
-    result.prevVelocityPosition = CalcClipPosition(prevLocalPosition, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
 #endif
 
     return result;
@@ -178,9 +165,6 @@ CameraPassPSOutput PSMain(PSInput input) {
     result.color = baseColor;
 #ifdef OUTPUT_NORMAL
     result.normal = EncodeOctahedralNormal(shading.normal);
-#endif
-#ifdef OUTPUT_VELOCITY
-    result.velocity = CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
 #endif
 
 #if DEBUG_CASCADED_SHADOW_MAP == 1

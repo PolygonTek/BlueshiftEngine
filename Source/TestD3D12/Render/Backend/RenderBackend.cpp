@@ -473,16 +473,17 @@ static const RenderPass *FindRenderPass(const VisCamera *visCamera, RenderPassTy
 }
 
 struct RenderPassImagesDesc {
-    RHI::RenderPassImage::LoadAction colorLoadAction;
-    RHI::RenderPassImage::LoadAction surfaceOutputLoadAction;
-    RHI::RenderPassImage::LoadAction depthLoadAction;
-    RHI::GPUResourceState            renderTargetBeforeState;
-    RHI::GPUResourceState            renderTargetAfterState;
-    RHI::GPUResourceState            depthBeforeState;
-    RHI::GPUResourceState            depthAfterState;
-    const RHI::Texture *             colorResolveTexture;
-    const RHI::Texture *             depthResolveTexture;
-    RHI::RenderPassImage::DepthResolveMode depthResolveMode;
+    RHI::RenderPassImage::LoadAction        colorLoadAction;
+    RHI::RenderPassImage::LoadAction        surfaceOutputLoadAction;
+    RHI::RenderPassImage::LoadAction        depthLoadAction;
+    RHI::GPUResourceState                   renderTargetBeforeState;
+    RHI::GPUResourceState                   renderTargetAfterState;
+    RHI::GPUResourceState                   depthBeforeState;
+    RHI::GPUResourceState                   depthAfterState;
+    const RHI::Texture *                    colorResolveTexture;
+    const RHI::Texture *                    depthResolveTexture;
+    RHI::RenderPassImage::DepthResolveMode  depthResolveMode;
+    bool                                    outputVelocity;
 };
 
 // Camera3D render pass 에서 사용할 color, surface output, depth attachment 를 구성한다.
@@ -510,13 +511,12 @@ static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const 
         renderPassImages[renderPassImageCount++] = normalImage;
     }
 
-    if (visCamera->needVelocityOutput) {
+    if (desc.outputVelocity) {
         const RHI::Texture *velocityTexture = useMSAA ? visCamera->rtVelocityMSAATexture : visCamera->rtVelocityTexture;
-        RHI::RenderPassImage velocityImage = RHI::RenderPassImage::Color(velocityTexture, RHI::ViewID::PrimaryID, desc.surfaceOutputLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
-        if (desc.surfaceOutputLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
-            velocityImage = velocityImage.WithClearValue(zeroClearValue);
-        }
-        renderPassImages[renderPassImageCount++] = velocityImage;
+        // Prepass 의 velocity 를 보존하고 Ocean 등 후속 패스의 출력만 덧쓴다.
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(velocityTexture, RHI::ViewID::PrimaryID,
+            RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, desc.renderTargetAfterState);
     }
 
     renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(visCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState);
@@ -629,7 +629,8 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     }
 
     const RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-    const bool hasDepthPrepass = FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
+    // 불투명 surface 가 없는 프레임도 velocity 를 clear 해야 이전 프레임 값이 남지 않는다.
+    const bool hasDepthPrepass = currentVisCamera->needVelocityOutput || FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
 
     bool ssaoReady = false;
 
@@ -766,13 +767,17 @@ void RenderBackend::ExecuteDrawCamera3DShadowPass() {
 }
 
 void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
-    RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
+    RHI::RenderPassImage renderPassImages[2];
+    uint32_t renderPassImageCount = 0;
+    if (currentVisCamera->needVelocityOutput) {
+        const RHI::Texture *velocityTexture = currentVisCamera->rtVelocityMSAATexture ? currentVisCamera->rtVelocityMSAATexture : currentVisCamera->rtVelocityTexture;
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(velocityTexture, RHI::ViewID::PrimaryID,
+            RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
+    }
+    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
         RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
-
-    RHI::RenderPassImage renderPassImages[] = {
-        depthImage
-    };
-    RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+    RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
     DrawCamera3DDepthPrepass();
 
@@ -797,7 +802,8 @@ void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, cons
         RHI::GPUResourceState::DepthWrite,
         captureSceneSnapshot ? currentVisCamera->snapshotColorTexture : nullptr,
         captureSceneSnapshot ? currentVisCamera->snapshotDepthTexture : nullptr,
-        currentVisCamera->projectionPolicy.reverseZ ? RHI::RenderPassImage::DepthResolveMode::Max : RHI::RenderPassImage::DepthResolveMode::Min
+        currentVisCamera->projectionPolicy.reverseZ ? RHI::RenderPassImage::DepthResolveMode::Max : RHI::RenderPassImage::DepthResolveMode::Min,
+        false
     };
     RHI::RenderPassImage renderPassImages[6];
     const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentVisCamera, passDesc, useExplicitClearColor ? &clearColorValue : nullptr, renderPassImages);
@@ -829,6 +835,7 @@ void RenderBackend::CaptureSceneSnapshot() {
     } else {
         assert(snapshotDepthTexture->GetWidth() == sourceDepthTexture->GetWidth() && snapshotDepthTexture->GetHeight() == sourceDepthTexture->GetHeight());
     }
+
     if (downsampleSnapshot) {
         if (!currentVisCamera->sceneSnapshotDownsamplePSO ||
             !snapshotColorTexture->HasValidView(RHI::ViewType::RTV) ||
@@ -899,7 +906,8 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
         RHI::GPUResourceState::ShaderResource,
         currentVisCamera->rtColorTexture,
         nullptr,
-        RHI::RenderPassImage::DepthResolveMode::None
+        RHI::RenderPassImage::DepthResolveMode::None,
+        currentVisCamera->needVelocityOutput
     };
     RHI::RenderPassImage renderPassImages[6];
     const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentVisCamera, passDesc, nullptr, renderPassImages);

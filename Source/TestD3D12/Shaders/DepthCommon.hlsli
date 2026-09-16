@@ -20,6 +20,10 @@ struct DepthVSInput {
 
 struct DepthPSInput {
     float4 position : SV_POSITION;
+#ifdef OUTPUT_VELOCITY
+    float4 currentVelocityPosition : TEXCOORD2;
+    float4 prevVelocityPosition : TEXCOORD3;
+#endif
 #ifdef PERFORATED
     float2 texCoord : TEXCOORD0;
     float4 color : COLOR;
@@ -27,7 +31,11 @@ struct DepthPSInput {
 #endif
 };
 
+#ifdef OUTPUT_VELOCITY
+DepthPSInput BuildDepthVertex(DepthVSInput input, uint surfaceTableIndex, row_major float4x4 viewProjMatrix, row_major float4x4 unjitteredViewProjMatrix, row_major float4x4 prevUnjitteredViewProjMatrix) {
+#else
 DepthPSInput BuildDepthVertex(DepthVSInput input, uint surfaceTableIndex, row_major float4x4 viewProjMatrix) {
+#endif
     DepthPSInput result;
 
     ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID, surfaceTableIndex);
@@ -39,6 +47,16 @@ DepthPSInput BuildDepthVertex(DepthVSInput input, uint surfaceTableIndex, row_ma
 #endif
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, localPosition), 1.0);
     result.position = mul(viewProjMatrix, positionWS);
+
+#ifdef OUTPUT_VELOCITY
+    result.currentVelocityPosition = mul(unjitteredViewProjMatrix, positionWS);
+    float4 prevLocalPosition = localPosition;
+    #if GPU_SKINNING
+        // History resets alias the current pose and need no additional joint reads.
+        prevLocalPosition = GetPreviousSkinnedPosition(input.skinning, input.position, localPosition, shaderSurface.skinningJointOffset, shaderSurface.prevSkinningJointOffset);
+    #endif
+    result.prevVelocityPosition = CalcClipPosition(prevLocalPosition, shaderSurface.prevWorldMatrix, prevUnjitteredViewProjMatrix);
+#endif
 
 #ifdef PERFORATED
     result.texCoord = input.texCoord;

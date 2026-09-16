@@ -32,10 +32,6 @@ struct PSInput {
     float4 color : COLOR;
     float2 texCoord : TEXCOORD0;
     nointerpolation uint shaderMaterialIndex : TEXCOORD1;
-#ifdef OUTPUT_VELOCITY
-    float4 currentVelocityPosition : TEXCOORD2;
-    float4 prevVelocityPosition : TEXCOORD3;
-#endif
 #ifdef OUTPUT_NORMAL
     float3 worldNormal : TEXCOORD4;
 #endif
@@ -57,15 +53,6 @@ PSInput VSMain(VSInput input) {
     result.color = input.color;
     result.texCoord = input.texCoord;
     result.shaderMaterialIndex = shaderSurface.shaderMaterialIndex;
-
-#ifdef OUTPUT_VELOCITY
-    result.currentVelocityPosition = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
-    float4 prevLocalPosition = localPosition;
-    #if GPU_SKINNING
-        prevLocalPosition = GetPreviousSkinnedPosition(input.skinning, input.position, localPosition, shaderSurface.skinningJointOffset, shaderSurface.prevSkinningJointOffset);
-    #endif
-    result.prevVelocityPosition = CalcClipPosition(prevLocalPosition, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
-#endif
 
 #ifdef OUTPUT_NORMAL
     #ifdef PACKED_VERTEX_TANGENT_FRAME
@@ -96,9 +83,6 @@ CameraPassPSOutput PSMain(PSInput input) {
     result.color = textureColor * shaderMaterial.GetBaseColorFactor() * input.color;
 #ifdef OUTPUT_NORMAL
     result.normal = EncodeOctahedralNormal(normalize(input.worldNormal));
-#endif
-#ifdef OUTPUT_VELOCITY
-    result.velocity = CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
 #endif
     return result;
 }

@@ -213,8 +213,8 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     }
 
     // Forward lighting 에서 불투명 표면을 렌더링하려면 AO 가 필요하다.
-    // 따라서 SSAO 가 켜지면 depth prepass 를 강제로 켠다.
-    const bool useDepthPrepass = frameData->GetRenderFrameSettings().depthPrepass || visCamera->applySSAO;
+    // SSAO 또는 velocity 가 필요하면 depth prepass 를 강제로 켠다.
+    const bool useDepthPrepass = frameData->GetRenderFrameSettings().depthPrepass || visCamera->applySSAO || visCamera->needVelocityOutput;
 
     int numDepthDrawSurfs = 0;
     int numOpaqueDrawSurfs = 0;
@@ -255,12 +255,19 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
 
     // AllocRenderPass 호출 순서대로 백엔드에서 RenderPass 가 렌더링된다.
     // 1. DepthPrepass RenderPass 를 할당한다.
-    RenderPass *depthPass = AllocRenderPass(visCamera, RenderPassType::DepthPrepass, {}, VertexInputLayoutId::XyzStColor, numDepthDrawSurfs);
+    ShaderFeatureSet depthPassFeatureSet;
+    if (visCamera->needVelocityOutput) {
+        depthPassFeatureSet.EnableFeature(ShaderFeature::OutputVelocity);
+    }
+    RenderPass *depthPass = AllocRenderPass(visCamera, RenderPassType::DepthPrepass, depthPassFeatureSet, VertexInputLayoutId::XyzStColor, numDepthDrawSurfs);
     if (depthPass) {
         depthPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, true);
         RHI::RenderDest &renderDest = depthPass->graphicsPipelineDesc.renderDest;
         renderDest = RHI::RenderDest();
         renderDest.renderTargetCount = 0;
+        if (visCamera->needVelocityOutput) {
+            renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R16G16_FLOAT;
+        }
         renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
         renderDest.sampleCount = visCamera->depthTexture->GetSampleCount();
 
@@ -271,15 +278,12 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     if (visCamera->needNormalOutput) {
         opaquePassFeatureSet.EnableFeature(ShaderFeature::OutputNormal);
     }
-    if (visCamera->needVelocityOutput) {
-        opaquePassFeatureSet.EnableFeature(ShaderFeature::OutputVelocity);
-    }
 
     // 2. Opaque RenderPass 를 할당한다.
     RenderPass *opaquePass = AllocRenderPass(visCamera, RenderPassType::Opaque, opaquePassFeatureSet, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
     if (opaquePass) {
         opaquePass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, !useDepthPrepass);
-        RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest, visCamera->needNormalOutput, visCamera->needVelocityOutput);
+        RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest, visCamera->needNormalOutput, false);
 
         opaquePSOResolver.Begin(opaquePass, BE1::Min(numOpaqueDrawSurfs, 1024));
     }
@@ -288,7 +292,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     RenderPass *skyboxPass = AllocRenderPass(visCamera, RenderPassType::Skybox, {}, VertexInputLayoutId::XyzStColor, numSkyboxDrawSurfs);
     if (skyboxPass) {
         skyboxPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, false);
-        RenderContext::activeContext->GetMainRenderDest(skyboxPass->graphicsPipelineDesc.renderDest, visCamera->needNormalOutput, visCamera->needVelocityOutput);
+        RenderContext::activeContext->GetMainRenderDest(skyboxPass->graphicsPipelineDesc.renderDest, visCamera->needNormalOutput, false);
 
         skyboxPSOResolver.Begin(skyboxPass, BE1::Min(numSkyboxDrawSurfs, 1));
     }

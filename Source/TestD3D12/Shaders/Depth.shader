@@ -5,6 +5,10 @@ shader "Depth" {
     }
 
     features {
+        outputVelocity {
+            OUTPUT_VELOCITY=1
+        }
+
         perforated {
             PERFORATED=1
         }
