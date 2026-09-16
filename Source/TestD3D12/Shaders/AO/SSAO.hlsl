@@ -120,8 +120,8 @@ float EvaluateSSAO(uint2 outputPixelCoord, uint2 inputPixelCoord, float centerDe
     }
 
     // IGN 으로 주변 픽셀의 샘플 회전각을 고르게 분포시킨다.
-    // AO 자체의 temporal accumulation 이 없으므로 프레임마다 같은 패턴을 유지한다.
-    const float angle = TWO_PI * InterleavedGradientNoise(outputPixelCoord);
+    // TAA 가 누적할 수 있도록 프레임별 위상을 더한다. noisePhase 가 0 이면 기존 패턴을 유지한다.
+    const float angle = TWO_PI * frac(InterleavedGradientNoise(outputPixelCoord) + ssaoParams.noisePhase);
     float sinAngle;
     float cosAngle;
     sincos(angle, sinAngle, cosAngle);

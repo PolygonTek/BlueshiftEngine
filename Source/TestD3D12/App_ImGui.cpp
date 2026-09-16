@@ -934,10 +934,15 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::Checkbox("Half resolution##SSAO", &ssaoHalfResolution)) {
                     r_ssaoHalfResolution.SetBool(ssaoHalfResolution);
                 }
+                bool ssaoTemporalRotation = r_ssaoTemporalRotation.GetBool();
+                if (ImGui::Checkbox("Temporal rotation##SSAO", &ssaoTemporalRotation)) {
+                    r_ssaoTemporalRotation.SetBool(ssaoTemporalRotation);
+                }
                 bool ssaoBilateral = r_ssaoBilateral.GetBool();
                 if (ImGui::Checkbox("Bilateral filter##SSAO", &ssaoBilateral)) {
                     r_ssaoBilateral.SetBool(ssaoBilateral);
                 }
+                ImGui::SetItemTooltip("Requires TAA. Compare in the final rendered view; AO debug keeps a fixed pattern.");
                 bool ssaoDebug = r_ssaoDebug.GetBool();
                 if (ImGui::Checkbox("AO debug output", &ssaoDebug)) {
                     r_ssaoDebug.SetBool(ssaoDebug);

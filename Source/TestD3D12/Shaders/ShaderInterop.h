@@ -366,7 +366,7 @@ struct SSAOParams {
     float normalBias;
     float depthBias;
     float farPlaneDeviceDepth;
-    float padding0;
+    float noisePhase;
 };
 
 #ifdef __cplusplus

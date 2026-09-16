@@ -134,6 +134,7 @@ struct RenderFrameSettings {
     bool                        ssao = false;
     bool                        ssaoDebug = false;
     bool                        ssaoHalfResolution = true;
+    bool                        ssaoTemporalRotation = true;
     bool                        ssaoBilateral = true;
 
     bool                        ssr = false;

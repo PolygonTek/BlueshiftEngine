@@ -81,6 +81,7 @@ CVAR_MINMAX(r_ssaoRadius, "0.5", BE1::CVar::Flag::Float, "screen-space ambient o
 CVAR_MINMAX(r_ssaoPower, "1.0", BE1::CVar::Flag::Float, "screen-space ambient occlusion power", 0.25f, 4.0f);
 CVAR(r_ssaoHalfResolution, "1", BE1::CVar::Flag::Bool, "compute screen-space ambient occlusion at half resolution");
 CVAR(r_ssaoBilateral, "1", BE1::CVar::Flag::Bool, "apply depth-aware bilateral filtering to screen-space ambient occlusion");
+CVAR(r_ssaoTemporalRotation, "1", BE1::CVar::Flag::Bool, "rotate screen-space ambient occlusion samples each frame when TAA is active");
 
 CVAR(r_ssr, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
 CVAR(r_ssrDebug, "0", BE1::CVar::Flag::Bool, "show screen-space reflection trace debug output");
@@ -262,6 +263,7 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.ssaoRadius = r_ssaoRadius.GetFloat();
     settings.ssaoPower = r_ssaoPower.GetFloat();
     settings.ssaoHalfResolution = r_ssaoHalfResolution.GetBool();
+    settings.ssaoTemporalRotation = r_ssaoTemporalRotation.GetBool();
     settings.ssaoBilateral = r_ssaoBilateral.GetBool();
 
     settings.ssr = r_ssr.GetBool();

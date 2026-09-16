@@ -101,6 +101,13 @@ void RenderBackend::DispatchSSAOCompute(RHI::Texture *depthTexture, RHI::Texture
     params.depthBias = params.radius * 0.004f;
     params.farPlaneDeviceDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
 
+    // TAA history 를 사용할 수 있을 때만 회전한다. SSR debug 출력도 TAA 를 건너뛴다.
+    if (settings.ssaoTemporalRotation && currentVisCamera->taaResolve && currentVisCamera->historyValid && frameTAAResolvePSO && !(settings.ssrDebug && currentVisCamera->traceSSR)) {
+        // 8 프레임 동안 회전각을 고르게 분포시킨다. Camera jitter 를 꺼도 시퀀스는 진행한다.
+        static constexpr float noisePhases[8] = {0.0f, 0.5f, 0.25f, 0.75f, 0.125f, 0.625f, 0.375f, 0.875f};
+        params.noisePhase = noisePhases[frameData->GetFrameCount() % COUNT_OF(noisePhases)];
+    }
+
     RHI::GPUBarrier startBarriers[3] = {
         RHI::Renderer::MakeTextureBarrier(depthTexture, depthInputState, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(outputAOTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
