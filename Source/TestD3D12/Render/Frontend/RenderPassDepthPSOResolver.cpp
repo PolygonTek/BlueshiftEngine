@@ -37,7 +37,7 @@ void RenderPassDepthPSOResolver::Begin(const RenderPass *renderPass, uint32_t in
 
 ShaderFeatureSet RenderPassDepthPSOResolver::BuildDepthFeatureSet(const ShaderFeatureSet &featureSet) {
     ShaderFeatureSet depthFeatureSet;
-    depthFeatureSet.flags = featureSet.flags & (ShaderFeatureSet::Perforated | ShaderFeatureSet::GpuSkinningWeightMask | ShaderFeatureSet::OutputVelocity);
+    depthFeatureSet.flags = featureSet.flags & (ShaderFeatureSet::Perforated | ShaderFeatureSet::GpuSkinningWeightMask | ShaderFeatureSet::OutputVelocity | ShaderFeatureSet::OutputNormal);
     return depthFeatureSet;
 }
 
@@ -124,8 +124,8 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
     GraphicsPipelineDesc graphicsPipelineDesc = GetGraphicsPipelineDesc(result.inputLayoutId);
 
     // Opaque depth surface 는 fragment shader 없이 depth 를 기록할 수 있다.
-    // Alpha cutoff 또는 velocity 출력이 필요하면 fragment shader 를 유지한다.
-    graphicsPipelineDesc.fragmentShaderEnabled = featureSet.HasFeature(ShaderFeature::Perforated) || featureSet.HasFeature(ShaderFeature::OutputVelocity);
+    // Alpha cutoff, velocity 또는 normal 출력이 필요하면 fragment shader 를 유지한다.
+    graphicsPipelineDesc.fragmentShaderEnabled = featureSet.HasFeature(ShaderFeature::Perforated) || featureSet.HasFeature(ShaderFeature::OutputVelocity) || featureSet.HasFeature(ShaderFeature::OutputNormal);
 
     // 재질별 cull mode 를 유지한다. 양면 alpha-cutoff surface 도 양쪽에서 depth 를 기록해야 한다.
     switch (cullMode) {

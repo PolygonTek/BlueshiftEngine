@@ -46,7 +46,21 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
         return texture && texture->GetWidth() == width && texture->GetHeight() == height;
     };
 
-    // Keep AO available while pipelines are compiling or allocation has failed.
+    const bool useMSAA = currentVisCamera->depthTexture->GetSampleCount() > 1;
+    RHI::Texture *normalTexture = currentVisCamera->rtNormalTexture;
+    if (!currentVisCamera->needDepthNormalOutput || !matchesSize(normalTexture, width, height) || normalTexture->GetSampleCount() != 1) {
+        return false;
+    }
+
+    if (useMSAA) {
+        RHI::Texture *normalMSAATexture = currentVisCamera->rtNormalMSAATexture;
+        // Never read the previous resolved normal while the paired resolve PSO is unavailable.
+        if (!frameDepthNormalMSAAResolvePSO || !matchesSize(normalMSAATexture, width, height) || normalMSAATexture->GetSampleCount() != currentVisCamera->depthTexture->GetSampleCount()) {
+            return false;
+        }
+    }
+
+    // Keep full-resolution AO available while half-resolution resources are not ready.
     const bool useHalfResolution = settings.aoHalfResolution && frameSSAOHalfResolutionPSO && frameAOUpsamplePSO && matchesSize(ssaoRawTexture, halfWidth, halfHeight) && matchesSize(halfDepthTexture, halfWidth, halfHeight);
     const uint32_t aoWidth = useHalfResolution ? halfWidth : width;
     const uint32_t aoHeight = useHalfResolution ? halfHeight : height;
@@ -55,18 +69,18 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
     const bool useBlur = settings.aoBilateral && frameAOBilateralHorizontalPSO && frameAOBilateralVerticalPSO && matchesSize(ssaoRawTexture, aoWidth, aoHeight) && matchesSize(ssaoTempTexture, aoWidth, aoHeight);
 
     RHI::Texture *ssaoComputeOutputTexture = (useHalfResolution || useBlur) ? ssaoRawTexture : ssaoTexture;
-    if (!useHalfResolution && !frameSSAOPSO) {
+    RHI::PipelineState *ssaoPSO = useHalfResolution ? frameSSAOHalfResolutionPSO : frameSSAOPSO;
+    if (!ssaoPSO) {
         return false;
     }
 
-    // Lighting AO runs before opaque shading, so resolve the MSAA prepass depth first.
-    const bool useMSAA = currentVisCamera->depthTexture->GetSampleCount() > 1;
-    if (useMSAA && !DispatchDepthMSAAResolve(depthTexture, renderDepthState)) {
+    // Lighting AO runs before opaque shading; resolve prepass depth and its matching normal together.
+    if (useMSAA && !DispatchDepthMSAAResolve(depthTexture, renderDepthState, normalTexture)) {
         return false;
     }
 
     const RHI::GPUResourceState depthInputState = useMSAA ? RHI::GPUResourceState::ShaderResource : renderDepthState;
-    DispatchSSAOCompute(depthTexture, ssaoComputeOutputTexture, useHalfResolution ? halfDepthTexture : nullptr, depthInputState);
+    DispatchSSAOCompute(ssaoPSO, depthTexture, normalTexture, ssaoComputeOutputTexture, useHalfResolution ? halfDepthTexture : nullptr, depthInputState);
 
     if (useBlur) {
         DispatchAOBilateralFilter(useHalfResolution ? halfDepthTexture : depthTexture, ssaoRawTexture, ssaoTempTexture, useHalfResolution ? ssaoRawTexture : ssaoTexture, settings.aoRadius);
@@ -85,7 +99,7 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
     return true;
 }
 
-void RenderBackend::DispatchSSAOCompute(RHI::Texture *depthTexture, RHI::Texture *outputAOTexture, RHI::Texture *outputHalfDepthTexture, RHI::GPUResourceState depthInputState) {
+void RenderBackend::DispatchSSAOCompute(RHI::PipelineState *pso, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *outputAOTexture, RHI::Texture *outputHalfDepthTexture, RHI::GPUResourceState depthInputState) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchSSAOCompute");
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SSAO);
@@ -99,31 +113,32 @@ void RenderBackend::DispatchSSAOCompute(RHI::Texture *depthTexture, RHI::Texture
     params.outputSize = uint2(outputAOTexture->GetWidth(), outputAOTexture->GetHeight());
     params.radius = settings.aoRadius;
     params.power = settings.aoPower;
-    params.normalBias = params.radius * 0.005f;
-    params.depthBias = params.radius * 0.002f;
+    params.normalBias = params.radius * settings.ssaoNormalBiasScale;
+    params.depthBias = params.radius * settings.ssaoDepthBiasScale;
     params.farPlaneDeviceDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
 
-    // TAA history 를 사용할 수 있을 때 회전한다. SSR debug 출력은 TAA 를 건너뛴다.
-    const bool useTAAHistory = currentVisCamera->taaResolve && currentVisCamera->historyValid && frameTAAResolvePSO && settings.taaHistoryWeight > 0.0f && !(settings.ssrDebug && currentVisCamera->traceSSR);
-    if (settings.aoTemporalRotation && useTAAHistory) {
-        // 8 프레임 동안 회전각을 고르게 분포시킨다. Camera jitter 를 꺼도 시퀀스는 진행한다.
+    if (settings.aoTemporalRotation) {
+        // 8 프레임 동안 회전각을 고르게 분포시킨다.
         static constexpr float noisePhases[8] = {0.0f, 0.5f, 0.25f, 0.75f, 0.125f, 0.625f, 0.375f, 0.875f};
         params.noisePhase = noisePhases[frameData->GetFrameCount() % COUNT_OF(noisePhases)];
     }
 
-    RHI::GPUBarrier startBarriers[3] = {
+    RHI::GPUBarrier startBarriers[4] = {
         RHI::Renderer::MakeTextureBarrier(depthTexture, depthInputState, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeTextureBarrier(normalTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(outputAOTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
 
+    uint32_t startBarrierCount = 3;
     if (useHalfResolution) {
-        startBarriers[2] = RHI::Renderer::MakeTextureBarrier(outputHalfDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess);
+        startBarriers[startBarrierCount++] = RHI::Renderer::MakeTextureBarrier(outputHalfDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess);
     }
 
-    RHI::renderer->Barrier(mainCommandList, startBarriers, useHalfResolution ? 3 : 2);
+    RHI::renderer->Barrier(mainCommandList, startBarriers, startBarrierCount);
 
-    RHI::renderer->SetPSO(mainCommandList, useHalfResolution ? frameSSAOHalfResolutionPSO : frameSSAOPSO);
+    RHI::renderer->SetPSO(mainCommandList, pso);
     RHI::renderer->SetTexture(mainCommandList, 0, false, depthTexture);
+    RHI::renderer->SetTexture(mainCommandList, 1, false, normalTexture);
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputAOTexture);
     if (useHalfResolution) {
         RHI::renderer->SetTexture(mainCommandList, 1, true, outputHalfDepthTexture);
@@ -133,10 +148,15 @@ void RenderBackend::DispatchSSAOCompute(RHI::Texture *depthTexture, RHI::Texture
 
     RHI::renderer->Dispatch(mainCommandList, BE1::DivCeil(params.outputSize.x, SSAOBlockSizeX), BE1::DivCeil(params.outputSize.y, SSAOBlockSizeY), 1);
 
+    // Restore the state expected by opaque's later overwrite, or by the next frame without SSR.
+    RHI::GPUBarrier endBarriers[2] = {
+        RHI::Renderer::MakeTextureBarrier(normalTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
+    };
+    uint32_t endBarrierCount = 1;
     if (useHalfResolution) {
-        const RHI::GPUBarrier depthBarrier = RHI::Renderer::MakeTextureBarrier(outputHalfDepthTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
-        RHI::renderer->Barrier(mainCommandList, &depthBarrier, 1);
+        endBarriers[endBarrierCount++] = RHI::Renderer::MakeTextureBarrier(outputHalfDepthTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
     }
+    RHI::renderer->Barrier(mainCommandList, endBarriers, endBarrierCount);
 }
 
 void RenderBackend::DispatchAOBilateralFilter(RHI::Texture *depthTexture, RHI::Texture *inputAOTexture, RHI::Texture *tempAOTexture, RHI::Texture *outputAOTexture, float radius) {

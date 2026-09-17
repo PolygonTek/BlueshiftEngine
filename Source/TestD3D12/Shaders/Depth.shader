@@ -5,6 +5,10 @@ shader "Depth" {
     }
 
     features {
+        outputNormal {
+            OUTPUT_NORMAL=1
+        }
+
         outputVelocity {
             OUTPUT_VELOCITY=1
         }

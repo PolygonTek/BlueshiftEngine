@@ -16,7 +16,7 @@ cbuffer CameraCB : register(b1) {
 }
 
 Texture2D<float> inputDepthTexture : register(t0);
-Texture2D<float2> inputNormalTexture : register(t1);
+Texture2D<float2> inputNormalTexture : register(t1); // Octahedral view-space shading normal.
 
 Texture2D<float2> inputDepthPyramidTexture : register(t2);
 RWTexture2D<float4> outputTraceTexture : register(u0);
@@ -24,7 +24,7 @@ RWTexture2D<float4> outputTraceTexture : register(u0);
 #include "ScreenSpaceRayMarching.hlsli"
 
 // Half-resolution pixel 에 대응하는 full-resolution 2x2 영역에서 가장 가까운 depth 와 그 normal 을 선택한다.
-void LoadClosestDepthAndNormal(uint2 outputPixelCoord, out uint2 inputPixelCoord, out float deviceDepth, out float3 normal) {
+void LoadClosestDepthAndNormal(uint2 outputPixelCoord, out uint2 inputPixelCoord, out float deviceDepth, out float3 viewNormal) {
     const uint2 inputMin = outputPixelCoord * 2u;
     const uint2 inputMax = min(inputMin + 1u, ssrTraceParams.inputSize - 1u);
     const uint2 candidatePixelCoords[4] = {
@@ -48,7 +48,7 @@ void LoadClosestDepthAndNormal(uint2 outputPixelCoord, out uint2 inputPixelCoord
         }
     }
 
-    normal = DecodeOctahedralNormal(inputNormalTexture.Load(int3(inputPixelCoord, 0)));
+    viewNormal = DecodeOctahedralNormal(inputNormalTexture.Load(int3(inputPixelCoord, 0)));
 }
 
 float4 GetTraceDebugColor(uint status) {
@@ -73,8 +73,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     uint2 inputPixelCoord;
     float surfaceDepth;
-    float3 surfaceNormal;
-    LoadClosestDepthAndNormal(outputPixelCoord, inputPixelCoord, surfaceDepth, surfaceNormal);
+    float3 viewNormal;
+    LoadClosestDepthAndNormal(outputPixelCoord, inputPixelCoord, surfaceDepth, viewNormal);
     // 원본 깊이에서 선택한 샘플이므로 clear 값만 배경으로 취급한다.
     if (surfaceDepth == farPlaneDeviceDepth) {
         outputTraceTexture[outputPixelCoord] = 0.0f;
@@ -82,20 +82,21 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     const float2 uv = (float2(inputPixelCoord) + 0.5f) / ssrTraceParams.inputSize;
-    const float surfaceNDCDepth = surfaceDepth * cameraConstants.ndcDepthScaleBias.x + cameraConstants.ndcDepthScaleBias.y;
-    const float3 surfacePosition = ReconstructPosition(uv, surfaceNDCDepth, cameraConstants.invViewProjMatrix);
     const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
+    const float linearDepth = ToLinearDepth(surfaceDepth, cameraConstants.ndcDepthScaleBias, cameraConstants.projectionZ, orthogonal);
+    const float3 viewPosition = ViewPositionFromLinearDepth(uv, linearDepth, cameraConstants.uvToView, orthogonal);
 
-    // 카메라에서 표면으로 향하는 입사 방향 벡터
-    const float3 incidentDirection = orthogonal ? normalize(cameraConstants.cameraForward) : normalize(surfacePosition - cameraConstants.cameraOrigin);
+    // 카메라에서 표면으로 향하는 입사 방향 벡터. 오른손 뷰 공간의 전방은 -Z 이다.
+    const float3 incidentDirection = orthogonal ? float3(0.0f, 0.0f, -1.0f) : normalize(viewPosition);
 
     // 표면에서 반사되는 방향 벡터
-    const float3 reflectionDirection = normalize(reflect(incidentDirection, surfaceNormal));
+    const float3 reflectionDirection = normalize(reflect(incidentDirection, viewNormal));
 
-    const float3 rayOrigin = surfacePosition + surfaceNormal * ssrTraceParams.normalBias; // self-intersection 방지 offset
+    const float3 rayOrigin = viewPosition + viewNormal * ssrTraceParams.normalBias; // self-intersection 방지 offset (world 단위 유지)
     const float3 rayEnd = rayOrigin + reflectionDirection * ssrTraceParams.maxDistance;
-    const float4 rayOriginClip = mul(cameraConstants.viewProjMatrix, float4(rayOrigin, 1.0f));
-    float4 rayEndClip = mul(cameraConstants.viewProjMatrix, float4(rayEnd, 1.0f));
+    // Depth 생성과 같은 jitter 를 포함한 투영 상수를 사용한다.
+    const float4 rayOriginClip = ProjectViewPosition(rayOrigin, cameraConstants.projectionXY, cameraConstants.projectionZ, orthogonal);
+    float4 rayEndClip = ProjectViewPosition(rayEnd, cameraConstants.projectionXY, cameraConstants.projectionZ, orthogonal);
 
     // ray origin 이 카메라 평면에 너무 가깝거나 뒤에 있으면 Miss 로 처리한다.
     const float minClipW = 0.0001f;

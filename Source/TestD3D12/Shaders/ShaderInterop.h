@@ -747,6 +747,7 @@ struct CameraConstants {
     row_major float4x4 prevUnjitteredViewProjMatrix;
 
     row_major float4x4 hiZCullViewProjMatrix;
+    row_major float3x4 viewRotation; // World-to-view directions; fourth column is zero (16-byte row alignment).
 
     float3 cameraOrigin;
     float ndcFarZ;
@@ -785,7 +786,7 @@ struct CameraConstants {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(CameraConstants) == 912, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 960, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {

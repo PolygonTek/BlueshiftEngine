@@ -1,8 +1,9 @@
 #include "../ShaderInterop.h"
 #include "../Common.hlsli"
 
+// Full-resolution depth becomes writable again for opaque rendering after AO.
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), UAV(u0)), " \
+    "DescriptorTable(SRV(t0), SRV(t1), SRV(t2, flags = DATA_VOLATILE), UAV(u0)), " \
     "RootConstants(num32BitConstants=8, b0), " \
     "CBV(b1)"
 

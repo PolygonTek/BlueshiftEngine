@@ -83,14 +83,16 @@ CVAR(r_hiZDebugPreview, "0", BE1::CVar::Flag::Bool, "enable Hi-Z debug preview t
 CVAR_MINMAX(r_hiZDebugPreviewMipLevel, "0", BE1::CVar::Flag::Integer, "Hi-Z debug preview mip level", 0, RenderHiZMaxLevelCount - 1);
 
 // Ambient Occlusion
-CVAR(r_ao, "1", BE1::CVar::Flag::Bool, "apply ambient occlusion to indirect lighting");
+CVAR(r_ao, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "apply ambient occlusion to indirect lighting");
 CVAR(r_aoDebug, "0", BE1::CVar::Flag::Bool, "show full-resolution ambient occlusion");
-CVAR_MINMAX(r_ssaoSampleCount, "16", BE1::CVar::Flag::Integer, "SSAO kernel sample count: 8 or 16 (values below 16 use 8)", 8, 16);
+CVAR_MINMAX(r_ssaoSampleCount, "16", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "SSAO kernel sample count: 8 or 16 (values below 16 use 8)", 8, 16);
+CVAR_MINMAX(r_ssaoNormalBiasScale, "0.005", BE1::CVar::Flag::Float, "SSAO normal bias as a fraction of the AO radius", 0.0f, 0.05f);
+CVAR_MINMAX(r_ssaoDepthBiasScale, "0.002", BE1::CVar::Flag::Float, "SSAO depth bias as a fraction of the AO radius", 0.0f, 0.05f);
 CVAR_MINMAX(r_aoRadius, "0.5", BE1::CVar::Flag::Float, "ambient occlusion radius in world units", 0.01f, 10.0f);
 CVAR_MINMAX(r_aoPower, "1.0", BE1::CVar::Flag::Float, "ambient occlusion power", 0.25f, 4.0f);
-CVAR(r_aoHalfResolution, "1", BE1::CVar::Flag::Bool, "compute ambient occlusion at half resolution");
-CVAR(r_aoBilateral, "1", BE1::CVar::Flag::Bool, "apply depth-aware bilateral filtering to ambient occlusion");
-CVAR(r_aoTemporalRotation, "1", BE1::CVar::Flag::Bool, "rotate ambient occlusion samples each frame when TAA is active");
+CVAR(r_aoHalfResolution, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "compute ambient occlusion at half resolution");
+CVAR(r_aoBilateral, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "apply depth-aware bilateral filtering to ambient occlusion");
+CVAR(r_aoTemporalRotation, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "rotate ambient occlusion samples each frame when TAA is active");
 
 // SSR
 CVAR(r_ssr, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
@@ -99,7 +101,7 @@ CVAR_MINMAX(r_ssrMaxDistance, "48.0", BE1::CVar::Flag::Float, "screen-space refl
 CVAR_MINMAX(r_ssrThickness, "1.0", BE1::CVar::Flag::Float, "screen-space reflection hit thickness", 0.0f, 10.0f);
 CVAR_MINMAX(r_ssrMaxIterations, "64", BE1::CVar::Flag::Integer, "screen-space reflection maximum Hi-Z traversal iterations", 1, 128);
 CVAR_MINMAX(r_ssrBinaryRefinementSteps, "3", BE1::CVar::Flag::Integer, "screen-space reflection binary refinement steps", 0, 8);
-CVAR_MINMAX(r_ssrNormalBias, "0.02", BE1::CVar::Flag::Float, "screen-space reflection world-space normal bias", 0.0f, 1.0f);
+CVAR_MINMAX(r_ssrNormalBias, "0.02", BE1::CVar::Flag::Float, "screen-space reflection normal bias in world units", 0.0f, 1.0f);
 
 // Texture
 CVAR_MINMAX(r_textureFilter, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "texture filtering mode for material samplers", 0, static_cast<int>(RHI::TextureFilter::Count) - 1);
@@ -278,6 +280,8 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.ao = r_ao.GetBool();
     settings.aoDebug = r_aoDebug.GetBool();
     settings.ssaoSampleCount = r_ssaoSampleCount.GetInteger() < 16 ? 8u : 16u;
+    settings.ssaoNormalBiasScale = r_ssaoNormalBiasScale.GetFloat();
+    settings.ssaoDepthBiasScale = r_ssaoDepthBiasScale.GetFloat();
     settings.aoRadius = r_aoRadius.GetFloat();
     settings.aoPower = r_aoPower.GetFloat();
     settings.aoHalfResolution = r_aoHalfResolution.GetBool();

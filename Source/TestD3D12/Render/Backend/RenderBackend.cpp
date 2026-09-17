@@ -256,6 +256,14 @@ bool RenderBackend::UploadCameraConstants() {
     BE1::simdProcessor->Memcpy(&constants->prevUnjitteredViewProjMatrix, &prevUnjitteredViewProjMatrix, sizeof(constants->prevUnjitteredViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->hiZCullViewProjMatrix, &currentVisCamera->hiZCullViewProjMatrix, sizeof(constants->hiZCullViewProjMatrix));
 
+    for (uint32_t row = 0; row < 3; ++row) {
+        const BE1::Vec4 &viewRow = currentVisCamera->viewMatrix[row];
+        constants->viewRotation.m[row][0] = viewRow.x;
+        constants->viewRotation.m[row][1] = viewRow.y;
+        constants->viewRotation.m[row][2] = viewRow.z;
+        constants->viewRotation.m[row][3] = 0.0f;
+    }
+
     constants->cameraOrigin = float3(currentVisCamera->origin.x, currentVisCamera->origin.y, currentVisCamera->origin.z);
     constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
     constants->cameraForward = float3(currentVisCamera->axis[0].x, currentVisCamera->axis[0].y, currentVisCamera->axis[0].z);
@@ -323,6 +331,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameAOUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->aoUpsamplePipeline);
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
+    frameDepthNormalMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthNormalMSAAResolvePipeline);
     frameSurfaceOutputMSAAResolveNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalPipeline);
     frameSurfaceOutputMSAAResolveVelocityPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveVelocityPipeline);
     frameSurfaceOutputMSAAResolveNormalVelocityPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalVelocityPipeline);
@@ -520,7 +529,9 @@ static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const 
             RHI::GPUResourceState::ShaderResource, desc.renderTargetAfterState);
     }
 
-    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(visCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState);
+    // A reused texture can retain the optimized clear value of a different projection policy.
+    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(visCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState)
+        .WithClearValue(RHI::ClearValue::DepthStencil(visCamera->projectionPolicy.GetDepthClearValue(), 0));
 
     if (useMSAA && desc.colorResolveTexture) {
         renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveColor(desc.colorResolveTexture, RHI::ViewID::PrimaryID, 0);
@@ -630,8 +641,8 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     }
 
     const RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-    // 불투명 surface 가 없는 프레임도 velocity 를 clear 해야 이전 프레임 값이 남지 않는다.
-    const bool hasDepthPrepass = currentVisCamera->needVelocityOutput || FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
+    // 불투명 surface 가 없는 프레임도 velocity 와 prepass normal 을 clear 해야 이전 프레임 값이 남지 않는다.
+    const bool hasDepthPrepass = currentVisCamera->needVelocityOutput || currentVisCamera->needDepthNormalOutput || FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
 
     const bool useMSAA = currentVisCamera->rtColorMSAATexture != nullptr;
     bool ssaoReady = false;
@@ -769,16 +780,26 @@ void RenderBackend::ExecuteDrawCamera3DShadowPass() {
 }
 
 void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
-    RHI::RenderPassImage renderPassImages[2];
+    RHI::RenderPassImage renderPassImages[3];
     uint32_t renderPassImageCount = 0;
+
     if (currentVisCamera->needVelocityOutput) {
         const RHI::Texture *velocityTexture = currentVisCamera->rtVelocityMSAATexture ? currentVisCamera->rtVelocityMSAATexture : currentVisCamera->rtVelocityTexture;
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(velocityTexture, RHI::ViewID::PrimaryID,
-            RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(velocityTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
     }
+
+    if (currentVisCamera->needDepthNormalOutput) {
+        const RHI::Texture *normalTexture = currentVisCamera->rtNormalMSAATexture ? currentVisCamera->rtNormalMSAATexture : currentVisCamera->rtNormalTexture;
+        assert(normalTexture->GetSampleCount() == currentVisCamera->depthTexture->GetSampleCount());
+
+        // SSAO consumes view normals before opaque writes SSR's shading normals to this attachment.
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(normalTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
+    }
+
     renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
-        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
+        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::DepthStencil(currentVisCamera->projectionPolicy.GetDepthClearValue(), 0));
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
     DrawCamera3DDepthPrepass();

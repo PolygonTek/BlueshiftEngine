@@ -420,6 +420,7 @@ void RenderSystem::InitComputePipelines() {
 
     lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "Lighting/LightCulling.hlsl", baseDir);
     depthMSAAResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthMSAAResolveShader", computeShaderModel, "DepthMSAAResolve.hlsl", baseDir);
+    depthNormalMSAAResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthNormalMSAAResolveShader", computeShaderModel, "DepthMSAAResolve.hlsl", baseDir, "CSMain", "RESOLVE_MSAA_NORMAL=1");
     surfaceOutputMSAAResolveNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
     surfaceOutputMSAAResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=2");
     surfaceOutputMSAAResolveNormalVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=3");
@@ -461,6 +462,7 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(ssao16HalfResShaderTemplate, ssao16HalfResPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(ssao8FullResShaderTemplate, ssao8FullResPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(ssao8HalfResShaderTemplate, ssao8HalfResPipeline, shaderPipelineBootstrap);
+
     EnsureComputePipeline(aoBilateralHorizontalShaderTemplate, aoBilateralHorizontalPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(aoBilateralVerticalShaderTemplate, aoBilateralVerticalPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(aoUpsampleShaderTemplate, aoUpsamplePipeline, shaderPipelineBootstrap);
@@ -472,6 +474,7 @@ void RenderSystem::EnsureComputePipelines() {
 
     EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(depthMSAAResolveShaderTemplate, depthMSAAResolvePipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(depthNormalMSAAResolveShaderTemplate, depthNormalMSAAResolvePipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(surfaceOutputMSAAResolveNormalShaderTemplate, surfaceOutputMSAAResolveNormalPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(surfaceOutputMSAAResolveVelocityShaderTemplate, surfaceOutputMSAAResolveVelocityPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(surfaceOutputMSAAResolveNormalVelocityShaderTemplate, surfaceOutputMSAAResolveNormalVelocityPipeline, shaderPipelineBootstrap);
@@ -512,6 +515,7 @@ void RenderSystem::ReleaseComputePipelines() {
 
     lightCullingPipeline.reset();
     depthMSAAResolvePipeline.reset();
+    depthNormalMSAAResolvePipeline.reset();
     surfaceOutputMSAAResolveNormalPipeline.reset();
     surfaceOutputMSAAResolveVelocityPipeline.reset();
     surfaceOutputMSAAResolveNormalVelocityPipeline.reset();
@@ -550,6 +554,7 @@ void RenderSystem::ReleaseComputePipelines() {
     ssrTraceShaderTemplate.reset();
 
     depthMSAAResolveShaderTemplate.reset();
+    depthNormalMSAAResolveShaderTemplate.reset();
     surfaceOutputMSAAResolveNormalShaderTemplate.reset();
     surfaceOutputMSAAResolveVelocityShaderTemplate.reset();
     surfaceOutputMSAAResolveNormalVelocityShaderTemplate.reset();

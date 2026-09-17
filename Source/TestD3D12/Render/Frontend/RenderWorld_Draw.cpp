@@ -446,7 +446,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->ssaoFilterTexture = renderCamera->GetSSAOFilterTexture();
     visCamera->ssaoHalfDepthTexture = renderCamera->GetSSAOHalfDepthTexture();
     visCamera->ssaoDepthTexture = useMSAA ? (visCamera->ssrResolvedDepthTexture ? visCamera->ssrResolvedDepthTexture : renderCamera->GetSSAOResolvedDepthTexture()) : visCamera->depthTexture;
-    visCamera->applySSAO = renderFrameSettings.ao && visCamera->ssaoTexture && visCamera->ssaoDepthTexture;
+    visCamera->applySSAO = renderFrameSettings.ao && visCamera->ssaoTexture && visCamera->ssaoDepthTexture && visCamera->rtNormalTexture && (!useMSAA || visCamera->rtNormalMSAATexture);
+    visCamera->needDepthNormalOutput = visCamera->applySSAO;
 
     visCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;
 

@@ -259,15 +259,27 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     if (visCamera->needVelocityOutput) {
         depthPassFeatureSet.EnableFeature(ShaderFeature::OutputVelocity);
     }
-    RenderPass *depthPass = AllocRenderPass(visCamera, RenderPassType::DepthPrepass, depthPassFeatureSet, VertexInputLayoutId::XyzStColor, numDepthDrawSurfs);
+
+    if (visCamera->needDepthNormalOutput) {
+        depthPassFeatureSet.EnableFeature(ShaderFeature::OutputNormal);
+    }
+
+    const VertexInputLayoutId depthInputLayout = visCamera->needDepthNormalOutput ? VertexInputLayoutId::XyzStColorNormal : VertexInputLayoutId::XyzStColor;
+    RenderPass *depthPass = AllocRenderPass(visCamera, RenderPassType::DepthPrepass, depthPassFeatureSet, depthInputLayout, numDepthDrawSurfs);
     if (depthPass) {
         depthPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(visCamera->projectionPolicy, true);
         RHI::RenderDest &renderDest = depthPass->graphicsPipelineDesc.renderDest;
         renderDest = RHI::RenderDest();
         renderDest.renderTargetCount = 0;
+
         if (visCamera->needVelocityOutput) {
             renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R16G16_FLOAT;
         }
+
+        if (visCamera->needDepthNormalOutput) {
+            renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R16G16_FLOAT;
+        }
+
         renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
         renderDest.sampleCount = visCamera->depthTexture->GetSampleCount();
 

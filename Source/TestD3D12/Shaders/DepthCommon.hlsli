@@ -12,6 +12,13 @@ struct DepthVSInput {
     float4 position : POSITION;
     float2 texCoord : TEXCOORD0;
     float4 color : COLOR;
+#ifdef OUTPUT_NORMAL
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        uint normal : NORMAL;
+    #else
+        float4 normal : NORMAL;
+    #endif
+#endif
     uint instanceID : SV_InstanceID;
 #if GPU_SKINNING
     SkinningVertexInput skinning;
@@ -20,6 +27,9 @@ struct DepthVSInput {
 
 struct DepthPSInput {
     float4 position : SV_POSITION;
+#ifdef OUTPUT_NORMAL
+    float3 viewNormal : TEXCOORD4;
+#endif
 #ifdef OUTPUT_VELOCITY
     float4 currentVelocityPosition : TEXCOORD2;
     float4 prevVelocityPosition : TEXCOORD3;
@@ -31,14 +41,11 @@ struct DepthPSInput {
 #endif
 };
 
-#ifdef OUTPUT_VELOCITY
-DepthPSInput BuildDepthVertex(DepthVSInput input, uint surfaceTableIndex, row_major float4x4 viewProjMatrix, row_major float4x4 unjitteredViewProjMatrix, row_major float4x4 prevUnjitteredViewProjMatrix) {
-#else
-DepthPSInput BuildDepthVertex(DepthVSInput input, uint surfaceTableIndex, row_major float4x4 viewProjMatrix) {
-#endif
+template<typename ViewConstants>
+DepthPSInput BuildDepthVertex(DepthVSInput input, ViewConstants viewConstants) {
     DepthPSInput result;
 
-    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID, surfaceTableIndex);
+    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID, viewConstants.surfaceTableIndex);
 
     float4 localPosition = input.position;
 #if GPU_SKINNING
@@ -46,16 +53,31 @@ DepthPSInput BuildDepthVertex(DepthVSInput input, uint surfaceTableIndex, row_ma
     localPosition = float4(mul(skinningMatrix, localPosition), 1.0f);
 #endif
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, localPosition), 1.0);
-    result.position = mul(viewProjMatrix, positionWS);
+    result.position = mul(viewConstants.viewProjMatrix, positionWS);
+
+#ifdef OUTPUT_NORMAL
+    #ifdef PACKED_VERTEX_TANGENT_FRAME
+        float3 normal = DecodeTangentFrameNormal(input.normal);
+    #else
+        float3 normal = DecodeVertexNormal(input.normal);
+    #endif
+
+    #if GPU_SKINNING
+        normal = mul((float3x3)skinningMatrix, normal);
+    #endif
+    const float3 worldNormal = TransformSurfaceNormal(normal, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+    result.viewNormal = mul((float3x3)viewConstants.viewRotation, worldNormal);
+#endif
 
 #ifdef OUTPUT_VELOCITY
-    result.currentVelocityPosition = mul(unjitteredViewProjMatrix, positionWS);
+    result.currentVelocityPosition = mul(viewConstants.unjitteredViewProjMatrix, positionWS);
     float4 prevLocalPosition = localPosition;
+
     #if GPU_SKINNING
         // History resets alias the current pose and need no additional joint reads.
         prevLocalPosition = GetPreviousSkinnedPosition(input.skinning, input.position, localPosition, shaderSurface.skinningJointOffset, shaderSurface.prevSkinningJointOffset);
     #endif
-    result.prevVelocityPosition = CalcClipPosition(prevLocalPosition, shaderSurface.prevWorldMatrix, prevUnjitteredViewProjMatrix);
+    result.prevVelocityPosition = CalcClipPosition(prevLocalPosition, shaderSurface.prevWorldMatrix, viewConstants.prevUnjitteredViewProjMatrix);
 #endif
 
 #ifdef PERFORATED

@@ -33,7 +33,7 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
     nointerpolation uint shaderMaterialIndex : TEXCOORD1;
 #ifdef OUTPUT_NORMAL
-    float3 worldNormal : TEXCOORD4;
+    float3 viewNormal : TEXCOORD4;
 #endif
 };
 
@@ -63,7 +63,8 @@ PSInput VSMain(VSInput input) {
     #if GPU_SKINNING
         normal = mul((float3x3)skinningMatrix, normal);
     #endif
-    result.worldNormal = TransformSurfaceNormal(normal, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+    const float3 worldNormal = TransformSurfaceNormal(normal, shaderSurface.worldMatrix, (shaderSurface.flags & ShaderSurfaceFlagNonUniformScale) != 0);
+    result.viewNormal = mul((float3x3)cameraConstants.viewRotation, worldNormal);
 #endif
 
     return result;
@@ -82,7 +83,8 @@ CameraPassPSOutput PSMain(PSInput input) {
     CameraPassPSOutput result;
     result.color = textureColor * shaderMaterial.GetBaseColorFactor() * input.color;
 #ifdef OUTPUT_NORMAL
-    result.normal = EncodeOctahedralNormal(normalize(input.worldNormal));
+    // Octahedral encoding removes the interpolated length, as in the depth prepass.
+    result.normal = dot(input.viewNormal, input.viewNormal) > FLT_MIN ? EncodeOctahedralNormal(input.viewNormal) : float2(0.0f, 0.0f);
 #endif
     return result;
 }

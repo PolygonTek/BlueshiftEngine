@@ -185,6 +185,7 @@ private:
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidReduceShaderTemplate;
     SharedPtr<ShaderTemplate>       ssrTraceShaderTemplate;
     SharedPtr<ShaderTemplate>       depthMSAAResolveShaderTemplate;
+    SharedPtr<ShaderTemplate>       depthNormalMSAAResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveVelocityShaderTemplate;
     SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalVelocityShaderTemplate;
@@ -224,6 +225,7 @@ private:
 
     SharedPtr<ShaderPipeline>       lightCullingPipeline;
     SharedPtr<ShaderPipeline>       depthMSAAResolvePipeline;
+    SharedPtr<ShaderPipeline>       depthNormalMSAAResolvePipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveNormalPipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveVelocityPipeline;
     SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveNormalVelocityPipeline;

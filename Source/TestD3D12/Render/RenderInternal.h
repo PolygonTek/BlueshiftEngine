@@ -238,12 +238,13 @@ struct VisCamera {
     RenderCamera::Flag          flags = RenderCamera::Flag::None;
     bool                        directionalLightVisible = false;
     bool                        needNormalOutput = false;
+    bool                        needDepthNormalOutput = false; // Smooth view normals for SSAO, before opaque overwrites the normal buffer.
     bool                        needVelocityOutput = false;
 
     RHI::Texture *              rtColorTexture = nullptr;
     RHI::Texture *              rtColorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
-    RHI::Texture *              rtNormalTexture = nullptr;
+    RHI::Texture *              rtNormalTexture = nullptr; // Octahedral view normals: prepass smooth normals for SSAO, then shading normals for SSR.
     RHI::Texture *              rtNormalMSAATexture = nullptr;
     RHI::Texture *              rtVelocityTexture = nullptr;
     RHI::Texture *              rtVelocityMSAATexture = nullptr;

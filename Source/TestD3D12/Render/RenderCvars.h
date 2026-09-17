@@ -82,6 +82,8 @@ extern BE1::CVar    r_hiZDebugPreviewMipLevel;
 extern BE1::CVar    r_ao;
 extern BE1::CVar    r_aoDebug;
 extern BE1::CVar    r_ssaoSampleCount;
+extern BE1::CVar    r_ssaoNormalBiasScale;
+extern BE1::CVar    r_ssaoDepthBiasScale;
 extern BE1::CVar    r_aoRadius;
 extern BE1::CVar    r_aoPower;
 extern BE1::CVar    r_aoHalfResolution;

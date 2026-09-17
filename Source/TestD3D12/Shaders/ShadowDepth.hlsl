@@ -6,7 +6,7 @@ cbuffer ShadowViewCB : register(b1) {
 
 [RootSignature(DEPTH_ROOT_SIGNATURE)]
 DepthPSInput VSMain(DepthVSInput input) {
-    return BuildDepthVertex(input, shadowViewConstants.surfaceTableIndex, shadowViewConstants.viewProjMatrix);
+    return BuildDepthVertex(input, shadowViewConstants);
 }
 
 [RootSignature(DEPTH_ROOT_SIGNATURE)]

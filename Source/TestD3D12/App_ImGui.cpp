@@ -957,6 +957,18 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::SliderFloat("Radius##AO", &aoRadius, r_aoRadius.GetMinValue(), r_aoRadius.GetMaxValue(), "%.2f m", ImGuiSliderFlags_Logarithmic)) {
                     r_aoRadius.SetFloat(aoRadius);
                 }
+                float ssaoNormalBiasScale = r_ssaoNormalBiasScale.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Normal bias scale##AO", &ssaoNormalBiasScale, r_ssaoNormalBiasScale.GetMinValue(), r_ssaoNormalBiasScale.GetMaxValue(), "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+                    r_ssaoNormalBiasScale.SetFloat(ssaoNormalBiasScale);
+                }
+                ImGui::SetItemTooltip("Fraction of the AO radius. Offsets samples along the normal and rejects near-surface occlusion. Current bias: %.6g m.", aoRadius * ssaoNormalBiasScale);
+                float ssaoDepthBiasScale = r_ssaoDepthBiasScale.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Depth bias scale##AO", &ssaoDepthBiasScale, r_ssaoDepthBiasScale.GetMinValue(), r_ssaoDepthBiasScale.GetMaxValue(), "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+                    r_ssaoDepthBiasScale.SetFloat(ssaoDepthBiasScale);
+                }
+                ImGui::SetItemTooltip("Fraction of the AO radius. Sets the required view-space depth separation for occlusion. Current bias: %.6g m.", aoRadius * ssaoDepthBiasScale);
                 float aoPower = r_aoPower.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("Power##AO", &aoPower, r_aoPower.GetMinValue(), r_aoPower.GetMaxValue(), "%.2f")) {

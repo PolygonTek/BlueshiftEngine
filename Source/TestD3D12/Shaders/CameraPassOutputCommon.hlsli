@@ -14,7 +14,7 @@ float2 CalcVelocity(float4 currentClipPosition, float4 prevClipPosition) {
 struct CameraPassPSOutput {
     float4 color : SV_Target0;
 #ifdef OUTPUT_NORMAL
-    float2 normal : SV_Target1;
+    float2 normal : SV_Target1; // Octahedral view-space normal, shared with the SSAO prepass.
 #endif
 #ifdef OUTPUT_VELOCITY
     #ifdef OUTPUT_NORMAL

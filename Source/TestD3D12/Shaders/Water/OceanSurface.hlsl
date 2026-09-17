@@ -394,7 +394,7 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     result.color = float4(max(color, 0.0f), 1.0f);
 
 #ifdef OUTPUT_NORMAL
-    result.normal = EncodeOctahedralNormal(normal);
+    result.normal = EncodeOctahedralNormal(mul((float3x3)cameraConstants.viewRotation, normal));
 #endif
 #ifdef OUTPUT_VELOCITY
     // 이전 ocean field 와 굴절 UV 가 없으므로 굴절 픽셀은 화면 밖으로 reprojection 하여 TAA history 를 사용하지 않는다.

@@ -1,14 +1,18 @@
 #include "../ShaderInterop.h"
 #include "../Common.hlsli"
 #include "../PBR/ImportanceSampling.hlsli"
+#include "../NormalEncoding.hlsli"
 
+// Depth becomes writable again for opaque rendering after the AO passes.
+// Opaque shading may overwrite this prepass normal after SSAO.
+// Keep descriptor storage static, but do not promise static resource data.
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(SRV(t0), UAV(u0)), " \
+    "DescriptorTable(SRV(t0, flags = DATA_VOLATILE), SRV(t1, flags = DATA_VOLATILE), UAV(u0)), " \
     "RootConstants(num32BitConstants=12, b0), " \
     "CBV(b1)"
 
 #define HALF_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(SRV(t0), UAV(u0), UAV(u1)), " \
+    "DescriptorTable(SRV(t0, flags = DATA_VOLATILE), SRV(t1, flags = DATA_VOLATILE), UAV(u0), UAV(u1)), " \
     "RootConstants(num32BitConstants=12, b0), " \
     "CBV(b1)"
 
@@ -21,6 +25,7 @@ cbuffer CameraCB : register(b1) {
 }
 
 Texture2D<float> inputDepthTexture : register(t0);
+Texture2D<float2> inputNormalTexture : register(t1);
 RWTexture2D<float> outputAOTexture : register(u0);
 RWTexture2D<float> outputDepthTexture : register(u1);
 
@@ -83,6 +88,7 @@ float LinearDepth(float depth) {
     return ToLinearDepth(depth, cameraConstants.ndcDepthScaleBias, cameraConstants.projectionZ, orthogonal);
 }
 
+// Retained for depth-based normal reconstruction; SSAO uses prepass normals.
 // Select a neighbor on each axis from the same surface where possible.
 // Invalid/background neighbors must not participate in reconstruction, including
 // infinite-far depth. Only the two selected neighbor positions are reconstructed.
@@ -136,10 +142,9 @@ float EvaluateSSAO(uint2 outputPixelCoord, uint2 inputPixelCoord, float centerDe
     const float2 uv = (float2(inputPixelCoord) + 0.5f) * ssaoParams.inputSizeRcp;
     const float3 viewPos = ViewPositionFromLinearDepth(uv, LinearDepth(centerDepth), cameraConstants.uvToView, orthogonal);
 
-    float3 normal;
-    if (!ReconstructNormal(int2(inputPixelCoord), viewPos, normal)) {
-        return 1.0f;
-    }
+    // Half resolution uses the normal of the same full-resolution pixel selected for depth.
+    // The prepass already orients two-sided smooth normals by primitive facing.
+    const float3 normal = DecodeOctahedralNormal(inputNormalTexture.Load(int3(inputPixelCoord, 0)));
 
     // IGN 으로 주변 픽셀의 샘플 회전각을 고르게 분포시킨다.
     // TAA 가 누적할 수 있도록 프레임별 위상을 더한다. noisePhase 가 0 이면 기존 패턴을 유지한다.
@@ -191,11 +196,13 @@ float EvaluateSSAO(uint2 outputPixelCoord, uint2 inputPixelCoord, float centerDe
         const float3 delta = ViewPositionFromLinearDepth(sampleUV, sceneLinearDepth, cameraConstants.uvToView, orthogonal) - viewPos;
         // Point sampling can place a sloped plane in front of Q. A point on the
         // receiver's tangent plane must not count as its own occluder.
-        if (dot(normal, delta) <= ssaoParams.normalBias) {
+        const float normalDistance = dot(normal, delta);
+        if (normalDistance <= ssaoParams.normalBias) {
             continue;
         }
 
-        const float weight = saturate(1.0f - dot(delta, delta) * inverseRadiusSquared);
+        const float distanceSquared = dot(delta, delta);
+        const float weight = saturate(1.0f - distanceSquared * inverseRadiusSquared);
         occlusion += weight * weight;
     }
 

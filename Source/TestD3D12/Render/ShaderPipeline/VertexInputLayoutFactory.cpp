@@ -30,6 +30,9 @@ static_assert(static_cast<int>(VertexInputLayoutId::XyzStSkinning8) == static_ca
 static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorSkinning1) == static_cast<int>(VertexInputLayoutId::XyzStColor) + 1);
 static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorSkinning4) == static_cast<int>(VertexInputLayoutId::XyzStColor) + 2);
 static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorSkinning8) == static_cast<int>(VertexInputLayoutId::XyzStColor) + 3);
+static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorNormalSkinning1) == static_cast<int>(VertexInputLayoutId::XyzStColorNormal) + 1);
+static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorNormalSkinning4) == static_cast<int>(VertexInputLayoutId::XyzStColorNormal) + 2);
+static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorNormalSkinning8) == static_cast<int>(VertexInputLayoutId::XyzStColorNormal) + 3);
 static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangentSkinning1) == static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangent) + 1);
 static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangentSkinning4) == static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangent) + 2);
 static_assert(static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangentSkinning8) == static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangent) + 3);
@@ -80,6 +83,23 @@ static constexpr RHI::InputLayoutElement::Format GetNormalTangentFormat() {
 #endif
 }
 
+static RHI::InputLayout CreateXyzStColorNormalInputLayout() {
+    constexpr RHI::InputLayoutElement::Format normalFormat = GetNormalTangentFormat();
+
+    RHI::InputLayout inputLayout;
+    inputLayout.elements = {
+        { "POSITION", 0, offsetof(BE1::VertexGenericLit, xyz), 0, RHI::InputLayoutElement::Format::Float3 },
+        { "TEXCOORD", 0, offsetof(BE1::VertexGenericLit, st), 0, RHI::InputLayoutElement::Format::Half2 },
+        { "COLOR", 0, offsetof(BE1::VertexGenericLit, color), 0, RHI::InputLayoutElement::Format::UByte4N },
+#ifdef PACKED_VERTEX_TANGENT_FRAME
+        { "NORMAL", 0, offsetof(BE1::VertexGenericLit, tangentFrame), 0, normalFormat },
+#else
+        { "NORMAL", 0, offsetof(BE1::VertexGenericLit, normal), 0, normalFormat },
+#endif
+    };
+    return inputLayout;
+}
+
 static RHI::InputLayout CreateXyzStColorNormalTangentInputLayout() {
     constexpr RHI::InputLayoutElement::Format normalTangentFormat = GetNormalTangentFormat();
 
@@ -109,12 +129,14 @@ static void AppendSkinningInputLayoutElements(RHI::InputLayout &inputLayout, Ver
     case VertexInputLayoutId::XyzSkinning1:
     case VertexInputLayoutId::XyzStSkinning1:
     case VertexInputLayoutId::XyzStColorSkinning1:
+    case VertexInputLayoutId::XyzStColorNormalSkinning1:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning1:
         inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight1, jointIndex)), 1, RHI::InputLayoutElement::Format::UInt1 });
         break;
     case VertexInputLayoutId::XyzSkinning4:
     case VertexInputLayoutId::XyzStSkinning4:
     case VertexInputLayoutId::XyzStColorSkinning4:
+    case VertexInputLayoutId::XyzStColorNormalSkinning4:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning4:
         inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight4, jointIndexes[0])), 1, RHI::InputLayoutElement::Format::UByte4 });
         inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDWEIGHT", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight4, jointWeights[0])), 1, jointWeightFormat });
@@ -122,6 +144,7 @@ static void AppendSkinningInputLayoutElements(RHI::InputLayout &inputLayout, Ver
     case VertexInputLayoutId::XyzSkinning8:
     case VertexInputLayoutId::XyzStSkinning8:
     case VertexInputLayoutId::XyzStColorSkinning8:
+    case VertexInputLayoutId::XyzStColorNormalSkinning8:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning8:
         inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 0, static_cast<uint32_t>(offsetof(BE1::VertexWeight8, jointIndexes[0])), 1, RHI::InputLayoutElement::Format::UByte4 });
         inputLayout.elements.Append(RHI::InputLayoutElement{ "BLENDINDICES", 1, static_cast<uint32_t>(offsetof(BE1::VertexWeight8, jointIndexes[4])), 1, RHI::InputLayoutElement::Format::UByte4 });
@@ -152,6 +175,11 @@ static RHI::InputLayout CreateSkinnedInputLayout(VertexInputLayoutId id) {
     case VertexInputLayoutId::XyzStColorSkinning4:
     case VertexInputLayoutId::XyzStColorSkinning8:
         inputLayout = CreateXyzStColorInputLayout();
+        break;
+    case VertexInputLayoutId::XyzStColorNormalSkinning1:
+    case VertexInputLayoutId::XyzStColorNormalSkinning4:
+    case VertexInputLayoutId::XyzStColorNormalSkinning8:
+        inputLayout = CreateXyzStColorNormalInputLayout();
         break;
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning1:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning4:
@@ -184,6 +212,10 @@ void VertexInputLayoutFactory::Init() {
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorSkinning1)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStColorSkinning1);
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorSkinning4)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStColorSkinning4);
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorSkinning8)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStColorSkinning8);
+    inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorNormal)] = CreateXyzStColorNormalInputLayout();
+    inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorNormalSkinning1)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStColorNormalSkinning1);
+    inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorNormalSkinning4)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStColorNormalSkinning4);
+    inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorNormalSkinning8)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStColorNormalSkinning8);
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangent)] = CreateXyzStColorNormalTangentInputLayout();
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangentSkinning1)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStColorNormalTangentSkinning1);
     inputLayouts[static_cast<int>(VertexInputLayoutId::XyzStColorNormalTangentSkinning4)] = CreateSkinnedInputLayout(VertexInputLayoutId::XyzStColorNormalTangentSkinning4);
@@ -213,6 +245,7 @@ VertexInputLayoutId VertexInputLayoutFactory::GetIdForVertexWeights(VertexInputL
     assert(baseId == VertexInputLayoutId::Xyz ||
         baseId == VertexInputLayoutId::XyzSt ||
         baseId == VertexInputLayoutId::XyzStColor ||
+        baseId == VertexInputLayoutId::XyzStColorNormal ||
         baseId == VertexInputLayoutId::XyzStColorNormalTangent);
 
     int skinningOffset = 0;
@@ -249,6 +282,9 @@ bool VertexInputLayoutFactory::IsSkinning(VertexInputLayoutId id) {
     case VertexInputLayoutId::XyzStColorSkinning1:
     case VertexInputLayoutId::XyzStColorSkinning4:
     case VertexInputLayoutId::XyzStColorSkinning8:
+    case VertexInputLayoutId::XyzStColorNormalSkinning1:
+    case VertexInputLayoutId::XyzStColorNormalSkinning4:
+    case VertexInputLayoutId::XyzStColorNormalSkinning8:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning1:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning4:
     case VertexInputLayoutId::XyzStColorNormalTangentSkinning8:

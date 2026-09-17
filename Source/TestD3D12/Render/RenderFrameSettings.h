@@ -63,6 +63,8 @@ struct RenderFrameSettings {
     uint32_t                    hiZDebugPreviewMipLevel = 0;
 
     uint32_t                    ssaoSampleCount = 16;
+    float                       ssaoNormalBiasScale = 0.005f; // Fraction of the AO radius.
+    float                       ssaoDepthBiasScale = 0.002f; // Fraction of the AO radius.
     float                       aoRadius = 1.0f;
     float                       aoPower = 1.0f;
 
