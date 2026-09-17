@@ -143,6 +143,11 @@ private:
     bool                            DispatchGenScreenSpaceDepthPyramid();
     bool                            DispatchSSRTrace();
     bool                            DispatchSSAO(RHI::GPUResourceState renderDepthState);
+    bool                            DispatchGTAO(RHI::GPUResourceState renderDepthState);
+    void                            DispatchGTAOPrefilterDepth(RHI::GPUResourceState depthInputState, bool useHalfResolution);
+    void                            DispatchGTAOMain(bool useHalfResolution);
+    RHI::Texture *                  DispatchGTAODenoise(uint32_t denoisePassCount, bool useHalfResolution, RHI::GPUResourceState &rawAOState, RHI::GPUResourceState &tempAOState);
+    bool                            DispatchGTAODebugPreview();
     void                            DispatchSSAOCompute(RHI::PipelineState *pso, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *outputAOTexture, RHI::Texture *outputHalfDepthTexture, RHI::GPUResourceState depthInputState);
     void                            DispatchAOBilateralFilter(RHI::Texture *depthTexture, RHI::Texture *inputAOTexture, RHI::Texture *tempAOTexture, RHI::Texture *outputAOTexture, float radius);
     void                            DispatchAOUpsample(RHI::Texture *depthTexture, RHI::Texture *inputHalfAOTexture, RHI::Texture *inputHalfDepthTexture, RHI::Texture *outputAOTexture, float radius);
@@ -203,6 +208,10 @@ private:
     RHI::PipelineState *            frameAOUpsamplePSO = nullptr;
     RHI::PipelineState *            frameAOBilateralHorizontalPSO = nullptr;
     RHI::PipelineState *            frameAOBilateralVerticalPSO = nullptr;
+    RHI::PipelineState *            frameGTAOPrefilterPSO = nullptr;
+    RHI::PipelineState *            frameGTAOMainPSO = nullptr;
+    RHI::PipelineState *            frameGTAODenoisePSO = nullptr;
+    RHI::PipelineState *            frameGTAODebugPSO = nullptr;
     RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameDepthNormalMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalPSO = nullptr;

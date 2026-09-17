@@ -80,15 +80,27 @@ extern BE1::CVar    r_hiZDebugPreview;
 extern BE1::CVar    r_hiZDebugPreviewMipLevel;
 
 extern BE1::CVar    r_ao;
-extern BE1::CVar    r_aoDebug;
-extern BE1::CVar    r_ssaoSampleCount;
+extern BE1::CVar    r_aoRadius;
+extern BE1::CVar    r_aoHalfResolution;
+extern BE1::CVar    r_aoTemporalNoise;
+
+extern BE1::CVar    r_ssaoQuality;
+extern BE1::CVar    r_ssaoDebug;
+extern BE1::CVar    r_ssaoBilateral;
+extern BE1::CVar    r_ssaoPower;
 extern BE1::CVar    r_ssaoNormalBiasScale;
 extern BE1::CVar    r_ssaoDepthBiasScale;
-extern BE1::CVar    r_aoRadius;
-extern BE1::CVar    r_aoPower;
-extern BE1::CVar    r_aoHalfResolution;
-extern BE1::CVar    r_aoTemporalRotation;
-extern BE1::CVar    r_aoBilateral;
+
+extern BE1::CVar    r_gtaoQuality;
+extern BE1::CVar    r_gtaoDenoisePasses;
+extern BE1::CVar    r_gtao32BitDepth;
+extern BE1::CVar    r_gtaoDebug;
+extern BE1::CVar    r_gtaoPower;
+extern BE1::CVar    r_gtaoFalloffRange;
+extern BE1::CVar    r_gtaoRadiusMultiplier;
+extern BE1::CVar    r_gtaoSampleDistributionPower;
+extern BE1::CVar    r_gtaoThinOccluderCompensation;
+extern BE1::CVar    r_gtaoDepthMipSamplingOffset;
 
 extern BE1::CVar    r_ssr;
 extern BE1::CVar    r_ssrDebug;

@@ -104,6 +104,24 @@ static const uint ScreenSpaceDepthPyramidBlockSizeY = 8;
 static const uint SSRTraceBlockSizeX = 8;
 static const uint SSRTraceBlockSizeY = 8;
 
+static const uint GTAODepthMipLevelCount = 5;
+static const uint GTAOPrefilterBlockSizeX = 8;
+static const uint GTAOPrefilterBlockSizeY = 8;
+static const uint GTAOMainBlockSizeX = 8;
+static const uint GTAOMainBlockSizeY = 8;
+static const uint GTAODenoiseBlockSizeX = 8;
+static const uint GTAODenoiseBlockSizeY = 8;
+
+static const uint GTAOQualityLevelCount = 4;
+static const uint GTAOQualityLowSliceCount = 1;
+static const uint GTAOQualityLowStepsPerSlice = 3;
+static const uint GTAOQualityMediumSliceCount = 2;
+static const uint GTAOQualityMediumStepsPerSlice = 3;
+static const uint GTAOQualityHighSliceCount = 3;
+static const uint GTAOQualityHighStepsPerSlice = 3;
+static const uint GTAOQualityUltraSliceCount = 9;
+static const uint GTAOQualityUltraStepsPerSlice = 3;
+
 static const uint ScreenSpaceRayTraceStatusMiss = 0;
 static const uint ScreenSpaceRayTraceStatusHit = 1;
 static const uint ScreenSpaceRayTraceStatusMaxIterations = 2;
@@ -148,7 +166,7 @@ static const uint ShaderCameraFlagProjectionOrthogonal = 1u << 0;
 static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
 static const uint ShaderCameraFlagUseDirectionalLight = 1u << 2;
 static const uint ShaderCameraFlagUseSpecularAA = 1u << 3;
-static const uint ShaderCameraFlagUseSSAO = 1u << 4;
+static const uint ShaderCameraFlagUseAO = 1u << 4;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
@@ -371,6 +389,70 @@ struct SSAOParams {
 
 #ifdef __cplusplus
 static_assert(sizeof(SSAOParams) == 48, "SSAOParams must match the HLSL root constants");
+#endif
+
+struct GTAOPrefilterParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    uint resolutionScale;
+    uint useMaxDepth;
+    uint depthMipCount;
+    uint padding0;
+    float radius;
+    float falloffRange;
+    float radiusMultiplier;
+    float farPlaneDeviceDepth;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(GTAOPrefilterParams) == 48, "GTAOPrefilterParams must match the HLSL root constants");
+#endif
+
+struct GTAOMainParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    float2 outputSizeRcp;
+    uint resolutionScale;
+    uint noiseIndex;
+    uint depthMipCount;
+    float radius;
+    float falloffRange;
+    float radiusMultiplier;
+    float sampleDistributionPower;
+    float thinOccluderCompensation;
+    float depthMipSamplingOffset;
+    float power;
+    float farPlaneDeviceDepth;
+    float padding0;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(GTAOMainParams) == 72, "GTAOMainParams must match the HLSL root constants");
+#endif
+
+struct GTAODenoiseParams {
+    uint2 outputSize;
+    float2 outputSizeRcp;
+    float blurBeta;
+    uint finalPass;
+    float2 padding0;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(GTAODenoiseParams) == 32, "GTAODenoiseParams must match the HLSL root constants");
+#endif
+
+struct GTAODebugParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    uint sourceType;
+    uint mipLevel;
+    float linearDepthScale;
+    float padding0;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(GTAODebugParams) == 32, "GTAODebugParams must match the HLSL root constants");
 #endif
 
 struct AOBilateralParams {
@@ -780,7 +862,7 @@ struct CameraConstants {
     uint envLightDiffuseIrradianceCubeMapIndex;
     uint envLightSpecularCubeMapIndex;
     uint envLightSpecularMipCount;
-    uint ssaoTextureIndex;
+    uint aoTextureIndex;
 
     ShaderCSMData csm;
 };

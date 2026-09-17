@@ -22,6 +22,12 @@ enum RenderBloomMode {
     Convolution = 2
 };
 
+enum class RenderAOMode : uint32_t {
+    Off = 0,
+    SSAO = 1,
+    GTAO = 2
+};
+
 // 메인 스레드에서 프레임 시작 시 생성되고, 해당 프레임 동안 변경되지 않는 렌더 설정이다.
 struct RenderFrameSettings {
     static constexpr float      ShadowMapFilterRadiusMin = 1.0f;
@@ -62,11 +68,25 @@ struct RenderFrameSettings {
 
     uint32_t                    hiZDebugPreviewMipLevel = 0;
 
-    uint32_t                    ssaoSampleCount = 16;
+    float                       aoRadius = 0.5f;
+
+    uint32_t                    ssaoQuality = 1;
+    bool                        ssaoDebug = false;
+    bool                        ssaoBilateral = false;
+    float                       ssaoPower = 2.2f;
     float                       ssaoNormalBiasScale = 0.005f; // Fraction of the AO radius.
     float                       ssaoDepthBiasScale = 0.002f; // Fraction of the AO radius.
-    float                       aoRadius = 1.0f;
-    float                       aoPower = 1.0f;
+
+    uint32_t                    gtaoQuality = 2;
+    uint32_t                    gtaoDenoisePasses = 2;
+    bool                        gtao32BitDepth = false;
+    uint32_t                    gtaoDebug = 0;
+    float                       gtaoPower = 1.0f;
+    float                       gtaoFalloffRange = 0.615f;
+    float                       gtaoRadiusMultiplier = 1.457f;
+    float                       gtaoSampleDistributionPower = 2.0f;
+    float                       gtaoThinOccluderCompensation = 0.0f;
+    float                       gtaoDepthMipSamplingOffset = 3.3f;
 
     uint32_t                    ssrMaxIterations = 64;
     uint32_t                    ssrBinaryRefinementSteps = 5;
@@ -134,11 +154,9 @@ struct RenderFrameSettings {
     bool                        hiZOcclusionCullingFreeze = false;
     bool                        hiZDebugPreview = false;
 
-    bool                        ao = false;
-    bool                        aoDebug = false;
+    RenderAOMode                aoMode = RenderAOMode::Off;
     bool                        aoHalfResolution = true;
-    bool                        aoTemporalRotation = true;
-    bool                        aoBilateral = true;
+    bool                        aoTemporalNoise = true;
 
     bool                        ssr = false;
     bool                        ssrDebug = false;

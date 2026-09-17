@@ -25,6 +25,7 @@ static constexpr int RenderBloomUpMaxLevelCount = RenderBloomDownMaxLevelCount -
 static constexpr int RenderConvolutionBloomMaxMipLevelCount = 16;
 static constexpr int RenderHiZMaxLevelCount = 16;
 static constexpr int RenderScreenSpaceDepthPyramidMaxLevelCount = 16;
+static constexpr int RenderGTAODepthMipMaxLevelCount = 5;
 static constexpr int RenderHiZCullMaxInstanceCount = 2048;
 static constexpr int RenderHiZCullMaxVisibleInstanceCount = 0x40000;
 static constexpr int RenderHiZCullMaxBatchCount = RenderHiZCullMaxVisibleInstanceCount;
@@ -174,7 +175,7 @@ public:
     bool                        EnsureSceneSnapshotResources(bool needed, bool halfResolution);
     void                        EnsureScreenSpaceDepthPyramidResources(uint32_t width, uint32_t height, bool needed);
     void                        EnsureSSRTraceResources(uint32_t width, uint32_t height, uint32_t sampleCount, bool needed);
-    void                        EnsureSSAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, const RenderFrameSettings &settings);
+    void                        EnsureAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, const RenderFrameSettings &settings);
     void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, const RenderFrameSettings &renderFrameSettings);
 
     void                        InvalidateTemporalHistory();
@@ -220,11 +221,16 @@ public:
     uint32_t                    GetScreenSpaceDepthPyramidValidHeight() const { return screenSpaceDepthPyramidValidHeight; }
     RHI::Texture *              GetSSRResolvedDepthTexture() const { return ssrResolvedDepthTexture; }
     RHI::Texture *              GetSSRTraceTexture() const { return ssrTraceTexture; }
-    RHI::Texture *              GetSSAOTexture() const { return ssaoTexture; }
-    RHI::Texture *              GetSSAORawTexture() const { return ssaoRawTexture; }
-    RHI::Texture *              GetSSAOFilterTexture() const { return ssaoFilterTexture; }
-    RHI::Texture *              GetSSAOHalfDepthTexture() const { return ssaoHalfDepthTexture; }
-    RHI::Texture *              GetSSAOResolvedDepthTexture() const { return ssaoResolvedDepthTexture; }
+    RHI::Texture *              GetAOTexture() const { return aoTexture; }
+    RHI::Texture *              GetAORawTexture() const { return aoRawTexture; }
+    RHI::Texture *              GetAOTempTexture() const { return aoTempTexture; }
+    RHI::Texture *              GetAOHalfDepthTexture() const { return aoHalfDepthTexture; }
+    RHI::Texture *              GetAOResolvedDepthTexture() const { return aoResolvedDepthTexture; }
+    RHI::Texture *              GetGTAOPrefilterDepthTexture() const { return gtaoPrefilterDepthTexture; }
+    const RHI::ViewID *         GetGTAOPrefilterDepthMipSRVs() const { return gtaoPrefilterDepthMipSRVs; }
+    const RHI::ViewID *         GetGTAOPrefilterDepthMipUAVs() const { return gtaoPrefilterDepthMipUAVs; }
+    uint32_t                    GetGTAOPrefilterDepthMipCount() const { return gtaoPrefilterDepthMipCount; }
+    RHI::Texture *              GetGTAOPackedEdgesTexture() const { return gtaoPackedEdgesTexture; }
 
     RHI::Texture *              GetPostProcessColorTexture() const { return postProcessColorTexture; }
     RHI::Buffer *               GetLuminanceBuffer() const { return luminanceBuffer; }
@@ -278,8 +284,10 @@ private:
     void                        DestroySSRTraceTexture();
     bool                        CreateSSRResolvedDepthTexture(uint32_t width, uint32_t height);
     void                        DestroySSRResolvedDepthTexture();
-    void                        DestroySSAOResources();
-    void                        DestroySSAOFilterResources();
+    void                        DestroyAOResources();
+    void                        DestroyAOFilterResources();
+    bool                        CreateGTAOPrefilterDepthTexture(uint32_t width, uint32_t height, BE1::Image::Format imageFormat);
+    void                        DestroyGTAOResources();
     void                        EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview);
     bool                        CreateHiZTexture(uint32_t width, uint32_t height);
     void                        DestroyHiZTexture();
@@ -369,13 +377,20 @@ private:
     uint32_t                    screenSpaceDepthPyramidMipCount = 0;
     uint32_t                    screenSpaceDepthPyramidValidWidth = 0;
     uint32_t                    screenSpaceDepthPyramidValidHeight = 0;
+
     RHI::Texture *              ssrResolvedDepthTexture = nullptr;
     RHI::Texture *              ssrTraceTexture = nullptr;
-    RHI::Texture *              ssaoTexture = nullptr;
-    RHI::Texture *              ssaoRawTexture = nullptr;
-    RHI::Texture *              ssaoFilterTexture = nullptr;
-    RHI::Texture *              ssaoHalfDepthTexture = nullptr;
-    RHI::Texture *              ssaoResolvedDepthTexture = nullptr;
+
+    RHI::Texture *              aoTexture = nullptr;
+    RHI::Texture *              aoRawTexture = nullptr;
+    RHI::Texture *              aoTempTexture = nullptr;
+    RHI::Texture *              aoHalfDepthTexture = nullptr;
+    RHI::Texture *              aoResolvedDepthTexture = nullptr;
+    RHI::Texture *              gtaoPrefilterDepthTexture = nullptr;
+    RHI::ViewID                 gtaoPrefilterDepthMipSRVs[RenderGTAODepthMipMaxLevelCount] = {};
+    RHI::ViewID                 gtaoPrefilterDepthMipUAVs[RenderGTAODepthMipMaxLevelCount] = {};
+    uint32_t                    gtaoPrefilterDepthMipCount = 0;
+    RHI::Texture *              gtaoPackedEdgesTexture = nullptr;
 
     RHI::Texture *              colorHistoryTextures[2] = {};
     RHI::Texture *              depthHistoryTextures[2] = {};

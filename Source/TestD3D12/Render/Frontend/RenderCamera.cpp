@@ -21,9 +21,11 @@
 #include "Shaders/ShaderInterop.h"
 #include "Render/Texture/TextureManager.h"
 
+static_assert(RenderGTAODepthMipMaxLevelCount == GTAODepthMipLevelCount, "GTAO depth mip counts must match");
+
 RenderCamera::~RenderCamera() {
     DestroyPostProcessResources();
-    DestroySSAOResources();
+    DestroyAOResources();
     DestroySSRTraceTexture();
     DestroySSRResolvedDepthTexture();
     DestroyScreenSpaceDepthPyramidTexture();
@@ -1432,125 +1434,214 @@ void RenderCamera::DestroySSRResolvedDepthTexture() {
     }
 }
 
-void RenderCamera::EnsureSSAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, const RenderFrameSettings &settings) {
-    if (!settings.ao || width == 0 || height == 0) {
-        DestroySSAOResources();
+void RenderCamera::EnsureAOResources(uint32_t width, uint32_t height, bool needResolvedDepth, const RenderFrameSettings &settings) {
+    const bool useSSAO = settings.aoMode == RenderAOMode::SSAO;
+    const bool useGTAO = settings.aoMode == RenderAOMode::GTAO;
+    if ((!useSSAO && !useGTAO) || width == 0 || height == 0) {
+        DestroyAOResources();
         return;
     }
 
-    if (ssaoTexture && (ssaoTexture->GetWidth() != width || ssaoTexture->GetHeight() != height)) {
-        DestroySSAOResources();
+    if (!useGTAO && (gtaoPrefilterDepthTexture || gtaoPackedEdgesTexture || gtaoPrefilterDepthMipCount > 0)) {
+        DestroyGTAOResources();
     }
 
-    if (!ssaoTexture) {
+    if (aoTexture && (aoTexture->GetWidth() != width || aoTexture->GetHeight() != height)) {
+        DestroyAOResources();
+    }
+
+    if (!aoTexture) {
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         // L8 uses R8_UNORM storage and an (R, R, R, 1) SRV swizzle for the existing fullscreen blit.
         image->InitFromMemory(width, height, 1, 1, 1, BE1::Image::Format::L8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-        ssaoTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
-        if (!ssaoTexture) {
-            BE_WARNLOG("RenderCamera::EnsureSSAOResources: failed to create AO texture\n");
-            DestroySSAOResources();
+        aoTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!aoTexture) {
+            BE_WARNLOG("RenderCamera::EnsureAOResources: failed to create AO texture\n");
+            DestroyAOResources();
             return;
         }
-        RHI::renderer->SetName(ssaoTexture, "RenderCamera::ssaoTexture");
+        RHI::renderer->SetName(aoTexture, "RenderCamera::aoTexture");
     }
 
-    const uint32_t aoWidth = settings.aoHalfResolution ? BE1::DivCeil(width, 2u) : width;
-    const uint32_t aoHeight = settings.aoHalfResolution ? BE1::DivCeil(height, 2u) : height;
-    const bool needRaw = settings.aoHalfResolution || settings.aoBilateral;
+    const bool useHalfResolution = settings.aoHalfResolution;
+    const uint32_t aoWidth = useHalfResolution ? BE1::DivCeil(width, 2u) : width;
+    const uint32_t aoHeight = useHalfResolution ? BE1::DivCeil(height, 2u) : height;
+    const bool needRaw = useGTAO || useHalfResolution || settings.ssaoBilateral;
+    const bool needTemp = useGTAO ? (useHalfResolution || settings.gtaoDenoisePasses > 1) : settings.ssaoBilateral;
 
     // 해상도 옵션이 바뀌면 크기가 달라지는 중간 텍스처만 다시 만든다.
-    if (ssaoRawTexture && (!needRaw || ssaoRawTexture->GetWidth() != aoWidth || ssaoRawTexture->GetHeight() != aoHeight)) {
-        RHI::renderer->DestroyTexture(ssaoRawTexture);
-        ssaoRawTexture = nullptr;
+    if (aoRawTexture && (!needRaw || aoRawTexture->GetWidth() != aoWidth || aoRawTexture->GetHeight() != aoHeight)) {
+        RHI::renderer->DestroyTexture(aoRawTexture);
+        aoRawTexture = nullptr;
     }
 
-    if (ssaoHalfDepthTexture && (!settings.aoHalfResolution || ssaoHalfDepthTexture->GetWidth() != aoWidth || ssaoHalfDepthTexture->GetHeight() != aoHeight)) {
-        RHI::renderer->DestroyTexture(ssaoHalfDepthTexture);
-        ssaoHalfDepthTexture = nullptr;
+    if (aoHalfDepthTexture && (!useHalfResolution || aoHalfDepthTexture->GetWidth() != aoWidth || aoHalfDepthTexture->GetHeight() != aoHeight)) {
+        RHI::renderer->DestroyTexture(aoHalfDepthTexture);
+        aoHalfDepthTexture = nullptr;
     }
 
-    if (ssaoFilterTexture && (!settings.aoBilateral || ssaoFilterTexture->GetWidth() != aoWidth || ssaoFilterTexture->GetHeight() != aoHeight)) {
-        DestroySSAOFilterResources();
+    if (aoTempTexture && (!needTemp || aoTempTexture->GetWidth() != aoWidth || aoTempTexture->GetHeight() != aoHeight)) {
+        DestroyAOFilterResources();
     }
 
     // Keep intermediate visibility in FP16 to avoid repeated R8 quantization.
-    if (needRaw && !ssaoRawTexture) {
+    if (needRaw && !aoRawTexture) {
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, BE1::Image::Format::R16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-        ssaoRawTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
-        if (ssaoRawTexture) {
-            RHI::renderer->SetName(ssaoRawTexture, "RenderCamera::ssaoRawTexture");
+        aoRawTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (aoRawTexture) {
+            RHI::renderer->SetName(aoRawTexture, "RenderCamera::aoRawTexture");
         }
     }
 
-    if (settings.aoHalfResolution && !ssaoHalfDepthTexture) {
+    if (useHalfResolution && !aoHalfDepthTexture) {
         // AO 를 평가한 표면의 device depth 를 정확히 보존한다.
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-        ssaoHalfDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
-        if (ssaoHalfDepthTexture) {
-            RHI::renderer->SetName(ssaoHalfDepthTexture, "RenderCamera::ssaoHalfDepthTexture");
+        aoHalfDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (aoHalfDepthTexture) {
+            RHI::renderer->SetName(aoHalfDepthTexture, "RenderCamera::aoHalfDepthTexture");
         }
     }
 
-    if (settings.aoBilateral && ssaoRawTexture && !ssaoFilterTexture) {
+    if (needTemp && aoRawTexture && !aoTempTexture) {
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, BE1::Image::Format::R16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-        ssaoFilterTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
-        if (ssaoFilterTexture) {
-            RHI::renderer->SetName(ssaoFilterTexture, "RenderCamera::ssaoFilterTexture");
+        aoTempTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (aoTempTexture) {
+            RHI::renderer->SetName(aoTempTexture, "RenderCamera::aoTempTexture");
+        }
+    }
+
+    if (useGTAO) {
+        const BE1::Image::Format gtaoPrefilterDepthFormat = RHI::renderer->ToUAVImageFormat(settings.gtao32BitDepth ? BE1::Image::Format::R32_FLOAT : BE1::Image::Format::R16_FLOAT);
+        RHI::Format gtaoPrefilterDepthRHIFormat = RHI::Format::Unknown;
+        if (!RHI::Renderer::ImageFormatToRHIFormat(gtaoPrefilterDepthFormat, false, &gtaoPrefilterDepthRHIFormat)) {
+            BE_WARNLOG("RenderCamera::EnsureAOResources: unsupported GTAO prefiltered depth format\n");
+            DestroyGTAOResources();
+            return;
+        }
+
+        if ((gtaoPrefilterDepthTexture && (gtaoPrefilterDepthTexture->GetWidth() != aoWidth || gtaoPrefilterDepthTexture->GetHeight() != aoHeight ||
+            gtaoPrefilterDepthTexture->GetFormat() != gtaoPrefilterDepthRHIFormat)) ||
+            (gtaoPackedEdgesTexture && (gtaoPackedEdgesTexture->GetWidth() != aoWidth || gtaoPackedEdgesTexture->GetHeight() != aoHeight))) {
+            DestroyGTAOResources();
+        }
+
+        if (!gtaoPrefilterDepthTexture && !CreateGTAOPrefilterDepthTexture(aoWidth, aoHeight, gtaoPrefilterDepthFormat)) {
+            return;
+        }
+
+        if (!gtaoPackedEdgesTexture) {
+            const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R8);
+            SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+            image->InitFromMemory(aoWidth, aoHeight, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+            gtaoPackedEdgesTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+            if (!gtaoPackedEdgesTexture) {
+                BE_WARNLOG("RenderCamera::EnsureAOResources: failed to create GTAO packed edges texture\n");
+                DestroyGTAOResources();
+                return;
+            }
+            RHI::renderer->SetName(gtaoPackedEdgesTexture, "RenderCamera::gtaoPackedEdgesTexture");
         }
     }
 
     // SSR already owns a suitable full-resolution resolve target when enabled.
     if (!needResolvedDepth) {
-        if (ssaoResolvedDepthTexture) {
-            RHI::renderer->DestroyTexture(ssaoResolvedDepthTexture);
-            ssaoResolvedDepthTexture = nullptr;
+        if (aoResolvedDepthTexture) {
+            RHI::renderer->DestroyTexture(aoResolvedDepthTexture);
+            aoResolvedDepthTexture = nullptr;
         }
-    } else if (!ssaoResolvedDepthTexture) {
-        // MSAA 가 켜져있다면 resolve 된 SSAO 용 depth texture 가 필요하다.
+    } else if (!aoResolvedDepthTexture) {
+        // MSAA 가 켜져있다면 resolve 된 AO 용 depth texture 가 필요하다.
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->InitFromMemory(width, height, 1, 1, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-        ssaoResolvedDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
-        if (!ssaoResolvedDepthTexture) {
-            BE_WARNLOG("RenderCamera::EnsureSSAOResources: failed to create resolved depth texture\n");
+        aoResolvedDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        if (!aoResolvedDepthTexture) {
+            BE_WARNLOG("RenderCamera::EnsureAOResources: failed to create resolved depth texture\n");
             return;
         }
-        RHI::renderer->SetName(ssaoResolvedDepthTexture, "RenderCamera::ssaoResolvedDepthTexture");
+        RHI::renderer->SetName(aoResolvedDepthTexture, "RenderCamera::aoResolvedDepthTexture");
     }
 }
 
-void RenderCamera::DestroySSAOResources() {
-    DestroySSAOFilterResources();
+void RenderCamera::DestroyAOResources() {
+    DestroyGTAOResources();
+    DestroyAOFilterResources();
 
-    if (ssaoRawTexture) {
-        RHI::renderer->DestroyTexture(ssaoRawTexture);
-        ssaoRawTexture = nullptr;
+    if (aoRawTexture) {
+        RHI::renderer->DestroyTexture(aoRawTexture);
+        aoRawTexture = nullptr;
     }
 
-    if (ssaoHalfDepthTexture) {
-        RHI::renderer->DestroyTexture(ssaoHalfDepthTexture);
-        ssaoHalfDepthTexture = nullptr;
+    if (aoHalfDepthTexture) {
+        RHI::renderer->DestroyTexture(aoHalfDepthTexture);
+        aoHalfDepthTexture = nullptr;
     }
 
-    if (ssaoTexture) {
-        RHI::renderer->DestroyTexture(ssaoTexture);
-        ssaoTexture = nullptr;
+    if (aoTexture) {
+        RHI::renderer->DestroyTexture(aoTexture);
+        aoTexture = nullptr;
     }
 
-    if (ssaoResolvedDepthTexture) {
-        RHI::renderer->DestroyTexture(ssaoResolvedDepthTexture);
-        ssaoResolvedDepthTexture = nullptr;
+    if (aoResolvedDepthTexture) {
+        RHI::renderer->DestroyTexture(aoResolvedDepthTexture);
+        aoResolvedDepthTexture = nullptr;
     }
 }
 
-void RenderCamera::DestroySSAOFilterResources() {
-    if (ssaoFilterTexture) {
-        RHI::renderer->DestroyTexture(ssaoFilterTexture);
-        ssaoFilterTexture = nullptr;
+void RenderCamera::DestroyAOFilterResources() {
+    if (aoTempTexture) {
+        RHI::renderer->DestroyTexture(aoTempTexture);
+        aoTempTexture = nullptr;
     }
+}
+
+bool RenderCamera::CreateGTAOPrefilterDepthTexture(uint32_t width, uint32_t height, BE1::Image::Format imageFormat) {
+    const uint32_t maxMipCount = BE1::Image::MaxMipLevels(width, height, 1);
+    const uint32_t mipCount = BE1::Min(maxMipCount, static_cast<uint32_t>(RenderGTAODepthMipMaxLevelCount));
+
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->InitFromMemory(width, height, 1, 1, mipCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+
+    gtaoPrefilterDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    if (!gtaoPrefilterDepthTexture) {
+        BE_WARNLOG("RenderCamera::CreateGTAOPrefilterDepthTexture: failed to create texture\n");
+        DestroyGTAOResources();
+        return false;
+    }
+    RHI::renderer->SetName(gtaoPrefilterDepthTexture, "RenderCamera::gtaoPrefilterDepthTexture");
+
+    for (uint32_t mipLevel = 0; mipLevel < mipCount; ++mipLevel) {
+        gtaoPrefilterDepthMipSRVs[mipLevel] = RHI::renderer->CreateView(gtaoPrefilterDepthTexture, RHI::ViewType::SRV, RHI::Format::Auto, 0, gtaoPrefilterDepthTexture->GetArraySize(), mipLevel, 1);
+        gtaoPrefilterDepthMipUAVs[mipLevel] = RHI::renderer->CreateView(gtaoPrefilterDepthTexture, RHI::ViewType::UAV, RHI::Format::Auto, 0, gtaoPrefilterDepthTexture->GetArraySize(), mipLevel, 1);
+        if (!gtaoPrefilterDepthMipSRVs[mipLevel].IsValid() || !gtaoPrefilterDepthMipUAVs[mipLevel].IsValid()) {
+            BE_WARNLOG("RenderCamera::CreateGTAOPrefilterDepthTexture: failed to create mip %i views\n", mipLevel);
+            DestroyGTAOResources();
+            return false;
+        }
+    }
+
+    gtaoPrefilterDepthMipCount = mipCount;
+    return true;
+}
+
+void RenderCamera::DestroyGTAOResources() {
+    if (gtaoPrefilterDepthTexture) {
+        RHI::renderer->DestroyTexture(gtaoPrefilterDepthTexture);
+        gtaoPrefilterDepthTexture = nullptr;
+    }
+
+    if (gtaoPackedEdgesTexture) {
+        RHI::renderer->DestroyTexture(gtaoPackedEdgesTexture);
+        gtaoPackedEdgesTexture = nullptr;
+    }
+
+    for (uint32_t mipLevel = 0; mipLevel < RenderGTAODepthMipMaxLevelCount; ++mipLevel) {
+        gtaoPrefilterDepthMipSRVs[mipLevel] = RHI::ViewID::InvalidID;
+        gtaoPrefilterDepthMipUAVs[mipLevel] = RHI::ViewID::InvalidID;
+    }
+    gtaoPrefilterDepthMipCount = 0;
 }
 
 void RenderCamera::EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview) {

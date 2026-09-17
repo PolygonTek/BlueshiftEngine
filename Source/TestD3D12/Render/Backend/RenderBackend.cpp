@@ -237,8 +237,8 @@ bool RenderBackend::UploadCameraConstants() {
     if (renderFrameSettings.specularAA) {
         flags |= ShaderCameraFlagUseSpecularAA;
     }
-    if (currentVisCamera->applySSAO) {
-        flags |= ShaderCameraFlagUseSSAO;
+    if (currentVisCamera->applyAO) {
+        flags |= ShaderCameraFlagUseAO;
     }
 
     ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentVisCamera->viewProjMatrix;
@@ -304,7 +304,7 @@ bool RenderBackend::UploadCameraConstants() {
     constants->envLightDiffuseIrradianceCubeMapIndex = currentVisCamera->envLightDiffuseIrradianceCubeMap ? currentVisCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularCubeMapIndex = currentVisCamera->envLightSpecularCubeMap ? currentVisCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularMipCount = currentVisCamera->envLightSpecularMipCount;
-    constants->ssaoTextureIndex = currentVisCamera->applySSAO ? currentVisCamera->ssaoTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->aoTextureIndex = currentVisCamera->applyAO ? currentVisCamera->aoTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
 
     // Shadow depth 기록을 마친 뒤 해당 카메라의 샘플링 데이터를 활성화한다.
     constants->csm = {};
@@ -323,12 +323,30 @@ void RenderBackend::UpdateFramePSOs() {
     frameScreenSpaceDepthPyramidFirstMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstMSAAPipeline);
     frameScreenSpaceDepthPyramidReducePSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidReducePipeline);
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
-    const bool use8Samples = frameData->GetRenderFrameSettings().ssaoSampleCount == 8;
-    frameSSAOPSO = ShaderPipeline::GetReadyPSO(use8Samples ? renderSystem->ssao8FullResPipeline : renderSystem->ssao16FullResPipeline);
-    frameSSAOHalfResolutionPSO = ShaderPipeline::GetReadyPSO(use8Samples ? renderSystem->ssao8HalfResPipeline : renderSystem->ssao16HalfResPipeline);
+    const bool useLowQualitySSAO = frameData->GetRenderFrameSettings().ssaoQuality == 0;
+    frameSSAOPSO = ShaderPipeline::GetReadyPSO(useLowQualitySSAO ? renderSystem->ssao8FullResPipeline : renderSystem->ssao16FullResPipeline);
+    frameSSAOHalfResolutionPSO = ShaderPipeline::GetReadyPSO(useLowQualitySSAO ? renderSystem->ssao8HalfResPipeline : renderSystem->ssao16HalfResPipeline);
     frameAOBilateralHorizontalPSO = ShaderPipeline::GetReadyPSO(renderSystem->aoBilateralHorizontalPipeline);
     frameAOBilateralVerticalPSO = ShaderPipeline::GetReadyPSO(renderSystem->aoBilateralVerticalPipeline);
     frameAOUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->aoUpsamplePipeline);
+    frameGTAOPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->gtaoPrefilterPipeline);
+    const uint32_t gtaoQuality = BE1::Min(frameData->GetRenderFrameSettings().gtaoQuality, GTAOQualityLevelCount - 1u);
+    switch (gtaoQuality) {
+    case 0:
+        frameGTAOMainPSO = ShaderPipeline::GetReadyPSO(renderSystem->gtaoMainLowPipeline);
+        break;
+    case 1:
+        frameGTAOMainPSO = ShaderPipeline::GetReadyPSO(renderSystem->gtaoMainMediumPipeline);
+        break;
+    case 2:
+        frameGTAOMainPSO = ShaderPipeline::GetReadyPSO(renderSystem->gtaoMainHighPipeline);
+        break;
+    case 3:
+        frameGTAOMainPSO = ShaderPipeline::GetReadyPSO(renderSystem->gtaoMainUltraPipeline);
+        break;
+    }
+    frameGTAODenoisePSO = ShaderPipeline::GetReadyPSO(renderSystem->gtaoDenoisePipeline);
+    frameGTAODebugPSO = ShaderPipeline::GetReadyPSO(renderSystem->gtaoDebugPipeline);
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
     frameDepthNormalMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthNormalMSAAResolvePipeline);
@@ -645,22 +663,31 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     const bool hasDepthPrepass = currentVisCamera->needVelocityOutput || currentVisCamera->needDepthNormalOutput || FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
 
     const bool useMSAA = currentVisCamera->rtColorMSAATexture != nullptr;
-    bool ssaoReady = false;
+    bool aoReady = false;
 
     // depth prepass
     if (hasDepthPrepass) {
         ExecuteDrawCamera3DDepthPrepass(depthLoadAction);
 
-        if (currentVisCamera->applySSAO) {
-            ssaoReady = DispatchSSAO(RHI::GPUResourceState::ShaderResource);
+        if (currentVisCamera->applyAO) {
+            switch (currentVisCamera->aoMode) {
+            case RenderAOMode::SSAO:
+                aoReady = DispatchSSAO(RHI::GPUResourceState::ShaderResource);
+                break;
+            case RenderAOMode::GTAO:
+                aoReady = DispatchGTAO(RHI::GPUResourceState::ShaderResource);
+                break;
+            default:
+                break;
+            }
         }
     }
 
-    // Disable SSAO if its commands were not recorded before opaque shading.
+    // Disable AO if its commands were not recorded before opaque shading.
     // The camera command list has not been submitted yet.
-    if (currentVisCamera->applySSAO && !ssaoReady) {
+    if (currentVisCamera->applyAO && !aoReady) {
         CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
-        constants->flags &= ~ShaderCameraFlagUseSSAO;
+        constants->flags &= ~ShaderCameraFlagUseAO;
     }
 
     // Opaque 와 Skybox 를 렌더링한다.
@@ -705,8 +732,14 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
     const RHI::Texture *outputOverrideTexture = nullptr;
 
-    if (renderFrameSettings.aoDebug && ssaoReady) {
-        outputOverrideTexture = currentVisCamera->ssaoTexture;
+    const bool debugSSAO = currentVisCamera->aoMode == RenderAOMode::SSAO && renderFrameSettings.ssaoDebug;
+    const bool debugGTAO = currentVisCamera->aoMode == RenderAOMode::GTAO && renderFrameSettings.gtaoDebug != 0;
+
+    if ((debugSSAO || debugGTAO) && aoReady) {
+        if (debugGTAO && renderFrameSettings.gtaoDebug > 1) {
+            DispatchGTAODebugPreview();
+        }
+        outputOverrideTexture = currentVisCamera->aoTexture;
     } else if (renderFrameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
         outputOverrideTexture = currentVisCamera->rtColorTexture;
     } else if (renderFrameSettings.ssrDebug && ssrTraceReady) {
@@ -793,7 +826,7 @@ void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAc
         const RHI::Texture *normalTexture = currentVisCamera->rtNormalMSAATexture ? currentVisCamera->rtNormalMSAATexture : currentVisCamera->rtNormalTexture;
         assert(normalTexture->GetSampleCount() == currentVisCamera->depthTexture->GetSampleCount());
 
-        // SSAO consumes view normals before opaque writes SSR's shading normals to this attachment.
+        // AO consumes view normals before opaque writes SSR's shading normals to this attachment.
         renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(normalTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
     }

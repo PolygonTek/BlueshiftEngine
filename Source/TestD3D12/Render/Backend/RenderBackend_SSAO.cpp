@@ -21,24 +21,25 @@
 bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchSSAO");
 
-    RHI::Texture *depthTexture = currentVisCamera->ssaoDepthTexture;
-    RHI::Texture *ssaoTexture = currentVisCamera->ssaoTexture;
-    if (!depthTexture || !ssaoTexture) {
+    RHI::Texture *depthTexture = currentVisCamera->aoDepthTexture;
+    RHI::Texture *normalTexture = currentVisCamera->rtNormalTexture;
+    RHI::Texture *aoTexture = currentVisCamera->aoTexture;
+    if (!currentVisCamera->needDepthNormalOutput || !currentVisCamera->depthTexture || !depthTexture || !normalTexture || !aoTexture) {
         return false;
     }
 
-    assert(depthTexture->GetSampleCount() == 1 && ssaoTexture->GetSampleCount() == 1);
+    assert(depthTexture->GetSampleCount() == 1 && normalTexture->GetSampleCount() == 1 && aoTexture->GetSampleCount() == 1);
 
     // 최종 AO 는 full-resolution 을 유지한다.
-    assert(depthTexture->GetWidth() == ssaoTexture->GetWidth() && depthTexture->GetHeight() == ssaoTexture->GetHeight());
+    assert(depthTexture->GetWidth() == aoTexture->GetWidth() && depthTexture->GetHeight() == aoTexture->GetHeight());
 
     const RenderFrameSettings &settings = frameData->GetRenderFrameSettings();
-    RHI::Texture *ssaoRawTexture = currentVisCamera->ssaoRawTexture;
-    RHI::Texture *ssaoTempTexture = currentVisCamera->ssaoFilterTexture;
-    RHI::Texture *halfDepthTexture = currentVisCamera->ssaoHalfDepthTexture;
+    RHI::Texture *aoRawTexture = currentVisCamera->aoRawTexture;
+    RHI::Texture *aoTempTexture = currentVisCamera->aoTempTexture;
+    RHI::Texture *halfDepthTexture = currentVisCamera->aoHalfDepthTexture;
 
-    const uint32_t width = ssaoTexture->GetWidth();
-    const uint32_t height = ssaoTexture->GetHeight();
+    const uint32_t width = aoTexture->GetWidth();
+    const uint32_t height = aoTexture->GetHeight();
     const uint32_t halfWidth = BE1::DivCeil(width, 2u);
     const uint32_t halfHeight = BE1::DivCeil(height, 2u);
 
@@ -46,12 +47,11 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
         return texture && texture->GetWidth() == width && texture->GetHeight() == height;
     };
 
-    const bool useMSAA = currentVisCamera->depthTexture->GetSampleCount() > 1;
-    RHI::Texture *normalTexture = currentVisCamera->rtNormalTexture;
-    if (!currentVisCamera->needDepthNormalOutput || !matchesSize(normalTexture, width, height) || normalTexture->GetSampleCount() != 1) {
+    if (!matchesSize(normalTexture, width, height)) {
         return false;
     }
 
+    const bool useMSAA = currentVisCamera->depthTexture->GetSampleCount() > 1;
     if (useMSAA) {
         RHI::Texture *normalMSAATexture = currentVisCamera->rtNormalMSAATexture;
         // Never read the previous resolved normal while the paired resolve PSO is unavailable.
@@ -61,14 +61,14 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
     }
 
     // Keep full-resolution AO available while half-resolution resources are not ready.
-    const bool useHalfResolution = settings.aoHalfResolution && frameSSAOHalfResolutionPSO && frameAOUpsamplePSO && matchesSize(ssaoRawTexture, halfWidth, halfHeight) && matchesSize(halfDepthTexture, halfWidth, halfHeight);
+    const bool useHalfResolution = settings.aoHalfResolution && frameSSAOHalfResolutionPSO && frameAOUpsamplePSO && matchesSize(aoRawTexture, halfWidth, halfHeight) && matchesSize(halfDepthTexture, halfWidth, halfHeight);
     const uint32_t aoWidth = useHalfResolution ? halfWidth : width;
     const uint32_t aoHeight = useHalfResolution ? halfHeight : height;
 
     // Full-resolution fallback 에서는 half-resolution 중간 텍스처를 필터에 사용하지 않는다.
-    const bool useBlur = settings.aoBilateral && frameAOBilateralHorizontalPSO && frameAOBilateralVerticalPSO && matchesSize(ssaoRawTexture, aoWidth, aoHeight) && matchesSize(ssaoTempTexture, aoWidth, aoHeight);
+    const bool useBlur = settings.ssaoBilateral && frameAOBilateralHorizontalPSO && frameAOBilateralVerticalPSO && matchesSize(aoRawTexture, aoWidth, aoHeight) && matchesSize(aoTempTexture, aoWidth, aoHeight);
 
-    RHI::Texture *ssaoComputeOutputTexture = (useHalfResolution || useBlur) ? ssaoRawTexture : ssaoTexture;
+    RHI::Texture *aoComputeOutputTexture = (useHalfResolution || useBlur) ? aoRawTexture : aoTexture;
     RHI::PipelineState *ssaoPSO = useHalfResolution ? frameSSAOHalfResolutionPSO : frameSSAOPSO;
     if (!ssaoPSO) {
         return false;
@@ -80,19 +80,19 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
     }
 
     const RHI::GPUResourceState depthInputState = useMSAA ? RHI::GPUResourceState::ShaderResource : renderDepthState;
-    DispatchSSAOCompute(ssaoPSO, depthTexture, normalTexture, ssaoComputeOutputTexture, useHalfResolution ? halfDepthTexture : nullptr, depthInputState);
+    DispatchSSAOCompute(ssaoPSO, depthTexture, normalTexture, aoComputeOutputTexture, useHalfResolution ? halfDepthTexture : nullptr, depthInputState);
 
     if (useBlur) {
-        DispatchAOBilateralFilter(useHalfResolution ? halfDepthTexture : depthTexture, ssaoRawTexture, ssaoTempTexture, useHalfResolution ? ssaoRawTexture : ssaoTexture, settings.aoRadius);
+        DispatchAOBilateralFilter(useHalfResolution ? halfDepthTexture : depthTexture, aoRawTexture, aoTempTexture, useHalfResolution ? aoRawTexture : aoTexture, settings.aoRadius);
     }
 
     if (useHalfResolution) {
-        DispatchAOUpsample(depthTexture, ssaoRawTexture, halfDepthTexture, ssaoTexture, settings.aoRadius);
+        DispatchAOUpsample(depthTexture, aoRawTexture, halfDepthTexture, aoTexture, settings.aoRadius);
     }
 
     RHI::GPUBarrier endBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::ShaderResourceCompute, depthInputState),
-        RHI::Renderer::MakeTextureBarrier(ssaoTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeTextureBarrier(aoTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
 
@@ -110,12 +110,12 @@ void RenderBackend::DispatchSSAOCompute(RHI::PipelineState *pso, RHI::Texture *d
     params.inputSizeRcp = float2(1.0f / params.inputSize.x, 1.0f / params.inputSize.y);
     params.outputSize = uint2(outputAOTexture->GetWidth(), outputAOTexture->GetHeight());
     params.radius = settings.aoRadius;
-    params.power = settings.aoPower;
+    params.power = settings.ssaoPower;
     params.normalBias = params.radius * settings.ssaoNormalBiasScale;
     params.depthBias = params.radius * settings.ssaoDepthBiasScale;
     params.farPlaneDeviceDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
 
-    if (settings.aoTemporalRotation) {
+    if (currentVisCamera->aoTemporalNoise) {
         // 8 프레임 동안 회전각을 고르게 분포시킨다.
         static constexpr float noisePhases[8] = {0.0f, 0.5f, 0.25f, 0.75f, 0.125f, 0.625f, 0.375f, 0.875f};
         params.noisePhase = noisePhases[frameData->GetFrameCount() % COUNT_OF(noisePhases)];

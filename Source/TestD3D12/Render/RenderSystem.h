@@ -179,6 +179,13 @@ private:
     SharedPtr<ShaderTemplate>       aoBilateralHorizontalShaderTemplate;
     SharedPtr<ShaderTemplate>       aoBilateralVerticalShaderTemplate;
     SharedPtr<ShaderTemplate>       aoUpsampleShaderTemplate;
+    SharedPtr<ShaderTemplate>       gtaoPrefilterShaderTemplate;
+    SharedPtr<ShaderTemplate>       gtaoMainLowShaderTemplate;
+    SharedPtr<ShaderTemplate>       gtaoMainMediumShaderTemplate;
+    SharedPtr<ShaderTemplate>       gtaoMainHighShaderTemplate;
+    SharedPtr<ShaderTemplate>       gtaoMainUltraShaderTemplate;
+    SharedPtr<ShaderTemplate>       gtaoDenoiseShaderTemplate;
+    SharedPtr<ShaderTemplate>       gtaoDebugShaderTemplate;
 
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidFirstShaderTemplate;
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidFirstMSAAShaderTemplate;
@@ -217,6 +224,13 @@ private:
     SharedPtr<ShaderPipeline>       aoBilateralHorizontalPipeline;
     SharedPtr<ShaderPipeline>       aoBilateralVerticalPipeline;
     SharedPtr<ShaderPipeline>       aoUpsamplePipeline;
+    SharedPtr<ShaderPipeline>       gtaoPrefilterPipeline;
+    SharedPtr<ShaderPipeline>       gtaoMainLowPipeline;
+    SharedPtr<ShaderPipeline>       gtaoMainMediumPipeline;
+    SharedPtr<ShaderPipeline>       gtaoMainHighPipeline;
+    SharedPtr<ShaderPipeline>       gtaoMainUltraPipeline;
+    SharedPtr<ShaderPipeline>       gtaoDenoisePipeline;
+    SharedPtr<ShaderPipeline>       gtaoDebugPipeline;
 
     SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidFirstPipeline;
     SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidFirstMSAAPipeline;

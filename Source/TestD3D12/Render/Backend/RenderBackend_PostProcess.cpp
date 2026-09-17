@@ -242,7 +242,7 @@ bool RenderBackend::DispatchDepthMSAAResolve(RHI::Texture *outputDepthTexture, R
     };
     uint32_t startBarrierCount = 2;
     if (outputNormalTexture) {
-        // The prepass leaves its MSAA normal attachment readable; SSAO consumes the resolved pair.
+        // The prepass leaves its MSAA normal attachment readable; AO consumes the resolved pair.
         startBarriers[startBarrierCount++] = RHI::Renderer::MakeTextureBarrier(inputNormalTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute);
         startBarriers[startBarrierCount++] = RHI::Renderer::MakeTextureBarrier(outputNormalTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess);
     }

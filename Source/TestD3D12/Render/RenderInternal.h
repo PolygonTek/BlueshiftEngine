@@ -238,13 +238,13 @@ struct VisCamera {
     RenderCamera::Flag          flags = RenderCamera::Flag::None;
     bool                        directionalLightVisible = false;
     bool                        needNormalOutput = false;
-    bool                        needDepthNormalOutput = false; // Smooth view normals for SSAO, before opaque overwrites the normal buffer.
+    bool                        needDepthNormalOutput = false; // Smooth view normals for AO, before opaque overwrites the normal buffer.
     bool                        needVelocityOutput = false;
 
     RHI::Texture *              rtColorTexture = nullptr;
     RHI::Texture *              rtColorMSAATexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
-    RHI::Texture *              rtNormalTexture = nullptr; // Octahedral view normals: prepass smooth normals for SSAO, then shading normals for SSR.
+    RHI::Texture *              rtNormalTexture = nullptr; // Octahedral view normals: prepass smooth normals for AO, then shading normals for SSR.
     RHI::Texture *              rtNormalMSAATexture = nullptr;
     RHI::Texture *              rtVelocityTexture = nullptr;
     RHI::Texture *              rtVelocityMSAATexture = nullptr;
@@ -270,12 +270,20 @@ struct VisCamera {
     RHI::Texture *              hiZDebugPreviewTexture = nullptr;
     float                       hiZDebugLinearDepthScale = 1.0f;
 
-    bool                        applySSAO = false;
-    RHI::Texture *              ssaoTexture = nullptr;
-    RHI::Texture *              ssaoRawTexture = nullptr;
-    RHI::Texture *              ssaoFilterTexture = nullptr;
-    RHI::Texture *              ssaoHalfDepthTexture = nullptr;
-    RHI::Texture *              ssaoDepthTexture = nullptr;
+    bool                        applyAO = false;
+    RenderAOMode                aoMode = RenderAOMode::Off;
+    bool                        aoTemporalNoise = false;
+    RHI::Texture *              aoTexture = nullptr;
+    RHI::Texture *              aoRawTexture = nullptr;
+    RHI::Texture *              aoTempTexture = nullptr;
+    RHI::Texture *              aoHalfDepthTexture = nullptr;
+    RHI::Texture *              aoDepthTexture = nullptr;
+
+    RHI::Texture *              gtaoPrefilterDepthTexture = nullptr;
+    RHI::ViewID                 gtaoPrefilterDepthMipSRVs[RenderGTAODepthMipMaxLevelCount] = {};
+    RHI::ViewID                 gtaoPrefilterDepthMipUAVs[RenderGTAODepthMipMaxLevelCount] = {};
+    uint32_t                    gtaoPrefilterDepthMipCount = 0;
+    RHI::Texture *              gtaoPackedEdgesTexture = nullptr;
 
     bool                        generateScreenSpaceDepthPyramid = false;
     RHI::Texture *              screenSpaceDepthPyramidTexture = nullptr;

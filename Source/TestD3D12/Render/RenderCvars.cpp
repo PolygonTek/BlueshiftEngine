@@ -82,17 +82,31 @@ CVAR(r_hiZOcclusionCullingFreeze, "0", BE1::CVar::Flag::Bool, "freeze Hi-Z occlu
 CVAR(r_hiZDebugPreview, "0", BE1::CVar::Flag::Bool, "enable Hi-Z debug preview texture update");
 CVAR_MINMAX(r_hiZDebugPreviewMipLevel, "0", BE1::CVar::Flag::Integer, "Hi-Z debug preview mip level", 0, RenderHiZMaxLevelCount - 1);
 
-// Ambient Occlusion
-CVAR(r_ao, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "apply ambient occlusion to indirect lighting");
-CVAR(r_aoDebug, "0", BE1::CVar::Flag::Bool, "show full-resolution ambient occlusion");
-CVAR_MINMAX(r_ssaoSampleCount, "16", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "SSAO kernel sample count: 8 or 16 (values below 16 use 8)", 8, 16);
+// Ambient Occlusion Common
+CVAR_MINMAX(r_ao, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "ambient occlusion mode: 0 = off, 1 = SSAO, 2 = GTAO", 0, 2);
+CVAR_MINMAX(r_aoRadius, "0.5", BE1::CVar::Flag::Float, "ambient occlusion radius in world units", 0.01f, 10.0f);
+CVAR(r_aoHalfResolution, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "compute ambient occlusion at half resolution");
+CVAR(r_aoTemporalNoise, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "vary the ambient occlusion sampling pattern each frame when TAA is active");
+
+// SSAO
+CVAR_MINMAX(r_ssaoQuality, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "SSAO quality: 0 = low, 1 = high", 0, 1);
+CVAR(r_ssaoDebug, "0", BE1::CVar::Flag::Bool, "show full-resolution SSAO");
+CVAR(r_ssaoBilateral, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "apply depth-aware bilateral filtering to SSAO");
+CVAR_MINMAX(r_ssaoPower, "2.2", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "SSAO visibility power", 0.25f, 4.0f);
 CVAR_MINMAX(r_ssaoNormalBiasScale, "0.005", BE1::CVar::Flag::Float, "SSAO normal bias as a fraction of the AO radius", 0.0f, 0.05f);
 CVAR_MINMAX(r_ssaoDepthBiasScale, "0.002", BE1::CVar::Flag::Float, "SSAO depth bias as a fraction of the AO radius", 0.0f, 0.05f);
-CVAR_MINMAX(r_aoRadius, "0.5", BE1::CVar::Flag::Float, "ambient occlusion radius in world units", 0.01f, 10.0f);
-CVAR_MINMAX(r_aoPower, "1.0", BE1::CVar::Flag::Float, "ambient occlusion power", 0.25f, 4.0f);
-CVAR(r_aoHalfResolution, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "compute ambient occlusion at half resolution");
-CVAR(r_aoBilateral, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "apply depth-aware bilateral filtering to ambient occlusion");
-CVAR(r_aoTemporalRotation, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "rotate ambient occlusion samples each frame when TAA is active");
+
+// GTAO
+CVAR_MINMAX(r_gtaoQuality, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "GTAO quality: 0 = low, 1 = medium, 2 = high, 3 = ultra", 0, 3);
+CVAR_MINMAX(r_gtaoDenoisePasses, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "GTAO edge-aware denoise pass count", 0, 4);
+CVAR(r_gtao32BitDepth, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use 32-bit GTAO prefiltered depth instead of 16-bit");
+CVAR_MINMAX(r_gtaoDebug, "0", BE1::CVar::Flag::Integer, "GTAO debug source: 0 = off, 1 = final, 2 = raw, 3 = edges, 4..8 = depth mip 0..4", 0, 8);
+CVAR_MINMAX(r_gtaoPower, "1.0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "GTAO final visibility power", 0.25f, 4.0f);
+CVAR_MINMAX(r_gtaoFalloffRange, "0.615", BE1::CVar::Flag::Float, "GTAO effect falloff range", 0.0f, 1.0f);
+CVAR_MINMAX(r_gtaoRadiusMultiplier, "1.457", BE1::CVar::Flag::Float, "GTAO effect radius multiplier", 0.3f, 3.0f);
+CVAR_MINMAX(r_gtaoSampleDistributionPower, "2.0", BE1::CVar::Flag::Float, "GTAO sample distribution power", 1.0f, 3.0f);
+CVAR_MINMAX(r_gtaoThinOccluderCompensation, "0.0", BE1::CVar::Flag::Float, "GTAO thin occluder compensation", 0.0f, 1.0f);
+CVAR_MINMAX(r_gtaoDepthMipSamplingOffset, "3.3", BE1::CVar::Flag::Float, "GTAO depth mip sampling offset", 0.0f, 5.0f);
 
 // SSR
 CVAR(r_ssr, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
@@ -277,16 +291,28 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.hiZOcclusionCullingFreeze = r_hiZOcclusionCullingFreeze.GetBool();
     settings.hiZDebugPreview = r_hiZDebugPreview.GetBool();
 
-    settings.ao = r_ao.GetBool();
-    settings.aoDebug = r_aoDebug.GetBool();
-    settings.ssaoSampleCount = r_ssaoSampleCount.GetInteger() < 16 ? 8u : 16u;
+    settings.aoMode = static_cast<RenderAOMode>(r_ao.GetInteger());
+    settings.aoRadius = r_aoRadius.GetFloat();
+    settings.aoHalfResolution = r_aoHalfResolution.GetBool();
+    settings.aoTemporalNoise = r_aoTemporalNoise.GetBool();
+
+    settings.ssaoQuality = static_cast<uint32_t>(r_ssaoQuality.GetInteger());
+    settings.ssaoDebug = r_ssaoDebug.GetBool();
+    settings.ssaoBilateral = r_ssaoBilateral.GetBool();
+    settings.ssaoPower = r_ssaoPower.GetFloat();
     settings.ssaoNormalBiasScale = r_ssaoNormalBiasScale.GetFloat();
     settings.ssaoDepthBiasScale = r_ssaoDepthBiasScale.GetFloat();
-    settings.aoRadius = r_aoRadius.GetFloat();
-    settings.aoPower = r_aoPower.GetFloat();
-    settings.aoHalfResolution = r_aoHalfResolution.GetBool();
-    settings.aoTemporalRotation = r_aoTemporalRotation.GetBool();
-    settings.aoBilateral = r_aoBilateral.GetBool();
+
+    settings.gtaoQuality = static_cast<uint32_t>(r_gtaoQuality.GetInteger());
+    settings.gtaoDenoisePasses = static_cast<uint32_t>(r_gtaoDenoisePasses.GetInteger());
+    settings.gtao32BitDepth = r_gtao32BitDepth.GetBool();
+    settings.gtaoDebug = static_cast<uint32_t>(r_gtaoDebug.GetInteger());
+    settings.gtaoPower = r_gtaoPower.GetFloat();
+    settings.gtaoFalloffRange = r_gtaoFalloffRange.GetFloat();
+    settings.gtaoRadiusMultiplier = r_gtaoRadiusMultiplier.GetFloat();
+    settings.gtaoSampleDistributionPower = r_gtaoSampleDistributionPower.GetFloat();
+    settings.gtaoThinOccluderCompensation = r_gtaoThinOccluderCompensation.GetFloat();
+    settings.gtaoDepthMipSamplingOffset = r_gtaoDepthMipSamplingOffset.GetFloat();
 
     settings.ssr = r_ssr.GetBool();
     settings.ssrDebug = r_ssrDebug.GetBool();

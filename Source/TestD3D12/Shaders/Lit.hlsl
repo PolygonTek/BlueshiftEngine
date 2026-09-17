@@ -164,7 +164,7 @@ CameraPassPSOutput PSMain(PSInput input) {
     CameraPassPSOutput result;
     result.color = baseColor;
 #ifdef OUTPUT_NORMAL
-    // Lighting stays in world space; the shared SSAO/SSR buffer stores view-space normals.
+    // Lighting stays in world space; the shared AO/SSR buffer stores view-space normals.
     result.normal = EncodeOctahedralNormal(mul((float3x3)cameraConstants.viewRotation, shading.normal));
 #endif
 
@@ -197,11 +197,11 @@ CameraPassPSOutput PSMain(PSInput input) {
 #endif
 
 #ifdef INDIRECT_LIGHTING
-    // Opaque and alpha-tested surfaces use SSAO from the depth prepass.
-    if ((cameraConstants.flags & ShaderCameraFlagUseSSAO) != 0 &&
+    // Opaque and alpha-tested surfaces use screen-space AO from the depth prepass.
+    if ((cameraConstants.flags & ShaderCameraFlagUseAO) != 0 &&
         (shaderMaterial.flags & ShaderMaterialFlagTransparent) == 0) {
-        const float screenAO = GetTexture2D(cameraConstants.ssaoTextureIndex).Load(int3(uint2(input.position.xy), 0)).r;
-        // Material AO and SSAO can describe the same cavity; use the stronger
+        const float screenAO = GetTexture2D(cameraConstants.aoTextureIndex).Load(int3(uint2(input.position.xy), 0)).r;
+        // Material AO and screen-space AO can describe the same cavity; use the stronger
         // occlusion instead of counting it twice. The IBL path also derives
         // roughness-aware specular/clear-coat occlusion from this value.
         shading.ambientOcclusion = min(shading.ambientOcclusion, screenAO);
