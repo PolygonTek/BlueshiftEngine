@@ -26,16 +26,32 @@ BE_NAMESPACE_BEGIN
 
 struct PNGReadContext {
     const byte *current;
+    size_t remaining;
 };
 
-static void png_read_data(png_structp png, png_bytep data, png_size_t length) {
+static void PNGCBAPI png_read_error(png_structp png, png_const_charp message) {
+    const char *name = static_cast<const char *>(png_get_error_ptr(png));
+    BE_WARNLOG("Image::LoadPNGFromMemory: '%s': %s\n", name ? name : "<memory>", message);
+    png_longjmp(png, 1);
+}
+
+static void PNGCBAPI png_read_data(png_structp png, png_bytep data, png_size_t length) {
     PNGReadContext *ctx = static_cast<PNGReadContext *>(png_get_io_ptr(png));
+    if (length > ctx->remaining) {
+        png_error(png, "Truncated PNG data");
+    }
     memcpy(data, ctx->current, length);
     ctx->current += length;
+    ctx->remaining -= length;
 }
 
 bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
-    png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!data || !size) {
+        BE_WARNLOG("Image::LoadPNGFromMemory: '%s': Empty PNG data\n", name ? name : "<memory>");
+        return false;
+    }
+
+    png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, const_cast<char *>(name), png_read_error, nullptr);
     if (!png) {
         return false;
     }
@@ -53,6 +69,7 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
 
     PNGReadContext ctx;
     ctx.current = data;
+    ctx.remaining = size;
     png_set_read_fn(png, &ctx, png_read_data);
 
     png_read_info(png, info);
@@ -96,6 +113,14 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
 
     png_get_IHDR(png, info, (png_uint_32 *)&w, (png_uint_32 *)&h, &bit_depth, &color_type, nullptr, nullptr, nullptr);
 
+    const size_t rowbytes = png_get_rowbytes(png, info);
+    const int channels = (color_type & PNG_COLOR_MASK_ALPHA) ? 4 : 3;
+    if (!w || !h || w > INT32_MAX || h > INT32_MAX || bit_depth != 8 ||
+        rowbytes != static_cast<uint64_t>(w) * channels ||
+        rowbytes > SIZE_MAX / h || h > SIZE_MAX / sizeof(png_bytep)) {
+        png_error(png, "Invalid PNG output size");
+    }
+
     // allocate the memory to hold the image
     Create2D(w, h, 1, (color_type & PNG_COLOR_MASK_ALPHA) ? Format::R8G8B8A8 : Format::R8G8B8, GammaSpace::sRGB, nullptr, Flag::None);
     
@@ -105,10 +130,13 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
     if (setjmp(png_jmpbuf(png))) {
         Mem_AlignedFree(row_pointers);
         png_destroy_read_struct(&png, &info, (png_infopp)nullptr);
+        Clear();
         return false;
     }
 
-    size_t rowbytes = png_get_rowbytes(png, info);
+    if (!pic || !row_pointers) {
+        png_error(png, "Could not allocate PNG image data");
+    }
 
     for (unsigned int row = 0; row < h; row++) {
         row_pointers[row] = (png_bytep)&(this->pic)[row * rowbytes];

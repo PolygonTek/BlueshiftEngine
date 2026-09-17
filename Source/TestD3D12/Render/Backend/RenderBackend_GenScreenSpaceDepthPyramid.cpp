@@ -52,14 +52,14 @@ bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
         return false;
     }
 
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::GenScreenSpaceDepthPyramid);
-
     ScreenSpaceDepthPyramidParams params = {};
     params.inputSize = uint2(depthTexture->GetWidth(), depthTexture->GetHeight());
     params.outputSize = uint2(currentVisCamera->screenSpaceDepthPyramidMipWidths[0], currentVisCamera->screenSpaceDepthPyramidMipHeights[0]);
     params.validOutputSize = uint2(currentVisCamera->screenSpaceDepthPyramidValidWidth, currentVisCamera->screenSpaceDepthPyramidValidHeight);
     params.farPlaneDeviceDepth = currentVisCamera->projectionPolicy.GetDepthClearValue();
     params.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::GenScreenSpaceDepthPyramid);
 
     RHI::GPUBarrier firstMipStartBarriers[5];
     uint32_t firstMipStartBarrierCount = 0;

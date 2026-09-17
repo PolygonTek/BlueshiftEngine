@@ -57,6 +57,9 @@ bool RenderBackend::DispatchSSRTrace() {
 
     const RHI::GPUResourceState depthInputState = useMSAA ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::DepthWrite;
     const RHI::GPUResourceState normalInputState = useMSAA ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::RenderTarget;
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SSRTrace);
+
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(depthTexture, depthInputState, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(normalTexture, normalInputState, RHI::GPUResourceState::ShaderResourceCompute),
@@ -64,8 +67,6 @@ bool RenderBackend::DispatchSSRTrace() {
         RHI::Renderer::MakeTextureBarrier(traceTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
-
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SSRTrace);
 
     RHI::renderer->SetPSO(mainCommandList, tracePSO);
     RHI::renderer->SetTexture(mainCommandList, 0, false, depthTexture);

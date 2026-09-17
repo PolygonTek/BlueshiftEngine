@@ -102,8 +102,6 @@ bool RenderBackend::DispatchSSAO(RHI::GPUResourceState renderDepthState) {
 void RenderBackend::DispatchSSAOCompute(RHI::PipelineState *pso, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *outputAOTexture, RHI::Texture *outputHalfDepthTexture, RHI::GPUResourceState depthInputState) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchSSAOCompute");
 
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SSAO);
-
     const RenderFrameSettings &settings = frameData->GetRenderFrameSettings();
     const bool useHalfResolution = outputHalfDepthTexture != nullptr;
 
@@ -122,6 +120,8 @@ void RenderBackend::DispatchSSAOCompute(RHI::PipelineState *pso, RHI::Texture *d
         static constexpr float noisePhases[8] = {0.0f, 0.5f, 0.25f, 0.75f, 0.125f, 0.625f, 0.375f, 0.875f};
         params.noisePhase = noisePhases[frameData->GetFrameCount() % COUNT_OF(noisePhases)];
     }
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SSAO);
 
     RHI::GPUBarrier startBarriers[4] = {
         RHI::Renderer::MakeTextureBarrier(depthTexture, depthInputState, RHI::GPUResourceState::ShaderResourceCompute),
@@ -165,8 +165,6 @@ void RenderBackend::DispatchAOBilateralFilter(RHI::Texture *depthTexture, RHI::T
     assert(depthTexture->GetSampleCount() == 1);
     assert(depthTexture->GetWidth() == outputAOTexture->GetWidth() && depthTexture->GetHeight() == outputAOTexture->GetHeight());
 
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::AOBilateralFilter);
-
     AOBilateralParams params = {};
     params.outputSize = uint2(outputAOTexture->GetWidth(), outputAOTexture->GetHeight());
     params.depthSigmaRcp = 1.0f / BE1::Max(radius * 0.1f, 1.0e-5f);
@@ -188,6 +186,8 @@ void RenderBackend::DispatchAOBilateralFilter(RHI::Texture *depthTexture, RHI::T
     // Depth stays readable throughout all AO passes. Input AO enters as UAV;
     // scratch enters as SRV, and the caller transitions the final UAV for the next pass.
     desc.inputState = RHI::GPUResourceState::UnorderedAccess;
+
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::AOBilateralFilter);
 
     DispatchSeparableBlur(desc);
 }

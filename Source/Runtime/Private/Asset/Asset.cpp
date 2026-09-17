@@ -206,13 +206,13 @@ void Asset::Rename(const Str &newName) {
 }
 
 void Asset::Reload() {
-    if (resource->Reload()) {
+    if (resource && resource->Reload()) {
         EmitSignal(&SIG_Reloaded);
     }
 }
 
 void Asset::Save() {
-    if (resource->Save()) {
+    if (resource && resource->Save()) {
         EmitSignal(&SIG_Modified, 0);
     }
 }
