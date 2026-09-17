@@ -24,6 +24,8 @@ set(SRC_FILES
     Scene/SceneMaterialBall.cpp
     Scene/SceneSkinnedMesh.h
     Scene/SceneSkinnedMesh.cpp
+    Scene/SceneStaticMesh.h
+    Scene/SceneStaticMesh.cpp
     Scene/SceneDebugDraw.h
     Scene/SceneDebugDraw.cpp
     Scene/SceneOcean.h
