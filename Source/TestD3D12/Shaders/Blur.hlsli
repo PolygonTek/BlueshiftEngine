@@ -4,16 +4,15 @@
 #include "Common.hlsli"
 
 // 중심을 제외한 Gaussian blur 의 이웃 tap 개수.
-static const uint gaussianNeighborCount = 8;
+static const uint gaussianNeighborCount = 6;
 
-// sigma = 2픽셀인 Gaussian 공간 가중치. 중심 가중치는 1이다.
+// sigma = 2 픽셀인 Gaussian 공간 가중치. 중심 가중치는 1 이다.
 static const float gaussianWeights[gaussianNeighborCount] = {
-    0.135335283f, 0.324652467f, 0.606530660f, 0.882496903f,
-    0.882496903f, 0.606530660f, 0.324652467f, 0.135335283f
+    0.324652467f, 0.606530660f, 0.882496903f, 0.882496903f, 0.606530660f, 0.324652467f
 };
-static const int gaussianOffsets[gaussianNeighborCount] = { -4, -3, -2, -1, 1, 2, 3, 4 };
+static const int gaussianOffsets[gaussianNeighborCount] = { -3, -2, -1, 1, 2, 3 };
 
-// 한 축 방향으로 스칼라 값을 처리하는 9-tap Gaussian blur.
+// 한 축 방향으로 스칼라 값을 처리하는 7-tap Gaussian blur.
 float GaussianBlur(Texture2D<float> inputTexture, uint2 pixelCoord, int2 axis, uint2 inputSize) {
     float valueSum = inputTexture.Load(int3(pixelCoord, 0));
     float weightSum = 1.0f;
@@ -41,7 +40,7 @@ struct BlurBilateralParams {
     bool orthogonal;
 };
 
-// 한 축 방향으로 스칼라 값을 처리하는 9-tap Gaussian bilateral blur.
+// 한 축 방향으로 스칼라 값을 처리하는 7-tap Gaussian bilateral blur.
 // Bilateral 의 입력값과 depth 는 같은 texel 격자를 사용한다.
 float BilateralBlur(Texture2D<float> inputTexture, Texture2D<float> inputDepthTexture, uint2 pixelCoord, int2 axis, BlurBilateralParams params) {
     const float centerDepth = inputDepthTexture.Load(int3(pixelCoord, 0));
@@ -68,9 +67,9 @@ float BilateralBlur(Texture2D<float> inputTexture, Texture2D<float> inputDepthTe
     // depth 가 한 방향으로 증가하거나 감소하는 표면에서는 국소 depth 기울기를 제거한다.
     // 양쪽 기울기의 부호가 다르면 고립된 얇은 표면일 수 있으므로 기울기를 외삽하지 않는다.
     float depthSlope = 0.0f;
-    if (valid[3] && valid[4]) {
-        const float leftSlope = centerLinearDepth - sampleLinearDepths[3];
-        const float rightSlope = sampleLinearDepths[4] - centerLinearDepth;
+    if (valid[2] && valid[3]) {
+        const float leftSlope = centerLinearDepth - sampleLinearDepths[2];
+        const float rightSlope = sampleLinearDepths[3] - centerLinearDepth;
 
         if ((leftSlope > 0.0f && rightSlope > 0.0f) || (leftSlope < 0.0f && rightSlope < 0.0f)) {
             depthSlope = abs(leftSlope) < abs(rightSlope) ? leftSlope : rightSlope;
@@ -85,12 +84,10 @@ float BilateralBlur(Texture2D<float> inputTexture, Texture2D<float> inputDepthTe
     }
 
     // 먼 tap 이 제외된 표면을 건너뛰지 않도록 가까운 tap 부터 바깥쪽으로 depth 가중치를 누적해 중간의 모든 tap 을 반영한다.
-    depthWeights[2] *= depthWeights[3];
     depthWeights[1] *= depthWeights[2];
     depthWeights[0] *= depthWeights[1];
+    depthWeights[4] *= depthWeights[3];
     depthWeights[5] *= depthWeights[4];
-    depthWeights[6] *= depthWeights[5];
-    depthWeights[7] *= depthWeights[6];
 
     float valueSum = inputTexture.Load(int3(pixelCoord, 0));
     float weightSum = 1.0f;
