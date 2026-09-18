@@ -18,6 +18,7 @@
 #include "GpuOceanSurface.h"
 #include "GpuSphericalHarmonics.h"
 #include "ScreenSpaceAO.h"
+#include "Bloom.h"
 #include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
 #include "IBLBaker.h"
@@ -110,6 +111,9 @@ public:
     GpuSphericalHarmonics &         GetGpuSphericalHarmonics() { return gpuSphericalHarmonics; }
     const GpuSphericalHarmonics &   GetGpuSphericalHarmonics() const { return gpuSphericalHarmonics; }
 
+    Bloom &                         GetBloom() { return bloom; }
+    const Bloom &                   GetBloom() const { return bloom; }
+
     ScreenSpaceAO &                 GetScreenSpaceAO() { return screenSpaceAO; }
     const ScreenSpaceAO &           GetScreenSpaceAO() const { return screenSpaceAO; }
 
@@ -191,14 +195,6 @@ private:
     SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
 
-    SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
-    SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;
-    SharedPtr<ShaderTemplate>       bloomUpsampleShaderTemplate;
-
-    SharedPtr<ShaderTemplate>       convolutionBloomScreenPrepareShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomKernelPrepareShaderTemplate;
-    SharedPtr<ShaderTemplate>       convolutionBloomResolveShaderTemplate;
-
     SharedPtr<ShaderPipeline>       genHiZMipFirstBatchPipeline;
     SharedPtr<ShaderPipeline>       genHiZMipFirstBatchMSAAPipeline;
     SharedPtr<ShaderPipeline>       genHiZMipBatchPipeline;
@@ -222,14 +218,6 @@ private:
     SharedPtr<ShaderPipeline>       luminancePass1Pipeline;
     SharedPtr<ShaderPipeline>       luminancePass2Pipeline;
 
-    SharedPtr<ShaderPipeline>       bloomPrefilterPipeline;
-    SharedPtr<ShaderPipeline>       bloomDownsamplePipeline;
-    SharedPtr<ShaderPipeline>       bloomUpsamplePipeline;
-
-    SharedPtr<ShaderPipeline>       convolutionBloomScreenPreparePipeline;
-    SharedPtr<ShaderPipeline>       convolutionBloomKernelPreparePipeline;
-    SharedPtr<ShaderPipeline>       convolutionBloomResolvePipeline;
-
     ConvolutionBloomKernelGenerator convolutionBloomKernelGenerator;
     uint64_t                        nextConvolutionBloomKernelGenerationSerial = 0;
     uint64_t                        completedConvolutionBloomKernelGenerationSerial = 0;
@@ -246,6 +234,7 @@ private:
     GpuOceanSurface                 gpuOceanSurface;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     ScreenSpaceAO                   screenSpaceAO;
+    Bloom                           bloom;
     IBLBaker                        iblBaker;
     ProbeBakeSystem                 probeBakeSystem;
     ShaderPipelineBootstrap         shaderPipelineBootstrap;

@@ -76,6 +76,9 @@ void RenderSystem::Init(void *mainWindowHandle) {
     screenSpaceAO.Init();
     screenSpaceAO.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
+    bloom.Init();
+    bloom.TrackBootstrapPipelines(shaderPipelineBootstrap);
+
     iblBaker.Init();
     iblBaker.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
@@ -141,6 +144,8 @@ void RenderSystem::Shutdown() {
     probeBakeSystem.Shutdown();
 
     iblBaker.Shutdown();
+
+    bloom.Shutdown();
 
     screenSpaceAO.Shutdown();
 
@@ -410,7 +415,6 @@ void RenderSystem::InitComputePipelines() {
     hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZ/HiZCullInstances.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZ/HiZDebugPreview.hlsl", baseDir);
 
-
     screenSpaceDepthPyramidFirstShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidFirst.hlsl", baseDir);
     screenSpaceDepthPyramidFirstMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstMSAAShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidFirstMSAA.hlsl", baseDir);
     screenSpaceDepthPyramidReduceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidReduceShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidReduce.hlsl", baseDir);
@@ -427,14 +431,6 @@ void RenderSystem::InitComputePipelines() {
     taaResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAAResolve.hlsl", baseDir);
     luminancePass1ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
     luminancePass2ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
-
-    bloomPrefilterShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_bloomPrefilterShader", computeShaderModel, "Bloom/BloomPrefilter.hlsl", baseDir);
-    bloomDownsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_bloomDownsampleShader", computeShaderModel, "Bloom/BloomDownsample.hlsl", baseDir);
-    bloomUpsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_bloomUpsampleShader", computeShaderModel, "Bloom/BloomUpsample.hlsl", baseDir);
-
-    convolutionBloomScreenPrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomScreenPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomScreenPrepare.hlsl", baseDir);
-    convolutionBloomKernelPrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
-    convolutionBloomResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
 
     EnsureComputePipelines();
 }
@@ -456,8 +452,6 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline, shaderPipelineBootstrap);
 
-
-
     EnsureComputePipeline(screenSpaceDepthPyramidFirstShaderTemplate, screenSpaceDepthPyramidFirstPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(screenSpaceDepthPyramidFirstMSAAShaderTemplate, screenSpaceDepthPyramidFirstMSAAPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(screenSpaceDepthPyramidReduceShaderTemplate, screenSpaceDepthPyramidReducePipeline, shaderPipelineBootstrap);
@@ -474,14 +468,6 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(taaResolveShaderTemplate, taaResolvePipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline, shaderPipelineBootstrap);
-
-    EnsureComputePipeline(bloomPrefilterShaderTemplate, bloomPrefilterPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(bloomDownsampleShaderTemplate, bloomDownsamplePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(bloomUpsampleShaderTemplate, bloomUpsamplePipeline, shaderPipelineBootstrap);
-
-    EnsureComputePipeline(convolutionBloomScreenPrepareShaderTemplate, convolutionBloomScreenPreparePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(convolutionBloomKernelPrepareShaderTemplate, convolutionBloomKernelPreparePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(convolutionBloomResolveShaderTemplate, convolutionBloomResolvePipeline, shaderPipelineBootstrap);
 }
 
 void RenderSystem::ReleaseComputePipelines() {
@@ -509,21 +495,12 @@ void RenderSystem::ReleaseComputePipelines() {
     luminancePass1Pipeline.reset();
     luminancePass2Pipeline.reset();
 
-    bloomPrefilterPipeline.reset();
-    bloomDownsamplePipeline.reset();
-    bloomUpsamplePipeline.reset();
-
-    convolutionBloomScreenPreparePipeline.reset();
-    convolutionBloomKernelPreparePipeline.reset();
-    convolutionBloomResolvePipeline.reset();
-
     genHiZMipFirstBatchShaderTemplate.reset();
     genHiZMipFirstBatchMSAAShaderTemplate.reset();
     genHiZMipBatchShaderTemplate.reset();
     genHiZMipOddDimShaderTemplate.reset();
     hiZCullInstancesShaderTemplate.reset();
     hiZDebugPreviewShaderTemplate.reset();
-
 
     screenSpaceDepthPyramidFirstShaderTemplate.reset();
     screenSpaceDepthPyramidFirstMSAAShaderTemplate.reset();
@@ -540,14 +517,6 @@ void RenderSystem::ReleaseComputePipelines() {
     taaResolveShaderTemplate.reset();
     luminancePass1ShaderTemplate.reset();
     luminancePass2ShaderTemplate.reset();
-
-    bloomPrefilterShaderTemplate.reset();
-    bloomDownsampleShaderTemplate.reset();
-    bloomUpsampleShaderTemplate.reset();
-
-    convolutionBloomScreenPrepareShaderTemplate.reset();
-    convolutionBloomKernelPrepareShaderTemplate.reset();
-    convolutionBloomResolveShaderTemplate.reset();
 }
 
 static ColorGradingLUTGenerator::Settings MakeColorGradingLUTSettingsFromCVars() {

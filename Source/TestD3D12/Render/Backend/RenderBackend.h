@@ -134,15 +134,6 @@ private:
     bool                            DispatchLuminance();
     bool                            DispatchTAAResolve();
     bool                            DispatchBloom();
-    bool                            DispatchPyramidBloom();
-    bool                            DispatchConvolutionBloom();
-    bool                            DispatchConvolutionBloomKernelPrepare();
-    bool                            DispatchConvolutionBloomScreenPrefilter();
-    bool                            DispatchConvolutionBloomScreenPrepare();
-    bool                            DispatchConvolutionBloomMultiplySpectrum();
-    bool                            DispatchConvolutionBloomResolve();
-    bool                            DispatchConvolutionBloomFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
-    bool                            DispatchConvolutionBloomIFFT(RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer);
     bool                            DispatchFinalPostProcess(bool useToneMapping, bool useBloom);
 
     bool                            DispatchLightCulling();
@@ -187,12 +178,6 @@ private:
     RHI::PipelineState *            frameTAAResolvePSO = nullptr;
     RHI::PipelineState *            frameLuminancePass1PSO = nullptr;
     RHI::PipelineState *            frameLuminancePass2PSO = nullptr;
-    RHI::PipelineState *            frameBloomPrefilterPSO = nullptr;
-    RHI::PipelineState *            frameBloomDownsamplePSO = nullptr;
-    RHI::PipelineState *            frameBloomUpsamplePSO = nullptr;
-    RHI::PipelineState *            frameConvolutionBloomScreenPreparePSO = nullptr;
-    RHI::PipelineState *            frameConvolutionBloomKernelPreparePSO = nullptr;
-    RHI::PipelineState *            frameConvolutionBloomResolvePSO = nullptr;
 
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;

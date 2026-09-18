@@ -26,6 +26,7 @@
 #include "Render/Frontend/RenderLight.h"
 #include "Render/RenderFrameSettings.h"
 #include "Render/ScreenSpaceAOResources.h"
+#include "Render/BloomResources.h"
 #include "Math/Matrix4.h"
 #include "Math/OBB.h"
 #include "Math/Plane.h"
@@ -152,6 +153,47 @@ struct LightCulling {
     uint32_t                    lightRefTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 참조 테이블 오프셋
     uint32_t                    zBinTableOffset = ~0u;      // 현재 카메라가 셰이더에서 사용할 라이트 z-bin 테이블 오프셋
     uint32_t                    tileWordTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 bitmask word 테이블 오프셋
+};
+
+struct BloomFrameData {
+    uint32_t                    renderWidth = 0;
+    uint32_t                    renderHeight = 0;
+    RHI::Texture *              outputTexture = nullptr;
+    RHI::ViewID                 outputViewID = RHI::ViewID::PrimaryID;
+
+    RHI::Texture *              bloomDirtMaskTexture = nullptr;
+
+    RHI::Texture *              bloomDownTexture = nullptr;
+    RHI::Texture *              bloomUpTexture = nullptr;
+    uint32_t                    bloomMipWidths[RenderBloomDownMaxLevelCount] = {};
+    uint32_t                    bloomMipHeights[RenderBloomDownMaxLevelCount] = {};
+    RHI::ViewID                 bloomDownMipSRVs[RenderBloomDownMaxLevelCount] = {};
+    RHI::ViewID                 bloomDownMipUAVs[RenderBloomDownMaxLevelCount] = {};
+    RHI::ViewID                 bloomUpMipSRVs[RenderBloomUpMaxLevelCount] = {};
+    RHI::ViewID                 bloomUpMipUAVs[RenderBloomUpMaxLevelCount] = {};
+    uint32_t                    bloomMipCount = 0;
+
+    uint32_t                    fftBloomSize = 0;
+    RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
+    RHI::Buffer *               fftBloomScreenSpectrumBuffer = nullptr;
+    RHI::Texture *              fftBloomKernelSourceTexture = nullptr;
+    RHI::Buffer *               fftBloomKernelSpatialBuffer = nullptr;
+    RHI::Buffer *               fftBloomKernelSpectrumBuffer = nullptr;
+    RHI::Buffer *               fftBloomWorkBuffer = nullptr;
+    RHI::Texture *              fftBloomConvolutionOutputTexture = nullptr;
+    uint32_t                    fftBloomConvolutionOutputWidth = 0;
+    uint32_t                    fftBloomConvolutionOutputHeight = 0;
+    RHI::ViewID                 fftBloomConvolutionOutputMipSRVs[RenderConvolutionBloomMaxMipLevelCount] = {};
+    RHI::ViewID                 fftBloomConvolutionOutputMipUAVs[RenderConvolutionBloomMaxMipLevelCount] = {};
+    uint32_t                    fftBloomConvolutionOutputMipCount = 0;
+    float                       fftBloomKernelRotation = 0.0f;
+    float                       fftBloomKernelScale = 1.0f;
+    float                       fftBloomPaddingTrim = 0.0f;
+    BE1::Vec2                   fftBloomKernelNormalizedExtents = BE1::Vec2(1.0f, 1.0f);
+    BE1::RectF                  fftBloomMappedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
+    BE1::Vec2                   fftBloomMappedKernelScale = BE1::Vec2(1.0f, 1.0f);
+    float                       fftBloomKernelInverseAverageLuminance = 1.0f;
+    bool                        fftBloomKernelDirty = true;
 };
 
 struct ScreenSpaceAOFrameData {
@@ -299,39 +341,7 @@ struct VisCamera {
     bool                        taaResolve = false;
     RHI::Buffer *               luminanceBuffer = nullptr;
     RHI::Texture *              colorGradingLUTTexture = nullptr;
-    RHI::Texture *              bloomDirtMaskTexture = nullptr;
-
-    RHI::Texture *              bloomDownTexture = nullptr;
-    RHI::Texture *              bloomUpTexture = nullptr;
-    uint32_t                    bloomMipWidths[RenderBloomDownMaxLevelCount] = {};
-    uint32_t                    bloomMipHeights[RenderBloomDownMaxLevelCount] = {};
-    RHI::ViewID                 bloomDownMipSRVs[RenderBloomDownMaxLevelCount] = {};
-    RHI::ViewID                 bloomDownMipUAVs[RenderBloomDownMaxLevelCount] = {};
-    RHI::ViewID                 bloomUpMipSRVs[RenderBloomUpMaxLevelCount] = {};
-    RHI::ViewID                 bloomUpMipUAVs[RenderBloomUpMaxLevelCount] = {};
-    uint32_t                    bloomMipCount = 0;
-
-    uint32_t                    fftBloomSize = 0;
-    RHI::Buffer *               fftBloomScreenSpatialBuffer = nullptr;
-    RHI::Buffer *               fftBloomScreenSpectrumBuffer = nullptr;
-    RHI::Texture *              fftBloomKernelSourceTexture = nullptr;
-    RHI::Buffer *               fftBloomKernelSpatialBuffer = nullptr;
-    RHI::Buffer *               fftBloomKernelSpectrumBuffer = nullptr;
-    RHI::Buffer *               fftBloomWorkBuffer = nullptr;
-    RHI::Texture *              fftBloomConvolutionOutputTexture = nullptr;
-    uint32_t                    fftBloomConvolutionOutputWidth = 0;
-    uint32_t                    fftBloomConvolutionOutputHeight = 0;
-    RHI::ViewID                 fftBloomConvolutionOutputMipSRVs[RenderConvolutionBloomMaxMipLevelCount] = {};
-    RHI::ViewID                 fftBloomConvolutionOutputMipUAVs[RenderConvolutionBloomMaxMipLevelCount] = {};
-    uint32_t                    fftBloomConvolutionOutputMipCount = 0;
-    float                       fftBloomKernelRotation = 0.0f;
-    float                       fftBloomKernelScale = 1.0f;
-    float                       fftBloomPaddingTrim = 0.0f;
-    BE1::Vec2                   fftBloomKernelNormalizedExtents = BE1::Vec2(1.0f, 1.0f);
-    BE1::RectF                  fftBloomMappedContentRect = BE1::RectF(0.0f, 0.0f, 0.0f, 0.0f);
-    BE1::Vec2                   fftBloomMappedKernelScale = BE1::Vec2(1.0f, 1.0f);
-    float                       fftBloomKernelInverseAverageLuminance = 1.0f;
-    bool                        fftBloomKernelDirty = true;
+    BloomFrameData              bloom;
 
     bool                        is2D;
 };

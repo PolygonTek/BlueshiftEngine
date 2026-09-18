@@ -64,7 +64,7 @@ void App::Init(void *mainWindowHandle) {
 
     SharedPtr<Texture> bloomDirtMaskTexture = textureManager.GetTexture("Data/EngineTextures/LensDirt/LensDirt02.png", Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::NoMipmaps | Texture::Flag::Compute, false);
     if (bloomDirtMaskTexture && bloomDirtMaskTexture != textureManager.defaultTexture) {
-        renderCamera->SetBloomDirtMaskTexture(bloomDirtMaskTexture);
+        renderCamera->GetBloomResources().SetBloomDirtMaskTexture(bloomDirtMaskTexture);
     }
 
     cameraYaw = targetCameraYaw;
@@ -871,8 +871,8 @@ void App::ProcessConvolutionBloomKernelGenerationResult() {
 
     char kernelTextureName[128];
     BE1::Str::snPrintf(kernelTextureName, sizeof(kernelTextureName), "_Generated/ConvolutionBloom/ApertureKernel_%u", ++convolutionBloomGeneratedKernelSerial);
-    if (renderCamera->SetConvolutionBloomKernelFromImage(kernelTextureName, kernelImage)) {
-        convolutionBloomGeneratedKernelTexture = renderCamera->GetFFTBloomKernelTexture();
+    if (renderCamera->GetBloomResources().SetConvolutionBloomKernelFromImage(kernelTextureName, kernelImage)) {
+        convolutionBloomGeneratedKernelTexture = renderCamera->GetBloomResources().GetFFTBloomKernelTexture();
     } else {
         BE_WARNLOG("App::ProcessConvolutionBloomKernelGenerationResult: failed to create generated convolution bloom kernel texture\n");
     }
@@ -890,7 +890,7 @@ void App::SetConvolutionBloomKernelPreset(int presetIndex) {
     filePath.AppendPath("BloomKernels");
     filePath.AppendPath(filename);
 
-    if (renderCamera->SetConvolutionBloomKernelFromFile(filePath)) {
+    if (renderCamera->GetBloomResources().SetConvolutionBloomKernelFromFile(filePath)) {
         convolutionBloomGeneratedKernelTexture.reset();
     }
 }

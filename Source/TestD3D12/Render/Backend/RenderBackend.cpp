@@ -324,6 +324,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameScreenSpaceDepthPyramidReducePSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidReducePipeline);
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
     renderSystem->GetScreenSpaceAO().UpdateFramePSOs(frameData->GetRenderFrameSettings());
+    renderSystem->GetBloom().UpdateFramePSOs();
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
     frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
     frameDepthNormalMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthNormalMSAAResolvePipeline);
@@ -334,12 +335,6 @@ void RenderBackend::UpdateFramePSOs() {
     frameTAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->taaResolvePipeline);
     frameLuminancePass1PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass1Pipeline);
     frameLuminancePass2PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass2Pipeline);
-    frameBloomPrefilterPSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomPrefilterPipeline);
-    frameBloomDownsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomDownsamplePipeline);
-    frameBloomUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->bloomUpsamplePipeline);
-    frameConvolutionBloomScreenPreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomScreenPreparePipeline);
-    frameConvolutionBloomKernelPreparePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomKernelPreparePipeline);
-    frameConvolutionBloomResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->convolutionBloomResolvePipeline);
 }
 
 const void *RenderBackend::ExecuteRenderWork(const void *data) {

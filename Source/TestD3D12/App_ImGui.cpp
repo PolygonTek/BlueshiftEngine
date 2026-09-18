@@ -391,15 +391,15 @@ void App::BuildImGuiTextureViewer() {
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", renderCamera->GetRTVelocityTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetRTNormalTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomDownTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomUpTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomResources().GetBloomDownTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomResources().GetBloomUpTexture());
 
-        const SharedPtr<Texture> &bloomDirtMaskTexture = renderCamera->GetBloomDirtMaskTexture();
+        const SharedPtr<Texture> &bloomDirtMaskTexture = renderCamera->GetBloomResources().GetBloomDirtMaskTexture();
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Dirt Mask", bloomDirtMaskTexture ? bloomDirtMaskTexture->GetReadyRHITexture() : nullptr);
 
-        const SharedPtr<Texture> &fftBloomKernelTexture = renderCamera->GetFFTBloomKernelTexture();
+        const SharedPtr<Texture> &fftBloomKernelTexture = renderCamera->GetBloomResources().GetFFTBloomKernelTexture();
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "FFT Bloom Kernel", fftBloomKernelTexture ? fftBloomKernelTexture->GetReadyRHITexture() : nullptr);
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Convolution Output", renderCamera->GetFFTBloomConvolutionOutputTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Convolution Output", renderCamera->GetBloomResources().GetFFTBloomConvolutionOutputTexture());
     }
 
     if (entryCount == 0) {

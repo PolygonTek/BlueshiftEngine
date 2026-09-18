@@ -168,6 +168,12 @@ set(SRC_FILES
     Render/RenderWork/RenderWork.h
     Render/RenderWork/RenderWorkQueue.h
     Render/RenderWork/RenderWorkQueue.cpp
+    Render/Bloom.h
+    Render/Bloom.cpp
+    Render/Bloom_Pyramid.cpp
+    Render/Bloom_Convolution.cpp
+    Render/BloomResources.h
+    Render/BloomResources.cpp
     Render/ScreenSpaceAO.h
     Render/ScreenSpaceAO.cpp
     Render/ScreenSpaceAOResources.h
