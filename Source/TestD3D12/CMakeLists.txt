@@ -184,6 +184,10 @@ set(SRC_FILES
     Render/ScreenSpaceDepthPyramid.cpp
     Render/ScreenSpaceDepthPyramidResources.h
     Render/ScreenSpaceDepthPyramidResources.cpp
+    Render/HiZ.h
+    Render/HiZ.cpp
+    Render/HiZResources.h
+    Render/HiZResources.cpp
     Render/GpuFFT.h
     Render/GpuFFT.cpp
     Render/GpuOcean.h
@@ -209,8 +213,6 @@ set(SRC_FILES
     Render/Backend/RenderBackend.h
     Render/Backend/RenderBackend.cpp
     Render/Backend/RenderBackend_HiZCulling.cpp
-    Render/Backend/RenderBackend_GenHiZ.cpp
-    Render/Backend/RenderBackend_HiZDebug.cpp
     Render/Backend/RenderBackend_SSRTrace.cpp
     Render/Backend/RenderBackend_PostProcess.cpp
     Render/Backend/RenderBackend_DebugDraw.cpp

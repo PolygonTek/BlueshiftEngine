@@ -700,8 +700,8 @@ void App::BuildImGuiOverlay() {
                     r_hiZOcclusionCullingFreeze.SetBool(hiZOcclusionCullingFreeze);
                 }
 
-                const RHI::Texture *hiZTexture = renderCamera ? renderCamera->GetHiZTexture() : nullptr;
-                const uint32_t hiZMipCount = renderCamera ? renderCamera->GetHiZMipCount() : 0;
+                const RHI::Texture *hiZTexture = renderCamera ? renderCamera->GetHiZResources().GetTexture() : nullptr;
+                const uint32_t hiZMipCount = renderCamera ? renderCamera->GetHiZResources().GetMipCount() : 0;
                 if (hiZTexture && hiZMipCount > 0) {
                     const int maxHiZMipLevel = static_cast<int>(hiZMipCount) - 1;
                     int selectedHiZMipLevel = BE1::Clamp(r_hiZDebugPreviewMipLevel.GetInteger(), 0, maxHiZMipLevel);
@@ -714,7 +714,7 @@ void App::BuildImGuiOverlay() {
                     }
 
                     ImGui::Spacing();
-                    const RHI::Texture *hiZDebugPreviewTexture = renderCamera ? renderCamera->GetHiZDebugPreviewTexture() : nullptr;
+                    const RHI::Texture *hiZDebugPreviewTexture = renderCamera ? renderCamera->GetHiZResources().GetDebugPreviewTexture() : nullptr;
                     if (!DrawImGuiTexturePreview(hiZDebugPreviewTexture, RHI::ViewID::PrimaryID, fontSize * 24.0f, true)) {
                         ImGui::TextColored(ImGuiWarningTextColor, "Hi-Z preview is unavailable.");
                     }

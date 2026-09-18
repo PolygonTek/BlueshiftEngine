@@ -17,7 +17,7 @@
 #include "RHI/RHI.h"
 #include "Render/GpuTiming.h"
 #include "Render/GpuOceanSurface.h"
-#include "Render/Frontend/RenderCamera.h"
+#include "Render/HiZResources.h"
 
 class RenderFrameData;
 class RenderContext;
@@ -158,13 +158,7 @@ private:
 
     RHI::PipelineState *            frameImagePSO = nullptr;
     RHI::PipelineState *            frameHDROutputPSO = nullptr;
-    RHI::PipelineState *            frameGenHiZMipFirstBatchPSO = nullptr;
-    RHI::PipelineState *            frameGenHiZMipFirstBatchMSAAPSO = nullptr;
-    RHI::PipelineState *            frameGenHiZMipBatchPSO = nullptr;
-    RHI::PipelineState *            frameGenHiZMipOddDimPSO = nullptr;
-    RHI::PipelineState *            frameHiZCullInstancesPSO = nullptr;
     RHI::PipelineState *            frameLightCullingPSO = nullptr;
-    RHI::PipelineState *            frameHiZDebugPreviewPSO = nullptr;
     RHI::PipelineState *            frameSSRTracePSO = nullptr;
     RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameDepthNormalMSAAResolvePSO = nullptr;

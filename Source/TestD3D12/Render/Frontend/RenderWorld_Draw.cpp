@@ -353,7 +353,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool useHalfResSnapshot = requestHalfResSnapshot && sceneSnapshotDownsamplePSO;
     renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot, useHalfResSnapshot);
 
-    renderCamera->EnsureHiZResources(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
+    HiZResources &hiZResources = renderCamera->GetHiZResources();
+    hiZResources.Ensure(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
     renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, renderFrameSettings);
 
     const bool temporalJitterEnabled = useTAA && renderFrameSettings.taaJitter;
@@ -361,9 +362,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     renderCamera->UpdateTemporalJitter(temporalJitterEnabled, temporalJitterSampleCount);
 
-    const bool canUseHiZ = renderCamera->GetDepthTexture() && renderCamera->GetHiZTexture();
-    const bool requestHiZOcclusionCulling = canUseHiZ && needHiZCullResources && renderCamera->GetHiZCullVisibleInstanceBuffer() && renderCamera->GetHiZCullIndirectArgsBuffer();
-    const bool requestHiZDebugPreview = canUseHiZ && needHiZDebugPreview && renderCamera->GetHiZDebugPreviewTexture();
+    const bool canUseHiZ = renderCamera->GetDepthTexture() && hiZResources.GetTexture();
+    const bool requestHiZOcclusionCulling = canUseHiZ && needHiZCullResources && hiZResources.GetVisibleInstanceBuffer() && hiZResources.GetIndirectArgsBuffer();
+    const bool requestHiZDebugPreview = canUseHiZ && needHiZDebugPreview && hiZResources.GetDebugPreviewTexture();
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
     const bool useMSAA = renderCamera->GetRTColorMSAATexture() != nullptr;
     const bool hasSSRInputs = renderCamera->GetRTNormalTexture() && (!useMSAA || renderCamera->GetSSRResolvedDepthTexture());
@@ -484,26 +485,26 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     visCamera->generateHiZ = requestHiZGeneration;
     if (visCamera->generateHiZ) {
-        visCamera->hiZTexture = renderCamera->GetHiZTexture();
-        visCamera->hiZMipCount = renderCamera->GetHiZMipCount();
+        visCamera->hiZ.texture = hiZResources.GetTexture();
+        visCamera->hiZ.mipCount = hiZResources.GetMipCount();
 
         for (uint32_t mipLevel = 0; mipLevel < RenderHiZMaxLevelCount; ++mipLevel) {
-            visCamera->hiZMipSRVs[mipLevel] = renderCamera->GetHiZMipSRVs()[mipLevel];
-            visCamera->hiZMipUAVs[mipLevel] = renderCamera->GetHiZMipUAVs()[mipLevel];
-            visCamera->hiZMipWidths[mipLevel] = renderCamera->GetHiZMipWidths()[mipLevel];
-            visCamera->hiZMipHeights[mipLevel] = renderCamera->GetHiZMipHeights()[mipLevel];
+            visCamera->hiZ.mipSRVs[mipLevel] = hiZResources.GetMipSRVs()[mipLevel];
+            visCamera->hiZ.mipUAVs[mipLevel] = hiZResources.GetMipUAVs()[mipLevel];
+            visCamera->hiZ.mipWidths[mipLevel] = hiZResources.GetMipWidths()[mipLevel];
+            visCamera->hiZ.mipHeights[mipLevel] = hiZResources.GetMipHeights()[mipLevel];
         }
 
-        visCamera->hiZOcclusionCulling = renderCamera->IsPreviousHiZValid() && requestHiZOcclusionCulling;
+        visCamera->hiZOcclusionCulling = hiZResources.IsHistoryValid() && requestHiZOcclusionCulling;
         if (visCamera->hiZOcclusionCulling) {
-            visCamera->hiZCullVisibleInstanceBuffer = renderCamera->GetHiZCullVisibleInstanceBuffer();
-            visCamera->hiZCullIndirectArgsBuffer = renderCamera->GetHiZCullIndirectArgsBuffer();
+            visCamera->hiZ.visibleInstanceBuffer = hiZResources.GetVisibleInstanceBuffer();
+            visCamera->hiZ.indirectArgsBuffer = hiZResources.GetIndirectArgsBuffer();
         }
 
         visCamera->hiZDebugPreview = requestHiZDebugPreview;
         if (visCamera->hiZDebugPreview) {
-            visCamera->hiZDebugPreviewTexture = renderCamera->GetHiZDebugPreviewTexture();
-            visCamera->hiZDebugLinearDepthScale = renderCamera->desc.zFar > 0.0f ? 1.0f / renderCamera->desc.zFar : 1.0f;
+            visCamera->hiZ.debugPreviewTexture = hiZResources.GetDebugPreviewTexture();
+            visCamera->hiZ.debugLinearDepthScale = renderCamera->desc.zFar > 0.0f ? 1.0f / renderCamera->desc.zFar : 1.0f;
         }
     }
 
@@ -559,7 +560,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->taaResolve = useTAA;
 
     // freeze 가 되면 prevViewProjMatrix 를 유지하기 위해서 hiZCullViewProjMatrix 에 복사한다.
-    if (!renderFrameSettings.hiZOcclusionCullingFreeze || !renderCamera->previousHiZValid) {
+    if (!renderFrameSettings.hiZOcclusionCullingFreeze || !hiZResources.IsHistoryValid()) {
         renderCamera->hiZCullViewProjMatrix = visCamera->prevViewProjMatrix;
     }
     visCamera->hiZCullViewProjMatrix = renderCamera->hiZCullViewProjMatrix;
@@ -583,7 +584,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     if (!renderFrameSettings.hiZOcclusionCullingFreeze) {
-        renderCamera->previousHiZValid = visCamera->generateHiZ;
+        hiZResources.SetHistoryValid(visCamera->generateHiZ);
     }
 }
 

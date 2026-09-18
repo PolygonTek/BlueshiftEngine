@@ -27,6 +27,7 @@
 #include "Render/RenderFrameSettings.h"
 #include "Render/ScreenSpaceAOResources.h"
 #include "Render/ScreenSpaceDepthPyramidResources.h"
+#include "Render/HiZResources.h"
 #include "Render/BloomResources.h"
 #include "Math/Matrix4.h"
 #include "Math/OBB.h"
@@ -154,6 +155,19 @@ struct LightCulling {
     uint32_t                    lightRefTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 참조 테이블 오프셋
     uint32_t                    zBinTableOffset = ~0u;      // 현재 카메라가 셰이더에서 사용할 라이트 z-bin 테이블 오프셋
     uint32_t                    tileWordTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 bitmask word 테이블 오프셋
+};
+
+struct HiZFrameData {
+    RHI::Texture *              texture = nullptr;
+    RHI::ViewID                 mipSRVs[RenderHiZMaxLevelCount] = {};
+    RHI::ViewID                 mipUAVs[RenderHiZMaxLevelCount] = {};
+    uint32_t                    mipWidths[RenderHiZMaxLevelCount] = {};
+    uint32_t                    mipHeights[RenderHiZMaxLevelCount] = {};
+    uint32_t                    mipCount = 0;
+    RHI::Texture *              debugPreviewTexture = nullptr;
+    RHI::Buffer *               visibleInstanceBuffer = nullptr;
+    RHI::Buffer *               indirectArgsBuffer = nullptr;
+    float                       debugLinearDepthScale = 1.0f;
 };
 
 struct ScreenSpaceDepthPyramidFrameData {
@@ -320,19 +334,9 @@ struct VisCamera {
     bool                        historyValid = false;
 
     bool                        generateHiZ = false;
-    RHI::Texture *              hiZTexture = nullptr;
-    RHI::ViewID                 hiZMipSRVs[RenderHiZMaxLevelCount] = {};
-    RHI::ViewID                 hiZMipUAVs[RenderHiZMaxLevelCount] = {};
-    uint32_t                    hiZMipWidths[RenderHiZMaxLevelCount] = {};
-    uint32_t                    hiZMipHeights[RenderHiZMaxLevelCount] = {};
-    uint32_t                    hiZMipCount = 0;
     bool                        hiZOcclusionCulling = false;
-    RHI::Buffer *               hiZCullVisibleInstanceBuffer = nullptr;
-    RHI::Buffer *               hiZCullIndirectArgsBuffer = nullptr;
-
     bool                        hiZDebugPreview = false;
-    RHI::Texture *              hiZDebugPreviewTexture = nullptr;
-    float                       hiZDebugLinearDepthScale = 1.0f;
+    HiZFrameData                hiZ;
 
     bool                        applyAO = false;
     ScreenSpaceAOFrameData      ao;

@@ -17,6 +17,7 @@
 #include "GpuOcean.h"
 #include "GpuOceanSurface.h"
 #include "GpuSphericalHarmonics.h"
+#include "HiZ.h"
 #include "ScreenSpaceAO.h"
 #include "ScreenSpaceDepthPyramid.h"
 #include "Bloom.h"
@@ -115,6 +116,9 @@ public:
     Bloom &                         GetBloom() { return bloom; }
     const Bloom &                   GetBloom() const { return bloom; }
 
+    HiZ &                           GetHiZ() { return hiZ; }
+    const HiZ &                     GetHiZ() const { return hiZ; }
+
     ScreenSpaceAO &                 GetScreenSpaceAO() { return screenSpaceAO; }
     const ScreenSpaceAO &           GetScreenSpaceAO() const { return screenSpaceAO; }
 
@@ -176,13 +180,7 @@ private:
     bool                            isStoppingRenderThread = false;
     static thread_local bool        isRenderThread;
 
-    SharedPtr<ShaderTemplate>       genHiZMipFirstBatchShaderTemplate;
-    SharedPtr<ShaderTemplate>       genHiZMipFirstBatchMSAAShaderTemplate;
-    SharedPtr<ShaderTemplate>       genHiZMipBatchShaderTemplate;
-    SharedPtr<ShaderTemplate>       genHiZMipOddDimShaderTemplate;
-    SharedPtr<ShaderTemplate>       hiZCullInstancesShaderTemplate;
     SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
-    SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
 
     SharedPtr<ShaderTemplate>       ssrTraceShaderTemplate;
     SharedPtr<ShaderTemplate>       depthMSAAResolveShaderTemplate;
@@ -195,13 +193,6 @@ private:
 
     SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
     SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
-
-    SharedPtr<ShaderPipeline>       genHiZMipFirstBatchPipeline;
-    SharedPtr<ShaderPipeline>       genHiZMipFirstBatchMSAAPipeline;
-    SharedPtr<ShaderPipeline>       genHiZMipBatchPipeline;
-    SharedPtr<ShaderPipeline>       genHiZMipOddDimPipeline;
-    SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
-    SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
 
     SharedPtr<ShaderPipeline>       ssrTracePipeline;
 
@@ -231,6 +222,7 @@ private:
     GpuOcean                        gpuOcean;
     GpuOceanSurface                 gpuOceanSurface;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
+    HiZ                             hiZ;
     ScreenSpaceAO                   screenSpaceAO;
     ScreenSpaceDepthPyramid         screenSpaceDepthPyramid;
     Bloom                           bloom;

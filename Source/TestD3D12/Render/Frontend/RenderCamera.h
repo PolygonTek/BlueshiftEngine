@@ -18,15 +18,11 @@
 #include "Render/RenderFrameSettings.h"
 #include "Render/ScreenSpaceAOResources.h"
 #include "Render/ScreenSpaceDepthPyramidResources.h"
+#include "Render/HiZResources.h"
 #include "Render/BloomResources.h"
 
 class RenderWorld;
 class Texture;
-
-static constexpr int RenderHiZMaxLevelCount = 16;
-static constexpr int RenderHiZCullMaxInstanceCount = 2048;
-static constexpr int RenderHiZCullMaxVisibleInstanceCount = 0x40000;
-static constexpr int RenderHiZCullMaxBatchCount = RenderHiZCullMaxVisibleInstanceCount;
 
 class RenderCamera {
     friend class RenderWorld;
@@ -188,16 +184,8 @@ public:
     uint32_t                    GetCurrentHistoryTextureIndex() const { return currentHistoryTextureIndex; }
     bool                        IsHistoryValid() const { return historyValid && !temporalHistoryInvalidated; }
 
-    RHI::Texture *              GetHiZTexture() const { return hiZTexture; }
-    const RHI::ViewID *         GetHiZMipSRVs() const { return hiZMipSRVs; }
-    const RHI::ViewID *         GetHiZMipUAVs() const { return hiZMipUAVs; }
-    const uint32_t *            GetHiZMipWidths() const { return hiZMipWidths; }
-    const uint32_t *            GetHiZMipHeights() const { return hiZMipHeights; }
-    uint32_t                    GetHiZMipCount() const { return hiZMipCount; }
-    RHI::Texture *              GetHiZDebugPreviewTexture() const { return hiZDebugPreviewTexture; }
-    bool                        IsPreviousHiZValid() const { return previousHiZValid; }
-    RHI::Buffer *               GetHiZCullVisibleInstanceBuffer() const { return hiZCullVisibleInstanceBuffer; }
-    RHI::Buffer *               GetHiZCullIndirectArgsBuffer() const { return hiZCullIndirectArgsBuffer; }
+    HiZResources &              GetHiZResources() { return hiZResources; }
+    const HiZResources &        GetHiZResources() const { return hiZResources; }
 
     ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() { return screenSpaceDepthPyramidResources; }
     const ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() const { return screenSpaceDepthPyramidResources; }
@@ -223,15 +211,6 @@ private:
     void                        DestroySSRTraceTexture();
     bool                        CreateSSRResolvedDepthTexture(uint32_t width, uint32_t height);
     void                        DestroySSRResolvedDepthTexture();
-    void                        EnsureHiZResources(uint32_t width, uint32_t height, bool needHiZTexture, bool needHiZCullResources, bool needHiZDebugPreview);
-    bool                        CreateHiZTexture(uint32_t width, uint32_t height);
-    void                        DestroyHiZTexture();
-    void                        DestroyHiZResources();
-    bool                        EnsureHiZDebugPreviewTexture(uint32_t width, uint32_t height);
-    bool                        CreateHiZDebugPreviewTexture(uint32_t width, uint32_t height);
-    void                        DestroyHiZDebugPreviewTexture();
-    bool                        CreateHiZCullResources();
-    void                        DestroyHiZCullResources();
     bool                        CreateRTNormalTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
     bool                        CreateRTVelocityTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
     bool                        CreatePostProcessColorTexture(uint32_t width, uint32_t height, RHI::Format colorFormat);
@@ -308,16 +287,7 @@ private:
     uint32_t                    currentHistoryTextureIndex = 0;
     bool                        historyValid = false;
 
-    RHI::Texture *              hiZTexture = nullptr;
-    RHI::ViewID                 hiZMipSRVs[RenderHiZMaxLevelCount] = {};
-    RHI::ViewID                 hiZMipUAVs[RenderHiZMaxLevelCount] = {};
-    uint32_t                    hiZMipWidths[RenderHiZMaxLevelCount] = {};
-    uint32_t                    hiZMipHeights[RenderHiZMaxLevelCount] = {};
-    uint32_t                    hiZMipCount = 0;
-    RHI::Texture *              hiZDebugPreviewTexture = nullptr;
-    RHI::Buffer *               hiZCullVisibleInstanceBuffer = nullptr;
-    RHI::Buffer *               hiZCullIndirectArgsBuffer = nullptr;
-    bool                        previousHiZValid = false;
+    HiZResources                hiZResources;
 
     BloomResources              bloomResources;
 

@@ -313,12 +313,7 @@ bool RenderBackend::UploadCameraConstants() {
 }
 
 void RenderBackend::UpdateFramePSOs() {
-    frameGenHiZMipFirstBatchPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipFirstBatchPipeline);
-    frameGenHiZMipFirstBatchMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipFirstBatchMSAAPipeline);
-    frameGenHiZMipBatchPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipBatchPipeline);
-    frameGenHiZMipOddDimPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipOddDimPipeline);
-    frameHiZCullInstancesPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZCullInstancesPipeline);
-    frameHiZDebugPreviewPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZDebugPreviewPipeline);
+    renderSystem->GetHiZ().UpdateFramePSOs();
     renderSystem->GetScreenSpaceDepthPyramid().UpdateFramePSOs();
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
     renderSystem->GetScreenSpaceAO().UpdateFramePSOs(frameData->GetRenderFrameSettings());
@@ -630,6 +625,14 @@ bool RenderBackend::PrepareAOInputs() {
     }
 
     return DispatchDepthMSAAResolve(currentVisCamera->ao.depthTexture, RHI::GPUResourceState::ShaderResource, currentVisCamera->ao.normalTexture);
+}
+
+bool RenderBackend::DispatchGenHiZ() {
+    return renderSystem->GetHiZ().DispatchGenerate(mainCommandList, frameData->GetThreadData(0), gpuTiming, currentVisCamera->depthTexture, currentVisCamera->projectionPolicy, currentVisCamera->hiZ);
+}
+
+bool RenderBackend::DispatchHiZDebugPreview() {
+    return renderSystem->GetHiZ().DispatchDebugPreview(mainCommandList, frameData->GetThreadData(0), cameraConstantBuffer, gpuTiming, frameData->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentVisCamera->hiZ);
 }
 
 bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {

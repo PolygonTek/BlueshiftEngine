@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RenderBackend.h"
 #include "Render/RenderInternal.h"
+#include "Render/RenderSystem.h"
 #include "Render/RenderFrameData.h"
 #include "Shaders/ShaderInterop.h"
 
@@ -28,7 +29,7 @@ bool RenderBackend::PrepareHiZCulling() {
     hiZCullDrawBatches.SetCount(0, false);
     hiZCullPassRanges.SetCount(0, false);
 
-    assert(currentVisCamera->hiZMipCount > 0 && currentVisCamera->hiZMipWidths[0] > 0 && currentVisCamera->hiZMipHeights[0] > 0);
+    assert(currentVisCamera->hiZ.mipCount > 0 && currentVisCamera->hiZ.mipWidths[0] > 0 && currentVisCamera->hiZ.mipHeights[0] > 0);
 
     uint32_t totalBatchCount = 0;
     uint32_t totalInstanceCount = 0;
@@ -112,9 +113,9 @@ bool RenderBackend::PrepareHiZCulling() {
             SurfaceInstanceBatch &batch = hiZCullDrawBatches.Alloc();
             batch.drawSurfIndex = instanceStartIndex; // renderPass->drawSurfs 의 시작 index
             batch.instanceCount = instanceCount;
-            batch.instanceToShaderSurfaceTable = currentVisCamera->hiZCullVisibleInstanceBuffer;
+            batch.instanceToShaderSurfaceTable = currentVisCamera->hiZ.visibleInstanceBuffer;
             batch.instanceBaseOffset = instanceBaseOffset;
-            batch.indirectArgsBuffer = currentVisCamera->hiZCullIndirectArgsBuffer;
+            batch.indirectArgsBuffer = currentVisCamera->hiZ.indirectArgsBuffer;
             batch.indirectArgsOffset = batchIndex * HiZCullIndirectArgSize;
             batch.valid = false;
 
@@ -136,8 +137,8 @@ bool RenderBackend::PrepareHiZCulling() {
     assert(batchIndex == totalBatchCount);
     assert(instanceBaseOffset == totalInstanceCount);
 
-    RHI::Buffer *visibleInstanceBuffer = currentVisCamera->hiZCullVisibleInstanceBuffer;
-    RHI::Buffer *indirectArgsBuffer = currentVisCamera->hiZCullIndirectArgsBuffer;
+    RHI::Buffer *visibleInstanceBuffer = currentVisCamera->hiZ.visibleInstanceBuffer;
+    RHI::Buffer *indirectArgsBuffer = currentVisCamera->hiZ.indirectArgsBuffer;
 
     RHI::GPUBarrier copyStartBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(indirectArgsBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::CopyDst)
@@ -153,7 +154,7 @@ bool RenderBackend::PrepareHiZCulling() {
     RHI::GPUBarrier dispatchStartBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(indirectArgsBuffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::UnorderedAccess),
         RHI::Renderer::MakeBufferBarrier(visibleInstanceBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeTextureBarrier(currentVisCamera->hiZTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute)
+        RHI::Renderer::MakeTextureBarrier(currentVisCamera->hiZ.texture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute)
     };
     RHI::renderer->Barrier(mainCommandList, dispatchStartBarriers, COUNT_OF(dispatchStartBarriers));
 
@@ -182,7 +183,7 @@ bool RenderBackend::PrepareHiZCulling() {
     RHI::GPUBarrier drawStartBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(visibleInstanceBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource),
         RHI::Renderer::MakeBufferBarrier(indirectArgsBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::IndirectArgument),
-        RHI::Renderer::MakeTextureBarrier(currentVisCamera->hiZTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeTextureBarrier(currentVisCamera->hiZ.texture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(mainCommandList, drawStartBarriers, COUNT_OF(drawStartBarriers));
 
@@ -190,50 +191,20 @@ bool RenderBackend::PrepareHiZCulling() {
 }
 
 bool RenderBackend::DispatchHiZCullInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) {
-    if (instanceCount == 0 || instanceCount > RenderHiZCullMaxInstanceCount) {
-        return false;
-    }
-
-    HiZCullInstancesParams hiZCullParams = {};
-    hiZCullParams.inputInstanceCount = instanceCount;
-    hiZCullParams.surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
-    hiZCullParams.hiZWidth = currentVisCamera->hiZMipWidths[0];
-    hiZCullParams.hiZHeight = currentVisCamera->hiZMipHeights[0];
-    hiZCullParams.hiZMipCount = currentVisCamera->hiZMipCount;
-    hiZCullParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 1 : 0;
-    hiZCullParams.instanceBaseOffset = instanceBaseOffset;
-    hiZCullParams.indirectArgOffset = indirectArgsOffset;
-
-    RHI::ConstantBuffer *hiZCullConstantBuffer = frameThreadData->AllocConstant(sizeof(HiZCullInstancesParams), &hiZCullParams);
-    if (!hiZCullConstantBuffer) {
-        return false;
-    }
-
-    RHI::Buffer *visibleInstanceBuffer = currentVisCamera->hiZCullVisibleInstanceBuffer;
-    RHI::Buffer *indirectArgsBuffer = currentVisCamera->hiZCullIndirectArgsBuffer;
-
-    RHI::renderer->SetPSO(commandList, frameHiZCullInstancesPSO);
-    RHI::renderer->SetBuffer(commandList, 0, false, inputInstanceToShaderSurfaceTable);
-    RHI::renderer->SetTexture(commandList, 1, false, currentVisCamera->hiZTexture, RHI::ViewID::PrimaryID);
-    RHI::renderer->SetBuffer(commandList, 0, true, visibleInstanceBuffer);
-    RHI::renderer->SetBuffer(commandList, 1, true, indirectArgsBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, hiZCullConstantBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
-
-    const uint32_t threadGroupCountX = BE1::DivCeil(instanceCount, HiZCullThreadCount);
-    RHI::renderer->Dispatch(commandList, threadGroupCountX, 1, 1);
-
-    return true;
+    return renderSystem->GetHiZ().DispatchCullInstances(
+        commandList, frameThreadData, cameraConstantBuffer, frameData->GetShaderSurfaceTableBindlessIndex(),
+        currentVisCamera->projectionPolicy, currentVisCamera->hiZ,
+        instanceCount, inputInstanceToShaderSurfaceTable, instanceBaseOffset, indirectArgsOffset);
 }
 
 void RenderBackend::FinishHiZCulling() {
-    if (!currentVisCamera->hiZCullVisibleInstanceBuffer || !currentVisCamera->hiZCullIndirectArgsBuffer) {
+    if (!currentVisCamera->hiZ.visibleInstanceBuffer || !currentVisCamera->hiZ.indirectArgsBuffer) {
         return;
     }
 
     RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeBufferBarrier(currentVisCamera->hiZCullVisibleInstanceBuffer, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(currentVisCamera->hiZCullIndirectArgsBuffer, RHI::GPUResourceState::IndirectArgument, RHI::GPUResourceState::Undefined)
+        RHI::Renderer::MakeBufferBarrier(currentVisCamera->hiZ.visibleInstanceBuffer, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(currentVisCamera->hiZ.indirectArgsBuffer, RHI::GPUResourceState::IndirectArgument, RHI::GPUResourceState::Undefined)
     };
     RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
 }

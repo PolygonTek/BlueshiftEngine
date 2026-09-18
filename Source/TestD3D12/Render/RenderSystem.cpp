@@ -73,6 +73,9 @@ void RenderSystem::Init(void *mainWindowHandle) {
     gpuSphericalHarmonics.Init();
     gpuSphericalHarmonics.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
+    hiZ.Init();
+    hiZ.TrackBootstrapPipelines(shaderPipelineBootstrap);
+
     screenSpaceAO.Init();
     screenSpaceAO.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
@@ -153,6 +156,8 @@ void RenderSystem::Shutdown() {
     screenSpaceDepthPyramid.Shutdown();
 
     screenSpaceAO.Shutdown();
+
+    hiZ.Shutdown();
 
     gpuSphericalHarmonics.Shutdown();
 
@@ -413,13 +418,6 @@ void RenderSystem::InitComputePipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
 
-    genHiZMipFirstBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchShader", computeShaderModel, "HiZ/GenHiZMipFirstBatch.hlsl", baseDir);
-    genHiZMipFirstBatchMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipFirstBatchMSAAShader", computeShaderModel, "HiZ/GenHiZMipFirstBatch.hlsl", baseDir, "CSMain", "GEN_HIZ_DEPTH_MSAA=1");
-    genHiZMipBatchShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipBatchShader", computeShaderModel, "HiZ/GenHiZMipBatch.hlsl", baseDir);
-    genHiZMipOddDimShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genHiZMipOddDimShader", computeShaderModel, "HiZ/GenHiZMipOddDim.hlsl", baseDir);
-    hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZ/HiZCullInstances.hlsl", baseDir);
-    hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZ/HiZDebugPreview.hlsl", baseDir);
-
     ssrTraceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrTraceShader", computeShaderModel, "Reflection/SSRTrace.hlsl", baseDir);
 
     lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "Lighting/LightCulling.hlsl", baseDir);
@@ -447,13 +445,6 @@ static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplat
 }
 
 void RenderSystem::EnsureComputePipelines() {
-    EnsureComputePipeline(genHiZMipFirstBatchShaderTemplate, genHiZMipFirstBatchPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(genHiZMipFirstBatchMSAAShaderTemplate, genHiZMipFirstBatchMSAAPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(genHiZMipBatchShaderTemplate, genHiZMipBatchPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(genHiZMipOddDimShaderTemplate, genHiZMipOddDimPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline, shaderPipelineBootstrap);
-
     EnsureComputePipeline(ssrTraceShaderTemplate, ssrTracePipeline, shaderPipelineBootstrap);
 
     EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline, shaderPipelineBootstrap);
@@ -470,13 +461,6 @@ void RenderSystem::EnsureComputePipelines() {
 }
 
 void RenderSystem::ReleaseComputePipelines() {
-    genHiZMipFirstBatchPipeline.reset();
-    genHiZMipFirstBatchMSAAPipeline.reset();
-    genHiZMipBatchPipeline.reset();
-    genHiZMipOddDimPipeline.reset();
-    hiZCullInstancesPipeline.reset();
-    hiZDebugPreviewPipeline.reset();
-
     ssrTracePipeline.reset();
 
     lightCullingPipeline.reset();
@@ -490,13 +474,6 @@ void RenderSystem::ReleaseComputePipelines() {
     taaResolvePipeline.reset();
     luminancePass1Pipeline.reset();
     luminancePass2Pipeline.reset();
-
-    genHiZMipFirstBatchShaderTemplate.reset();
-    genHiZMipFirstBatchMSAAShaderTemplate.reset();
-    genHiZMipBatchShaderTemplate.reset();
-    genHiZMipOddDimShaderTemplate.reset();
-    hiZCullInstancesShaderTemplate.reset();
-    hiZDebugPreviewShaderTemplate.reset();
 
     ssrTraceShaderTemplate.reset();
 
