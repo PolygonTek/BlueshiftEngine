@@ -17,13 +17,13 @@
 #include "RHI/RHI.h"
 #include "Render/RenderFrameSettings.h"
 #include "Render/ScreenSpaceAOResources.h"
+#include "Render/ScreenSpaceDepthPyramidResources.h"
 #include "Render/BloomResources.h"
 
 class RenderWorld;
 class Texture;
 
 static constexpr int RenderHiZMaxLevelCount = 16;
-static constexpr int RenderScreenSpaceDepthPyramidMaxLevelCount = 16;
 static constexpr int RenderHiZCullMaxInstanceCount = 2048;
 static constexpr int RenderHiZCullMaxVisibleInstanceCount = 0x40000;
 static constexpr int RenderHiZCullMaxBatchCount = RenderHiZCullMaxVisibleInstanceCount;
@@ -163,7 +163,6 @@ public:
 
     bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
     bool                        EnsureSceneSnapshotResources(bool needed, bool halfResolution);
-    void                        EnsureScreenSpaceDepthPyramidResources(uint32_t width, uint32_t height, bool needed);
     void                        EnsureSSRTraceResources(uint32_t width, uint32_t height, uint32_t sampleCount, bool needed);
     void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, const RenderFrameSettings &renderFrameSettings);
 
@@ -200,14 +199,9 @@ public:
     RHI::Buffer *               GetHiZCullVisibleInstanceBuffer() const { return hiZCullVisibleInstanceBuffer; }
     RHI::Buffer *               GetHiZCullIndirectArgsBuffer() const { return hiZCullIndirectArgsBuffer; }
 
-    RHI::Texture *              GetScreenSpaceDepthPyramidTexture() const { return screenSpaceDepthPyramidTexture; }
-    const RHI::ViewID *         GetScreenSpaceDepthPyramidMipSRVs() const { return screenSpaceDepthPyramidMipSRVs; }
-    const RHI::ViewID *         GetScreenSpaceDepthPyramidMipUAVs() const { return screenSpaceDepthPyramidMipUAVs; }
-    const uint32_t *            GetScreenSpaceDepthPyramidMipWidths() const { return screenSpaceDepthPyramidMipWidths; }
-    const uint32_t *            GetScreenSpaceDepthPyramidMipHeights() const { return screenSpaceDepthPyramidMipHeights; }
-    uint32_t                    GetScreenSpaceDepthPyramidMipCount() const { return screenSpaceDepthPyramidMipCount; }
-    uint32_t                    GetScreenSpaceDepthPyramidValidWidth() const { return screenSpaceDepthPyramidValidWidth; }
-    uint32_t                    GetScreenSpaceDepthPyramidValidHeight() const { return screenSpaceDepthPyramidValidHeight; }
+    ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() { return screenSpaceDepthPyramidResources; }
+    const ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() const { return screenSpaceDepthPyramidResources; }
+
     RHI::Texture *              GetSSRResolvedDepthTexture() const { return ssrResolvedDepthTexture; }
     RHI::Texture *              GetSSRTraceTexture() const { return ssrTraceTexture; }
     RHI::Texture *              GetAOTexture() const { return aoResources.GetTextures().outputTexture; }
@@ -225,8 +219,6 @@ private:
     bool                        CreateDepthTexture(uint32_t width, uint32_t height, RHI::Format depthFormat, uint32_t sampleCount);
     bool                        CreateSceneSnapshotResources(bool halfResolution);
     void                        DestroySceneSnapshotResources();
-    bool                        CreateScreenSpaceDepthPyramidTexture(uint32_t width, uint32_t height);
-    void                        DestroyScreenSpaceDepthPyramidTexture();
     bool                        CreateSSRTraceTexture(uint32_t width, uint32_t height);
     void                        DestroySSRTraceTexture();
     bool                        CreateSSRResolvedDepthTexture(uint32_t width, uint32_t height);
@@ -303,14 +295,7 @@ private:
     RHI::Texture *              snapshotDepthTexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
 
-    RHI::Texture *              screenSpaceDepthPyramidTexture = nullptr;
-    RHI::ViewID                 screenSpaceDepthPyramidMipSRVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    RHI::ViewID                 screenSpaceDepthPyramidMipUAVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                    screenSpaceDepthPyramidMipWidths[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                    screenSpaceDepthPyramidMipHeights[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                    screenSpaceDepthPyramidMipCount = 0;
-    uint32_t                    screenSpaceDepthPyramidValidWidth = 0;
-    uint32_t                    screenSpaceDepthPyramidValidHeight = 0;
+    ScreenSpaceDepthPyramidResources screenSpaceDepthPyramidResources;
 
     RHI::Texture *              ssrResolvedDepthTexture = nullptr;
     RHI::Texture *              ssrTraceTexture = nullptr;

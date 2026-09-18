@@ -165,9 +165,6 @@ private:
     RHI::PipelineState *            frameHiZCullInstancesPSO = nullptr;
     RHI::PipelineState *            frameLightCullingPSO = nullptr;
     RHI::PipelineState *            frameHiZDebugPreviewPSO = nullptr;
-    RHI::PipelineState *            frameScreenSpaceDepthPyramidFirstPSO = nullptr;
-    RHI::PipelineState *            frameScreenSpaceDepthPyramidFirstMSAAPSO = nullptr;
-    RHI::PipelineState *            frameScreenSpaceDepthPyramidReducePSO = nullptr;
     RHI::PipelineState *            frameSSRTracePSO = nullptr;
     RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameDepthNormalMSAAResolvePSO = nullptr;

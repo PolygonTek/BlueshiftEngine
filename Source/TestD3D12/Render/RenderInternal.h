@@ -26,6 +26,7 @@
 #include "Render/Frontend/RenderLight.h"
 #include "Render/RenderFrameSettings.h"
 #include "Render/ScreenSpaceAOResources.h"
+#include "Render/ScreenSpaceDepthPyramidResources.h"
 #include "Render/BloomResources.h"
 #include "Math/Matrix4.h"
 #include "Math/OBB.h"
@@ -153,6 +154,17 @@ struct LightCulling {
     uint32_t                    lightRefTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 참조 테이블 오프셋
     uint32_t                    zBinTableOffset = ~0u;      // 현재 카메라가 셰이더에서 사용할 라이트 z-bin 테이블 오프셋
     uint32_t                    tileWordTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 bitmask word 테이블 오프셋
+};
+
+struct ScreenSpaceDepthPyramidFrameData {
+    RHI::Texture *              texture = nullptr;
+    RHI::ViewID                 mipSRVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    RHI::ViewID                 mipUAVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    uint32_t                    mipWidths[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    uint32_t                    mipHeights[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    uint32_t                    mipCount = 0;
+    uint32_t                    validWidth = 0;
+    uint32_t                    validHeight = 0;
 };
 
 struct BloomFrameData {
@@ -326,14 +338,8 @@ struct VisCamera {
     ScreenSpaceAOFrameData      ao;
 
     bool                        generateScreenSpaceDepthPyramid = false;
-    RHI::Texture *              screenSpaceDepthPyramidTexture = nullptr;
-    RHI::ViewID                 screenSpaceDepthPyramidMipSRVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    RHI::ViewID                 screenSpaceDepthPyramidMipUAVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                    screenSpaceDepthPyramidMipWidths[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                    screenSpaceDepthPyramidMipHeights[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                    screenSpaceDepthPyramidMipCount = 0;
-    uint32_t                    screenSpaceDepthPyramidValidWidth = 0;
-    uint32_t                    screenSpaceDepthPyramidValidHeight = 0;
+    ScreenSpaceDepthPyramidFrameData screenSpaceDepthPyramid;
+
     bool                        traceSSR = false;
     RHI::Texture *              ssrResolvedDepthTexture = nullptr;
     RHI::Texture *              ssrTraceTexture = nullptr;

@@ -25,10 +25,10 @@ bool RenderBackend::DispatchSSRTrace() {
     const bool useMSAA = renderDepthTexture && renderDepthTexture->GetSampleCount() > 1;
     RHI::Texture *depthTexture = useMSAA ? currentVisCamera->ssrResolvedDepthTexture : renderDepthTexture;
     RHI::Texture *normalTexture = currentVisCamera->rtNormalTexture;
-    RHI::Texture *depthPyramidTexture = currentVisCamera->screenSpaceDepthPyramidTexture;
+    RHI::Texture *depthPyramidTexture = currentVisCamera->screenSpaceDepthPyramid.texture;
     RHI::Texture *traceTexture = currentVisCamera->ssrTraceTexture;
 
-    if (!depthTexture || !normalTexture || !depthPyramidTexture || !traceTexture || !cameraConstantBuffer || currentVisCamera->screenSpaceDepthPyramidMipCount == 0) {
+    if (!depthTexture || !normalTexture || !depthPyramidTexture || !traceTexture || !cameraConstantBuffer || currentVisCamera->screenSpaceDepthPyramid.mipCount == 0) {
         return false;
     }
 
@@ -47,7 +47,7 @@ bool RenderBackend::DispatchSSRTrace() {
     SSRTraceParams params = {};
     params.inputSize = uint2(depthTexture->GetWidth(), depthTexture->GetHeight());
     params.outputSize = uint2(traceTexture->GetWidth(), traceTexture->GetHeight());
-    params.depthPyramidMipCount = currentVisCamera->screenSpaceDepthPyramidMipCount;
+    params.depthPyramidMipCount = currentVisCamera->screenSpaceDepthPyramid.mipCount;
     params.maxIterations = renderFrameSettings.ssrMaxIterations;
     params.binaryRefinementSteps = renderFrameSettings.ssrBinaryRefinementSteps;
     params.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;

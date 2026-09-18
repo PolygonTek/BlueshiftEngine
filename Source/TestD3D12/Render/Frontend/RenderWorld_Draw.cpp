@@ -340,7 +340,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         return;
     }
 
-    renderCamera->EnsureScreenSpaceDepthPyramidResources(renderWidth, renderHeight, renderFrameSettings.ssr);
+    ScreenSpaceDepthPyramidResources &depthPyramidResources = renderCamera->GetScreenSpaceDepthPyramidResources();
+    depthPyramidResources.Ensure(renderWidth, renderHeight, renderFrameSettings.ssr);
     renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), renderFrameSettings.ssr);
 
     const bool needAOResolvedDepth = renderContext->GetMainRTSampleCount() > 1 && !renderCamera->GetSSRResolvedDepthTexture();
@@ -366,7 +367,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
     const bool useMSAA = renderCamera->GetRTColorMSAATexture() != nullptr;
     const bool hasSSRInputs = renderCamera->GetRTNormalTexture() && (!useMSAA || renderCamera->GetSSRResolvedDepthTexture());
-    const bool requestScreenSpaceDepthPyramidGeneration = renderFrameSettings.ssr && hasSSRInputs && renderCamera->GetDepthTexture() && renderCamera->GetScreenSpaceDepthPyramidTexture();
+    const bool requestScreenSpaceDepthPyramidGeneration = renderFrameSettings.ssr && hasSSRInputs && renderCamera->GetDepthTexture() && depthPyramidResources.GetTexture();
     const bool requestSSRTrace = requestScreenSpaceDepthPyramidGeneration && renderCamera->GetSSRTraceTexture();
 
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
@@ -464,16 +465,17 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;
 
     if (visCamera->generateScreenSpaceDepthPyramid) {
-        visCamera->screenSpaceDepthPyramidTexture = renderCamera->GetScreenSpaceDepthPyramidTexture();
-        visCamera->screenSpaceDepthPyramidMipCount = renderCamera->GetScreenSpaceDepthPyramidMipCount();
-        visCamera->screenSpaceDepthPyramidValidWidth = renderCamera->GetScreenSpaceDepthPyramidValidWidth();
-        visCamera->screenSpaceDepthPyramidValidHeight = renderCamera->GetScreenSpaceDepthPyramidValidHeight();
+        ScreenSpaceDepthPyramidFrameData &depthPyramid = visCamera->screenSpaceDepthPyramid;
+        depthPyramid.texture = depthPyramidResources.GetTexture();
+        depthPyramid.mipCount = depthPyramidResources.GetMipCount();
+        depthPyramid.validWidth = depthPyramidResources.GetValidWidth();
+        depthPyramid.validHeight = depthPyramidResources.GetValidHeight();
 
         for (uint32_t mipLevel = 0; mipLevel < RenderScreenSpaceDepthPyramidMaxLevelCount; ++mipLevel) {
-            visCamera->screenSpaceDepthPyramidMipSRVs[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipSRVs()[mipLevel];
-            visCamera->screenSpaceDepthPyramidMipUAVs[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipUAVs()[mipLevel];
-            visCamera->screenSpaceDepthPyramidMipWidths[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipWidths()[mipLevel];
-            visCamera->screenSpaceDepthPyramidMipHeights[mipLevel] = renderCamera->GetScreenSpaceDepthPyramidMipHeights()[mipLevel];
+            depthPyramid.mipSRVs[mipLevel] = depthPyramidResources.GetMipSRVs()[mipLevel];
+            depthPyramid.mipUAVs[mipLevel] = depthPyramidResources.GetMipUAVs()[mipLevel];
+            depthPyramid.mipWidths[mipLevel] = depthPyramidResources.GetMipWidths()[mipLevel];
+            depthPyramid.mipHeights[mipLevel] = depthPyramidResources.GetMipHeights()[mipLevel];
         }
     }
 

@@ -385,7 +385,7 @@ void App::BuildImGuiTextureViewer() {
 
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetRTColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", depthTexture);
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Depth Pyramid", renderCamera->GetScreenSpaceDepthPyramidTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Depth Pyramid", renderCamera->GetScreenSpaceDepthPyramidResources().GetTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Trace", renderCamera->GetSSRTraceTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "AO Final", renderCamera->GetAOTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", renderCamera->GetRTVelocityTexture());

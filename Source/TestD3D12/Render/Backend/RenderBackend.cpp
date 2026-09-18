@@ -319,9 +319,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameGenHiZMipOddDimPSO = ShaderPipeline::GetReadyPSO(renderSystem->genHiZMipOddDimPipeline);
     frameHiZCullInstancesPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZCullInstancesPipeline);
     frameHiZDebugPreviewPSO = ShaderPipeline::GetReadyPSO(renderSystem->hiZDebugPreviewPipeline);
-    frameScreenSpaceDepthPyramidFirstPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstPipeline);
-    frameScreenSpaceDepthPyramidFirstMSAAPSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidFirstMSAAPipeline);
-    frameScreenSpaceDepthPyramidReducePSO = ShaderPipeline::GetReadyPSO(renderSystem->screenSpaceDepthPyramidReducePipeline);
+    renderSystem->GetScreenSpaceDepthPyramid().UpdateFramePSOs();
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
     renderSystem->GetScreenSpaceAO().UpdateFramePSOs(frameData->GetRenderFrameSettings());
     renderSystem->GetBloom().UpdateFramePSOs();
@@ -632,6 +630,11 @@ bool RenderBackend::PrepareAOInputs() {
     }
 
     return DispatchDepthMSAAResolve(currentVisCamera->ao.depthTexture, RHI::GPUResourceState::ShaderResource, currentVisCamera->ao.normalTexture);
+}
+
+bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
+    return renderSystem->GetScreenSpaceDepthPyramid().Dispatch(mainCommandList, gpuTiming, currentVisCamera->depthTexture, currentVisCamera->rtNormalMSAATexture,
+        currentVisCamera->ssrResolvedDepthTexture, currentVisCamera->rtNormalTexture, currentVisCamera->projectionPolicy, currentVisCamera->screenSpaceDepthPyramid);
 }
 
 bool RenderBackend::DispatchScreenSpaceAO() {

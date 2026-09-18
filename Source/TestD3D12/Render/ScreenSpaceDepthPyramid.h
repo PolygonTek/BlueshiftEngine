@@ -1,0 +1,48 @@
+// Copyright(c) 2017 POLYGONTEK
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#pragma once
+
+#include "RHI/RHI.h"
+
+class GpuTiming;
+class ShaderTemplate;
+class ShaderPipeline;
+class ShaderPipelineBootstrap;
+struct ScreenSpaceDepthPyramidFrameData;
+
+class ScreenSpaceDepthPyramid {
+public:
+    void                            Init();
+    void                            Shutdown();
+
+    void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
+
+    void                            UpdateFramePSOs();
+
+    bool                            Dispatch(RHI::CommandList *commandList, GpuTiming &gpuTiming, RHI::Texture *depthTexture, RHI::Texture *normalMSAATexture, RHI::Texture *resolvedDepthTexture, RHI::Texture *resolvedNormalTexture, const RHI::ProjectionPolicy &projectionPolicy, const ScreenSpaceDepthPyramidFrameData &data) const;
+
+private:
+    SharedPtr<ShaderTemplate>       firstMipShaderTemplate;
+    SharedPtr<ShaderTemplate>       firstMipMSAAShaderTemplate;
+    SharedPtr<ShaderTemplate>       reduceShaderTemplate;
+
+    SharedPtr<ShaderPipeline>       firstMipPipeline;
+    SharedPtr<ShaderPipeline>       firstMipMSAAPipeline;
+    SharedPtr<ShaderPipeline>       reducePipeline;
+
+    RHI::PipelineState *            frameFirstMipPSO = nullptr;
+    RHI::PipelineState *            frameFirstMipMSAAPSO = nullptr;
+    RHI::PipelineState *            frameReducePSO = nullptr;
+};

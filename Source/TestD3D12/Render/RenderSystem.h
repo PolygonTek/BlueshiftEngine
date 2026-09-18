@@ -18,6 +18,7 @@
 #include "GpuOceanSurface.h"
 #include "GpuSphericalHarmonics.h"
 #include "ScreenSpaceAO.h"
+#include "ScreenSpaceDepthPyramid.h"
 #include "Bloom.h"
 #include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
@@ -117,6 +118,9 @@ public:
     ScreenSpaceAO &                 GetScreenSpaceAO() { return screenSpaceAO; }
     const ScreenSpaceAO &           GetScreenSpaceAO() const { return screenSpaceAO; }
 
+    ScreenSpaceDepthPyramid &       GetScreenSpaceDepthPyramid() { return screenSpaceDepthPyramid; }
+    const ScreenSpaceDepthPyramid & GetScreenSpaceDepthPyramid() const { return screenSpaceDepthPyramid; }
+
     IBLBaker &                      GetIBLBaker() { return iblBaker; }
     const IBLBaker &                GetIBLBaker() const { return iblBaker; }
 
@@ -180,9 +184,6 @@ private:
     SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
     SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
 
-    SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidFirstShaderTemplate;
-    SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidFirstMSAAShaderTemplate;
-    SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidReduceShaderTemplate;
     SharedPtr<ShaderTemplate>       ssrTraceShaderTemplate;
     SharedPtr<ShaderTemplate>       depthMSAAResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       depthNormalMSAAResolveShaderTemplate;
@@ -202,9 +203,6 @@ private:
     SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
     SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
 
-    SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidFirstPipeline;
-    SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidFirstMSAAPipeline;
-    SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidReducePipeline;
     SharedPtr<ShaderPipeline>       ssrTracePipeline;
 
     SharedPtr<ShaderPipeline>       lightCullingPipeline;
@@ -234,6 +232,7 @@ private:
     GpuOceanSurface                 gpuOceanSurface;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     ScreenSpaceAO                   screenSpaceAO;
+    ScreenSpaceDepthPyramid         screenSpaceDepthPyramid;
     Bloom                           bloom;
     IBLBaker                        iblBaker;
     ProbeBakeSystem                 probeBakeSystem;
