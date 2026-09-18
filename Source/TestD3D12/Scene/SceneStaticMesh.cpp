@@ -25,22 +25,22 @@
 #include "imgui/imgui.h"
 #endif
 
-static constexpr const char *meshPath = "Data/Test/Museum/hintze-hall_UV_pack01.bmesh ";
+static constexpr const char *meshPath = "Data/Test/House/House_scene_01.bmesh ";
 
 void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
 
-    app.SetCameraPitchYaw(25.0f, 30.0f);
-    app.SetCameraDistance(5.0f);
+    app.SetCameraPitchYaw(15.0f, -120.0f);
+    app.SetCameraDistance(5.5f);
 
     directionalLight.type = RenderLight::Type::Directional;
     directionalLight.flags = RenderLight::Flag::CastShadows;
     directionalLight.linearColor = BE1::Color3::white;
     directionalLight.intensity = 2.0f;
     UpdateDirectionalLightDirection();
-    directionalLightEnabled = directionalLight.SetEnabled(renderWorld, false);
+    directionalLightEnabled = directionalLight.SetEnabled(renderWorld, true);
 
     EnvironmentLight::Desc envLightDesc;
     if (renderWorld->AddEnvironmentLight(envLightDesc)) {
@@ -81,8 +81,6 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     }
 
     renderWorld->AddRenderObject(desc);
-
-    app.SetCameraDistance(BE1::Max(1.0f, meshAABB.Extents().Length() * 3.5f));
 }
 
 void SceneStaticMesh::Shutdown() {
