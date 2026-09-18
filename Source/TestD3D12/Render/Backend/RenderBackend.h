@@ -57,23 +57,6 @@ private:
         uint32_t                    numBatches = 0;
     };
 
-    // Both PSOs use t0=input, u0=output, b0=root constants, and optionally
-    // t1=depth and b1=view constants. The same constants are bound in both passes.
-    struct SeparableBlurDesc {
-        RHI::Texture *              inputTexture = nullptr;
-        RHI::Texture *              tempTexture = nullptr;
-        RHI::Texture *              outputTexture = nullptr;
-        RHI::Texture *              depthTexture = nullptr;
-        RHI::PipelineState *        horizontalPSO = nullptr;
-        RHI::PipelineState *        verticalPSO = nullptr;
-        const void *                constants = nullptr;
-        uint32_t                    constantsSize = 0;
-        const RHI::ConstantBuffer * viewConstantBuffer = nullptr;
-        uint32_t                    blockSizeX = 0;
-        uint32_t                    blockSizeY = 0;
-        RHI::GPUResourceState       inputState = RHI::GPUResourceState::ShaderResource;
-    };
-
     struct DrawSurfsTaskDesc {
         int32_t                     threadIndex = -1;
         const RenderPassDrawSurf ** drawSurfs = nullptr;
@@ -142,16 +125,8 @@ private:
     bool                            DispatchHiZDebugPreview();
     bool                            DispatchGenScreenSpaceDepthPyramid();
     bool                            DispatchSSRTrace();
-    bool                            DispatchSSAO(RHI::GPUResourceState renderDepthState);
-    bool                            DispatchGTAO(RHI::GPUResourceState renderDepthState);
-    void                            DispatchGTAOPrefilterDepth(RHI::GPUResourceState depthInputState, bool useHalfResolution);
-    void                            DispatchGTAOMain(bool useHalfResolution);
-    RHI::Texture *                  DispatchGTAODenoise(uint32_t denoisePassCount, bool useHalfResolution, RHI::GPUResourceState &rawAOState, RHI::GPUResourceState &tempAOState);
-    bool                            DispatchGTAODebugPreview();
-    void                            DispatchSSAOCompute(RHI::PipelineState *pso, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *outputAOTexture, RHI::Texture *outputHalfDepthTexture, RHI::GPUResourceState depthInputState);
-    void                            DispatchAOBilateralFilter(RHI::Texture *depthTexture, RHI::Texture *inputAOTexture, RHI::Texture *tempAOTexture, RHI::Texture *outputAOTexture, float radius);
-    void                            DispatchAOUpsample(RHI::Texture *depthTexture, RHI::Texture *inputHalfAOTexture, RHI::Texture *inputHalfDepthTexture, RHI::Texture *outputAOTexture, float radius);
-    void                            DispatchSeparableBlur(const SeparableBlurDesc &desc);
+    bool                            DispatchScreenSpaceAO();
+    bool                            PrepareAOInputs();
     bool                            DispatchDepthMSAAResolve(RHI::Texture *outputDepthTexture, RHI::GPUResourceState inputState, RHI::Texture *outputNormalTexture = nullptr);
     bool                            DispatchSurfaceOutputMSAAResolve();
     bool                            DispatchCurrentDepthMSAAResolve();
@@ -203,15 +178,6 @@ private:
     RHI::PipelineState *            frameScreenSpaceDepthPyramidFirstMSAAPSO = nullptr;
     RHI::PipelineState *            frameScreenSpaceDepthPyramidReducePSO = nullptr;
     RHI::PipelineState *            frameSSRTracePSO = nullptr;
-    RHI::PipelineState *            frameSSAOPSO = nullptr;
-    RHI::PipelineState *            frameSSAOHalfResolutionPSO = nullptr;
-    RHI::PipelineState *            frameAOUpsamplePSO = nullptr;
-    RHI::PipelineState *            frameAOBilateralHorizontalPSO = nullptr;
-    RHI::PipelineState *            frameAOBilateralVerticalPSO = nullptr;
-    RHI::PipelineState *            frameGTAOPrefilterPSO = nullptr;
-    RHI::PipelineState *            frameGTAOMainPSO = nullptr;
-    RHI::PipelineState *            frameGTAODenoisePSO = nullptr;
-    RHI::PipelineState *            frameGTAODebugPSO = nullptr;
     RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameDepthNormalMSAAResolvePSO = nullptr;
     RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalPSO = nullptr;

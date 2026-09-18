@@ -73,6 +73,9 @@ void RenderSystem::Init(void *mainWindowHandle) {
     gpuSphericalHarmonics.Init();
     gpuSphericalHarmonics.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
+    screenSpaceAO.Init();
+    screenSpaceAO.TrackBootstrapPipelines(shaderPipelineBootstrap);
+
     iblBaker.Init();
     iblBaker.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
@@ -138,6 +141,8 @@ void RenderSystem::Shutdown() {
     probeBakeSystem.Shutdown();
 
     iblBaker.Shutdown();
+
+    screenSpaceAO.Shutdown();
 
     gpuSphericalHarmonics.Shutdown();
 
@@ -405,20 +410,6 @@ void RenderSystem::InitComputePipelines() {
     hiZCullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZ/HiZCullInstances.hlsl", baseDir);
     hiZDebugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZ/HiZDebugPreview.hlsl", baseDir);
 
-    ssao16FullResShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssao16FullResShader", computeShaderModel, "AO/SSAO.hlsl", baseDir);
-    ssao16HalfResShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssao16HalfResShader", computeShaderModel, "AO/SSAO.hlsl", baseDir, "CSMainHalfResolution");
-    ssao8FullResShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssao8FullResShader", computeShaderModel, "AO/SSAO.hlsl", baseDir, "CSMain", "SSAO_SAMPLE_COUNT=8");
-    ssao8HalfResShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssao8HalfResShader", computeShaderModel, "AO/SSAO.hlsl", baseDir, "CSMainHalfResolution", "SSAO_SAMPLE_COUNT=8");
-    aoBilateralHorizontalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoBilateralHorizontalShader", computeShaderModel, "AO/AOBilateral.hlsl", baseDir, "CSMainHorizontal");
-    aoBilateralVerticalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoBilateralVerticalShader", computeShaderModel, "AO/AOBilateral.hlsl", baseDir, "CSMainVertical");
-    aoUpsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoUpsampleShader", computeShaderModel, "AO/AOUpsample.hlsl", baseDir);
-    gtaoPrefilterShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoPrefilterShader", computeShaderModel, "AO/GTAOPrefilter.hlsl", baseDir);
-    gtaoMainLowShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainLowShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=1, GTAO_STEPS_PER_SLICE=2");
-    gtaoMainMediumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainMediumShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=2, GTAO_STEPS_PER_SLICE=2");
-    gtaoMainHighShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainHighShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=3, GTAO_STEPS_PER_SLICE=3");
-    gtaoMainUltraShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainUltraShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=9, GTAO_STEPS_PER_SLICE=3");
-    gtaoDenoiseShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoDenoiseShader", computeShaderModel, "AO/GTAODenoise.hlsl", baseDir);
-    gtaoDebugShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoDebugShader", computeShaderModel, "AO/GTAODebug.hlsl", baseDir);
 
     screenSpaceDepthPyramidFirstShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidFirst.hlsl", baseDir);
     screenSpaceDepthPyramidFirstMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstMSAAShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidFirstMSAA.hlsl", baseDir);
@@ -465,21 +456,7 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(hiZCullInstancesShaderTemplate, hiZCullInstancesPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(hiZDebugPreviewShaderTemplate, hiZDebugPreviewPipeline, shaderPipelineBootstrap);
 
-    EnsureComputePipeline(ssao16FullResShaderTemplate, ssao16FullResPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(ssao16HalfResShaderTemplate, ssao16HalfResPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(ssao8FullResShaderTemplate, ssao8FullResPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(ssao8HalfResShaderTemplate, ssao8HalfResPipeline, shaderPipelineBootstrap);
 
-    EnsureComputePipeline(aoBilateralHorizontalShaderTemplate, aoBilateralHorizontalPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(aoBilateralVerticalShaderTemplate, aoBilateralVerticalPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(aoUpsampleShaderTemplate, aoUpsamplePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(gtaoPrefilterShaderTemplate, gtaoPrefilterPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(gtaoMainLowShaderTemplate, gtaoMainLowPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(gtaoMainMediumShaderTemplate, gtaoMainMediumPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(gtaoMainHighShaderTemplate, gtaoMainHighPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(gtaoMainUltraShaderTemplate, gtaoMainUltraPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(gtaoDenoiseShaderTemplate, gtaoDenoisePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(gtaoDebugShaderTemplate, gtaoDebugPipeline, shaderPipelineBootstrap);
 
     EnsureComputePipeline(screenSpaceDepthPyramidFirstShaderTemplate, screenSpaceDepthPyramidFirstPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(screenSpaceDepthPyramidFirstMSAAShaderTemplate, screenSpaceDepthPyramidFirstMSAAPipeline, shaderPipelineBootstrap);
@@ -519,20 +496,6 @@ void RenderSystem::ReleaseComputePipelines() {
     screenSpaceDepthPyramidFirstMSAAPipeline.reset();
     screenSpaceDepthPyramidReducePipeline.reset();
     ssrTracePipeline.reset();
-    ssao16FullResPipeline.reset();
-    ssao16HalfResPipeline.reset();
-    ssao8FullResPipeline.reset();
-    ssao8HalfResPipeline.reset();
-    aoBilateralHorizontalPipeline.reset();
-    aoBilateralVerticalPipeline.reset();
-    aoUpsamplePipeline.reset();
-    gtaoPrefilterPipeline.reset();
-    gtaoMainLowPipeline.reset();
-    gtaoMainMediumPipeline.reset();
-    gtaoMainHighPipeline.reset();
-    gtaoMainUltraPipeline.reset();
-    gtaoDenoisePipeline.reset();
-    gtaoDebugPipeline.reset();
 
     lightCullingPipeline.reset();
     depthMSAAResolvePipeline.reset();
@@ -561,20 +524,6 @@ void RenderSystem::ReleaseComputePipelines() {
     hiZCullInstancesShaderTemplate.reset();
     hiZDebugPreviewShaderTemplate.reset();
 
-    ssao16FullResShaderTemplate.reset();
-    ssao16HalfResShaderTemplate.reset();
-    ssao8FullResShaderTemplate.reset();
-    ssao8HalfResShaderTemplate.reset();
-    aoBilateralHorizontalShaderTemplate.reset();
-    aoBilateralVerticalShaderTemplate.reset();
-    aoUpsampleShaderTemplate.reset();
-    gtaoPrefilterShaderTemplate.reset();
-    gtaoMainLowShaderTemplate.reset();
-    gtaoMainMediumShaderTemplate.reset();
-    gtaoMainHighShaderTemplate.reset();
-    gtaoMainUltraShaderTemplate.reset();
-    gtaoDenoiseShaderTemplate.reset();
-    gtaoDebugShaderTemplate.reset();
 
     screenSpaceDepthPyramidFirstShaderTemplate.reset();
     screenSpaceDepthPyramidFirstMSAAShaderTemplate.reset();

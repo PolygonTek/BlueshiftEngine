@@ -81,6 +81,37 @@ float4 GTAOUnpackEdges(float packedValue) {
     return saturate(float4((packed >> 6u) & 3u, (packed >> 4u) & 3u, (packed >> 2u) & 3u, packed & 3u) / 3.0f);
 }
 
+// Match the nearest surface selected by the GTAO depth prefilter at half resolution.
+uint2 GTAOSelectInputCoord(uint2 outputCoord, uint resolutionScale, uint2 inputSize, float farPlaneDeviceDepth, Texture2D<float> depthTexture) {
+    const uint2 blockOrigin = outputCoord * resolutionScale;
+    uint2 selectedCoord = min(blockOrigin, inputSize - 1u);
+    float selectedDepth = farPlaneDeviceDepth;
+    bool foundSurface = false;
+
+    [unroll]
+    for (uint y = 0u; y < 2u; ++y) {
+        [unroll]
+        for (uint x = 0u; x < 2u; ++x) {
+            if (x >= resolutionScale || y >= resolutionScale) {
+                continue;
+            }
+
+            const uint2 inputCoord = blockOrigin + uint2(x, y);
+            if (any(inputCoord >= inputSize)) {
+                continue;
+            }
+
+            const float depth = depthTexture.Load(int3(inputCoord, 0));
+            if (depth != farPlaneDeviceDepth && (!foundSurface || (farPlaneDeviceDepth == 0.0f ? depth > selectedDepth : depth < selectedDepth))) {
+                selectedCoord = inputCoord;
+                selectedDepth = depth;
+                foundSurface = true;
+            }
+        }
+    }
+    return selectedCoord;
+}
+
 float GTAOFastSqrt(float value) {
     return asfloat(0x1fbd1df5 + (asint(max(value, 0.0f)) >> 1));
 }

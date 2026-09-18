@@ -17,6 +17,7 @@
 #include "GpuOcean.h"
 #include "GpuOceanSurface.h"
 #include "GpuSphericalHarmonics.h"
+#include "ScreenSpaceAO.h"
 #include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
 #include "IBLBaker.h"
@@ -109,6 +110,9 @@ public:
     GpuSphericalHarmonics &         GetGpuSphericalHarmonics() { return gpuSphericalHarmonics; }
     const GpuSphericalHarmonics &   GetGpuSphericalHarmonics() const { return gpuSphericalHarmonics; }
 
+    ScreenSpaceAO &                 GetScreenSpaceAO() { return screenSpaceAO; }
+    const ScreenSpaceAO &           GetScreenSpaceAO() const { return screenSpaceAO; }
+
     IBLBaker &                      GetIBLBaker() { return iblBaker; }
     const IBLBaker &                GetIBLBaker() const { return iblBaker; }
 
@@ -172,21 +176,6 @@ private:
     SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
     SharedPtr<ShaderTemplate>       hiZDebugPreviewShaderTemplate;
 
-    SharedPtr<ShaderTemplate>       ssao16FullResShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssao16HalfResShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssao8FullResShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssao8HalfResShaderTemplate;
-    SharedPtr<ShaderTemplate>       aoBilateralHorizontalShaderTemplate;
-    SharedPtr<ShaderTemplate>       aoBilateralVerticalShaderTemplate;
-    SharedPtr<ShaderTemplate>       aoUpsampleShaderTemplate;
-    SharedPtr<ShaderTemplate>       gtaoPrefilterShaderTemplate;
-    SharedPtr<ShaderTemplate>       gtaoMainLowShaderTemplate;
-    SharedPtr<ShaderTemplate>       gtaoMainMediumShaderTemplate;
-    SharedPtr<ShaderTemplate>       gtaoMainHighShaderTemplate;
-    SharedPtr<ShaderTemplate>       gtaoMainUltraShaderTemplate;
-    SharedPtr<ShaderTemplate>       gtaoDenoiseShaderTemplate;
-    SharedPtr<ShaderTemplate>       gtaoDebugShaderTemplate;
-
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidFirstShaderTemplate;
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidFirstMSAAShaderTemplate;
     SharedPtr<ShaderTemplate>       screenSpaceDepthPyramidReduceShaderTemplate;
@@ -216,21 +205,6 @@ private:
     SharedPtr<ShaderPipeline>       genHiZMipOddDimPipeline;
     SharedPtr<ShaderPipeline>       hiZCullInstancesPipeline;
     SharedPtr<ShaderPipeline>       hiZDebugPreviewPipeline;
-
-    SharedPtr<ShaderPipeline>       ssao16FullResPipeline;
-    SharedPtr<ShaderPipeline>       ssao16HalfResPipeline;
-    SharedPtr<ShaderPipeline>       ssao8FullResPipeline;
-    SharedPtr<ShaderPipeline>       ssao8HalfResPipeline;
-    SharedPtr<ShaderPipeline>       aoBilateralHorizontalPipeline;
-    SharedPtr<ShaderPipeline>       aoBilateralVerticalPipeline;
-    SharedPtr<ShaderPipeline>       aoUpsamplePipeline;
-    SharedPtr<ShaderPipeline>       gtaoPrefilterPipeline;
-    SharedPtr<ShaderPipeline>       gtaoMainLowPipeline;
-    SharedPtr<ShaderPipeline>       gtaoMainMediumPipeline;
-    SharedPtr<ShaderPipeline>       gtaoMainHighPipeline;
-    SharedPtr<ShaderPipeline>       gtaoMainUltraPipeline;
-    SharedPtr<ShaderPipeline>       gtaoDenoisePipeline;
-    SharedPtr<ShaderPipeline>       gtaoDebugPipeline;
 
     SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidFirstPipeline;
     SharedPtr<ShaderPipeline>       screenSpaceDepthPyramidFirstMSAAPipeline;
@@ -271,6 +245,7 @@ private:
     GpuOcean                        gpuOcean;
     GpuOceanSurface                 gpuOceanSurface;
     GpuSphericalHarmonics           gpuSphericalHarmonics;
+    ScreenSpaceAO                   screenSpaceAO;
     IBLBaker                        iblBaker;
     ProbeBakeSystem                 probeBakeSystem;
     ShaderPipelineBootstrap         shaderPipelineBootstrap;

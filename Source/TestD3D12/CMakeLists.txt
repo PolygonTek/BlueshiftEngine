@@ -168,6 +168,12 @@ set(SRC_FILES
     Render/RenderWork/RenderWork.h
     Render/RenderWork/RenderWorkQueue.h
     Render/RenderWork/RenderWorkQueue.cpp
+    Render/ScreenSpaceAO.h
+    Render/ScreenSpaceAO.cpp
+    Render/ScreenSpaceAOResources.h
+    Render/ScreenSpaceAOResources.cpp
+    Render/ScreenSpaceAO_SSAO.cpp
+    Render/ScreenSpaceAO_GTAO.cpp
     Render/GpuFFT.h
     Render/GpuFFT.cpp
     Render/GpuOcean.h
@@ -197,9 +203,6 @@ set(SRC_FILES
     Render/Backend/RenderBackend_HiZDebug.cpp
     Render/Backend/RenderBackend_GenScreenSpaceDepthPyramid.cpp
     Render/Backend/RenderBackend_SSRTrace.cpp
-    Render/Backend/RenderBackend_SSAO.cpp
-    Render/Backend/RenderBackend_GTAO.cpp
-    Render/Backend/RenderBackend_Blur.cpp
     Render/Backend/RenderBackend_PostProcess.cpp
     Render/Backend/RenderBackend_DebugDraw.cpp
     Render/Backend/RenderBackend_DrawGenericSurf.cpp

@@ -85,8 +85,7 @@ void ShaderPipelineBootstrap::Update() {
     readyPipelineCount = newReadyPipelineCount;
 
     if (failedPipeline) {
-        BE_ERRLOG("ShaderPipelineBootstrap::Update: pipeline build failed (%s)\n",
-            failedPipeline->groupName ? failedPipeline->groupName : "unknown");
+        BE_ERRLOG("ShaderPipelineBootstrap::Update: pipeline build failed (%s)\n", failedPipeline->groupName ? failedPipeline->groupName : "unknown");
         pipelines.Clear();
         state = State::Failed;
         return;

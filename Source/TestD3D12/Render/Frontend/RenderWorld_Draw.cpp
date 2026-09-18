@@ -337,7 +337,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), renderFrameSettings.ssr);
 
     const bool needAOResolvedDepth = renderContext->GetMainRTSampleCount() > 1 && !renderCamera->GetSSRResolvedDepthTexture();
-    renderCamera->EnsureAOResources(renderWidth, renderHeight, needAOResolvedDepth, renderFrameSettings);
+    renderCamera->aoResources.Ensure(renderWidth, renderHeight, needAOResolvedDepth, renderFrameSettings);
 
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
     const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
@@ -443,23 +443,15 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->snapshotDepthTexture = renderCamera->GetSnapshotDepthTexture();
 
     visCamera->ssrResolvedDepthTexture = renderCamera->GetSSRResolvedDepthTexture();
-    visCamera->aoTexture = renderCamera->GetAOTexture();
-    visCamera->aoRawTexture = renderCamera->GetAORawTexture();
-    visCamera->aoTempTexture = renderCamera->GetAOTempTexture();
-    visCamera->aoHalfDepthTexture = renderCamera->GetAOHalfDepthTexture();
-    visCamera->aoDepthTexture = useMSAA ? (visCamera->ssrResolvedDepthTexture ? visCamera->ssrResolvedDepthTexture : renderCamera->GetAOResolvedDepthTexture()) : visCamera->depthTexture;
-    visCamera->gtaoPrefilterDepthTexture = renderCamera->GetGTAOPrefilterDepthTexture();
-    visCamera->gtaoPrefilterDepthMipCount = renderCamera->GetGTAOPrefilterDepthMipCount();
-    visCamera->gtaoPackedEdgesTexture = renderCamera->GetGTAOPackedEdgesTexture();
-    for (uint32_t mipLevel = 0; mipLevel < RenderGTAODepthMipMaxLevelCount; ++mipLevel) {
-        visCamera->gtaoPrefilterDepthMipSRVs[mipLevel] = renderCamera->GetGTAOPrefilterDepthMipSRVs()[mipLevel];
-        visCamera->gtaoPrefilterDepthMipUAVs[mipLevel] = renderCamera->GetGTAOPrefilterDepthMipUAVs()[mipLevel];
-    }
-    visCamera->aoMode = renderFrameSettings.aoMode;
-    visCamera->aoTemporalNoise = renderFrameSettings.aoTemporalNoise && useTAA && renderCamera->IsHistoryValid() && !debugAO;
-    const bool hasCommonAOResources = visCamera->aoTexture && visCamera->aoDepthTexture && visCamera->rtNormalTexture && (!useMSAA || visCamera->rtNormalMSAATexture);
-    const bool hasGTAOResources = visCamera->aoRawTexture && visCamera->gtaoPrefilterDepthTexture && visCamera->gtaoPackedEdgesTexture && visCamera->gtaoPrefilterDepthMipCount > 0;
-    visCamera->applyAO = useAO && hasCommonAOResources && (visCamera->aoMode != RenderAOMode::GTAO || hasGTAOResources);
+
+    ScreenSpaceAOFrameData &ao = visCamera->ao;
+    ao.textures = renderCamera->aoResources.GetTextures();
+    ao.depthTexture = useMSAA ? (visCamera->ssrResolvedDepthTexture ? visCamera->ssrResolvedDepthTexture : renderCamera->aoResources.GetResolvedDepthTexture()) : visCamera->depthTexture;
+    ao.normalTexture = visCamera->rtNormalTexture;
+    ao.projectionPolicy = visCamera->projectionPolicy;
+    ao.mode = renderFrameSettings.aoMode;
+    ao.temporalNoise = renderFrameSettings.aoTemporalNoise && useTAA && renderCamera->IsHistoryValid() && !debugAO;
+    visCamera->applyAO = useAO && ScreenSpaceAO::HasRequiredResources(ao) && (!useMSAA || visCamera->rtNormalMSAATexture);
     visCamera->needDepthNormalOutput = visCamera->applyAO;
 
     visCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;

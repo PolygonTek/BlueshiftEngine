@@ -24,7 +24,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     const uint2 inputCoord = min(outputCoord * gtaoDebugParams.inputSize / gtaoDebugParams.outputSize, gtaoDebugParams.inputSize - 1u);
     const float value = inputTexture.Load(int3(inputCoord, 0));
 
-    float preview = value;
+    float preview = value * GTAOWorkingVisibilityScale;
     if (gtaoDebugParams.sourceType == 1u) {
         const float4 edges = GTAOUnpackEdges(value);
         preview = dot(edges, 0.25f);

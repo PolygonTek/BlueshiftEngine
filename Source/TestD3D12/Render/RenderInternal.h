@@ -25,6 +25,7 @@
 #include "Render/Frontend/RenderCamera.h"
 #include "Render/Frontend/RenderLight.h"
 #include "Render/RenderFrameSettings.h"
+#include "Render/ScreenSpaceAOResources.h"
 #include "Math/Matrix4.h"
 #include "Math/OBB.h"
 #include "Math/Plane.h"
@@ -153,6 +154,15 @@ struct LightCulling {
     uint32_t                    tileWordTableOffset = ~0u;  // 현재 카메라가 셰이더에서 사용할 라이트 bitmask word 테이블 오프셋
 };
 
+struct ScreenSpaceAOFrameData {
+    RenderAOMode                mode = RenderAOMode::Off;
+    RHI::Texture *              depthTexture = nullptr;
+    RHI::Texture *              normalTexture = nullptr;
+    ScreenSpaceAOTextures       textures;
+    RHI::ProjectionPolicy       projectionPolicy;
+    bool                        temporalNoise = false;
+};
+
 // 한 프레임 렌더링에서만 유효한 렌더링 카메라
 // 매 프레임 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
 struct VisCamera {
@@ -271,19 +281,7 @@ struct VisCamera {
     float                       hiZDebugLinearDepthScale = 1.0f;
 
     bool                        applyAO = false;
-    RenderAOMode                aoMode = RenderAOMode::Off;
-    bool                        aoTemporalNoise = false;
-    RHI::Texture *              aoTexture = nullptr;
-    RHI::Texture *              aoRawTexture = nullptr;
-    RHI::Texture *              aoTempTexture = nullptr;
-    RHI::Texture *              aoHalfDepthTexture = nullptr;
-    RHI::Texture *              aoDepthTexture = nullptr;
-
-    RHI::Texture *              gtaoPrefilterDepthTexture = nullptr;
-    RHI::ViewID                 gtaoPrefilterDepthMipSRVs[RenderGTAODepthMipMaxLevelCount] = {};
-    RHI::ViewID                 gtaoPrefilterDepthMipUAVs[RenderGTAODepthMipMaxLevelCount] = {};
-    uint32_t                    gtaoPrefilterDepthMipCount = 0;
-    RHI::Texture *              gtaoPackedEdgesTexture = nullptr;
+    ScreenSpaceAOFrameData      ao;
 
     bool                        generateScreenSpaceDepthPyramid = false;
     RHI::Texture *              screenSpaceDepthPyramidTexture = nullptr;

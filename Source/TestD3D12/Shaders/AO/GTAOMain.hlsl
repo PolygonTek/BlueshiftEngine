@@ -34,40 +34,6 @@ RWTexture2D<float> outputPackedEdgesTexture : register(u1);
 #define GTAO_STEPS_PER_SLICE GTAOQualityHighStepsPerSlice
 #endif
 
-bool GTAOIsCloserDeviceDepth(float lhs, float rhs) {
-    return gtaoMainParams.farPlaneDeviceDepth == 0.0f ? lhs > rhs : lhs < rhs;
-}
-
-uint2 GTAOSelectInputCoord(uint2 outputCoord) {
-    const uint2 blockOrigin = outputCoord * gtaoMainParams.resolutionScale;
-    uint2 selectedCoord = min(blockOrigin, gtaoMainParams.inputSize - 1u);
-    float selectedDepth = gtaoMainParams.farPlaneDeviceDepth;
-    bool foundSurface = false;
-
-    [unroll]
-    for (uint y = 0u; y < 2u; ++y) {
-        [unroll]
-        for (uint x = 0u; x < 2u; ++x) {
-            if (x >= gtaoMainParams.resolutionScale || y >= gtaoMainParams.resolutionScale) {
-                continue;
-            }
-
-            const uint2 inputCoord = blockOrigin + uint2(x, y);
-            if (any(inputCoord >= gtaoMainParams.inputSize)) {
-                continue;
-            }
-
-            const float depth = inputDepthTexture.Load(int3(inputCoord, 0));
-            if (depth != gtaoMainParams.farPlaneDeviceDepth && (!foundSurface || GTAOIsCloserDeviceDepth(depth, selectedDepth))) {
-                selectedCoord = inputCoord;
-                selectedDepth = depth;
-                foundSurface = true;
-            }
-        }
-    }
-    return selectedCoord;
-}
-
 [RootSignature(GTAO_MAIN_ROOT_SIGNATURE)]
 [numthreads(GTAOMainBlockSizeX, GTAOMainBlockSizeY, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
@@ -76,7 +42,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         return;
     }
 
-    const uint2 inputCoord = GTAOSelectInputCoord(pixelCoord);
+    const uint2 inputCoord = GTAOSelectInputCoord(pixelCoord, gtaoMainParams.resolutionScale, gtaoMainParams.inputSize, gtaoMainParams.farPlaneDeviceDepth, inputDepthTexture);
     const float3 viewNormal = DecodeOctahedralNormal(inputNormalTexture.Load(int3(inputCoord, 0)));
     float packedEdges;
     const float visibility = GTAOEvaluateVisibility(pixelCoord, viewNormal, gtaoMainParams, GTAO_SLICE_COUNT, GTAO_STEPS_PER_SLICE, cameraConstants, prefilteredDepthTexture, pointClampSampler, packedEdges);
