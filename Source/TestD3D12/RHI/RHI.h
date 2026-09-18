@@ -1223,6 +1223,7 @@ namespace RHI {
         virtual void                    BeginRenderPass(CommandList *commandList, const SwapChain *swapChain, const Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, ClearFlag clearFlags = ClearFlag::None) = 0;
         virtual void                    BeginRenderPass(CommandList *commandList, const RenderPassImage renderPassImages[], int numRenderPassImages, RenderPassFlag flags = RenderPassFlag::None) = 0;
         virtual void                    EndRenderPass(CommandList *commandList) = 0;
+        virtual void                    WaitCommandList(CommandList *waitingCommandList, CommandList *waitForCommandList) = 0;
 
         virtual void                    Draw(CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) = 0;
         virtual void                    DrawIndexed(CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) = 0;

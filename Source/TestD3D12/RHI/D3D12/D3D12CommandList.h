@@ -31,7 +31,7 @@ struct D3D12RootBindingData;
 
     - D3D12CommandList 객체는 D3D12CommandListPool 객체에서 할당되고 관리된다.
     - 커맨드 리스트는 Reset() 함수로 초기화한 후, 커맨드를 기록하고 Close() 함수로 닫는다.
-    - 닫힌 커맨드 리스트는 Execute() 함수를 호출하여 실행할 수 있다.
+    - 닫힌 커맨드 리스트는 Reset() 이후 한 번 Execute() 함수를 호출하여 실행할 수 있다.
     - 각종 상태 변수들은 커맨드 리스트 단위로 캐싱한다. (같은 상태로 중복 세팅 코드가 호출되는 것을 방지를 위함)
     - 커맨드 리스트는 자신을 관리하는 커맨드 리스트 풀의 D3D12RootBindingData 객체를 참조하여, 같은 풀에서 할당한 커맨드 리스트들이 동일한 바인딩 데이터를 공유하도록 한다.
     - dirtyMask 의 각 비트는 루트 파라미터 하나에 대응하며, 그래픽스/컴퓨트 루트 시그니처 설정 이후 해당 루트 파라미터의 바인딩 상태가 변경되어 현재 command list 에 commit 되어야 함을 나타낸다.
@@ -92,12 +92,24 @@ public:
     void                            InvalidateStateCache(bool invalidateDescriptorHeaps = true);
 
 private:
+    RHI::CommandQueueType           GetQueueType() const;
     void                            InvalidateRootSignatureDependentBindings();
+
+    struct Dependency {
+        D3D12CommandList *          commandList;
+        uint64_t                    recordingId;
+    };
 
     BE1::LinkList<D3D12CommandList> node;
     D3D12CommandListPool *          parentPool = nullptr;
     ID3D12CommandAllocator *        commandAllocator = nullptr;
     ID3D12CommandList *             commandList = nullptr;
+
+    BE1::Array<Dependency>          dependencies;
+    uint64_t                        recordingId = 0;
+    uint64_t                        completionFenceValue = 0;
+    bool                            requiresCompletionSignal = false;
+    bool                            submitted = false;
 
     const D3D12PipelineState *      currentPSO = nullptr;
     uint64_t                        graphicsRootParametersDirtyMask = 0;

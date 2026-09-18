@@ -201,6 +201,7 @@ public:
     virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::SwapChain *swapChain, const RHI::Texture *depthStencilTexture, const BE1::Color4 &clearColor = {}, float clearDepth = 0, uint8_t clearStencil = 0, RHI::ClearFlag clearFlags = RHI::ClearFlag::None) override;
     virtual void                        BeginRenderPass(RHI::CommandList *commandList, const RHI::RenderPassImage renderPassImages[], int numRenderPassImages, RHI::RenderPassFlag flags = RHI::RenderPassFlag::None) override;
     virtual void                        EndRenderPass(RHI::CommandList *commandList) override;
+    virtual void                        WaitCommandList(RHI::CommandList *waitingCommandList, RHI::CommandList *waitForCommandList) override;
 
     virtual void                        Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) override;
     virtual void                        DrawIndexed(RHI::CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
@@ -291,7 +292,7 @@ public:
     struct D3D12QueueFence {
         ID3D12Fence *                   fence = nullptr;
         uint64_t                        value = 0;
-        BE1::Mutex                      signalMutex;
+        BE1::Mutex                      submissionMutex; // Queue wait, execute, signal 의 제출 순서를 함께 보호한다.
     };
 
     ID3D12Device5 *                     device = nullptr;

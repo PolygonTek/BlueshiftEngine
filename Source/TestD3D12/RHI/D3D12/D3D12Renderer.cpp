@@ -727,10 +727,14 @@ uint64_t D3D12Renderer::SignalFence(RHI::CommandQueueType queueType) {
     D3D12QueueFence &queueFence = queueFences[to_int(queueType)];
 
     // 여러 스레드에서 호출되었을 경우 락을 걸어서 fence 값의 증가 순서와 signal 이 기록되는 순서를 일치시킨다.
-    BE1::ScopedLock lock(queueFence.signalMutex);
+    // Command list 의 wait/execute/signal 과도 동일한 제출 락을 사용한다.
+    BE1::ScopedLock lock(queueFence.submissionMutex);
 
     queueFence.value++;
-    commandQueues[to_int(queueType)]->Signal(queueFence.fence, queueFence.value);
+    HRESULT hr = commandQueues[to_int(queueType)]->Signal(queueFence.fence, queueFence.value);
+    if (FAILED(hr)) {
+        BE_FATALERROR("ID3D12CommandQueue::Signal failed, ERROR: 0x%x", hr);
+    }
 
     return queueFence.value;
 }
@@ -1828,6 +1832,32 @@ void D3D12Renderer::EndRenderPass(RHI::CommandList *commandList) {
         _commandList->GetGraphicsCommandList()->ResourceBarrier((UINT)_commandList->endRenderPassBarriers.Count(), _commandList->endRenderPassBarriers.Ptr());
     }
     _commandList->endRenderPassBarriers.SetCount(0, false);
+}
+
+void D3D12Renderer::WaitCommandList(RHI::CommandList *waitingCommandList, RHI::CommandList *waitForCommandList) {
+    D3D12CommandList *_waitingCommandList = static_cast<D3D12CommandList *>(waitingCommandList);
+    D3D12CommandList *_waitForCommandList = static_cast<D3D12CommandList *>(waitForCommandList);
+
+    if (_waitingCommandList == _waitForCommandList || _waitingCommandList->isSecondary || _waitForCommandList->isSecondary ||
+        _waitingCommandList->recordingId == 0 || _waitForCommandList->recordingId == 0 || _waitingCommandList->submitted || _waitForCommandList->submitted) {
+        BE_FATALERROR("D3D12Renderer::WaitCommandList: expected two distinct, unsubmitted primary command lists\n");
+        return;
+    }
+
+    for (const D3D12CommandList::Dependency &dependency : _waitingCommandList->dependencies) {
+        if (dependency.commandList == _waitForCommandList && dependency.recordingId == _waitForCommandList->recordingId) {
+            // 동일한 의존 관계 설정은 스킵한다.
+            return;
+        }
+    }
+
+    // 의존성 추가
+    _waitingCommandList->dependencies.Append(D3D12CommandList::Dependency{ _waitForCommandList, _waitForCommandList->recordingId });
+
+    // 의존하는 커맨드 리스트가 다른 큐에 있을 때만 완료 시그널이 필요하다.
+    if (_waitingCommandList->GetQueueType() != _waitForCommandList->GetQueueType()) {
+        _waitForCommandList->requiresCompletionSignal = true;
+    }
 }
 
 void D3D12Renderer::Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
