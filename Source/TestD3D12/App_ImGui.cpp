@@ -582,11 +582,6 @@ void App::BuildImGuiOverlay() {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
             }
 
-            bool depthPrepass = r_depthPrepass.GetBool();
-            if (ImGui::Checkbox("Depth prepass", &depthPrepass)) {
-                r_depthPrepass.SetBool(depthPrepass);
-            }
-
             bool specularEnergyCompensation = r_specularEnergyCompensation2.GetBool();
             if (ImGui::Checkbox("Specular energy compensation", &specularEnergyCompensation)) {
                 r_specularEnergyCompensation2.SetBool(specularEnergyCompensation);
