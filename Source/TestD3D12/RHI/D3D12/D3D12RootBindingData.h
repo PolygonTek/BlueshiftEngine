@@ -34,7 +34,7 @@ struct D3D12RootBindingData {
     static constexpr uint32_t           MaxRootParameters = 64;
     static constexpr uint32_t           MaxDescriptorsInDescriptorTable = 64;
     static constexpr uint32_t           MaxRootConstantRegisters = 4;
-    static constexpr uint32_t           MaxRootConstant32BitValues = 16;
+    static constexpr uint32_t           MaxRootConstant32BitValues = 32;
 
                                         // 루트 파라미터 별 디스크립터 테이블에서 사용할 디스크립터들의 CPU 핸들
     D3D12_CPU_DESCRIPTOR_HANDLE         tableDescriptorHandles[MaxRootParameters][MaxDescriptorsInDescriptorTable] = { CD3DX12_CPU_DESCRIPTOR_HANDLE() };
