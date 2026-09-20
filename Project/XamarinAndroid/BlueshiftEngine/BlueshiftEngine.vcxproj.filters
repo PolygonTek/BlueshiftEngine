@@ -414,7 +414,7 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\FloatConverter.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Frustum.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Half.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Hammersley.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Halton.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Math.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\MathCommon.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Matrix.h" />

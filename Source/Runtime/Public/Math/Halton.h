@@ -19,16 +19,16 @@ BE_NAMESPACE_BEGIN
 /*
 -------------------------------------------------------------------------------
 
-    Hammersley-Halton Sequence
+    Halton Sequence
 
 -------------------------------------------------------------------------------
 */
 
 template <int N>
-class Hammersley {
+class Halton {
 public:
-    Hammersley(int baseX = 2, int baseY = 7);
-    Hammersley(int baseX, int baseY, const Vec2 &sampleOffset);
+    Halton(int baseX = 2, int baseY = 7);
+    Halton(int baseX, int baseY, const Vec2 &sampleOffset);
 
                     /// Casts this to a C array.
                     /// This function simply returns a C pointer view to this data structure.
@@ -42,7 +42,7 @@ public:
 private:
     void            GenerateSamples(int baseX, int baseY, const Vec2 &sampleOffset);
 
-                    /// Radical Inverse function for Hammersley and Halton squences.
+                    /// Radical inverse function for the Halton sequence.
     float           RadicalInverse(int index, int base) const;
 
     Vec2            samples[N];
@@ -51,17 +51,17 @@ private:
 };
 
 template <int N>
-BE_INLINE Hammersley<N>::Hammersley(int baseX, int baseY) : baseX(baseX), baseY(baseY) {
+BE_INLINE Halton<N>::Halton(int baseX, int baseY) : baseX(baseX), baseY(baseY) {
     GenerateSamples(baseX, baseY, Vec2(RNG::GetRandom(1.0f), RNG::GetRandom(1.0f)));
 }
 
 template <int N>
-BE_INLINE Hammersley<N>::Hammersley(int baseX, int baseY, const Vec2 &sampleOffset) : baseX(baseX), baseY(baseY) {
+BE_INLINE Halton<N>::Halton(int baseX, int baseY, const Vec2 &sampleOffset) : baseX(baseX), baseY(baseY) {
     GenerateSamples(baseX, baseY, sampleOffset);
 }
 
 template <int N>
-BE_INLINE void Hammersley<N>::GenerateSamples(int baseX, int baseY, const Vec2 &sampleOffset) {
+BE_INLINE void Halton<N>::GenerateSamples(int baseX, int baseY, const Vec2 &sampleOffset) {
     for (int sampleIndex = 0; sampleIndex < N; sampleIndex++) {
         samples[sampleIndex].x = Math::Fract(RadicalInverse(sampleIndex, baseX) + sampleOffset.x);
         samples[sampleIndex].y = Math::Fract(RadicalInverse(sampleIndex, baseY) + sampleOffset.y);
@@ -69,7 +69,7 @@ BE_INLINE void Hammersley<N>::GenerateSamples(int baseX, int baseY, const Vec2 &
 }
 
 template <int N>
-BE_INLINE float Hammersley<N>::RadicalInverse(int index, int base) const {
+BE_INLINE float Halton<N>::RadicalInverse(int index, int base) const {
     float radix = (float)base;
     float x = 0.0f;
 
@@ -84,7 +84,7 @@ BE_INLINE float Hammersley<N>::RadicalInverse(int index, int base) const {
 }
 
 template <int N>
-BE_INLINE const Vec2 &Hammersley<N>::GetSample(int index) const {
+BE_INLINE const Vec2 &Halton<N>::GetSample(int index) const {
     return samples[index % N];
 }
 

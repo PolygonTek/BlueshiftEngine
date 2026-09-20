@@ -38,7 +38,7 @@
 #include "Math/Rect.h"
 #include "Math/Color.h"
 #include "Math/Barycentric.h"
-#include "Math/Hammersley.h"
+#include "Math/Halton.h"
 #include "Math/SamplingPDF.h"
 #include "Math/SphericalHarmonics.h"
 #include "Math/Hermite.h"

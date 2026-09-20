@@ -568,7 +568,7 @@
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Image\DxtEncoder.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Hermite.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\FloatConverter.h" />
-    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Hammersley.h" />
+    <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\Halton.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\RGBE9995.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\Math\SphericalHarmonics.h" />
     <ClInclude Include="..\..\..\Source\BlueshiftEngine\Public\RHI\RHI.h" />

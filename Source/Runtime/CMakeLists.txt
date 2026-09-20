@@ -88,7 +88,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/FloatConverter.h
     Public/Math/Frustum.h
     Public/Math/Half.h
-    Public/Math/Hammersley.h
+    Public/Math/Halton.h
     Public/Math/Line.h
     Public/Math/LineSegment.h
     Public/Math/Math.h

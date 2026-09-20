@@ -46,8 +46,8 @@ void Sampler::Init(int numSamples, uint64_t seed) {
     BE1::RNG rng(seed);
 
 #if 1
-    // Reuse the Hammersley-Halton radical inverse sequence without consuming random numbers.
-    static const BE1::Hammersley<Options::MaxSampleCount> baseSamples(2, 7, BE1::Vec2::zero);
+    // Reuse the Halton radical inverse sequence without consuming random numbers.
+    static const BE1::Halton<Options::MaxSampleCount> baseSamples(2, 7, BE1::Vec2::zero);
 
     for (int s = 0; s < NumSets; s++) {
         float rx = rng.GetNextFloat();

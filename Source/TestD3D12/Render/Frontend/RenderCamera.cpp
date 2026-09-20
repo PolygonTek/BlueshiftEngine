@@ -16,7 +16,7 @@
 #include "RenderCamera.h"
 #include "Render/RenderCvars.h"
 #include "Render/RenderUtils.h"
-#include "Math/Hammersley.h"
+#include "Math/Halton.h"
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
@@ -660,7 +660,7 @@ void RenderCamera::UpdateTemporalJitter(bool enableJitter, uint32_t sampleCount)
 
     // deterministic offset 이 Vec2::zero 이므로 0 번 샘플은 (0, 0) 이다.
     // jitter 로 변환하면 (-0.5, -0.5) 이 되어 최대 offset 이 되므로 1 번 샘플부터 사용한다.
-    static const BE1::Hammersley<MaxTemporalJitterSampleCount + 1> jitterSamples(2, 3, BE1::Vec2::zero);
+    static const BE1::Halton<MaxTemporalJitterSampleCount + 1> jitterSamples(2, 3, BE1::Vec2::zero);
     const uint32_t sampleIndex = (temporalFrameIndex % temporalJitterSampleCount) + 1;
     const BE1::Vec2 &sample = jitterSamples.GetSample(sampleIndex);
 
