@@ -54,18 +54,18 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
         return;
     }
 
-    RenderObject::Desc desc;
-    desc.meshInstance = testMesh->GetStaticInstance();
-    if (!desc.meshInstance) {
+    RenderObject::Desc meshDesc;
+    meshDesc.meshInstance = testMesh->GetStaticInstance();
+    if (!meshDesc.meshInstance) {
         BE_WARNLOG("SceneStaticMesh::Init: failed to instantiate '%s'", meshPath);
         testMesh.reset();
         return;
     }
 
     const BE1::AABB &meshAABB = testMesh->GetAABB();
-    desc.flags = RenderObject::Flag::Static | RenderObject::Flag::CastShadows;
-    desc.worldMatrix.SetTranslation(-meshAABB.Center());
-    desc.aabb = meshAABB;
+    meshDesc.flags = RenderObject::Flag::Static | RenderObject::Flag::CastShadows;
+    meshDesc.worldMatrix.SetTranslation(-meshAABB.Center());
+    meshDesc.aabb = meshAABB;
 
     int materialCount = 1;
     const int numSurfaces = testMesh->NumSurfaces();
@@ -75,12 +75,12 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
             materialCount = BE1::Max(materialCount, materialIndex + 1);
         }
     }
-    desc.materials.SetCount(materialCount);
+    meshDesc.materials.SetCount(materialCount);
     for (int materialIndex = 0; materialIndex < materialCount; ++materialIndex) {
-        desc.materials[materialIndex] = materialManager.whiteLitMaterial;
+        meshDesc.materials[materialIndex] = materialManager.whiteLitMaterial;
     }
 
-    renderWorld->AddRenderObject(desc);
+    renderWorld->AddRenderObject(meshDesc);
 }
 
 void SceneStaticMesh::Shutdown() {

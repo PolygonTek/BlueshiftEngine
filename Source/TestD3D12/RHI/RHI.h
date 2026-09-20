@@ -1090,6 +1090,8 @@ namespace RHI {
         virtual const RendererInfo &    GetRendererInfo() const = 0;
         const ProjectionPolicy &        GetProjectionPolicy() const { return projectionPolicy; }
 
+        virtual bool                    SupportsRayTracing() const = 0;
+
         virtual uint64_t                SignalFence(CommandQueueType queueType) = 0;
         virtual bool                    IsFenceComplete(CommandQueueType queueType, uint64_t checkFenceValue) = 0;
         virtual void                    WaitFence(CommandQueueType queueType, uint64_t expectedFenceValue) = 0;

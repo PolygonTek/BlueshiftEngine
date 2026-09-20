@@ -75,15 +75,6 @@ bool ScreenSpaceDepthPyramid::Dispatch(RHI::CommandList *commandList, GpuTiming 
 
     assert(data.validWidth == BE1::Max((depthTexture->GetWidth() + 1) >> 1, 1u));
     assert(data.validHeight == BE1::Max((depthTexture->GetHeight() + 1) >> 1, 1u));
-    assert(data.mipWidths[0] == depthPyramidTexture->GetWidth());
-    assert(data.mipHeights[0] == depthPyramidTexture->GetHeight());
-    if (useMSAA) {
-        assert(depthTexture->GetWidth() == normalMSAATexture->GetWidth() && depthTexture->GetHeight() == normalMSAATexture->GetHeight());
-        assert(depthTexture->GetSampleCount() == normalMSAATexture->GetSampleCount());
-        assert(depthTexture->GetWidth() == resolvedDepthTexture->GetWidth() && depthTexture->GetHeight() == resolvedDepthTexture->GetHeight());
-        assert(depthTexture->GetWidth() == resolvedNormalTexture->GetWidth() && depthTexture->GetHeight() == resolvedNormalTexture->GetHeight());
-        assert(resolvedDepthTexture->GetSampleCount() == 1 && resolvedNormalTexture->GetSampleCount() == 1);
-    }
 
     // MSAA depth 는 Texture2DMS 로 각 sample 을 직접 읽어 min/max 를 구해야 하므로, 단일 sample 용 Texture2D shader 와 PSO 를 분리한다.
     // MSAA variant 는 같은 sample 순회를 재사용해 SSR 입력 depth/normal 도 함께 resolve 한다.

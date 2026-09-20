@@ -54,6 +54,8 @@ public:
     virtual void                        GetMemoryUsage(RHI::MemoryUsage &memoryUsage) const override;
     virtual const RHI::RendererInfo &   GetRendererInfo() const override { return rendererInfo; }
 
+    virtual bool                        SupportsRayTracing() const override { return supportsRayTracing; }
+
     RHI::ShaderFormat                   GetShaderFormat() const;
 
     virtual uint64_t                    SignalFence(RHI::CommandQueueType queueType) override;
