@@ -168,7 +168,7 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
     break;
   }
 
-  Create2D(cinfo.output_width, cinfo.output_height, 1, imageFormat, GammaSpace::sRGB, nullptr, Flag::None);
+  Create2D(cinfo.output_width, cinfo.output_height, 1, imageFormat, GammaSpace::sRGB, nullptr);
   
   byte *ptr = this->pic;
 

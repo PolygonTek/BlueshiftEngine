@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
@@ -135,6 +137,12 @@ public:
     void                            Reset();
 
     bool                            Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags);
+    bool                            Create1D(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::Texture1D, std::move(srcImage), flags); }
+    bool                            Create2D(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::Texture2D, std::move(srcImage), flags); }
+    bool                            Create2DArray(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::Texture2DArray, std::move(srcImage), flags); }
+    bool                            CreateCube(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::TextureCube, std::move(srcImage), flags); }
+    bool                            CreateCubeArray(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::TextureCubeArray, std::move(srcImage), flags); }
+    bool                            Create3D(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::Texture3D, std::move(srcImage), flags); }
 
                                     // 리로드 완료 후 리소스를 사용할 수 있으면 true 를 반환한다. 새 데이터 로딩 성공 여부와는 무관하다.
     bool                            Reload();

@@ -21,10 +21,7 @@ SamplerManager      samplerManager;
 void SamplerManager::Init() {
     samplerHashMap.Init(512, 512, 512);
 
-    defaultSampler = GetSampler(RHI::TextureFilter::LinearMipmapLinear,
-        RHI::TextureAddressMode::Repeat,
-        RHI::TextureAddressMode::Repeat,
-        RHI::TextureAddressMode::Repeat);
+    defaultSampler = GetSampler(RHI::TextureFilter::LinearMipmapLinear, RHI::TextureAddressMode::Repeat, RHI::TextureAddressMode::Repeat, RHI::TextureAddressMode::Repeat);
     if (!defaultSampler) {
         BE_FATALERROR("SamplerManager::Init: failed to create default sampler\n");
     }
@@ -48,11 +45,7 @@ Sampler *SamplerManager::FindSampler(uint32_t hash) const {
     return nullptr;
 }
 
-Sampler *SamplerManager::FindSampler(RHI::TextureFilter filter,
-    RHI::TextureAddressMode addressModeU,
-    RHI::TextureAddressMode addressModeV,
-    RHI::TextureAddressMode addressModeW,
-    uint8_t maxAnisotropy, RHI::TextureBorderColor borderColor) const {
+Sampler *SamplerManager::FindSampler(RHI::TextureFilter filter, RHI::TextureAddressMode addressModeU, RHI::TextureAddressMode addressModeV, RHI::TextureAddressMode addressModeW, uint8_t maxAnisotropy, RHI::TextureBorderColor borderColor) const {
     Sampler::Hasher hasher = {};
     hasher.bits.filter = (uint32_t)filter;
     hasher.bits.addressModeU = (uint32_t)addressModeU;
@@ -63,11 +56,7 @@ Sampler *SamplerManager::FindSampler(RHI::TextureFilter filter,
     return FindSampler(hasher.value);
 }
 
-Sampler *SamplerManager::GetSampler(RHI::TextureFilter filter,
-    RHI::TextureAddressMode addressModeU,
-    RHI::TextureAddressMode addressModeV,
-    RHI::TextureAddressMode addressModeW,
-    uint8_t maxAnisotropy, RHI::TextureBorderColor borderColor) {
+Sampler *SamplerManager::GetSampler(RHI::TextureFilter filter, RHI::TextureAddressMode addressModeU, RHI::TextureAddressMode addressModeV, RHI::TextureAddressMode addressModeW, uint8_t maxAnisotropy, RHI::TextureBorderColor borderColor) {
     Sampler::Hasher hasher = {};
     hasher.bits.filter = (uint32_t)filter;
     hasher.bits.addressModeU = (uint32_t)addressModeU;

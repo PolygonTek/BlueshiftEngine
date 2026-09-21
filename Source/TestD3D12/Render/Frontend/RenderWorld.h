@@ -54,10 +54,7 @@ enum class DrawTextFlag : uint16_t {
     AddOutlines                 = BIT(9)
 };
 
-template<>
-struct BE1::enable_bitmask_operators<DrawTextFlag> {
-    static constexpr bool enable = true;
-};
+constexpr std::true_type EnableBitmaskEnum(DrawTextFlag) noexcept { return {}; }
 
 /*
 ---------------------------------------------------------------------------------------------------

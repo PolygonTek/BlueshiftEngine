@@ -314,7 +314,7 @@ void RenderContext::InitHdrMapRT() {
    
     Image::Format screenImageFormat = GetScreenImageFormat();
     Image hdrBloomImage;
-    hdrBloomImage.Create2D(quarterWidth, quarterHeight, 1, screenImageFormat, Image::GammaSpace::Linear, nullptr, Image::Flag::None);
+    hdrBloomImage.Create2D(quarterWidth, quarterHeight, 1, screenImageFormat, Image::GammaSpace::Linear, nullptr);
 
     for (int i = 0; i < COUNT_OF(hdrBloomRT); i++) {
         hdrBloomTexture[i] = textureManager.AllocTexture(va("_%i_hdrBloom%i", (int)contextHandle, i));

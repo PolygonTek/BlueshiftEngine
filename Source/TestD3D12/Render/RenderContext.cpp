@@ -283,10 +283,10 @@ void RenderContext::CreateFrameCompositionTexture() {
     RHI::Renderer::RHIFormatToImageFormat(GetFrameCompositionColorFormat(), &imageFormat, &isSRGB);
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(width, height, 1, 1, 1, imageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image->Init2DFromMemory(width, height, 1, imageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr);
 
     const RHI::ClearValue clearValue = RHI::ClearValue::Color(baseClearColor[0], baseClearColor[1], baseClearColor[2], baseClearColor[3]);
-    frameCompositionTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, clearValue, 1, RHI::GPUResourceState::ShaderResource);
+    frameCompositionTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, clearValue, 1, RHI::GPUResourceState::ShaderResource);
     assert(frameCompositionTexture);
 
     RHI::renderer->SetName(frameCompositionTexture, "RenderContext::frameCompositionTexture");
@@ -320,11 +320,11 @@ bool RenderContext::CreateCSMDepthTexture(uint32_t resolution) {
     assert(resolution > 0);
 
     SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
-    depthImage->InitFromMemory(resolution, resolution, 1, CSMCascadeCount, 1, BE1::Image::Format::D24S8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    depthImage->Init2DArrayFromMemory(resolution, resolution, CSMCascadeCount, 1, BE1::Image::Format::D24S8, BE1::Image::GammaSpace::Linear, nullptr);
 
     const RHI::TextureFlag textureFlags = RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless;
     const RHI::ClearValue optimizedClearValue = RHI::ClearValue::DepthStencil(1.0f, 0);
-    RHI::Texture *newTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2DArray, textureFlags, depthImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::Texture *newTexture = RHI::renderer->CreateTexture2DArray(textureFlags, depthImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
     if (!newTexture) {
         return false;
     }

@@ -21,7 +21,6 @@
 #include "Math/Frustum.h"
 #include "Math/OBB.h"
 #include "Math/Plane.h"
-#include "Math/Sphere.h"
 #include "RHI/RHI.h"
 
 namespace EngineAxis {

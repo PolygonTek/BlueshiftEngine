@@ -324,10 +324,11 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     const bool skipPostProcess = renderFrameSettings.skipPostProcess || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
     const bool useAO = renderFrameSettings.aoMode != RenderAOMode::Off;
-    const bool debugAO = (renderFrameSettings.aoMode == RenderAOMode::SSAO && renderFrameSettings.ssaoDebug) ||
-                         (renderFrameSettings.aoMode == RenderAOMode::GTAO && renderFrameSettings.gtaoDebug != 0);
+    const bool debugAO = (renderFrameSettings.aoMode == RenderAOMode::SSAO && renderFrameSettings.ssaoDebug) || (renderFrameSettings.aoMode == RenderAOMode::GTAO && renderFrameSettings.gtaoDebug != 0);
     const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableTemporalHistory);
     const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess && !debugAO && renderFrameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
+    const bool needNormalTexture = useAO || renderFrameSettings.ssr;
+    const bool needVelocityTexture = useTAA;
     const bool needColorHistory = useTAA;
     const bool needDepthHistory = useTAA;
     const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && renderFrameSettings.hiZOcclusionCulling;
@@ -336,19 +337,20 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     const RenderBloomMode bloomMode = renderFrameSettings.bloomMode;
 
-    if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, renderContext->GetBaseClearColor())) {
+    if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, needNormalTexture, needVelocityTexture, renderContext->GetBaseClearColor())) {
         return;
     }
 
     ScreenSpaceDepthPyramidResources &depthPyramidResources = renderCamera->GetScreenSpaceDepthPyramidResources();
     depthPyramidResources.Ensure(renderWidth, renderHeight, renderFrameSettings.ssr);
-    renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), renderFrameSettings.ssr);
+    renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderFrameSettings.ssr);
 
-    const bool needAOResolvedDepth = renderContext->GetMainRTSampleCount() > 1 && !renderCamera->GetSSRResolvedDepthTexture();
-    renderCamera->aoResources.Ensure(renderWidth, renderHeight, needAOResolvedDepth, renderFrameSettings);
+    renderCamera->EnsureResolvedDepthTexture(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), useAO || renderFrameSettings.ssr);
+    renderCamera->aoResources.Ensure(renderWidth, renderHeight, renderFrameSettings);
 
+    const bool useMSAA = renderCamera->GetColorTexture()->GetSampleCount() > 1;
     const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
-    const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !renderCamera->GetRTColorMSAATexture();
+    const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !useMSAA;
     RHI::PipelineState *sceneSnapshotDownsamplePSO = requestHalfResSnapshot ? GetSceneSnapshotDownsamplePSO(renderContext->GetMainRTColorFormat()) : nullptr;
     const bool useHalfResSnapshot = requestHalfResSnapshot && sceneSnapshotDownsamplePSO;
     renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot, useHalfResSnapshot);
@@ -366,8 +368,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool requestHiZOcclusionCulling = canUseHiZ && needHiZCullResources && hiZResources.GetVisibleInstanceBuffer() && hiZResources.GetIndirectArgsBuffer();
     const bool requestHiZDebugPreview = canUseHiZ && needHiZDebugPreview && hiZResources.GetDebugPreviewTexture();
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
-    const bool useMSAA = renderCamera->GetRTColorMSAATexture() != nullptr;
-    const bool hasSSRInputs = renderCamera->GetRTNormalTexture() && (!useMSAA || renderCamera->GetSSRResolvedDepthTexture());
+    const bool hasSSRInputs = renderCamera->GetNormalTexture() && (!useMSAA || (renderCamera->GetResolvedDepthTexture() && renderCamera->GetResolvedNormalTexture()));
     const bool requestScreenSpaceDepthPyramidGeneration = renderFrameSettings.ssr && hasSSRInputs && renderCamera->GetDepthTexture() && depthPyramidResources.GetTexture();
     const bool requestSSRTrace = requestScreenSpaceDepthPyramidGeneration && renderCamera->GetSSRTraceTexture();
 
@@ -439,28 +440,27 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->flags = renderCamera->desc.flags;
     visCamera->needNormalOutput = renderFrameSettings.ssr;
     visCamera->needVelocityOutput = useTAA;
-    visCamera->rtColorTexture = renderCamera->GetRTColorTexture();
-    visCamera->rtColorMSAATexture = renderCamera->GetRTColorMSAATexture();
+    visCamera->colorTexture = renderCamera->GetColorTexture();
+    visCamera->resolvedColorTexture = renderCamera->GetResolvedColorTexture();
     visCamera->depthTexture = renderCamera->GetDepthTexture();
-    visCamera->rtNormalTexture = renderCamera->GetRTNormalTexture();
-    visCamera->rtNormalMSAATexture = renderCamera->GetRTNormalMSAATexture();
-    visCamera->rtVelocityTexture = renderCamera->GetRTVelocityTexture();
-    visCamera->rtVelocityMSAATexture = renderCamera->GetRTVelocityMSAATexture();
+    visCamera->resolvedDepthTexture = renderCamera->GetResolvedDepthTexture();
+    visCamera->normalTexture = renderCamera->GetNormalTexture();
+    visCamera->resolvedNormalTexture = renderCamera->GetResolvedNormalTexture();
+    visCamera->velocityTexture = renderCamera->GetVelocityTexture();
+    visCamera->resolvedVelocityTexture = renderCamera->GetResolvedVelocityTexture();
 
     visCamera->sceneSnapshotDownsamplePSO = useHalfResSnapshot ? sceneSnapshotDownsamplePSO : nullptr;
     visCamera->snapshotColorTexture = renderCamera->GetSnapshotColorTexture();
     visCamera->snapshotDepthTexture = renderCamera->GetSnapshotDepthTexture();
 
-    visCamera->ssrResolvedDepthTexture = renderCamera->GetSSRResolvedDepthTexture();
-
     ScreenSpaceAOFrameData &ao = visCamera->ao;
     ao.textures = renderCamera->aoResources.GetTextures();
-    ao.depthTexture = useMSAA ? (visCamera->ssrResolvedDepthTexture ? visCamera->ssrResolvedDepthTexture : renderCamera->aoResources.GetResolvedDepthTexture()) : visCamera->depthTexture;
-    ao.normalTexture = visCamera->rtNormalTexture;
+    ao.depthTexture = useMSAA ? visCamera->resolvedDepthTexture : visCamera->depthTexture;
+    ao.normalTexture = useMSAA ? visCamera->resolvedNormalTexture : visCamera->normalTexture;
     ao.projectionPolicy = visCamera->projectionPolicy;
     ao.mode = renderFrameSettings.aoMode;
     ao.temporalNoise = renderFrameSettings.aoTemporalNoise && useTAA && renderCamera->IsHistoryValid() && !debugAO;
-    visCamera->applyAO = useAO && ScreenSpaceAO::HasRequiredResources(ao) && (!useMSAA || visCamera->rtNormalMSAATexture);
+    visCamera->applyAO = useAO && ScreenSpaceAO::HasRequiredResources(ao) && (!useMSAA || visCamera->normalTexture);
     visCamera->needDepthNormalOutput = visCamera->applyAO;
 
     visCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;

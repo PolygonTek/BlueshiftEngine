@@ -112,7 +112,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
         palette = data + infoEnd;
     }
 
-    Create2D(w, h, 1, Image::Format::B8G8R8, Image::GammaSpace::sRGB, nullptr, Flag::None);
+    Create2D(w, h, 1, Image::Format::B8G8R8, Image::GammaSpace::sRGB, nullptr);
 
     ptr = data + bmfh->ofsBits;
 

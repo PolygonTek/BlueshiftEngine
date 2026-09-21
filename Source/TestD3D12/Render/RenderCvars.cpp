@@ -70,7 +70,7 @@ CVAR_MINMAX(r_msaa, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "M
 CVAR(r_taa, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable temporal anti-aliasing");
 CVAR(r_taaJitter, "1", BE1::CVar::Flag::Bool, "enable temporal projection jitter");
 CVAR_MINMAX(r_taaJitterSampleCount, "16", BE1::CVar::Flag::Integer, "temporal projection jitter sample count", 1, 64);
-CVAR_MINMAX(r_taaHistoryWeight, "0.9", BE1::CVar::Flag::Float, "temporal anti-aliasing history blend weight", 0.0f, 1.0f);
+CVAR_MINMAX(r_taaHistoryWeight, "0.95", BE1::CVar::Flag::Float, "temporal anti-aliasing history blend weight", 0.0f, 1.0f);
 CVAR_MINMAX(r_taaColorBoxSigma, "2.0", BE1::CVar::Flag::Float, "temporal anti-aliasing variance color box sigma scale", 0.0f, 15.0f);
 CVAR_MINMAX(r_taaSubpixelWeight, "0.5", BE1::CVar::Flag::Float, "temporal anti-aliasing maximum subpixel current frame weight", 0.0f, 1.0f);
 CVAR_MINMAX(r_taaLuminanceWeight, "0.25", BE1::CVar::Flag::Float, "temporal anti-aliasing luminance mismatch history rejection weight", 0.0f, 1.0f);

@@ -23,8 +23,8 @@ bool RenderBackend::DispatchSSRTrace() {
 
     RHI::Texture *renderDepthTexture = currentVisCamera->depthTexture;
     const bool useMSAA = renderDepthTexture && renderDepthTexture->GetSampleCount() > 1;
-    RHI::Texture *depthTexture = useMSAA ? currentVisCamera->ssrResolvedDepthTexture : renderDepthTexture;
-    RHI::Texture *normalTexture = currentVisCamera->rtNormalTexture;
+    RHI::Texture *depthTexture = useMSAA ? currentVisCamera->resolvedDepthTexture : renderDepthTexture;
+    RHI::Texture *normalTexture = useMSAA ? currentVisCamera->resolvedNormalTexture : currentVisCamera->normalTexture;
     RHI::Texture *depthPyramidTexture = currentVisCamera->screenSpaceDepthPyramid.texture;
     RHI::Texture *traceTexture = currentVisCamera->ssrTraceTexture;
 

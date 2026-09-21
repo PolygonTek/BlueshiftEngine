@@ -39,11 +39,10 @@ public:
     ScreenSpaceAOResources(const ScreenSpaceAOResources &) = delete;
     ScreenSpaceAOResources &operator=(const ScreenSpaceAOResources &) = delete;
 
-    void                            Ensure(uint32_t renderWidth, uint32_t renderHeight, bool needResolvedDepth, const RenderFrameSettings &settings);
+    void                            Ensure(uint32_t renderWidth, uint32_t renderHeight, const RenderFrameSettings &settings);
     void                            Destroy();
 
     const ScreenSpaceAOTextures &   GetTextures() const { return textures; }
-    RHI::Texture *                  GetResolvedDepthTexture() const { return resolvedDepthTexture; }
 
 private:
     void                            DestroyFilterResources();
@@ -51,5 +50,4 @@ private:
     bool                            CreateGTAOPrefilterDepthTexture(uint32_t width, uint32_t height, BE1::Image::Format imageFormat);
 
     ScreenSpaceAOTextures           textures;
-    RHI::Texture *                  resolvedDepthTexture = nullptr;
 };

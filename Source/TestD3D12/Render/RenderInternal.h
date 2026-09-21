@@ -46,10 +46,7 @@ enum class VisSurfFlag : uint8_t {
     Skybox                      = BIT(3)
 };
 
-template<>
-struct BE1::enable_bitmask_operators<VisSurfFlag> {
-    static constexpr bool enable = true;
-};
+constexpr std::true_type EnableBitmaskEnum(VisSurfFlag) noexcept { return {}; }
 
 struct VisSurf {
     uint32_t                    index;
@@ -319,15 +316,17 @@ struct VisCamera {
     bool                        needDepthNormalOutput = false; // Smooth view normals for AO, before opaque overwrites the normal buffer.
     bool                        needVelocityOutput = false;
 
-    RHI::Texture *              rtColorTexture = nullptr;
-    RHI::Texture *              rtColorMSAATexture = nullptr;
+    RHI::Texture *              colorTexture = nullptr;
     RHI::Texture *              depthTexture = nullptr;
-    RHI::Texture *              rtNormalTexture = nullptr; // Octahedral view normals: prepass smooth normals for AO, then shading normals for SSR.
-    RHI::Texture *              rtNormalMSAATexture = nullptr;
-    RHI::Texture *              rtVelocityTexture = nullptr;
-    RHI::Texture *              rtVelocityMSAATexture = nullptr;
-    RHI::Texture *              postProcessColorTexture = nullptr;
+    RHI::Texture *              normalTexture = nullptr; // Octahedral view normals: prepass smooth normals for AO, then shading normals for SSR.
+    RHI::Texture *              velocityTexture = nullptr;
 
+    RHI::Texture *              resolvedColorTexture = nullptr;
+    RHI::Texture *              resolvedDepthTexture = nullptr; // Prepass depth for AO, then opaque depth for SSR.
+    RHI::Texture *              resolvedNormalTexture = nullptr;
+    RHI::Texture *              resolvedVelocityTexture = nullptr;
+
+    RHI::Texture *              postProcessColorTexture = nullptr;
     RHI::Texture *              colorHistoryTextures[2] = {};
     RHI::Texture *              depthHistoryTextures[2] = {};
     uint32_t                    currentHistoryTextureIndex = 0;
@@ -345,7 +344,6 @@ struct VisCamera {
     ScreenSpaceDepthPyramidFrameData screenSpaceDepthPyramid;
 
     bool                        traceSSR = false;
-    RHI::Texture *              ssrResolvedDepthTexture = nullptr;
     RHI::Texture *              ssrTraceTexture = nullptr;
 
     bool                        taaResolve = false;

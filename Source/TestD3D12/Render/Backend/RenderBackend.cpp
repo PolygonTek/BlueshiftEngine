@@ -394,9 +394,10 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         if (currentContext->frameCompositionTextureNeedsClear) {
             // 새로 생성되었거나 다시 활성화된 frameCompositionTexture 는 실제로 처음 사용할 때 한 번만 초기화한다.
             const BE1::Color4 &clearColor = currentContext->GetBaseClearColor();
-            RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(currentContext->frameCompositionTexture, RHI::ViewID::PrimaryID,
-                RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
-            outputImage = outputImage.WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
+            RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(
+                currentContext->frameCompositionTexture, RHI::ViewID::PrimaryID,
+                RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource)
+                .WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
             RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
             RHI::renderer->EndRenderPass(mainCommandList);
             currentContext->frameCompositionTextureNeedsClear = false;
@@ -463,67 +464,6 @@ static const RenderPass *FindRenderPass(const VisCamera *visCamera, RenderPassTy
         }
     }
     return nullptr;
-}
-
-struct RenderPassImagesDesc {
-    RHI::RenderPassImage::LoadAction        colorLoadAction;
-    RHI::RenderPassImage::LoadAction        surfaceOutputLoadAction;
-    RHI::RenderPassImage::LoadAction        depthLoadAction;
-    RHI::GPUResourceState                   renderTargetBeforeState;
-    RHI::GPUResourceState                   renderTargetAfterState;
-    RHI::GPUResourceState                   depthBeforeState;
-    RHI::GPUResourceState                   depthAfterState;
-    const RHI::Texture *                    colorResolveTexture;
-    const RHI::Texture *                    depthResolveTexture;
-    RHI::RenderPassImage::DepthResolveMode  depthResolveMode;
-    bool                                    outputVelocity;
-};
-
-// Camera3D render pass 에서 사용할 color, surface output, depth attachment 를 구성한다.
-// 각 attachment 의 종료 상태를 다음 pass 의 시작 상태와 연결해 불필요한 resource transition 을 피하고,
-// 지정된 resolve texture 로 MSAA color/depth 를 resolve 한다.
-static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const RenderPassImagesDesc &desc, const RHI::ClearValue *clearColorValue, RHI::RenderPassImage renderPassImages[6]) {
-    uint32_t renderPassImageCount = 0;
-
-    const bool useMSAA = visCamera->rtColorMSAATexture != nullptr;
-
-    const RHI::Texture *colorTexture = useMSAA ? visCamera->rtColorMSAATexture : visCamera->rtColorTexture;
-    RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(colorTexture, RHI::ViewID::PrimaryID, desc.colorLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
-    if (clearColorValue && desc.colorLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
-        colorImage = colorImage.WithClearValue(*clearColorValue);
-    }
-    renderPassImages[renderPassImageCount++] = colorImage;
-
-    const RHI::ClearValue zeroClearValue = RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f);
-    if (visCamera->needNormalOutput) {
-        const RHI::Texture *normalTexture = useMSAA ? visCamera->rtNormalMSAATexture : visCamera->rtNormalTexture;
-        RHI::RenderPassImage normalImage = RHI::RenderPassImage::Color(normalTexture, RHI::ViewID::PrimaryID, desc.surfaceOutputLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
-        if (desc.surfaceOutputLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
-            normalImage = normalImage.WithClearValue(zeroClearValue);
-        }
-        renderPassImages[renderPassImageCount++] = normalImage;
-    }
-
-    if (desc.outputVelocity) {
-        const RHI::Texture *velocityTexture = useMSAA ? visCamera->rtVelocityMSAATexture : visCamera->rtVelocityTexture;
-        // Prepass 의 velocity 를 보존하고 Ocean 등 후속 패스의 출력만 덧쓴다.
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(velocityTexture, RHI::ViewID::PrimaryID,
-            RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store,
-            RHI::GPUResourceState::ShaderResource, desc.renderTargetAfterState);
-    }
-
-    // A reused texture can retain the optimized clear value of a different projection policy.
-    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(visCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState)
-        .WithClearValue(RHI::ClearValue::DepthStencil(visCamera->projectionPolicy.GetDepthClearValue(), 0));
-
-    if (useMSAA && desc.colorResolveTexture) {
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveColor(desc.colorResolveTexture, RHI::ViewID::PrimaryID, 0);
-    }
-    if (useMSAA && desc.depthResolveTexture) {
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveDepth(desc.depthResolveTexture, RHI::ViewID::PrimaryID, desc.depthResolveMode);
-    }
-
-    return renderPassImageCount;
 }
 
 const void *RenderBackend::ExecuteDrawCamera(const void *data) {
@@ -606,8 +546,9 @@ void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Co
     // 백버퍼에 바로 그리지 않고, frameCompositionTexture 에 그린다.
     RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
     const RHI::RenderPassImage::LoadAction loadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-    RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(frameCompositionTexture, RHI::ViewID::PrimaryID, loadAction, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
-    outputImage = outputImage.WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
+    RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(
+        frameCompositionTexture, RHI::ViewID::PrimaryID, loadAction, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource)
+        .WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
     RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
 
     DrawCamera2D();
@@ -636,8 +577,8 @@ bool RenderBackend::DispatchHiZDebugPreview() {
 }
 
 bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
-    return renderSystem->GetScreenSpaceDepthPyramid().Dispatch(mainCommandList, gpuTiming, currentVisCamera->depthTexture, currentVisCamera->rtNormalMSAATexture,
-        currentVisCamera->ssrResolvedDepthTexture, currentVisCamera->rtNormalTexture, currentVisCamera->projectionPolicy, currentVisCamera->screenSpaceDepthPyramid);
+    return renderSystem->GetScreenSpaceDepthPyramid().Dispatch(mainCommandList, gpuTiming, currentVisCamera->depthTexture, currentVisCamera->normalTexture,
+        currentVisCamera->resolvedDepthTexture, currentVisCamera->resolvedNormalTexture, currentVisCamera->projectionPolicy, currentVisCamera->screenSpaceDepthPyramid);
 }
 
 bool RenderBackend::DispatchScreenSpaceAO() {
@@ -673,7 +614,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     // 불투명 surface 가 없는 프레임도 velocity 와 prepass normal 을 clear 해야 이전 프레임 값이 남지 않는다.
     const bool hasDepthPrepass = currentVisCamera->needVelocityOutput || currentVisCamera->needDepthNormalOutput || FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
 
-    const bool useMSAA = currentVisCamera->rtColorMSAATexture != nullptr;
+    const bool useMSAA = currentVisCamera->colorTexture->GetSampleCount() > 1;
     bool aoReady = false;
 
     // depth prepass
@@ -741,7 +682,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         }
         outputOverrideTexture = currentVisCamera->ao.textures.outputTexture;
     } else if (renderFrameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
-        outputOverrideTexture = currentVisCamera->rtColorTexture;
+        outputOverrideTexture = useMSAA ? currentVisCamera->resolvedColorTexture : currentVisCamera->colorTexture;
     } else if (renderFrameSettings.ssrDebug && ssrTraceReady) {
         outputOverrideTexture = currentVisCamera->ssrTraceTexture;
     }
@@ -795,8 +736,8 @@ void RenderBackend::ExecuteDrawCamera3DShadowPass() {
         // Caster 가 없어도 active slice 를 far depth 로 지워 이전 카메라/프레임의 그림자를 제거한다.
         RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(cascadedShadow->depthTexture, cascade.depthDSV,
             RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
-            RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite);
-        depthImage = depthImage.WithClearValue(RHI::ClearValue::DepthStencil(1.0f, 0));
+            RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite)
+        .WithClearValue(RHI::ClearValue::DepthStencil(1.0f, 0));
         RHI::renderer->BeginRenderPass(mainCommandList, &depthImage, 1);
 
         DrawGenericPass(&cascade.renderPass, shadowViewConstantBuffers[cascadeIndex]);
@@ -817,27 +758,96 @@ void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAc
     uint32_t renderPassImageCount = 0;
 
     if (currentVisCamera->needVelocityOutput) {
-        const RHI::Texture *velocityTexture = currentVisCamera->rtVelocityMSAATexture ? currentVisCamera->rtVelocityMSAATexture : currentVisCamera->rtVelocityTexture;
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(velocityTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
+            currentVisCamera->velocityTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
     if (currentVisCamera->needDepthNormalOutput) {
-        const RHI::Texture *normalTexture = currentVisCamera->rtNormalMSAATexture ? currentVisCamera->rtNormalMSAATexture : currentVisCamera->rtNormalTexture;
+        const RHI::Texture *normalTexture = currentVisCamera->normalTexture;
         assert(normalTexture->GetSampleCount() == currentVisCamera->depthTexture->GetSampleCount());
 
         // AO consumes view normals before opaque writes SSR's shading normals to this attachment.
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(normalTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
+            normalTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
     renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
-        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::DepthStencil(currentVisCamera->projectionPolicy.GetDepthClearValue(), 0));
+        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource)
+        .WithClearValue(RHI::ClearValue::DepthStencil(currentVisCamera->projectionPolicy.GetDepthClearValue(), 0));
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
     DrawCamera3DDepthPrepass();
 
     RHI::renderer->EndRenderPass(mainCommandList);
+}
+
+struct RenderPassImagesDesc {
+    RHI::RenderPassImage::LoadAction        colorLoadAction;
+    RHI::RenderPassImage::LoadAction        surfaceOutputLoadAction;
+    RHI::RenderPassImage::LoadAction        depthLoadAction;
+    RHI::GPUResourceState                   renderTargetBeforeState;
+    RHI::GPUResourceState                   renderTargetAfterState;
+    RHI::GPUResourceState                   depthBeforeState;
+    RHI::GPUResourceState                   depthAfterState;
+    const RHI::Texture *colorResolveTexture;
+    const RHI::Texture *depthResolveTexture;
+    RHI::RenderPassImage::DepthResolveMode  depthResolveMode;
+    bool                                    outputVelocity;
+};
+
+// Camera3D render pass 에서 사용할 color, surface output, depth attachment 를 구성한다.
+// 각 attachment 의 종료 상태를 다음 pass 의 시작 상태와 연결해 불필요한 resource transition 을 피하고,
+// 지정된 resolve texture 로 MSAA color/depth 를 resolve 한다.
+static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const RenderPassImagesDesc &desc, const RHI::ClearValue *clearColorValue, RHI::RenderPassImage renderPassImages[6]) {
+    uint32_t renderPassImageCount = 0;
+
+    const bool useMSAA = visCamera->colorTexture->GetSampleCount() > 1;
+
+    // color
+    RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(
+        visCamera->colorTexture, RHI::ViewID::PrimaryID, desc.colorLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
+    if (clearColorValue && desc.colorLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
+        colorImage = colorImage.WithClearValue(*clearColorValue);
+    }
+    renderPassImages[renderPassImageCount++] = colorImage;
+
+    // normal
+    if (visCamera->needNormalOutput) {
+        RHI::RenderPassImage normalImage = RHI::RenderPassImage::Color(
+            visCamera->normalTexture, RHI::ViewID::PrimaryID, desc.surfaceOutputLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
+        if (desc.surfaceOutputLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
+            normalImage = normalImage.WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
+        }
+        renderPassImages[renderPassImageCount++] = normalImage;
+    }
+
+    // velocity
+    if (desc.outputVelocity) {
+        // Prepass 의 velocity 를 보존하고 Ocean 등 후속 패스의 출력만 덧쓴다.
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(visCamera->velocityTexture, RHI::ViewID::PrimaryID,
+            RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, desc.renderTargetAfterState);
+    }
+
+    // depth
+    // A reused texture can retain the optimized clear value of a different projection policy.
+    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(
+        visCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState)
+        .WithClearValue(RHI::ClearValue::DepthStencil(visCamera->projectionPolicy.GetDepthClearValue(), 0));
+
+    // MSAA resolve
+    if (useMSAA) {
+        if (desc.colorResolveTexture) {
+            renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveColor(desc.colorResolveTexture, RHI::ViewID::PrimaryID, 0);
+        }
+        if (desc.depthResolveTexture) {
+            renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveDepth(desc.depthResolveTexture, RHI::ViewID::PrimaryID, desc.depthResolveMode);
+        }
+    }
+
+    return renderPassImageCount;
 }
 
 void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction) {
@@ -875,11 +885,11 @@ void RenderBackend::CaptureSceneSnapshot() {
     RHI::Texture *snapshotColorTexture = currentVisCamera->snapshotColorTexture;
     RHI::Texture *snapshotDepthTexture = currentVisCamera->snapshotDepthTexture;
 
-    if (!currentVisCamera->oceanSurfacePSO || !snapshotColorTexture || !snapshotDepthTexture || currentVisCamera->rtColorMSAATexture) {
+    if (!currentVisCamera->oceanSurfacePSO || !snapshotColorTexture || !snapshotDepthTexture || currentVisCamera->colorTexture->GetSampleCount() > 1) {
         return;
     }
 
-    RHI::Texture *sourceColorTexture = currentVisCamera->rtColorTexture;
+    RHI::Texture *sourceColorTexture = currentVisCamera->colorTexture;
     RHI::Texture *sourceDepthTexture = currentVisCamera->depthTexture;
     assert(sourceColorTexture->GetSampleCount() == 1 && sourceDepthTexture->GetSampleCount() == 1);
     assert(sourceColorTexture->GetWidth() == sourceDepthTexture->GetWidth() && sourceColorTexture->GetHeight() == sourceDepthTexture->GetHeight());
@@ -960,7 +970,7 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
         RHI::GPUResourceState::ShaderResource,
         RHI::GPUResourceState::DepthWrite,
         RHI::GPUResourceState::ShaderResource,
-        currentVisCamera->rtColorTexture,
+        currentVisCamera->resolvedColorTexture,
         nullptr,
         RHI::RenderPassImage::DepthResolveMode::None,
         currentVisCamera->needVelocityOutput
@@ -976,9 +986,8 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
 }
 
 void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady, const RHI::Texture *outputOverrideTexture) {
-    const RHI::Texture *finalColorTexture = currentVisCamera->rtColorTexture;
-
-    currentPostProcessInputTexture = currentVisCamera->rtColorTexture;
+    currentPostProcessInputTexture = currentVisCamera->resolvedColorTexture ? currentVisCamera->resolvedColorTexture : currentVisCamera->colorTexture;
+    const RHI::Texture *finalColorTexture = currentPostProcessInputTexture;
 
     const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
     if (outputOverrideTexture) {
@@ -1060,7 +1069,8 @@ void RenderBackend::BlitTextureToRenderTarget(const RHI::Texture *srcTexture, co
     // RTV 전체를 덮어쓰는 경우 이전 내용을 보존하지 않아 초기화되지 않은 렌더 타겟도 안전하게 사용할 수 있다.
     const bool overwriteWholeTarget = outputX0 == 0 && outputY0 == 0 && outputW == w && outputH == h;
     const RHI::RenderPassImage::LoadAction loadAction = overwriteWholeTarget ? RHI::RenderPassImage::LoadAction::DontCare : RHI::RenderPassImage::LoadAction::Load;
-    RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(renderTargetTexture, renderTargetViewID, loadAction, RHI::RenderPassImage::StoreAction::Store, renderTargetBeforeState, renderTargetAfterState);
+    RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(
+        renderTargetTexture, renderTargetViewID, loadAction, RHI::RenderPassImage::StoreAction::Store, renderTargetBeforeState, renderTargetAfterState);
     RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
     RHI::renderer->SetViewport(mainCommandList, outputRect);
     RHI::renderer->SetScissorRect(mainCommandList, outputRect);
@@ -1202,7 +1212,7 @@ const void *RenderBackend::ExecuteScreenshot(const void *data) {
 
     // 최종 합성 결과를 저장할 8-bit sRGB 이미지를 생성한다.
     BE1::Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr);
 
     RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
     const int frameWidth = static_cast<int>(frameCompositionTexture->GetWidth());
@@ -1212,14 +1222,14 @@ const void *RenderBackend::ExecuteScreenshot(const void *data) {
         // HDR 합성 텍스처는 paper-white-relative 선형 Rec.709 이다.
         // 디스플레이 피크를 white point 로 사용하는 extended Reinhard 커브로 SDR 범위에 압축한 뒤 sRGB 로 인코딩한다.
         BE1::Image compositionImage;
-        compositionImage.Create2D(frameWidth, frameHeight, 1, BE1::Image::Format::R16G16B16A16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        compositionImage.Create2D(frameWidth, frameHeight, 1, BE1::Image::Format::R16G16B16A16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
         RHI::renderer->GetTextureImage2D(frameCompositionTexture, 0, compositionImage.GetFormat(), compositionImage.GetPixels());
 
         ConvertHDRScreenshotRegionToSDR(compositionImage, captureRect, currentContext->GetDisplayOutputSettings().maxDisplayLinearValue, screenImage);
     } else {
         // SDR 합성 텍스처에는 최종 sRGB 값이 저장되어 있으므로 색 변환 없이 캡쳐 영역만 복사한다.
         BE1::Image compositionImage;
-        compositionImage.Create2D(frameWidth, frameHeight, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+        compositionImage.Create2D(frameWidth, frameHeight, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr);
         RHI::renderer->GetTextureImage2D(frameCompositionTexture, 0, compositionImage.GetFormat(), compositionImage.GetPixels());
 
         CopySDRScreenshotRegion(compositionImage, captureRect, screenImage);
@@ -1265,7 +1275,8 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
             RHI::renderer->SetViewport(mainCommandList, viewportRect);
             RHI::renderer->SetScissorRect(mainCommandList, viewportRect);
 
-            RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Load,
+            RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(
+                frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Load,
                 RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
             RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
 

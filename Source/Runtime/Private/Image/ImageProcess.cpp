@@ -271,7 +271,7 @@ static Image MakeMorphology2D(const Image &sourceImage) {
     }
 
     Image image;
-    image.Create2D(width, height, 1, sourceImage.GetFormat(), sourceImage.GetGammaSpace(), nullptr, Image::Flag::None);
+    image.Create2D(width, height, 1, sourceImage.GetFormat(), sourceImage.GetGammaSpace(), nullptr);
 
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(sourceImage.GetFormat());
     const bool isSigned = HasFlag(formatInfo->type, Image::FormatType::SNorm) || HasFlag(formatInfo->type, Image::FormatType::SInt);
@@ -311,7 +311,7 @@ Image Image::MakeErosion() const {
 
 Image Image::MakeSDF(int32_t spread) const {
     Image image;
-    image.Create2D(width, height, 1, Format::A8, GammaSpace::Linear, nullptr, Flag::None);
+    image.Create2D(width, height, 1, Format::A8, GammaSpace::Linear, nullptr);
 
     for (int centerY = 0; centerY < height; centerY++) {
         for (int centerX = 0; centerX < width; centerX++) {
@@ -366,7 +366,7 @@ Image &Image::SwapRedAlphaRGBA8888() {
 
 Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
     Image image;
-    image.Create2D(width, height, 1, Image::Format::R8G8B8A8, GammaSpace::Linear, nullptr, Flag::None);
+    image.Create2D(width, height, 1, Image::Format::R8G8B8A8, GammaSpace::Linear, nullptr);
 
     byte *dstPtr = image.pic;
 

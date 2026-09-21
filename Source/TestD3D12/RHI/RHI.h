@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <utility>
+
 namespace RHI {
     enum class GraphicsAPI : uint8_t {
         Default,
@@ -28,6 +30,8 @@ namespace RHI {
         Depth                           = BIT(1),
         Stencil                         = BIT(2)
     };
+
+    constexpr std::true_type EnableBitmaskEnum(ClearFlag) noexcept { return {}; }
 
     struct ClearValue {
         union {
@@ -78,6 +82,8 @@ namespace RHI {
         Alpha                           = BIT(3),
         All = Red | Green | Blue | Alpha,
     };
+
+    constexpr std::true_type EnableBitmaskEnum(ColorWriteMask) noexcept { return {}; }
 
     enum class ComparisonFunc : uint8_t {
         Always,
@@ -185,6 +191,8 @@ namespace RHI {
         UnorderedAccess                 = BIT(11)
     };
 
+    constexpr std::true_type EnableBitmaskEnum(BufferFlag) noexcept { return {}; }
+
     enum class TextureFlag : uint32_t {
         None = 0,
         RenderTarget                    = BIT(0),
@@ -194,6 +202,8 @@ namespace RHI {
         UnorderedAccess                 = BIT(11),
         SkipDefaultViews                = BIT(12)
     };
+
+    constexpr std::true_type EnableBitmaskEnum(TextureFlag) noexcept { return {}; }
 
     enum class TextureMipInitMode : uint8_t {
         FromImage,
@@ -205,6 +215,8 @@ namespace RHI {
         Load                            = BIT(0),
         Store                           = BIT(1)
     };
+
+    constexpr std::true_type EnableBitmaskEnum(UAVAccessFlag) noexcept { return {}; }
 
     enum class BufferType : uint8_t {
         Static,
@@ -555,6 +567,9 @@ namespace RHI {
         bool                            IsZNegativeOneToOne() const { return clipDepthRange == ClipDepthRange::NegativeOneToOne; }
         float                           GetNDCFarZ() const { return reverseZ ? (IsZNegativeOneToOne() ? -1.0f : 0.0f) : 1.0f; }
         float                           GetDepthClearValue() const { return reverseZ ? 0.0f : 1.0f; }
+
+        float                           NDCZToDeviceDepth(float ndcZ) const { return IsZNegativeOneToOne() ? ndcZ * 0.5f + 0.5f : ndcZ; }
+        float                           DeviceDepthToNDCZ(float depth) const { return IsZNegativeOneToOne() ? depth * 2.0f - 1.0f : depth; }
     };
 
     enum class QueryType : uint8_t {
@@ -728,6 +743,8 @@ namespace RHI {
         Prediction                      = BIT(14)
     };
 
+    constexpr std::true_type EnableBitmaskEnum(GPUResourceState) noexcept { return {}; }
+
     class GPUBarrier {
     public:
         enum class Type : uint8_t {
@@ -828,6 +845,8 @@ namespace RHI {
         Suspending                      = BIT(1),
         Resuming                        = BIT(2)
     };
+
+    constexpr std::true_type EnableBitmaskEnum(RenderPassFlag) noexcept { return {}; }
 
     struct RenderPassImage {
         enum class Type : uint8_t {
@@ -1159,6 +1178,13 @@ namespace RHI {
         void                            AdjustTextureSize(TextureType textureType, bool useNPOT, uint32_t inWidth, uint32_t inHeight, uint32_t inDepth, uint32_t *outWidth, uint32_t *outHeight, uint32_t *outDepth);
 
         virtual Texture *               CreateTexture(TextureType textureType, TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
+        Texture *                       CreateTexture1D(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::Texture1D, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
+        Texture *                       CreateTexture2D(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::Texture2D, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
+        Texture *                       CreateTexture2DArray(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::Texture2DArray, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
+        Texture *                       CreateTextureCube(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::TextureCube, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
+        Texture *                       CreateTextureCubeArray(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::TextureCubeArray, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
+        Texture *                       CreateTexture3D(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::Texture3D, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
+
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
 
         virtual bool                    SetBufferSubData(Buffer *buffer, uint64_t offset, uint64_t size, const void *data, GPUResourceState stateBefore, GPUResourceState stateAfter) = 0;
@@ -1286,41 +1312,6 @@ namespace RHI {
     private:
         CommandList *                   eventCommandList = nullptr;
     };
-};
-
-template<>
-struct BE1::enable_bitmask_operators<RHI::ClearFlag> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct BE1::enable_bitmask_operators<RHI::ColorWriteMask> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct BE1::enable_bitmask_operators<RHI::BufferFlag> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct BE1::enable_bitmask_operators<RHI::TextureFlag> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct BE1::enable_bitmask_operators<RHI::UAVAccessFlag> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct BE1::enable_bitmask_operators<RHI::GPUResourceState> {
-    static constexpr bool enable = true;
-};
-
-template<>
-struct BE1::enable_bitmask_operators<RHI::RenderPassFlag> {
-    static constexpr bool enable = true;
 };
 
 namespace std {

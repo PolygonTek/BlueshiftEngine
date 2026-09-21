@@ -152,7 +152,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
     }
 
     const bool hasAlpha = has_colormap ? header->colormap_bpp == 32 : header->bpp == 32;
-    Create2D(header->width, header->height, 1, hasAlpha ? Format::B8G8R8A8 : Format::B8G8R8, GammaSpace::sRGB, nullptr, Flag::None);
+    Create2D(header->width, header->height, 1, hasAlpha ? Format::B8G8R8A8 : Format::B8G8R8, GammaSpace::sRGB, nullptr);
 
     int byte_per_pixel = BytesPerPixel();
         

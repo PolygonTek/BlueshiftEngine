@@ -21,7 +21,6 @@
 #include "ScreenSpaceAO.h"
 #include "ScreenSpaceDepthPyramid.h"
 #include "Bloom.h"
-#include "ColorGradingLUTGenerator.h"
 #include "ConvolutionBloomKernelGenerator.h"
 #include "IBLBaker.h"
 #include "ProbeBakeSystem.h"

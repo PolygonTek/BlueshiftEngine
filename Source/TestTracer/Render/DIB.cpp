@@ -144,7 +144,7 @@ int DIB::WriteBMP(const TCHAR *filename) const {
 int DIB::WritePNG(const TCHAR *filename) const {
     // GDI stores top-down BGR rows with 4-byte padding; Image expects packed rows.
     BE1::Image image;
-    image.Create2D(width, height, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    image.Create2D(width, height, 1, BE1::Image::Format::B8G8R8, BE1::Image::GammaSpace::sRGB, nullptr);
     for (int y = 0; y < height; ++y) {
         memcpy(image.GetPixels() + y * width * 3, data + y * pitch, width * 3);
     }

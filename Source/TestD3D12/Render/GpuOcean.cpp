@@ -229,7 +229,7 @@ static RHI::Buffer *CreateOceanStructuredBuffer(const char *debugName, uint64_t 
 
 static RHI::Texture *CreateOceanTexture(const char *debugName, uint32_t size, BE1::Image::Format format, uint32_t arraySize, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(size, size, 1, arraySize, 1, format, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image->Init2DArrayFromMemory(size, size, arraySize, 1, format, BE1::Image::GammaSpace::Linear, nullptr);
 
     const RHI::TextureType textureType = arraySize > 1 ? RHI::TextureType::Texture2DArray : RHI::TextureType::Texture2D;
     RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, mipInitMode, {}, 1, initialState);

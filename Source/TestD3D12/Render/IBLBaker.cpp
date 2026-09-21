@@ -330,11 +330,9 @@ bool IBLBaker::GenerateDFGSumGGXToImage(RHI::FrameThreadData *frameThreadData, i
 
     // CreateTexture 에 필요한 metadata 만 준비하고 CPU pixel memory 는 할당하지 않는다.
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>();
-    textureImage->InitFromMemory(size, size, 1, 1, 1, DFGImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    textureImage->Init2DFromMemory(size, size, 1, DFGImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    RHI::Texture *texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D,
-        RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess,
-        textureImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::Texture *texture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, textureImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!texture) {
         return false;
     }
@@ -350,7 +348,7 @@ bool IBLBaker::GenerateDFGSumGGXToImage(RHI::FrameThreadData *frameThreadData, i
     }
 
     BE1::Image image;
-    image.Create2D(size, size, 1, DFGImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image.Create2D(size, size, 1, DFGImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
     if (!RHI::renderer->GetTextureImage2D(texture, 0, DFGImageFormat, image.GetPixels())) {
         RHI::renderer->DestroyTexture(texture);
         return false;

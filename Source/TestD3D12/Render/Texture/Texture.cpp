@@ -139,7 +139,7 @@ bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> s
 
 void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr);
     byte *dstPtr = image->GetPixels();
 
     for (int y = 0; y < size; y++) {
@@ -159,12 +159,12 @@ void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::HighQuality | Texture::Flag::NoCompression);
+    Create2D(image, flags | Texture::Flag::HighQuality | Texture::Flag::NoCompression);
 }
 
 void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr, BE1::Image::Flag::None);
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr);
     uint32_t *dstPtr = (uint32_t *)image->GetPixels();
     uint32_t c = color.ToUInt32();
 
@@ -174,12 +174,12 @@ void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags)
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::HighQuality);
+    Create2D(image, flags | Texture::Flag::HighQuality);
 }
 
 void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8, BE1::Image::GammaSpace::Linear, nullptr);
     byte *dstPtr = image->GetPixels();
 
     for (int y = 0; y < size; y++) {
@@ -191,12 +191,12 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
         }
     }
 
-    Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::NormalMap | Texture::Flag::NoScaleDown);
+    Create2D(image, flags | Texture::Flag::NormalMap | Texture::Flag::NoScaleDown);
 }
 
 void Texture::CreateRandomRotMatTexture(int size, Texture::Flag flags) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->Create2D(size, size, 1, BE1::Image::Format::R8G8, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8, BE1::Image::GammaSpace::Linear, nullptr);
     byte *dstPtr = image->GetPixels();
 
     BE1::RNG rng(23119);
@@ -209,7 +209,7 @@ void Texture::CreateRandomRotMatTexture(int size, Texture::Flag flags) {
         dstPtr += 2;
     }
 
-    Create(RHI::TextureType::Texture2D, image, flags | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace);
+    Create2D(image, flags | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace);
 }
 
 RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState) {
@@ -595,7 +595,7 @@ bool Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMip
 
     // RHI 와 Image 는 동일한 엔진 좌표계의 큐브맵 면 순서를 사용하므로 각 면을 그대로 읽는다.
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), gammaSpace, nullptr, BE1::Image::Flag::None);
+        faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), gammaSpace, nullptr);
 
         for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
             if (!cubeTexture->GetTexelsCubeFace((RHI::CubemapFace)faceIndex, mipLevel, cubeTexture->GetFormat(), faceImages[faceIndex].GetPixels(mipLevel))) {

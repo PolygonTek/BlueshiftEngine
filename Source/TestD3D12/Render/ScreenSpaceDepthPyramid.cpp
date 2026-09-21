@@ -61,7 +61,7 @@ void ScreenSpaceDepthPyramid::UpdateFramePSOs() {
     frameReducePSO = ShaderPipeline::GetReadyPSO(reducePipeline);
 }
 
-bool ScreenSpaceDepthPyramid::Dispatch(RHI::CommandList *commandList, GpuTiming &gpuTiming, RHI::Texture *depthTexture, RHI::Texture *normalMSAATexture, RHI::Texture *resolvedDepthTexture, RHI::Texture *resolvedNormalTexture, const RHI::ProjectionPolicy &projectionPolicy, const ScreenSpaceDepthPyramidFrameData &data) const {
+bool ScreenSpaceDepthPyramid::Dispatch(RHI::CommandList *commandList, GpuTiming &gpuTiming, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *resolvedDepthTexture, RHI::Texture *resolvedNormalTexture, const RHI::ProjectionPolicy &projectionPolicy, const ScreenSpaceDepthPyramidFrameData &data) const {
     PROFILER_CPU_SCOPED_EVENT("ScreenSpaceDepthPyramid::Dispatch");
 
     RHI::Texture *depthPyramidTexture = data.texture;
@@ -69,7 +69,7 @@ bool ScreenSpaceDepthPyramid::Dispatch(RHI::CommandList *commandList, GpuTiming 
     const bool useMSAA = depthTexture && depthTexture->GetSampleCount() > 1;
 
     if (!depthTexture || !depthPyramidTexture || mipCount == 0 ||
-        (useMSAA && (!normalMSAATexture || !resolvedDepthTexture || !resolvedNormalTexture))) {
+        (useMSAA && (!normalTexture || !resolvedDepthTexture || !resolvedNormalTexture))) {
         return false;
     }
 
@@ -97,7 +97,7 @@ bool ScreenSpaceDepthPyramid::Dispatch(RHI::CommandList *commandList, GpuTiming 
     firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResourceCompute);
     firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthPyramidTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, 0);
     if (useMSAA) {
-        firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalMSAATexture, RHI::GPUResourceState::RenderTarget, RHI::GPUResourceState::ShaderResourceCompute);
+        firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalTexture, RHI::GPUResourceState::RenderTarget, RHI::GPUResourceState::ShaderResourceCompute);
         firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(resolvedDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess);
         firstMipStartBarriers[firstMipStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(resolvedNormalTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess);
     }
@@ -107,7 +107,7 @@ bool ScreenSpaceDepthPyramid::Dispatch(RHI::CommandList *commandList, GpuTiming 
     RHI::renderer->SetTexture(commandList, 0, false, depthTexture, RHI::ViewID::PrimaryID);
     RHI::renderer->SetTexture(commandList, 0, true, depthPyramidTexture, data.mipUAVs[0]);
     if (useMSAA) {
-        RHI::renderer->SetTexture(commandList, 1, false, normalMSAATexture);
+        RHI::renderer->SetTexture(commandList, 1, false, normalTexture);
         RHI::renderer->SetTexture(commandList, 1, true, resolvedDepthTexture);
         RHI::renderer->SetTexture(commandList, 2, true, resolvedNormalTexture);
     }
@@ -122,7 +122,7 @@ bool ScreenSpaceDepthPyramid::Dispatch(RHI::CommandList *commandList, GpuTiming 
     firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::DepthWrite);
     firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthPyramidTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute, 0, 0);
     if (useMSAA) {
-        firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalMSAATexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::RenderTarget);
+        firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::RenderTarget);
         firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(resolvedDepthTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource);
         firstMipEndBarriers[firstMipEndBarrierCount++] = RHI::Renderer::MakeTextureBarrier(resolvedNormalTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource);
     }

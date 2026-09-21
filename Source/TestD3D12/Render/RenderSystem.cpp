@@ -20,6 +20,7 @@
 #include "RenderCvars.h"
 #include "RHI/RHI.h"
 #include "SamplerManager.h"
+#include "ColorGradingLUTGenerator.h"
 #include "Render/Texture/TextureManager.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
@@ -509,7 +510,7 @@ bool RenderSystem::CreateColorGradingLUT() {
 
     // color grading 3D LUT texture 생성
     colorGradingLUTTexture = textureManager.AllocTexture("_Generated/ColorGradingLUT");
-    if (!colorGradingLUTTexture->Create(RHI::TextureType::Texture3D, textureImage, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::Compute)) {
+    if (!colorGradingLUTTexture->Create3D(textureImage, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::Compute)) {
         BE_WARNLOG("RenderSystem::CreateColorGradingLUT: failed to create LUT texture\n");
         colorGradingLUTTexture.reset();
         colorGradingLUTImage.Clear();

@@ -36,11 +36,11 @@ static void Atlas_Add(int textureSize) {
     GlyphAtlas &atlas = atlasArray.Alloc();
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->Create2D(textureSize, textureSize, 1, GLYPH_CACHE_TEXTURE_FORMAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image->Create2D(textureSize, textureSize, 1, GLYPH_CACHE_TEXTURE_FORMAT, BE1::Image::GammaSpace::Linear, nullptr);
     memset(image->GetPixels(), 0, image->SizeInBytes());
 
     atlas.texture = textureManager.AllocTexture(BE1::va("_glyph_cache_%i", atlasArray.Count() - 1));
-    atlas.texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    atlas.texture->Create2D(image, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
 
     // 대략 16x16 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
     // 2048*2048 / 16*16 = 16384
@@ -321,7 +321,7 @@ void TrueTypeFontFace::WriteBitmapFiles(const char *fontFilename) {
         const Texture *texture = atlasArray[i].texture.get();
 
         BE1::Image bitmapImage;
-        bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), BE1::Image::GammaSpace::DontCare, nullptr, BE1::Image::Flag::None);
+        bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), BE1::Image::GammaSpace::DontCare, nullptr);
 
         if (texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels())) {
             BE1::Str filename = bitmapBasename;

@@ -264,7 +264,7 @@ bool Image::LoadEXRFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
 
-    Create2D(exr.image.width, exr.image.height, 1, dstFormat, GammaSpace::Linear, nullptr, Flag::None);
+    Create2D(exr.image.width, exr.image.height, 1, dstFormat, GammaSpace::Linear, nullptr);
 
     const bool copied = exr.header.tiled ?
         CopyTiledEXRImage(pic, useFloat32, exr.header, exr.image, redIndex, greenIndex, blueIndex, alphaIndex, hasAlpha) :

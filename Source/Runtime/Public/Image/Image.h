@@ -385,17 +385,21 @@ public:
                         /// Clears allocated pixel data.
     void                Clear();
 
-                        /// Creates an image with the given memory.
-    Image &             InitFromMemory(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags);
+                        /// Initializes an image referencing the given memory without allocating or copying pixel data.
+                        /// If data is nullptr, only image metadata is initialized.
+    Image &             InitFromMemory(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags = Flag::None);
+    Image &             Init2DFromMemory(int32_t width, int32_t height, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags = Flag::None);
+    Image &             Init3DFromMemory(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags = Flag::None);
+    Image &             InitCubeFromMemory(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags = Flag::None);
+    Image &             Init2DArrayFromMemory(int32_t width, int32_t height, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags = Flag::None);
 
                         /// Creates an image.
                         /// If data is nullptr, just allocate the memory.
-    Image &             Create(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
-
-    Image &             Create2D(int32_t width, int32_t height, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
-    Image &             Create3D(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
-    Image &             CreateCube(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
-    Image &             Create2DArray(int32_t width, int32_t height, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags);
+    Image &             Create(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags = Flag::None);
+    Image &             Create2D(int32_t width, int32_t height, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags = Flag::None);
+    Image &             Create3D(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags = Flag::None);
+    Image &             CreateCube(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags = Flag::None);
+    Image &             Create2DArray(int32_t width, int32_t height, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags = Flag::None);
 
                         /// Creates a cubic image from six square images.
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
@@ -416,11 +420,9 @@ public:
     Image &             GenerateMipmaps(bool preserveAlphaCoverage = false);
 
                         /// Converts this image to the given target image.
-    bool                ConvertFormat(Format dstFormat, Image &dstImage, 
-                            GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal) const;
+    bool                ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal) const;
                         /// Converts this image in-place.
-    bool                ConvertFormatSelf(Format dstFormat, 
-                            GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal);
+    bool                ConvertFormatSelf(Format dstFormat, GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal);
 
                         /// Resizes this image to the given target image.
     bool                Resize(int32_t width, int32_t height, ResampleFilter resampleFilter, Image &dstImage) const;
@@ -474,7 +476,7 @@ public:
     bool                WriteTGA(const char *filename) const;
     bool                WriteBTEX(const char *filename, PayloadFormat payloadFormat = PayloadFormat::DDS) const;
                         /// @param quality  value has the range [0, 100]
-    bool                WriteJPG(const char *filename, int quality = 100) const; 
+    bool                WriteJPG(const char *filename, int quality = 100) const;
     bool                WritePNG(const char *filename) const;
     bool                WriteHDR(const char *filename) const;
     
@@ -641,6 +643,22 @@ BE_INLINE byte *Image::GetPixels(int32_t mipLevel, int32_t sliceIndex) const {
     // Slice1: Mip0, Mip1, Mip2, ...
     // ...
     return pic + SizeInBytesForSlice(0, numMipLevels) * sliceIndex + SizeInBytesForSlice(0, mipLevel);
+}
+
+BE_INLINE Image &Image::Init2DFromMemory(int32_t width, int32_t height, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
+    return InitFromMemory(width, height, 1, 1, numMipLevels, format, gammaSpace, data, flags);
+}
+
+BE_INLINE Image &Image::Init3DFromMemory(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
+    return InitFromMemory(width, height, depth, 1, numMipLevels, format, gammaSpace, data, flags);
+}
+
+BE_INLINE Image &Image::InitCubeFromMemory(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
+    return InitFromMemory(size, size, 1, 6, numMipLevels, format, gammaSpace, data, (flags | Flag::CubeMap));
+}
+
+BE_INLINE Image &Image::Init2DArrayFromMemory(int32_t width, int32_t height, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
+    return InitFromMemory(width, height, 1, numSlices, numMipLevels, format, gammaSpace, data, flags);
 }
 
 BE_INLINE Image &Image::Create2D(int32_t width, int32_t height, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {

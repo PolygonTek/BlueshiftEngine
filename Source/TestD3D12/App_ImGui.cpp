@@ -77,7 +77,7 @@ void App::BuildImGuiStatsPlotWindow() {
 
     const float fontSize = ImGui::GetFontSize();
     ImGui::SetNextWindowSize(ImVec2(fontSize * 42.0f, fontSize * 24.0f), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Stats Plot", &imguiShowStatsPlotWindow)) {
+    if (!ImGui::Begin("Frame Timing", &imguiShowStatsPlotWindow)) {
         ImGui::End();
         return;
     }
@@ -381,15 +381,27 @@ void App::BuildImGuiTextureViewer() {
     int entryCount = 0;
 
     if (renderCamera) {
+        const RHI::Texture *colorTexture = renderCamera->GetResolvedColorTexture();
+        if (!colorTexture) {
+            colorTexture = renderCamera->GetColorTexture();
+        }
         const RHI::Texture *depthTexture = renderCamera->GetDepthTexture();
+        const RHI::Texture *normalTexture = renderCamera->GetResolvedNormalTexture();
+        if (!normalTexture) {
+            normalTexture = renderCamera->GetNormalTexture();
+        }
+        const RHI::Texture *velocityTexture = renderCamera->GetResolvedVelocityTexture();
+        if (!velocityTexture) {
+            velocityTexture = renderCamera->GetVelocityTexture();
+        }
 
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", renderCamera->GetRTColorTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", colorTexture);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", depthTexture);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Depth Pyramid", renderCamera->GetScreenSpaceDepthPyramidResources().GetTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Trace", renderCamera->GetSSRTraceTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "AO Final", renderCamera->GetAOTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", renderCamera->GetRTVelocityTexture());
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", renderCamera->GetRTNormalTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", velocityTexture);
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", normalTexture);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomResources().GetBloomDownTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomResources().GetBloomUpTexture());
@@ -578,7 +590,7 @@ void App::BuildImGuiOverlay() {
                 r_showLights2.SetBool(showLights);
             }
 
-            if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Stats Plot" : "Show Stats Plot")) {
+            if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Frame Timing" : "Show Frame Timing")) {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
             }
 

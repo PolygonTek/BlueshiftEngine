@@ -83,7 +83,7 @@ static bool CreateIBLCubemapTexture(int size, bool useHDR, bool renderTarget, bo
 
     // IBL 적분과 mip 생성은 linear radiance 를 대상으로 하므로 LDR 텍스처도 sRGB view 를 사용하지 않는다.
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>();
-    textureImage->InitFromMemory(size, size, 1, 6, 1, format, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::CubeMap);
+    textureImage->InitCubeFromMemory(size, 1, format, BE1::Image::GammaSpace::Linear, nullptr);
 
     Texture::Flag textureFlags = Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
     if (renderTarget) {
@@ -99,7 +99,7 @@ static bool CreateIBLCubemapTexture(int size, bool useHDR, bool renderTarget, bo
     }
 
     SharedPtr<Texture> texture = MakeShared<Texture>();
-    if (!texture->Create(RHI::TextureType::TextureCube, textureImage, textureFlags)) {
+    if (!texture->CreateCube(textureImage, textureFlags)) {
         return false;
     }
 
@@ -173,11 +173,11 @@ bool RenderCapture::CaptureSceneToImage(RenderContext *renderContext, RenderWorl
     const BE1::Image::GammaSpace captureGammaSpace = useHDR ? BE1::Image::GammaSpace::Linear : BE1::Image::GammaSpace::sRGB;
 
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>();
-    textureImage->InitFromMemory(width, height, 1, 1, 1, captureFormat, captureGammaSpace, nullptr, BE1::Image::Flag::None);
+    textureImage->Init2DFromMemory(width, height, 1, captureFormat, captureGammaSpace, nullptr);
 
     SharedPtr<Texture> targetTexture = MakeShared<Texture>();
     const Texture::Flag textureFlags = Texture::Flag::RenderTarget | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
-    if (!targetTexture->Create(RHI::TextureType::Texture2D, textureImage, textureFlags)) {
+    if (!targetTexture->Create2D(textureImage, textureFlags)) {
         BE_WARNLOG("RenderCapture::CaptureSceneToImage: failed to create capture texture\n");
         return false;
     }
@@ -190,7 +190,7 @@ bool RenderCapture::CaptureSceneToImage(RenderContext *renderContext, RenderWorl
     const BE1::Image::GammaSpace readbackGammaSpace = BE1::Image::NeedFloatConversion(readbackFormat) ? BE1::Image::GammaSpace::Linear : BE1::Image::GammaSpace::sRGB;
 
     BE1::Image capturedImage;
-    capturedImage.Create2D(targetTexture->GetWidth(), targetTexture->GetHeight(), 1, readbackFormat, readbackGammaSpace, nullptr, BE1::Image::Flag::None);
+    capturedImage.Create2D(targetTexture->GetWidth(), targetTexture->GetHeight(), 1, readbackFormat, readbackGammaSpace, nullptr);
     if (!targetTexture->GetTexels2D(0, readbackFormat, capturedImage.GetPixels())) {
         BE_WARNLOG("RenderCapture::CaptureSceneToImage: failed to read capture texture\n");
         return false;
@@ -329,11 +329,11 @@ bool RenderCapture::CaptureEnvCubeToImage(RenderContext *renderContext, RenderWo
     const BE1::Image::GammaSpace captureGammaSpace = useHDR ? BE1::Image::GammaSpace::Linear : BE1::Image::GammaSpace::sRGB;
 
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>();
-    textureImage->InitFromMemory(size, size, 1, 6, 1, captureFormat, captureGammaSpace, nullptr, BE1::Image::Flag::CubeMap);
+    textureImage->InitCubeFromMemory(size, 1, captureFormat, captureGammaSpace, nullptr);
 
     SharedPtr<Texture> targetCubeTexture = MakeShared<Texture>();
     const Texture::Flag textureFlags = Texture::Flag::RenderTarget | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
-    if (!targetCubeTexture->Create(RHI::TextureType::TextureCube, textureImage, textureFlags)) {
+    if (!targetCubeTexture->CreateCube(textureImage, textureFlags)) {
         BE_WARNLOG("RenderCapture::CaptureEnvCubeToImage: failed to create capture texture\n");
         return false;
     }
@@ -346,7 +346,7 @@ bool RenderCapture::CaptureEnvCubeToImage(RenderContext *renderContext, RenderWo
     const BE1::Image::GammaSpace readbackGammaSpace = BE1::Image::NeedFloatConversion(readbackFormat) ? BE1::Image::GammaSpace::Linear : BE1::Image::GammaSpace::sRGB;
 
     BE1::Image capturedCubeImage;
-    capturedCubeImage.CreateCube(targetCubeTexture->GetWidth(), 1, readbackFormat, readbackGammaSpace, nullptr, BE1::Image::Flag::None);
+    capturedCubeImage.CreateCube(targetCubeTexture->GetWidth(), 1, readbackFormat, readbackGammaSpace, nullptr);
 
     for (uint32_t faceIndex = 0; faceIndex < 6; ++faceIndex) {
         if (!targetCubeTexture->GetTexelsCubeFace(static_cast<RHI::CubemapFace>(faceIndex), 0, readbackFormat, capturedCubeImage.GetPixels(0, faceIndex))) {
@@ -426,7 +426,7 @@ bool RenderCapture::CaptureDiffuseIrradianceEnvCubeToImage(RenderContext *render
     const BE1::Image::Format outputFormat = useHDR ? BE1::Image::Format::R11G11B10_FLOAT : BE1::Image::Format::R8G8B8A8;
 
     BE1::Image diffuseIrradianceCubeImage;
-    diffuseIrradianceCubeImage.CreateCube(diffuseIrradianceCubeTexture->GetWidth(), 1, outputFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    diffuseIrradianceCubeImage.CreateCube(diffuseIrradianceCubeTexture->GetWidth(), 1, outputFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
     for (uint32_t faceIndex = 0; faceIndex < 6; ++faceIndex) {
         if (!diffuseIrradianceCubeTexture->GetTexelsCubeFace(static_cast<RHI::CubemapFace>(faceIndex), 0, outputFormat, diffuseIrradianceCubeImage.GetPixels(0, faceIndex))) {
@@ -524,7 +524,7 @@ bool RenderCapture::CaptureSpecularPrefilteredEnvCubeToImage(RenderContext *rend
     const BE1::Image::Format outputFormat = useHDR ? BE1::Image::Format::R11G11B10_FLOAT : BE1::Image::Format::R8G8B8A8;
 
     BE1::Image specularPrefilteredCubeImage;
-    specularPrefilteredCubeImage.CreateCube(specularPrefilteredCubeTexture->GetWidth(), outputMipLevelCount, outputFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    specularPrefilteredCubeImage.CreateCube(specularPrefilteredCubeTexture->GetWidth(), outputMipLevelCount, outputFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
     for (uint32_t faceIndex = 0; faceIndex < 6; ++faceIndex) {
         for (uint32_t mipLevel = 0; mipLevel < outputMipLevelCount; ++mipLevel) {

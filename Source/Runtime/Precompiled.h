@@ -687,27 +687,24 @@ BE_FORCE_INLINE constexpr int16_t BE_API    HighByte(word w) { return ((w >> 8) 
 /// Returns true if x is a power of 2.
 BE_FORCE_INLINE constexpr bool BE_API       IsPowerOfTwo(int x) { return x > 0 && ((x & (x - 1)) == 0); }
 
-// Enable enum flags:
+// Enable enum flags through an ADL-discovered EnableBitmaskEnum overload returning std::true_type.
 // https://www.justsoftwaresolutions.co.uk/cplusplus/using-enum-classes-as-bitfields.html
 template<typename E, typename = void>
-struct enable_bitmask_operators {
-    static constexpr bool enable = false;
-};
+struct IsBitmaskEnum : std::false_type {};
 
 template<typename E>
-struct enable_bitmask_operators<E, std::void_t<decltype(EnableBitmaskEnum(std::declval<E>()))>> {
-    static constexpr bool enable = std::is_enum_v<E> && std::is_same_v<decltype(EnableBitmaskEnum(std::declval<E>())), std::true_type>;
-};
+struct IsBitmaskEnum<E, std::void_t<decltype(EnableBitmaskEnum(std::declval<E>()))>>
+    : std::bool_constant<std::is_enum_v<E> && std::is_same_v<decltype(EnableBitmaskEnum(std::declval<E>())), std::true_type>> {};
 
 /// Checks if all bits in the specified flag(s) (rhs) are set in the target flags (lhs).
-template<typename E, std::enable_if_t<enable_bitmask_operators<E>::enable, int> = 0>
+template<typename E, std::enable_if_t<IsBitmaskEnum<E>::value, int> = 0>
 constexpr bool HasFlag(E lhs, E rhs) noexcept {
     using underlying = std::underlying_type_t<E>;
     return (static_cast<underlying>(lhs) & static_cast<underlying>(rhs)) == static_cast<underlying>(rhs);
 }
 
 /// Checks if any bits in the specified flag(s) (rhs) are set in the target flags (lhs).
-template<typename E, std::enable_if_t<enable_bitmask_operators<E>::enable, int> = 0>
+template<typename E, std::enable_if_t<IsBitmaskEnum<E>::value, int> = 0>
 constexpr bool HasAnyFlag(E lhs, E rhs) noexcept {
     using underlying = std::underlying_type_t<E>;
     return (static_cast<underlying>(lhs) & static_cast<underlying>(rhs)) != 0;
@@ -945,14 +942,14 @@ BE_NAMESPACE_END
 
 // Bit OR
 template<typename E>
-constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E> operator|(E lhs, E rhs) {
+constexpr typename std::enable_if_t<BE1::IsBitmaskEnum<E>::value, E> operator|(E lhs, E rhs) {
     typedef typename std::underlying_type_t<E> underlying;
     return static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
 }
 
 // Assignment Bit OR
 template<typename E>
-constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E &> operator|=(E &lhs, E rhs) {
+constexpr typename std::enable_if_t<BE1::IsBitmaskEnum<E>::value, E &> operator|=(E &lhs, E rhs) {
     typedef typename std::underlying_type_t<E> underlying;
     lhs = static_cast<E>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
     return lhs;
@@ -960,14 +957,14 @@ constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E 
 
 // Bit AND
 template<typename E>
-constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E> operator&(E lhs, E rhs) {
+constexpr typename std::enable_if_t<BE1::IsBitmaskEnum<E>::value, E> operator&(E lhs, E rhs) {
     typedef typename std::underlying_type_t<E> underlying;
     return static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
 }
 
 // Assignment Bit AND
 template<typename E>
-constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E &> operator&=(E &lhs, E rhs) {
+constexpr typename std::enable_if_t<BE1::IsBitmaskEnum<E>::value, E &> operator&=(E &lhs, E rhs) {
     typedef typename std::underlying_type_t<E> underlying;
     lhs = static_cast<E>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
     return lhs;
@@ -975,7 +972,7 @@ constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E 
 
 // Bit NOT
 template<typename E>
-constexpr typename std::enable_if_t<BE1::enable_bitmask_operators<E>::enable, E> operator~(E rhs) {
+constexpr typename std::enable_if_t<BE1::IsBitmaskEnum<E>::value, E> operator~(E rhs) {
     typedef typename std::underlying_type_t<E> underlying;
     rhs = static_cast<E>(~static_cast<underlying>(rhs));
     return rhs;

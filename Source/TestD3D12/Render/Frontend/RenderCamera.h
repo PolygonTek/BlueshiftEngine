@@ -157,22 +157,24 @@ public:
     BloomResources &            GetBloomResources() { return bloomResources; }
     const BloomResources &      GetBloomResources() const { return bloomResources; }
 
-    bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
+    bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, bool needNormalTexture, bool needVelocityTexture, const BE1::Color4 &optimizedClearColor);
+    void                        EnsureResolvedDepthTexture(uint32_t width, uint32_t height, uint32_t sampleCount, bool needed);
     bool                        EnsureSceneSnapshotResources(bool needed, bool halfResolution);
-    void                        EnsureSSRTraceResources(uint32_t width, uint32_t height, uint32_t sampleCount, bool needed);
+    void                        EnsureSSRTraceResources(uint32_t width, uint32_t height, bool needed);
     void                        EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, const RenderFrameSettings &renderFrameSettings);
 
     void                        InvalidateTemporalHistory();
 
     uint32_t                    GetRenderWidth() const { return renderWidth; }
     uint32_t                    GetRenderHeight() const { return renderHeight; }
-    RHI::Texture *              GetRTColorTexture() const { return rtColorTexture; }
-    RHI::Texture *              GetRTColorMSAATexture() const { return rtColorMSAATexture; }
+    RHI::Texture *              GetColorTexture() const { return colorTexture; }
+    RHI::Texture *              GetResolvedColorTexture() const { return resolvedColorTexture; }
     RHI::Texture *              GetDepthTexture() const { return depthHistoryAsRenderTarget ? depthHistoryTextures[currentHistoryTextureIndex] : depthTexture; }
-    RHI::Texture *              GetRTNormalTexture() const { return rtNormalTexture; }
-    RHI::Texture *              GetRTNormalMSAATexture() const { return rtNormalMSAATexture; }
-    RHI::Texture *              GetRTVelocityTexture() const { return rtVelocityTexture; }
-    RHI::Texture *              GetRTVelocityMSAATexture() const { return rtVelocityMSAATexture; }
+    RHI::Texture *              GetResolvedDepthTexture() const { return resolvedDepthTexture; }
+    RHI::Texture *              GetNormalTexture() const { return normalTexture; }
+    RHI::Texture *              GetResolvedNormalTexture() const { return resolvedNormalTexture; }
+    RHI::Texture *              GetVelocityTexture() const { return velocityTexture; }
+    RHI::Texture *              GetResolvedVelocityTexture() const { return resolvedVelocityTexture; }
     RHI::Texture *              GetSnapshotColorTexture() const { return snapshotColorTexture; }
     RHI::Texture *              GetSnapshotDepthTexture() const { return snapshotDepthTexture; }
     RHI::Texture *              GetColorHistoryTexture(uint32_t index) const { return colorHistoryTextures[index % 2]; }
@@ -190,7 +192,6 @@ public:
     ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() { return screenSpaceDepthPyramidResources; }
     const ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() const { return screenSpaceDepthPyramidResources; }
 
-    RHI::Texture *              GetSSRResolvedDepthTexture() const { return ssrResolvedDepthTexture; }
     RHI::Texture *              GetSSRTraceTexture() const { return ssrTraceTexture; }
     RHI::Texture *              GetAOTexture() const { return aoResources.GetTextures().outputTexture; }
 
@@ -200,28 +201,33 @@ public:
     static void                 CalculateFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
 private:
-    void                        DestroyPostProcessResources();
-    bool                        CreateRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, const BE1::Color4 &optimizedClearColor);
+    bool                        CreateRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, bool needNormalTexture, bool needVelocityTexture, const BE1::Color4 &optimizedClearColor);
     void                        DestroyRenderTextures();
-    bool                        CreateRTColorTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
+    bool                        CreateColorTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, uint32_t sampleCount, const BE1::Color4 &optimizedClearColor);
     bool                        CreateDepthTexture(uint32_t width, uint32_t height, RHI::Format depthFormat, uint32_t sampleCount);
+    bool                        CreateNormalTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
+    bool                        CreateVelocityTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
     bool                        CreateSceneSnapshotResources(bool halfResolution);
     void                        DestroySceneSnapshotResources();
-    bool                        CreateSSRTraceTexture(uint32_t width, uint32_t height);
-    void                        DestroySSRTraceTexture();
-    bool                        CreateSSRResolvedDepthTexture(uint32_t width, uint32_t height);
-    void                        DestroySSRResolvedDepthTexture();
-    bool                        CreateRTNormalTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
-    bool                        CreateRTVelocityTextures(uint32_t width, uint32_t height, uint32_t sampleCount);
+
+    bool                        CreateResolvedDepthTexture(uint32_t width, uint32_t height);
+    void                        DestroyResolvedDepthTexture();
+
     bool                        CreatePostProcessColorTexture(uint32_t width, uint32_t height, RHI::Format colorFormat);
     void                        DestroyPostProcessColorTexture();
+    void                        DestroyPostProcessResources();
+
+    bool                        CreateSSRTraceTexture(uint32_t width, uint32_t height);
+    void                        DestroySSRTraceTexture();
+
     bool                        EnsureColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat);
     bool                        CreateColorHistoryTextures(uint32_t width, uint32_t height, RHI::Format colorFormat);
     void                        DestroyColorHistoryTextures();
-    bool                        EnsureDepthHistoryTextures(uint32_t width, uint32_t height);
-    bool                        CreateDepthHistoryTextures(uint32_t width, uint32_t height);
+    bool                        EnsureDepthHistoryResolveTargets(uint32_t width, uint32_t height);
+    bool                        CreateDepthHistoryResolveTargets(uint32_t width, uint32_t height);
     bool                        CreateDepthHistoryRenderTargets(uint32_t width, uint32_t height, RHI::Format depthFormat);
     void                        DestroyDepthHistoryTextures();
+
     void                        CreateLuminanceBuffer();
     void                        DestroyLuminanceBuffer();
     void                        UpdateTemporalJitter(bool enableJitter, uint32_t sampleCount);
@@ -263,33 +269,30 @@ private:
     RHI::Format                 renderDepthFormat = RHI::Format::Unknown;
     uint32_t                    renderSampleCount = 1;
 
-    RHI::Texture *              rtColorTexture = nullptr;
-    RHI::Texture *              rtColorMSAATexture = nullptr;
-    RHI::Texture *              depthTexture = nullptr;
-    RHI::Texture *              rtNormalTexture = nullptr;
-    RHI::Texture *              rtNormalMSAATexture = nullptr;
-    RHI::Texture *              rtVelocityTexture = nullptr;
-    RHI::Texture *              rtVelocityMSAATexture = nullptr;
+    RHI::Texture *              colorTexture = nullptr;
+    RHI::Texture *              depthTexture = nullptr; // MSAA off, TAA on 상태에서는 depthTexture 대신 depthHistoryTextures 를 사용한다.
+    RHI::Texture *              normalTexture = nullptr; // AO 또는 SSR 에서 필요할 때 생성한다.
+    RHI::Texture *              velocityTexture = nullptr; // TAA 에서 필요할 때 생성한다.
+
+    RHI::Texture *              resolvedColorTexture = nullptr; // MSAA on 상태에서 생성, off 상태에서는 nullptr
+    RHI::Texture *              resolvedDepthTexture = nullptr; // MSAA on 상태에서 depth prepass 이후 SSAO/SSR 에서 필요
+    RHI::Texture *              resolvedNormalTexture = nullptr; // MSAA on 이고 normalTexture 가 필요할 때 생성, 그 외에는 nullptr
+    RHI::Texture *              resolvedVelocityTexture = nullptr; // MSAA on 이고 velocityTexture 가 필요할 때 생성, 그 외에는 nullptr
+
     RHI::Texture *              snapshotColorTexture = nullptr;
     RHI::Texture *              snapshotDepthTexture = nullptr;
     RHI::Texture *              postProcessColorTexture = nullptr;
-
-    ScreenSpaceDepthPyramidResources screenSpaceDepthPyramidResources;
-
-    RHI::Texture *              ssrResolvedDepthTexture = nullptr;
     RHI::Texture *              ssrTraceTexture = nullptr;
-
-    ScreenSpaceAOResources      aoResources;
 
     RHI::Texture *              colorHistoryTextures[2] = {};
     RHI::Texture *              depthHistoryTextures[2] = {};
-    bool                        depthHistoryAsRenderTarget = false;
     uint32_t                    currentHistoryTextureIndex = 0;
+    bool                        depthHistoryAsRenderTarget = false; // MSAA off, TAA on 상태에서는 depthHistoryTextures 를 렌더 타겟으로 삼는다.
     bool                        historyValid = false;
 
+    ScreenSpaceDepthPyramidResources screenSpaceDepthPyramidResources;
+    ScreenSpaceAOResources      aoResources;
     HiZResources                hiZResources;
-
     BloomResources              bloomResources;
-
     RHI::Buffer *               luminanceBuffer = nullptr;
 };

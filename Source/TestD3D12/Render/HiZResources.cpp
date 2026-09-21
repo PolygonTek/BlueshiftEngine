@@ -73,7 +73,7 @@ bool HiZResources::CreateTexture(uint32_t width, uint32_t height) {
 
     const BE1::Image::Format hiZImageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R32_FLOAT);
     SharedPtr<BE1::Image> hiZImage = MakeShared<BE1::Image>();
-    hiZImage->InitFromMemory(width, height, 1, 1, hiZLevelCount, hiZImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    hiZImage->Init2DFromMemory(width, height, hiZLevelCount, hiZImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
     auto createHiZMipViews = [](RHI::Texture *texture, RHI::ViewID *srvViewIDs, RHI::ViewID *uavViewIDs, uint32_t levelCount) -> bool {
         for (uint32_t mipLevel = 0; mipLevel < levelCount; ++mipLevel) {
@@ -93,7 +93,7 @@ bool HiZResources::CreateTexture(uint32_t width, uint32_t height) {
         return true;
     };
 
-    texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, hiZImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    texture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, hiZImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!texture) {
         BE_WARNLOG("HiZResources::CreateTexture: failed to create Hi-Z texture\n");
         DestroyTexture();
@@ -151,8 +151,8 @@ bool HiZResources::CreateDebugPreviewTexture(uint32_t width, uint32_t height) {
     RHI::Renderer::RHIFormatToImageFormat(RHI::Format::R8G8B8A8_UNORM, &debugPreviewImageFormat, nullptr);
 
     SharedPtr<BE1::Image> debugPreviewImage = MakeShared<BE1::Image>();
-    debugPreviewImage->InitFromMemory(width, height, 1, 1, 1, debugPreviewImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
-    debugPreviewTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, debugPreviewImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    debugPreviewImage->Init2DFromMemory(width, height, 1, debugPreviewImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
+    debugPreviewTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, debugPreviewImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!debugPreviewTexture) {
         BE_WARNLOG("HiZResources::CreateDebugPreviewTexture: failed to create Hi-Z debug preview texture\n");
         return false;

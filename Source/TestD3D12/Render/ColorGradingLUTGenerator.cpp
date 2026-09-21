@@ -27,7 +27,7 @@ void ColorGradingLUTGenerator::Generate(const Settings &settings, BE1::Image &ou
         outImage.GetFlags() == BE1::Image::Flag::None &&
         outImage.GetGammaSpace() == BE1::Image::GammaSpace::Linear;
     if (!reuseImage) {
-        outImage.Create3D(LUTSize, LUTSize, LUTSize, 1, BE1::Image::Format::R16G16B16A16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+        outImage.Create3D(LUTSize, LUTSize, LUTSize, 1, BE1::Image::Format::R16G16B16A16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
     }
 
     const float saturation = BE1::Max(settings.saturation, 0.0f);

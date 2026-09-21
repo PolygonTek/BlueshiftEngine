@@ -14,7 +14,6 @@
 
 #pragma once
 
-
 class RenderContext;
 class RenderWorld;
 class Texture;

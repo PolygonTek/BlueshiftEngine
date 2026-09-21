@@ -160,7 +160,7 @@ bool ConvolutionBloomKernelGenerator::ReadKernelImage(BE1::Image &outImage) cons
 
     static constexpr BE1::Image::Format KernelImageFormat = BE1::Image::Format::R16G16B16A16_FLOAT;
 
-    outImage.Create2D(width, height, 1, KernelImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    outImage.Create2D(width, height, 1, KernelImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
     if (!RHI::renderer->GetTextureImage2D(kernelTexture, 0, KernelImageFormat, outImage.GetPixels())) {
         outImage.Clear();
         return false;
@@ -206,9 +206,9 @@ static RHI::Texture *CreateGeneratorTexture(const char *debugName, uint32_t size
     }
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(size, size, 1, 1, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image->Init2DFromMemory(size, size, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    RHI::Texture *texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::Texture *texture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!texture) {
         BE_WARNLOG("ConvolutionBloomKernelGenerator::EnsureResources: failed to create %s\n", debugName);
         return nullptr;

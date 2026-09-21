@@ -270,7 +270,7 @@ bool BloomResources::SetConvolutionBloomKernelFromImage(const char *textureName,
 
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>(kernelImage);
     SharedPtr<Texture> texture = textureManager.AllocTexture(textureName);
-    if (!texture->Create(RHI::TextureType::Texture2D, textureImage, Texture::Flag::HighQuality)) {
+    if (!texture->Create2D(textureImage, Texture::Flag::HighQuality)) {
         return false;
     }
 
@@ -449,9 +449,9 @@ bool BloomResources::CreatePyramidBloomTextures(uint32_t width, uint32_t height,
     const uint32_t bloomUpMipCount = levelCount - 1;
 
     SharedPtr<BE1::Image> bloomDownImage = MakeShared<BE1::Image>();
-    bloomDownImage->InitFromMemory(bloomMipWidths[0], bloomMipHeights[0], 1, 1, bloomDownMipCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    bloomDownImage->Init2DFromMemory(bloomMipWidths[0], bloomMipHeights[0], bloomDownMipCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    bloomDownTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, bloomDownImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    bloomDownTexture = RHI::renderer->CreateTexture2D(bloomTextureFlags, bloomDownImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!bloomDownTexture) {
         BE_WARNLOG("BloomResources::CreatePyramidBloomTextures: failed to create bloom down texture\n");
         return false;
@@ -460,9 +460,9 @@ bool BloomResources::CreatePyramidBloomTextures(uint32_t width, uint32_t height,
 
     // bloomUpTexture 는 upsample pass 의 출력 mip 만 필요하므로 가장 작은 source-only mip 은 만들지 않는다.
     SharedPtr<BE1::Image> bloomUpImage = MakeShared<BE1::Image>();
-    bloomUpImage->InitFromMemory(bloomMipWidths[0], bloomMipHeights[0], 1, 1, bloomUpMipCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    bloomUpImage->Init2DFromMemory(bloomMipWidths[0], bloomMipHeights[0], bloomUpMipCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    bloomUpTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, bloomUpImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    bloomUpTexture = RHI::renderer->CreateTexture2D(bloomTextureFlags, bloomUpImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!bloomUpTexture) {
         BE_WARNLOG("BloomResources::CreatePyramidBloomTextures: failed to create bloom up texture\n");
         DestroyPyramidBloomTextures();
@@ -636,9 +636,9 @@ bool BloomResources::CreateConvolutionBloomOutputTexture(uint32_t width, uint32_
     const uint32_t mipLevelCount = static_cast<uint32_t>(BE1::Min(BE1::Image::MaxMipLevels(width, height, 1), RenderConvolutionBloomMaxMipLevelCount));
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-    image->InitFromMemory(width, height, 1, 1, mipLevelCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::None);
+    image->Init2DFromMemory(width, height, mipLevelCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    fftBloomConvolutionOutputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    fftBloomConvolutionOutputTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!fftBloomConvolutionOutputTexture) {
         BE_WARNLOG("BloomResources::CreateConvolutionBloomOutputTexture: failed to create convolution texture\n");
         return false;

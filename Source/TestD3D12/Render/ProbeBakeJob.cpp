@@ -23,7 +23,7 @@ static bool CreateProbeOutputCubemapTexture(int32_t size, bool useHDR, bool allo
 
     // 필터링된 cubemap 은 항상 linear 포맷을 사용한다.
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>();
-    textureImage->InitFromMemory(size, size, 1, 6, 1, format, BE1::Image::GammaSpace::Linear, nullptr, BE1::Image::Flag::CubeMap);
+    textureImage->InitCubeFromMemory(size, 1, format, BE1::Image::GammaSpace::Linear, nullptr);
 
     Texture::Flag textureFlags = Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::UnorderedAccess;
     if (allocateMipmaps) {
@@ -33,7 +33,7 @@ static bool CreateProbeOutputCubemapTexture(int32_t size, bool useHDR, bool allo
     }
 
     SharedPtr<Texture> texture = MakeShared<Texture>();
-    if (!texture->Create(RHI::TextureType::TextureCube, textureImage, textureFlags)) {
+    if (!texture->CreateCube(textureImage, textureFlags)) {
         return false;
     }
 
