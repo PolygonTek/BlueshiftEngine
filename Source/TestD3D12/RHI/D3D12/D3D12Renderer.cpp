@@ -775,15 +775,9 @@ void D3D12Renderer::CreateShaderCompiler() {
         BE_FATALERROR("Create dxc compiler failed, ERROR: 0x%x", hr);
     }
 
-    uint32_t dxcVersionMajor = 0;
-    uint32_t dxcVersionMinor = 0;
-
-    IDxcVersionInfo *dxcVersionInfo = nullptr;
-    if (SUCCEEDED(dxcCompiler->QueryInterface(IID_PPV_ARGS(&dxcVersionInfo)))) {
-        if (SUCCEEDED(dxcVersionInfo->GetVersion(&dxcVersionMajor, &dxcVersionMinor))) {
-            BE_LOG("DXC version: %i.%i\n", dxcVersionMajor, dxcVersionMinor);
-        }
-        dxcVersionInfo->Release();
+    dxcCompilerCacheHashValid = GenerateDxcCompilerCacheHash(dxcCompilerCacheHash);
+    if (!dxcCompilerCacheHashValid) {
+        BE_WARNLOG("Could not identify the DXC compiler build; compiled shader disk cache is disabled\n");
     }
 
     hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));

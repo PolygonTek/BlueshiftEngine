@@ -16,9 +16,88 @@
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
 #include "D3D12Shader.h"
+#include <cwchar>
 
 static constexpr uint32_t CompiledShaderIdent = MAKE_FOURCC('B', 'S', 'C', 'S');
-static constexpr uint32_t CompiledShaderVersion = 1;
+static constexpr uint32_t CompiledShaderVersion = 2;
+
+// 컴파일과 캐시 키가 같은 옵션 목록을 사용해야 옵션 변경 시 이전 cso 가 무효화된다.
+static constexpr const wchar_t *dxcCompileOptions[] = {
+    L"-res-may-alias",
+    //L"-flegacy-macro-expansion",
+    //L"-no-legacy-cbuf-layout",
+    //L"-pack-optimized", // this has problem with tessellation shaders: https://github.com/microsoft/DirectXShaderCompiler/issues/3362
+    //L"-all-resources-bound",
+    //L"-Gis", // Force IEEE strictness
+    //L"-Gec", // Enable backward compatibility mode
+    //L"-Ges", // Enable strict mode
+    //L"-O0", // Optimization Level 0
+    //L"-enable-16bit-types",
+    L"-Wno-conversion",
+#ifdef USE_SHADER_DEBUG
+    // Disable optimization
+    L"-Od",
+#endif
+    // only valid in HLSL6 compiler
+    L"-Qstrip_reflect",
+    //L"-rootsig-define",
+    //L"DEFAULT_ROOTSIGNATURE",
+};
+
+bool D3D12Renderer::GenerateDxcCompilerCacheHash(uint64_t &outHash) const {
+    Microsoft::WRL::ComPtr<IDxcVersionInfo2> versionInfo;
+    if (FAILED(dxcCompiler->QueryInterface(IID_PPV_ARGS(&versionInfo)))) {
+        return false;
+    }
+
+    uint32_t major = 0;
+    uint32_t minor = 0;
+    uint32_t flags = 0;
+    if (FAILED(versionInfo->GetVersion(&major, &minor)) || FAILED(versionInfo->GetFlags(&flags))) {
+        return false;
+    }
+    BE_LOG("DXC version: %i.%i\n", major, minor);
+
+    // DXC 의 빌드 커밋 정보를 얻어온다.
+    uint32_t commitCount = 0;
+    char *commitHash = nullptr;
+    const HRESULT commitResult = versionInfo->GetCommitInfo(&commitCount, &commitHash);
+    if (FAILED(commitResult) || !commitHash || !commitHash[0]) {
+        CoTaskMemFree(commitHash);
+        return false;
+    }
+
+    // DXC 버젼, 플래그, 커밋 정보등으로 해시키를 생성한다.
+    uint64_t hash = hash_combine(static_cast<uint64_t>(major), minor);
+    hash = hash_combine(hash, flags);
+    hash = hash_combine(hash, commitCount);
+    hash = hash_combine(hash, BE1::Str::Hash64(commitHash));
+    CoTaskMemFree(commitHash);
+
+    // DXC 빌드가 제공하는 추가 버전 문자열도 해시키 생성에 포함한다.
+    Microsoft::WRL::ComPtr<IDxcVersionInfo3> customVersionInfo;
+    const HRESULT customVersionResult = versionInfo.As(&customVersionInfo);
+    if (SUCCEEDED(customVersionResult)) {
+        char *customVersion = nullptr;
+        const HRESULT result = customVersionInfo->GetCustomVersionString(&customVersion);
+        if (FAILED(result) || !customVersion) {
+            CoTaskMemFree(customVersion);
+            return false;
+        }
+        hash = hash_combine(hash, BE1::Str::Hash64(customVersion));
+        CoTaskMemFree(customVersion);
+    } else if (customVersionResult != E_NOINTERFACE) {
+        return false;
+    }
+
+    // 컴파일 옵션도 해시키 생성에 포함한다.
+    for (const wchar_t *option : dxcCompileOptions) {
+        hash = hash_combine(hash, BE1::CityHash64(reinterpret_cast<const char *>(option), std::wcslen(option) * sizeof(wchar_t)));
+    }
+
+    outHash = hash;
+    return true;
+}
 
 struct CompiledShaderHeader {
     uint32_t    ident;
@@ -127,30 +206,7 @@ bool D3D12Renderer::CompileShaderD3D(const RHI::ShaderCompileInput *compileInput
 }
 
 bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput) {
-    std::vector<std::wstring> args = {
-        L"-res-may-alias",
-        //L"-flegacy-macro-expansion",
-        //L"-no-legacy-cbuf-layout",
-        //L"-pack-optimized", // this has problem with tessellation shaders: https://github.com/microsoft/DirectXShaderCompiler/issues/3362
-        //L"-all-resources-bound",
-        //L"-Gis", // Force IEEE strictness
-        //L"-Gec", // Enable backward compatibility mode
-        //L"-Ges", // Enable strict mode
-        //L"-O0", // Optimization Level 0
-        //L"-enable-16bit-types",
-        L"-Wno-conversion",
-    };
-
-#ifdef USE_SHADER_DEBUG
-    // Disable optimization
-    args.push_back(L"-Od");
-#endif
-
-    // only valid in HLSL6 compiler
-    args.push_back(L"-Qstrip_reflect");
-
-    //args.push_back(L"-rootsig-define");
-    //args.push_back(L"DEFAULT_ROOTSIGNATURE");
+    std::vector<std::wstring> args(dxcCompileOptions, dxcCompileOptions + COUNT_OF(dxcCompileOptions));
 
     args.push_back(L"-T");
 
@@ -754,13 +810,17 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
 
     byte *compiledShaderData = nullptr;
     uint32_t compiledShaderDataSize = 0;
+    const RHI::ShaderFormat shaderFormat = GetShaderFormat();
 
     // Include files are validated from the dependency table stored in the cso cache.
     uint64_t shaderHash = BE1::CityHash64(shaderText, shaderTextSize);
     shaderHash = hash_combine(shaderHash, definesHash);
+    shaderHash = hash_combine(shaderHash, dxcCompilerCacheHash);
 #ifdef USE_COMPILED_SHADER
+    // 컴파일러를 식별할 수 없으면 이전 cso 를 읽거나 새 cso 를 저장하지 않는다.
+    const bool useCompiledShaderCache = shaderFormat == RHI::ShaderFormat::HLSL6 && dxcCompilerCacheHashValid;
     // 이미 컴파일된 cso 파일을 로드해본다.
-    bool shouldCompileShader = !LoadCompiledShader(fileName, shaderHash, &compiledShaderData, &compiledShaderDataSize);
+    bool shouldCompileShader = !useCompiledShaderCache || !LoadCompiledShader(fileName, shaderHash, &compiledShaderData, &compiledShaderDataSize);
 #else
     bool shouldCompileShader = true;
 #endif
@@ -768,7 +828,7 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
     // hash 값이 다르거나 파일이 없다면 새로 컴파일한다.
     if (shouldCompileShader) {
         RHI::ShaderCompileInput compileInput = {};
-        compileInput.shaderFormat = GetShaderFormat();
+        compileInput.shaderFormat = shaderFormat;
         compileInput.shaderModel = shaderModel;
         compileInput.shaderStage = shaderStage;
         compileInput.sourceName = sourceName;
@@ -795,7 +855,9 @@ RHI::Shader *D3D12Renderer::CreateShader(RHI::ShaderModel shaderModel, RHI::Shad
 
 #ifdef USE_COMPILED_SHADER
         // 컴파일했으므로 cso 파일을 저장한다.
-        WriteCompiledShader(fileName, shaderHash, compiledShaderData, compiledShaderDataSize, compileOutput.dependencies);
+        if (useCompiledShaderCache) {
+            WriteCompiledShader(fileName, shaderHash, compiledShaderData, compiledShaderDataSize, compileOutput.dependencies);
+        }
 #endif
     }
 

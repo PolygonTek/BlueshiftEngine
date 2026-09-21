@@ -487,11 +487,12 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     bool cachedPsoBlobEntry = false;
 
     // cachedPsoBlob 은 미리 컴파일된 cached PSO 정보가 담긴 ID3DBlob 객체이다.
-    ID3DBlob *cachedPsoBlob = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> cachedPsoBlob;
     {
         BE1::ScopedLock lock(psoMapMutex);
         const auto *entry = cachedPsoBlobMap.Get(psoHash);
         if (entry) {
+            // 다른 스레드가 캐시를 무효화해도 PSO 생성 중에는 blob 을 유지한다.
             cachedPsoBlob = entry->second;
             cachedPsoBlobEntry = true;
         }
@@ -500,7 +501,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     // cached PSO 가 없다면 파일로 저장된 cached PSO 파일을 로딩해본다.
     // NOTE: hash 값 충돌로 엉뚱한 cached PSO 파일을 읽어오지는 않는지 체크 필요
     if (!cachedPsoBlob) {
-        LoadCachedPSO(psoHash, &cachedPsoBlob);
+        LoadCachedPSO(psoHash, cachedPsoBlob.GetAddressOf());
     }
 
     // PSO 스트림에 cached PSO blob 정보를 담아서 PSO 를 생성하면, D3D12 디바이스가 cached PSO blob 정보를 이용해서 PSO 객체를 빠르게 생성할 수 있다.
@@ -676,16 +677,30 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     // streamDesc 를 통해 PSO 를 생성한다.
     HRESULT hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
 #ifdef USE_CACHED_PSO_BLOB
-    if (hr == D3D12_ERROR_DRIVER_VERSION_MISMATCH) {
-        // cached PSO 버젼이 맞지 않는다면, 스트림에서 cached PSO 를 제거하고 다시 생성해본다.
+    if (FAILED(hr) && cachedPsoBlob) {
+        // 캐시를 사용한 생성이 실패하면, 실패 원인과 관계없이 캐시 없이 한 번 재시도한다.
         stream->cachedPSO = CD3DX12_PIPELINE_STATE_STREAM_CACHED_PSO();
-        // cached PSO 를 릴리즈한다.
-        SAFE_RELEASE(cachedPsoBlob);
+
+        {
+            BE1::ScopedLock lock(psoMapMutex);
+            const auto *entry = cachedPsoBlobMap.Get(psoHash);
+            // 다른 스레드가 이미 교체한 캐시는 유지하고, 실패한 blob 의 맵 참조만 해제한다.
+            if (entry && entry->second == cachedPsoBlob.Get()) {
+                ID3DBlob *invalidBlob = entry->second;
+                cachedPsoBlobMap.Remove(psoHash);
+                invalidBlob->Release();
+            }
+        }
+
+        // cached PSO 의 로컬 참조도 해제한다. 재시도 성공 시 새 blob 을 저장한다.
+        cachedPsoBlob.Reset();
+        cachedPsoBlobEntry = false;
 
         BE1::Str psoCacheFilename;
         GetCachedPSOFilename(psoHash, psoCacheFilename);
-        BE_WARNLOG("Cached PSO file '%s' has a mismatched driver version\nThe file will be updated\n", psoCacheFilename.c_str());
+        BE_WARNLOG("Cached PSO '%s' failed, ERROR: 0x%x\nRetrying without the cache\n", psoCacheFilename.c_str(), hr);
 
+        SAFE_RELEASE(pipelineState->pso);
         hr = device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipelineState->pso));
     }
 #endif
@@ -697,15 +712,11 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     }
 
 #ifdef USE_CACHED_PSO_BLOB
-    if (!cachedPsoBlobEntry) {
-        if (!cachedPsoBlob) {
-            // cached PSO 가 없었다면 PSO 로부터 가져와서 파일에 저장한다.
-            if (SUCCEEDED(pipelineState->pso->GetCachedBlob(&cachedPsoBlob))) {
-                WriteCachedPSO(psoHash, cachedPsoBlob);
-            }
+    if (!cachedPsoBlob) {
+        // cached PSO 가 없거나 무효화되었다면 PSO 로부터 가져와서 파일에 저장한다.
+        if (SUCCEEDED(pipelineState->pso->GetCachedBlob(cachedPsoBlob.GetAddressOf()))) {
+            WriteCachedPSO(psoHash, cachedPsoBlob.Get());
         }
-
-        // cached PSO 를 캐싱한다.
     }
 #endif
 
@@ -718,24 +729,17 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
             pso->refCount.fetch_add(1);
             delete pipelineState;
 
-#ifdef USE_CACHED_PSO_BLOB
-            if (!cachedPsoBlobEntry && cachedPsoBlob) {
-                SAFE_RELEASE(cachedPsoBlob);
-            }
-#endif
             return pso;
         }
 
         graphicsPsoMap.Set(psoHash, pipelineState);
 
 #ifdef USE_CACHED_PSO_BLOB
-        // cached PSO 를 캐싱한다.
+        // cached PSO 를 캐싱한다. blob 의 로컬 소유권을 맵으로 이전한다.
         if (!cachedPsoBlobEntry && cachedPsoBlob) {
             const auto *entry = cachedPsoBlobMap.Get(psoHash);
-            if (entry) {
-                SAFE_RELEASE(cachedPsoBlob);
-            } else {
-                cachedPsoBlobMap.Set(psoHash, cachedPsoBlob);
+            if (!entry) {
+                cachedPsoBlobMap.Set(psoHash, cachedPsoBlob.Detach());
             }
         }
 #endif
