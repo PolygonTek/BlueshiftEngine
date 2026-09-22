@@ -17,7 +17,7 @@
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
-class RenderFrameData;
+class RenderFrame;
 struct VisLight;
 
 /*
@@ -39,10 +39,10 @@ public:
 
     bool                            EnsureBufferCapacity(uint32_t lightRefCount, uint32_t numLightCullingZBins, uint32_t numLightCullingWords);
 
-    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrameData *frameData, bool allowResize);
+    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame, bool allowResize);
 
                                     // 타일 마스크 워드 테이블을 계산한다.
-    bool                            DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState, const RenderFrameData *frameData);
+    bool                            DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState, const RenderFrame *frame);
 
     uint32_t                        GetLightRefBindlessIndex() const { return lightRefBuffer.bindlessIndex; }
     uint32_t                        GetLightZBinBindlessIndex() const { return lightZBinBuffer.bindlessIndex; }

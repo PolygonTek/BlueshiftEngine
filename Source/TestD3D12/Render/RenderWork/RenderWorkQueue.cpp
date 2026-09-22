@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderWorkQueue.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 #include "Platform/PlatformTime.h"
 
 static constexpr uint64_t RenderWorkAttachTimeoutUsec = 30ULL * 1000 * 1000;
@@ -30,10 +30,10 @@ void RenderWorkQueue::Enqueue(UniquePtr<RenderWork> work) {
     pendingWorks.Append(std::move(work));
 }
 
-int RenderWorkQueue::AttachPendingWorks(RenderFrameData *frameData, int maxWorkCount) {
+int RenderWorkQueue::AttachPendingWorks(RenderFrame *frame, int maxWorkCount) {
     assert(BE1::Engine::IsInMainThread());
 
-    if (!frameData || maxWorkCount <= 0) {
+    if (!frame || maxWorkCount <= 0) {
         return 0;
     }
 
@@ -71,7 +71,7 @@ int RenderWorkQueue::AttachPendingWorks(RenderFrameData *frameData, int maxWorkC
 
         UniquePtr<RenderWork> work = pendingWorks.TakeAt(readyWorkIndex);
 
-        if (!frameData->CmdRenderWork(work.get())) {
+        if (!frame->CmdRenderWork(work.get())) {
             // 렌더 커맨드에 밀어 넣지 못했다면, 다시 대기 목록으로 되돌린다.
             pendingWorks.Insert(std::move(work), readyWorkIndex);
             break;
@@ -79,7 +79,7 @@ int RenderWorkQueue::AttachPendingWorks(RenderFrameData *frameData, int maxWorkC
 
         AttachedWork attachedWork;
         attachedWork.renderWork = std::move(work);
-        attachedWork.frameData = frameData;
+        attachedWork.frame = frame;
         attachedWorks.Append(std::move(attachedWork));
         attachedWorkCount++;
     }
@@ -97,13 +97,13 @@ void RenderWorkQueue::CompleteAttachedWork(AttachedWork &attachedWork) {
 
     attachedWork.renderWork->OnCompleted(commandListSubmitted);
     attachedWork.renderWork.reset();
-    attachedWork.frameData = nullptr;
+    attachedWork.frame = nullptr;
 }
 
-void RenderWorkQueue::CompleteAttachedWorks(const RenderFrameData *completedFrameDataArray, int completedFrameDataCount) {
+void RenderWorkQueue::CompleteAttachedWorks(const RenderFrame *completedFrames, int completedFrameCount) {
     assert(BE1::Engine::IsInMainThread());
 
-    if (!completedFrameDataArray || completedFrameDataCount <= 0) {
+    if (!completedFrames || completedFrameCount <= 0) {
         return;
     }
 
@@ -111,8 +111,8 @@ void RenderWorkQueue::CompleteAttachedWorks(const RenderFrameData *completedFram
         AttachedWork &attachedWork = attachedWorks[index];
 
         bool belongsToCompletedFrame = false;
-        for (int completedFrameDataIndex = 0; completedFrameDataIndex < completedFrameDataCount; ++completedFrameDataIndex) {
-            if (attachedWork.frameData == &completedFrameDataArray[completedFrameDataIndex]) {
+        for (int completedFrameIndex = 0; completedFrameIndex < completedFrameCount; ++completedFrameIndex) {
+            if (attachedWork.frame == &completedFrames[completedFrameIndex]) {
                 belongsToCompletedFrame = true;
                 break;
             }
@@ -128,8 +128,8 @@ void RenderWorkQueue::CompleteAttachedWorks(const RenderFrameData *completedFram
     }
 }
 
-void RenderWorkQueue::CompleteAttachedWorks(const RenderFrameData *completedFrameData) {
-    CompleteAttachedWorks(completedFrameData, 1);
+void RenderWorkQueue::CompleteAttachedWorks(const RenderFrame *completedFrame) {
+    CompleteAttachedWorks(completedFrame, 1);
 }
 
 void RenderWorkQueue::CompleteAllAttachedWorks() {

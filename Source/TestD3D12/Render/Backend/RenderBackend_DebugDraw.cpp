@@ -16,7 +16,7 @@
 #include "RenderBackend.h"
 #include "Render/DebugDrawVertex.h"
 #include "Render/RenderInternal.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 
 static constexpr uint32_t DebugLightCircleLowSegments = 12;
 static constexpr uint32_t DebugLightCircleMediumSegments = 24;
@@ -201,7 +201,7 @@ void RenderBackend::DrawDebugLights() {
         return;
     }
 
-    RHI::VertexBuffer *vertexBuffer = frameData->GetThreadData(0)->AllocVertex(sizeof(DebugDrawVertex), numVerts);
+    RHI::VertexBuffer *vertexBuffer = frame->GetThreadData(0)->AllocVertex(sizeof(DebugDrawVertex), numVerts);
     if (!vertexBuffer || !vertexBuffer->mappedPtr) {
         BE_WARNLOG("RenderBackend::DrawDebugLights: failed to allocate light bounds vertex buffer\n");
         return;

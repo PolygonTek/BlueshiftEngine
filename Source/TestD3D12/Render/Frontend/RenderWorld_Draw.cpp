@@ -76,7 +76,7 @@ static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubM
     return featureSet;
 }
 
-void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel) {
+void RenderWorld::AddVisSurf(RenderFrame *frame, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel) {
     if (visCamera->numVisSurfs + 1 > visCamera->maxVisSurfs) {
         BE_WARNLOG("RenderWorld::AddVisSurf: not enough available visible surfaces\n");
         return;
@@ -98,7 +98,7 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
 
     const VisSkinnedMesh *visSkinnedMesh = visObject->skinnedMesh;
 
-    VisSurf *drawSurf = (VisSurf *)frameData->MemAlloc(sizeof(VisSurf));
+    VisSurf *drawSurf = (VisSurf *)frame->MemAlloc(sizeof(VisSurf));
     drawSurf->index = visCamera->numVisSurfs;
     drawSurf->space = visObject;
     drawSurf->subMesh = subMesh;
@@ -107,7 +107,7 @@ void RenderWorld::AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, V
     drawSurf->lodLevel = lodLevel;
     drawSurf->material = material;
     drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh, visSkinnedMesh && visSkinnedMesh->skinningJointOffset != ShaderSkinningJointOffsetInvalid);
-    drawSurf->shaderMaterialIndex = frameData->RegisterShaderMaterial(material);
+    drawSurf->shaderMaterialIndex = frame->RegisterShaderMaterial(material);
     drawSurf->flags = flags;
     drawSurf->shadowCascadeMask = shadowCascadeMask;
 
@@ -168,7 +168,7 @@ RenderWorld::SkyboxState RenderWorld::GetSkyboxState() const {
     return SkyboxState::Ready;
 }
 
-void RenderWorld::SetupPyramidBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::SetupPyramidBloom(RenderFrame *frame, RenderCamera *renderCamera, VisCamera *visCamera) {
     BloomResources &resources = renderCamera->GetBloomResources();
     if (resources.GetBloomMipCount() < 2) {
         return;
@@ -193,7 +193,7 @@ void RenderWorld::SetupPyramidBloom(RenderFrameData *frameData, RenderCamera *re
     visCamera->bloom.outputViewID = resources.GetBloomUpMipSRVs()[0];
 }
 
-void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::SetupConvolutionBloom(RenderFrame *frame, RenderCamera *renderCamera, VisCamera *visCamera) {
     BloomResources &resources = renderCamera->GetBloomResources();
     if (resources.GetFFTBloomSize() == 0 ||
         !resources.GetFFTBloomConvolutionOutputTexture() ||
@@ -202,7 +202,7 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
         return;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
     resources.SetConvolutionBloomKernelRotation(renderFrameSettings.convolutionBloomKernelRotation);
     resources.SetConvolutionBloomKernelScale(renderFrameSettings.convolutionBloomKernelScale);
     resources.SetConvolutionBloomPaddingTrim(renderFrameSettings.convolutionBloomPaddingTrim);
@@ -213,7 +213,7 @@ void RenderWorld::SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera
     Texture *fftBloomKernelSourceTexture = nullptr;
     RHI::Texture *fftBloomKernelSourceRHITexture = nullptr;
     if (updateFFTBloomKernelBuffer) {
-        fftBloomKernelSourceTexture = frameData->RetainTexture(resources.GetFFTBloomKernelTexture());
+        fftBloomKernelSourceTexture = frame->RetainTexture(resources.GetFFTBloomKernelTexture());
         if (!fftBloomKernelSourceTexture || !fftBloomKernelSourceTexture->IsReadyForRendering()) {
             return;
         }
@@ -295,9 +295,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     assert(BE1::Engine::IsInMainThread());
     assert(frameActive);
 
-    RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrontendFrameData();
+    RenderFrame *frame = RenderContext::activeContext->GetCurrentFrontendFrame();
     RenderContext *renderContext = RenderContext::activeContext;
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
     const BE1::Rect &outputRect = renderCamera->desc.outputRect;
 
     // VisLight stores each tile coordinate in 8 bits; limit internal render targets to 256 tiles per axis.
@@ -373,15 +373,15 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool requestSSRTrace = requestScreenSpaceDepthPyramidGeneration && renderCamera->GetSSRTraceTexture();
 
     // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
-    VisCamera *visCamera = frameData->AllocVisCamera();
+    VisCamera *visCamera = frame->AllocVisCamera();
     if (!visCamera) {
         return;
     }
 
     visCamera->maxVisSurfs = VisCamera::MaxVisSurfs;
-    visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
+    visCamera->visSurfs = (const VisSurf **)frame->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
     visCamera->numRenderPasses = 0;
-    visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
+    visCamera->renderPasses = (RenderPass *)frame->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
     visCamera->origin = renderCamera->desc.origin;
     visCamera->axis = renderCamera->desc.axis;
 
@@ -391,13 +391,13 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         visCamera->envLightColor = envLightDesc.linearColor;
         visCamera->envLightIntensity = envLightDesc.intensity;
 
-        Texture *diffuseIrradianceCubeMap = frameData->RetainTexture(envLight.GetDiffuseIrradianceCubeMap());
+        Texture *diffuseIrradianceCubeMap = frame->RetainTexture(envLight.GetDiffuseIrradianceCubeMap());
         RHI::Texture *rhiDiffuseIrradianceCubeMap = diffuseIrradianceCubeMap ? diffuseIrradianceCubeMap->GetReadyRHITexture() : nullptr;
         if (rhiDiffuseIrradianceCubeMap && rhiDiffuseIrradianceCubeMap->type == RHI::TextureType::TextureCube) {
             visCamera->envLightDiffuseIrradianceCubeMap = rhiDiffuseIrradianceCubeMap;
         }
 
-        Texture *specularCubeMap = frameData->RetainTexture(envLight.GetSpecularPrefilteredCubeMap());
+        Texture *specularCubeMap = frame->RetainTexture(envLight.GetSpecularPrefilteredCubeMap());
         RHI::Texture *rhiSpecularCubeMap = specularCubeMap ? specularCubeMap->GetReadyRHITexture() : nullptr;
         if (rhiSpecularCubeMap && rhiSpecularCubeMap->type == RHI::TextureType::TextureCube) {
             visCamera->envLightSpecularCubeMap = rhiSpecularCubeMap;
@@ -521,16 +521,16 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     if (!skipPostProcess) {
         // 초기 LUT upload request 는 backend frame 실행 전에 처리되므로 Pending 상태의 RHI 포인터도 프레임에 전달할 수 있다.
-        Texture *colorGradingLUTTexture = frameData->RetainTexture(renderSystem->GetColorGradingLUTTexture());
+        Texture *colorGradingLUTTexture = frame->RetainTexture(renderSystem->GetColorGradingLUTTexture());
         visCamera->colorGradingLUTTexture = colorGradingLUTTexture ? colorGradingLUTTexture->GetRHITexture() : nullptr;
 
-        Texture *bloomDirtMaskTexture = frameData->RetainTexture(renderCamera->GetBloomResources().GetBloomDirtMaskTexture());
+        Texture *bloomDirtMaskTexture = frame->RetainTexture(renderCamera->GetBloomResources().GetBloomDirtMaskTexture());
         visCamera->bloom.bloomDirtMaskTexture = bloomDirtMaskTexture ? bloomDirtMaskTexture->GetRHITexture() : nullptr;
 
         if (bloomMode == RenderBloomMode::Pyramid) {
-            SetupPyramidBloom(frameData, renderCamera, visCamera);
+            SetupPyramidBloom(frame, renderCamera, visCamera);
         } else if (bloomMode == RenderBloomMode::Convolution) {
-            SetupConvolutionBloom(frameData, renderCamera, visCamera);
+            SetupConvolutionBloom(frame, renderCamera, visCamera);
         }
     }
 
@@ -565,7 +565,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
     visCamera->hiZCullViewProjMatrix = renderCamera->hiZCullViewProjMatrix;
 
-    DrawCamera(frameData, renderCamera, visCamera);
+    DrawCamera(frame, renderCamera, visCamera);
 
     if (temporalHistoryEnabled) {
         renderCamera->previousViewProjMatrix = renderCamera->viewProjMatrix;
@@ -588,56 +588,56 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 }
 
-void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::DrawCamera(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera");
 
     // RenderObject 중에서 컬링한 오브젝트를 프레임 데이터에 VisObject 로 등록한다.
-    FindVisObjects(frameData, renderCamera, visCamera);
+    FindVisObjects(frame, renderCamera, visCamera);
 
     // RenderLight 중에서 컬링한 라이트를 프레임 데이터에 VisLight 로 등록한다.
-    FindVisLights(frameData, renderCamera, visCamera);
+    FindVisLights(frame, renderCamera, visCamera);
 
     // 광원별 요청/할당은 이후 이 카메라 전용 snapshot 에 등록한다.
-    visCamera->localShadowAtlas = frameData->AllocVisLocalShadowAtlas(RenderContext::activeContext->GetShadowAtlas());
+    visCamera->localShadowAtlas = frame->AllocVisLocalShadowAtlas(RenderContext::activeContext->GetShadowAtlas());
 
     // 각 CSM split 의 receiver 영역으로 directional shadow 투영을 준비하고 caster 를 수집한다.
-    SetupCascadedShadow(frameData, renderCamera, visCamera);
+    SetupCascadedShadow(frame, renderCamera, visCamera);
 
     // visObjects 중에서 mesh surface 들을 visCamera->visSurfs 에 추가한다.
-    AddMeshes(frameData, renderCamera, visCamera);
+    AddMeshes(frame, renderCamera, visCamera);
 
     // visibleLights 들로 GPU light culling 데이터를 구성한다.
-    BuildLightCullingData(frameData, renderCamera, visCamera);
+    BuildLightCullingData(frame, renderCamera, visCamera);
 
     // visObjects 중에서 text mesh 를 visCamera->visSurfs 에 추가한다.
-    AddTextMeshes(frameData, renderCamera, visCamera);
+    AddTextMeshes(frame, renderCamera, visCamera);
 
     // Add drawing surface of skybox.
-    AddSkyBoxMeshes(frameData, renderCamera, visCamera);
+    AddSkyBoxMeshes(frame, renderCamera, visCamera);
 
     // Ocean surface 와 query 정보를 프레임 데이터에 등록한다.
     if (hasOceanSurface) {
-        frameData->RegisterVisOceanSurface(oceanSurface.desc.simulation, oceanSurface.desc.surface, oceanSurface.revision, oceanSurface.queries.Ptr(), static_cast<uint32_t>(oceanSurface.queries.Count()));
+        frame->RegisterVisOceanSurface(oceanSurface.desc.simulation, oceanSurface.desc.surface, oceanSurface.revision, oceanSurface.queries.Ptr(), static_cast<uint32_t>(oceanSurface.queries.Count()));
     }
 
     // 렌더 패스를 구성한다.
     if (visCamera->cascadedShadow) {
         const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
         for (uint32_t cascadeIndex = 0; cascadeIndex < visCamera->cascadedShadow->cascadeCount; cascadeIndex++) {
-            renderPassBuilder.BuildCascadedShadow(frameData, visCamera->cascadedShadow, cascadeIndex, visCamera->visSurfs, visCamera->numVisSurfs, allowAsyncPSOBuild);
+            renderPassBuilder.BuildCascadedShadow(frame, visCamera->cascadedShadow, cascadeIndex, visCamera->visSurfs, visCamera->numVisSurfs, allowAsyncPSOBuild);
         }
     }
 
-    renderPassBuilder.BuildMain(frameData, visCamera);
+    renderPassBuilder.BuildMain(frame, visCamera);
 
     // Post-Opaque 단계에서 그릴 ocean surface pipeline 을 준비한다.
     PrepareOceanSurfacePipeline(visCamera);
 
     // 카메라의 debug draw 데이터를 구성한다.
-    BuildDebugDraw(frameData, visCamera);
+    BuildDebugDraw(frame, visCamera);
 
     // 렌더링 커맨드에 visCamera 를 기록한다.
-    frameData->CmdDrawCamera(visCamera);
+    frame->CmdDrawCamera(visCamera);
 
     viewCount++;
 }
@@ -703,17 +703,17 @@ static float3x4 BuildWorldToShadowCoordMatrix(const BE1::Mat4 &viewProjMatrix) {
     return matrix;
 }
 
-void RenderWorld::SetupCascadedShadow(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     if (!visCamera->directionalLightVisible) {
         return;
     }
 
-    const VisLight *directionalLight = frameData->GetPrimaryDirectionalLight();
+    const VisLight *directionalLight = frame->GetPrimaryDirectionalLight();
     if (!directionalLight || !BE1::HasFlag(directionalLight->flags, RenderLight::Flag::CastShadows)) {
         return;
     }
 
-    const RenderFrameSettings &settings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &settings = frame->GetRenderFrameSettings();
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const float csmMaxDistance = BE1::Min(cameraDesc.zFar, settings.csmMaxDistance); // CSM 최대 거리
     if (!settings.shadows || csmMaxDistance <= cameraDesc.zNear) {
@@ -732,7 +732,7 @@ void RenderWorld::SetupCascadedShadow(RenderFrameData *frameData, const RenderCa
     const float usableShadowResolution = static_cast<float>(shadowMapResolution - 2 * shadowMapBorderTexels);
     const float filterResolutionScale = usableShadowResolution / referenceUsableResolution;
 
-    VisCascadedShadow *cascadedShadow = new (frameData->MemAlloc(sizeof(VisCascadedShadow))) VisCascadedShadow();
+    VisCascadedShadow *cascadedShadow = new (frame->MemAlloc(sizeof(VisCascadedShadow))) VisCascadedShadow();
     cascadedShadow->cascadeCount = settings.csmCascadeCount;
 
     // cascade 별 distance 를 계산한다.
@@ -774,7 +774,7 @@ void RenderWorld::SetupCascadedShadow(RenderFrameData *frameData, const RenderCa
     }
 
     // RenderObject 를 한 번 순회하여 caster 와 cascade mask 를 수집한다.
-    FindDirectionalShadowCasters(frameData, renderCamera, cascadedShadow);
+    FindDirectionalShadowCasters(frame, renderCamera, cascadedShadow);
 
     cascadedShadow->depthTexture = depthTexture;
 
@@ -821,12 +821,12 @@ static float CalcDirectionalShadowSquaredLODErrorLimit(const VisCascadedShadow *
     return CalcLocalLODErrorLimitSqr(worldMatrix, cascadePixelsPerWorldUnit, shadowTexelErrorLimit);
 }
 
-void RenderWorld::FindDirectionalShadowCasters(RenderFrameData *frameData, const RenderCamera *renderCamera, const VisCascadedShadow *cascadedShadow) {
+void RenderWorld::FindDirectionalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, const VisCascadedShadow *cascadedShadow) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindDirectionalShadowCasters");
 
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
-    const float meshLODPixelError = frameData->GetRenderFrameSettings().meshLODPixelError;
+    const float meshLODPixelError = frame->GetRenderFrameSettings().meshLODPixelError;
 
     for (RenderObject *renderObject : renderObjects) {
         if (!renderObject || !renderObject->desc.meshInstance || !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::CastShadows)) {
@@ -855,7 +855,7 @@ void RenderWorld::FindDirectionalShadowCasters(RenderFrameData *frameData, const
             continue;
         }
 
-        VisObject *visObject = RegisterVisObject(frameData, renderObject);
+        VisObject *visObject = RegisterVisObject(frame, renderObject);
         if (!visObject) {
             continue;
         }
@@ -912,14 +912,14 @@ void RenderWorld::PrepareOceanSurfacePipeline(VisCamera *visCamera) {
     visCamera->oceanSurfacePSO = ShaderPipeline::GetReadyPSO(shaderPipeline);
 }
 
-VisLight *RenderWorld::RegisterVisLight(RenderFrameData *frameData, RenderLight *renderLight) {
+VisLight *RenderWorld::RegisterVisLight(RenderFrame *frame, RenderLight *renderLight) {
     assert(frameActive);
 
     if (IsVisLightRegisteredInCurrentView(renderLight)) {
         return nullptr;
     }
 
-    VisLight *visLight = frameData->AllocVisLight(renderLight->desc.type);
+    VisLight *visLight = frame->AllocVisLight(renderLight->desc.type);
     if (!visLight) {
         return nullptr;
     }
@@ -932,7 +932,7 @@ VisLight *RenderWorld::RegisterVisLight(RenderFrameData *frameData, RenderLight 
     } else if (renderLight->desc.type == RenderLight::Type::Spot) {
         visLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
 
-        VisSpotLightData *spotLightData = frameData->AllocVisSpotLightData();
+        VisSpotLightData *spotLightData = frame->AllocVisSpotLightData();
         spotLightData->fallOffMatrix = renderLight->fallOffMatrix;
         visLight->spotLightData = spotLightData;
 
@@ -956,31 +956,31 @@ VisLight *RenderWorld::RegisterVisLight(RenderFrameData *frameData, RenderLight 
     return visLight;
 }
 
-VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject) {
+VisObject *RenderWorld::RegisterVisObject(RenderFrame *frame, RenderObject *renderObject) {
     assert(frameActive);
 
     if (IsVisObjectRegisteredInCurrentView(renderObject)) {
         return renderObject->visObject;
     }
 
-    VisObject *visObject = frameData->AllocVisObject();
+    VisObject *visObject = frame->AllocVisObject();
     if (!visObject) {
         return nullptr;
     }
     renderObject->viewCount = viewCount;
     renderObject->visObject = visObject;
-    visObject->meshLOD = frameData->GetRenderFrameSettings().meshLOD ? renderObject->GetMeshLOD() : 0;
+    visObject->meshLOD = frame->GetRenderFrameSettings().meshLOD ? renderObject->GetMeshLOD() : 0;
 
     if (renderObject->desc.meshInstance) {
-        visObject->meshInstance = frameData->RetainMeshInstance(renderObject->desc.meshInstance);
+        visObject->meshInstance = frame->RetainMeshInstance(renderObject->desc.meshInstance);
     }
 
     if (visObject->meshInstance && visObject->meshInstance->IsSkinned() && renderObject->desc.skeleton) {
-        VisSkinnedMesh *visSkinnedMesh = frameData->AllocVisSkinnedMesh();
+        VisSkinnedMesh *visSkinnedMesh = frame->AllocVisSkinnedMesh();
         if (visSkinnedMesh) {
             visSkinnedMesh->space = visObject;
             visSkinnedMesh->meshInstance = visObject->meshInstance;
-            visSkinnedMesh->skeleton = frameData->RetainSkeleton(renderObject->desc.skeleton);
+            visSkinnedMesh->skeleton = frame->RetainSkeleton(renderObject->desc.skeleton);
             visObject->skinnedMesh = visSkinnedMesh;
         }
     }
@@ -990,26 +990,26 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrameData *frameData, RenderObje
     if (numMaterials > 0) {
         const Material **materials;
         if (numMaterials > COUNT_OF(visObject->baseMaterials)) {
-            materials = (const Material **)frameData->MemAlloc(numMaterials * sizeof(materials[0]));
+            materials = (const Material **)frame->MemAlloc(numMaterials * sizeof(materials[0]));
             visObject->materials = materials;
         } else {
             materials = visObject->baseMaterials;
         }
         for (int i = 0; i < numMaterials; ++i) {
-            materials[i] = frameData->RetainMaterial(renderObject->desc.materials[i]);
+            materials[i] = frame->RetainMaterial(renderObject->desc.materials[i]);
         }
     }
     if (renderObject->desc.text && !renderObject->desc.text->text.IsEmpty()) {
         RenderObject::TextDesc &textDesc = *(renderObject->desc.text);
-        VisText *visText = frameData->AllocVisText();
+        VisText *visText = frame->AllocVisText();
         if (visText) {
             visText->space = visObject;
             if (textDesc.font) {
-                visText->font = frameData->RetainFont(textDesc.font);
+                visText->font = frame->RetainFont(textDesc.font);
             }
 
             int size = textDesc.text.Length() + 1;
-            char *textMemPtr = (char *)frameData->MemAlloc(size);
+            char *textMemPtr = (char *)frame->MemAlloc(size);
             BE1::Str::Copynz(textMemPtr, textDesc.text.c_str(), size);
             visText->text = textMemPtr;
             visText->textRect = textDesc.textRect;
@@ -1033,19 +1033,19 @@ void RenderWorld::SetVisObjectWorldMatrices(const RenderObject *renderObject, Vi
     visObject->prevWorldMatrix = hasContinuousPrevWorldMatrix ? renderObject->prevWorldMatrix : renderObject->desc.worldMatrix;
 }
 
-void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::FindVisObjects(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisObjects");
 
-    const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
-    const float meshLODPixelError = frameData->GetRenderFrameSettings().meshLODPixelError;
+    const bool skipViewCulling = frame->GetRenderFrameSettings().skipViewCulling;
+    const float meshLODPixelError = frame->GetRenderFrameSettings().meshLODPixelError;
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
 
     // 같은 프레임 데이터로 RenderScene 을 여러 번 호출하면 앞선 카메라의 VisObject, VisSkinnedMesh, VisText 가 누적되어 있다.
     // 현재 카메라에서 새로 등록할 각 레코드의 범위를 구분하기 위해 시작 인덱스를 기록한다.
-    visCamera->firstVisObjectIndex = frameData->NumVisObjects();
-    visCamera->firstVisSkinnedMeshIndex = frameData->NumVisSkinnedMeshes();
-    visCamera->firstVisTextIndex = frameData->NumVisTexts();
+    visCamera->firstVisObjectIndex = frame->NumVisObjects();
+    visCamera->firstVisSkinnedMeshIndex = frame->NumVisSkinnedMeshes();
+    visCamera->firstVisTextIndex = frame->NumVisTexts();
 
     visCamera->worldAABB.Clear();
 
@@ -1069,7 +1069,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
             }
         }
 
-        VisObject *visObject = RegisterVisObject(frameData, renderObject);
+        VisObject *visObject = RegisterVisObject(frame, renderObject);
         if (!visObject) {
             continue;
         }
@@ -1091,7 +1091,7 @@ void RenderWorld::FindVisObjects(RenderFrameData *frameData, const RenderCamera 
     }
 }
 
-void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, const VisSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints) {
+void RenderWorld::UpdateSkinningJointCaches(RenderFrame *frame, const VisSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCaches");
 
     if (numObjects == 0 || numSkinningJoints == 0) {
@@ -1102,7 +1102,7 @@ void RenderWorld::UpdateSkinningJointCaches(RenderFrameData *frameData, const Vi
     static constexpr uint32_t MaxSkinningJointsPerTask = 8192;
 
     uint32_t numTasks = (numSkinningJoints + MaxSkinningJointsPerTask - 1) / MaxSkinningJointsPerTask;
-    numTasks = BE1::Min(frameData->NumRenderTaskThreads(), numTasks);
+    numTasks = BE1::Min(frame->NumRenderTaskThreads(), numTasks);
 
     if (numTasks > 1) {
         UpdateSkinningJointCachesWithTask(objects, numObjects, numSkinningJoints, numTasks);
@@ -1171,7 +1171,7 @@ void RenderWorld::UpdateSkinningJointCachesWithTask(const VisSkinnedMesh **objec
     BE1::Engine::taskManager->WaitFinish(renderWorldGroupId, true);
 }
 
-int RenderWorld::CountSkinningUploadJoints(const RenderFrameData::ChunkRange<VisSkinnedMesh> &visSkinnedMeshes, bool needVelocityOutput, uint64_t currentFrameSerial) const {
+int RenderWorld::CountSkinningUploadJoints(const RenderFrame::ChunkRange<VisSkinnedMesh> &visSkinnedMeshes, bool needVelocityOutput, uint64_t currentFrameSerial) const {
     uint32_t numTotalUploadJoints = 0;
 
     for (const VisSkinnedMesh &visSkinnedMesh : visSkinnedMeshes) {
@@ -1203,10 +1203,10 @@ int RenderWorld::CountSkinningUploadJoints(const RenderFrameData::ChunkRange<Vis
     return static_cast<int>(numTotalUploadJoints);
 }
 
-void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera *visCamera) {
+void RenderWorld::BuildSkinningJointBuffer(RenderFrame *frame, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildSkinningJointBuffer");
 
-    if (frameData->NumVisSkinnedMeshes() == visCamera->firstVisSkinnedMeshIndex) {
+    if (frame->NumVisSkinnedMeshes() == visCamera->firstVisSkinnedMeshIndex) {
         return;
     }
 
@@ -1214,8 +1214,8 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
 
     uint32_t numTotalJoints = 0;
 
-    const auto visSkinnedMeshes = frameData->GetVisSkinnedMeshes(visCamera->firstVisSkinnedMeshIndex);
-    const uint64_t currentFrameSerial = frameData->GetFrameSerial();
+    const auto visSkinnedMeshes = frame->GetVisSkinnedMeshes(visCamera->firstVisSkinnedMeshIndex);
+    const uint64_t currentFrameSerial = frame->GetFrameSerial();
 
     for (const VisSkinnedMesh &visSkinnedMesh : visSkinnedMeshes) {
         if (!visSkinnedMesh.space->IsRenderable()) {
@@ -1243,7 +1243,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     }
 
     // 앞선 카메라나 프레임에서 이미 갱신된 캐시도 현재 카메라의 jointBuffer 에 업로드해야 한다.
-    UpdateSkinningJointCaches(frameData, skinningJointCacheUpdateObjects.Ptr(), skinningJointCacheUpdateObjects.Count(), numTotalJoints);
+    UpdateSkinningJointCaches(frame, skinningJointCacheUpdateObjects.Ptr(), skinningJointCacheUpdateObjects.Count(), numTotalJoints);
 
     // jointBuffer 에 업로드할 전체 joint pose 개수를 계산한다. 카메라 velocity 에 필요한 이전 pose 만 포함한다.
     const int numTotalUploadJoints = CountSkinningUploadJoints(visSkinnedMeshes, visCamera->needVelocityOutput, currentFrameSerial);
@@ -1257,7 +1257,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera
     }
 
     // 전체 joint pose 를 한 번에 업로드하기 위해서 업로드 버퍼를 할당한다.
-    RHI::Buffer *jointBuffer = frameData->GetThreadData(0)->AllocStructuredBuffer(sizeof(ShaderSkinningJoint), static_cast<uint32_t>(numTotalUploadJoints));
+    RHI::Buffer *jointBuffer = frame->GetThreadData(0)->AllocStructuredBuffer(sizeof(ShaderSkinningJoint), static_cast<uint32_t>(numTotalUploadJoints));
     if (!jointBuffer) {
         return;
     }
@@ -1351,20 +1351,20 @@ static BE_INLINE void CullMeshSurface(const BE1::AABB &localAABB, const BE1::Mat
     }
 }
 
-void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddMeshes");
 
     // 현재 카메라에서 새로 등록된 VisObject 가 없으면 메시 처리를 생략한다.
-    if (frameData->NumVisObjects() == visCamera->firstVisObjectIndex) {
+    if (frame->NumVisObjects() == visCamera->firstVisObjectIndex) {
         return;
     }
 
-    BuildSkinningJointBuffer(frameData, visCamera);
+    BuildSkinningJointBuffer(frame, visCamera);
 
-    const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
+    const bool skipViewCulling = frame->GetRenderFrameSettings().skipViewCulling;
     const VisCascadedShadow *cascadedShadow = visCamera->cascadedShadow;
 
-    for (VisObject &visObject : frameData->GetVisObjects(visCamera->firstVisObjectIndex)) {
+    for (VisObject &visObject : frame->GetVisObjects(visCamera->firstVisObjectIndex)) {
         const bool objectCameraVisible = BE1::HasFlag(visObject.flags, VisObject::Flag::CameraVisible);
         const uint8_t objectShadowCascadeMask = cascadedShadow ? visObject.shadowCascadeMask : 0;
         if (!objectCameraVisible && objectShadowCascadeMask == 0) {
@@ -1422,16 +1422,16 @@ void RenderWorld::AddMeshes(RenderFrameData *frameData, const RenderCamera *rend
             // 카메라에 보이는 surface 는 카메라 기준, shadow 전용 surface 는 가장 정밀한 관련 cascade 기준 LOD 를 사용한다.
             // 한 surface 가 여러 cascade 에 투영되어도 같은 LOD 를 공유하여 blend 영역의 caster silhouette 를 일치시킨다.
             const int lodLevel = SelectMeshLOD(meshSurf->subMesh, visObject.meshLOD, visObject.squaredLODErrorLimit);
-            AddVisSurf(frameData, visCamera, nullptr, &visObject, material, meshSurf->subMesh, flags, surfaceShadowCascadeMask, lodLevel);
+            AddVisSurf(frame, visCamera, nullptr, &visObject, material, meshSurf->subMesh, flags, surfaceShadowCascadeMask, lodLevel);
         }
     }
 }
 
-void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::AddTextMeshes(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddTextMeshes");
 
     // 이전 카메라에서 등록한 VisText 는 제외하고 현재 카메라의 시작 위치부터 순회한다.
-    for (VisText &visText : frameData->GetVisTexts(visCamera->firstVisTextIndex)) {
+    for (VisText &visText : frame->GetVisTexts(visCamera->firstVisTextIndex)) {
         VisObject *visObject = visText.space;
         if (!BE1::HasFlag(visObject->flags, VisObject::Flag::CameraVisible)) {
             continue;
@@ -1440,17 +1440,17 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
         textMesh.Clear();
 
         if (visText.textRect.IsEmpty()) {
-            textMesh.DrawText3D(frameData->GetThreadData(0), (RenderObject::TextDrawMode)visText.textParams.bits.textDrawMode,
+            textMesh.DrawText3D(frame->GetThreadData(0), (RenderObject::TextDrawMode)visText.textParams.bits.textDrawMode,
                 (RenderObject::TextAnchor)visText.textParams.bits.textAnchor, (RenderObject::TextHorzAlignment)visText.textParams.bits.textHorzAlignment,
                 visText.textLineSpacing, visText.textScale, BE1::Color4::white.ToUInt32(), visText.textShadowColor, visText.textShadowOffset, visText.font, visText.text);
         } else {
-            textMesh.DrawText3D(frameData->GetThreadData(0), (RenderObject::TextDrawMode)visText.textParams.bits.textDrawMode, visText.textRect,
+            textMesh.DrawText3D(frame->GetThreadData(0), (RenderObject::TextDrawMode)visText.textParams.bits.textDrawMode, visText.textRect,
                 (RenderObject::TextHorzAlignment)visText.textParams.bits.textHorzAlignment, (RenderObject::TextVertAlignment)visText.textParams.bits.textVertAlignment,
                 (RenderObject::TextHorzOverflow)visText.textParams.bits.textHorzOverflow, (RenderObject::TextVertOverflow)visText.textParams.bits.textVertOverflow,
                 visText.textLineSpacing, visText.textScale, BE1::Color4::white.ToUInt32(), visText.textShadowColor, visText.textShadowOffset, visText.font, visText.text);
         }
 
-        textMesh.CacheIndexes(frameData->GetThreadData(0));
+        textMesh.CacheIndexes(frame->GetThreadData(0));
 
         const int numSurfaces = textMesh.NumSurfaces();
         for (int surfaceIndex = 0; surfaceIndex < numSurfaces; surfaceIndex++) {
@@ -1459,7 +1459,7 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
                 break;
             }
 
-            SubMesh *subMesh = (SubMesh *)frameData->MemAlloc(sizeof(SubMesh));
+            SubMesh *subMesh = (SubMesh *)frame->MemAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
             subMesh->numIndexes = guiSurf->numIndexes;
@@ -1467,12 +1467,12 @@ void RenderWorld::AddTextMeshes(RenderFrameData *frameData, const RenderCamera *
             subMesh->vertexBuffer = guiSurf->vertexBuffer;
             subMesh->indexBuffer = guiSurf->indexBuffer;
 
-            AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::CameraVisible, 0);
+            AddVisSurf(frame, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::CameraVisible, 0);
         }
     }
 }
 
-void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddSkyBoxMeshes");
 
     if (renderCamera->GetDesc().clearMethod != RenderCamera::ClearMethod::Skybox) {
@@ -1487,7 +1487,7 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera
         return;
     }
 
-    VisObject *visObject = frameData->AllocVisObject();
+    VisObject *visObject = frame->AllocVisObject();
     if (!visObject) {
         return;
     }
@@ -1495,27 +1495,27 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera
     visObject->worldMatrix.SetTRS(renderCamera->GetDesc().origin, BE1::Mat3::identity, BE1::Vec3(10, 10, 10));
     visObject->prevWorldMatrix = visObject->worldMatrix;
     visObject->flags |= VisObject::Flag::CameraVisible;
-    Material *material = frameData->RetainMaterial(skyboxMaterial);
+    Material *material = frame->RetainMaterial(skyboxMaterial);
 
-    AddVisSurf(frameData, visCamera, nullptr, visObject, material, meshSurf->subMesh, VisSurfFlag::CameraVisible | VisSurfFlag::SkipSelection | VisSurfFlag::Skybox, 0);
+    AddVisSurf(frame, visCamera, nullptr, visObject, material, meshSurf->subMesh, VisSurfFlag::CameraVisible | VisSurfFlag::SkipSelection | VisSurfFlag::Skybox, 0);
 }
 
-void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::FindVisLights(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisLights");
 
-    const bool skipViewCulling = frameData->GetRenderFrameSettings().skipViewCulling;
+    const bool skipViewCulling = frame->GetRenderFrameSettings().skipViewCulling;
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
     const BE1::Vec3 &viewZAxis = cameraDesc.axis[EngineAxis::Forward];
     const float viewZOffset = -viewZAxis.Dot(cameraDesc.origin);
 
     // 현재 카메라의 local light 참조가 시작되는 프레임 공용 ShaderLightRef 테이블의 오프셋을 기록한다.
-    visCamera->lightCulling.lightRefTableOffset = frameData->NumVisLocalLights();
+    visCamera->lightCulling.lightRefTableOffset = frame->NumVisLocalLights();
 
     // RenderWorld 에 등록된 renderLights 개수만큼 미리 visCamera->visLocalLights 를 할당
     visCamera->maxVisLocalLights = static_cast<uint32_t>(renderLights.Count());
     if (visCamera->maxVisLocalLights > 0) {
-        visCamera->visLocalLights = (const VisLight **)frameData->MemAlloc(visCamera->maxVisLocalLights * sizeof(visCamera->visLocalLights[0]));
+        visCamera->visLocalLights = (const VisLight **)frame->MemAlloc(visCamera->maxVisLocalLights * sizeof(visCamera->visLocalLights[0]));
     }
 
     // 등록된 모든 RenderLight 들을 프레임 데이터에 VisLight 로 등록한다.
@@ -1536,11 +1536,11 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
             visCamera->directionalLightVisible = true;
 
             // Directional light 는 모든 카메라가 공유하는 프레임 단위 Primary light 하나만 등록한다.
-            if (frameData->GetPrimaryDirectionalLight()) {
+            if (frame->GetPrimaryDirectionalLight()) {
                 continue;
             }
 
-            VisLight *visLight = RegisterVisLight(frameData, renderLight);
+            VisLight *visLight = RegisterVisLight(frame, renderLight);
             if (!visLight) {
                 continue;
             }
@@ -1574,7 +1574,7 @@ void RenderWorld::FindVisLights(RenderFrameData *frameData, const RenderCamera *
                 continue;
             }
 
-            VisLight *visLight = RegisterVisLight(frameData, renderLight);
+            VisLight *visLight = RegisterVisLight(frame, renderLight);
             if (!visLight) {
                 continue;
             }
@@ -1653,15 +1653,15 @@ void RenderWorld::ComputeLightTileRange(const VisCamera *visCamera, const BE1::R
     packedTileMax = PackLightTileCoord(tileMaxX, tileMaxY);
 }
 
-void RenderWorld::BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::BuildLightCullingData(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildLightCullingData");
 
     // 현재 카메라의 visible lights 를 minmax z 에 따라 정렬하고, z-bins 를 작성한다.
-    BuildLightZBins(frameData, renderCamera, visCamera);
+    BuildLightZBins(frame, renderCamera, visCamera);
 
     if (visCamera->lightCulling.zBins) {
         // 현재 카메라의 Z-bin 이 시작되는 프레임 공용 light Z-bin 테이블을 예약한다.
-        visCamera->lightCulling.zBinTableOffset = frameData->ReserveLightCullingZBins();
+        visCamera->lightCulling.zBinTableOffset = frame->ReserveLightCullingZBins();
     }
 
     if (visCamera->numVisLocalLights > 0) {
@@ -1679,7 +1679,7 @@ void RenderWorld::BuildLightCullingData(RenderFrameData *frameData, const Render
 
         if (numLightCullingWords <= UINT32_MAX) {
             // 현재 카메라의 타일 마스크 워드가 시작되는 프레임 공용 테이블을 예약한다.
-            visCamera->lightCulling.tileWordTableOffset = frameData->ReserveLightCullingWords(static_cast<uint32_t>(numLightCullingWords));
+            visCamera->lightCulling.tileWordTableOffset = frame->ReserveLightCullingWords(static_cast<uint32_t>(numLightCullingWords));
         }
     }
 }
@@ -1690,7 +1690,7 @@ static BE_INLINE uint32_t PackLightZBin(uint32_t minLightIndex, uint32_t maxLigh
     return (maxLightIndex << 16) | minLightIndex;
 }
 
-void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera) {
+void RenderWorld::BuildLightZBins(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildLightZBins");
 
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
@@ -1735,7 +1735,7 @@ void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera
     // linear view Z 를 Z-bin index 로 변환하기 위한 scale 과 bias 를 미리 계산한다.
     visCamera->lightCulling.zBinScale = static_cast<float>(ShaderLightZBinCount) / viewZRange;
     visCamera->lightCulling.zBinBias = -cameraDesc.zNear * visCamera->lightCulling.zBinScale;
-    visCamera->lightCulling.zBins = (uint32_t *)frameData->MemAlloc(ShaderLightZBinCount * sizeof(visCamera->lightCulling.zBins[0]));
+    visCamera->lightCulling.zBins = (uint32_t *)frame->MemAlloc(ShaderLightZBinCount * sizeof(visCamera->lightCulling.zBins[0]));
 
     uint32_t startLightIndex = 0;
     uint32_t endLightIndex = 0;
@@ -1760,34 +1760,34 @@ void RenderWorld::BuildLightZBins(RenderFrameData *frameData, const RenderCamera
     }
 }
 
-void RenderWorld::BuildDebugDraw(RenderFrameData *frameData, VisCamera *visCamera) {
+void RenderWorld::BuildDebugDraw(RenderFrame *frame, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildDebugDraw");
 
     if (BE1::HasFlag(visCamera->flags, RenderCamera::Flag::SkipDebugDraw)) {
         return;
     }
 
-    visCamera->showDebugLights = frameData->GetRenderFrameSettings().showDebugLights && visCamera->numVisLocalLights > 0;
+    visCamera->showDebugLights = frame->GetRenderFrameSettings().showDebugLights && visCamera->numVisLocalLights > 0;
 
     // 현재 debug primitive 저장소의 프레임 snapshot 을 카메라에 연결한다.
-    visCamera->debugDrawData = BuildDebugDrawData(frameData);
+    visCamera->debugDrawData = BuildDebugDrawData(frame);
     PrepareDebugDrawPipelines(visCamera);
 }
 
-const DebugDrawData *RenderWorld::BuildDebugDrawData(RenderFrameData *frameData) {
+const DebugDrawData *RenderWorld::BuildDebugDrawData(RenderFrame *frame) {
     static_assert(static_cast<uint32_t>(DebugDrawPipelineId::Count) == DebugDrawData::MaxBatches);
     if (debugPrimitiveVertexCount == 0) {
         assert(debugPrimitiveCount == 0);
         return nullptr;
     }
 
-    RHI::VertexBuffer *vertexBuffer = frameData->GetThreadData(0)->AllocVertex(sizeof(DebugDrawVertex), debugPrimitiveVertexCount);
+    RHI::VertexBuffer *vertexBuffer = frame->GetThreadData(0)->AllocVertex(sizeof(DebugDrawVertex), debugPrimitiveVertexCount);
     if (!vertexBuffer || !vertexBuffer->mappedPtr) {
         BE_WARNLOG("RenderWorld::BuildDebugDrawData: failed to allocate debug primitive vertex buffer\n");
         return nullptr;
     }
 
-    DebugDrawData *newDebugDrawData = new (frameData->MemAlloc(sizeof(DebugDrawData))) DebugDrawData();
+    DebugDrawData *newDebugDrawData = new (frame->MemAlloc(sizeof(DebugDrawData))) DebugDrawData();
     newDebugDrawData->vertexBuffer = vertexBuffer;
     newDebugDrawData->numVerts = debugPrimitiveVertexCount;
 
@@ -1891,27 +1891,27 @@ void RenderWorld::RenderGUI(GuiMesh &guiMesh) {
         return;
     }
 
-    RenderFrameData *frameData = RenderContext::activeContext->GetCurrentFrontendFrameData();
+    RenderFrame *frame = RenderContext::activeContext->GetCurrentFrontendFrame();
 
     uint32_t screenWidth = RenderContext::activeContext->GetWidth();
     uint32_t screenHeight = RenderContext::activeContext->GetHeight();
 
     // guiMesh 를 기반으로 GUI VisCamera 를 구성하여, 렌더링 커맨드에 DrawCamera 명령을 기록한다.
-    DrawGUICamera(frameData, screenWidth, screenHeight, guiMesh);
+    DrawGUICamera(frame, screenWidth, screenHeight, guiMesh);
 }
 
-void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh) {
+void RenderWorld::DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawGUICamera");
 
-    VisCamera *visCamera = frameData->AllocVisCamera();
+    VisCamera *visCamera = frame->AllocVisCamera();
     if (!visCamera) {
         return;
     }
 
     visCamera->maxVisSurfs = guiMesh.NumSurfaces();
-    visCamera->visSurfs = (const VisSurf **)frameData->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
+    visCamera->visSurfs = (const VisSurf **)frame->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
     visCamera->numRenderPasses = 0;
-    visCamera->renderPasses = (RenderPass *)frameData->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
+    visCamera->renderPasses = (RenderPass *)frame->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
     visCamera->origin = BE1::Vec3::origin;
     visCamera->axis = BE1::Mat3::identity;
     visCamera->outputRect = BE1::Rect(0, 0, screenWidth, screenHeight);
@@ -1948,7 +1948,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visCamera->worldAABB.Clear();
     visCamera->is2D = true;
 
-    VisObject *visObject = frameData->AllocVisObject();
+    VisObject *visObject = frame->AllocVisObject();
     if (!visObject) {
         return;
     }
@@ -1956,7 +1956,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
     visObject->worldMatrix.SetIdentity();
     visObject->prevWorldMatrix.SetIdentity();
 
-    guiMesh.CacheIndexes(frameData->GetThreadData(0));
+    guiMesh.CacheIndexes(frame->GetThreadData(0));
 
     const int numSurfaces = guiMesh.NumSurfaces();
     for (int surfaceIndex = 0; surfaceIndex < numSurfaces; surfaceIndex++) {
@@ -1965,7 +1965,7 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
             break;
         }
 
-        SubMesh *subMesh = (SubMesh *)frameData->MemAlloc(sizeof(SubMesh));
+        SubMesh *subMesh = (SubMesh *)frame->MemAlloc(sizeof(SubMesh));
         new (subMesh) SubMesh();
 
         subMesh->numIndexes = guiSurf->numIndexes;
@@ -1973,14 +1973,14 @@ void RenderWorld::DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth
         subMesh->vertexBuffer = guiSurf->vertexBuffer;
         subMesh->indexBuffer = guiSurf->indexBuffer;
 
-        AddVisSurf(frameData, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::None, 0);
+        AddVisSurf(frame, visCamera, nullptr, visObject, guiSurf->material, subMesh, VisSurfFlag::None, 0);
     }
 
     guiMesh.Clear();
 
-    renderPassBuilder.BuildGUI(frameData, visCamera);
+    renderPassBuilder.BuildGUI(frame, visCamera);
 
-    frameData->CmdDrawCamera(visCamera);
+    frame->CmdDrawCamera(visCamera);
 
     viewCount++;
 }

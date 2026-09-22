@@ -316,7 +316,7 @@ void App::RenderRunningFrame(uint64_t frameUsec) {
         char path[BE1::MaxAbsolutePath];
         BE1::Str::snPrintf(path, sizeof(path), "%s/Screenshots/DFGSumGGX.dds", documentDir.c_str());
 
-        if (!renderSystem->GetIBLBaker().GenerateDFGSumGGXToFile(mainRenderContext->GetCurrentFrontendFrameData()->GetThreadData(0), 256, path)) {
+        if (!renderSystem->GetIBLBaker().GenerateDFGSumGGXToFile(mainRenderContext->GetCurrentFrontendFrame()->GetThreadData(0), 256, path)) {
             BE_WARNLOG("App::Render: failed to generate GGX DFG LUT\n");
         }
     }

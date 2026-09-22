@@ -272,41 +272,41 @@ RenderContext *RenderSystem::FindRenderContextByWindowHandle(void *windowHandle)
     return nullptr;
 }
 
-void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData) {
+void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrame *frame) {
     assert(renderContext);
-    assert(frameData);
+    assert(frame);
 
     if (IsUsingRenderThread()) {
         BE1::ScopedWriteLock lock(frameSyncLock);
 
         // 주어진 프레임에 대한 (메인 스레드의) 업데이트가 완료되어,
         // (렌더 스레드의) 렌더링이 완료되기를 기다리는 상태로 변경.
-        assert(frameData->frameSyncState == FrameSyncState::RenderCompleted);
-        frameData->frameSyncState = FrameSyncState::UpdateCompleted;
+        assert(frame->frameSyncState == FrameSyncState::RenderCompleted);
+        frame->frameSyncState = FrameSyncState::UpdateCompleted;
 
-        SubmittedFrame submittedFrame;
+        SubmittedFrame &submittedFrame = submittedFrames.Alloc();
         submittedFrame.renderContext = renderContext;
-        submittedFrame.frameData = frameData;
-        submittedFrames.Append(submittedFrame);
+        submittedFrame.frame = frame;
 
         // 렌더 스레드에게 업데이트가 완료되었다고 신호를 보낸다.
         updateCompletedCondition.Signal();
-    } else {
-        // 이전에 사용이 완료된 리소스들을 해제한다.
-        RHI::renderer->FreeRetiredResources(false);
-
-        // 리소스 요청 처리
-        RHI::renderer->ProcessResourceRequests(frameData->GetThreadData(0));
-
-        // 현재 프레임 데이터로 렌더링 백엔드를 실행한다.
-        backEnd->Execute(frameData);
-
-        // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
-        RHI::renderer->DrainReleaseRequestsToRetireList();
+        return;
     }
+
+    // 이전에 사용이 완료된 리소스들을 해제한다.
+    RHI::renderer->FreeRetiredResources(false);
+
+    // 리소스 요청 처리
+    RHI::renderer->ProcessResourceRequests(frame->GetThreadData(0));
+
+    // 현재 프레임 데이터로 렌더링 백엔드를 실행한다.
+    backEnd->Execute(frame);
+
+    // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
+    RHI::renderer->DrainReleaseRequestsToRetireList();
 }
 
-void RenderSystem::WaitFrameRenderCompleted(const RenderFrameData *frameData) {
+void RenderSystem::WaitFrameRenderCompleted(const RenderFrame *frame) {
     PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitFrameRenderCompleted");
 
     assert(BE1::Engine::IsInMainThread());
@@ -319,8 +319,8 @@ void RenderSystem::WaitFrameRenderCompleted(const RenderFrameData *frameData) {
         BE1::ScopedReadLock lock(frameSyncLock);
 
         // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되기를 기다린다.
-        renderCompletedCondition.Wait(lock, [frameData] {
-            return frameData->frameSyncState == FrameSyncState::RenderCompleted;
+        renderCompletedCondition.Wait(lock, [frame] {
+            return frame->frameSyncState == FrameSyncState::RenderCompleted;
         });
     }
 }
@@ -330,8 +330,8 @@ void RenderSystem::WaitContextRenderCompleted(const RenderContext *renderContext
 
     assert(BE1::Engine::IsInMainThread());
 
-    for (const RenderFrameData &frameData : renderContext->frames) {
-        WaitFrameRenderCompleted(&frameData);
+    for (const RenderFrame &frame : renderContext->frames) {
+        WaitFrameRenderCompleted(&frame);
     }
 }
 
@@ -363,21 +363,21 @@ void RenderSystem::EnqueueRenderWork(UniquePtr<RenderWork> work) {
     renderWorkQueue.Enqueue(std::move(work));
 }
 
-void RenderSystem::CompleteRenderWorks(RenderFrameData *frameData) {
+void RenderSystem::CompleteRenderWorks(RenderFrame *frame) {
     PROFILER_CPU_SCOPED_EVENT("RenderSystem::CompleteRenderWorks");
 
     assert(BE1::Engine::IsInMainThread());
 
-    renderWorkQueue.CompleteAttachedWorks(frameData);
+    renderWorkQueue.CompleteAttachedWorks(frame);
 }
 
-void RenderSystem::AttachPendingRenderWorks(RenderFrameData *frameData) {
+void RenderSystem::AttachPendingRenderWorks(RenderFrame *frame) {
     PROFILER_CPU_SCOPED_EVENT("RenderSystem::AttachPendingRenderWorks");
 
     assert(BE1::Engine::IsInMainThread());
 
     static constexpr int MaxRenderWorksPerFrame = 1;
-    renderWorkQueue.AttachPendingWorks(frameData, MaxRenderWorksPerFrame);
+    renderWorkQueue.AttachPendingWorks(frame, MaxRenderWorksPerFrame);
 }
 
 uint64_t RenderSystem::RequestConvolutionBloomKernelGeneration(const SharedPtr<Texture> &apertureTexture, float apertureScale, float dispersionAmount) {
@@ -559,15 +559,15 @@ void RenderSystem::ShutdownRenderThread() {
     isStoppingRenderThread = false;
 }
 
-void RenderSystem::MarkRenderCompleted(RenderFrameData *frameData) {
+void RenderSystem::MarkRenderCompleted(RenderFrame *frame) {
     assert(!IsUsingRenderThread() || RenderSystem::IsInRenderThread());
 
     BE1::ScopedWriteLock lock(frameSyncLock);
 
     // 주어진 프레임에 대한 (렌더 스레드의) 렌더링이 완료되어,
     // (메인 스레드의) 업데이트가 완료되기를 기다리는 상태로 변경.
-    assert(frameData->frameSyncState == FrameSyncState::UpdateCompleted);
-    frameData->frameSyncState = FrameSyncState::RenderCompleted;
+    assert(frame->frameSyncState == FrameSyncState::UpdateCompleted);
+    frame->frameSyncState = FrameSyncState::RenderCompleted;
 
     // 메인 스레드에게 렌더링이 완료되었다고 신호를 보낸다.
     renderCompletedCondition.Signal();
@@ -624,19 +624,19 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
         // 이전에 사용이 완료된 리소스들을 해제한다.
         RHI::renderer->FreeRetiredResources(false);
 
-        RenderFrameData *backendFrameData = submittedFrame.frameData;
+        RenderFrame *backendFrame = submittedFrame.frame;
 
         // 리소스 요청 처리
-        RHI::renderer->ProcessResourceRequests(backendFrameData->GetThreadData(0));
+        RHI::renderer->ProcessResourceRequests(backendFrame->GetThreadData(0));
 
         // 현재 백엔드 프레임 데이터로 렌더링 백엔드를 실행한다.
-        renderSystem->backEnd->Execute(backendFrameData);
+        renderSystem->backEnd->Execute(backendFrame);
 
         // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
         RHI::renderer->DrainReleaseRequestsToRetireList();
 
         // 메인 스레드에게 렌더링이 완료되었음을 알린다.
-        renderSystem->MarkRenderCompleted(backendFrameData);
+        renderSystem->MarkRenderCompleted(backendFrame);
     }
 
     return 0;

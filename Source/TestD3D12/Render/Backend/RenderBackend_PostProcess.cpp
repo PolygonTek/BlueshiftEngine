@@ -17,7 +17,7 @@
 #include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 #include "Shaders/ShaderInterop.h"
 
 bool RenderBackend::DispatchLuminance() {
@@ -39,7 +39,7 @@ bool RenderBackend::DispatchMSAAResolveVelocity() {
     resolveParams.outputSize = uint2(currentVisCamera->renderWidth, currentVisCamera->renderHeight);
     resolveParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
 
-    RHI::ConstantBuffer *resolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(MSAAResolveVelocityParams), &resolveParams);
+    RHI::ConstantBuffer *resolveConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(MSAAResolveVelocityParams), &resolveParams);
     if (!resolveConstantBuffer) {
         return false;
     }
@@ -117,7 +117,7 @@ bool RenderBackend::DispatchMSAAResolveDepth(RHI::Texture *outputDepthTexture, R
     msaaResolveDepthParams.outputSize = uint2(outputW, outputH);
     msaaResolveDepthParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
 
-    RHI::ConstantBuffer *msaaResolveDepthConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(MSAAResolveDepthParams), &msaaResolveDepthParams);
+    RHI::ConstantBuffer *msaaResolveDepthConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(MSAAResolveDepthParams), &msaaResolveDepthParams);
     if (!msaaResolveDepthConstantBuffer) {
         return false;
     }
@@ -188,7 +188,7 @@ bool RenderBackend::DispatchTAAResolve() {
         return false;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
     TAAResolveParams taaResolveParams = {};
     taaResolveParams.outputSize = uint2(outputW, outputH);
     taaResolveParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
@@ -200,7 +200,7 @@ bool RenderBackend::DispatchTAAResolve() {
     taaResolveParams.luminanceWeight = renderFrameSettings.taaLuminanceWeight;
     taaResolveParams.colorBoxSigma = renderFrameSettings.taaColorBoxSigma;
 
-    RHI::ConstantBuffer *taaResolveConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(TAAResolveParams), &taaResolveParams);
+    RHI::ConstantBuffer *taaResolveConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(TAAResolveParams), &taaResolveParams);
     if (!taaResolveConstantBuffer) {
         return false;
     }
@@ -262,7 +262,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
         return false;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
 
     RHI::Texture *colorGradingLUTTexture = currentVisCamera->colorGradingLUTTexture;
     if (!colorGradingLUTTexture) {
@@ -332,7 +332,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
         finalPostProcessParams.flags |= FinalPostProcessFlagColorGrading;
     }
 
-    RHI::ConstantBuffer *finalPostProcessConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(FinalPostProcessParams), &finalPostProcessParams);
+    RHI::ConstantBuffer *finalPostProcessConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(FinalPostProcessParams), &finalPostProcessParams);
     if (!finalPostProcessConstantBuffer) {
         return false;
     }

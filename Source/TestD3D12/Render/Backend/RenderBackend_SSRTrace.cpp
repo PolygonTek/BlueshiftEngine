@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderBackend.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 #include "Render/RenderInternal.h"
 #include "Shaders/ShaderInterop.h"
 
@@ -42,7 +42,7 @@ bool RenderBackend::DispatchSSRTrace() {
         return false;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
 
     SSRTraceParams params = {};
     params.inputSize = uint2(depthTexture->GetWidth(), depthTexture->GetHeight());

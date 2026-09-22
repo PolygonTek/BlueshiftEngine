@@ -20,7 +20,7 @@
 #include "Render/HiZResources.h"
 
 class GpuFFT;
-class RenderFrameData;
+class RenderFrame;
 class RenderContext;
 class ShaderPipeline;
 struct RenderFrameSettings;
@@ -34,7 +34,7 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    void                            Execute(RenderFrameData *frameData);
+    void                            Execute(RenderFrame *frame);
 
     float                           GetStatRenderAverageMsec() const { return statRenderAverageUsec.load() * 0.001f; }
     void                            UpdateRenderFrameTime(uint64_t frameUsec);
@@ -160,7 +160,7 @@ private:
     bool                            UploadFrameConstants();
     bool                            UploadCameraConstants();
 
-    RenderFrameData *               frameData = nullptr; // 현재 백엔드가 처리할 프레임 데이터
+    RenderFrame *                   frame = nullptr; // 현재 백엔드가 처리할 프레임 데이터
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;

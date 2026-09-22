@@ -30,7 +30,7 @@
 
 class RenderContext;
 class RenderBackend;
-class RenderFrameData;
+class RenderFrame;
 class ShaderPipeline;
 class ShaderTemplate;
 class Texture;
@@ -51,7 +51,7 @@ class Texture;
 */
 
 class RenderSystem {
-    friend class RenderFrameData;
+    friend class RenderFrame;
     friend class RenderContext;
     friend class RenderBackend;
     friend class ProbeBakeSystem;
@@ -76,11 +76,11 @@ public:
     void                            DestroyRenderContext(RenderContext *renderContext);
     RenderContext *                 FindRenderContextByWindowHandle(void *windowHandle) const;
 
-                                    // 프레임 데이터를 렌더 스레드에 제출한다. 제출된 프레임 데이터는 렌더 스레드에서 순서대로 처리된다.
-    void                            SubmitFrame(RenderContext *renderContext, RenderFrameData *frameData);
+                                    // 준비된 프레임을 렌더 스레드에 제출한다. 제출된 프레임은 렌더 스레드에서 순차적으로 처리된다.
+    void                            SubmitFrame(RenderContext *renderContext, RenderFrame *frame);
 
-                                    // 주어진 프레임 데이터의 렌더링이 완료될 때까지 기다린다.
-    void                            WaitFrameRenderCompleted(const RenderFrameData *frameData);
+                                    // 주어진 프레임의 렌더링이 완료될 때까지 기다린다.
+    void                            WaitFrameRenderCompleted(const RenderFrame *frame);
 
                                     // 주어진 렌더 컨텍스트의 모든 프레임 렌더링이 완료될 때까지 기다린다.
     void                            WaitContextRenderCompleted(const RenderContext *renderContext);
@@ -137,7 +137,7 @@ public:
 private:
     struct SubmittedFrame {
         RenderContext *             renderContext = nullptr;
-        RenderFrameData *           frameData = nullptr;
+        RenderFrame *               frame = nullptr;
     };
 
     void                            InitRenderThread();
@@ -154,13 +154,13 @@ private:
                                     // render work 를 대기 큐에 추가한다.
     void                            EnqueueRenderWork(UniquePtr<RenderWork> work);
 
-                                    // 완료된 frameData 의 render work 를 완료 처리한다.
-    void                            CompleteRenderWorks(RenderFrameData *frameData);
+                                    // 완료된 frame 의 render work 를 완료 처리한다.
+    void                            CompleteRenderWorks(RenderFrame *frame);
 
                                     // 대기 중인 render work 를 메인 스왑 체인 프레임의 렌더 커맨드에 밀어 넣는다.
-    void                            AttachPendingRenderWorks(RenderFrameData *frameData);
+    void                            AttachPendingRenderWorks(RenderFrame *frame);
 
-    void                            MarkRenderCompleted(RenderFrameData *frameData);
+    void                            MarkRenderCompleted(RenderFrame *frame);
     bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);
 
     static unsigned int             RenderThreadProc(void *param);

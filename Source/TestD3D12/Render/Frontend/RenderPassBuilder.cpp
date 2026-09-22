@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RenderPassBuilder.h"
 #include "Render/RenderContext.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 #include "Render/RenderInternal.h"
 #include "Render/Material/Material.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
@@ -84,14 +84,14 @@ static ShaderFeatureSet BuildSurfaceFeatureSet(const VisSurf *visSurf, const Ren
     return featureSet;
 }
 
-void RenderPassBuilder::AllocRenderPassDrawSurfs(RenderFrameData *frameData, VisCamera *visCamera, uint32_t maxDrawSurfs) {
+void RenderPassBuilder::AllocRenderPassDrawSurfs(RenderFrame *frame, VisCamera *visCamera, uint32_t maxDrawSurfs) {
     assert(!visCamera->renderPassDrawSurfs);
     assert(!visCamera->renderPassDrawSurfStorage);
 
     visCamera->maxRenderPassDrawSurfs = maxDrawSurfs;
     visCamera->numRenderPassDrawSurfs = 0;
-    visCamera->renderPassDrawSurfs = (const RenderPassDrawSurf **)frameData->MemAlloc(maxDrawSurfs * sizeof(RenderPassDrawSurf *));
-    visCamera->renderPassDrawSurfStorage = (RenderPassDrawSurf *)frameData->MemAlloc(maxDrawSurfs * sizeof(RenderPassDrawSurf));
+    visCamera->renderPassDrawSurfs = (const RenderPassDrawSurf **)frame->MemAlloc(maxDrawSurfs * sizeof(RenderPassDrawSurf *));
+    visCamera->renderPassDrawSurfStorage = (RenderPassDrawSurf *)frame->MemAlloc(maxDrawSurfs * sizeof(RenderPassDrawSurf));
 }
 
 RenderPass *RenderPassBuilder::AllocRenderPass(VisCamera *visCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, VertexInputLayoutId passBaseInputLayoutId, uint32_t maxDrawSurfs) {
@@ -126,7 +126,7 @@ static RHI::DepthStencilStateType GetDepthState(const RHI::ProjectionPolicy &pro
     return write ? RHI::DepthStencilStateType::LEqualWrite : RHI::DepthStencilStateType::LEqualNoWrite;
 }
 
-void RenderPassBuilder::BuildCascadedShadow(RenderFrameData *frameData, VisCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const VisSurf *const *visSurfs, uint32_t numVisSurfs, bool allowAsyncPSOBuild) {
+void RenderPassBuilder::BuildCascadedShadow(RenderFrame *frame, VisCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const VisSurf *const *visSurfs, uint32_t numVisSurfs, bool allowAsyncPSOBuild) {
     PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildCascadedShadow");
 
     assert(cascadedShadow);
@@ -150,15 +150,15 @@ void RenderPassBuilder::BuildCascadedShadow(RenderFrameData *frameData, VisCasca
     pipelineDesc.depthClipEnabled = false;
 
     // 각 cascade 는 독립된 view/DSV/draw 목록과 해당 프레임에 캡처한 bias 를 사용한다.
-    const RenderFrameSettings &settings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &settings = frame->GetRenderFrameSettings();
     pipelineDesc.depthBiasOverride = true;
     pipelineDesc.constantDepthBias = settings.csmConstantDepthBias[cascadeIndex];
     pipelineDesc.slopeScaledDepthBias = settings.csmSlopeScaledDepthBias[cascadeIndex];
 
-    BuildShadow(frameData, shadowPass, static_cast<uint8_t>(1u << cascadeIndex), visSurfs, numVisSurfs, allowAsyncPSOBuild);
+    BuildShadow(frame, shadowPass, static_cast<uint8_t>(1u << cascadeIndex), visSurfs, numVisSurfs, allowAsyncPSOBuild);
 }
 
-void RenderPassBuilder::BuildShadow(RenderFrameData *frameData, RenderPass *shadowPass, uint8_t shadowCascadeMask, const VisSurf *const *visSurfs, uint32_t numVisSurfs, bool allowAsyncPSOBuild) {
+void RenderPassBuilder::BuildShadow(RenderFrame *frame, RenderPass *shadowPass, uint8_t shadowCascadeMask, const VisSurf *const *visSurfs, uint32_t numVisSurfs, bool allowAsyncPSOBuild) {
     PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildShadow");
 
     assert(shadowPass);
@@ -186,8 +186,8 @@ void RenderPassBuilder::BuildShadow(RenderFrameData *frameData, RenderPass *shad
     }
 
     shadowPass->maxDrawSurfs = numShadowDrawSurfs;
-    shadowPass->drawSurfs = (const RenderPassDrawSurf **)frameData->MemAlloc(numShadowDrawSurfs * sizeof(RenderPassDrawSurf *));
-    shadowPass->drawSurfStorage = (RenderPassDrawSurf *)frameData->MemAlloc(numShadowDrawSurfs * sizeof(RenderPassDrawSurf));
+    shadowPass->drawSurfs = (const RenderPassDrawSurf **)frame->MemAlloc(numShadowDrawSurfs * sizeof(RenderPassDrawSurf *));
+    shadowPass->drawSurfStorage = (RenderPassDrawSurf *)frame->MemAlloc(numShadowDrawSurfs * sizeof(RenderPassDrawSurf));
 
     // ShadowViewCB 에 광원 행렬과 surface table 을 전달하는 전용 셰이더를 사용한다.
     shadowPSOResolver.Begin(shadowPass, BE1::Min(numShadowDrawSurfs, 24u), shaderTemplateManager.shadowDepthShaderTemplate);
@@ -202,10 +202,10 @@ void RenderPassBuilder::BuildShadow(RenderFrameData *frameData, RenderPass *shad
         AddRenderPassDrawSurf(shadowPass, visSurf, BuildOpaqueSortKey(visSurf, rr.pso), rr.inputLayoutId, rr.pso);
     }
 
-    SortRenderPassDrawSurfs(frameData, shadowPass);
+    SortRenderPassDrawSurfs(frame, shadowPass);
 }
 
-void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCamera) {
+void RenderPassBuilder::BuildMain(RenderFrame *frame, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildMain");
 
     if (visCamera->numVisSurfs == 0) {
@@ -214,7 +214,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
 
     // Forward lighting 에서 불투명 표면을 렌더링하려면 AO 가 필요하다.
     // AO 또는 velocity 가 필요하면 depth prepass 를 강제로 켠다.
-    const bool useDepthPrepass = frameData->GetRenderFrameSettings().depthPrepass || visCamera->applyAO || visCamera->needVelocityOutput;
+    const bool useDepthPrepass = frame->GetRenderFrameSettings().depthPrepass || visCamera->applyAO || visCamera->needVelocityOutput;
 
     int numDepthDrawSurfs = 0;
     int numOpaqueDrawSurfs = 0;
@@ -251,7 +251,7 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
     const bool indirectLighting = visCamera->envLightDiffuseIrradianceCubeMap && visCamera->envLightSpecularCubeMap;
 
     // RenderPass 에서 필요한 모든 RenderPassDrawSurf 를 미리 할당한다.
-    AllocRenderPassDrawSurfs(frameData, visCamera, numMainDrawSurfs);
+    AllocRenderPassDrawSurfs(frame, visCamera, numMainDrawSurfs);
 
     // AllocRenderPass 호출 순서대로 백엔드에서 RenderPass 가 렌더링된다.
     // 1. DepthPrepass RenderPass 를 할당한다.
@@ -353,24 +353,24 @@ void RenderPassBuilder::BuildMain(RenderFrameData *frameData, VisCamera *visCame
 
     // 필요한 경우 각 render pass 마다 surface 들을 sorting 한다.
     if (depthPass) {
-        SortRenderPassDrawSurfs(frameData, depthPass);
+        SortRenderPassDrawSurfs(frame, depthPass);
     }
     if (opaquePass) {
-        SortRenderPassDrawSurfs(frameData, opaquePass);
+        SortRenderPassDrawSurfs(frame, opaquePass);
     }
     if (blendPass) {
-        SortRenderPassDrawSurfs(frameData, blendPass);
+        SortRenderPassDrawSurfs(frame, blendPass);
     }
 }
 
-void RenderPassBuilder::BuildGUI(RenderFrameData *frameData, VisCamera *visCamera) {
+void RenderPassBuilder::BuildGUI(RenderFrame *frame, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildGUI");
 
     if (visCamera->numVisSurfs == 0) {
         return;
     }
 
-    AllocRenderPassDrawSurfs(frameData, visCamera, visCamera->numVisSurfs);
+    AllocRenderPassDrawSurfs(frame, visCamera, visCamera->numVisSurfs);
 
     RenderPass *guiPass = AllocRenderPass(visCamera, RenderPassType::Gui, {}, VertexInputLayoutId::XyzStColor, visCamera->numVisSurfs);
     RenderContext::activeContext->GetSwapChainRenderDest(guiPass->graphicsPipelineDesc.renderDest);
@@ -400,7 +400,7 @@ void RenderPassBuilder::AddRenderPassDrawSurf(RenderPass *renderPass, const VisS
     renderPass->drawSurfs[drawSurfIndex] = passDrawSurf;
 }
 
-void RenderPassBuilder::SortRenderPassDrawSurfs(RenderFrameData *frameData, RenderPass *renderPass) {
+void RenderPassBuilder::SortRenderPassDrawSurfs(RenderFrame *frame, RenderPass *renderPass) {
     PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::SortRenderPassDrawSurfs");
 
     if (renderPass->numDrawSurfs == 0) {
@@ -414,7 +414,7 @@ void RenderPassBuilder::SortRenderPassDrawSurfs(RenderFrameData *frameData, Rend
         return;
     }
 
-    const RenderPassDrawSurf **tempDrawSurfs = (const RenderPassDrawSurf **)frameData->MemAlloc(renderPass->numDrawSurfs * sizeof(tempDrawSurfs[0]));
+    const RenderPassDrawSurf **tempDrawSurfs = (const RenderPassDrawSurf **)frame->MemAlloc(renderPass->numDrawSurfs * sizeof(tempDrawSurfs[0]));
     RadixSortDrawSurfs(renderPass->drawSurfs, renderPass->numDrawSurfs, tempDrawSurfs);
 }
 

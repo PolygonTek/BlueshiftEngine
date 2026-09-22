@@ -16,7 +16,7 @@
 
 #include "RenderWork.h"
 
-class RenderFrameData;
+class RenderFrame;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -31,12 +31,12 @@ public:
                                     // render work 를 대기 목록에 추가한다.
     void                            Enqueue(UniquePtr<RenderWork> work);
 
-                                    // 대기 중인 render work 를 최대 maxWorkCount 만큼 frameData 의 렌더 커맨드에 밀어 넣는다.
-    int                             AttachPendingWorks(RenderFrameData *frameData, int maxWorkCount);
+                                    // 대기 중인 render work 를 최대 maxWorkCount 만큼 frame 의 렌더 커맨드에 밀어 넣는다.
+    int                             AttachPendingWorks(RenderFrame *frame, int maxWorkCount);
 
                                     // 완료된 frame data 의 렌더 커맨드에 밀어 넣었던 render work 를 완료 처리한다.
-    void                            CompleteAttachedWorks(const RenderFrameData *completedFrameDataArray, int completedFrameDataCount);
-    void                            CompleteAttachedWorks(const RenderFrameData *completedFrameData);
+    void                            CompleteAttachedWorks(const RenderFrame *completedFrames, int completedFrameCount);
+    void                            CompleteAttachedWorks(const RenderFrame *completedFrame);
 
                                     // 렌더 커맨드에 밀어 넣은 모든 render work 를 완료 처리한다.
     void                            CompleteAllAttachedWorks();
@@ -47,7 +47,7 @@ public:
 private:
     struct AttachedWork {
         UniquePtr<RenderWork>       renderWork;
-        const RenderFrameData *     frameData = nullptr;
+        const RenderFrame *         frame = nullptr;
     };
 
     void                            CompleteAttachedWork(AttachedWork &attachedWork);

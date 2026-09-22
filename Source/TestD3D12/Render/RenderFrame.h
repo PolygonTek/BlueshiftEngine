@@ -19,7 +19,7 @@
 #include "GpuOcean.h"
 #include "GpuOceanSurface.h"
 #include "RenderFrameSettings.h"
-#include "Render/Frontend/RenderLight.h"
+#include "Frontend/RenderLight.h"
 #include "ShaderLightCullingTable.h"
 #include "ShaderLightTable.h"
 #include "ShaderMaterialTable.h"
@@ -115,10 +115,18 @@ struct PendingImGuiOverlay {
     void *                          userData = nullptr;
 };
 
+struct VisOceanSurface {
+    GpuOcean::SimulationSettings    simulationSettings;
+    GpuOceanSurface::Settings       surfaceSettings;
+    const OceanSurfaceQueryInput *  surfaceQueries = nullptr;
+    uint32_t                        surfaceQueryCount = 0;
+    uint64_t                        settingsRevision = 0;
+};
+
 /*
 ---------------------------------------------------------------------------------------------------
 
-    Render Frame Data
+    Render Frame
 
     한 프레임의 렌더링에 필요한 데이터들을 관리한다.
 
@@ -133,15 +141,7 @@ struct PendingImGuiOverlay {
 ---------------------------------------------------------------------------------------------------
 */
 
-struct VisOceanSurface {
-    GpuOcean::SimulationSettings    simulationSettings;
-    GpuOceanSurface::Settings       surfaceSettings;
-    const OceanSurfaceQueryInput *  surfaceQueries = nullptr;
-    uint32_t                        surfaceQueryCount = 0;
-    uint64_t                        settingsRevision = 0;
-};
-
-class RenderFrameData {
+class RenderFrame {
     friend class RenderSystem;
     friend class RenderContext;
 
@@ -397,7 +397,7 @@ private:
 };
 
 template<typename T>
-BE_INLINE RenderFrameData::ChunkIterator<T> &RenderFrameData::ChunkIterator<T>::operator++() {
+BE_INLINE RenderFrame::ChunkIterator<T> &RenderFrame::ChunkIterator<T>::operator++() {
     current++;
     if (current == end) {
         SetChunk(nextChunk);
@@ -406,7 +406,7 @@ BE_INLINE RenderFrameData::ChunkIterator<T> &RenderFrameData::ChunkIterator<T>::
 }
 
 template<typename T>
-BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chunk *chunk, uint32_t offset) {
+BE_INLINE void RenderFrame::ChunkIterator<T>::SetChunk(RenderFrame::Chunk *chunk, uint32_t offset) {
     if (!chunk) {
         current = nullptr;
         end = nullptr;
@@ -421,7 +421,7 @@ BE_INLINE void RenderFrameData::ChunkIterator<T>::SetChunk(RenderFrameData::Chun
     nextChunk = chunk->next;
 }
 
-BE_INLINE void RenderFrameData::SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount) {
+BE_INLINE void RenderFrame::SetFrameTiming(float frameTime, float elapsedTime, float elapsedPrevTime, uint32_t frameCount) {
     this->frameTime = frameTime;
     this->elapsedTime = elapsedTime;
     this->elapsedPrevTime = elapsedPrevTime;

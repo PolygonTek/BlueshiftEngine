@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShaderLightTable.h"
-#include "RenderFrameData.h"
+#include "RenderFrame.h"
 #include "RenderInternal.h"
 
 bool ShaderLightTable::Init(uint32_t initialPointLightCapacity, uint32_t initialSpotLightCapacity, uint32_t initialBoxDirLightCapacity) {
@@ -66,12 +66,12 @@ static bool AllocShaderLightUploadBuffer(RHI::FrameThreadData *frameThreadData, 
     return shaderLights != nullptr;
 }
 
-bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrameData *frameData, bool allowResize) {
+bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame, bool allowResize) {
     PROFILER_CPU_SCOPED_EVENT("ShaderLightTable::Upload");
 
-    const uint32_t pointLightCount = frameData->NumVisPointLights();
-    const uint32_t spotLightCount = frameData->NumVisSpotLights();
-    const uint32_t boxDirLightCount = frameData->NumVisBoxDirLights();
+    const uint32_t pointLightCount = frame->NumVisPointLights();
+    const uint32_t spotLightCount = frame->NumVisSpotLights();
+    const uint32_t boxDirLightCount = frame->NumVisBoxDirLights();
 
     if (pointLightCount == 0 && spotLightCount == 0 && boxDirLightCount == 0) {
         Clear();
@@ -99,7 +99,7 @@ bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comman
         return false;
     }
 
-    for (const VisLight &visLight : frameData->GetVisLights()) {
+    for (const VisLight &visLight : frame->GetVisLights()) {
         switch (visLight.type) {
         case RenderLight::Type::Point:
             assert(visLight.typeIndex < pointLightCount);

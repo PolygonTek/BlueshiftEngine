@@ -17,7 +17,7 @@
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
-class RenderFrameData;
+class RenderFrame;
 struct VisLight;
 
 /*
@@ -40,7 +40,7 @@ public:
 
     bool                            EnsureBufferCapacity(uint32_t pointLightCount, uint32_t spotLightCount, uint32_t boxDirLightCount);
 
-    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrameData *frameData, bool allowResize);
+    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame, bool allowResize);
 
     uint32_t                        GetPointLightBindlessIndex() const { return pointLightBuffer.bindlessIndex; }
     uint32_t                        GetSpotLightBindlessIndex() const { return spotLightBuffer.bindlessIndex; }

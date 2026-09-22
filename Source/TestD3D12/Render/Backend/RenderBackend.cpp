@@ -24,18 +24,18 @@
 #include "Shaders/ShaderInterop.h"
 
 RHI::FrameThreadData *RenderBackend::GetFrameThreadData() const {
-    assert(frameData);
-    return frameData->GetThreadData(0);
+    assert(frame);
+    return frame->GetThreadData(0);
 }
 
 const RenderFrameSettings &RenderBackend::GetFrameSettings() const {
-    assert(frameData);
-    return frameData->GetRenderFrameSettings();
+    assert(frame);
+    return frame->GetRenderFrameSettings();
 }
 
 uint32_t RenderBackend::GetFrameIndex() const {
-    assert(frameData);
-    return frameData->GetFrameCount();
+    assert(frame);
+    return frame->GetFrameCount();
 }
 
 void RenderBackend::Init() {
@@ -52,18 +52,18 @@ void RenderBackend::Shutdown() {
     gpuTiming.Shutdown();
 }
 
-void RenderBackend::Execute(RenderFrameData *frameData) {
+void RenderBackend::Execute(RenderFrame *frame) {
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
     // 백엔드가 처리할 프레임 데이터
-    this->frameData = frameData;
+    this->frame = frame;
 
     UpdateFramePSOs();
 
     frameConstantBuffer = nullptr;
     cameraConstantBuffer = nullptr;
 
-    const void *data = frameData->GetCommands()->buffer;
+    const void *data = frame->GetCommands()->buffer;
     bool finished = false;
 
     while (!finished) {
@@ -122,7 +122,7 @@ void RenderBackend::DiscardGpuFrameTimings(const RenderContext *renderContext) {
 }
 
 void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes) {
-    if (!frameData->IsStatEnabled()) {
+    if (!frame->IsStatEnabled()) {
         return;
     }
 
@@ -134,26 +134,26 @@ void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCou
 
 void RenderBackend::UpdateFrameStats() {
     RenderContext::Stats stats;
-    stats.visibleCameraCount = frameData->NumVisCameras();
-    stats.visibleObjectCount = frameData->NumVisObjects();
-    stats.visibleLightCount = frameData->NumVisLights();
-    stats.visiblePointLightCount = frameData->NumVisPointLights();
-    stats.visibleSpotLightCount = frameData->NumVisSpotLights();
-    stats.visibleBoxDirLightCount = frameData->NumVisBoxDirLights();
+    stats.visibleCameraCount = frame->NumVisCameras();
+    stats.visibleObjectCount = frame->NumVisObjects();
+    stats.visibleLightCount = frame->NumVisLights();
+    stats.visiblePointLightCount = frame->NumVisPointLights();
+    stats.visibleSpotLightCount = frame->NumVisSpotLights();
+    stats.visibleBoxDirLightCount = frame->NumVisBoxDirLights();
     stats.drawCount = statDrawCount;
     stats.drawTriangleCount = statDrawTriangleCount;
     stats.instanceTableAllocCount = statInstanceTableAllocCount;
     stats.instanceTableUploadBytes = statInstanceTableUploadBytes;
-    stats.lightCullingZBinCount = frameData->NumLightCullingZBins();
-    stats.lightCullingWordCount = frameData->NumLightCullingWords();
+    stats.lightCullingZBinCount = frame->NumLightCullingZBins();
+    stats.lightCullingWordCount = frame->NumLightCullingWords();
 
     // 모든 렌더 태스크가 완료된 현재 프레임의 다이나믹 버퍼 사용량을 합산한다.
-    for (uint32_t threadIndex = 0; threadIndex < frameData->NumRenderTaskThreads(); ++threadIndex) {
-        stats.dynamicBufferUsedBytes += frameData->GetThreadData(static_cast<int32_t>(threadIndex))->GetUsedBytes();
+    for (uint32_t threadIndex = 0; threadIndex < frame->NumRenderTaskThreads(); ++threadIndex) {
+        stats.dynamicBufferUsedBytes += frame->GetThreadData(static_cast<int32_t>(threadIndex))->GetUsedBytes();
     }
 
-    const VisCamera *visCameras = frameData->GetVisCameras();
-    for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
+    const VisCamera *visCameras = frame->GetVisCameras();
+    for (uint32_t cameraIndex = 0; cameraIndex < frame->NumVisCameras(); ++cameraIndex) {
         const VisCamera &visCamera = visCameras[cameraIndex];
         if (visCamera.lightCulling.wordsPerTile == 0) {
             continue;
@@ -169,23 +169,23 @@ void RenderBackend::UpdateFrameStats() {
 }
 
 bool RenderBackend::UploadFrameConstants() {
-    frameConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(FrameConstants));
+    frameConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(FrameConstants));
     if (!frameConstantBuffer) {
         return false;
     }
 
     FrameConstants *constants = reinterpret_cast<FrameConstants *>(frameConstantBuffer->mappedPtr);
-    constants->frameTime = frameData->GetFrameTime();
-    constants->elapsedTime = frameData->GetElapsedTime();
-    constants->elapsedPrevTime = frameData->GetElapsedPrevTime();
-    constants->frameCount = frameData->GetFrameCount();
-    constants->shaderMaterialTableIndex = frameData->GetShaderMaterialTableBindlessIndex();
-    constants->shaderPointLightTableIndex = frameData->GetShaderPointLightTableBindlessIndex();
-    constants->shaderSpotLightTableIndex = frameData->GetShaderSpotLightTableBindlessIndex();
-    constants->shaderBoxDirLightTableIndex = frameData->GetShaderBoxDirLightTableBindlessIndex();
-    constants->shaderLightRefTableIndex = frameData->GetShaderLightRefTableBindlessIndex();
-    constants->shaderLightZBinTableIndex = frameData->GetShaderLightZBinTableBindlessIndex();
-    constants->shaderLightTileWordTableIndex = frameData->GetShaderLightTileWordTableBindlessIndex();
+    constants->frameTime = frame->GetFrameTime();
+    constants->elapsedTime = frame->GetElapsedTime();
+    constants->elapsedPrevTime = frame->GetElapsedPrevTime();
+    constants->frameCount = frame->GetFrameCount();
+    constants->shaderMaterialTableIndex = frame->GetShaderMaterialTableBindlessIndex();
+    constants->shaderPointLightTableIndex = frame->GetShaderPointLightTableBindlessIndex();
+    constants->shaderSpotLightTableIndex = frame->GetShaderSpotLightTableBindlessIndex();
+    constants->shaderBoxDirLightTableIndex = frame->GetShaderBoxDirLightTableBindlessIndex();
+    constants->shaderLightRefTableIndex = frame->GetShaderLightRefTableBindlessIndex();
+    constants->shaderLightZBinTableIndex = frame->GetShaderLightZBinTableBindlessIndex();
+    constants->shaderLightTileWordTableIndex = frame->GetShaderLightTileWordTableBindlessIndex();
     constants->feedbackBufferIndex = textureStreamingFeedbackEnabled ? currentContext->textureStreamingFeedback.GetBindlessIndex() : 0;
 
     const RHI::Texture *dfgSumGGXTexture = renderSystem->dfgSumGGXTexture ? renderSystem->dfgSumGGXTexture->GetReadyRHITexture() : nullptr;
@@ -196,7 +196,7 @@ bool RenderBackend::UploadFrameConstants() {
     constants->padding2 = 0;
 
     ShaderDirectionalLight &shaderDirectionalLight = constants->directionalLight;
-    const VisLight *primaryDirectionalLight = frameData->GetPrimaryDirectionalLight();
+    const VisLight *primaryDirectionalLight = frame->GetPrimaryDirectionalLight();
     if (primaryDirectionalLight) {
         const BE1::Vec3 &direction = primaryDirectionalLight->axis[0];
         shaderDirectionalLight.direction = float3(direction.x, direction.y, direction.z);
@@ -230,9 +230,9 @@ bool RenderBackend::UploadCameraConstants() {
         return false;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
 
-    cameraConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(CameraConstants));
+    cameraConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(CameraConstants));
     if (!cameraConstantBuffer) {
         return false;
     }
@@ -295,7 +295,7 @@ bool RenderBackend::UploadCameraConstants() {
     // Keep reconstruction in UV coordinates so passes can use their own resolution.
     constants->uvToView = float4(2.0f * inverseProjectionScaleX, -2.0f * inverseProjectionScaleY, (-1.0f - constants->projectionXY.z) * inverseProjectionScaleX, (1.0f - constants->projectionXY.w) * inverseProjectionScaleY);
 
-    constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
+    constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
     constants->numLocalLights = currentVisCamera->numVisLocalLights;
     constants->lightCullingLightRefTableOffset = currentVisCamera->lightCulling.lightRefTableOffset;
     constants->lightCullingZBinTableOffset = currentVisCamera->lightCulling.zBinTableOffset;
@@ -331,7 +331,7 @@ void RenderBackend::UpdateFramePSOs() {
     renderSystem->GetHiZ().UpdateFramePSOs();
     renderSystem->GetScreenSpaceDepthPyramid().UpdateFramePSOs();
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
-    renderSystem->GetScreenSpaceAO().UpdateFramePSOs(frameData->GetRenderFrameSettings());
+    renderSystem->GetScreenSpaceAO().UpdateFramePSOs(frame->GetRenderFrameSettings());
     renderSystem->GetBloom().UpdateFramePSOs();
     renderSystem->GetPostLuminance().UpdateFramePSOs();
 
@@ -352,7 +352,7 @@ const void *RenderBackend::ExecuteRenderWork(const void *data) {
         return (const void *)(cmd + 1);
     }
 
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+    RHI::FrameThreadData *frameThreadData = frame->GetThreadData(0);
     RHI::CommandList *commandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
 
     // render work 의 커맨드 리스트를 기록한다.
@@ -385,20 +385,20 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     statInstanceTableAllocCount = 0;
     statInstanceTableUploadBytes = 0;
 
-    mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
+    mainCommandList = frame->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
     if (gpuTimingEnabled) {
-        gpuTiming.BeginFrame(mainCommandList, frameData, currentContext);
+        gpuTiming.BeginFrame(mainCommandList, frame, currentContext);
     }
 
-    const VisOceanSurface *visOceanSurface = frameData->GetVisOceanSurface();
+    const VisOceanSurface *visOceanSurface = frame->GetVisOceanSurface();
     if (visOceanSurface && swapChainOutputEnabled && currentContext == renderSystem->mainRenderContext) {
         renderSystem->gpuOcean.ApplySimulationSettings(visOceanSurface->simulationSettings, visOceanSurface->settingsRevision);
 
         // 메인 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
-        if (renderSystem->gpuOcean.Update(mainCommandList, frameData->GetThreadData(0), frameData->GetFrameTime())) {
+        if (renderSystem->gpuOcean.Update(mainCommandList, frame->GetThreadData(0), frame->GetFrameTime())) {
             if (visOceanSurface->surfaceQueryCount > 0) {
-                oceanSurfaceQueryReadbackFrame = renderSystem->gpuOceanSurface.DispatchQueries(mainCommandList, frameData->GetThreadData(0), visOceanSurface->surfaceQueries, visOceanSurface->surfaceQueryCount, visOceanSurface->surfaceSettings.height);
+                oceanSurfaceQueryReadbackFrame = renderSystem->gpuOceanSurface.DispatchQueries(mainCommandList, frame->GetThreadData(0), visOceanSurface->surfaceQueries, visOceanSurface->surfaceQueryCount, visOceanSurface->surfaceSettings.height);
             }
         }
     }
@@ -427,28 +427,28 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 #endif
 
     // 이번 프레임의 카메라들이 참조할 ShaderSurface 테이블 용량을 미리 확보한다.
-    if (!frameData->EnsureShaderSurfaceTableCapacity()) {
+    if (!frame->EnsureShaderSurfaceTableCapacity()) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to ensure shader surface table capacity\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
 
     // 등록된 ShaderMaterial 테이블을 GPU 에 업로드한다.
-    if (!frameData->UploadShaderMaterialTable(frameData->GetThreadData(0), mainCommandList)) {
+    if (!frame->UploadShaderMaterialTable(frame->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader material table\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
 
     // 각 카메라 별로 참조할 local ShaderLight 테이블을 GPU 에 업로드한다.
-    if (!frameData->UploadShaderLightTable(frameData->GetThreadData(0), mainCommandList)) {
+    if (!frame->UploadShaderLightTable(frame->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader light table\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
 
     // 각 카메라 별로 visible light 참조 테이블과 z-bin 테이블을 GPU 에 업로드한다.
-    if (!frameData->UploadShaderLightCullingTable(frameData->GetThreadData(0), mainCommandList)) {
+    if (!frame->UploadShaderLightCullingTable(frame->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader light culling table\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
@@ -486,16 +486,16 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     currentVisCamera = cmd->visCamera;
 
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
     if ((currentVisCamera->is2D && renderFrameSettings.skipDrawCamera2D) || (!currentVisCamera->is2D && renderFrameSettings.skipDrawCamera3D)) {
         return (const void *)(cmd + 1);
     }
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
-    mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
+    mainCommandList = frame->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
     // 현재 카메라에서 참조할 ShaderSurface 테이블을 GPU 에 업로드한다.
-    if (!frameData->UploadShaderSurfaceTable(frameData->GetThreadData(0), mainCommandList, currentVisCamera)) {
+    if (!frame->UploadShaderSurfaceTable(frame->GetThreadData(0), mainCommandList, currentVisCamera)) {
         BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to upload shader surface table\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
@@ -582,11 +582,11 @@ bool RenderBackend::PrepareAOInputs() {
 }
 
 bool RenderBackend::DispatchGenHiZ() {
-    return renderSystem->GetHiZ().DispatchGenerate(mainCommandList, frameData->GetThreadData(0), gpuTiming, currentVisCamera->depthTexture, currentVisCamera->projectionPolicy, currentVisCamera->hiZ);
+    return renderSystem->GetHiZ().DispatchGenerate(mainCommandList, frame->GetThreadData(0), gpuTiming, currentVisCamera->depthTexture, currentVisCamera->projectionPolicy, currentVisCamera->hiZ);
 }
 
 bool RenderBackend::DispatchHiZDebugPreview() {
-    return renderSystem->GetHiZ().DispatchDebugPreview(mainCommandList, frameData->GetThreadData(0), cameraConstantBuffer, gpuTiming, frameData->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentVisCamera->hiZ);
+    return renderSystem->GetHiZ().DispatchDebugPreview(mainCommandList, frame->GetThreadData(0), cameraConstantBuffer, gpuTiming, frame->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentVisCamera->hiZ);
 }
 
 bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
@@ -600,7 +600,7 @@ bool RenderBackend::DispatchScreenSpaceAO() {
 
     ScreenSpaceAO &screenSpaceAO = renderSystem->GetScreenSpaceAO();
     const ScreenSpaceAOFrameData &ao = currentVisCamera->ao;
-    const RenderFrameSettings &settings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &settings = frame->GetRenderFrameSettings();
     ScreenSpaceAO::DispatchParams params;
     if (!screenSpaceAO.PrepareDispatch(ao, settings, params)) {
         return false;
@@ -674,7 +674,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         FinishHiZCulling();
     }
 
-    if (currentVisCamera->generateHiZ && !frameData->GetRenderFrameSettings().hiZOcclusionCullingFreeze) {
+    if (currentVisCamera->generateHiZ && !frame->GetRenderFrameSettings().hiZOcclusionCullingFreeze) {
         DispatchGenHiZ();
     }
 
@@ -682,7 +682,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         DispatchHiZDebugPreview();
     }
 
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
     const RHI::Texture *outputOverrideTexture = nullptr;
 
     const bool debugSSAO = currentVisCamera->ao.mode == RenderAOMode::SSAO && renderFrameSettings.ssaoDebug;
@@ -720,7 +720,7 @@ void RenderBackend::ExecuteDrawCamera3DShadowPass() {
             continue;
         }
 
-        RHI::ConstantBuffer *shadowViewConstantBuffer = frameData->GetThreadData(0)->AllocConstant(sizeof(ShadowViewConstants));
+        RHI::ConstantBuffer *shadowViewConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(ShadowViewConstants));
         if (!shadowViewConstantBuffer) {
             BE_WARNLOG("RenderBackend::ExecuteDrawCamera3DShadowPass: failed to allocate cascade constants\n");
             return;
@@ -729,7 +729,7 @@ void RenderBackend::ExecuteDrawCamera3DShadowPass() {
         // 모든 상수를 resource transition 전에 준비하여 cascade 중간 실패를 방지한다.
         ShadowViewConstants *constants = reinterpret_cast<ShadowViewConstants *>(shadowViewConstantBuffer->mappedPtr);
         BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &cascade.viewProjMatrix, sizeof(constants->viewProjMatrix));
-        constants->surfaceTableIndex = frameData->GetShaderSurfaceTableBindlessIndex();
+        constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
         constants->padding = uint3(0, 0, 0);
 
         shadowViewConstantBuffers[cascadeIndex] = shadowViewConstantBuffer;
@@ -1001,7 +1001,7 @@ void RenderBackend::PostProcessAndBlitToOutput(bool velocityReady, const RHI::Te
     currentPostProcessInputTexture = currentVisCamera->resolvedColorTexture ? currentVisCamera->resolvedColorTexture : currentVisCamera->colorTexture;
     const RHI::Texture *finalColorTexture = currentPostProcessInputTexture;
 
-    const RenderFrameSettings &renderFrameSettings = frameData->GetRenderFrameSettings();
+    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
     if (outputOverrideTexture) {
         finalColorTexture = outputOverrideTexture;
     } else if (!renderFrameSettings.skipPostProcess && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
@@ -1259,7 +1259,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteFinalizeFrame");
 
     const FinalizeFrameRenderCommand *cmd = reinterpret_cast<const FinalizeFrameRenderCommand *>(data);
-    const bool renderImGuiOverlay = cmd->renderImGuiOverlay && frameData->HasPendingImGuiOverlay();
+    const bool renderImGuiOverlay = cmd->renderImGuiOverlay && frame->HasPendingImGuiOverlay();
     const bool finishGpuTiming = gpuTimingEnabled && gpuTiming.IsFrameActive();
     RHI::Texture *frameCompositionTexture = swapChainOutputEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
 
@@ -1270,7 +1270,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
 #endif
 
     if (needsCommandList) {
-        mainCommandList = frameData->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
+        mainCommandList = frame->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
 #ifdef USE_MIPMAP_STREAMING
         if (textureStreamingFeedbackEnabled) {
@@ -1292,7 +1292,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
                 RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource);
             RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
 
-            frameData->RenderPendingImGuiOverlay(mainCommandList);
+            frame->RenderPendingImGuiOverlay(mainCommandList);
 
             RHI::renderer->EndRenderPass(mainCommandList);
         }
@@ -1311,13 +1311,13 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
 
     // 이번 백엔드 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     uint64_t fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
-    frameData->SetFrameFenceValue(fenceValue);
+    frame->SetFrameFenceValue(fenceValue);
 
     if (gpuTimingEnabled) {
         gpuTiming.SetFrameFence(fenceValue);
     }
 
-    if (frameData->IsStatEnabled()) {
+    if (frame->IsStatEnabled()) {
         UpdateFrameStats();
     }
 
@@ -1341,7 +1341,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     const SwapBuffersRenderCommand *cmd = reinterpret_cast<const SwapBuffersRenderCommand *>(data);
 
     // 백버퍼를 전면버퍼와 교환한다.
-    currentContext->GetSwapChain()->SwapBuffers(frameData->GetRenderFrameSettings().vsync);
+    currentContext->GetSwapChain()->SwapBuffers(frame->GetRenderFrameSettings().vsync);
 
     PROFILER_FRAME_MARK();
 
@@ -1474,7 +1474,7 @@ void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
 void RenderBackend::DrawGpuOcean() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGpuOcean");
 
-    const VisOceanSurface *visOceanSurface = frameData->GetVisOceanSurface();
+    const VisOceanSurface *visOceanSurface = frame->GetVisOceanSurface();
     if (!visOceanSurface || BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::StaticOnly) || !currentVisCamera->oceanSurfacePSO) {
         return;
     }
@@ -1498,7 +1498,7 @@ void RenderBackend::DrawGpuOcean() {
     }
 
     GpuOceanSurface::DrawStats drawStats;
-    if (gpuOceanSurface.Draw(mainCommandList, frameData->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, visOceanSurface->surfaceSettings, surfaceView,
+    if (gpuOceanSurface.Draw(mainCommandList, frame->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, visOceanSurface->surfaceSettings, surfaceView,
         currentVisCamera->snapshotColorTexture, currentVisCamera->snapshotDepthTexture, &drawStats)) {
         RecordDrawStats(drawStats.drawCount, drawStats.triangleCount, drawStats.instanceBufferAllocCount, drawStats.instanceBufferUploadBytes);
     }
@@ -1520,7 +1520,7 @@ void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
 bool RenderBackend::DispatchLightCulling() {
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::LightCulling);
 
-    return frameData->DispatchLightCulling(frameData->GetThreadData(0), mainCommandList, frameLightCullingPSO);
+    return frame->DispatchLightCulling(frame->GetThreadData(0), mainCommandList, frameLightCullingPSO);
 }
 
 static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, const RenderPassDrawSurf *drawSurf) {

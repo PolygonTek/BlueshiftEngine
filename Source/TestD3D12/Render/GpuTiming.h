@@ -17,7 +17,7 @@
 #include "RHI/RHI.h"
 
 class RenderContext;
-class RenderFrameData;
+class RenderFrame;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    void                            BeginFrame(RHI::CommandList *commandList, const RenderFrameData *frameData, RenderContext *renderContext);
+    void                            BeginFrame(RHI::CommandList *commandList, const RenderFrame *frame, RenderContext *renderContext);
     void                            EndFrame(RHI::CommandList *commandList);
 
                                     // 현재 프레임의 GPU 타이밍 측정이 활성화되어 있는지 리턴한다.

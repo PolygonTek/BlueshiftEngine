@@ -13,14 +13,14 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "RenderFrameData.h"
+#include "RenderFrame.h"
 #include "RenderContext.h"
 #include "RenderInternal.h"
 #include "Render/Animation/Skeleton.h"
 #include "Render/Material/Material.h"
 #include "Render/Texture/Texture.h"
 
-uint64_t                    RenderFrameData::globalFrameSerial = 0;
+uint64_t                    RenderFrame::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr size_t     FrameMemoryBlockSize = 0x4000000;
 static constexpr int        FrameMemoryAlignment = 32;
@@ -33,7 +33,7 @@ static constexpr uint32_t   VisSkinnedMeshChunkCapacity = 256;
 static constexpr uint32_t   VisTextChunkCapacity = 256;
 static constexpr uint32_t   VisLightChunkCapacity = 1024;
 
-void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
+void RenderFrame::Init(int32_t frameIndex, int32_t numFrames) {
     frameArena.Init(FrameMemoryBlockSize, FrameMemoryAlignment);
 
 #ifdef USE_RENDER_TASK
@@ -52,23 +52,23 @@ void RenderFrameData::Init(int32_t frameIndex, int32_t numFrames) {
     }
 
     if (!shaderMaterialTable.Init()) {
-        BE_WARNLOG("RenderFrameData::Init: failed to initialize shader material table\n");
+        BE_WARNLOG("RenderFrame::Init: failed to initialize shader material table\n");
     }
 
     if (!shaderLightTable.Init()) {
-        BE_WARNLOG("RenderFrameData::Init: failed to initialize shader light table\n");
+        BE_WARNLOG("RenderFrame::Init: failed to initialize shader light table\n");
     }
 
     if (!shaderLightCullingTable.Init()) {
-        BE_WARNLOG("RenderFrameData::Init: failed to initialize shader light culling table\n");
+        BE_WARNLOG("RenderFrame::Init: failed to initialize shader light culling table\n");
     }
 
     if (!shaderSurfaceTable.Init()) {
-        BE_WARNLOG("RenderFrameData::Init: failed to initialize shader surface table\n");
+        BE_WARNLOG("RenderFrame::Init: failed to initialize shader surface table\n");
     }
 }
 
-void RenderFrameData::Shutdown() {
+void RenderFrame::Shutdown() {
     ClearPendingImGuiOverlay();
 
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
@@ -106,8 +106,8 @@ void RenderFrameData::Shutdown() {
     frameArena.Shutdown();
 }
 
-void RenderFrameData::BeginFrame(const RenderFrameSettings &renderFrameSettings) {
-    PROFILER_CPU_SCOPED_EVENT("RenderFrameData::BeginFrame");
+void RenderFrame::BeginFrame(const RenderFrameSettings &renderFrameSettings) {
+    PROFILER_CPU_SCOPED_EVENT("RenderFrame::BeginFrame");
 
     // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
     WaitFrameFence();
@@ -141,8 +141,8 @@ void RenderFrameData::BeginFrame(const RenderFrameSettings &renderFrameSettings)
     ResetFrameData();
 }
 
-void RenderFrameData::EndFrame() {
-    PROFILER_CPU_SCOPED_EVENT("RenderFrameData::EndFrame");
+void RenderFrame::EndFrame() {
+    PROFILER_CPU_SCOPED_EVENT("RenderFrame::EndFrame");
 
     // 커맨드 버퍼에 커맨드의 끝을 기록.
     CmdEnd();
@@ -151,7 +151,7 @@ void RenderFrameData::EndFrame() {
     commands.used = 0;
 }
 
-void RenderFrameData::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount) {
+void RenderFrame::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount) {
     if (hasVisOceanSurface) {
         assert(visOceanSurface.settingsRevision == settingsRevision); // 현재 한 frame 에서는 하나의 ocean simulation 만 지원한다.
         return;
@@ -174,7 +174,7 @@ void RenderFrameData::RegisterVisOceanSurface(const GpuOcean::SimulationSettings
     hasVisOceanSurface = true;
 }
 
-void RenderFrameData::ResetFrameData() {
+void RenderFrame::ResetFrameData() {
     FreeVisCameras();
 
     FreeVisLights();
@@ -204,7 +204,7 @@ void RenderFrameData::ResetFrameData() {
     InitVisCameras(MaxVisCamera);
 }
 
-void RenderFrameData::InitVisCameras(uint32_t maxVisCameras) {
+void RenderFrame::InitVisCameras(uint32_t maxVisCameras) {
     assert(!visCameras);
 
     this->maxVisCameras = maxVisCameras;
@@ -212,7 +212,7 @@ void RenderFrameData::InitVisCameras(uint32_t maxVisCameras) {
     this->visCameras = (VisCamera *)MemAlloc(sizeof(VisCamera) * maxVisCameras);
 }
 
-void RenderFrameData::FreeVisCameras() {
+void RenderFrame::FreeVisCameras() {
     if (!visCameras) {
         return;
     }
@@ -226,7 +226,7 @@ void RenderFrameData::FreeVisCameras() {
     numVisCameras = 0;
 }
 
-void RenderFrameData::FreeVisObjects() {
+void RenderFrame::FreeVisObjects() {
     for (Chunk *chunk = firstVisObjectChunk; chunk; chunk = chunk->next) {
         VisObject *visObjects = static_cast<VisObject *>(chunk->elements);
         for (uint32_t i = 0; i < chunk->count; ++i) {
@@ -239,7 +239,7 @@ void RenderFrameData::FreeVisObjects() {
     numVisObjects = 0;
 }
 
-void RenderFrameData::FreeVisSkinnedMeshes() {
+void RenderFrame::FreeVisSkinnedMeshes() {
     // 공유 자원의 수명은 retained 배열이 관리하므로 개별 소멸자 호출 없이 청크를 초기화한다.
     static_assert(std::is_trivially_destructible<VisSkinnedMesh>::value, "VisSkinnedMesh must not require destruction");
     firstVisSkinnedMeshChunk = nullptr;
@@ -247,7 +247,7 @@ void RenderFrameData::FreeVisSkinnedMeshes() {
     numVisSkinnedMeshes = 0;
 }
 
-void RenderFrameData::FreeVisTexts() {
+void RenderFrame::FreeVisTexts() {
     for (Chunk *chunk = firstVisTextChunk; chunk; chunk = chunk->next) {
         VisText *visTexts = static_cast<VisText *>(chunk->elements);
         for (uint32_t i = 0; i < chunk->count; ++i) {
@@ -260,7 +260,7 @@ void RenderFrameData::FreeVisTexts() {
     numVisTexts = 0;
 }
 
-void RenderFrameData::FreeVisLights() {
+void RenderFrame::FreeVisLights() {
     for (Chunk *chunk = firstVisLightChunk; chunk; chunk = chunk->next) {
         VisLight *visLights = static_cast<VisLight *>(chunk->elements);
         for (uint32_t i = 0; i < chunk->count; ++i) {
@@ -278,7 +278,7 @@ void RenderFrameData::FreeVisLights() {
     primaryDirectionalLight = nullptr;
 }
 
-RenderFrameData::Chunk *RenderFrameData::AllocChunk(uint32_t elementSize, uint32_t elementCount) {
+RenderFrame::Chunk *RenderFrame::AllocChunk(uint32_t elementSize, uint32_t elementCount) {
     const uint32_t elementsOffset = BE1::AlignUp(static_cast<uint32_t>(sizeof(Chunk)), FrameMemoryAlignment);
     const uint64_t allocationSize = elementsOffset + static_cast<uint64_t>(elementSize) * elementCount;
     assert(allocationSize <= INT_MAX);
@@ -290,7 +290,7 @@ RenderFrameData::Chunk *RenderFrameData::AllocChunk(uint32_t elementSize, uint32
     return chunk;
 }
 
-void RenderFrameData::ClearRetainedMaterials() {
+void RenderFrame::ClearRetainedMaterials() {
     const int numRetainedMaterials = retainedMaterials.Count();
     for (int i = 0; i < numRetainedMaterials; ++i) {
         retainedMaterials[i].reset();
@@ -298,7 +298,7 @@ void RenderFrameData::ClearRetainedMaterials() {
     retainedMaterials.SetCount(0, false);
 }
 
-void RenderFrameData::ClearRetainedMeshInstances() {
+void RenderFrame::ClearRetainedMeshInstances() {
     const int numRetainedMeshInstances = retainedMeshInstances.Count();
     for (int i = 0; i < numRetainedMeshInstances; ++i) {
         retainedMeshInstances[i].reset();
@@ -306,7 +306,7 @@ void RenderFrameData::ClearRetainedMeshInstances() {
     retainedMeshInstances.SetCount(0, false);
 }
 
-void RenderFrameData::ClearRetainedSkeletons() {
+void RenderFrame::ClearRetainedSkeletons() {
     const int numRetainedSkeletons = retainedSkeletons.Count();
     for (int i = 0; i < numRetainedSkeletons; ++i) {
         retainedSkeletons[i].reset();
@@ -314,7 +314,7 @@ void RenderFrameData::ClearRetainedSkeletons() {
     retainedSkeletons.SetCount(0, false);
 }
 
-void RenderFrameData::ClearRetainedFonts() {
+void RenderFrame::ClearRetainedFonts() {
     const int numRetainedFonts = retainedFonts.Count();
     for (int i = 0; i < numRetainedFonts; ++i) {
         retainedFonts[i].reset();
@@ -322,7 +322,7 @@ void RenderFrameData::ClearRetainedFonts() {
     retainedFonts.SetCount(0, false);
 }
 
-void RenderFrameData::ClearRetainedTextures() {
+void RenderFrame::ClearRetainedTextures() {
     const int numRetainedTextures = retainedTextures.Count();
     for (int i = 0; i < numRetainedTextures; ++i) {
         retainedTextures[i].reset();
@@ -330,7 +330,7 @@ void RenderFrameData::ClearRetainedTextures() {
     retainedTextures.SetCount(0, false);
 }
 
-Material *RenderFrameData::RetainMaterial(const SharedPtr<Material> &material) {
+Material *RenderFrame::RetainMaterial(const SharedPtr<Material> &material) {
     if (!material) {
         return nullptr;
     }
@@ -344,7 +344,7 @@ Material *RenderFrameData::RetainMaterial(const SharedPtr<Material> &material) {
     return materialPtr;
 }
 
-MeshInstance *RenderFrameData::RetainMeshInstance(const SharedPtr<MeshInstance> &meshInstance) {
+MeshInstance *RenderFrame::RetainMeshInstance(const SharedPtr<MeshInstance> &meshInstance) {
     if (!meshInstance) {
         return nullptr;
     }
@@ -358,7 +358,7 @@ MeshInstance *RenderFrameData::RetainMeshInstance(const SharedPtr<MeshInstance> 
     return meshInstancePtr;
 }
 
-Skeleton *RenderFrameData::RetainSkeleton(const SharedPtr<Skeleton> &skeleton) {
+Skeleton *RenderFrame::RetainSkeleton(const SharedPtr<Skeleton> &skeleton) {
     if (!skeleton) {
         return nullptr;
     }
@@ -372,7 +372,7 @@ Skeleton *RenderFrameData::RetainSkeleton(const SharedPtr<Skeleton> &skeleton) {
     return skeletonPtr;
 }
 
-Font *RenderFrameData::RetainFont(const SharedPtr<Font> &font) {
+Font *RenderFrame::RetainFont(const SharedPtr<Font> &font) {
     if (!font) {
         return nullptr;
     }
@@ -386,7 +386,7 @@ Font *RenderFrameData::RetainFont(const SharedPtr<Font> &font) {
     return fontPtr;
 }
 
-Texture *RenderFrameData::RetainTexture(const SharedPtr<Texture> &texture) {
+Texture *RenderFrame::RetainTexture(const SharedPtr<Texture> &texture) {
     if (!texture) {
         return nullptr;
     }
@@ -400,14 +400,14 @@ Texture *RenderFrameData::RetainTexture(const SharedPtr<Texture> &texture) {
     return texturePtr;
 }
 
-void RenderFrameData::SetPendingImGuiOverlay(RHI::ImGuiOverlay *overlay, void *userData) {
+void RenderFrame::SetPendingImGuiOverlay(RHI::ImGuiOverlay *overlay, void *userData) {
     ClearPendingImGuiOverlay();
 
     pendingImGuiOverlay.overlay = overlay;
     pendingImGuiOverlay.userData = userData;
 }
 
-void RenderFrameData::RenderPendingImGuiOverlay(RHI::CommandList *commandList) {
+void RenderFrame::RenderPendingImGuiOverlay(RHI::CommandList *commandList) {
     PendingImGuiOverlay overlay = pendingImGuiOverlay;
     pendingImGuiOverlay = {};
 
@@ -418,7 +418,7 @@ void RenderFrameData::RenderPendingImGuiOverlay(RHI::CommandList *commandList) {
     }
 }
 
-void RenderFrameData::ClearPendingImGuiOverlay() {
+void RenderFrame::ClearPendingImGuiOverlay() {
     if (pendingImGuiOverlay.overlay) {
         // ImGui 의 캡쳐 데이터를 폐기한다.
         RHI::renderer->FreeImGuiDrawData(pendingImGuiOverlay.overlay, pendingImGuiOverlay.userData);
@@ -426,7 +426,7 @@ void RenderFrameData::ClearPendingImGuiOverlay() {
     pendingImGuiOverlay = {};
 }
 
-VisCamera *RenderFrameData::AllocVisCamera() {
+VisCamera *RenderFrame::AllocVisCamera() {
     if (numVisCameras >= maxVisCameras) {
         assert(0);
         return nullptr;
@@ -441,7 +441,7 @@ VisCamera *RenderFrameData::AllocVisCamera() {
     return newVisCamera;
 }
 
-RenderFrameData::ChunkRange<VisObject> RenderFrameData::GetVisObjects(uint32_t firstIndex) const {
+RenderFrame::ChunkRange<VisObject> RenderFrame::GetVisObjects(uint32_t firstIndex) const {
     assert(firstIndex <= numVisObjects);
     if (firstIndex >= numVisObjects) {
         return ChunkRange<VisObject>(nullptr);
@@ -456,7 +456,7 @@ RenderFrameData::ChunkRange<VisObject> RenderFrameData::GetVisObjects(uint32_t f
     return ChunkRange<VisObject>(firstChunk, firstIndex);
 }
 
-VisObject *RenderFrameData::AllocVisObject() {
+VisObject *RenderFrame::AllocVisObject() {
     if (numVisObjects >= MaxVisObjects) {
         assert(0);
         return nullptr;
@@ -483,7 +483,7 @@ VisObject *RenderFrameData::AllocVisObject() {
     return newVisObject;
 }
 
-RenderFrameData::ChunkRange<VisSkinnedMesh> RenderFrameData::GetVisSkinnedMeshes(uint32_t firstIndex) const {
+RenderFrame::ChunkRange<VisSkinnedMesh> RenderFrame::GetVisSkinnedMeshes(uint32_t firstIndex) const {
     assert(firstIndex <= numVisSkinnedMeshes);
     if (firstIndex >= numVisSkinnedMeshes) {
         return ChunkRange<VisSkinnedMesh>(nullptr);
@@ -498,7 +498,7 @@ RenderFrameData::ChunkRange<VisSkinnedMesh> RenderFrameData::GetVisSkinnedMeshes
     return ChunkRange<VisSkinnedMesh>(firstChunk, firstIndex);
 }
 
-VisSkinnedMesh *RenderFrameData::AllocVisSkinnedMesh() {
+VisSkinnedMesh *RenderFrame::AllocVisSkinnedMesh() {
     // VisObject 하나당 최대 한 개의 스키닝 레코드만 등록한다.
     if (numVisSkinnedMeshes >= numVisObjects) {
         assert(0);
@@ -522,7 +522,7 @@ VisSkinnedMesh *RenderFrameData::AllocVisSkinnedMesh() {
     return newVisSkinnedMesh;
 }
 
-RenderFrameData::ChunkRange<VisText> RenderFrameData::GetVisTexts(uint32_t firstIndex) const {
+RenderFrame::ChunkRange<VisText> RenderFrame::GetVisTexts(uint32_t firstIndex) const {
     assert(firstIndex <= numVisTexts);
     if (firstIndex >= numVisTexts) {
         return ChunkRange<VisText>(nullptr);
@@ -537,7 +537,7 @@ RenderFrameData::ChunkRange<VisText> RenderFrameData::GetVisTexts(uint32_t first
     return ChunkRange<VisText>(firstChunk, firstIndex);
 }
 
-VisText *RenderFrameData::AllocVisText() {
+VisText *RenderFrame::AllocVisText() {
     if (numVisTexts >= MaxVisTexts) {
         assert(0);
         return nullptr;
@@ -564,7 +564,7 @@ VisText *RenderFrameData::AllocVisText() {
     return newVisText;
 }
 
-RenderFrameData::ChunkRange<VisLight> RenderFrameData::GetVisLights(uint32_t firstIndex) const {
+RenderFrame::ChunkRange<VisLight> RenderFrame::GetVisLights(uint32_t firstIndex) const {
     assert(firstIndex <= numVisLights);
     if (firstIndex >= numVisLights) {
         return ChunkRange<VisLight>(nullptr);
@@ -579,12 +579,12 @@ RenderFrameData::ChunkRange<VisLight> RenderFrameData::GetVisLights(uint32_t fir
     return ChunkRange<VisLight>(firstChunk, firstIndex);
 }
 
-VisSpotLightData *RenderFrameData::AllocVisSpotLightData() {
+VisSpotLightData *RenderFrame::AllocVisSpotLightData() {
     void *memory = MemAlloc(sizeof(VisSpotLightData));
     return new (memory) VisSpotLightData();
 }
 
-VisLocalShadowAtlas *RenderFrameData::AllocVisLocalShadowAtlas(const ShadowAtlas &atlas) {
+VisLocalShadowAtlas *RenderFrame::AllocVisLocalShadowAtlas(const ShadowAtlas &atlas) {
     if (!renderFrameSettings.shadows || renderFrameSettings.shadowAtlasMaxViews == 0 ||
         !atlas.GetShadowTexture() || !atlas.GetShadowDSV().IsValid() || !atlas.GetShadowSRV().IsValid()) {
         return nullptr;
@@ -603,7 +603,7 @@ VisLocalShadowAtlas *RenderFrameData::AllocVisLocalShadowAtlas(const ShadowAtlas
     return data;
 }
 
-VisLocalShadow *RenderFrameData::AllocVisLocalShadow(VisLocalShadowAtlas &atlas, VisLight &light) {
+VisLocalShadow *RenderFrame::AllocVisLocalShadow(VisLocalShadowAtlas &atlas, VisLight &light) {
     if (light.localShadowIndex != ~0u || !BE1::HasFlag(light.flags, RenderLight::Flag::CastShadows)) {
         return nullptr;
     }
@@ -640,7 +640,7 @@ VisLocalShadow *RenderFrameData::AllocVisLocalShadow(VisLocalShadowAtlas &atlas,
     return shadow;
 }
 
-VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
+VisLight *RenderFrame::AllocVisLight(RenderLight::Type type) {
     if (type == RenderLight::Type::Directional && primaryDirectionalLight) {
         assert(0);
         return nullptr;
@@ -696,7 +696,7 @@ VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {
     return newVisLight;
 }
 
-uint32_t RenderFrameData::ReserveLightCullingZBins() {
+uint32_t RenderFrame::ReserveLightCullingZBins() {
     assert(ShaderLightZBinCount <= UINT32_MAX - numLightCullingZBins);
 
     const uint32_t offset = numLightCullingZBins;
@@ -704,7 +704,7 @@ uint32_t RenderFrameData::ReserveLightCullingZBins() {
     return offset;
 }
 
-uint32_t RenderFrameData::ReserveLightCullingWords(uint32_t count) {
+uint32_t RenderFrame::ReserveLightCullingWords(uint32_t count) {
     assert(count <= UINT32_MAX - numLightCullingWords);
 
     const uint32_t offset = numLightCullingWords;
@@ -712,14 +712,14 @@ uint32_t RenderFrameData::ReserveLightCullingWords(uint32_t count) {
     return offset;
 }
 
-void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {
+void *RenderFrame::GetCommandBuffer(uint32_t bytes) {
     RenderCommandBuffer *cmds = GetCommands();
 
     assert(cmds->used <= RenderCommandBuffer::BufferSize);
 
     const uint32_t availableBytes = RenderCommandBuffer::BufferSize - cmds->used;
     if (bytes > availableBytes) {
-        BE_WARNLOG("RenderFrameData::GetCommandBuffer: not enough command buffer space\n");
+        BE_WARNLOG("RenderFrame::GetCommandBuffer: not enough command buffer space\n");
         return nullptr;
     }
 
@@ -728,7 +728,7 @@ void *RenderFrameData::GetCommandBuffer(uint32_t bytes) {
     return commandBuffer;
 }
 
-bool RenderFrameData::CmdRenderWork(RenderWork *renderWork) {
+bool RenderFrame::CmdRenderWork(RenderWork *renderWork) {
     if (!renderWork) {
         return false;
     }
@@ -743,7 +743,7 @@ bool RenderFrameData::CmdRenderWork(RenderWork *renderWork) {
     return true;
 }
 
-void RenderFrameData::CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput) {
+void RenderFrame::CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput) {
     BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
     if (!cmd) {
         return;
@@ -758,7 +758,7 @@ void RenderFrameData::CmdBeginContext(RenderContext *context, bool gpuTiming, bo
     cmd->swapChainOutput = swapChainOutput;
 }
 
-void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
+void RenderFrame::CmdDrawCamera(const VisCamera *camera) {
     DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
     if (!cmd) {
         return;
@@ -772,10 +772,10 @@ void RenderFrameData::CmdDrawCamera(const VisCamera *camera) {
     }
 }
 
-void RenderFrameData::CmdFinalizeFrame(bool renderImGuiOverlay) {
+void RenderFrame::CmdFinalizeFrame(bool renderImGuiOverlay) {
     FinalizeFrameRenderCommand *cmd = (FinalizeFrameRenderCommand *)GetCommandBuffer(sizeof(FinalizeFrameRenderCommand));
     if (!cmd) {
-        BE_FATALERROR("RenderFrameData::CmdFinalizeFrame: failed to allocate command buffer\n");
+        BE_FATALERROR("RenderFrame::CmdFinalizeFrame: failed to allocate command buffer\n");
         return;
     }
 
@@ -783,7 +783,7 @@ void RenderFrameData::CmdFinalizeFrame(bool renderImGuiOverlay) {
     cmd->renderImGuiOverlay = renderImGuiOverlay;
 }
 
-void RenderFrameData::CmdSwapBuffers() {
+void RenderFrame::CmdSwapBuffers() {
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
     if (!cmd) {
         return;
@@ -792,7 +792,7 @@ void RenderFrameData::CmdSwapBuffers() {
     cmd->commandId = RenderCommandId::SwapBuffers;
 }
 
-void RenderFrameData::CmdScreenshot(int x, int y, int width, int height, const char *filename) {
+void RenderFrame::CmdScreenshot(int x, int y, int width, int height, const char *filename) {
     ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)GetCommandBuffer(sizeof(ScreenShotRenderCommand));
     if (!cmd) {
         return;
@@ -806,10 +806,10 @@ void RenderFrameData::CmdScreenshot(int x, int y, int width, int height, const c
     BE1::Str::Copynz(cmd->filename, filename, COUNT_OF(cmd->filename));
 }
 
-void RenderFrameData::CmdEnd() {
+void RenderFrame::CmdEnd() {
     EndRenderCommand *cmd = (EndRenderCommand *)GetCommandBuffer(sizeof(EndRenderCommand));
     if (!cmd) {
-        BE_FATALERROR("RenderFrameData::CmdEnd: failed to allocate command buffer\n");
+        BE_FATALERROR("RenderFrame::CmdEnd: failed to allocate command buffer\n");
         return;
     }
 

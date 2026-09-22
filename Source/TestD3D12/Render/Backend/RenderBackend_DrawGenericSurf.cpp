@@ -16,7 +16,7 @@
 #include "RenderBackend.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 
 void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfaces");
@@ -26,7 +26,7 @@ void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, ui
 
 #ifdef USE_RENDER_TASK
     // numDrawSurfs 가 많으면 태스크로 나눠서 그린다.
-    if (numDrawSurfs > MaxInstancesPerDraw && frameData->NumRenderTaskThreads() > 1) {
+    if (numDrawSurfs > MaxInstancesPerDraw && frame->NumRenderTaskThreads() > 1) {
         DrawGenericSurfacesWithTask(drawSurfs, numDrawSurfs, viewConstantBuffer, hiZCullBatches, hiZCullBatchCount);
     } else {
         DrawGenericSurfacesWithoutTask(drawSurfs, numDrawSurfs, viewConstantBuffer, hiZCullBatches, hiZCullBatchCount);
@@ -99,7 +99,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **dr
             DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[instanceStartIndex], *preparedBatch, drawCount, drawTriangleCount);
         } else {
             SurfaceInstanceBatch batch;
-            if (PrepareSurfaceInstanceBatch(frameData->GetThreadData(0), &drawSurfs[instanceStartIndex], instanceStartIndex, instanceCount, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
+            if (PrepareSurfaceInstanceBatch(frame->GetThreadData(0), &drawSurfs[instanceStartIndex], instanceStartIndex, instanceCount, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
                 DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[instanceStartIndex], batch, drawCount, drawTriangleCount);
             }
         }
@@ -113,7 +113,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesByTask");
 
     // 세컨더리 커맨드 리스트를 시작한다.
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(taskDesc->threadIndex);
+    RHI::FrameThreadData *frameThreadData = frame->GetThreadData(taskDesc->threadIndex);
     RHI::CommandList *commandList = frameThreadData->BeginSecondaryCommandList();
 
     RHI::PipelineState *currentPSO = nullptr;
@@ -195,7 +195,7 @@ void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawS
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithTask");
 
     // numDrawSurfs 로 만들어 질 수 있는 최대 태스크 개수를 계산한다.
-    const uint32_t maxTasks = BE1::Min(frameData->NumRenderTaskThreads(), (numDrawSurfs + MaxInstancesPerDraw - 1) / MaxInstancesPerDraw);
+    const uint32_t maxTasks = BE1::Min(frame->NumRenderTaskThreads(), (numDrawSurfs + MaxInstancesPerDraw - 1) / MaxInstancesPerDraw);
 
     // 태스크 당 처리하는 목표 DrawSurfs 개수 (인스턴싱 경계에 걸리지 않도록 더 추가될 수 있다)
     const uint32_t targetDrawSurfsPerTask = (numDrawSurfs + maxTasks - 1) / maxTasks;

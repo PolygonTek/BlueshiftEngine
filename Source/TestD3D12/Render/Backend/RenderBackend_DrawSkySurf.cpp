@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RenderBackend.h"
 #include "Render/RenderInternal.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 #include "Render/Texture/TextureManager.h"
 
 static RHI::Texture *GetReadyMaterialRHITexture(const Material *material, ShaderTemplate::StandardProperty standardProperty) {
@@ -121,7 +121,7 @@ void RenderBackend::DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32
         }
 
         SurfaceInstanceBatch batch;
-        if (PrepareSurfaceInstanceBatch(frameData->GetThreadData(0), &drawSurfs[drawSurfIndex], drawSurfIndex, 1, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
+        if (PrepareSurfaceInstanceBatch(frame->GetThreadData(0), &drawSurfs[drawSurfIndex], drawSurfIndex, 1, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
             DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[drawSurfIndex], batch, drawCount, drawTriangleCount);
         }
     }

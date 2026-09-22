@@ -16,7 +16,7 @@
 #include "RenderBackend.h"
 #include "Render/RenderInternal.h"
 #include "Render/RenderSystem.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 #include "Shaders/ShaderInterop.h"
 
 static bool IsHiZCullRenderPass(RenderPassType passType) {
@@ -69,7 +69,7 @@ bool RenderBackend::PrepareHiZCulling() {
     }
 
     // 배치별로 DrawIndexedInstancedIndirect 를 위한 인자들을 기록할 업로드 버퍼를 할당한다.
-    RHI::FrameThreadData *frameThreadData = frameData->GetThreadData(0);
+    RHI::FrameThreadData *frameThreadData = frame->GetThreadData(0);
     const uint32_t indirectArgsUploadSize = totalBatchCount * HiZCullIndirectArgSize;
     RHI::Buffer *indirectArgsUploadBuffer = frameThreadData->AllocRawBuffer(indirectArgsUploadSize, sizeof(uint32_t), nullptr);
     if (!indirectArgsUploadBuffer) {
@@ -192,7 +192,7 @@ bool RenderBackend::PrepareHiZCulling() {
 
 bool RenderBackend::DispatchHiZCullInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) {
     return renderSystem->GetHiZ().DispatchCullInstances(
-        commandList, frameThreadData, cameraConstantBuffer, frameData->GetShaderSurfaceTableBindlessIndex(),
+        commandList, frameThreadData, cameraConstantBuffer, frame->GetShaderSurfaceTableBindlessIndex(),
         currentVisCamera->projectionPolicy, currentVisCamera->hiZ,
         instanceCount, inputInstanceToShaderSurfaceTable, instanceBaseOffset, indirectArgsOffset);
 }

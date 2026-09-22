@@ -27,7 +27,7 @@ class RenderWorkQueue;
 
     Render Work
 
-    RenderFrameData 의 렌더 커맨드에 밀어 넣어져 렌더 백엔드에서 처리되는 비정기 렌더 작업이다.
+    RenderFrame 의 렌더 커맨드에 밀어 넣어져 렌더 백엔드에서 처리되는 비정기 렌더 작업이다.
     별도의 FrameThreadData 를 소유하지 않고 밀어 넣은 프레임의 0 번 FrameThreadData 를 사용한다.
     작업 객체는 일회성이며 RenderWorkQueue 가 OnCompleted 호출까지 수명을 관리한다.
 

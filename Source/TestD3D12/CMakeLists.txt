@@ -168,8 +168,8 @@ set(SRC_FILES
     Render/ShaderPipelineBootstrap.cpp
     Render/RenderContext.h
     Render/RenderContext.cpp
-    Render/RenderFrameData.h
-    Render/RenderFrameData.cpp
+    Render/RenderFrame.h
+    Render/RenderFrame.cpp
     Render/RenderFrameSettings.h
     Render/RenderWork/RenderWork.h
     Render/RenderWork/RenderWorkQueue.h

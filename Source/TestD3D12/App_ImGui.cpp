@@ -373,11 +373,11 @@ bool App::DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID viewI
 }
 
 void App::BuildImGuiShadowAtlasPreview() {
-    RenderFrameData *frameData = mainRenderContext->GetCurrentFrontendFrameData();
+    RenderFrame *frame = mainRenderContext->GetCurrentFrontendFrame();
     const VisCamera *camera = nullptr;
-    for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
-        if (!frameData->GetVisCameras()[cameraIndex].is2D) {
-            camera = &frameData->GetVisCameras()[cameraIndex];
+    for (uint32_t cameraIndex = 0; cameraIndex < frame->NumVisCameras(); ++cameraIndex) {
+        if (!frame->GetVisCameras()[cameraIndex].is2D) {
+            camera = &frame->GetVisCameras()[cameraIndex];
         }
     }
 
@@ -406,7 +406,7 @@ void App::BuildImGuiShadowAtlasPreview() {
         ImGui::TextDisabled("Atlas depth preview is unavailable.");
         return;
     }
-    frameData->SetShadowAtlasDebugPreview(atlas);
+    frame->SetShadowAtlasDebugPreview(atlas);
 
     const ImVec2 imageMin = ImGui::GetItemRectMin();
     const ImVec2 imageMax = ImGui::GetItemRectMax();

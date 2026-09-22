@@ -23,7 +23,7 @@
 #include "RenderPassBuilder.h"
 #include "Render/DebugDrawPipeline.h"
 #include "Render/DebugDrawVertex.h"
-#include "Render/RenderFrameData.h"
+#include "Render/RenderFrame.h"
 
 struct VisSurf;
 struct VisCamera;
@@ -209,47 +209,47 @@ private:
     };
 
     bool                        IsVisLightRegisteredInCurrentView(const RenderLight *renderLight) const;
-    VisLight *                  RegisterVisLight(RenderFrameData *frameData, RenderLight *renderLight);
-    VisObject *                 RegisterVisObject(RenderFrameData *frameData, RenderObject *renderObject);
+    VisLight *                  RegisterVisLight(RenderFrame *frame, RenderLight *renderLight);
+    VisObject *                 RegisterVisObject(RenderFrame *frame, RenderObject *renderObject);
     RenderObject *              GetRenderObjectForUpdate(int index, const char *functionName) const;
     RenderLight *               GetRenderLightForUpdate(int index, const char *functionName) const;
     void                        CapturePrevWorldMatrix(RenderObject *renderObject);
     void                        SetVisObjectWorldMatrices(const RenderObject *renderObject, VisObject *visObject);
-    void                        FindVisObjects(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        AddMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    int                         CountSkinningUploadJoints(const RenderFrameData::ChunkRange<VisSkinnedMesh> &visSkinnedMeshes, bool needVelocityOutput, uint64_t currentFrameSerial) const;
-    void                        BuildSkinningJointBuffer(RenderFrameData *frameData, VisCamera *visCamera);
-    void                        UpdateSkinningJointCaches(RenderFrameData *frameData, const VisSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints);
+    void                        FindVisObjects(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
+    int                         CountSkinningUploadJoints(const RenderFrame::ChunkRange<VisSkinnedMesh> &visSkinnedMeshes, bool needVelocityOutput, uint64_t currentFrameSerial) const;
+    void                        BuildSkinningJointBuffer(RenderFrame *frame, VisCamera *visCamera);
+    void                        UpdateSkinningJointCaches(RenderFrame *frame, const VisSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints);
     void                        UpdateSkinningJointCachesWithoutTask(const VisSkinnedMesh **objects, uint32_t numObjects);
     void                        UpdateSkinningJointCachesWithTask(const VisSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints, uint32_t numTasks);
     void                        UpdateSkinningJointCachesByTask(RenderWorld::UpdateSkinningJointCachesTaskDesc *taskDesc);
     static void                 UpdateSkinningJointCachesByTaskFunction(void *data);
-    void                        AddTextMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        AddTextMeshes(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
     SkyboxState                 GetSkyboxState() const;
-    void                        AddSkyBoxMeshes(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        FindVisLights(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        SetupCascadedShadow(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        FindDirectionalShadowCasters(RenderFrameData *frameData, const RenderCamera *renderCamera, const VisCascadedShadow *cascadedShadow);
+    void                        AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        FindVisLights(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        SetupCascadedShadow(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        FindDirectionalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, const VisCascadedShadow *cascadedShadow);
     static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax);
-    static void                 BuildLightCullingData(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    static void                 BuildLightZBins(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
+    static void                 BuildLightCullingData(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
+    static void                 BuildLightZBins(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
     bool                        IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const;
-    void                        SetupPyramidBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        SetupConvolutionBloom(RenderFrameData *frameData, RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        SetupPyramidBloom(RenderFrame *frame, RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        SetupConvolutionBloom(RenderFrame *frame, RenderCamera *renderCamera, VisCamera *visCamera);
 
     DebugDrawVertex *           ReserveDebugVertices(DebugDrawPipelineId pipelineId, uint32_t numVerts, const BE1::Color4 &color, int lifeTime);
     DebugDrawVertex *           ReserveDebugLineVertices(uint32_t numVerts, bool depthTest, int lifeTime);
     DebugDrawVertex *           ReserveDebugFillVertices(uint32_t numVerts, bool twoSided, bool depthTest, int lifeTime);
     void                        ExpireDebugPrimitives(uint64_t currentTimeUsec);
-    void                        BuildDebugDraw(RenderFrameData *frameData, VisCamera *visCamera);
-    const DebugDrawData *       BuildDebugDrawData(RenderFrameData *frameData);
+    void                        BuildDebugDraw(RenderFrame *frame, VisCamera *visCamera);
+    const DebugDrawData *       BuildDebugDrawData(RenderFrame *frame);
     void                        PrepareDebugDrawPipelines(VisCamera *visCamera);
     void                        PrepareOceanSurfacePipeline(VisCamera *visCamera);
 
-    void                        DrawCamera(RenderFrameData *frameData, const RenderCamera *renderCamera, VisCamera *visCamera);
-    void                        DrawGUICamera(RenderFrameData *frameData, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
+    void                        DrawCamera(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
+    void                        DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
-    void                        AddVisSurf(RenderFrameData *frameData, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel = 0);
+    void                        AddVisSurf(RenderFrame *frame, VisCamera *visCamera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, VisSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel = 0);
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.

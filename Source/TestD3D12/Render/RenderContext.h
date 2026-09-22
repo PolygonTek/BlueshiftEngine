@@ -16,11 +16,11 @@
 
 #include "RHI/RHI.h"
 #include "GpuTiming.h"
-#include "RenderFrameData.h"
+#include "RenderFrame.h"
 #include "RenderFrameSettings.h"
 #include "ShadowAtlas.h"
-#include "Render/Texture/TextureStreamingFeedback.h"
-#include "Render/Mesh/GuiMesh.h"
+#include "Texture/TextureStreamingFeedback.h"
+#include "Mesh/GuiMesh.h"
 
 class ShaderPipeline;
 class RenderBackend;
@@ -33,7 +33,7 @@ class RenderBackend;
     하나의 윈도우 (SwapChain) 에 대응되는 렌더링 객체
 
     - 스왑 체인
-    - 프레임 데이터 배열
+    - 프레임 배열
         - 요소 하나는 한 프레임 렌더링에 필요한 데이터를 관리한다.
         - 프런트엔드 (메인 스레드) 는 프레임 데이터를 작성하고, RenderSystem 에 제출한다.
         - 백엔드 (렌더 스레드) 는 RenderSystem 이 관리하며, 제출된 프레임 데이터를 읽어서 처리한다.
@@ -45,7 +45,7 @@ class RenderBackend;
 class RenderContext {
     friend class RenderSystem;
     friend class RenderBackend;
-    friend class RenderFrameData;
+    friend class RenderFrame;
     friend class GpuTiming;
 
     template <typename T>
@@ -94,7 +94,7 @@ public:
         bool                        statEnabled = false;
         bool                        gpuTiming = false;
         bool                        textureStreamingFeedback = false;
-        bool                        swapChainOutput = false;
+        bool                        swapChainOutput = false;            // false 면 offscreen 출력
     };
 
     RenderContext() = default;
@@ -148,8 +148,8 @@ public:
     void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const;
     void                            GetSwapChainRenderDest(RHI::RenderDest &renderDest) const;
 
-    const RenderFrameData *         GetCurrentFrontendFrameData() const { return &frames[currentFrontendFrameIndex]; }
-    RenderFrameData *               GetCurrentFrontendFrameData() { return &frames[currentFrontendFrameIndex]; }
+    const RenderFrame *             GetCurrentFrontendFrame() const { return &frames[currentFrontendFrameIndex]; }
+    RenderFrame *                   GetCurrentFrontendFrame() { return &frames[currentFrontendFrameIndex]; }
 
                                     // 모든 렌더링 명령이 수행이 완료될 때까지 대기한다.
     void                            WaitAllFrameFences();
@@ -196,7 +196,7 @@ private:
     void                            DestroyCSMDepthTexture();
     bool                            BeginImGui();
     void                            EndImGui();
-    void                            FlushPendingScreenshots(RenderFrameData *frameData);
+    void                            FlushPendingScreenshots(RenderFrame *frame);
     void                            EnsureTextureStreamingFeedbackCapacity(uint32_t requiredCapacity);
     void                            ResetGuiClipRect(int width, int height);
     void                            UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)], uint64_t measuredTagMask);
@@ -224,7 +224,7 @@ private:
     static constexpr int            NumFrames = 1;
 #endif
 
-    RenderFrameData                 frames[NumFrames] = {};
+    RenderFrame                     frames[NumFrames] = {};
     uint32_t                        currentFrontendFrameIndex = 0;
     uint32_t                        frameCount = 0;
     FrameOptions                    activeFrameOptions;

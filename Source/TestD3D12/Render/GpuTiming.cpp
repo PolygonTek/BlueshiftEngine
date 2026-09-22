@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "GpuTiming.h"
 #include "RenderContext.h"
-#include "RenderFrameData.h"
+#include "RenderFrame.h"
 
 const char *GpuTiming::TagName(Tag tag) {
     static const char *tagNames[static_cast<int>(GpuTiming::Tag::Count)] = {
@@ -134,8 +134,8 @@ void GpuTiming::EndScope(RHI::CommandList *commandList, uint32_t tagSampleIndex)
     RHI::renderer->EndQuery(commandList, timestampQueryHeap, timestampIndex + 1);
 }
 
-void GpuTiming::BeginFrame(RHI::CommandList *commandList, const RenderFrameData *frameData, RenderContext *renderContext) {
-    if (!frameData->IsStatEnabled()) {
+void GpuTiming::BeginFrame(RHI::CommandList *commandList, const RenderFrame *frame, RenderContext *renderContext) {
+    if (!frame->IsStatEnabled()) {
         return;
     }
 

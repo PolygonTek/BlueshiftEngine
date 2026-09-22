@@ -86,8 +86,8 @@ void RenderContext::Shutdown() {
     RHI::renderer->Finish(RHI::CommandQueueType::Compute);
 
 #ifdef ENABLE_IMGUI
-    for (RenderFrameData &frameData : frames) {
-        frameData.ClearPendingImGuiOverlay();
+    for (RenderFrame &frame : frames) {
+        frame.ClearPendingImGuiOverlay();
     }
 
     // ImGui 오버레이 객체 파괴
@@ -104,8 +104,8 @@ void RenderContext::Shutdown() {
     DestroyCSMDepthTexture();
     DestroyFrameCompositionTexture();
 
-    for (RenderFrameData &frameData : frames) {
-        frameData.Shutdown();
+    for (RenderFrame &frame : frames) {
+        frame.Shutdown();
     }
 
     RHI::renderer->DestroySwapChain(swapChain);
@@ -209,8 +209,8 @@ void RenderContext::RecreateDisplayOutput(bool hdrOutputRequested, const RenderF
     const uint32_t height = swapChain->GetHeight();
 
 #ifdef ENABLE_IMGUI
-    for (RenderFrameData &frameData : frames) {
-        frameData.ClearPendingImGuiOverlay();
+    for (RenderFrame &frame : frames) {
+        frame.ClearPendingImGuiOverlay();
     }
 #endif
 
@@ -477,8 +477,8 @@ void RenderContext::ReleasePipelines() {
 }
 
 void RenderContext::WaitAllFrameFences() {
-    for (const RenderFrameData &frameData : frames) {
-        frameData.WaitFrameFence();
+    for (const RenderFrame &frame : frames) {
+        frame.WaitFrameFence();
     }
 }
 
@@ -586,9 +586,9 @@ void RenderContext::RequestScreenshot(const char *filename) {
     BE1::Str::Copynz(pendingScreenshot.filename, filename, COUNT_OF(pendingScreenshot.filename));
 }
 
-void RenderContext::FlushPendingScreenshots(RenderFrameData *frameData) {
+void RenderContext::FlushPendingScreenshots(RenderFrame *frame) {
     for (const PendingScreenshot &pendingScreenshot : pendingScreenshots) {
-        frameData->CmdScreenshot(0, 0, swapChain->GetWidth(), swapChain->GetHeight(), pendingScreenshot.filename);
+        frame->CmdScreenshot(0, 0, swapChain->GetWidth(), swapChain->GetHeight(), pendingScreenshot.filename);
     }
 
     pendingScreenshots.SetCount(0, false);
@@ -628,25 +628,23 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
         // RenderCapture 는 활성 프레임 안에서 실행할 수 없으므로 필요한 radiance 캡처를 먼저 처리한다.
         renderSystem->PrepareProbeBakes(this);
         assert(!RenderContext::activeContext);
-    }
 
-    if (options.swapChainOutput) {
         ResetGuiClipRect(GetWidth(), GetHeight());
     }
 
     currentFrontendFrameIndex = frameCount % COUNT_OF(frames);
-    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+    RenderFrame *frame = GetCurrentFrontendFrame();
     mainRTSampleCount = renderFrameSettings.mainRTSampleCount;
 
     if (renderSystem->IsUsingRenderThread()) {
         // 현재 프런트엔드 프레임의 렌더 스레드 작업이 끝날 때까지 기다린다.
-        renderSystem->WaitFrameRenderCompleted(frameData);
+        renderSystem->WaitFrameRenderCompleted(frame);
     }
 
-    frameData->BeginFrame(renderFrameSettings);
+    frame->BeginFrame(renderFrameSettings);
 
     // BeginFrame 에서 frame fence 완료를 기다렸으므로, 렌더 커맨드에 밀어 넣었던 render work 들을 안전하게 완료한다.
-    renderSystem->CompleteRenderWorks(frameData);
+    renderSystem->CompleteRenderWorks(frame);
 
     // CSM depth texture 가 없거나 해상도가 바뀌었으면 새로 생성한다.
     if (!EnsureCSMDepthTexture(renderFrameSettings.csmResolution)) {
@@ -659,12 +657,12 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
 
     if (options.swapChainOutput && this == renderSystem->mainRenderContext) {
         // 대기 중인 render work 들을 렌더 커맨드에 (CmdBeginContext 전에) 밀어 넣는다.
-        renderSystem->AttachPendingRenderWorks(frameData);
+        renderSystem->AttachPendingRenderWorks(frame);
     }
 
-    frameData->SetFrameTiming(options.frameTime, options.elapsedTime, options.elapsedPrevTime, frameCount);
-    frameData->SetStatEnabled(options.statEnabled);
-    frameData->CmdBeginContext(this, options.gpuTiming, options.textureStreamingFeedback, options.swapChainOutput);
+    frame->SetFrameTiming(options.frameTime, options.elapsedTime, options.elapsedPrevTime, frameCount);
+    frame->SetStatEnabled(options.statEnabled);
+    frame->CmdBeginContext(this, options.gpuTiming, options.textureStreamingFeedback, options.swapChainOutput);
 
     activeFrameOptions = options;
 
@@ -682,11 +680,11 @@ void RenderContext::EndFrame() {
         return;
     }
 
-    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+    RenderFrame *frame = GetCurrentFrontendFrame();
     if (activeFrameOptions.swapChainOutput) {
         assert(guiClipRectStack.Count() == 1);
     } else {
-        frameData->ClearPendingImGuiOverlay();
+        frame->ClearPendingImGuiOverlay();
     }
 
 #ifdef USE_MIPMAP_STREAMING
@@ -695,21 +693,21 @@ void RenderContext::EndFrame() {
     }
 #endif
 
-    frameData->CmdFinalizeFrame(activeFrameOptions.swapChainOutput);
+    frame->CmdFinalizeFrame(activeFrameOptions.swapChainOutput);
 
     if (activeFrameOptions.swapChainOutput) {
-        FlushPendingScreenshots(frameData);
+        FlushPendingScreenshots(frame);
 
-        frameData->CmdSwapBuffers();
+        frame->CmdSwapBuffers();
     }
 
-    frameData->EndFrame();
+    frame->EndFrame();
 
     RenderContext::activeContext = nullptr;
     activeFrameOptions = {};
     frameCount++;
 
-    renderSystem->SubmitFrame(this, frameData);
+    renderSystem->SubmitFrame(this, frame);
 }
 
 bool RenderContext::BeginImGui() {
@@ -732,7 +730,7 @@ void RenderContext::EndImGui() {
     void *imguiDrawData = imguiOverlay->EndFrameCapture();
     if (imguiDrawData) {
         // RenderBackend::ExecuteFinalizeFrame 에서 렌더링하기 위해 캡쳐 데이터를 세팅한다.
-        GetCurrentFrontendFrameData()->SetPendingImGuiOverlay(imguiOverlay, imguiDrawData);
+        GetCurrentFrontendFrame()->SetPendingImGuiOverlay(imguiOverlay, imguiDrawData);
     }
 #endif
 }
@@ -763,17 +761,17 @@ bool RenderContext::ImGuiWantsCaptureKeyboard() const {
 }
 
 void RenderContext::DrawPic(float x, float y, float w, float h, const SharedPtr<Material> &material) {
-    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+    RenderFrame *frame = GetCurrentFrontendFrame();
 
-    frameData->RetainMaterial(material);
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), material ? material.get() : nullptr);
+    frame->RetainMaterial(material);
+    guiMesh.DrawPic(frame->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), material ? material.get() : nullptr);
 }
 
 void RenderContext::DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const SharedPtr<Material> &material) {
-    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+    RenderFrame *frame = GetCurrentFrontendFrame();
 
-    frameData->RetainMaterial(material);
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), material ? material.get() : nullptr);
+    frame->RetainMaterial(material);
+    guiMesh.DrawPic(frame->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, currentColor.ToUInt32(), material ? material.get() : nullptr);
 }
 
 void RenderContext::DrawSlicedPic(float x, float y, float w, float h, float imageWidth, float imageHeight, const GuiMesh::SliceBorder &border, const SharedPtr<Material> &material) {
@@ -781,10 +779,10 @@ void RenderContext::DrawSlicedPic(float x, float y, float w, float h, float imag
 }
 
 void RenderContext::DrawStretchSlicedPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, float imageWidth, float imageHeight, const GuiMesh::SliceBorder &border, const SharedPtr<Material> &material) {
-    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+    RenderFrame *frame = GetCurrentFrontendFrame();
 
-    frameData->RetainMaterial(material);
-    guiMesh.DrawSlicedPic(frameData->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, imageWidth, imageHeight, border, currentColor.ToUInt32(), material ? material.get() : nullptr);
+    frame->RetainMaterial(material);
+    guiMesh.DrawSlicedPic(frame->GetThreadData(0), x, y, w, h, s1, t1, s2, t2, imageWidth, imageHeight, border, currentColor.ToUInt32(), material ? material.get() : nullptr);
 }
 
 void RenderContext::ResetGuiClipRect(int width, int height) {
@@ -811,9 +809,9 @@ void RenderContext::PopClipRect() {
 }
 
 void RenderContext::DrawBar(float x, float y, float w, float h) {
-    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+    RenderFrame *frame = GetCurrentFrontendFrame();
 
-    guiMesh.DrawPic(frameData->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), materialManager.whiteUnlitMaterial.get());
+    guiMesh.DrawPic(frame->GetThreadData(0), x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, currentColor.ToUInt32(), materialManager.whiteUnlitMaterial.get());
 }
 
 void RenderContext::DrawRect(float x, float y, float w, float h) {
@@ -862,16 +860,16 @@ void RenderContext::SetTextShadowOffset(float shadowOffsetX, float shadowOffsetY
 }
 
 void RenderContext::DrawText(const BE1::Rect &rect, float x, float y, const char *text, DrawTextFlag flags) {
-    RenderFrameData *frameData = GetCurrentFrontendFrameData();
+    RenderFrame *frame = GetCurrentFrontendFrame();
 
     // 프레임 메모리에 텍스트 내용을 복사
     int size = BE1::Str::Length(text) + 1;
-    char *frameTextPtr = (char *)frameData->MemAlloc(size);
+    char *frameTextPtr = (char *)frame->MemAlloc(size);
     BE1::Str::Copynz(frameTextPtr, text, size);
 
-    frameData->RetainFont(currentFont);
+    frame->RetainFont(currentFont);
 
-    guiMesh.DrawText2D(frameData->GetThreadData(0), rect, x, y, currentTextLineSpacing, currentTextScale, currentColor.ToUInt32(), currentTextShadowColor.ToUInt32(), currentTextShadowOffset, currentFont.get(), frameTextPtr, flags);
+    guiMesh.DrawText2D(frame->GetThreadData(0), rect, x, y, currentTextLineSpacing, currentTextScale, currentColor.ToUInt32(), currentTextShadowColor.ToUInt32(), currentTextShadowOffset, currentFont.get(), frameTextPtr, flags);
 }
 
 void RenderContext::DrawString(float x, float y, const BE1::Str &string, DrawTextFlag flags) {

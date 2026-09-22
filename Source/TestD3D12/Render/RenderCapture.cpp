@@ -60,7 +60,7 @@ static bool BeginRenderFrame(RenderContext *renderContext, RenderWorld *renderWo
     }
 
     // 렌더링 완료 전까지 출력 텍스처의 수명을 보장한다.
-    renderContext->GetCurrentFrontendFrameData()->RetainTexture(targetTexture);
+    renderContext->GetCurrentFrontendFrame()->RetainTexture(targetTexture);
 
     renderWorld->BeginFrame();
     return true;
@@ -68,13 +68,13 @@ static bool BeginRenderFrame(RenderContext *renderContext, RenderWorld *renderWo
 
 static void EndRenderFrame(RenderContext *renderContext, RenderWorld *renderWorld, bool waitForCompletion) {
     // EndFrame 이후 완료를 기다릴 캡처 프레임을 보관한다.
-    const RenderFrameData *captureFrameData = waitForCompletion ? renderContext->GetCurrentFrontendFrameData() : nullptr;
+    const RenderFrame *captureFrame = waitForCompletion ? renderContext->GetCurrentFrontendFrame() : nullptr;
 
     renderWorld->EndFrame();
     renderContext->EndFrame();
 
-    if (captureFrameData) {
-        renderSystem->WaitFrameRenderCompleted(captureFrameData);
+    if (captureFrame) {
+        renderSystem->WaitFrameRenderCompleted(captureFrame);
     }
 }
 
@@ -409,7 +409,7 @@ bool RenderCapture::CaptureDiffuseIrradianceEnvCubeToImage(RenderContext *render
 
     RHI::Texture *outputRHITexture = diffuseIrradianceCubeTexture->GetRHITexture();
 
-    RHI::FrameThreadData *frameThreadData = renderContext->GetCurrentFrontendFrameData()->GetThreadData(0);
+    RHI::FrameThreadData *frameThreadData = renderContext->GetCurrentFrontendFrame()->GetThreadData(0);
     RHI::CommandList *commandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
 #if 0
     bool generated = renderSystem->GetIBLBaker().GenerateDiffuseIrradiance(commandList, radianceCubeTexture->GetRHITexture(), outputRHITexture);
@@ -504,7 +504,7 @@ bool RenderCapture::CaptureSpecularPrefilteredEnvCubeToImage(RenderContext *rend
         return false;
     }
 
-    RHI::FrameThreadData *frameThreadData = renderContext->GetCurrentFrontendFrameData()->GetThreadData(0);
+    RHI::FrameThreadData *frameThreadData = renderContext->GetCurrentFrontendFrame()->GetThreadData(0);
     RHI::CommandList *commandList = frameThreadData->BeginCommandList(RHI::CommandQueueType::Graphics);
 
     // GGX importance sampling 이 source LOD 를 선택할 수 있도록 캡처된 radiance cubemap 의 mip chain 을 먼저 만든다.
