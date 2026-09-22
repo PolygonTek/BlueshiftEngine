@@ -190,7 +190,10 @@ FontGlyph *TrueTypeFontFace::CacheGlyph(char32_t unicodeChar, Font::RenderMode r
     }
 
     Texture *atlasTexture = atlasArray[atlasIndex].texture.get();
-    atlasTexture->Update2D(0, glyphX, glyphY, glyphWidth, glyphHeight, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
+    // 공백처럼 비트맵이 없는 글리프는 캐시와 advance 정보를 유지하고 업로드만 생략한다.
+    if (glyphWidth > 0 && glyphHeight > 0) {
+        atlasTexture->Update2D(0, glyphX, glyphY, glyphWidth, glyphHeight, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
+    }
 
     // NOTE: ascender 의 의미가 폰트 포맷마다 해석이 좀 다양하다
     // (base line 에서부터 위쪽으로 top bearing 을 포함해서 그 위쪽까지의 거리가 필요함)
