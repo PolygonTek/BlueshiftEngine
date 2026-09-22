@@ -16,11 +16,10 @@
 
 #include "RHI/RHI.h"
 
-class GpuTiming;
+class RenderBackend;
 class ShaderTemplate;
 class ShaderPipeline;
 class ShaderPipelineBootstrap;
-struct ScreenSpaceDepthPyramidFrameData;
 
 class ScreenSpaceDepthPyramid {
 public:
@@ -31,7 +30,7 @@ public:
 
     void                            UpdateFramePSOs();
 
-    bool                            Dispatch(RHI::CommandList *commandList, GpuTiming &gpuTiming, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *resolvedDepthTexture, RHI::Texture *resolvedNormalTexture, const RHI::ProjectionPolicy &projectionPolicy, const ScreenSpaceDepthPyramidFrameData &data) const;
+    bool                            Dispatch(RenderBackend &backend) const;
 
 private:
     SharedPtr<ShaderTemplate>       firstMipShaderTemplate;

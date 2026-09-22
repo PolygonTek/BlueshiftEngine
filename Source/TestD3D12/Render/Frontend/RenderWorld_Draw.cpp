@@ -597,6 +597,9 @@ void RenderWorld::DrawCamera(RenderFrameData *frameData, const RenderCamera *ren
     // RenderLight 중에서 컬링한 라이트를 프레임 데이터에 VisLight 로 등록한다.
     FindVisLights(frameData, renderCamera, visCamera);
 
+    // 광원별 요청/할당은 이후 이 카메라 전용 snapshot 에 등록한다.
+    visCamera->localShadowAtlas = frameData->AllocVisLocalShadowAtlas(RenderContext::activeContext->GetShadowAtlas());
+
     // 각 CSM split 의 receiver 영역으로 directional shadow 투영을 준비하고 caster 를 수집한다.
     SetupCascadedShadow(frameData, renderCamera, visCamera);
 

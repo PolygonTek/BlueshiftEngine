@@ -14,9 +14,8 @@
 
 #include "Precompiled.h"
 #include "Bloom.h"
+#include "Render/Backend/RenderBackend.h"
 #include "Render/RenderInternal.h"
-#include "Render/GpuTiming.h"
-#include "Render/GpuFFT.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
@@ -82,8 +81,10 @@ void Bloom::UpdateFramePSOs() {
     frameConvolutionBloomResolvePSO = ShaderPipeline::GetReadyPSO(convolutionBloomResolvePipeline);
 }
 
-bool Bloom::Dispatch(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuFFT &gpuFFT, GpuTiming &gpuTiming, RHI::Texture *inputColorTexture, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const {
+bool Bloom::Dispatch(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::Dispatch");
+
+    const RenderFrameSettings &renderFrameSettings = backend.GetFrameSettings();
 
     const RenderBloomMode bloomMode = renderFrameSettings.bloomMode;
     switch (bloomMode) {
@@ -91,12 +92,12 @@ bool Bloom::Dispatch(RHI::CommandList *commandList, RHI::FrameThreadData *frameT
         if (!frameBloomPrefilterPSO || !frameBloomDownsamplePSO || !frameBloomUpsamplePSO) {
             return false;
         }
-        return DispatchPyramidBloom(commandList, frameThreadData, gpuTiming, inputColorTexture, data, renderFrameSettings);
+        return DispatchPyramidBloom(backend);
     case RenderBloomMode::Convolution:
         if (!frameBloomPrefilterPSO || !frameConvolutionBloomScreenPreparePSO || !frameConvolutionBloomKernelPreparePSO || !frameConvolutionBloomResolvePSO) {
             return false;
         }
-        return DispatchConvolutionBloom(commandList, frameThreadData, gpuFFT, gpuTiming, inputColorTexture, data, renderFrameSettings);
+        return DispatchConvolutionBloom(backend);
     default:
         return false;
     }

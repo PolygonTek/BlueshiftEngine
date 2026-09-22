@@ -152,7 +152,7 @@ bool FindShadowMapCascade(ShaderCSMData csm, float3 worldPosition, uint firstCas
     outCascadeIndex = 0;
     outShadowCoord = 0.0f;
 
-    [unroll(ShaderCSMCount)]
+    [unroll(ShaderCSMCascadeCount)]
     for (uint candidateIndex = 0; candidateIndex < csm.cascadeCount; candidateIndex++) {
         if (candidateIndex < firstCascadeIndex) {
             continue;
@@ -179,11 +179,11 @@ typedef float ShadowLighting;
 
 ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, uint2 pixelCoord, float3 worldPosition) {
 #if DEBUG_CASCADED_SHADOW_MAP == 2
-    static const float3 cascadeDebugColors[ShaderCSMCount] = {
-        float3(0.15f, 0.70f, 1.00f),
-        float3(0.20f, 1.00f, 0.35f),
-        float3(1.00f, 0.85f, 0.10f),
-        float3(0.75f, 0.35f, 1.00f)
+    static const float3 cascadeDebugColors[ShaderCSMCascadeCount] = {
+        float3(0.02f, 0.35f, 1.00f),
+        float3(0.02f, 1.00f, 0.08f),
+        float3(1.00f, 0.80f, 0.02f),
+        float3(0.55f, 0.03f, 1.00f)
     };
 #endif
 

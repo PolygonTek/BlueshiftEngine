@@ -52,9 +52,9 @@ struct VisSurf {
     uint32_t                    index;
     const VisObject *           space;
     const SubMesh *             subMesh;
-    const RHI::IndexBuffer *    indexBuffer;        ///< 선택한 LOD 의 index buffer.
+    const RHI::IndexBuffer *    indexBuffer;        ///< 선택된 LOD 의 index buffer.
     uint32_t                    numIndexes;
-    int                         lodLevel;
+    int32_t                     lodLevel;
     const Material *            material;
     ShaderFeatureSet            baseFeatureSet;
     uint32_t                    shaderMaterialIndex;
@@ -117,7 +117,46 @@ struct VisCascadedShadow {
     RHI::Texture *              depthTexture = nullptr;
 };
 
-static_assert(ShaderCSMCount == RenderFrameSettings::CSMCascadeCount, "CPU and shader cascade counts must match");
+static_assert(ShaderCSMCascadeCount == RenderFrameSettings::CSMCascadeCount, "CPU and shader cascade counts must match");
+
+// Spot 한 개 또는 Point 한 면의 투영과 depth pass. 참조 목록도 카메라별 프레임 메모리에 둔다.
+struct LocalShadowView {
+    ALIGN_AS32 BE1::Mat4        viewProjMatrix = BE1::Mat4::identity;
+    BE1::Frustum                frustum;
+    BE1::Rect                   tileRect = BE1::Rect(0, 0, 0, 0); // Border 를 포함한 atlas 내 물리적 영역.
+    uint32_t                    borderTexels = 0;
+    uint32_t                    shadowIndex = ~0u;
+    uint32_t                    faceIndex = 0;               // Point: +X, -X, +Y, -Y, +Z, -Z. Spot: 0.
+    uint32_t                    numSurfs = 0;
+    const VisSurf **            surfs = nullptr;            // 공통 surface 를 복사하지 않고 참조한다.
+    RenderPass                  renderPass {};
+
+    LocalShadowView() { renderPass.type = RenderPassType::Shadow; }
+};
+
+struct VisLocalShadow {
+    const VisLight *            light = nullptr;            // 같은 카메라의 VisLight. RenderLight 를 직접 참조하지 않는다.
+    uint32_t                    firstView = 0;
+    uint32_t                    numViews = 0;               // Spot: 1, Point: 6. Point 는 항상 6면을 함께 등록한다.
+    uint32_t                    requestedResolution = 0;
+    uint32_t                    resolution = 0;             // 축소 할당 후 최종 해상도. Border 포함.
+};
+
+// Atlas 리소스는 공유하지만 타일 좌표, 투영, draw 목록은 카메라마다 독립적인 snapshot 이다.
+// 백엔드는 변경 가능한 ShadowAtlas/allocator 대신 이 데이터만 사용한다.
+struct VisLocalShadowAtlas {
+    RHI::Texture *              shadowTexture = nullptr;    // RenderContext 소유 리소스에 대한 비소유 참조.
+    RHI::ViewID                 shadowDSV = RHI::ViewID::InvalidID;
+    RHI::ViewID                 shadowSRV = RHI::ViewID::InvalidID;
+    uint32_t                    size = 0;
+    uint32_t                    maxViews = 0;
+    uint32_t                    numShadows = 0;
+    uint32_t                    numViews = 0;
+    VisLocalShadow *            shadows = nullptr;
+    LocalShadowView *           views = nullptr;
+
+    bool                        depthRendered = false; // 초기화 후 백엔드에서만 접근한다. 해당 카메라의 depth 기록이 성공한 뒤 true 로 바꾼다.
+};
 
 // 같은 debug draw pipeline 을 사용하는 프리미티브들을 하나의 배치로 묶는다.
 struct DebugDrawBatch {
@@ -274,6 +313,7 @@ struct VisCamera {
     const VisLight **           visLocalLights = nullptr;   // 카메라에 보이는 local light 포인터 배열
 
     VisCascadedShadow *         cascadedShadow = nullptr;
+    VisLocalShadowAtlas *       localShadowAtlas = nullptr;
 
     const DebugDrawData *       debugDrawData = nullptr;
     RHI::PipelineState *        debugDrawPSOs[DebugDrawData::MaxBatches] = {};
@@ -460,6 +500,7 @@ struct VisLight {
 
     RenderLight::Type           type;
     RenderLight::Flag           flags;
+    uint32_t                    localShadowIndex = ~0u;     ///< 카메라의 VisLocalShadowAtlas::shadows 인덱스. ~0u 이면 shadow 없음.
 };
 
 static_assert(sizeof(VisLight) == 192, "VisLight layout changed");

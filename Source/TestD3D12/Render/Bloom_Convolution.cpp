@@ -14,13 +14,17 @@
 
 #include "Precompiled.h"
 #include "Bloom.h"
+#include "RenderSystem.h"
+#include "Render/Backend/RenderBackend.h"
 #include "Render/RenderInternal.h"
 #include "Render/GpuTiming.h"
 #include "Render/GpuFFT.h"
 #include "Shaders/ShaderInterop.h"
 
-bool Bloom::DispatchConvolutionBloom(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuFFT &gpuFFT, GpuTiming &gpuTiming, RHI::Texture *inputColorTexture, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const {
+bool Bloom::DispatchConvolutionBloom(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloom");
+
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
 
     if (data.renderWidth == 0 || data.renderHeight == 0 || data.fftBloomSize == 0) {
         return false;
@@ -33,51 +37,56 @@ bool Bloom::DispatchConvolutionBloom(RHI::CommandList *commandList, RHI::FrameTh
         }
 
         // 커널 이미지로 버퍼 준비 (축소 스케일, 회전)
-        if (!DispatchConvolutionBloomKernelPrepare(commandList, frameThreadData, gpuTiming, data)) {
+        if (!DispatchConvolutionBloomKernelPrepare(backend)) {
             return false;
         }
 
         // 커널 버퍼 FFT
-        if (!DispatchConvolutionBloomFFT(commandList, gpuFFT, gpuTiming, data, data.fftBloomKernelSpatialBuffer, data.fftBloomKernelSpectrumBuffer)) {
+        if (!DispatchConvolutionBloomFFT(backend, data.fftBloomKernelSpatialBuffer, data.fftBloomKernelSpectrumBuffer)) {
             return false;
         }
     }
 
     // 화면 이미지에 bloom prefilter 를 적용하고, 축소 샘플링에 사용할 밉체인을 만든다.
-    if (!DispatchConvolutionBloomScreenPrefilter(commandList, frameThreadData, gpuTiming, inputColorTexture, data, renderFrameSettings)) {
+    if (!DispatchConvolutionBloomScreenPrefilter(backend)) {
         return false;
     }
 
     // 화면 이미지로 버퍼 준비 (축소 스케일)
-    if (!DispatchConvolutionBloomScreenPrepare(commandList, frameThreadData, gpuTiming, data)) {
+    if (!DispatchConvolutionBloomScreenPrepare(backend)) {
         return false;
     }
 
     // 화면 버퍼 FFT
-    if (!DispatchConvolutionBloomFFT(commandList, gpuFFT, gpuTiming, data, data.fftBloomScreenSpatialBuffer, data.fftBloomScreenSpectrumBuffer)) {
+    if (!DispatchConvolutionBloomFFT(backend, data.fftBloomScreenSpatialBuffer, data.fftBloomScreenSpectrumBuffer)) {
         return false;
     }
 
     // 화면 스펙트럼과 커널 스펙트럼의 Hadamard 곱 (fftBloomWorkBuffer 에 출력)
-    if (!DispatchConvolutionBloomMultiplySpectrum(commandList, frameThreadData, gpuFFT, gpuTiming, data, renderFrameSettings)) {
+    if (!DispatchConvolutionBloomMultiplySpectrum(backend)) {
         return false;
     }
 
     // 결과를 IFFT
-    if (!DispatchConvolutionBloomIFFT(commandList, gpuFFT, gpuTiming, data, data.fftBloomWorkBuffer, data.fftBloomScreenSpatialBuffer)) {
+    if (!DispatchConvolutionBloomIFFT(backend, data.fftBloomWorkBuffer, data.fftBloomScreenSpatialBuffer)) {
         return false;
     }
 
     // IFFT 결과 버퍼를 스크린 half-res 텍스쳐 (fftBloomConvolutionOutputTexture) 에 resolve
-    if (!DispatchConvolutionBloomResolve(commandList, frameThreadData, gpuTiming, data)) {
+    if (!DispatchConvolutionBloomResolve(backend)) {
         return false;
     }
 
     return true;
 }
 
-bool Bloom::DispatchConvolutionBloomKernelPrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, const BloomFrameData &data) const {
+bool Bloom::DispatchConvolutionBloomKernelPrepare(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomKernelPrepare");
+
+    RHI::CommandList *commandList = backend.GetCommandList();
+    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
 
     if (data.fftBloomSize == 0) {
         return false;
@@ -147,8 +156,15 @@ bool Bloom::DispatchConvolutionBloomKernelPrepare(RHI::CommandList *commandList,
     return true;
 }
 
-bool Bloom::DispatchConvolutionBloomScreenPrefilter(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, RHI::Texture *inputColorTexture, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const {
+bool Bloom::DispatchConvolutionBloomScreenPrefilter(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomScreenPrefilter");
+
+    RHI::CommandList *commandList = backend.GetCommandList();
+    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    RHI::Texture *inputColorTexture = backend.GetPostProcessInputTexture();
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const RenderFrameSettings &renderFrameSettings = backend.GetFrameSettings();
 
     RHI::Texture *inputTexture = inputColorTexture;
     RHI::Texture *outputTexture = data.fftBloomConvolutionOutputTexture;
@@ -209,8 +225,13 @@ bool Bloom::DispatchConvolutionBloomScreenPrefilter(RHI::CommandList *commandLis
     return true;
 }
 
-bool Bloom::DispatchConvolutionBloomScreenPrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, const BloomFrameData &data) const {
+bool Bloom::DispatchConvolutionBloomScreenPrepare(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomScreenPrepare");
+
+    RHI::CommandList *commandList = backend.GetCommandList();
+    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
 
     if (data.renderWidth == 0 || data.renderHeight == 0 || data.fftBloomSize == 0) {
         return false;
@@ -276,8 +297,15 @@ bool Bloom::DispatchConvolutionBloomScreenPrepare(RHI::CommandList *commandList,
     return true;
 }
 
-bool Bloom::DispatchConvolutionBloomMultiplySpectrum(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuFFT &gpuFFT, GpuTiming &gpuTiming, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const {
+bool Bloom::DispatchConvolutionBloomMultiplySpectrum(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomMultiplySpectrum");
+
+    RHI::CommandList *commandList = backend.GetCommandList();
+    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
+    GpuFFT &gpuFFT = renderSystem->GetGpuFFT();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const RenderFrameSettings &renderFrameSettings = backend.GetFrameSettings();
 
     if (data.renderWidth == 0 || data.renderHeight == 0 || data.fftBloomSize == 0) {
         return false;
@@ -304,8 +332,13 @@ bool Bloom::DispatchConvolutionBloomMultiplySpectrum(RHI::CommandList *commandLi
         kernelSpectrumScale);
 }
 
-bool Bloom::DispatchConvolutionBloomResolve(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, const BloomFrameData &data) const {
+bool Bloom::DispatchConvolutionBloomResolve(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomResolve");
+
+    RHI::CommandList *commandList = backend.GetCommandList();
+    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
 
     if (data.fftBloomSize == 0) {
         return false;
@@ -364,7 +397,12 @@ bool Bloom::DispatchConvolutionBloomResolve(RHI::CommandList *commandList, RHI::
     return true;
 }
 
-bool Bloom::DispatchConvolutionBloomFFT(RHI::CommandList *commandList, GpuFFT &gpuFFT, GpuTiming &gpuTiming, const BloomFrameData &data, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) const {
+bool Bloom::DispatchConvolutionBloomFFT(RenderBackend &backend, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) const {
+    RHI::CommandList *commandList = backend.GetCommandList();
+    GpuFFT &gpuFFT = renderSystem->GetGpuFFT();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
     GpuFFT::FFTSize fftSizeEnum;
@@ -377,7 +415,12 @@ bool Bloom::DispatchConvolutionBloomFFT(RHI::CommandList *commandList, GpuFFT &g
     return gpuFFT.DispatchFFTDualReal2D(commandList, inputBuffer, outputBuffer, data.fftBloomWorkBuffer, fftSizeEnum, PlaneCount);
 }
 
-bool Bloom::DispatchConvolutionBloomIFFT(RHI::CommandList *commandList, GpuFFT &gpuFFT, GpuTiming &gpuTiming, const BloomFrameData &data, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) const {
+bool Bloom::DispatchConvolutionBloomIFFT(RenderBackend &backend, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) const {
+    RHI::CommandList *commandList = backend.GetCommandList();
+    GpuFFT &gpuFFT = renderSystem->GetGpuFFT();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
     GpuFFT::FFTSize fftSizeEnum;

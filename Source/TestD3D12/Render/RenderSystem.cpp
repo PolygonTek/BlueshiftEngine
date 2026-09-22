@@ -60,7 +60,7 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     shaderTemplateManager.Init();
 
-    shaderPipelineBootstrap.BeginCollection(96);
+    shaderPipelineBootstrap.BeginCollection(128);
 
     gpuFFT.Init();
     gpuFFT.TrackBootstrapPipelines(shaderPipelineBootstrap);
@@ -85,6 +85,9 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     bloom.Init();
     bloom.TrackBootstrapPipelines(shaderPipelineBootstrap);
+
+    postLuminance.Init();
+    postLuminance.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
     iblBaker.Init();
     iblBaker.TrackBootstrapPipelines(shaderPipelineBootstrap);
@@ -151,6 +154,8 @@ void RenderSystem::Shutdown() {
     probeBakeSystem.Shutdown();
 
     iblBaker.Shutdown();
+
+    postLuminance.Shutdown();
 
     bloom.Shutdown();
 
@@ -221,15 +226,18 @@ void RenderSystem::UpdateFrame() {
 }
 
 RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {
-    RenderContext *renderContext = new RenderContext;
-    renderContexts.Append(renderContext);
+    if (isMain && mainRenderContext) {
+        BE_FATALERROR("RenderSystem::CreateRenderContext: main render context already exists");
+        return nullptr;
+    }
 
     const BE1::Color4 baseClearColor = BE1::Color4::darkBlue;
 
+    RenderContext *renderContext = new RenderContext;
     renderContext->Init(windowHandle, baseClearColor);
+    renderContexts.Append(renderContext);
 
     if (isMain) {
-        assert(!mainRenderContext);
         mainRenderContext = renderContext;
     }
 
@@ -419,19 +427,13 @@ void RenderSystem::InitComputePipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
 
-    ssrTraceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrTraceShader", computeShaderModel, "Reflection/SSRTrace.hlsl", baseDir);
-
+    msaaResolveDepthShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveDepthShader", computeShaderModel, "MSAAResolveDepth.hlsl", baseDir);
+    msaaResolveDepthNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveDepthNormalShader", computeShaderModel, "MSAAResolveDepthNormal.hlsl", baseDir);
+    msaaResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveVelocityShader", computeShaderModel, "MSAAResolveVelocity.hlsl", baseDir);
     lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "Lighting/LightCulling.hlsl", baseDir);
-    depthMSAAResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthMSAAResolveShader", computeShaderModel, "DepthMSAAResolve.hlsl", baseDir);
-    depthNormalMSAAResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_depthNormalMSAAResolveShader", computeShaderModel, "DepthMSAAResolve.hlsl", baseDir, "CSMain", "RESOLVE_MSAA_NORMAL=1");
-    surfaceOutputMSAAResolveNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=1");
-    surfaceOutputMSAAResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=2");
-    surfaceOutputMSAAResolveNormalVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_surfaceOutputMSAAResolveNormalVelocityShader", computeShaderModel, "SurfaceOutputMSAAResolve.hlsl", baseDir, "CSMain", "SURFACE_OUTPUT_MSAA_RESOLVE_MODE=3");
-
-    finalPostProcessShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_finalPostProcessShader", computeShaderModel, "FinalPostProcess.hlsl", baseDir);
+    ssrTraceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrTraceShader", computeShaderModel, "Reflection/SSRTrace.hlsl", baseDir);
     taaResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAAResolve.hlsl", baseDir);
-    luminancePass1ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
-    luminancePass2ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
+    finalPostProcessShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_finalPostProcessShader", computeShaderModel, "FinalPostProcess.hlsl", baseDir);
 
     EnsureComputePipelines();
 }
@@ -446,48 +448,31 @@ static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplat
 }
 
 void RenderSystem::EnsureComputePipelines() {
-    EnsureComputePipeline(ssrTraceShaderTemplate, ssrTracePipeline, shaderPipelineBootstrap);
-
+    EnsureComputePipeline(msaaResolveDepthShaderTemplate, msaaResolveDepthPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(msaaResolveDepthNormalShaderTemplate, msaaResolveDepthNormalPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(msaaResolveVelocityShaderTemplate, msaaResolveVelocityPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(depthMSAAResolveShaderTemplate, depthMSAAResolvePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(depthNormalMSAAResolveShaderTemplate, depthNormalMSAAResolvePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(surfaceOutputMSAAResolveNormalShaderTemplate, surfaceOutputMSAAResolveNormalPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(surfaceOutputMSAAResolveVelocityShaderTemplate, surfaceOutputMSAAResolveVelocityPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(surfaceOutputMSAAResolveNormalVelocityShaderTemplate, surfaceOutputMSAAResolveNormalVelocityPipeline, shaderPipelineBootstrap);
-
-    EnsureComputePipeline(finalPostProcessShaderTemplate, finalPostProcessPipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(ssrTraceShaderTemplate, ssrTracePipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(taaResolveShaderTemplate, taaResolvePipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(luminancePass1ShaderTemplate, luminancePass1Pipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(luminancePass2ShaderTemplate, luminancePass2Pipeline, shaderPipelineBootstrap);
+    EnsureComputePipeline(finalPostProcessShaderTemplate, finalPostProcessPipeline, shaderPipelineBootstrap);
 }
 
 void RenderSystem::ReleaseComputePipelines() {
-    ssrTracePipeline.reset();
-
+    msaaResolveDepthPipeline.reset();
+    msaaResolveDepthNormalPipeline.reset();
+    msaaResolveVelocityPipeline.reset();
     lightCullingPipeline.reset();
-    depthMSAAResolvePipeline.reset();
-    depthNormalMSAAResolvePipeline.reset();
-    surfaceOutputMSAAResolveNormalPipeline.reset();
-    surfaceOutputMSAAResolveVelocityPipeline.reset();
-    surfaceOutputMSAAResolveNormalVelocityPipeline.reset();
-
-    finalPostProcessPipeline.reset();
+    ssrTracePipeline.reset();
     taaResolvePipeline.reset();
-    luminancePass1Pipeline.reset();
-    luminancePass2Pipeline.reset();
+    finalPostProcessPipeline.reset();
 
+    msaaResolveDepthShaderTemplate.reset();
+    msaaResolveDepthNormalShaderTemplate.reset();
+    msaaResolveVelocityShaderTemplate.reset();
+    lightCullingShaderTemplate.reset();
     ssrTraceShaderTemplate.reset();
-
-    depthMSAAResolveShaderTemplate.reset();
-    depthNormalMSAAResolveShaderTemplate.reset();
-    surfaceOutputMSAAResolveNormalShaderTemplate.reset();
-    surfaceOutputMSAAResolveVelocityShaderTemplate.reset();
-    surfaceOutputMSAAResolveNormalVelocityShaderTemplate.reset();
-
-    finalPostProcessShaderTemplate.reset();
     taaResolveShaderTemplate.reset();
-    luminancePass1ShaderTemplate.reset();
-    luminancePass2ShaderTemplate.reset();
+    finalPostProcessShaderTemplate.reset();
 }
 
 static ColorGradingLUTGenerator::Settings MakeColorGradingLUTSettingsFromCVars() {

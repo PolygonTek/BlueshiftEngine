@@ -32,12 +32,15 @@ class Material;
 class MeshInstance;
 class Skeleton;
 class Font;
+class ShadowAtlas;
 struct VisCamera;
 struct VisObject;
 struct VisSkinnedMesh;
 struct VisText;
 struct VisSpotLightData;
 struct VisLight;
+struct VisLocalShadow;
+struct VisLocalShadowAtlas;
 enum class DrawTextFlag : uint16_t;
 
 enum class FrameSyncState : uint8_t {
@@ -223,6 +226,13 @@ public:
     [[nodiscard]] VisSpotLightData *AllocVisSpotLightData();
     [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
 
+                                    // 카메라마다 리소스 snapshot 을 만들고, 실제 shadow 등록 시에만 view 저장 공간을 확보한다.
+    [[nodiscard]] VisLocalShadowAtlas *AllocVisLocalShadowAtlas(const ShadowAtlas &atlas);
+    [[nodiscard]] VisLocalShadow *  AllocVisLocalShadow(VisLocalShadowAtlas &atlas, VisLight &light);
+
+    const VisLocalShadowAtlas *     GetShadowAtlasDebugPreview() const { return shadowAtlasDebugPreview; }
+    void                            SetShadowAtlasDebugPreview(const VisLocalShadowAtlas *atlas) { shadowAtlasDebugPreview = atlas; }
+
     uint32_t                        NumLightCullingZBins() const { return numLightCullingZBins; }
     [[nodiscard]] uint32_t          ReserveLightCullingZBins();
     uint32_t                        NumLightCullingWords() const { return numLightCullingWords; }
@@ -353,6 +363,7 @@ private:
 
     RenderCommandBuffer             commands;
     PendingImGuiOverlay             pendingImGuiOverlay;
+    const VisLocalShadowAtlas *     shadowAtlasDebugPreview = nullptr;
 
     FrameSyncState                  frameSyncState = FrameSyncState::RenderCompleted;
     uint64_t                        frameFenceValue = 0;

@@ -48,6 +48,11 @@ CVAR(r_shadows2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable 
 CVAR_MINMAX(r_shadowDebug, "0", BE1::CVar::Flag::Integer, "shadow debug view (0 = off, 1 = visibility, 2 = coverage)", 0, 2);
 CVAR_MINMAX(r_shadowMapQuality2, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "shadow map filter quality (0 = 1, 1 = 5, 2 = 9, 3 = 16 rotated Poisson comparisons)", 0, 3);
 CVAR_MINMAX(r_shadowMapFilterRadius, "1.414", BE1::CVar::Flag::Float, "Q3 Poisson filter radius in texels at 1024 resolution; adjusted for CSM resolution and cascade scale (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::ShadowMapFilterRadiusMin, RenderFrameSettings::ShadowMapFilterRadiusMax);
+
+CVAR_MINMAX(r_shadowAtlasSize, "8192", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "local shadow atlas side length in texels; rounded down to a power of two when captured", 1024, 8192);
+CVAR_MINMAX(r_shadowAtlasMaxTileResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "maximum local shadow tile resolution including border (per face for point lights); rounded down to a power of two when captured", RenderFrameSettings::ShadowAtlasMinTileResolution, 1024);
+CVAR_MINMAX(r_shadowAtlasMaxViews, "64", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "maximum local shadow views per camera (spot = 1, point = 6, 0 = disabled)", 0, 1024);
+
 CVAR_MINMAX(r_csmResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "cascade shadow map resolution", 128, 8192);
 CVAR_MINMAX(r_csmCount, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "active CSM cascade count", 1, RenderFrameSettings::CSMCascadeCount);
 CVAR_MINMAX(r_csmSplitLambda, "0.9", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "CSM split distribution (0 = uniform, 1 = logarithmic; orthographic cameras use uniform)", 0.0f, 1.0f);
@@ -203,6 +208,11 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.shadowDebugMode = static_cast<uint32_t>(r_shadowDebug.GetInteger());
     settings.shadowMapQuality = static_cast<uint32_t>(r_shadowMapQuality2.GetInteger());
     settings.shadowMapFilterRadius = r_shadowMapFilterRadius.GetFloat();
+
+    // Atlas 크기와 타일 해상도는 예산을 초과하지 않도록 2 의 거듭제곱으로 내림한다.
+    settings.shadowAtlasSize = BE1::Math::RoundDownPowerOfTwo(static_cast<uint32_t>(BE1::Clamp(r_shadowAtlasSize.GetInteger(), 1024, 8192)));
+    settings.shadowAtlasMaxTileResolution = BE1::Math::RoundDownPowerOfTwo(static_cast<uint32_t>(BE1::Clamp(r_shadowAtlasMaxTileResolution.GetInteger(), static_cast<int>(RenderFrameSettings::ShadowAtlasMinTileResolution), 1024)));
+    settings.shadowAtlasMaxViews = static_cast<uint32_t>(BE1::Clamp(r_shadowAtlasMaxViews.GetInteger(), 0, 1024));
 
     settings.csmResolution = static_cast<uint32_t>(r_csmResolution.GetInteger());
     settings.csmCascadeCount = static_cast<uint32_t>(r_csmCount.GetInteger());

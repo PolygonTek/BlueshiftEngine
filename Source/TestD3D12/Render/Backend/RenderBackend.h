@@ -19,9 +19,11 @@
 #include "Render/GpuOceanSurface.h"
 #include "Render/HiZResources.h"
 
+class GpuFFT;
 class RenderFrameData;
 class RenderContext;
 class ShaderPipeline;
+struct RenderFrameSettings;
 struct VisCamera;
 struct RenderPass;
 struct VisSurf;
@@ -38,6 +40,17 @@ public:
     void                            UpdateRenderFrameTime(uint64_t frameUsec);
 
     void                            DiscardGpuFrameTimings(const RenderContext *renderContext);
+
+                                    // Current execution state for backend render modules; valid during dispatch.
+    RHI::CommandList *              GetCommandList() const { return mainCommandList; }
+    RHI::FrameThreadData *          GetFrameThreadData() const;
+    const RHI::ConstantBuffer *     GetFrameConstantBuffer() const { return frameConstantBuffer; }
+    const RHI::ConstantBuffer *     GetCameraConstantBuffer() const { return cameraConstantBuffer; }
+    const VisCamera *               GetVisCamera() const { return currentVisCamera; }
+    RHI::Texture *                  GetPostProcessInputTexture() const { return currentPostProcessInputTexture; }
+    const RenderFrameSettings &     GetFrameSettings() const;
+    uint32_t                        GetFrameIndex() const;
+    GpuTiming &                     GetGpuTiming() { return gpuTiming; }
 
 private:
     static constexpr uint32_t       MaxInstancesPerDraw = RenderHiZCullMaxInstanceCount;
@@ -96,9 +109,8 @@ private:
     void                            DrawCamera3DPostOpaquePass();
     void                            DrawCamera2D();
 
-    void                            PostProcessAndBlitToOutput(bool surfaceOutputsReady, const RHI::Texture *outputOverrideTexture);
-    void                            BlitTextureToRenderTarget(const RHI::Texture *texture, const RHI::Texture *renderTargetTexture, RHI::ViewID renderTargetViewID,
-                                        RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destinationRect, RHI::PipelineState *imagePSO);
+    void                            PostProcessAndBlitToOutput(bool velocityReady, const RHI::Texture *outputOverrideTexture);
+    void                            BlitTextureToRenderTarget(const RHI::Texture *texture, const RHI::Texture *renderTargetTexture, RHI::ViewID renderTargetViewID, RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destinationRect, RHI::PipelineState *imagePSO);
     void                            BlitTextureToSwapChain(const RHI::Texture *texture, const BE1::Rect &destinationRect);
 
     void                            DrawGenericPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer);
@@ -127,9 +139,9 @@ private:
     bool                            DispatchSSRTrace();
     bool                            DispatchScreenSpaceAO();
     bool                            PrepareAOInputs();
-    bool                            DispatchDepthMSAAResolve(RHI::Texture *outputDepthTexture, RHI::GPUResourceState inputState, RHI::Texture *outputNormalTexture = nullptr);
-    bool                            DispatchSurfaceOutputMSAAResolve();
-    bool                            DispatchCurrentDepthMSAAResolve();
+    bool                            DispatchMSAAResolveDepth(RHI::Texture *outputDepthTexture, RHI::GPUResourceState inputState, RHI::Texture *outputNormalTexture = nullptr);
+    bool                            DispatchMSAAResolveVelocity();
+    bool                            DispatchMSAAResolveDepthHistory();
 
     bool                            DispatchLuminance();
     bool                            DispatchTAAResolve();
@@ -160,15 +172,11 @@ private:
     RHI::PipelineState *            frameHDROutputPSO = nullptr;
     RHI::PipelineState *            frameLightCullingPSO = nullptr;
     RHI::PipelineState *            frameSSRTracePSO = nullptr;
-    RHI::PipelineState *            frameDepthMSAAResolvePSO = nullptr;
-    RHI::PipelineState *            frameDepthNormalMSAAResolvePSO = nullptr;
-    RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalPSO = nullptr;
-    RHI::PipelineState *            frameSurfaceOutputMSAAResolveVelocityPSO = nullptr;
-    RHI::PipelineState *            frameSurfaceOutputMSAAResolveNormalVelocityPSO = nullptr;
+    RHI::PipelineState *            frameMSAAResolveDepthPSO = nullptr;
+    RHI::PipelineState *            frameMSAAResolveDepthNormalPSO = nullptr;
+    RHI::PipelineState *            frameMSAAResolveVelocityPSO = nullptr;
     RHI::PipelineState *            frameFinalPostProcessPSO = nullptr;
     RHI::PipelineState *            frameTAAResolvePSO = nullptr;
-    RHI::PipelineState *            frameLuminancePass1PSO = nullptr;
-    RHI::PipelineState *            frameLuminancePass2PSO = nullptr;
 
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;

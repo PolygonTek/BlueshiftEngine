@@ -45,10 +45,10 @@ static const uint MipGenOptionBitSRGB = 1 << 1;
 static const uint IBLIntegrationBlockSizeX = 8;
 static const uint IBLIntegrationBlockSizeY = 8;
 
-static const uint DepthMSAAResolveBlockSizeX = 16;
-static const uint DepthMSAAResolveBlockSizeY = 16;
-static const uint SurfaceOutputMSAAResolveBlockSizeX = 16;
-static const uint SurfaceOutputMSAAResolveBlockSizeY = 16;
+static const uint MSAAResolveDepthBlockSizeX = 16;
+static const uint MSAAResolveDepthBlockSizeY = 16;
+static const uint MSAAResolveVelocityBlockSizeX = 16;
+static const uint MSAAResolveVelocityBlockSizeY = 16;
 
 static const uint LuminanceBlockSize = 32;
 static const uint LuminanceHistogramBinCount = LuminanceBlockSize * LuminanceBlockSize;
@@ -160,7 +160,7 @@ static const uint ShaderLightCullingDebugModeTileMaskAndZBin = 2;
 static const uint ShaderShadowDebugModeNone = 0;
 static const uint ShaderShadowDebugModeVisibility = 1;
 static const uint ShaderShadowDebugModeCascadeCoverage = 2;
-static const uint ShaderCSMCount = 4;
+static const uint ShaderCSMCascadeCount = 4;
 
 static const uint ShaderCameraFlagProjectionOrthogonal = 1u << 0;
 static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
@@ -300,13 +300,13 @@ struct TAAResolveParams {
 static_assert(sizeof(TAAResolveParams) == 48, "TAAResolveParams must match the HLSL constant-buffer layout");
 #endif
 
-struct DepthMSAAResolveParams {
+struct MSAAResolveDepthParams {
     uint2 outputSize;
     uint useMinDepth;
     uint padding0;
 };
 
-struct SurfaceOutputMSAAResolveParams {
+struct MSAAResolveVelocityParams {
     uint2 outputSize;
     uint useMinDepth;
     uint padding0;
@@ -800,7 +800,7 @@ struct ShaderCSMData {
     // world position -> shadow texture coordinate.
     // XY 는 UV, Z 는 비교할 depth [0, 1].
     // orthogonal projection 이므로 perspective divide 없이 float3x4 로 표현할 수 있다.
-    row_major float3x4 worldToShadowCoordMatrices[ShaderCSMCount];
+    row_major float3x4 worldToShadowCoordMatrices[ShaderCSMCascadeCount];
 
     uint textureIndex;          // Texture2DArray<float> 의 bindless SRV index.
     uint cascadeCount;

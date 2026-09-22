@@ -17,7 +17,7 @@
 #include "RHI/RHI.h"
 #include "Render/RenderFrameSettings.h"
 
-class GpuTiming;
+class RenderBackend;
 class ShaderTemplate;
 class ShaderPipeline;
 class ShaderPipelineBootstrap;
@@ -44,19 +44,18 @@ public:
 
                                     // Requires successful PrepareDispatch() and ready single-sample inputs.
                                     // Inputs and scratch resources enter and leave in ShaderResource state.
-                                    // Records commands only; does not submit or select a command queue.
-    void                            Dispatch(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t frameIndex, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, const DispatchParams &params) const;
-    bool                            DispatchDebugPreview(RHI::CommandList *commandList, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings) const;
+    void                            Dispatch(RenderBackend &backend, const DispatchParams &params) const;
+    bool                            DispatchDebugPreview(RenderBackend &backend) const;
 
 private:
-    void                            DispatchSSAO(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t frameIndex, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, const DispatchParams &params) const;
-    void                            DispatchGTAO(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t frameIndex, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, const DispatchParams &params) const;
-    void                            DispatchGTAOPrefilterDepth(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, RHI::GPUResourceState depthInputState, bool useHalfResolution) const;
-    void                            DispatchGTAOMain(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t frameIndex, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, bool useHalfResolution) const;
-    RHI::Texture *                  DispatchGTAODenoise(RHI::CommandList *commandList, GpuTiming &gpuTiming, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, uint32_t denoisePassCount, bool useHalfResolution, RHI::GPUResourceState &rawAOState, RHI::GPUResourceState &tempAOState) const;
-    void                            DispatchSSAOCompute(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t frameIndex, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, RHI::PipelineState *pso, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *outputAOTexture, RHI::Texture *outputHalfDepthTexture, RHI::GPUResourceState depthInputState) const;
-    void                            DispatchAOBilateralBlur(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, const ScreenSpaceAOFrameData &data, RHI::Texture *depthTexture, RHI::Texture *inputAOTexture, RHI::Texture *tempAOTexture, RHI::Texture *outputAOTexture, float radius) const;
-    void                            DispatchAOUpsample(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, const ScreenSpaceAOFrameData &data, RHI::Texture *depthTexture, RHI::Texture *inputHalfAOTexture, RHI::Texture *inputHalfDepthTexture, RHI::Texture *outputAOTexture, float radius) const;
+    void                            DispatchSSAO(RenderBackend &backend, const DispatchParams &params) const;
+    void                            DispatchGTAO(RenderBackend &backend, const DispatchParams &params) const;
+    void                            DispatchGTAOPrefilterDepth(RenderBackend &backend, RHI::GPUResourceState depthInputState, bool useHalfResolution) const;
+    void                            DispatchGTAOMain(RenderBackend &backend, bool useHalfResolution) const;
+    RHI::Texture *                  DispatchGTAODenoise(RenderBackend &backend, uint32_t denoisePassCount, bool useHalfResolution, RHI::GPUResourceState &rawAOState, RHI::GPUResourceState &tempAOState) const;
+    void                            DispatchSSAOCompute(RenderBackend &backend, RHI::PipelineState *pso, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *outputAOTexture, RHI::Texture *outputHalfDepthTexture, RHI::GPUResourceState depthInputState) const;
+    void                            DispatchAOBilateralBlur(RenderBackend &backend, RHI::Texture *depthTexture, RHI::Texture *inputAOTexture, RHI::Texture *tempAOTexture, RHI::Texture *outputAOTexture, float radius) const;
+    void                            DispatchAOUpsample(RenderBackend &backend, RHI::Texture *depthTexture, RHI::Texture *inputHalfAOTexture, RHI::Texture *inputHalfDepthTexture, RHI::Texture *outputAOTexture, float radius) const;
 
                                     // Ambient Occlusion (Common) shader templates
     SharedPtr<ShaderTemplate>       aoBilateralHorizontalShaderTemplate;

@@ -23,6 +23,21 @@
 #include "Render/Texture/TextureManager.h"
 #include "Shaders/ShaderInterop.h"
 
+RHI::FrameThreadData *RenderBackend::GetFrameThreadData() const {
+    assert(frameData);
+    return frameData->GetThreadData(0);
+}
+
+const RenderFrameSettings &RenderBackend::GetFrameSettings() const {
+    assert(frameData);
+    return frameData->GetRenderFrameSettings();
+}
+
+uint32_t RenderBackend::GetFrameIndex() const {
+    assert(frameData);
+    return frameData->GetFrameCount();
+}
+
 void RenderBackend::Init() {
 #ifdef USE_RENDER_TASK
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
@@ -318,16 +333,14 @@ void RenderBackend::UpdateFramePSOs() {
     frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
     renderSystem->GetScreenSpaceAO().UpdateFramePSOs(frameData->GetRenderFrameSettings());
     renderSystem->GetBloom().UpdateFramePSOs();
+    renderSystem->GetPostLuminance().UpdateFramePSOs();
+
+    frameMSAAResolveDepthPSO = ShaderPipeline::GetReadyPSO(renderSystem->msaaResolveDepthPipeline);
+    frameMSAAResolveDepthNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->msaaResolveDepthNormalPipeline);
+    frameMSAAResolveVelocityPSO = ShaderPipeline::GetReadyPSO(renderSystem->msaaResolveVelocityPipeline);
     frameLightCullingPSO = ShaderPipeline::GetReadyPSO(renderSystem->lightCullingPipeline);
-    frameDepthMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthMSAAResolvePipeline);
-    frameDepthNormalMSAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->depthNormalMSAAResolvePipeline);
-    frameSurfaceOutputMSAAResolveNormalPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalPipeline);
-    frameSurfaceOutputMSAAResolveVelocityPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveVelocityPipeline);
-    frameSurfaceOutputMSAAResolveNormalVelocityPSO = ShaderPipeline::GetReadyPSO(renderSystem->surfaceOutputMSAAResolveNormalVelocityPipeline);
-    frameFinalPostProcessPSO = ShaderPipeline::GetReadyPSO(renderSystem->finalPostProcessPipeline);
     frameTAAResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->taaResolvePipeline);
-    frameLuminancePass1PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass1Pipeline);
-    frameLuminancePass2PSO = ShaderPipeline::GetReadyPSO(renderSystem->luminancePass2Pipeline);
+    frameFinalPostProcessPSO = ShaderPipeline::GetReadyPSO(renderSystem->finalPostProcessPipeline);
 }
 
 const void *RenderBackend::ExecuteRenderWork(const void *data) {
@@ -565,7 +578,7 @@ bool RenderBackend::PrepareAOInputs() {
         return true;
     }
 
-    return DispatchDepthMSAAResolve(currentVisCamera->ao.depthTexture, RHI::GPUResourceState::ShaderResource, currentVisCamera->ao.normalTexture);
+    return DispatchMSAAResolveDepth(currentVisCamera->ao.depthTexture, RHI::GPUResourceState::ShaderResource, currentVisCamera->ao.normalTexture);
 }
 
 bool RenderBackend::DispatchGenHiZ() {
@@ -577,8 +590,7 @@ bool RenderBackend::DispatchHiZDebugPreview() {
 }
 
 bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
-    return renderSystem->GetScreenSpaceDepthPyramid().Dispatch(mainCommandList, gpuTiming, currentVisCamera->depthTexture, currentVisCamera->normalTexture,
-        currentVisCamera->resolvedDepthTexture, currentVisCamera->resolvedNormalTexture, currentVisCamera->projectionPolicy, currentVisCamera->screenSpaceDepthPyramid);
+    return renderSystem->GetScreenSpaceDepthPyramid().Dispatch(*this);
 }
 
 bool RenderBackend::DispatchScreenSpaceAO() {
@@ -598,7 +610,7 @@ bool RenderBackend::DispatchScreenSpaceAO() {
         return false;
     }
 
-    screenSpaceAO.Dispatch(mainCommandList, cameraConstantBuffer, gpuTiming, frameData->GetFrameCount(), ao, settings, params);
+    screenSpaceAO.Dispatch(*this, params);
     return true;
 }
 
@@ -652,10 +664,10 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     // Ocean, Transparent, Debug primitive 를 렌더링한다.
     ExecuteDrawCamera3DPostOpaquePass();
 
-    // Normal 과 velocity 는 shading 이 끝난 뒤 TAA 전에 resolve 한다.
-    bool surfaceOutputsReady = true;
-    if (useMSAA && (currentVisCamera->needNormalOutput || currentVisCamera->needVelocityOutput)) {
-        surfaceOutputsReady = DispatchSurfaceOutputMSAAResolve();
+    // Velocity 는 shading 이 끝난 뒤 TAA 전에 resolve 한다.
+    bool velocityReady = true;
+    if (useMSAA && currentVisCamera->needVelocityOutput) {
+        velocityReady = DispatchMSAAResolveVelocity();
     }
 
     if (hiZCullingPrepared) {
@@ -678,7 +690,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
 
     if ((debugSSAO || debugGTAO) && aoReady) {
         if (debugGTAO && renderFrameSettings.gtaoDebug > 1) {
-            renderSystem->GetScreenSpaceAO().DispatchDebugPreview(mainCommandList, currentVisCamera->ao, renderFrameSettings);
+            renderSystem->GetScreenSpaceAO().DispatchDebugPreview(*this);
         }
         outputOverrideTexture = currentVisCamera->ao.textures.outputTexture;
     } else if (renderFrameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
@@ -687,7 +699,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         outputOverrideTexture = currentVisCamera->ssrTraceTexture;
     }
 
-    PostProcessAndBlitToOutput(surfaceOutputsReady, outputOverrideTexture);
+    PostProcessAndBlitToOutput(velocityReady, outputOverrideTexture);
 }
 
 void RenderBackend::ExecuteDrawCamera3DShadowPass() {
@@ -985,7 +997,7 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
     RHI::renderer->EndRenderPass(mainCommandList);
 }
 
-void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady, const RHI::Texture *outputOverrideTexture) {
+void RenderBackend::PostProcessAndBlitToOutput(bool velocityReady, const RHI::Texture *outputOverrideTexture) {
     currentPostProcessInputTexture = currentVisCamera->resolvedColorTexture ? currentVisCamera->resolvedColorTexture : currentVisCamera->colorTexture;
     const RHI::Texture *finalColorTexture = currentPostProcessInputTexture;
 
@@ -995,10 +1007,10 @@ void RenderBackend::PostProcessAndBlitToOutput(bool surfaceOutputsReady, const R
     } else if (!renderFrameSettings.skipPostProcess && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
         bool depthHistoryReady = true;
         if (currentVisCamera->taaResolve && currentVisCamera->depthTexture->GetSampleCount() > 1) {
-            depthHistoryReady = DispatchCurrentDepthMSAAResolve();
+            depthHistoryReady = DispatchMSAAResolveDepthHistory();
         }
 
-        if (surfaceOutputsReady && depthHistoryReady && DispatchTAAResolve()) {
+        if (velocityReady && depthHistoryReady && DispatchTAAResolve()) {
             currentPostProcessInputTexture = currentVisCamera->colorHistoryTextures[currentVisCamera->currentHistoryTextureIndex];
             finalColorTexture = currentPostProcessInputTexture;
         }

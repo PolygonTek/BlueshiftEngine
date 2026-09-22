@@ -16,13 +16,10 @@
 
 #include "RHI/RHI.h"
 
-class GpuFFT;
-class GpuTiming;
+class RenderBackend;
 class ShaderTemplate;
 class ShaderPipeline;
 class ShaderPipelineBootstrap;
-struct BloomFrameData;
-struct RenderFrameSettings;
 
 class Bloom {
 public:
@@ -33,20 +30,18 @@ public:
 
     void                            UpdateFramePSOs();
 
-                                    // Records commands only; does not submit or select a command queue.
-                                    // Input and output textures enter and leave in ShaderResource state.
-    bool                            Dispatch(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuFFT &gpuFFT, GpuTiming &gpuTiming, RHI::Texture *inputColorTexture, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const;
+    bool                            Dispatch(RenderBackend &backend) const;
 
 private:
-    bool                            DispatchPyramidBloom(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, RHI::Texture *inputColorTexture, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const;
-    bool                            DispatchConvolutionBloom(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuFFT &gpuFFT, GpuTiming &gpuTiming, RHI::Texture *inputColorTexture, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const;
-    bool                            DispatchConvolutionBloomKernelPrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, const BloomFrameData &data) const;
-    bool                            DispatchConvolutionBloomScreenPrefilter(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, RHI::Texture *inputColorTexture, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const;
-    bool                            DispatchConvolutionBloomScreenPrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, const BloomFrameData &data) const;
-    bool                            DispatchConvolutionBloomMultiplySpectrum(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuFFT &gpuFFT, GpuTiming &gpuTiming, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const;
-    bool                            DispatchConvolutionBloomResolve(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, const BloomFrameData &data) const;
-    bool                            DispatchConvolutionBloomFFT(RHI::CommandList *commandList, GpuFFT &gpuFFT, GpuTiming &gpuTiming, const BloomFrameData &data, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) const;
-    bool                            DispatchConvolutionBloomIFFT(RHI::CommandList *commandList, GpuFFT &gpuFFT, GpuTiming &gpuTiming, const BloomFrameData &data, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) const;
+    bool                            DispatchPyramidBloom(RenderBackend &backend) const;
+    bool                            DispatchConvolutionBloom(RenderBackend &backend) const;
+    bool                            DispatchConvolutionBloomKernelPrepare(RenderBackend &backend) const;
+    bool                            DispatchConvolutionBloomScreenPrefilter(RenderBackend &backend) const;
+    bool                            DispatchConvolutionBloomScreenPrepare(RenderBackend &backend) const;
+    bool                            DispatchConvolutionBloomMultiplySpectrum(RenderBackend &backend) const;
+    bool                            DispatchConvolutionBloomResolve(RenderBackend &backend) const;
+    bool                            DispatchConvolutionBloomFFT(RenderBackend &backend, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) const;
+    bool                            DispatchConvolutionBloomIFFT(RenderBackend &backend, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer) const;
 
     SharedPtr<ShaderTemplate>       bloomPrefilterShaderTemplate;
     SharedPtr<ShaderTemplate>       bloomDownsampleShaderTemplate;

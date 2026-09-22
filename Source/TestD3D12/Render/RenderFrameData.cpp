@@ -117,6 +117,7 @@ void RenderFrameData::BeginFrame(const RenderFrameSettings &renderFrameSettings)
     ClearPendingImGuiOverlay();
 
     frameTime = 0.0f;
+    shadowAtlasDebugPreview = nullptr;
     elapsedTime = 0.0f;
     elapsedPrevTime = 0.0f;
     frameCount = 0;
@@ -581,6 +582,62 @@ RenderFrameData::ChunkRange<VisLight> RenderFrameData::GetVisLights(uint32_t fir
 VisSpotLightData *RenderFrameData::AllocVisSpotLightData() {
     void *memory = MemAlloc(sizeof(VisSpotLightData));
     return new (memory) VisSpotLightData();
+}
+
+VisLocalShadowAtlas *RenderFrameData::AllocVisLocalShadowAtlas(const ShadowAtlas &atlas) {
+    if (!renderFrameSettings.shadows || renderFrameSettings.shadowAtlasMaxViews == 0 ||
+        !atlas.GetShadowTexture() || !atlas.GetShadowDSV().IsValid() || !atlas.GetShadowSRV().IsValid()) {
+        return nullptr;
+    }
+
+    void *memory = MemAlloc(sizeof(VisLocalShadowAtlas));
+    if (!memory) {
+        return nullptr;
+    }
+    VisLocalShadowAtlas *data = new (memory) VisLocalShadowAtlas();
+    data->shadowTexture = atlas.GetShadowTexture();
+    data->shadowDSV = atlas.GetShadowDSV();
+    data->shadowSRV = atlas.GetShadowSRV();
+    data->size = atlas.GetSize();
+    data->maxViews = renderFrameSettings.shadowAtlasMaxViews;
+    return data;
+}
+
+VisLocalShadow *RenderFrameData::AllocVisLocalShadow(VisLocalShadowAtlas &atlas, VisLight &light) {
+    if (light.localShadowIndex != ~0u || !BE1::HasFlag(light.flags, RenderLight::Flag::CastShadows)) {
+        return nullptr;
+    }
+
+    const uint32_t viewCount = light.type == RenderLight::Type::Spot ? 1u : light.type == RenderLight::Type::Point ? 6u : 0u;
+    if (viewCount == 0 || atlas.numViews > atlas.maxViews || viewCount > atlas.maxViews - atlas.numViews) {
+        return nullptr;
+    }
+
+    if (!atlas.views) {
+        // 모두 Spot 일 때 광원 수도 maxViews 이다. 사용하지 않는 배열 요소는 생성/초기화하지 않는다.
+        VisLocalShadow *shadows = static_cast<VisLocalShadow *>(MemAlloc(sizeof(VisLocalShadow) * atlas.maxViews));
+        LocalShadowView *views = static_cast<LocalShadowView *>(MemAlloc(sizeof(LocalShadowView) * atlas.maxViews));
+        if (!shadows || !views) {
+            return nullptr;
+        }
+        atlas.shadows = shadows;
+        atlas.views = views;
+    }
+
+    const uint32_t shadowIndex = atlas.numShadows;
+    VisLocalShadow *shadow = new (&atlas.shadows[shadowIndex]) VisLocalShadow();
+    shadow->light = &light;
+    shadow->firstView = atlas.numViews;
+    shadow->numViews = viewCount;
+    for (uint32_t faceIndex = 0; faceIndex < viewCount; ++faceIndex) {
+        LocalShadowView *view = new (&atlas.views[atlas.numViews + faceIndex]) LocalShadowView();
+        view->shadowIndex = shadowIndex;
+        view->faceIndex = faceIndex;
+    }
+    atlas.numViews += viewCount;
+    ++atlas.numShadows;
+    light.localShadowIndex = shadowIndex;
+    return shadow;
 }
 
 VisLight *RenderFrameData::AllocVisLight(RenderLight::Type type) {

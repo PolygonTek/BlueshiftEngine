@@ -14,12 +14,20 @@
 
 #include "Precompiled.h"
 #include "Bloom.h"
+#include "Render/Backend/RenderBackend.h"
 #include "Render/RenderInternal.h"
 #include "Render/GpuTiming.h"
 #include "Shaders/ShaderInterop.h"
 
-bool Bloom::DispatchPyramidBloom(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, RHI::Texture *inputColorTexture, const BloomFrameData &data, const RenderFrameSettings &renderFrameSettings) const {
+bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchPyramidBloom");
+
+    RHI::CommandList *commandList = backend.GetCommandList();
+    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    RHI::Texture *inputColorTexture = backend.GetPostProcessInputTexture();
+    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const RenderFrameSettings &renderFrameSettings = backend.GetFrameSettings();
 
     if (data.bloomMipCount < 2) {
         return false;

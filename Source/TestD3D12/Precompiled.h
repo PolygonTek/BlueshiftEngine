@@ -40,6 +40,9 @@
 // 텍스쳐 밉맵 스트리밍 시스템 사용 여부
 #define USE_MIPMAP_STREAMING
 
+// 활성화하면 시작 시 ShadowAtlasAllocator CPU 테스트만 실행하고 종료한다.
+//#define ENABLE_SHADOW_ATLAS_ALLOCATOR_TESTS
+
 template <typename T>
 using SharedPtr = std::shared_ptr<T>;
 

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "ScreenSpaceDepthPyramid.h"
+#include "Render/Backend/RenderBackend.h"
 #include "Render/RenderInternal.h"
 #include "Render/GpuTiming.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
@@ -61,8 +62,18 @@ void ScreenSpaceDepthPyramid::UpdateFramePSOs() {
     frameReducePSO = ShaderPipeline::GetReadyPSO(reducePipeline);
 }
 
-bool ScreenSpaceDepthPyramid::Dispatch(RHI::CommandList *commandList, GpuTiming &gpuTiming, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *resolvedDepthTexture, RHI::Texture *resolvedNormalTexture, const RHI::ProjectionPolicy &projectionPolicy, const ScreenSpaceDepthPyramidFrameData &data) const {
+bool ScreenSpaceDepthPyramid::Dispatch(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("ScreenSpaceDepthPyramid::Dispatch");
+
+    RHI::CommandList *commandList = backend.GetCommandList();
+    GpuTiming &gpuTiming = backend.GetGpuTiming();
+    const VisCamera *visCamera = backend.GetVisCamera();
+    RHI::Texture *depthTexture = visCamera->depthTexture;
+    RHI::Texture *normalTexture = visCamera->normalTexture;
+    RHI::Texture *resolvedDepthTexture = visCamera->resolvedDepthTexture;
+    RHI::Texture *resolvedNormalTexture = visCamera->resolvedNormalTexture;
+    const RHI::ProjectionPolicy &projectionPolicy = visCamera->projectionPolicy;
+    const ScreenSpaceDepthPyramidFrameData &data = visCamera->screenSpaceDepthPyramid;
 
     RHI::Texture *depthPyramidTexture = data.texture;
     const uint32_t mipCount = data.mipCount;

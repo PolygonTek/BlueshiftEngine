@@ -17,6 +17,7 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderCvars.h"
 #include "Render/RenderContext.h"
+#include "Render/RenderInternal.h"
 #include "Render/Backend/RenderBackend.h"
 #include "Render/Frontend/RenderCamera.h"
 #include "Render/Texture/Texture.h"
@@ -369,6 +370,93 @@ bool App::DrawImGuiTexturePreview(const RHI::Texture *texture, RHI::ViewID viewI
     ImGui::Dummy(previewFrameSize);
 
     return true;
+}
+
+void App::BuildImGuiShadowAtlasPreview() {
+    RenderFrameData *frameData = mainRenderContext->GetCurrentFrontendFrameData();
+    const VisCamera *camera = nullptr;
+    for (uint32_t cameraIndex = 0; cameraIndex < frameData->NumVisCameras(); ++cameraIndex) {
+        if (!frameData->GetVisCameras()[cameraIndex].is2D) {
+            camera = &frameData->GetVisCameras()[cameraIndex];
+        }
+    }
+
+    // 공유 atlas 에 마지막으로 기록할 3D 카메라의 타일만 표시하여 depth 와 경계가 일치하게 한다.
+    const VisLocalShadowAtlas *atlas = camera ? camera->localShadowAtlas : nullptr;
+    if (!atlas || atlas->size == 0) {
+        ImGui::TextDisabled("No active local shadow atlas for this frame.");
+        return;
+    }
+
+    uint64_t usedArea = 0;
+    for (uint32_t viewIndex = 0; viewIndex < atlas->numViews; ++viewIndex) {
+        const BE1::Rect &rect = atlas->views[viewIndex].tileRect;
+        usedArea += static_cast<uint64_t>(rect.w) * rect.h;
+    }
+    const float occupancy = 100.0f * static_cast<float>(usedArea) / (static_cast<uint64_t>(atlas->size) * atlas->size);
+    ImGui::Text("Atlas: %u x %u | Used: %.1f%%", atlas->size, atlas->size, occupancy);
+    ImGui::Text("Camera %u | Lights: %u | Views: %u / %u", camera->index, atlas->numShadows, atlas->numViews, atlas->maxViews);
+    ImGui::TextDisabled("Red = depth (0 near, 1 far). Cyan = Spot, orange = Point.");
+
+    static bool showTileBounds = true;
+    ImGui::Checkbox("Tile bounds##ShadowAtlas", &showTileBounds);
+
+    const float previewSize = BE1::Min(ImGui::GetFontSize() * 24.0f, ImGui::GetContentRegionAvail().x);
+    if (!DrawImGuiTexturePreview(atlas->shadowTexture, atlas->shadowSRV, previewSize, true)) {
+        ImGui::TextDisabled("Atlas depth preview is unavailable.");
+        return;
+    }
+    frameData->SetShadowAtlasDebugPreview(atlas);
+
+    const ImVec2 imageMin = ImGui::GetItemRectMin();
+    const ImVec2 imageMax = ImGui::GetItemRectMax();
+    const bool imageHovered = ImGui::IsItemHovered();
+    const ImVec2 mouse = ImGui::GetIO().MousePos;
+    const float scale = previewSize / atlas->size;
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+    drawList->AddRect(imageMin, imageMax, IM_COL32(160, 160, 160, 255));
+
+    if (showTileBounds) {
+        static const char *faceNames[] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
+        for (uint32_t viewIndex = 0; viewIndex < atlas->numViews; ++viewIndex) {
+            const LocalShadowView &view = atlas->views[viewIndex];
+            if (view.tileRect.w <= 0 || view.tileRect.h <= 0 || view.shadowIndex >= atlas->numShadows) {
+                continue;
+            }
+            const VisLocalShadow &shadow = atlas->shadows[view.shadowIndex];
+            const bool point = shadow.light->type == RenderLight::Type::Point;
+            const char *faceName = point && view.faceIndex < COUNT_OF(faceNames) ? faceNames[view.faceIndex] : "Spot";
+            const ImU32 color = point ? IM_COL32(255, 176, 64, 255) : IM_COL32(64, 224, 255, 255);
+            const ImVec2 tileMin(imageMin.x + view.tileRect.x * scale, imageMin.y + view.tileRect.y * scale);
+            const ImVec2 tileMax(tileMin.x + view.tileRect.w * scale, tileMin.y + view.tileRect.h * scale);
+            drawList->AddRect(tileMin, tileMax, color);
+
+            const float border = view.borderTexels * scale;
+            if (border >= 1.0f && border * 2.0f < tileMax.x - tileMin.x) {
+                drawList->AddRect(ImVec2(tileMin.x + border, tileMin.y + border), ImVec2(tileMax.x - border, tileMax.y - border), IM_COL32(255, 255, 255, 100));
+            }
+
+            char label[48];
+            BE1::Str::snPrintf(label, sizeof(label), "%u %s", shadow.light->index, faceName);
+            const ImVec2 labelSize = ImGui::CalcTextSize(label);
+            if (labelSize.x + 4.0f <= tileMax.x - tileMin.x && labelSize.y + 4.0f <= tileMax.y - tileMin.y) {
+                drawList->AddText(ImVec2(tileMin.x + 2.0f, tileMin.y + 2.0f), color, label);
+            }
+
+            if (imageHovered && mouse.x >= tileMin.x && mouse.x < tileMax.x && mouse.y >= tileMin.y && mouse.y < tileMax.y) {
+                ImGui::BeginTooltip();
+                ImGui::Text("Light %u | %s | View %u", shadow.light->index, faceName, viewIndex);
+                ImGui::Text("Tile: (%d, %d), %d x %d | Border: %u", view.tileRect.x, view.tileRect.y, view.tileRect.w, view.tileRect.h, view.borderTexels);
+                ImGui::Text("Resolution: %u requested, %u allocated", shadow.requestedResolution, shadow.resolution);
+                ImGui::Text("Surfaces: %u | Draws: %u", view.numSurfs, view.renderPass.numDrawSurfs);
+                ImGui::EndTooltip();
+            }
+        }
+    }
+
+    if (atlas->numViews == 0) {
+        ImGui::TextDisabled("No local shadow views. Preview shows cleared depth.");
+    }
 }
 
 void App::BuildImGuiTextureViewer() {
@@ -929,6 +1017,10 @@ void App::BuildImGuiOverlay() {
                     }
                     ImGui::TreePop();
                 }
+            }
+
+            if (roundedCollapsingHeader("Local Shadow Atlas##ShadowAtlasHeader")) {
+                BuildImGuiShadowAtlasPreview();
             }
 
             if (roundedCollapsingHeader("Ambient Occlusion##AOHeader")) {

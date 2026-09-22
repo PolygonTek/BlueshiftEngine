@@ -137,6 +137,7 @@ private:
 #ifdef ENABLE_IMGUI
     void                            BuildImGuiOverlay();
     void                            BuildImGuiTextureViewer();
+    void                            BuildImGuiShadowAtlasPreview();
     void                            UpdateImGuiStatsPlotHistory();
     void                            BuildImGuiStatsPlotWindow();
 

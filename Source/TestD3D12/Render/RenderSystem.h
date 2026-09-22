@@ -21,6 +21,7 @@
 #include "ScreenSpaceAO.h"
 #include "ScreenSpaceDepthPyramid.h"
 #include "Bloom.h"
+#include "PostLuminance.h"
 #include "ConvolutionBloomKernelGenerator.h"
 #include "IBLBaker.h"
 #include "ProbeBakeSystem.h"
@@ -115,6 +116,9 @@ public:
     Bloom &                         GetBloom() { return bloom; }
     const Bloom &                   GetBloom() const { return bloom; }
 
+    PostLuminance &                 GetPostLuminance() { return postLuminance; }
+    const PostLuminance &           GetPostLuminance() const { return postLuminance; }
+
     HiZ &                           GetHiZ() { return hiZ; }
     const HiZ &                     GetHiZ() const { return hiZ; }
 
@@ -179,32 +183,21 @@ private:
     bool                            isStoppingRenderThread = false;
     static thread_local bool        isRenderThread;
 
+    SharedPtr<ShaderTemplate>       msaaResolveDepthShaderTemplate;
+    SharedPtr<ShaderTemplate>       msaaResolveDepthNormalShaderTemplate;
+    SharedPtr<ShaderTemplate>       msaaResolveVelocityShaderTemplate;
     SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
-
     SharedPtr<ShaderTemplate>       ssrTraceShaderTemplate;
-    SharedPtr<ShaderTemplate>       depthMSAAResolveShaderTemplate;
-    SharedPtr<ShaderTemplate>       depthNormalMSAAResolveShaderTemplate;
-    SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalShaderTemplate;
-    SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveVelocityShaderTemplate;
-    SharedPtr<ShaderTemplate>       surfaceOutputMSAAResolveNormalVelocityShaderTemplate;
-    SharedPtr<ShaderTemplate>       finalPostProcessShaderTemplate;
     SharedPtr<ShaderTemplate>       taaResolveShaderTemplate;
+    SharedPtr<ShaderTemplate>       finalPostProcessShaderTemplate;
 
-    SharedPtr<ShaderTemplate>       luminancePass1ShaderTemplate;
-    SharedPtr<ShaderTemplate>       luminancePass2ShaderTemplate;
-
-    SharedPtr<ShaderPipeline>       ssrTracePipeline;
-
+    SharedPtr<ShaderPipeline>       msaaResolveDepthPipeline;
+    SharedPtr<ShaderPipeline>       msaaResolveDepthNormalPipeline;
+    SharedPtr<ShaderPipeline>       msaaResolveVelocityPipeline;
     SharedPtr<ShaderPipeline>       lightCullingPipeline;
-    SharedPtr<ShaderPipeline>       depthMSAAResolvePipeline;
-    SharedPtr<ShaderPipeline>       depthNormalMSAAResolvePipeline;
-    SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveNormalPipeline;
-    SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveVelocityPipeline;
-    SharedPtr<ShaderPipeline>       surfaceOutputMSAAResolveNormalVelocityPipeline;
-    SharedPtr<ShaderPipeline>       finalPostProcessPipeline;
+    SharedPtr<ShaderPipeline>       ssrTracePipeline;
     SharedPtr<ShaderPipeline>       taaResolvePipeline;
-    SharedPtr<ShaderPipeline>       luminancePass1Pipeline;
-    SharedPtr<ShaderPipeline>       luminancePass2Pipeline;
+    SharedPtr<ShaderPipeline>       finalPostProcessPipeline;
 
     ConvolutionBloomKernelGenerator convolutionBloomKernelGenerator;
     uint64_t                        nextConvolutionBloomKernelGenerationSerial = 0;
@@ -225,6 +218,7 @@ private:
     ScreenSpaceAO                   screenSpaceAO;
     ScreenSpaceDepthPyramid         screenSpaceDepthPyramid;
     Bloom                           bloom;
+    PostLuminance                   postLuminance;
     IBLBaker                        iblBaker;
     ProbeBakeSystem                 probeBakeSystem;
     ShaderPipelineBootstrap         shaderPipelineBootstrap;

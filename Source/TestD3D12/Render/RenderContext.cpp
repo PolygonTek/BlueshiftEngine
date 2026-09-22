@@ -65,6 +65,10 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
         BE_WARNLOG("RenderContext::Init: failed to create CSM depth texture\n");
     }
 
+    if (!shadowAtlas.Ensure(initialRenderFrameSettings)) {
+        BE_WARNLOG("RenderContext::Init: failed to create local shadow atlas\n");
+    }
+
     InitPipelines();
 
     if (!textureStreamingFeedback.Init()) {
@@ -94,6 +98,8 @@ void RenderContext::Shutdown() {
     textureStreamingFeedback.Shutdown();
 
     ReleasePipelines();
+
+    shadowAtlas.Destroy();
 
     DestroyCSMDepthTexture();
     DestroyFrameCompositionTexture();
@@ -645,6 +651,10 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
     // CSM depth texture 가 없거나 해상도가 바뀌었으면 새로 생성한다.
     if (!EnsureCSMDepthTexture(renderFrameSettings.csmResolution)) {
         BE_WARNLOG("RenderContext::BeginFrame: failed to create CSM depth texture\n");
+    }
+
+    if (!shadowAtlas.Ensure(renderFrameSettings)) {
+        BE_WARNLOG("RenderContext::BeginFrame: failed to update local shadow atlas\n");
     }
 
     if (options.swapChainOutput && this == renderSystem->mainRenderContext) {

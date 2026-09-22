@@ -18,6 +18,7 @@
 #include "GpuTiming.h"
 #include "RenderFrameData.h"
 #include "RenderFrameSettings.h"
+#include "ShadowAtlas.h"
 #include "Render/Texture/TextureStreamingFeedback.h"
 #include "Render/Mesh/GuiMesh.h"
 
@@ -44,8 +45,8 @@ class RenderBackend;
 class RenderContext {
     friend class RenderSystem;
     friend class RenderBackend;
-    friend class GpuTiming;
     friend class RenderFrameData;
+    friend class GpuTiming;
 
     template <typename T>
     using PlainStatValue = T;
@@ -117,6 +118,8 @@ public:
     RHI::ViewID                     GetCSMDepthSliceDSV(uint32_t cascadeIndex) const { assert(cascadeIndex < CSMCascadeCount); return csmDepthSliceDSVs[cascadeIndex]; }
     RHI::Format                     GetCSMDepthFormat() const { return RHI::Format::D24_UNORM_S8_UINT; }
     uint32_t                        GetCSMResolution() const { return csmDepthTexture ? csmDepthTexture->GetWidth() : 0; }
+    ShadowAtlas &                   GetShadowAtlas() { return shadowAtlas; }
+    const ShadowAtlas &             GetShadowAtlas() const { return shadowAtlas; }
 
     GuiMesh &                       GetGuiMesh() { return guiMesh; }
 
@@ -211,6 +214,7 @@ private:
     RHI::Texture *                  csmDepthTexture = nullptr;
     RHI::ViewID                     csmDepthSRV = RHI::ViewID::InvalidID;
     RHI::ViewID                     csmDepthSliceDSVs[CSMCascadeCount] = {};
+    ShadowAtlas                     shadowAtlas;
     RHI::ImGuiOverlay *             imguiOverlay = nullptr;
     BE1::Color4                     baseClearColor = BE1::Color4::black;
 

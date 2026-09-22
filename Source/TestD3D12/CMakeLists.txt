@@ -142,6 +142,12 @@ set(SRC_FILES
     Render/RenderCapture.cpp
     Render/RenderCvars.h
     Render/RenderCvars.cpp
+    Render/ShadowAtlas.h
+    Render/ShadowAtlas.cpp
+    Render/ShadowAtlasAllocator.h
+    Render/ShadowAtlasAllocator.cpp
+    Render/ShadowAtlasAllocatorTests.h
+    Render/ShadowAtlasAllocatorTests.cpp
     Render/ColorGradingLUTGenerator.h
     Render/ColorGradingLUTGenerator.cpp
     Render/ConvolutionBloomKernelGenerator.h
@@ -174,6 +180,8 @@ set(SRC_FILES
     Render/Bloom_Convolution.cpp
     Render/BloomResources.h
     Render/BloomResources.cpp
+    Render/PostLuminance.h
+    Render/PostLuminance.cpp
     Render/ScreenSpaceAO.h
     Render/ScreenSpaceAO.cpp
     Render/ScreenSpaceAOResources.h

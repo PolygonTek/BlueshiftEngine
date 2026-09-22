@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "ScreenSpaceAO.h"
+#include "Render/Backend/RenderBackend.h"
 #include "Render/RenderInternal.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
@@ -203,13 +204,15 @@ bool ScreenSpaceAO::PrepareDispatch(const ScreenSpaceAOFrameData &data, const Re
     return !needTempTexture || textures.tempTexture;
 }
 
-void ScreenSpaceAO::Dispatch(RHI::CommandList *commandList, const RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t frameIndex, const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, const DispatchParams &params) const {
+void ScreenSpaceAO::Dispatch(RenderBackend &backend, const DispatchParams &params) const {
+    const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
+
     switch (data.mode) {
     case RenderAOMode::SSAO:
-        DispatchSSAO(commandList, cameraConstantBuffer, gpuTiming, frameIndex, data, settings, params);
+        DispatchSSAO(backend, params);
         break;
     case RenderAOMode::GTAO:
-        DispatchGTAO(commandList, cameraConstantBuffer, gpuTiming, frameIndex, data, settings, params);
+        DispatchGTAO(backend, params);
         break;
     default:
         assert(false);

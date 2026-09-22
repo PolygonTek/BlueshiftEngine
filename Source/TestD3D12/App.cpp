@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderContext.h"
+#include "Render/ShadowAtlasAllocatorTests.h"
 #include "Render/Backend/RenderBackend.h"
 #include "Render/RenderCapture.h"
 #include "Render/RenderCvars.h"
@@ -39,6 +40,10 @@ BE1::CVar       app_convolutionBloomAperturePreset("app_convolutionBloomAperture
 App             app;
 
 void App::Init(void *mainWindowHandle) {
+#ifdef ENABLE_SHADOW_ATLAS_ALLOCATOR_TESTS
+    std::exit(RunShadowAtlasAllocatorTests());
+#endif
+
     PROFILER_INIT();
 
     loadingSystem.Init();
@@ -320,18 +325,19 @@ void App::RenderRunningFrame(uint64_t frameUsec) {
 
     renderSystem->UpdateFrame();
 
-#ifdef ENABLE_IMGUI
-    mainRenderContext->RenderImGui([this]() {
-        BuildImGuiOverlay();
-    });
-#endif
-
     renderWorld->BeginFrame();
 
     RenderScene();
     RenderGUI();
 
     renderWorld->EndFrame();
+
+#ifdef ENABLE_IMGUI
+    // 현재 프레임의 카메라별 atlas snapshot 을 UI 에서 읽을 수 있도록 장면 구성 후 캡처한다.
+    mainRenderContext->RenderImGui([this]() {
+        BuildImGuiOverlay();
+    });
+#endif
 
     mainRenderContext->EndFrame();
 
