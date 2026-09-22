@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     enginePath.CleanPath();
     BE1::Engine::InitBase(4096, enginePath, SystemLog, SystemError);
 
-    //Test::TestContainer();
+    Test::TestContainer();
 
     Test::TestLexer();
 

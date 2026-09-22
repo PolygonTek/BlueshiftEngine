@@ -87,6 +87,8 @@ private:
 
     void                            InitDebugDraw();
 
+    void                            ExecuteFrame(RenderFrame *frame);
+
     const void *                    ExecuteRenderWork(const void *data);
     const void *                    ExecuteBeginContext(const void *data);
     const void *                    ExecuteDrawCamera(const void *data);

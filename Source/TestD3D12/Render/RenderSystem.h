@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma once
+
+#include "Containers/RingBuffer.h"
 #include "RHI/RHI.h"
 #include "GpuFFT.h"
 #include "GpuOcean.h"
@@ -44,7 +47,7 @@ class Texture;
 
     - RenderContext 생성/파괴
     - 렌더 스레드와 프레임 동기화
-    - 제출된 프레임 데이터를 제출 순서대로 백엔드에서 실행
+    - 제출된 프레임 데이터 (RenderFrame) 를 제출 순서대로 백엔드에서 실행
     - 백엔드 실행과 지연 해제 리소스 정리
 
 ---------------------------------------------------------------------------------------------------
@@ -77,18 +80,16 @@ public:
     RenderContext *                 FindRenderContextByWindowHandle(void *windowHandle) const;
 
                                     // 준비된 프레임을 렌더 스레드에 제출한다. 제출된 프레임은 렌더 스레드에서 순차적으로 처리된다.
-    void                            SubmitFrame(RenderContext *renderContext, RenderFrame *frame);
+    void                            SubmitFrame(RenderFrame *frame);
 
-                                    // 주어진 프레임의 렌더링이 완료될 때까지 기다린다.
+                                    // 렌더 스레드에서 주어진 프레임의 렌더링이 완료될 때까지 기다린다.
     void                            WaitFrameRenderCompleted(const RenderFrame *frame);
 
-                                    // 주어진 렌더 컨텍스트의 모든 프레임 렌더링이 완료될 때까지 기다린다.
+                                    // 렌더 스레드에서 주어진 렌더 컨텍스트의 모든 프레임의 렌더링이 완료될 때까지 기다린다.
     void                            WaitContextRenderCompleted(const RenderContext *renderContext);
 
-                                    // 모든 렌더 컨텍스트의 모든 프레임 렌더링이 완료될 때까지 기다린다.
+                                    // 렌더 스레드에서 모든 렌더 컨텍스트들의 모든 프레임의 렌더링이 완료될 때까지 기다린다.
     void                            WaitAllRenderCompleted();
-
-    void                            RequestScreenshot(RenderContext *renderContext, const char *filename);
 
     RenderBackend *                 GetBackend() const { return backEnd; }
 
@@ -135,11 +136,6 @@ public:
     const ProbeBakeSystem &         GetProbeBakeSystem() const { return probeBakeSystem; }
 
 private:
-    struct SubmittedFrame {
-        RenderContext *             renderContext = nullptr;
-        RenderFrame *               frame = nullptr;
-    };
-
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
     void                            InitComputePipelines();
@@ -160,8 +156,8 @@ private:
                                     // 대기 중인 render work 를 메인 스왑 체인 프레임의 렌더 커맨드에 밀어 넣는다.
     void                            AttachPendingRenderWorks(RenderFrame *frame);
 
+    RenderFrame *                   WaitSubmittedFrame();
     void                            MarkRenderCompleted(RenderFrame *frame);
-    bool                            WaitSubmittedFrame(SubmittedFrame &submittedFrame);
 
     static unsigned int             RenderThreadProc(void *param);
 
@@ -172,16 +168,15 @@ private:
     RenderBackend *                 backEnd = nullptr;
     RHI::MemoryUsage                videoMemoryUsage = {};
 
-    BE1::Array<SubmittedFrame>      submittedFrames;
-    int                             submittedFrameReadIndex = 0;
-    RenderWorkQueue                 renderWorkQueue;
-
+    BE1::RingBuffer<RenderFrame *>  submittedFrames;    // 각 컨텍스트에서 제출한 프레임을 제출 순서대로 보관하는 원형 큐
     BE1::RWLock                     frameSyncLock;
     BE1::Condition                  renderCompletedCondition;
     BE1::Condition                  updateCompletedCondition;
     BE1::PlatformThread *           renderThread = nullptr;
     bool                            isStoppingRenderThread = false;
     static thread_local bool        isRenderThread;
+
+    RenderWorkQueue                 renderWorkQueue;
 
     SharedPtr<ShaderTemplate>       msaaResolveDepthShaderTemplate;
     SharedPtr<ShaderTemplate>       msaaResolveDepthNormalShaderTemplate;

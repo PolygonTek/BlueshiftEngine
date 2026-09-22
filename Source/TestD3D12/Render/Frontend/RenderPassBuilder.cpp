@@ -23,18 +23,17 @@
 
 static uint64_t BuildOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
     //-----------------------------------------------------------
-    // 0xFFFFF00000000000 (0~1048575)   : PSO sort index
-    // 0x00000FFFFF000000 (0~1048575)   : subMesh index
-    // 0x0000000000FF0000 (0~255)       : LOD level
-    // 0x000000000000FFFF (0~65535)     : shader material index
+    // 0xFFFFF00000000000 (0~1048575)  : PSO sort index
+    // 0x00000FFFF0000000 (0~65535)    : subMesh index
+    // 0x000000000F000000 (0~15)       : LOD level
+    // 0x0000000000FFFFFF (0~16777215) : shader material index
     //-----------------------------------------------------------
     uint64_t psoIndex = pso ? (pso->sortIndex & 0xFFFFF) : 0;
-    uint64_t subMeshIndex = visSurf->subMesh ? (visSurf->subMesh->GetID() & 0xFFFFF) : 0;
-    uint64_t lodLevel = visSurf->lodLevel & 0xFF;
-    uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFF;
+    uint64_t subMeshIndex = visSurf->subMesh ? (visSurf->subMesh->GetID() & 0xFFFF) : 0;
+    uint64_t lodLevel = visSurf->lodLevel & 0xF;
+    uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFFFF;
 
-    // 비트 마스크는 정렬에만 사용한다. 실제 LOD 선택과 배치 비교에는 전체 값을 사용한다.
-    return (psoIndex << 44) | (subMeshIndex << 24) | (lodLevel << 16) | shaderMaterialIndex;
+    return (psoIndex << 44) | (subMeshIndex << 28) | (lodLevel << 24) | shaderMaterialIndex;
 }
 
 static uint32_t BuildFloatSortKey(float value) {

@@ -110,9 +110,20 @@ public:
 
     void *                          GetWindowHandle() const { return windowHandle; }
     RHI::SwapChain *                GetSwapChain() const { return swapChain; }
+    uint32_t                        GetWidth() const { return swapChain->GetWidth(); }
+    uint32_t                        GetHeight() const { return swapChain->GetHeight(); }
     bool                            GetDisplayInfo(RHI::DisplayInfo &displayInfo) const { displayInfo = this->displayInfo; return displayInfoAvailable; }
     const DisplayOutputSettings &   GetDisplayOutputSettings() const { return displayOutputSettings; }
     RHI::Texture *                  GetFrameCompositionTexture() const { return frameCompositionTexture; }
+    const BE1::Color4 &             GetBaseClearColor() const { return baseClearColor; }
+
+    RHI::Format                     GetMainRTColorFormat() const { return mainRTColorFormat; }
+    RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
+    RHI::Format                     GetPostProcessColorFormat() const;
+    uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
+    void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const;
+    void                            GetSwapChainRenderDest(RHI::RenderDest &renderDest) const;
+
     RHI::Texture *                  GetCSMDepthTexture() const { return csmDepthTexture; }
     RHI::ViewID                     GetCSMDepthSRV() const { return csmDepthSRV; }
     RHI::ViewID                     GetCSMDepthSliceDSV(uint32_t cascadeIndex) const { assert(cascadeIndex < CSMCascadeCount); return csmDepthSliceDSVs[cascadeIndex]; }
@@ -122,10 +133,6 @@ public:
     const ShadowAtlas &             GetShadowAtlas() const { return shadowAtlas; }
 
     GuiMesh &                       GetGuiMesh() { return guiMesh; }
-
-    uint32_t                        GetWidth() const { return swapChain->GetWidth(); }
-    uint32_t                        GetHeight() const { return swapChain->GetHeight(); }
-    const BE1::Color4 &             GetBaseClearColor() const { return baseClearColor; }
 
     float                           GetStatGpuAverageMsec() const { return GetStatGpuTagAverageMsec(GpuTiming::Tag::GpuFrame); }
     float                           GetStatGpuTagAverageMsec(GpuTiming::Tag tag) const;
@@ -140,13 +147,6 @@ public:
     bool                            HandleImGuiWndProc(void *hwnd, uint32_t message, uintptr_t wParam, intptr_t lParam);
     bool                            ImGuiWantsCaptureMouse() const;
     bool                            ImGuiWantsCaptureKeyboard() const;
-
-    RHI::Format                     GetMainRTColorFormat() const { return mainRTColorFormat; }
-    RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
-    RHI::Format                     GetPostProcessColorFormat() const;
-    uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
-    void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const;
-    void                            GetSwapChainRenderDest(RHI::RenderDest &renderDest) const;
 
     const RenderFrame *             GetCurrentFrontendFrame() const { return &frames[currentFrontendFrameIndex]; }
     RenderFrame *                   GetCurrentFrontendFrame() { return &frames[currentFrontendFrameIndex]; }
@@ -183,6 +183,7 @@ private:
     };
 
     void                            InitPipelines();
+    void                            InitBootstrapGlyphCacheAndPipeline();
     void                            ReleasePipelines();
     void                            CreateSwapChain(uint32_t width, uint32_t height, bool hdrOutputRequested);
     void                            UpdateDisplayOutput(const RenderFrameSettings &renderFrameSettings);
@@ -209,6 +210,7 @@ private:
     DisplayOutputSettings           displayOutputSettings;
     float                           cachedHDRPeakNitsOverride = 0.0f;
     bool                            displayOutputDirty = false;
+
     RHI::Texture *                  frameCompositionTexture = nullptr; ///< Scene, GUI, ImGui 를 합성한 뒤 프레임 끝에 백버퍼로 출력한다.
     bool                            frameCompositionTextureNeedsClear = false;
     RHI::Texture *                  csmDepthTexture = nullptr;

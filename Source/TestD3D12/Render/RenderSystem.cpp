@@ -272,8 +272,7 @@ RenderContext *RenderSystem::FindRenderContextByWindowHandle(void *windowHandle)
     return nullptr;
 }
 
-void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrame *frame) {
-    assert(renderContext);
+void RenderSystem::SubmitFrame(RenderFrame *frame) {
     assert(frame);
 
     if (IsUsingRenderThread()) {
@@ -284,26 +283,15 @@ void RenderSystem::SubmitFrame(RenderContext *renderContext, RenderFrame *frame)
         assert(frame->frameSyncState == FrameSyncState::RenderCompleted);
         frame->frameSyncState = FrameSyncState::UpdateCompleted;
 
-        SubmittedFrame &submittedFrame = submittedFrames.Alloc();
-        submittedFrame.renderContext = renderContext;
-        submittedFrame.frame = frame;
+        submittedFrames.PushBack(frame);
 
         // 렌더 스레드에게 업데이트가 완료되었다고 신호를 보낸다.
         updateCompletedCondition.Signal();
         return;
     }
 
-    // 이전에 사용이 완료된 리소스들을 해제한다.
-    RHI::renderer->FreeRetiredResources(false);
-
-    // 리소스 요청 처리
-    RHI::renderer->ProcessResourceRequests(frame->GetThreadData(0));
-
     // 현재 프레임 데이터로 렌더링 백엔드를 실행한다.
     backEnd->Execute(frame);
-
-    // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
-    RHI::renderer->DrainReleaseRequestsToRetireList();
 }
 
 void RenderSystem::WaitFrameRenderCompleted(const RenderFrame *frame) {
@@ -347,14 +335,6 @@ void RenderSystem::WaitAllRenderCompleted() {
     for (RenderContext *renderContext : renderContexts) {
         WaitContextRenderCompleted(renderContext);
     }
-}
-
-void RenderSystem::RequestScreenshot(RenderContext *renderContext, const char *filename) {
-    if (!renderContext) {
-        return;
-    }
-
-    renderContext->RequestScreenshot(filename);
 }
 
 void RenderSystem::EnqueueRenderWork(UniquePtr<RenderWork> work) {
@@ -515,11 +495,8 @@ void RenderSystem::UpdateColorGradingLUT() {
     ColorGradingLUTGenerator::Generate(settings, colorGradingLUTImage);
 
     if (!colorGradingLUTTexture->Update3D(0, 0, 0, 0,
-        ColorGradingLUTGenerator::LUTSize,
-        ColorGradingLUTGenerator::LUTSize,
-        ColorGradingLUTGenerator::LUTSize,
-        colorGradingLUTImage.GetFormat(),
-        colorGradingLUTImage.GetPixels())) {
+        ColorGradingLUTGenerator::LUTSize, ColorGradingLUTGenerator::LUTSize, ColorGradingLUTGenerator::LUTSize,
+        colorGradingLUTImage.GetFormat(), colorGradingLUTImage.GetPixels())) {
         BE_WARNLOG("RenderSystem::UpdateColorGradingLUT: failed to update LUT texture\n");
         return;
     }
@@ -534,8 +511,7 @@ void RenderSystem::DestroyColorGradingLUT() {
 }
 
 void RenderSystem::InitRenderThread() {
-    submittedFrames.SetCount(0, false);
-    submittedFrameReadIndex = 0;
+    submittedFrames.Reset();
     isStoppingRenderThread = false;
 
     // 렌더 스레드를 시작한다.
@@ -554,13 +530,37 @@ void RenderSystem::ShutdownRenderThread() {
     BE1::PlatformThread::Join(renderThread);
     renderThread = nullptr;
 
-    submittedFrames.SetCount(0, false);
-    submittedFrameReadIndex = 0;
+    submittedFrames.Reset();
     isStoppingRenderThread = false;
 }
 
+// 렌더 스레드에서 프레임이 제출될 때까지 기다리고, 제출되었다면 제출된 프레임을 리턴한다.
+RenderFrame *RenderSystem::WaitSubmittedFrame() {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitSubmittedFrame");
+
+    assert(RenderSystem::IsInRenderThread());
+
+    RenderFrame *outFrame = nullptr;
+    {
+        BE1::ScopedWriteLock lock(frameSyncLock);
+
+        // 제출된 프레임이 생기거나 렌더 스레드의 종료 요청이 들어올 때까지 기다린다.
+        updateCompletedCondition.Wait(lock, [this] {
+            return !submittedFrames.IsEmpty() || isStoppingRenderThread;
+        });
+
+        if (isStoppingRenderThread) {
+            return nullptr;
+        }
+
+        // 가장 먼저 제출된 프레임을 꺼낸다.
+        outFrame = submittedFrames.PopFront();
+    }
+    return outFrame;
+}
+
 void RenderSystem::MarkRenderCompleted(RenderFrame *frame) {
-    assert(!IsUsingRenderThread() || RenderSystem::IsInRenderThread());
+    assert(RenderSystem::IsInRenderThread());
 
     BE1::ScopedWriteLock lock(frameSyncLock);
 
@@ -571,35 +571,6 @@ void RenderSystem::MarkRenderCompleted(RenderFrame *frame) {
 
     // 메인 스레드에게 렌더링이 완료되었다고 신호를 보낸다.
     renderCompletedCondition.Signal();
-}
-
-bool RenderSystem::WaitSubmittedFrame(SubmittedFrame &submittedFrame) {
-    PROFILER_CPU_SCOPED_EVENT("RenderSystem::WaitSubmittedFrame");
-
-    assert(!IsUsingRenderThread() || RenderSystem::IsInRenderThread());
-
-    {
-        BE1::ScopedWriteLock lock(frameSyncLock);
-
-        // 제출된 프레임 데이터가 생기거나 렌더 스레드 종료 요청이 들어올 때까지 기다린다.
-        updateCompletedCondition.Wait(lock, [this] {
-            return submittedFrameReadIndex < submittedFrames.Count() || isStoppingRenderThread;
-        });
-
-        if (isStoppingRenderThread) {
-            return false;
-        }
-
-        assert(submittedFrameReadIndex < submittedFrames.Count());
-
-        submittedFrame = submittedFrames[submittedFrameReadIndex++];
-
-        if (submittedFrameReadIndex == submittedFrames.Count()) {
-            submittedFrames.SetCount(0, false);
-            submittedFrameReadIndex = 0;
-        }
-    }
-    return true;
 }
 
 unsigned int RenderSystem::RenderThreadProc(void *param) {
@@ -614,26 +585,14 @@ unsigned int RenderSystem::RenderThreadProc(void *param) {
     while (1) {
         PROFILER_CPU_SCOPED_EVENT("RenderThreadProcLoop");
 
-        SubmittedFrame submittedFrame;
-
-        // 제출된 프레임 데이터가 생길 때까지 기다린다.
-        if (!renderSystem->WaitSubmittedFrame(submittedFrame)) {
+        // 프론트엔드에서 프레임이 제출되기를 기다린다.
+        RenderFrame *backendFrame = renderSystem->WaitSubmittedFrame();
+        if (!backendFrame) {
             break;
         }
 
-        // 이전에 사용이 완료된 리소스들을 해제한다.
-        RHI::renderer->FreeRetiredResources(false);
-
-        RenderFrame *backendFrame = submittedFrame.frame;
-
-        // 리소스 요청 처리
-        RHI::renderer->ProcessResourceRequests(backendFrame->GetThreadData(0));
-
-        // 현재 백엔드 프레임 데이터로 렌더링 백엔드를 실행한다.
+        // 제출된 프레임으로 렌더링 백엔드를 실행한다.
         renderSystem->backEnd->Execute(backendFrame);
-
-        // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
-        RHI::renderer->DrainReleaseRequestsToRetireList();
 
         // 메인 스레드에게 렌더링이 완료되었음을 알린다.
         renderSystem->MarkRenderCompleted(backendFrame);
@@ -677,5 +636,5 @@ void RenderSystem::Cmd_ScreenShot(const BE1::CmdArgs &args) {
         }
     }
 
-    renderSystem->RequestScreenshot(renderContext, path);
+    renderContext->RequestScreenshot(path);
 }

@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Containers/Array.h"
+#include "Containers/RingBuffer.h"
 #include "Containers/HashTable.h"
 #include "Threading/Threading.h"
 #include "Platform/PlatformThread.h"
@@ -86,15 +87,13 @@ public:
     bool                        TimedWaitFinishAll(int msec, bool withWake = false);
 
 private:
-    bool                        IsTaskEmpty() const { return headTaskIndex == tailTaskIndex; }
+    bool                        IsTaskEmpty() const { return taskRingBuffer.IsEmpty(); }
     Task                        GetTaskInternal();
     void                        Run();
 
     static unsigned int         ThreadProc(void *param);
 
-    Array<Task>                 taskRingBuffer;                 ///< Ring buffer of task list.
-    int                         headTaskIndex = 0;
-    int                         tailTaskIndex = 0;
+    RingBuffer<Task>            taskRingBuffer;                 ///< Fixed-capacity task queue; submissions never grow it.
 
     int32_t                     activeTaskCount = 0;            ///< Number of tasks in active state.
     HashTable<int32_t, int32_t> groupActiveTaskCount;           ///< Tracks how many tasks are active in each group.

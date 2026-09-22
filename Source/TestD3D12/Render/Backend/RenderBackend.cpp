@@ -53,6 +53,19 @@ void RenderBackend::Shutdown() {
 }
 
 void RenderBackend::Execute(RenderFrame *frame) {
+    // 이전에 사용이 완료된 리소스들을 해제한다.
+    RHI::renderer->FreeRetiredResources(false);
+
+    // 리소스 요청 처리
+    RHI::renderer->ProcessResourceRequests(frame->GetThreadData(0));
+
+    ExecuteFrame(frame);
+
+    // 이번 프레임에 Release/Delete 를 요청한 리소스들을 retiredResources 목록에 추가한다.
+    RHI::renderer->DrainReleaseRequestsToRetireList();
+}
+
+void RenderBackend::ExecuteFrame(RenderFrame *frame) {
     uint64_t t0 = BE1::PlatformTime::Microseconds();
 
     // 백엔드가 처리할 프레임 데이터
@@ -92,7 +105,7 @@ void RenderBackend::Execute(RenderFrame *frame) {
             finished = true;
             continue;
         default:
-            BE_ERRLOG("RenderBackend::Execute: invalid render command ID (%i)\n", cmdId);
+            BE_ERRLOG("RenderBackend::ExecuteFrame: invalid render command ID (%i)\n", cmdId);
             finished = true;
             continue;
         }

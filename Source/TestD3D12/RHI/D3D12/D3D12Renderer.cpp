@@ -850,16 +850,13 @@ void D3D12Renderer::DrainReleaseRequestsToRetireList() {
     uint64_t computeFenceValue = SignalFence(RHI::CommandQueueType::Compute);
 
     for (D3D12ReleaseRequest &request : localRequests) {
-        retiredResources.Append(D3D12RetiredResource{ request.resourceToRelease, request.objectToDelete, graphicsFenceValue, computeFenceValue});
+        retiredResources.PushBack(D3D12RetiredResource{ request.resourceToRelease, request.objectToDelete, graphicsFenceValue, computeFenceValue});
     }
 }
 
 void D3D12Renderer::FreeRetiredResources(bool waitPendings) {
-    int retiredIndex = 0;
-
-    const int numRetiredResources = retiredResources.Count();
-    for (retiredIndex = 0; retiredIndex < numRetiredResources; ++retiredIndex) {
-        D3D12RetiredResource &retiredResource = retiredResources[retiredIndex];
+    while (!retiredResources.IsEmpty()) {
+        D3D12RetiredResource &retiredResource = retiredResources.Front();
         if (waitPendings) {
             WaitFence(RHI::CommandQueueType::Graphics, retiredResource.graphicsFenceValue);
             WaitFence(RHI::CommandQueueType::Compute, retiredResource.computeFenceValue);
@@ -874,15 +871,9 @@ void D3D12Renderer::FreeRetiredResources(bool waitPendings) {
         }
         SAFE_RELEASE(retiredResource.resourceToRelease);
         SAFE_DELETE(retiredResource.objectToDelete)
-    }
 
-    if (retiredIndex > 0) {
-        // 아직 fence 가 완료되지 않은 리소스들을 앞으로 당긴다.
-        int remainingCount = retiredResources.Count() - retiredIndex;
-        for (int i = 0; i < remainingCount; ++i) {
-            retiredResources[i] = retiredResources[retiredIndex + i];
-        }
-        retiredResources.SetCount(remainingCount, false);
+        // 완료된 항목만 제거하고, 아직 fence 가 완료되지 않은 리소스들은 큐에 유지한다.
+        retiredResources.PopFront();
     }
 }
 

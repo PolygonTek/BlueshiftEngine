@@ -194,8 +194,8 @@ public:
                                     // 할당된 메모리는 다음 프레임에서 재사용될 때 일괄적으로 해제된다.
                                     // 현재는 프런트엔드에서 이번 프레임의 렌더 데이터를 구성하는 동안에만 사용한다.
                                     // 프런트엔드/백엔드 또는 여러 스레드에서 동시에 할당하려면 별도의 동기화가 필요하다.
-    [[nodiscard]] void *            MemAlloc(int size) { return frameArena.Alloc(size); }
-    [[nodiscard]] void *            ClearedMemAlloc(int size) { return frameArena.ClearedAlloc(size); }
+    [[nodiscard]] void *            MemAlloc(int size);
+    [[nodiscard]] void *            ClearedMemAlloc(int size);
 
     uint32_t                        NumVisCameras() const { return numVisCameras; }
     VisCamera *                     GetVisCameras() const { return visCameras; }

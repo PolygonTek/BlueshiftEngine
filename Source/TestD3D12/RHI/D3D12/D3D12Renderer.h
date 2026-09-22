@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "Containers/RingBuffer.h"
 #include "../RHI.h"
 #include "D3D12Common.h"
 #include "D3D12ShaderVisibleDescriptorHeap.h"
@@ -370,7 +371,7 @@ public:
 
     BE1::Mutex                          releaseRequestMutex;
     BE1::Array<D3D12ReleaseRequest>     releaseRequests;
-    BE1::Array<D3D12RetiredResource>    retiredResources;
+    BE1::RingBuffer<D3D12RetiredResource> retiredResources;
 
     BE1::Mutex                          resourceRequestMutex;
     BE1::Array<D3D12ResourceRequest>    resourceRequests;

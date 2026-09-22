@@ -14,6 +14,8 @@
 
 #include "BlueshiftEngine.h"
 #include "Test.h"
+#include <deque>
+#include <random>
 
 class Bucket {
 public:
@@ -64,6 +66,273 @@ static void TestHashLinkMap() {
     }
 }
 
+#define CHECK(expression) do { if (!(expression)) { \
+    std::fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, #expression); \
+    std::abort(); \
+} } while (false)
+
+static void TestWrapAndGrowth() {
+    BE1::RingBuffer<int> queue;
+    CHECK(queue.IsEmpty());
+    CHECK(queue.Capacity() == 0);
+    CHECK(!queue.TryPushBack(1));
+    CHECK(queue.Capacity() == 0);
+
+    queue.Reserve(3);
+    for (int value = 1; value <= 3; ++value) {
+        CHECK(queue.TryPushBack(value));
+    }
+    CHECK(queue.IsFull());
+    CHECK(!queue.TryPushBack(4));
+    CHECK(queue.PopFront() == 1);
+    CHECK(queue.TryPushBack(4));
+    CHECK(queue[0] == 2 && queue[1] == 3 && queue[2] == 4);
+
+    // Growth must also accept an argument referring to the wrapped buffer itself.
+    queue.PushBack(queue.Front());
+    CHECK(queue.Capacity() == 6);
+    CHECK(queue.Count() == 4);
+    const auto &view = queue;
+    CHECK(view.Front() == 2 && view.Back() == 2);
+    CHECK(view[1] == 3 && view[2] == 4);
+    CHECK(queue.PopFront() == 2);
+    CHECK(queue.PopFront() == 3);
+    CHECK(queue.PopFront() == 4);
+    CHECK(queue.PopFront() == 2);
+
+    queue.Reserve(2);
+    CHECK(queue.Capacity() == 6);
+    queue.Reset();
+    CHECK(queue.IsEmpty() && queue.Capacity() == 6);
+    queue.Clear();
+    CHECK(queue.IsEmpty() && queue.Capacity() == 0);
+
+    BE1::RingBuffer<int> single(1);
+    for (int value = 0; value < 100; ++value) {
+        CHECK(single.TryPushBack(value));
+        CHECK(!single.TryPushBack(-1));
+        CHECK(single.PopFront() == value);
+    }
+}
+
+static void TestPersistentBacklog() {
+    int frames[2] = {};
+    BE1::RingBuffer<int *> queue(2);
+    queue.PushBack(&frames[0]);
+    queue.PushBack(&frames[1]);
+    for (int i = 0; i < 100000; ++i) {
+        int *frame = queue.PopFront();
+        CHECK(frame == &frames[i & 1]);
+        queue.PushBack(frame);
+        CHECK(queue.Count() == 2 && queue.Capacity() == 2);
+    }
+}
+
+static void TestAgainstDeque() {
+    std::mt19937 random(73471);
+    std::deque<int> expected;
+    BE1::RingBuffer<int> queue(3);
+
+    for (int i = 0; i < 100000; ++i) {
+        const unsigned operation = random() % 10;
+        if (operation < 4) {
+            queue.PushBack(i);
+            expected.push_back(i);
+        } else if (operation < 7 && !expected.empty()) {
+            CHECK(queue.PopFront() == expected.front());
+            expected.pop_front();
+        } else if (operation == 7) {
+            const int capacity = queue.Capacity();
+            const bool accepted = queue.TryPushBack(i);
+            CHECK(accepted == (expected.size() < static_cast<size_t>(capacity)));
+            CHECK(queue.Capacity() == capacity);
+            if (accepted) {
+                expected.push_back(i);
+            }
+        } else if (operation == 8 && queue.Capacity() < 256) {
+            queue.Reserve(queue.Capacity() + 7);
+        } else if (operation == 9 && i % 100 == 0) {
+            const int capacity = queue.Capacity();
+            queue.Reset();
+            expected.clear();
+            CHECK(queue.Capacity() == capacity);
+        }
+
+        CHECK(queue.Count() == static_cast<int>(expected.size()));
+        CHECK(queue.IsEmpty() == expected.empty());
+        for (int index = 0; index < queue.Count(); ++index) {
+            CHECK(queue[index] == expected[index]);
+        }
+    }
+}
+
+struct Lifetime {
+    static int live;
+    int value;
+
+    explicit Lifetime(int value) : value(value) { ++live; }
+    Lifetime(const Lifetime &) = delete;
+    Lifetime &operator=(const Lifetime &) = delete;
+    Lifetime(Lifetime &&rhs) noexcept : value(rhs.value) { rhs.value = -1; ++live; }
+    ~Lifetime() { --live; }
+};
+
+int Lifetime::live = 0;
+
+static void TestLifetimeAndMove() {
+    {
+        BE1::RingBuffer<Lifetime> queue(3);
+        CHECK(Lifetime::live == 0);
+        CHECK(queue.TryEmplaceBack(1));
+        CHECK(queue.TryEmplaceBack(2));
+        CHECK(queue.TryEmplaceBack(3));
+        CHECK(!queue.TryEmplaceBack(4));
+        CHECK(Lifetime::live == 3);
+        {
+            Lifetime value = queue.PopFront();
+            CHECK(value.value == 1 && Lifetime::live == 3);
+        }
+        CHECK(Lifetime::live == 2);
+        queue.EmplaceBack(4);
+        queue.Reserve(7);
+        CHECK(Lifetime::live == 3);
+        CHECK(queue[0].value == 2 && queue[1].value == 3 && queue[2].value == 4);
+
+        BE1::RingBuffer<Lifetime> moved(std::move(queue));
+        CHECK(queue.IsEmpty() && queue.Capacity() == 0);
+        CHECK(moved.Count() == 3);
+        BE1::RingBuffer<Lifetime> assigned;
+        assigned.EmplaceBack(9);
+        assigned = std::move(moved);
+        CHECK(Lifetime::live == 3);
+        CHECK(moved.IsEmpty() && moved.Capacity() == 0);
+        assigned = std::move(assigned);
+        CHECK(assigned.Front().value == 2);
+        assigned.Reset();
+        CHECK(Lifetime::live == 0 && assigned.Capacity() == 7);
+        assigned.EmplaceBack(5);
+    }
+    CHECK(Lifetime::live == 0);
+}
+
+static void TestOwnershipOnRejection() {
+    BE1::RingBuffer<std::unique_ptr<int>> queue(1);
+    queue.PushBack(std::make_unique<int>(1));
+    auto next = std::make_unique<int>(2);
+    CHECK(!queue.TryPushBack(std::move(next)));
+    CHECK(next && *next == 2);
+    CHECK(*queue.Front() == 1);
+    queue.PushBack(std::move(next));
+    CHECK(!next && queue.Count() == 2);
+    CHECK(*queue.PopFront() == 1);
+    CHECK(*queue.PopFront() == 2);
+}
+
+struct alignas(128) AlignedValue {
+    int value;
+    explicit AlignedValue(int value) : value(value) {}
+};
+
+static void TestAlignment() {
+    BE1::RingBuffer<AlignedValue> queue(3);
+    for (int i = 0; i < 50; ++i) {
+        queue.EmplaceBack(i);
+    }
+    for (int i = 0; i < queue.Count(); ++i) {
+        CHECK(reinterpret_cast<uintptr_t>(&queue[i]) % alignof(AlignedValue) == 0);
+        CHECK(queue[i].value == i);
+    }
+}
+
+struct CopyOnGrow {
+    static int live;
+    static int copiesBeforeThrow;
+    int value;
+
+    explicit CopyOnGrow(int value) : value(value) {
+        if (value < 0) {
+            throw std::runtime_error("construction failure");
+        }
+        ++live;
+    }
+    CopyOnGrow(const CopyOnGrow &rhs) : value(rhs.value) {
+        if (copiesBeforeThrow == 0) {
+            throw std::runtime_error("copy failure");
+        }
+        if (copiesBeforeThrow > 0) {
+            --copiesBeforeThrow;
+        }
+        ++live;
+    }
+    CopyOnGrow(CopyOnGrow &&rhs) noexcept(false) : value(rhs.value) { ++live; }
+    ~CopyOnGrow() { --live; }
+};
+
+int CopyOnGrow::live = 0;
+int CopyOnGrow::copiesBeforeThrow = -1;
+
+static void TestConstructionFailures() {
+    {
+        BE1::RingBuffer<CopyOnGrow> queue(2);
+        queue.EmplaceBack(1);
+        queue.EmplaceBack(2);
+        CHECK(queue.PopFront().value == 1);
+        queue.EmplaceBack(3);
+
+        CopyOnGrow::copiesBeforeThrow = 1;
+        bool failed = false;
+        try {
+            queue.Reserve(8);
+        } catch (const std::runtime_error &) {
+            failed = true;
+        }
+        CHECK(failed && CopyOnGrow::live == 2);
+        CHECK(queue.Capacity() == 2 && queue.Count() == 2);
+        CHECK(queue.Front().value == 2 && queue.Back().value == 3);
+
+        CopyOnGrow::copiesBeforeThrow = 2;
+        failed = false;
+        try {
+            queue.PushBack(queue.Front());
+        } catch (const std::runtime_error &) {
+            failed = true;
+        }
+        CHECK(failed && CopyOnGrow::live == 2);
+        CHECK(queue.Capacity() == 2 && queue.Count() == 2);
+        CHECK(queue.Front().value == 2 && queue.Back().value == 3);
+
+        CopyOnGrow::copiesBeforeThrow = -1;
+        failed = false;
+        try {
+            queue.EmplaceBack(-1);
+        } catch (const std::runtime_error &) {
+            failed = true;
+        }
+        CHECK(failed && CopyOnGrow::live == 2);
+        CHECK(queue.Capacity() == 2 && queue.Count() == 2);
+        queue.PushBack(queue.Back());
+        CHECK(queue.Count() == 3 && CopyOnGrow::live == 3);
+        CHECK(queue.PopFront().value == 2);
+        CHECK(queue.PopFront().value == 3);
+        CHECK(queue.PopFront().value == 3);
+    }
+    CHECK(CopyOnGrow::live == 0);
+}
+
+static void TestRingBuffer() {
+    TestWrapAndGrowth();
+    TestPersistentBacklog();
+    TestAgainstDeque();
+    TestLifetimeAndMove();
+    TestOwnershipOnRejection();
+    TestAlignment();
+    TestConstructionFailures();
+    std::puts("RingBuffer tests passed");
+}
+
+#undef CHECK
+
 void Test::TestContainer() {
     TestHashLinkMap();
+    TestRingBuffer();
 }

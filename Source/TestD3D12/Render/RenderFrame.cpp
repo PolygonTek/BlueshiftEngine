@@ -106,6 +106,18 @@ void RenderFrame::Shutdown() {
     frameArena.Shutdown();
 }
 
+void *RenderFrame::MemAlloc(int size) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(frameSyncState == FrameSyncState::RenderCompleted);
+    return frameArena.Alloc(size);
+}
+
+void *RenderFrame::ClearedMemAlloc(int size) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(frameSyncState == FrameSyncState::RenderCompleted);
+    return frameArena.ClearedAlloc(size);
+}
+
 void RenderFrame::BeginFrame(const RenderFrameSettings &renderFrameSettings) {
     PROFILER_CPU_SCOPED_EVENT("RenderFrame::BeginFrame");
 

@@ -22,7 +22,8 @@
 BE_NAMESPACE_BEGIN
 
 TaskManager::TaskManager(int maxTasks) {
-    taskRingBuffer.SetCount(maxTasks);
+    assert(maxTasks > 0);
+    taskRingBuffer.Reserve(maxTasks);
 }
 
 TaskManager::~TaskManager() {
@@ -43,8 +44,7 @@ void TaskManager::Start(int numThreads) {
         numThreads = numLogicalProcessors;
     }
 
-    tailTaskIndex = 0;
-    headTaskIndex = 0;
+    taskRingBuffer.Reset();
     activeTaskCount = 0;
     groupActiveTaskCount.Clear();
     stopping = false;
@@ -81,8 +81,7 @@ void TaskManager::Stop() {
 
         threads.Clear();
 
-        headTaskIndex = 0;
-        tailTaskIndex = 0;
+        taskRingBuffer.Reset();
         activeTaskCount = 0;
         groupActiveTaskCount.Clear();
         stopping = false;
@@ -107,18 +106,10 @@ bool TaskManager::AddTask(TaskFunc taskFunction, void *data, int32_t groupId, bo
         return false;
     }
 
-    int nextTaskIndex = (tailTaskIndex + 1) % taskRingBuffer.Count();
-    if (nextTaskIndex == headTaskIndex) {
+    if (!taskRingBuffer.TryPushBack(Task{ taskFunction, data, groupId })) {
         BE_ERRLOG("TaskManager::AddTask: Task queue is full, task rejected\n");
         return false;
     }
-
-    Task &task = taskRingBuffer[tailTaskIndex];
-    task.groupId = groupId;
-    task.function = taskFunction;
-    task.data = data;
-
-    tailTaskIndex = nextTaskIndex;
 
     ++activeTaskCount;
 
@@ -143,18 +134,10 @@ bool TaskManager::AddTask(TaskWorker *taskWorker, int32_t groupId, bool withWake
         return false;
     }
 
-    int nextTaskIndex = (tailTaskIndex + 1) % taskRingBuffer.Count();
-    if (nextTaskIndex == headTaskIndex) {
+    if (!taskRingBuffer.TryPushBack(Task{ nullptr, taskWorker, groupId })) {
         BE_ERRLOG("TaskManager::AddTask: Task queue is full, task rejected\n");
         return false;
     }
-
-    Task &task = taskRingBuffer[tailTaskIndex];
-    task.groupId = groupId;
-    task.function = nullptr;
-    task.data = taskWorker;
-
-    tailTaskIndex = nextTaskIndex;
 
     ++activeTaskCount;
 
@@ -243,10 +226,7 @@ bool TaskManager::TimedWaitFinishAll(int ms, bool withWake) {
 }
 
 Task TaskManager::GetTaskInternal() {
-    Task task = taskRingBuffer[headTaskIndex];
-    headTaskIndex = (headTaskIndex + 1) % taskRingBuffer.Count();
-
-    return task;
+    return taskRingBuffer.PopFront();
 }
 
 void TaskManager::Run() {

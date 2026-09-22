@@ -437,6 +437,10 @@ void RenderContext::InitPipelines() {
         }
     }
 
+    InitBootstrapGlyphCacheAndPipeline();
+}
+
+void RenderContext::InitBootstrapGlyphCacheAndPipeline() {
     // bootstrap 화면의 DrawBar 가 첫 프레임부터 보이도록 white unlit GUI pipeline 을 미리 준비한다.
     GraphicsPipelineDesc bootstrapGuiPipelineDesc;
     bootstrapGuiPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(VertexInputLayoutId::XyzStColor);
@@ -449,11 +453,11 @@ void RenderContext::InitPipelines() {
     }
 
     // bootstrap 텍스트가 첫 프레임부터 보이도록 필요한 glyph 와 font material pipeline 을 미리 준비한다.
-    static constexpr char BootstrapTextGlyphs[] = "Building shader pipelines... 0123456789%Shader pipeline build failed";
+    static constexpr char bootstrapTextGlyphs[] = "Building shader pipelines... 0123456789%Shader pipeline build failed";
     bool cachedGlyphs[128] = {};
     SharedPtr<Material> bootstrapFontMaterial;
 
-    for (const unsigned char character : BootstrapTextGlyphs) {
+    for (const unsigned char character : bootstrapTextGlyphs) {
         if (character == 0 || character >= COUNT_OF(cachedGlyphs) || cachedGlyphs[character]) {
             continue;
         }
@@ -515,8 +519,7 @@ bool RenderContext::IsGpuTagMeasured(GpuTiming::Tag tag) const {
     if (tagIndex < 0 || tagIndex >= static_cast<int>(GpuTiming::Tag::Count)) {
         return false;
     }
-    const uint64_t tagMask = uint64_t{1} << tagIndex;
-    return (statGpuMeasuredTagMask.load() & tagMask) != 0;
+    return (statGpuMeasuredTagMask.load() & BIT64(tagIndex)) != 0;
 }
 
 RenderContext::Stats RenderContext::GetStats() const {
@@ -707,7 +710,7 @@ void RenderContext::EndFrame() {
     activeFrameOptions = {};
     frameCount++;
 
-    renderSystem->SubmitFrame(this, frame);
+    renderSystem->SubmitFrame(frame);
 }
 
 bool RenderContext::BeginImGui() {
