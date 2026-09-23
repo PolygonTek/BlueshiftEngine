@@ -66,13 +66,13 @@ void ScreenSpaceAO::Init() {
 void ScreenSpaceAO::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const {
     static constexpr char groupName[] = "ScreenSpaceAO";
 
+    bootstrap.TrackPipeline(groupName, aoBilateralHorizontalPipeline);
+    bootstrap.TrackPipeline(groupName, aoBilateralVerticalPipeline);
+    bootstrap.TrackPipeline(groupName, aoUpsamplePipeline);
     bootstrap.TrackPipeline(groupName, ssao16FullResPipeline);
     bootstrap.TrackPipeline(groupName, ssao16HalfResPipeline);
     bootstrap.TrackPipeline(groupName, ssao8FullResPipeline);
     bootstrap.TrackPipeline(groupName, ssao8HalfResPipeline);
-    bootstrap.TrackPipeline(groupName, aoBilateralHorizontalPipeline);
-    bootstrap.TrackPipeline(groupName, aoBilateralVerticalPipeline);
-    bootstrap.TrackPipeline(groupName, aoUpsamplePipeline);
     bootstrap.TrackPipeline(groupName, gtaoPrefilterPipeline);
     bootstrap.TrackPipeline(groupName, gtaoMainLowPipeline);
     bootstrap.TrackPipeline(groupName, gtaoMainMediumPipeline);
@@ -83,42 +83,41 @@ void ScreenSpaceAO::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) 
 }
 
 void ScreenSpaceAO::Shutdown() {
-    aoBilateralHorizontalPipeline.reset();
     aoBilateralHorizontalShaderTemplate.reset();
-    aoBilateralVerticalPipeline.reset();
     aoBilateralVerticalShaderTemplate.reset();
-    aoUpsamplePipeline.reset();
     aoUpsampleShaderTemplate.reset();
-
-    ssao16FullResPipeline.reset();
     ssao16FullResShaderTemplate.reset();
-    ssao16HalfResPipeline.reset();
     ssao16HalfResShaderTemplate.reset();
-    ssao8FullResPipeline.reset();
     ssao8FullResShaderTemplate.reset();
-    ssao8HalfResPipeline.reset();
     ssao8HalfResShaderTemplate.reset();
-
-    gtaoPrefilterPipeline.reset();
     gtaoPrefilterShaderTemplate.reset();
-    gtaoMainLowPipeline.reset();
     gtaoMainLowShaderTemplate.reset();
-    gtaoMainMediumPipeline.reset();
     gtaoMainMediumShaderTemplate.reset();
-    gtaoMainHighPipeline.reset();
     gtaoMainHighShaderTemplate.reset();
-    gtaoMainUltraPipeline.reset();
     gtaoMainUltraShaderTemplate.reset();
-    gtaoDenoisePipeline.reset();
     gtaoDenoiseShaderTemplate.reset();
-    gtaoDebugPipeline.reset();
     gtaoDebugShaderTemplate.reset();
 
-    frameSSAOPSO = nullptr;
-    frameSSAOHalfResolutionPSO = nullptr;
-    frameAOUpsamplePSO = nullptr;
+    aoBilateralHorizontalPipeline.reset();
+    aoBilateralVerticalPipeline.reset();
+    aoUpsamplePipeline.reset();
+    ssao16FullResPipeline.reset();
+    ssao16HalfResPipeline.reset();
+    ssao8FullResPipeline.reset();
+    ssao8HalfResPipeline.reset();
+    gtaoPrefilterPipeline.reset();
+    gtaoMainLowPipeline.reset();
+    gtaoMainMediumPipeline.reset();
+    gtaoMainHighPipeline.reset();
+    gtaoMainUltraPipeline.reset();
+    gtaoDenoisePipeline.reset();
+    gtaoDebugPipeline.reset();
+
     frameAOBilateralHorizontalPSO = nullptr;
     frameAOBilateralVerticalPSO = nullptr;
+    frameAOUpsamplePSO = nullptr;
+    frameSSAOPSO = nullptr;
+    frameSSAOHalfResolutionPSO = nullptr;
     frameGTAOPrefilterPSO = nullptr;
     frameGTAOMainPSO = nullptr;
     frameGTAODenoisePSO = nullptr;

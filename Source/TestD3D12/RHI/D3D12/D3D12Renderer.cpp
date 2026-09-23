@@ -305,11 +305,13 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     resourceShaderVisibleDescriptorHeap.Init(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MaxShaderVisibleResourceDescriptors);
     samplerShaderVisibleDescriptorHeap.Init(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, MaxShaderVisibleSamplerDescriptors);
 
-    // shader-visible 리소스 디스크립터 힙의 [0, MaxBindlessResourceDescriptors) 영역은 bindless 디스크립터로 사용 (0번 인덱스는 실제로는 invalid index 로 사용)
-    bindlessRessourceDescriptorAllocator.Init({ &resourceShaderVisibleDescriptorHeap, 0, MaxBindlessResourceDescriptors });
+    // shader-visible 리소스 디스크립터 힙의 [0, MaxBindlessResourceDescriptors) 영역은 persistent 영역으로,
+    // bindless 디스크립터로 사용 (0번 인덱스는 실제로는 invalid index 로 사용)
+    bindlessRessourceDescriptorAllocator.Init({ &resourceShaderVisibleDescriptorHeap, 0, MaxPersistentResourceDescriptors });
 
-    // shader-visible 샘플러 디스크립터 힙의 [0, MaxBindlessSamplerDescriptors) 영역은 bindless 디스크립터로 사용 (0번 인덱스는 실제로는 invalid index 로 사용)
-    bindlessSamplerDescriptorAllocator.Init({ &samplerShaderVisibleDescriptorHeap, 0, MaxBindlessSamplerDescriptors });
+    // shader-visible 샘플러 디스크립터 힙의 [0, MaxBindlessSamplerDescriptors) 영역은 persistent 영역으로,
+    // bindless 디스크립터로 사용 (0번 인덱스는 실제로는 invalid index 로 사용)
+    bindlessSamplerDescriptorAllocator.Init({ &samplerShaderVisibleDescriptorHeap, 0, MaxPersistentSamplerDescriptors });
 
     // shader cache 디렉토리 초기화
     shaderCacheDir = "Cache/D3D12CompiledShaderCache";

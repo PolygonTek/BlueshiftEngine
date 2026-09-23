@@ -979,6 +979,7 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrame *frame, RenderObject *rend
     if (!visObject) {
         return nullptr;
     }
+
     renderObject->viewCount = viewCount;
     renderObject->visObject = visObject;
     visObject->meshLOD = frame->GetRenderFrameSettings().meshLOD ? renderObject->GetMeshLOD() : 0;
@@ -1011,6 +1012,7 @@ VisObject *RenderWorld::RegisterVisObject(RenderFrame *frame, RenderObject *rend
             materials[i] = frame->RetainMaterial(renderObject->desc.materials[i]);
         }
     }
+
     if (renderObject->desc.text && !renderObject->desc.text->text.IsEmpty()) {
         RenderObject::TextDesc &textDesc = *(renderObject->desc.text);
         VisText *visText = frame->AllocVisText();
@@ -1317,6 +1319,7 @@ static int SelectMeshLOD(const SubMesh *subMesh, int requestedLOD, float squared
     if (requestedLOD == 0 || numLODs <= 1) {
         return 0;
     }
+
     if (requestedLOD > 0) {
         return BE1::Min(requestedLOD, numLODs - 1);
     }
@@ -1324,6 +1327,7 @@ static int SelectMeshLOD(const SubMesh *subMesh, int requestedLOD, float squared
     if (squaredLODErrorLimit <= 0.0f) {
         return 0;
     }
+
     for (int level = numLODs - 1; level > 0; level--) {
         const float error = subMesh->GetLODError(level);
         if (error * error <= squaredLODErrorLimit) {
@@ -1490,6 +1494,7 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *render
     if (renderCamera->GetDesc().clearMethod != RenderCamera::ClearMethod::Skybox) {
         return;
     }
+
     if (!skyboxMaterial || !meshManager.defaultBoxMesh || !meshManager.defaultBoxMesh->IsReady()) {
         return;
     }

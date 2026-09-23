@@ -42,23 +42,25 @@ void HiZ::Init() {
 }
 
 void HiZ::Shutdown() {
-    firstBatchPipeline.reset();
     firstBatchShaderTemplate.reset();
-    frameFirstBatchPSO = nullptr;
-    firstBatchMSAAPipeline.reset();
     firstBatchMSAAShaderTemplate.reset();
-    frameFirstBatchMSAAPSO = nullptr;
-    mipBatchPipeline.reset();
     mipBatchShaderTemplate.reset();
-    frameMipBatchPSO = nullptr;
-    oddDimPipeline.reset();
     oddDimShaderTemplate.reset();
-    frameOddDimPSO = nullptr;
-    cullInstancesPipeline.reset();
     cullInstancesShaderTemplate.reset();
-    frameCullInstancesPSO = nullptr;
-    debugPreviewPipeline.reset();
     debugPreviewShaderTemplate.reset();
+
+    firstBatchPipeline.reset();
+    firstBatchMSAAPipeline.reset();
+    mipBatchPipeline.reset();
+    oddDimPipeline.reset();
+    cullInstancesPipeline.reset();
+    debugPreviewPipeline.reset();
+
+    frameFirstBatchPSO = nullptr;
+    frameFirstBatchMSAAPSO = nullptr;
+    frameMipBatchPSO = nullptr;
+    frameOddDimPSO = nullptr;
+    frameCullInstancesPSO = nullptr;
     frameDebugPreviewPSO = nullptr;
 }
 

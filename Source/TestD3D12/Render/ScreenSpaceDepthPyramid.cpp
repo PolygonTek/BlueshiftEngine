@@ -37,14 +37,16 @@ void ScreenSpaceDepthPyramid::Init() {
 }
 
 void ScreenSpaceDepthPyramid::Shutdown() {
-    firstMipPipeline.reset();
     firstMipShaderTemplate.reset();
-    frameFirstMipPSO = nullptr;
-    firstMipMSAAPipeline.reset();
     firstMipMSAAShaderTemplate.reset();
-    frameFirstMipMSAAPSO = nullptr;
-    reducePipeline.reset();
     reduceShaderTemplate.reset();
+
+    firstMipPipeline.reset();
+    firstMipMSAAPipeline.reset();
+    reducePipeline.reset();
+
+    frameFirstMipPSO = nullptr;
+    frameFirstMipMSAAPSO = nullptr;
     frameReducePSO = nullptr;
 }
 

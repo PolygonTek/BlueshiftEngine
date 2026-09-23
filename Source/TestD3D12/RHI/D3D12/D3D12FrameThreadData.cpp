@@ -66,11 +66,12 @@ void D3D12FrameThreadData::Init(D3D12Renderer *renderer, int32_t frameIndex, int
     const uint32_t numSamplerDescriptorsPerThread = numSamplerDescriptorsPerFrame / numThreads;
     assert(numSamplerDescriptorsPerThread > 0);
 
-    UINT baseResourceDescriptorIndex = D3D12Renderer::MaxBindlessResourceDescriptors + frameIndex * numResourceDescriptorsPerFrame + threadIndex * numResourceDescriptorsPerThread;
-    UINT baseSamplerDescriptorIndex = D3D12Renderer::MaxBindlessSamplerDescriptors + frameIndex * numSamplerDescriptorsPerFrame + threadIndex * numSamplerDescriptorsPerThread;
+    UINT baseResourceDescriptorIndex = D3D12Renderer::MaxPersistentResourceDescriptors + frameIndex * numResourceDescriptorsPerFrame + threadIndex * numResourceDescriptorsPerThread;
+    UINT baseSamplerDescriptorIndex = D3D12Renderer::MaxPersistentSamplerDescriptors + frameIndex * numSamplerDescriptorsPerFrame + threadIndex * numSamplerDescriptorsPerThread;
 
-    // shader-visible 힙의 임시 영역 (후반 절반 영역) 을 프레임/스레드별로 나누어 descriptor range pool 로 관리한다.
-    // 이곳에서 소유하는 풀을 AllocGraphicsCommandList() / AllocComputeCommandList() 에서 커맨드 리스트에 전달한다.
+    // shader-visible 힙의 후반 절반 영역은 엔진 용어로 transient 영역이라고 부른다.
+    // transient 영역은 한 프레임에서만 수명이 보존되는 디스크립터 힙 영역이다.
+    // 프레임/스레드별로 나누어 descriptor range pool 로 관리한다.
     resourceDescriptorRangePool = new D3D12DescriptorRangePool;
     resourceDescriptorRangePool->Init({&renderer->resourceShaderVisibleDescriptorHeap, baseResourceDescriptorIndex, numResourceDescriptorsPerThread});
 

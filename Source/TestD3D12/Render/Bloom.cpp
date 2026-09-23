@@ -41,23 +41,25 @@ void Bloom::Init() {
 }
 
 void Bloom::Shutdown() {
-    bloomPrefilterPipeline.reset();
     bloomPrefilterShaderTemplate.reset();
-    frameBloomPrefilterPSO = nullptr;
-    bloomDownsamplePipeline.reset();
     bloomDownsampleShaderTemplate.reset();
-    frameBloomDownsamplePSO = nullptr;
-    bloomUpsamplePipeline.reset();
     bloomUpsampleShaderTemplate.reset();
-    frameBloomUpsamplePSO = nullptr;
-    convolutionBloomScreenPreparePipeline.reset();
     convolutionBloomScreenPrepareShaderTemplate.reset();
-    frameConvolutionBloomScreenPreparePSO = nullptr;
-    convolutionBloomKernelPreparePipeline.reset();
     convolutionBloomKernelPrepareShaderTemplate.reset();
-    frameConvolutionBloomKernelPreparePSO = nullptr;
-    convolutionBloomResolvePipeline.reset();
     convolutionBloomResolveShaderTemplate.reset();
+
+    bloomPrefilterPipeline.reset();
+    bloomDownsamplePipeline.reset();
+    bloomUpsamplePipeline.reset();
+    convolutionBloomScreenPreparePipeline.reset();
+    convolutionBloomKernelPreparePipeline.reset();
+    convolutionBloomResolvePipeline.reset();
+
+    frameBloomPrefilterPSO = nullptr;
+    frameBloomDownsamplePSO = nullptr;
+    frameBloomUpsamplePSO = nullptr;
+    frameConvolutionBloomScreenPreparePSO = nullptr;
+    frameConvolutionBloomKernelPreparePSO = nullptr;
     frameConvolutionBloomResolvePSO = nullptr;
 }
 

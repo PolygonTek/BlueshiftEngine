@@ -222,7 +222,7 @@ void Anim::InternalData::WriteBinaryAnim(const char *filename) const {
     fp->Write(&bAnimHeader, sizeof(bAnimHeader));
     
     // --- frame times ---
-    int frameTimesCount = frameTimes.Count();
+    const int frameTimesCount = frameTimes.Count();
     fp->Write(&frameTimesCount, sizeof(frameTimesCount));
     fp->Write(frameTimes.Ptr(), frameTimes.MemoryUsed());
 

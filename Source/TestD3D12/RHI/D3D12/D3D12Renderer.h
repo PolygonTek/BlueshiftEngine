@@ -287,11 +287,11 @@ public:
     static D3D12Renderer *              GetRenderer() { return static_cast<D3D12Renderer *>(RHI::renderer); }
 
     static constexpr uint32_t           MaxShaderVisibleResourceDescriptors = 1000000; // Resource Binding Tier 1 Limit
-    static constexpr uint32_t           MaxBindlessResourceDescriptors = 500000; // 앞부분 절반을 Bindless Resource 에 사용한다.
-    static constexpr uint32_t           MaxTransientResourceDescriptors = MaxShaderVisibleResourceDescriptors - MaxBindlessResourceDescriptors;
+    static constexpr uint32_t           MaxPersistentResourceDescriptors = 500000; // 앞부분 절반을 Bindless Resource 에 사용한다.
+    static constexpr uint32_t           MaxTransientResourceDescriptors = MaxShaderVisibleResourceDescriptors - MaxPersistentResourceDescriptors;
     static constexpr uint32_t           MaxShaderVisibleSamplerDescriptors = 2048;
-    static constexpr uint32_t           MaxBindlessSamplerDescriptors = 256;
-    static constexpr uint32_t           MaxTransientSamplerDescriptors = MaxShaderVisibleSamplerDescriptors - MaxBindlessSamplerDescriptors;
+    static constexpr uint32_t           MaxPersistentSamplerDescriptors = 256;
+    static constexpr uint32_t           MaxTransientSamplerDescriptors = MaxShaderVisibleSamplerDescriptors - MaxPersistentSamplerDescriptors;
 
     struct D3D12QueueFence {
         ID3D12Fence *                   fence = nullptr;

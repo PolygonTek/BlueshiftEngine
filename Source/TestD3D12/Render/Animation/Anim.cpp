@@ -104,7 +104,7 @@ SharedPtr<Anim> Anim::CreateAdditiveAnim(const char *hashName, const BE1::JointP
         GetSingleFrame(i, numJointIndexes, jointIndexes, jointFrame);
 
         for (int j = 0; j < numJointIndexes; j++) {
-            int jointIndex = jointIndexes[j];
+            const int jointIndex = jointIndexes[j];
             const JointInfo *jointInfoPtr = &internalData.joints[jointIndex];
 
             if (jointInfoPtr->componentBits == 0) {
@@ -160,7 +160,7 @@ SharedPtr<Anim> Anim::CreateAdditiveAnim(const char *hashName, const BE1::JointP
     }
 
     for (int j = 0; j < numJointIndexes; j++) {
-        int jointIndex = jointIndexes[j];
+        const int jointIndex = jointIndexes[j];
         additiveAnim->internalData.baseFrame[jointIndex] -= firstFrame[jointIndex];
     }
 
@@ -534,7 +534,7 @@ void Anim::TimeToFrameInterpolation(int time, FrameInterpolation &frameInterpola
         return;
     }
 
-    int lastFrameTime = internalData.frameTimes.Last();
+    const int lastFrameTime = internalData.frameTimes.Last();
 
     frameInterpolation.cycleCount = time / lastFrameTime;
 
@@ -547,15 +547,15 @@ void Anim::TimeToFrameInterpolation(int time, FrameInterpolation &frameInterpola
         return;
     }
 
-    int t = time % lastFrameTime;
+    const int t = time % lastFrameTime;
 
-    int frameNum = BE1::BinSearch_LessEqual<int>(internalData.frameTimes.Ptr(), internalData.frameTimes.Count(), t);
+    const int frameNum = BE1::BinSearch_LessEqual<int>(internalData.frameTimes.Ptr(), internalData.frameTimes.Count(), t);
 
     frameInterpolation.frame1 = frameNum;
     frameInterpolation.frame2 = frameInterpolation.frame1 + 1;
 
-    int t1 = internalData.frameTimes[frameNum];
-    int t2 = internalData.frameTimes[frameNum + 1];
+    const int t1 = internalData.frameTimes[frameNum];
+    const int t2 = internalData.frameTimes[frameNum + 1];
 
     frameInterpolation.backlerp = (float)(t - t1) / (float)(t2 - t1);
     frameInterpolation.frontlerp = 1.0f - frameInterpolation.backlerp;
@@ -627,7 +627,7 @@ void Anim::GetRotation(BE1::Quat &outRotation, int time) const {
 
     const JointInfo &rootJoint = internalData.joints[0];
 
-    int componentBits = rootJoint.componentBits;
+    const int componentBits = rootJoint.componentBits;
     if (!(componentBits & ComponentBit::Qxyz)) {
         // just use the baseframe
         outRotation[0] = internalData.baseFrame[0].q[0];
@@ -744,7 +744,7 @@ void Anim::GetScaling(BE1::Vec3 &outScaling, int time) const {
 
     outScaling = internalData.baseFrame[0].s;
 
-    int componentBits = rootJoint.componentBits;
+    const int componentBits = rootJoint.componentBits;
     if (!(componentBits & ComponentBit::Sxyz)) {
         // just use the baseframe
         return;
@@ -839,10 +839,9 @@ void Anim::GetAABB(BE1::AABB &outAabb, const BE1::Array<BE1::AABB> &frameAABBs, 
 
 static void DecodeSingleFrame(const Anim::JointInfo *joints, int numJointIndexes, const int *jointIndexes, const float *frameComponents, BE1::JointPose *frame) {
     for (int i = 0; i < numJointIndexes; i++) {
-        int jointIndex = jointIndexes[i];
+        const int jointIndex = jointIndexes[i];
         const Anim::JointInfo *jointInfoPtr = &joints[jointIndex];
-
-        int componentBits = jointInfoPtr->componentBits;
+        const int componentBits = jointInfoPtr->componentBits;
         if (componentBits == 0) {
             continue;
         }
@@ -929,10 +928,9 @@ static int BE_FASTCALL DecodeInterpolatedFrame(const Anim::JointInfo *joints, in
     int numLerpJoints = 0;
 
     for (int i = 0; i < numJointIndexes; i++) {
-        int jointIndex = jointIndexes[i];
+        const int jointIndex = jointIndexes[i];
         const Anim::JointInfo *jointInfoPtr = &joints[jointIndex];
-
-        int componentBits = jointInfoPtr->componentBits;
+        const int componentBits = jointInfoPtr->componentBits;
         if (componentBits == 0) {
             continue;
         }
@@ -1319,7 +1317,7 @@ void Anim::ComputeRemovableFrames(const BE1::JointPose *frameJoints, const int *
     }
 
     if (maxDt > epsilonT || maxDq > epsilonQ || maxDs > epsilonS) {
-        int frameNum = BE1::Max3(frameNumMaxDt, frameNumMaxDq, frameNumMaxDs);
+        const int frameNum = BE1::Max3(frameNumMaxDt, frameNumMaxDq, frameNumMaxDs);
 
         ComputeRemovableFrames(frameJoints, jointIndexes, lerpedJoints, epsilonT, epsilonQ, epsilonS, frameNum1, frameNum, removableFrameNums);
         ComputeRemovableFrames(frameJoints, jointIndexes, lerpedJoints, epsilonT, epsilonQ, epsilonS, frameNum, frameNum2, removableFrameNums);
@@ -1351,8 +1349,8 @@ void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
 
     BE1::JointPose *lerpedJoints = (BE1::JointPose *)_alloca16(internalData.numJoints * sizeof(BE1::JointPose));
 
-    int frameNum1 = 0;
-    int frameNum2 = internalData.numFrames - 1;
+    const int frameNum1 = 0;
+    const int frameNum2 = internalData.numFrames - 1;
 
     BE1::Array<int> removableFrameNums;
     removableFrameNums.Reserve(internalData.numFrames);

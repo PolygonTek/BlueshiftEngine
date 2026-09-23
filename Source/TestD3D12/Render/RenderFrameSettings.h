@@ -36,7 +36,7 @@ struct RenderFrameSettings {
     static constexpr uint32_t   ShadowMapFilterReferenceBorderTexels = 6;   ///< 기준 해상도에서 한쪽 shadow map border texel 수 (1.25 * 4 + 1 = 6 texel safety).
     static constexpr float      ShadowMapPoissonKernelMaxRadius = 1.25f;    ///< Shadow map border 계산용. 회전된 Poisson sample 의 최대 정규화 반경 (실제 약 1.234).
 
-    static constexpr uint32_t   ShadowAtlasMinTileResolution = 64;         ///< Border 를 포함한 local shadow atlas 타일의 최소 해상도.
+    static constexpr uint32_t   ShadowAtlasMinTileResolution = 64;          ///< Border 를 포함한 local shadow atlas 타일의 최소 해상도.
 
     static constexpr uint32_t   CSMCascadeCount = 4;
 
