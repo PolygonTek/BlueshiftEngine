@@ -55,6 +55,7 @@ struct VisSurf {
     const RHI::IndexBuffer *    indexBuffer;        ///< 선택된 LOD 의 index buffer.
     uint32_t                    numIndexes;
     int32_t                     lodLevel;
+    float                       viewZ = 0.0f;       ///< 소팅용 카메라 뷰 공간 깊이 (카메라 전방은 음수)
     const Material *            material;
     ShaderFeatureSet            baseFeatureSet;
     uint32_t                    shaderMaterialIndex;

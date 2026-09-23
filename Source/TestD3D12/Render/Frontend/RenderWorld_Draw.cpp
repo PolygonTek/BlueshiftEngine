@@ -96,6 +96,17 @@ void RenderWorld::AddVisSurf(RenderFrame *frame, VisCamera *visCamera, VisLight 
         return;
     }
 
+    // 카메라 뷰 공간 z 깊이를 미리 계산한다 (불필요한 x, y 계산 생략)
+#if 1
+    const auto &viewRow2 = visCamera->viewMatrix[2];
+    const float viewZ = viewRow2[0] * visObject->worldMatrix[0][3] + viewRow2[1] * visObject->worldMatrix[1][3] + viewRow2[2] * visObject->worldMatrix[2][3] + viewRow2[3];
+#else
+    const BE1::Vec3 localCenter = subMesh->GetBoundingBox().Center();
+    const BE1::Vec3 worldCenter = visObject->worldMatrix.TransformPos(localCenter);
+    const auto &viewRow2 = visCamera->viewMatrix[2];
+    const flaot viewZ = viewRow2[0] * worldCenter.x + viewRow2[1] * worldCenter.y + viewRow2[2] * worldCenter.z + viewRow2[3];
+#endif
+
     const VisSkinnedMesh *visSkinnedMesh = visObject->skinnedMesh;
 
     VisSurf *drawSurf = (VisSurf *)frame->MemAlloc(sizeof(VisSurf));
@@ -105,6 +116,7 @@ void RenderWorld::AddVisSurf(RenderFrame *frame, VisCamera *visCamera, VisLight 
     drawSurf->indexBuffer = indexBuffer;
     drawSurf->numIndexes = subMesh->NumIndexes(lodLevel);
     drawSurf->lodLevel = lodLevel;
+    drawSurf->viewZ = viewZ;
     drawSurf->material = material;
     drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh, visSkinnedMesh && visSkinnedMesh->skinningJointOffset != ShaderSkinningJointOffsetInvalid);
     drawSurf->shaderMaterialIndex = frame->RegisterShaderMaterial(material);

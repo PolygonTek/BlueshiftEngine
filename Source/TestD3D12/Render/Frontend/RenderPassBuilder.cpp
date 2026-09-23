@@ -21,50 +21,55 @@
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
-static uint64_t BuildOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
-    //-----------------------------------------------------------
-    // 0xFFFFF00000000000 (0~1048575)  : PSO sort index
-    // 0x00000FFFF0000000 (0~65535)    : subMesh index
-    // 0x000000000F000000 (0~15)       : LOD level
-    // 0x0000000000FFFFFF (0~16777215) : shader material index
-    //-----------------------------------------------------------
-    uint64_t psoIndex = pso ? (pso->sortIndex & 0xFFFFF) : 0;
-    uint64_t subMeshIndex = visSurf->subMesh ? (visSurf->subMesh->GetID() & 0xFFFF) : 0;
-    uint64_t lodLevel = visSurf->lodLevel & 0xF;
-    uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFFFF;
-
-    return (psoIndex << 44) | (subMeshIndex << 28) | (lodLevel << 24) | shaderMaterialIndex;
-}
-
 static uint32_t BuildFloatSortKey(float value) {
     uint32_t bits;
     memcpy(&bits, &value, sizeof(bits));
     return (bits & 0x80000000u) ? ~bits : (bits ^ 0x80000000u);
 }
 
-static float GetViewCenterZ(const VisSurf *visSurf, const VisCamera *visCamera) {
-    const BE1::Vec3 localCenter = visSurf->subMesh->GetBoundingBox().Center();
-    const BE1::Vec3 worldCenter = visSurf->space->worldMatrix.TransformPos(localCenter);
-    const BE1::Vec3 viewCenter = visCamera->viewMatrix.TransformPos(worldCenter);
-    return viewCenter.z;
+static uint32_t BuildRoughDepthKey(const VisSurf *visSurf) {
+    if (!visSurf) {
+        return 0;
+    }
+
+    // 가까운 물체일수록 작은 값 (0 에 가까움) 이 됨
+    const uint32_t depthKey = BuildFloatSortKey(visSurf->viewZ) ^ 0xFFFFFFFFu;
+    return (depthKey >> 20) & 0xFFF; // 상위 12 비트 추출 (0 ~ 4095)
 }
 
-static uint64_t BuildDepthSortKey(const VisSurf *visSurf, const VisCamera *visCamera) {
-    //-----------------------------------------------------------
-    // 0x8000000000000000 (0~1)          : alpha-test bucket
-    // 0x7FFFFFFF00000000 (0~2147483647) : shader material index (alpha-test only)
-    // 0x00000000FFFFFFFF (0~4294967295) : near-to-far view depth
-    //-----------------------------------------------------------
+static uint64_t BuildOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
+    //--------------------------------------------------------------
+    // 0xFFFF000000000000 (16비트, 0~65535)  : PSO sort index
+    // 0x0000FFFF00000000 (16비트, 0~65535)  : subMesh index
+    // 0x00000000F0000000 ( 4비트, 0~15)     : LOD level
+    // 0x000000000FFFF000 (16비트, 0~65535)  : shader material index
+    // 0x0000000000000FFF (12비트, 0~4095)   : rough view depth
+    //--------------------------------------------------------------
+    const uint64_t psoIndex = pso ? (pso->sortIndex & 0xFFFF) : 0;
+    const uint64_t subMeshIndex = visSurf->subMesh ? (visSurf->subMesh->GetID() & 0xFFFF) : 0;
+    const uint64_t lodLevel = visSurf->lodLevel & 0xF;
+    const uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFF;
+    const uint64_t roughDepth = BuildRoughDepthKey(visSurf);
+
+    return (psoIndex << 48) | (subMeshIndex << 32) | (lodLevel << 28) | (shaderMaterialIndex << 12) | roughDepth;
+}
+
+static uint64_t BuildDepthSortKey(const VisSurf *visSurf) {
+    //--------------------------------------------------------------
+    // 0x8000000000000000 ( 1비트, 0~1)          : alpha-test bucket
+    // 0x7FFFFFFF00000000 (31비트, 0~2147483647) : shader material index (alpha-test only)
+    // 0x00000000FFFFFFFF (32비트, 0~4294967295) : near-to-far view depth
+    //--------------------------------------------------------------
     const bool alphaTest = visSurf->baseFeatureSet.HasFeature(ShaderFeature::Perforated);
     const uint64_t alphaTestBucket = alphaTest ? 1ull : 0ull;
     const uint64_t shaderMaterialIndex = alphaTest ? (visSurf->shaderMaterialIndex & 0x7FFFFFFFull) : 0;
-    const uint64_t depthKey = static_cast<uint64_t>(BuildFloatSortKey(GetViewCenterZ(visSurf, visCamera))) ^ 0xFFFFFFFFull;
+    const uint64_t depthKey = static_cast<uint64_t>(BuildFloatSortKey(visSurf->viewZ)) ^ 0xFFFFFFFFull;
 
     return (alphaTestBucket << 63) | (shaderMaterialIndex << 32) | depthKey;
 }
 
-static uint64_t BuildTransparentSortKey(const VisSurf *visSurf, const VisCamera *visCamera) {
-    return BuildFloatSortKey(GetViewCenterZ(visSurf, visCamera));
+static uint64_t BuildTransparentSortKey(const VisSurf *visSurf) {
+    return BuildFloatSortKey(visSurf->viewZ);
 }
 
 static ShaderFeatureSet BuildSurfaceFeatureSet(const VisSurf *visSurf, const RenderPass *renderPass, bool directLighting, bool indirectLighting) {
@@ -335,12 +340,12 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, VisCamera *visCamera) {
             if (blendPass) {
                 const ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(visSurf, blendPass, directLighting, indirectLighting);
                 const RenderPassPSOResolver::ResolveResult rr = blendPSOResolver.Resolve(visSurf, featureSet, allowAsyncPSOBuild);
-                AddRenderPassDrawSurf(blendPass, visSurf, BuildTransparentSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
+                AddRenderPassDrawSurf(blendPass, visSurf, BuildTransparentSortKey(visSurf), rr.inputLayoutId, rr.pso);
             }
         } else {
             if (depthPass) {
                 const RenderPassDepthPSOResolver::ResolveResult rr = depthPSOResolver.Resolve(visSurf, allowAsyncPSOBuild);
-                AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf, visCamera), rr.inputLayoutId, rr.pso);
+                AddRenderPassDrawSurf(depthPass, visSurf, BuildDepthSortKey(visSurf), rr.inputLayoutId, rr.pso);
             }
             if (opaquePass) {
                 const ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(visSurf, opaquePass, directLighting, indirectLighting);
