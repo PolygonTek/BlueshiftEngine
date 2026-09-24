@@ -275,7 +275,7 @@ private:
     RHI::Texture *              velocityTexture = nullptr; // TAA 에서 필요할 때 생성한다.
 
     RHI::Texture *              resolvedColorTexture = nullptr; // MSAA on 상태에서 생성, off 상태에서는 nullptr
-    RHI::Texture *              resolvedDepthTexture = nullptr; // MSAA on 상태에서 depth prepass 이후 SSAO/SSR 에서 필요
+    RHI::Texture *              resolvedDepthTexture = nullptr; // MSAA on 상태에서 depth prepass 이후 GTAO/SSR 에서 필요
     RHI::Texture *              resolvedNormalTexture = nullptr; // MSAA on 이고 normalTexture 가 필요할 때 생성, 그 외에는 nullptr
     RHI::Texture *              resolvedVelocityTexture = nullptr; // MSAA on 이고 velocityTexture 가 필요할 때 생성, 그 외에는 nullptr
 

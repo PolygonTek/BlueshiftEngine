@@ -186,8 +186,6 @@ set(SRC_FILES
     Render/ScreenSpaceAO.cpp
     Render/ScreenSpaceAOResources.h
     Render/ScreenSpaceAOResources.cpp
-    Render/ScreenSpaceAO_SSAO.cpp
-    Render/ScreenSpaceAO_GTAO.cpp
     Render/ScreenSpaceDepthPyramid.h
     Render/ScreenSpaceDepthPyramid.cpp
     Render/ScreenSpaceDepthPyramidResources.h

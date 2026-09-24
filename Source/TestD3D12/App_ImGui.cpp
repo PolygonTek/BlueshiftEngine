@@ -869,21 +869,13 @@ void App::BuildImGuiOverlay() {
             if (roundedCollapsingHeader("Ambient Occlusion##AOHeader")) {
                 int aoMode = BE1::Clamp(r_ao.GetInteger(), static_cast<int>(RenderAOMode::Off), static_cast<int>(RenderAOMode::GTAO));
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::Combo("Ambient occlusion", &aoMode, "Off\0SSAO\0GTAO\0")) {
+                if (ImGui::Combo("Ambient occlusion", &aoMode, "Off\0GTAO\0")) {
                     r_ao.SetInteger(aoMode);
                 }
 
                 const bool aoEnabled = aoMode != static_cast<int>(RenderAOMode::Off);
-                const bool useSSAO = aoMode == static_cast<int>(RenderAOMode::SSAO);
                 const bool useGTAO = aoMode == static_cast<int>(RenderAOMode::GTAO);
                 ImGui::BeginDisabled(!aoEnabled);
-                if (useSSAO) {
-                    int ssaoQuality = r_ssaoQuality.GetInteger();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("SSAO quality", &ssaoQuality, "Low\0High\0")) {
-                        r_ssaoQuality.SetInteger(ssaoQuality);
-                    }
-                }
                 bool aoHalfResolution = r_aoHalfResolution.GetBool();
                 if (ImGui::Checkbox("Half resolution##AO", &aoHalfResolution)) {
                     r_aoHalfResolution.SetBool(aoHalfResolution);
@@ -893,41 +885,10 @@ void App::BuildImGuiOverlay() {
                     r_aoTemporalNoise.SetBool(aoTemporalNoise);
                 }
                 ImGui::SetItemTooltip("Varies AO sampling each frame, even without TAA.");
-                if (useSSAO) {
-                    bool ssaoBilateral = r_ssaoBilateral.GetBool();
-                    if (ImGui::Checkbox("Bilateral filter##SSAO", &ssaoBilateral)) {
-                        r_ssaoBilateral.SetBool(ssaoBilateral);
-                    }
-                }
                 float aoRadius = r_aoRadius.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("Radius##AO", &aoRadius, r_aoRadius.GetMinValue(), r_aoRadius.GetMaxValue(), "%.2f m", ImGuiSliderFlags_Logarithmic)) {
                     r_aoRadius.SetFloat(aoRadius);
-                }
-                if (useSSAO) {
-                    bool ssaoDebug = r_ssaoDebug.GetBool();
-                    if (ImGui::Checkbox("Debug output##SSAO", &ssaoDebug)) {
-                        r_ssaoDebug.SetBool(ssaoDebug);
-                    }
-
-                    float ssaoNormalBiasScale = r_ssaoNormalBiasScale.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Normal bias scale##AO", &ssaoNormalBiasScale, r_ssaoNormalBiasScale.GetMinValue(), r_ssaoNormalBiasScale.GetMaxValue(), "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
-                        r_ssaoNormalBiasScale.SetFloat(ssaoNormalBiasScale);
-                    }
-                    ImGui::SetItemTooltip("Fraction of the AO radius. Offsets samples along the normal and rejects near-surface occlusion. Current bias: %.6g m.", aoRadius * ssaoNormalBiasScale);
-                    float ssaoDepthBiasScale = r_ssaoDepthBiasScale.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Depth bias scale##AO", &ssaoDepthBiasScale, r_ssaoDepthBiasScale.GetMinValue(), r_ssaoDepthBiasScale.GetMaxValue(), "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
-                        r_ssaoDepthBiasScale.SetFloat(ssaoDepthBiasScale);
-                    }
-                    ImGui::SetItemTooltip("Fraction of the AO radius. Sets the required view-space depth separation for occlusion. Current bias: %.6g m.", aoRadius * ssaoDepthBiasScale);
-
-                    float ssaoPower = r_ssaoPower.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Power##SSAO", &ssaoPower, r_ssaoPower.GetMinValue(), r_ssaoPower.GetMaxValue(), "%.2f")) {
-                        r_ssaoPower.SetFloat(ssaoPower);
-                    }
                 }
                 if (useGTAO) {
                     int gtaoQuality = r_gtaoQuality.GetInteger();

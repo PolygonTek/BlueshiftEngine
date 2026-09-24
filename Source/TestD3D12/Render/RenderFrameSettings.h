@@ -24,8 +24,7 @@ enum RenderBloomMode {
 
 enum class RenderAOMode : uint32_t {
     Off = 0,
-    SSAO = 1,
-    GTAO = 2
+    GTAO = 1
 };
 
 // 메인 스레드에서 프레임 시작 시 생성되고, 해당 프레임 동안 변경되지 않는 렌더 설정이다.
@@ -75,13 +74,6 @@ struct RenderFrameSettings {
     uint32_t                    hiZDebugPreviewMipLevel = 0;
 
     float                       aoRadius = 0.5f;
-
-    uint32_t                    ssaoQuality = 1;
-    bool                        ssaoDebug = false;
-    bool                        ssaoBilateral = false;
-    float                       ssaoPower = 2.2f;
-    float                       ssaoNormalBiasScale = 0.005f; // Fraction of the AO radius.
-    float                       ssaoDepthBiasScale = 0.002f; // Fraction of the AO radius.
 
     uint32_t                    gtaoQuality = 2;
     uint32_t                    gtaoDenoisePasses = 2;

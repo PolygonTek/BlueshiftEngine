@@ -698,11 +698,10 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
     const RHI::Texture *outputOverrideTexture = nullptr;
 
-    const bool debugSSAO = currentVisCamera->ao.mode == RenderAOMode::SSAO && renderFrameSettings.ssaoDebug;
     const bool debugGTAO = currentVisCamera->ao.mode == RenderAOMode::GTAO && renderFrameSettings.gtaoDebug != 0;
 
-    if ((debugSSAO || debugGTAO) && aoReady) {
-        if (debugGTAO && renderFrameSettings.gtaoDebug > 1) {
+    if (debugGTAO && aoReady) {
+        if (renderFrameSettings.gtaoDebug > 1) {
             renderSystem->GetScreenSpaceAO().DispatchDebugPreview(*this);
         }
         outputOverrideTexture = currentVisCamera->ao.textures.outputTexture;
@@ -1412,8 +1411,8 @@ void RenderBackend::DrawCamera2D() {
 
 void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const {
     const SubMesh *subMesh = drawSurf->visSurf->subMesh;
-
     RHI::renderer->SetVertexBuffer(commandList, 0, subMesh->vertexBuffer);
+
     if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
         RHI::renderer->SetVertexBuffer(commandList, 1, subMesh->vertexWeightBuffer);
     }

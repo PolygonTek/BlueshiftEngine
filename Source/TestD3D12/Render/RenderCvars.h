@@ -89,13 +89,6 @@ extern BE1::CVar    r_aoRadius;
 extern BE1::CVar    r_aoHalfResolution;
 extern BE1::CVar    r_aoTemporalNoise;
 
-extern BE1::CVar    r_ssaoQuality;
-extern BE1::CVar    r_ssaoDebug;
-extern BE1::CVar    r_ssaoBilateral;
-extern BE1::CVar    r_ssaoPower;
-extern BE1::CVar    r_ssaoNormalBiasScale;
-extern BE1::CVar    r_ssaoDepthBiasScale;
-
 extern BE1::CVar    r_gtaoQuality;
 extern BE1::CVar    r_gtaoDenoisePasses;
 extern BE1::CVar    r_gtao32BitDepth;

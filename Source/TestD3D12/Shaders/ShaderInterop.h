@@ -91,10 +91,6 @@ static const uint GenHiZMipBlockSizeY = 8;
 static const uint HiZDebugPreviewBlockSizeX = 16;
 static const uint HiZDebugPreviewBlockSizeY = 16;
 
-static const uint SSAOBlockSizeX = 8;
-static const uint SSAOBlockSizeY = 8;
-static const uint AOBilateralBlockSizeX = 8;
-static const uint AOBilateralBlockSizeY = 8;
 static const uint AOUpsampleBlockSizeX = 8;
 static const uint AOUpsampleBlockSizeY = 8;
 
@@ -375,22 +371,6 @@ struct HiZMipGenParams {
     uint useMinDepth;
 };
 
-struct SSAOParams {
-    uint2 inputSize;
-    float2 inputSizeRcp;
-    uint2 outputSize;
-    float power;
-    float radius;
-    float normalBias;
-    float depthBias;
-    float farPlaneDeviceDepth;
-    float noisePhase;
-};
-
-#ifdef __cplusplus
-static_assert(sizeof(SSAOParams) == 48, "SSAOParams must match the HLSL root constants");
-#endif
-
 struct GTAOPrefilterParams {
     uint2 inputSize;
     uint2 outputSize;
@@ -453,16 +433,6 @@ struct GTAODebugParams {
 
 #ifdef __cplusplus
 static_assert(sizeof(GTAODebugParams) == 32, "GTAODebugParams must match the HLSL root constants");
-#endif
-
-struct AOBilateralParams {
-    uint2 outputSize;
-    float depthSigmaRcp;
-    float farPlaneDeviceDepth;
-};
-
-#ifdef __cplusplus
-static_assert(sizeof(AOBilateralParams) == 16, "AOBilateralParams must match the HLSL root constants");
 #endif
 
 struct AOUpsampleParams {

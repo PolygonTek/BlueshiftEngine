@@ -26,17 +26,9 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
         return;
     }
 
-    const bool useSSAO = settings.aoMode == RenderAOMode::SSAO;
-    const bool useGTAO = settings.aoMode == RenderAOMode::GTAO;
-    if (!useSSAO && !useGTAO) {
+    if (settings.aoMode != RenderAOMode::GTAO) {
         Destroy();
         return;
-    }
-
-    if (!useGTAO) {
-        if (textures.gtaoPrefilterDepthTexture || textures.gtaoPackedEdgesTexture || textures.gtaoDepthMipCount > 0) {
-            DestroyGTAOResources();
-        }
     }
 
     if (textures.outputTexture && (textures.outputTexture->GetWidth() != renderWidth || textures.outputTexture->GetHeight() != renderHeight)) {
@@ -59,11 +51,10 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
     const bool useHalfResolution = settings.aoHalfResolution;
     const uint32_t aoWidth = useHalfResolution ? BE1::DivCeil(renderWidth, 2u) : renderWidth;
     const uint32_t aoHeight = useHalfResolution ? BE1::DivCeil(renderHeight, 2u) : renderHeight;
-    const bool needRaw = useGTAO || useHalfResolution || settings.ssaoBilateral;
-    const bool needTemp = useGTAO ? (useHalfResolution || settings.gtaoDenoisePasses > 1) : settings.ssaoBilateral;
+    const bool needTemp = useHalfResolution || settings.gtaoDenoisePasses > 1;
 
     // 해상도 옵션이 바뀌면 크기가 달라지는 중간 텍스처만 다시 만든다.
-    if (textures.rawTexture && (!needRaw || textures.rawTexture->GetWidth() != aoWidth || textures.rawTexture->GetHeight() != aoHeight)) {
+    if (textures.rawTexture && (textures.rawTexture->GetWidth() != aoWidth || textures.rawTexture->GetHeight() != aoHeight)) {
         RHI::renderer->DestroyTexture(textures.rawTexture);
         textures.rawTexture = nullptr;
     }
@@ -78,7 +69,7 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
     }
 
     // Keep intermediate visibility in FP16 to avoid repeated R8 quantization.
-    if (needRaw && !textures.rawTexture) {
+    if (!textures.rawTexture) {
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->Init2DFromMemory(aoWidth, aoHeight, 1, BE1::Image::Format::R16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
         textures.rawTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
@@ -106,37 +97,35 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
         }
     }
 
-    if (useGTAO) {
-        const BE1::Image::Format gtaoPrefilterDepthFormat = RHI::renderer->ToUAVImageFormat(settings.gtao32BitDepth ? BE1::Image::Format::R32_FLOAT : BE1::Image::Format::R16_FLOAT);
-        RHI::Format gtaoPrefilterDepthRHIFormat = RHI::Format::Unknown;
-        if (!RHI::Renderer::ImageFormatToRHIFormat(gtaoPrefilterDepthFormat, false, &gtaoPrefilterDepthRHIFormat)) {
-            BE_WARNLOG("ScreenSpaceAOResources::Ensure: unsupported GTAO prefiltered depth format\n");
-            DestroyGTAOResources();
-            return;
-        }
+    const BE1::Image::Format gtaoPrefilterDepthFormat = RHI::renderer->ToUAVImageFormat(settings.gtao32BitDepth ? BE1::Image::Format::R32_FLOAT : BE1::Image::Format::R16_FLOAT);
+    RHI::Format gtaoPrefilterDepthRHIFormat = RHI::Format::Unknown;
+    if (!RHI::Renderer::ImageFormatToRHIFormat(gtaoPrefilterDepthFormat, false, &gtaoPrefilterDepthRHIFormat)) {
+        BE_WARNLOG("ScreenSpaceAOResources::Ensure: unsupported GTAO prefiltered depth format\n");
+        DestroyGTAOResources();
+        return;
+    }
 
-        if ((textures.gtaoPrefilterDepthTexture && (textures.gtaoPrefilterDepthTexture->GetWidth() != aoWidth || textures.gtaoPrefilterDepthTexture->GetHeight() != aoHeight ||
-            textures.gtaoPrefilterDepthTexture->GetFormat() != gtaoPrefilterDepthRHIFormat)) ||
-            (textures.gtaoPackedEdgesTexture && (textures.gtaoPackedEdgesTexture->GetWidth() != aoWidth || textures.gtaoPackedEdgesTexture->GetHeight() != aoHeight))) {
-            DestroyGTAOResources();
-        }
+    if ((textures.gtaoPrefilterDepthTexture && (textures.gtaoPrefilterDepthTexture->GetWidth() != aoWidth || textures.gtaoPrefilterDepthTexture->GetHeight() != aoHeight ||
+        textures.gtaoPrefilterDepthTexture->GetFormat() != gtaoPrefilterDepthRHIFormat)) ||
+        (textures.gtaoPackedEdgesTexture && (textures.gtaoPackedEdgesTexture->GetWidth() != aoWidth || textures.gtaoPackedEdgesTexture->GetHeight() != aoHeight))) {
+        DestroyGTAOResources();
+    }
 
-        if (!textures.gtaoPrefilterDepthTexture && !CreateGTAOPrefilterDepthTexture(aoWidth, aoHeight, gtaoPrefilterDepthFormat)) {
-            return;
-        }
+    if (!textures.gtaoPrefilterDepthTexture && !CreateGTAOPrefilterDepthTexture(aoWidth, aoHeight, gtaoPrefilterDepthFormat)) {
+        return;
+    }
 
+    if (!textures.gtaoPackedEdgesTexture) {
+        const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R8);
+        SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+        image->Init2DFromMemory(aoWidth, aoHeight, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
+        textures.gtaoPackedEdgesTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!textures.gtaoPackedEdgesTexture) {
-            const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R8);
-            SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
-            image->Init2DFromMemory(aoWidth, aoHeight, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
-            textures.gtaoPackedEdgesTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
-            if (!textures.gtaoPackedEdgesTexture) {
-                BE_WARNLOG("ScreenSpaceAOResources::Ensure: failed to create GTAO packed edges texture\n");
-                DestroyGTAOResources();
-                return;
-            }
-            RHI::renderer->SetName(textures.gtaoPackedEdgesTexture, "ScreenSpaceAOResources::gtaoPackedEdgesTexture");
+            BE_WARNLOG("ScreenSpaceAOResources::Ensure: failed to create GTAO packed edges texture\n");
+            DestroyGTAOResources();
+            return;
         }
+        RHI::renderer->SetName(textures.gtaoPackedEdgesTexture, "ScreenSpaceAOResources::gtaoPackedEdgesTexture");
     }
 }
 

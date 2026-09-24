@@ -27,7 +27,6 @@ class ScreenSpaceAO {
 public:
     struct DispatchParams {
         bool                        useHalfResolution = false;
-        bool                        useBlur = false;
         uint32_t                    denoisePassCount = 1;
     };
 
@@ -48,25 +47,13 @@ public:
     bool                            DispatchDebugPreview(RenderBackend &backend) const;
 
 private:
-    void                            DispatchSSAO(RenderBackend &backend, const DispatchParams &params) const;
-    void                            DispatchGTAO(RenderBackend &backend, const DispatchParams &params) const;
     void                            DispatchGTAOPrefilterDepth(RenderBackend &backend, RHI::GPUResourceState depthInputState, bool useHalfResolution) const;
     void                            DispatchGTAOMain(RenderBackend &backend, bool useHalfResolution) const;
     RHI::Texture *                  DispatchGTAODenoise(RenderBackend &backend, uint32_t denoisePassCount, bool useHalfResolution, RHI::GPUResourceState &rawAOState, RHI::GPUResourceState &tempAOState) const;
-    void                            DispatchSSAOCompute(RenderBackend &backend, RHI::PipelineState *pso, RHI::Texture *depthTexture, RHI::Texture *normalTexture, RHI::Texture *outputAOTexture, RHI::Texture *outputHalfDepthTexture, RHI::GPUResourceState depthInputState) const;
-    void                            DispatchAOBilateralBlur(RenderBackend &backend, RHI::Texture *depthTexture, RHI::Texture *inputAOTexture, RHI::Texture *tempAOTexture, RHI::Texture *outputAOTexture, float radius) const;
     void                            DispatchAOUpsample(RenderBackend &backend, RHI::Texture *depthTexture, RHI::Texture *inputHalfAOTexture, RHI::Texture *inputHalfDepthTexture, RHI::Texture *outputAOTexture, float radius) const;
 
-                                    // Ambient Occlusion (Common) shader templates
-    SharedPtr<ShaderTemplate>       aoBilateralHorizontalShaderTemplate;
-    SharedPtr<ShaderTemplate>       aoBilateralVerticalShaderTemplate;
+                                    // AO upsampling shader template
     SharedPtr<ShaderTemplate>       aoUpsampleShaderTemplate;
-
-                                    // SSAO shader templates
-    SharedPtr<ShaderTemplate>       ssao16FullResShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssao16HalfResShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssao8FullResShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssao8HalfResShaderTemplate;
 
                                     // GTAO shader templates
     SharedPtr<ShaderTemplate>       gtaoPrefilterShaderTemplate;
@@ -77,16 +64,8 @@ private:
     SharedPtr<ShaderTemplate>       gtaoDenoiseShaderTemplate;
     SharedPtr<ShaderTemplate>       gtaoDebugShaderTemplate;
 
-                                    // Ambient Occlusion (Common)
-    SharedPtr<ShaderPipeline>       aoBilateralHorizontalPipeline;
-    SharedPtr<ShaderPipeline>       aoBilateralVerticalPipeline;
+                                    // AO upsampling
     SharedPtr<ShaderPipeline>       aoUpsamplePipeline;
-
-                                    // SSAO
-    SharedPtr<ShaderPipeline>       ssao16FullResPipeline;
-    SharedPtr<ShaderPipeline>       ssao16HalfResPipeline;
-    SharedPtr<ShaderPipeline>       ssao8FullResPipeline;
-    SharedPtr<ShaderPipeline>       ssao8HalfResPipeline;
 
                                     // GTAO
     SharedPtr<ShaderPipeline>       gtaoPrefilterPipeline;
@@ -97,12 +76,7 @@ private:
     SharedPtr<ShaderPipeline>       gtaoDenoisePipeline;
     SharedPtr<ShaderPipeline>       gtaoDebugPipeline;
 
-    RHI::PipelineState *            frameAOBilateralHorizontalPSO = nullptr;
-    RHI::PipelineState *            frameAOBilateralVerticalPSO = nullptr;
     RHI::PipelineState *            frameAOUpsamplePSO = nullptr;
-
-    RHI::PipelineState *            frameSSAOPSO = nullptr;
-    RHI::PipelineState *            frameSSAOHalfResolutionPSO = nullptr;
 
     RHI::PipelineState *            frameGTAOPrefilterPSO = nullptr;
     RHI::PipelineState *            frameGTAOMainPSO = nullptr;

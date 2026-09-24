@@ -336,7 +336,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     const bool skipPostProcess = renderFrameSettings.skipPostProcess || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
     const bool useAO = renderFrameSettings.aoMode != RenderAOMode::Off;
-    const bool debugAO = (renderFrameSettings.aoMode == RenderAOMode::SSAO && renderFrameSettings.ssaoDebug) || (renderFrameSettings.aoMode == RenderAOMode::GTAO && renderFrameSettings.gtaoDebug != 0);
+    const bool debugAO = useAO && renderFrameSettings.gtaoDebug != 0;
     const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableTemporalHistory);
     const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess && !debugAO && renderFrameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
     const bool needNormalTexture = useAO || renderFrameSettings.ssr;

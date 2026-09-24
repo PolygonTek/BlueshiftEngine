@@ -87,19 +87,11 @@ CVAR(r_hiZOcclusionCullingFreeze, "0", BE1::CVar::Flag::Bool, "freeze Hi-Z occlu
 CVAR(r_hiZDebugPreview, "0", BE1::CVar::Flag::Bool, "enable Hi-Z debug preview texture update");
 CVAR_MINMAX(r_hiZDebugPreviewMipLevel, "0", BE1::CVar::Flag::Integer, "Hi-Z debug preview mip level", 0, RenderHiZMaxLevelCount - 1);
 
-// Ambient Occlusion Common
-CVAR_MINMAX(r_ao, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "ambient occlusion mode: 0 = off, 1 = SSAO, 2 = GTAO", 0, 2);
+// Ambient Occlusion
+CVAR_MINMAX(r_ao, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "ambient occlusion mode: 0 = off, 1 = GTAO", 0, 1);
 CVAR_MINMAX(r_aoRadius, "0.5", BE1::CVar::Flag::Float, "ambient occlusion radius in world units", 0.01f, 10.0f);
 CVAR(r_aoHalfResolution, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "compute ambient occlusion at half resolution");
 CVAR(r_aoTemporalNoise, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "vary the ambient occlusion sampling pattern each frame independently of TAA; AO debug keeps a fixed pattern");
-
-// SSAO
-CVAR_MINMAX(r_ssaoQuality, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "SSAO quality: 0 = low, 1 = high", 0, 1);
-CVAR(r_ssaoDebug, "0", BE1::CVar::Flag::Bool, "show full-resolution SSAO");
-CVAR(r_ssaoBilateral, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "apply depth-aware bilateral filtering to SSAO");
-CVAR_MINMAX(r_ssaoPower, "2.2", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "SSAO visibility power", 0.25f, 4.0f);
-CVAR_MINMAX(r_ssaoNormalBiasScale, "0.005", BE1::CVar::Flag::Float, "SSAO normal bias as a fraction of the AO radius", 0.0f, 0.05f);
-CVAR_MINMAX(r_ssaoDepthBiasScale, "0.002", BE1::CVar::Flag::Float, "SSAO depth bias as a fraction of the AO radius", 0.0f, 0.05f);
 
 // GTAO
 CVAR_MINMAX(r_gtaoQuality, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "GTAO quality: 0 = low, 1 = medium, 2 = high, 3 = ultra", 0, 3);
@@ -305,13 +297,6 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.aoRadius = r_aoRadius.GetFloat();
     settings.aoHalfResolution = r_aoHalfResolution.GetBool();
     settings.aoTemporalNoise = r_aoTemporalNoise.GetBool();
-
-    settings.ssaoQuality = static_cast<uint32_t>(r_ssaoQuality.GetInteger());
-    settings.ssaoDebug = r_ssaoDebug.GetBool();
-    settings.ssaoBilateral = r_ssaoBilateral.GetBool();
-    settings.ssaoPower = r_ssaoPower.GetFloat();
-    settings.ssaoNormalBiasScale = r_ssaoNormalBiasScale.GetFloat();
-    settings.ssaoDepthBiasScale = r_ssaoDepthBiasScale.GetFloat();
 
     settings.gtaoQuality = static_cast<uint32_t>(r_gtaoQuality.GetInteger());
     settings.gtaoDenoisePasses = static_cast<uint32_t>(r_gtaoDenoisePasses.GetInteger());
