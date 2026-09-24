@@ -471,7 +471,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     ao.normalTexture = useMSAA ? visCamera->resolvedNormalTexture : visCamera->normalTexture;
     ao.projectionPolicy = visCamera->projectionPolicy;
     ao.mode = renderFrameSettings.aoMode;
-    ao.temporalNoise = renderFrameSettings.aoTemporalNoise && useTAA && renderCamera->IsHistoryValid() && !debugAO;
+    ao.temporalNoise = renderFrameSettings.aoTemporalNoise && !debugAO;
     visCamera->applyAO = useAO && ScreenSpaceAO::HasRequiredResources(ao) && (!useMSAA || visCamera->normalTexture);
     visCamera->needDepthNormalOutput = visCamera->applyAO;
 

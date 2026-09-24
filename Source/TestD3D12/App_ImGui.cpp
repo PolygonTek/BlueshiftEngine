@@ -866,6 +866,132 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
+            if (roundedCollapsingHeader("Ambient Occlusion##AOHeader")) {
+                int aoMode = BE1::Clamp(r_ao.GetInteger(), static_cast<int>(RenderAOMode::Off), static_cast<int>(RenderAOMode::GTAO));
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::Combo("Ambient occlusion", &aoMode, "Off\0SSAO\0GTAO\0")) {
+                    r_ao.SetInteger(aoMode);
+                }
+
+                const bool aoEnabled = aoMode != static_cast<int>(RenderAOMode::Off);
+                const bool useSSAO = aoMode == static_cast<int>(RenderAOMode::SSAO);
+                const bool useGTAO = aoMode == static_cast<int>(RenderAOMode::GTAO);
+                ImGui::BeginDisabled(!aoEnabled);
+                if (useSSAO) {
+                    int ssaoQuality = r_ssaoQuality.GetInteger();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::Combo("SSAO quality", &ssaoQuality, "Low\0High\0")) {
+                        r_ssaoQuality.SetInteger(ssaoQuality);
+                    }
+                }
+                bool aoHalfResolution = r_aoHalfResolution.GetBool();
+                if (ImGui::Checkbox("Half resolution##AO", &aoHalfResolution)) {
+                    r_aoHalfResolution.SetBool(aoHalfResolution);
+                }
+                bool aoTemporalNoise = r_aoTemporalNoise.GetBool();
+                if (ImGui::Checkbox("Temporal noise##AO", &aoTemporalNoise)) {
+                    r_aoTemporalNoise.SetBool(aoTemporalNoise);
+                }
+                ImGui::SetItemTooltip("Varies AO sampling each frame, even without TAA.");
+                if (useSSAO) {
+                    bool ssaoBilateral = r_ssaoBilateral.GetBool();
+                    if (ImGui::Checkbox("Bilateral filter##SSAO", &ssaoBilateral)) {
+                        r_ssaoBilateral.SetBool(ssaoBilateral);
+                    }
+                }
+                float aoRadius = r_aoRadius.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Radius##AO", &aoRadius, r_aoRadius.GetMinValue(), r_aoRadius.GetMaxValue(), "%.2f m", ImGuiSliderFlags_Logarithmic)) {
+                    r_aoRadius.SetFloat(aoRadius);
+                }
+                if (useSSAO) {
+                    bool ssaoDebug = r_ssaoDebug.GetBool();
+                    if (ImGui::Checkbox("Debug output##SSAO", &ssaoDebug)) {
+                        r_ssaoDebug.SetBool(ssaoDebug);
+                    }
+
+                    float ssaoNormalBiasScale = r_ssaoNormalBiasScale.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Normal bias scale##AO", &ssaoNormalBiasScale, r_ssaoNormalBiasScale.GetMinValue(), r_ssaoNormalBiasScale.GetMaxValue(), "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+                        r_ssaoNormalBiasScale.SetFloat(ssaoNormalBiasScale);
+                    }
+                    ImGui::SetItemTooltip("Fraction of the AO radius. Offsets samples along the normal and rejects near-surface occlusion. Current bias: %.6g m.", aoRadius * ssaoNormalBiasScale);
+                    float ssaoDepthBiasScale = r_ssaoDepthBiasScale.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Depth bias scale##AO", &ssaoDepthBiasScale, r_ssaoDepthBiasScale.GetMinValue(), r_ssaoDepthBiasScale.GetMaxValue(), "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+                        r_ssaoDepthBiasScale.SetFloat(ssaoDepthBiasScale);
+                    }
+                    ImGui::SetItemTooltip("Fraction of the AO radius. Sets the required view-space depth separation for occlusion. Current bias: %.6g m.", aoRadius * ssaoDepthBiasScale);
+
+                    float ssaoPower = r_ssaoPower.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Power##SSAO", &ssaoPower, r_ssaoPower.GetMinValue(), r_ssaoPower.GetMaxValue(), "%.2f")) {
+                        r_ssaoPower.SetFloat(ssaoPower);
+                    }
+                }
+                if (useGTAO) {
+                    int gtaoQuality = r_gtaoQuality.GetInteger();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::Combo("Quality##GTAO", &gtaoQuality, "Low\0Medium\0High\0Ultra\0")) {
+                        r_gtaoQuality.SetInteger(gtaoQuality);
+                    }
+
+                    int gtaoDenoisePasses = r_gtaoDenoisePasses.GetInteger();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderInt("Denoise passes##GTAO", &gtaoDenoisePasses, static_cast<int>(r_gtaoDenoisePasses.GetMinValue()), static_cast<int>(r_gtaoDenoisePasses.GetMaxValue()))) {
+                        r_gtaoDenoisePasses.SetInteger(gtaoDenoisePasses);
+                    }
+
+                    bool gtao32BitDepth = r_gtao32BitDepth.GetBool();
+                    if (ImGui::Checkbox("32-bit depth##GTAO", &gtao32BitDepth)) {
+                        r_gtao32BitDepth.SetBool(gtao32BitDepth);
+                    }
+
+                    float gtaoPower = r_gtaoPower.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Power##GTAO", &gtaoPower, r_gtaoPower.GetMinValue(), r_gtaoPower.GetMaxValue(), "%.2f")) {
+                        r_gtaoPower.SetFloat(gtaoPower);
+                    }
+
+                    int gtaoDebug = r_gtaoDebug.GetInteger();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::Combo("Debug source##GTAO", &gtaoDebug, "Off\0Final AO\0Raw visibility\0Edges\0Depth mip 0\0Depth mip 1\0Depth mip 2\0Depth mip 3\0Depth mip 4\0")) {
+                        r_gtaoDebug.SetInteger(gtaoDebug);
+                    }
+
+                    float gtaoFalloffRange = r_gtaoFalloffRange.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Falloff range##GTAO", &gtaoFalloffRange, r_gtaoFalloffRange.GetMinValue(), r_gtaoFalloffRange.GetMaxValue(), "%.3f")) {
+                        r_gtaoFalloffRange.SetFloat(gtaoFalloffRange);
+                    }
+
+                    float gtaoRadiusMultiplier = r_gtaoRadiusMultiplier.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Radius multiplier##GTAO", &gtaoRadiusMultiplier, r_gtaoRadiusMultiplier.GetMinValue(), r_gtaoRadiusMultiplier.GetMaxValue(), "%.3f")) {
+                        r_gtaoRadiusMultiplier.SetFloat(gtaoRadiusMultiplier);
+                    }
+
+                    float gtaoSampleDistributionPower = r_gtaoSampleDistributionPower.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Sample distribution##GTAO", &gtaoSampleDistributionPower, r_gtaoSampleDistributionPower.GetMinValue(), r_gtaoSampleDistributionPower.GetMaxValue(), "%.2f")) {
+                        r_gtaoSampleDistributionPower.SetFloat(gtaoSampleDistributionPower);
+                    }
+
+                    float gtaoThinOccluderCompensation = r_gtaoThinOccluderCompensation.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Thin occluder compensation##GTAO", &gtaoThinOccluderCompensation, r_gtaoThinOccluderCompensation.GetMinValue(), r_gtaoThinOccluderCompensation.GetMaxValue(), "%.2f")) {
+                        r_gtaoThinOccluderCompensation.SetFloat(gtaoThinOccluderCompensation);
+                    }
+
+                    float gtaoDepthMipSamplingOffset = r_gtaoDepthMipSamplingOffset.GetFloat();
+                    ImGui::SetNextItemWidth(fontSize * 12.0f);
+                    if (ImGui::SliderFloat("Depth mip offset##GTAO", &gtaoDepthMipSamplingOffset, r_gtaoDepthMipSamplingOffset.GetMinValue(), r_gtaoDepthMipSamplingOffset.GetMaxValue(), "%.2f")) {
+                        r_gtaoDepthMipSamplingOffset.SetFloat(gtaoDepthMipSamplingOffset);
+                    }
+                }
+                ImGui::EndDisabled();
+            }
+
             if (roundedCollapsingHeader("Shadows##ShadowsHeader")) {
                 bool shadows = r_shadows2.GetBool();
                 if (ImGui::Checkbox("Enabled##Shadows", &shadows)) {
@@ -1021,132 +1147,6 @@ void App::BuildImGuiOverlay() {
 
             if (roundedCollapsingHeader("Local Shadow Atlas##ShadowAtlasHeader")) {
                 BuildImGuiShadowAtlasPreview();
-            }
-
-            if (roundedCollapsingHeader("Ambient Occlusion##AOHeader")) {
-                int aoMode = BE1::Clamp(r_ao.GetInteger(), static_cast<int>(RenderAOMode::Off), static_cast<int>(RenderAOMode::GTAO));
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::Combo("Ambient occlusion", &aoMode, "Off\0SSAO\0GTAO\0")) {
-                    r_ao.SetInteger(aoMode);
-                }
-
-                const bool aoEnabled = aoMode != static_cast<int>(RenderAOMode::Off);
-                const bool useSSAO = aoMode == static_cast<int>(RenderAOMode::SSAO);
-                const bool useGTAO = aoMode == static_cast<int>(RenderAOMode::GTAO);
-                ImGui::BeginDisabled(!aoEnabled);
-                if (useSSAO) {
-                    int ssaoQuality = r_ssaoQuality.GetInteger();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("SSAO quality", &ssaoQuality, "Low\0High\0")) {
-                        r_ssaoQuality.SetInteger(ssaoQuality);
-                    }
-                }
-                bool aoHalfResolution = r_aoHalfResolution.GetBool();
-                if (ImGui::Checkbox("Half resolution##AO", &aoHalfResolution)) {
-                    r_aoHalfResolution.SetBool(aoHalfResolution);
-                }
-                bool aoTemporalNoise = r_aoTemporalNoise.GetBool();
-                if (ImGui::Checkbox("Temporal noise##AO", &aoTemporalNoise)) {
-                    r_aoTemporalNoise.SetBool(aoTemporalNoise);
-                }
-                ImGui::SetItemTooltip("Requires TAA. Compare in the final rendered view; AO debug keeps a fixed pattern.");
-                if (useSSAO) {
-                    bool ssaoBilateral = r_ssaoBilateral.GetBool();
-                    if (ImGui::Checkbox("Bilateral filter##SSAO", &ssaoBilateral)) {
-                        r_ssaoBilateral.SetBool(ssaoBilateral);
-                    }
-                }
-                float aoRadius = r_aoRadius.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Radius##AO", &aoRadius, r_aoRadius.GetMinValue(), r_aoRadius.GetMaxValue(), "%.2f m", ImGuiSliderFlags_Logarithmic)) {
-                    r_aoRadius.SetFloat(aoRadius);
-                }
-                if (useSSAO) {
-                    bool ssaoDebug = r_ssaoDebug.GetBool();
-                    if (ImGui::Checkbox("Debug output##SSAO", &ssaoDebug)) {
-                        r_ssaoDebug.SetBool(ssaoDebug);
-                    }
-
-                    float ssaoNormalBiasScale = r_ssaoNormalBiasScale.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Normal bias scale##AO", &ssaoNormalBiasScale, r_ssaoNormalBiasScale.GetMinValue(), r_ssaoNormalBiasScale.GetMaxValue(), "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
-                        r_ssaoNormalBiasScale.SetFloat(ssaoNormalBiasScale);
-                    }
-                    ImGui::SetItemTooltip("Fraction of the AO radius. Offsets samples along the normal and rejects near-surface occlusion. Current bias: %.6g m.", aoRadius * ssaoNormalBiasScale);
-                    float ssaoDepthBiasScale = r_ssaoDepthBiasScale.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Depth bias scale##AO", &ssaoDepthBiasScale, r_ssaoDepthBiasScale.GetMinValue(), r_ssaoDepthBiasScale.GetMaxValue(), "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
-                        r_ssaoDepthBiasScale.SetFloat(ssaoDepthBiasScale);
-                    }
-                    ImGui::SetItemTooltip("Fraction of the AO radius. Sets the required view-space depth separation for occlusion. Current bias: %.6g m.", aoRadius * ssaoDepthBiasScale);
-
-                    float ssaoPower = r_ssaoPower.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Power##SSAO", &ssaoPower, r_ssaoPower.GetMinValue(), r_ssaoPower.GetMaxValue(), "%.2f")) {
-                        r_ssaoPower.SetFloat(ssaoPower);
-                    }
-                }
-                if (useGTAO) {
-                    int gtaoQuality = r_gtaoQuality.GetInteger();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Quality##GTAO", &gtaoQuality, "Low\0Medium\0High\0Ultra\0")) {
-                        r_gtaoQuality.SetInteger(gtaoQuality);
-                    }
-
-                    int gtaoDenoisePasses = r_gtaoDenoisePasses.GetInteger();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderInt("Denoise passes##GTAO", &gtaoDenoisePasses, static_cast<int>(r_gtaoDenoisePasses.GetMinValue()), static_cast<int>(r_gtaoDenoisePasses.GetMaxValue()))) {
-                        r_gtaoDenoisePasses.SetInteger(gtaoDenoisePasses);
-                    }
-
-                    bool gtao32BitDepth = r_gtao32BitDepth.GetBool();
-                    if (ImGui::Checkbox("32-bit depth##GTAO", &gtao32BitDepth)) {
-                        r_gtao32BitDepth.SetBool(gtao32BitDepth);
-                    }
-
-                    float gtaoPower = r_gtaoPower.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Power##GTAO", &gtaoPower, r_gtaoPower.GetMinValue(), r_gtaoPower.GetMaxValue(), "%.2f")) {
-                        r_gtaoPower.SetFloat(gtaoPower);
-                    }
-
-                    int gtaoDebug = r_gtaoDebug.GetInteger();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::Combo("Debug source##GTAO", &gtaoDebug, "Off\0Final AO\0Raw visibility\0Edges\0Depth mip 0\0Depth mip 1\0Depth mip 2\0Depth mip 3\0Depth mip 4\0")) {
-                        r_gtaoDebug.SetInteger(gtaoDebug);
-                    }
-
-                    float gtaoFalloffRange = r_gtaoFalloffRange.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Falloff range##GTAO", &gtaoFalloffRange, r_gtaoFalloffRange.GetMinValue(), r_gtaoFalloffRange.GetMaxValue(), "%.3f")) {
-                        r_gtaoFalloffRange.SetFloat(gtaoFalloffRange);
-                    }
-
-                    float gtaoRadiusMultiplier = r_gtaoRadiusMultiplier.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Radius multiplier##GTAO", &gtaoRadiusMultiplier, r_gtaoRadiusMultiplier.GetMinValue(), r_gtaoRadiusMultiplier.GetMaxValue(), "%.3f")) {
-                        r_gtaoRadiusMultiplier.SetFloat(gtaoRadiusMultiplier);
-                    }
-
-                    float gtaoSampleDistributionPower = r_gtaoSampleDistributionPower.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Sample distribution##GTAO", &gtaoSampleDistributionPower, r_gtaoSampleDistributionPower.GetMinValue(), r_gtaoSampleDistributionPower.GetMaxValue(), "%.2f")) {
-                        r_gtaoSampleDistributionPower.SetFloat(gtaoSampleDistributionPower);
-                    }
-
-                    float gtaoThinOccluderCompensation = r_gtaoThinOccluderCompensation.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Thin occluder compensation##GTAO", &gtaoThinOccluderCompensation, r_gtaoThinOccluderCompensation.GetMinValue(), r_gtaoThinOccluderCompensation.GetMaxValue(), "%.2f")) {
-                        r_gtaoThinOccluderCompensation.SetFloat(gtaoThinOccluderCompensation);
-                    }
-
-                    float gtaoDepthMipSamplingOffset = r_gtaoDepthMipSamplingOffset.GetFloat();
-                    ImGui::SetNextItemWidth(fontSize * 12.0f);
-                    if (ImGui::SliderFloat("Depth mip offset##GTAO", &gtaoDepthMipSamplingOffset, r_gtaoDepthMipSamplingOffset.GetMinValue(), r_gtaoDepthMipSamplingOffset.GetMaxValue(), "%.2f")) {
-                        r_gtaoDepthMipSamplingOffset.SetFloat(gtaoDepthMipSamplingOffset);
-                    }
-                }
-                ImGui::EndDisabled();
             }
 
             if (roundedCollapsingHeader("Screen Space Reflection##SSRHeader")) {

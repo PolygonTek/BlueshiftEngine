@@ -132,6 +132,8 @@ float3 SamplePreviousColorHistory(float2 uv) {
 
 #if USE_NEIGHBORHOOD_COLOR_BOUNDS
 static const float TAAResolveMinColorBoxRange = 1e-5;
+static const float TAAResolveRelativeColorTolerance = 0.02;
+static const float TAAResolveColorToleranceMaxMotionPixels = 1.0;
 
 float3 LoadNeighborhoodColor(int2 sampleCoord, int2 maxPixelCoord) {
     const int2 clampedCoord = clamp(sampleCoord, int2(0, 0), maxPixelCoord);
@@ -347,8 +349,21 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             float3 colorMax;
             ComputeNeighborhoodColorBounds(pixelCoord, centerColor, colorMin, colorMax);
 
+            // 화면상 이동량이 작을수록 color bounds 에 밝기에 비례한 여유를 더한다.
+            // 이동량이 커질수록 여유를 줄이고 1 pixel/frame 부터는 적용하지 않는다.
+            const float2 boundsVelocityPixels = abs(velocity) * float2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y);
+            const float boundsStability = saturate(1.0 - max(boundsVelocityPixels.x, boundsVelocityPixels.y) / TAAResolveColorToleranceMaxMotionPixels);
+#if USE_YCOCG_CLAMP
+            const float boundsLuma = max(centerColor.x, 0.0);
+#else
+            const float boundsLuma = GetLuma(max(centerColor, float3(0.0, 0.0, 0.0)));
+#endif
+            const float colorTolerance = boundsLuma * TAAResolveRelativeColorTolerance * boundsStability;
+            colorMin -= colorTolerance;
+            colorMax += colorTolerance;
+
 #if USE_ADAPTIVE_WEIGHT
-            // history color 가 color bounds 밖으로 벗어난 정도에 따라 historyWeight 를 줄인다.
+            // history color 가 허용 여유를 포함한 color bounds 밖으로 벗어난 정도에 따라 historyWeight 를 줄인다.
             const float3 unclampedHistoryColor = historyColor;
             historyColor = clamp(historyColor, colorMin, colorMax);
             const float3 colorRange = max(colorMax - colorMin, float3(TAAResolveMinColorBoxRange, TAAResolveMinColorBoxRange, TAAResolveMinColorBoxRange));
