@@ -85,7 +85,7 @@ public:
         RHI::Texture *              pendingReplacementTexture = nullptr;
     };
 
-    Texture() = default;
+    Texture() {}
     Texture(const Texture &rhs) = delete;
     Texture &operator=(const Texture &rhs) = delete;
     ~Texture() { Purge(); }

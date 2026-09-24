@@ -49,6 +49,7 @@ SharedPtr<Texture> TextureManager::AllocTexture(const char *hashName) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("TextureManager::AllocTexture: empty texture name");
     }
+
     if (const auto *entry = textureHashMap.Get(hashName)) {
         if (!entry->second.expired()) {
             BE_FATALERROR("TextureManager::AllocTexture: %s texture already allocated", hashName);

@@ -129,7 +129,7 @@ public:
 
     using PropertyValue = BE1::Variant;
 
-    ShaderTemplate() = default;
+    ShaderTemplate() {}
     ShaderTemplate(const ShaderTemplate &rhs) = delete;
     ShaderTemplate &operator=(const ShaderTemplate &rhs) = delete;
     ~ShaderTemplate() { Purge(); }

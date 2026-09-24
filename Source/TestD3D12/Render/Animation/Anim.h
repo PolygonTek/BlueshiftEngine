@@ -78,7 +78,7 @@ public:
         float                       frontlerp;          ///< A fractional value that maps [1, 0] to [frame1, frame2]
     };
 
-    Anim() = default;
+    Anim() {}
     ~Anim() { Purge(); }
 
     const char *                    GetName() const { return name.c_str(); }

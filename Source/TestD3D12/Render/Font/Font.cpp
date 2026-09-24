@@ -17,6 +17,9 @@
 #include "Render/Font/Font.h"
 #include "FontFace.h"
 
+Font::Font() {
+}
+
 Font::~Font() {
 }
 

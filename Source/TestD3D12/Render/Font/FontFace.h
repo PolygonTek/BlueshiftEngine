@@ -31,7 +31,7 @@ class TrueTypeFont;
 
 class FontFace {
 public:
-    virtual ~FontFace() = default;
+    virtual ~FontFace() {}
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode renderMode) const = 0;
 
@@ -54,7 +54,7 @@ public:
 
 class BitmapFontFace : public FontFace {
 public:
-    BitmapFontFace() = default;
+    BitmapFontFace() {}
     virtual ~BitmapFontFace() { Purge(); }
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode renderMode) const override;
@@ -91,7 +91,7 @@ private:
 
 class TrueTypeFontFace : public FontFace {
 public:
-    TrueTypeFontFace() = default;
+    TrueTypeFontFace() {}
     virtual ~TrueTypeFontFace() { Purge(); }
 
                             /// Caches a glyph in the texture with the given character code.

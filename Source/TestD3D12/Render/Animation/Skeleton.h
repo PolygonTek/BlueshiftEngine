@@ -46,7 +46,7 @@ public:
         Failed
     };
 
-    Skeleton() = default;
+    Skeleton() {}
     Skeleton(const Skeleton &rhs) = delete;
     Skeleton &operator=(const Skeleton &rhs) = delete;
     ~Skeleton() { Purge(); }

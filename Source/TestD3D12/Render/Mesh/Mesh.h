@@ -74,7 +74,7 @@ public:
         int32_t                     materialIndex = -1;
     };
 
-    Mesh() = default;
+    Mesh() {}
     Mesh(const Mesh &rhs) = delete;
     Mesh &operator=(const Mesh &rhs) = delete;
     ~Mesh() { Purge(); }
