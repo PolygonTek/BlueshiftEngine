@@ -23,6 +23,7 @@ set(COMMON_ENGINE_FILES
     Public/Containers/Stack.h
     Public/Containers/Queue.h 
     Public/Containers/RingBuffer.h
+    Public/Containers/StaticRingBuffer.h
     Public/Containers/StrArray.h
     Public/Containers/StrPool.h
     Public/Containers/LinkedList.h

@@ -47,6 +47,7 @@
 #include "Containers/LinkList.h"
 #include "Containers/Queue.h"
 #include "Containers/RingBuffer.h"
+#include "Containers/StaticRingBuffer.h"
 #include "Containers/HashIndex.h"
 #include "Containers/HashTable.h"
 #include "Containers/StrArray.h"

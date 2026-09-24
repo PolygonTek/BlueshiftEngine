@@ -45,6 +45,7 @@ public:
     RingBuffer &operator=(const RingBuffer &) = delete;
     RingBuffer(RingBuffer &&rhs) noexcept { Swap(rhs); }
     RingBuffer &operator=(RingBuffer &&rhs) noexcept;
+
     ~RingBuffer() { Clear(); }
 
     bool                IsEmpty() const { return count == 0; }

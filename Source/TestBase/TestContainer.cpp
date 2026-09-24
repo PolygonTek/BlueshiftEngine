@@ -330,9 +330,270 @@ static void TestRingBuffer() {
     std::puts("RingBuffer tests passed");
 }
 
+static void TestStaticWrapAndCapacity() {
+    BE1::StaticRingBuffer<int, 3> queue;
+    CHECK(queue.IsEmpty() && !queue.IsFull() && queue.Capacity() == 3);
+    for (int value = 1; value <= 3; ++value) {
+        CHECK(queue.TryPushBack(value));
+    }
+    CHECK(queue.IsFull());
+    CHECK(!queue.TryPushBack(4));
+    CHECK(queue.PopFront() == 1);
+    int *second = &queue.Front();
+    queue.PushBack(queue.Front());
+    CHECK(&queue.Front() == second);
+
+    const auto &view = queue;
+    CHECK(view.Front() == 2 && view.Back() == 2);
+    CHECK(view[0] == 2 && view[1] == 3 && view[2] == 2);
+    CHECK(queue.PopFront() == 2);
+    CHECK(queue.PopFront() == 3);
+    CHECK(queue.PopFront() == 2);
+
+    queue.PushBack(5);
+    queue.Reset();
+    CHECK(queue.IsEmpty() && queue.Capacity() == 3);
+    queue.PushBack(6);
+    queue.Clear();
+    CHECK(queue.IsEmpty() && queue.Capacity() == 3);
+
+    BE1::StaticRingBuffer<int, 1> single;
+    for (int value = 0; value < 100; ++value) {
+        CHECK(single.TryPushBack(value));
+        CHECK(single.IsFull() && !single.TryPushBack(-1));
+        CHECK(single.PopFront() == value);
+    }
+}
+
+static void TestStaticAgainstDeque() {
+    std::mt19937 random(84631);
+    std::deque<int> expected;
+    BE1::StaticRingBuffer<int, 7> queue;
+
+    for (int i = 0; i < 100000; ++i) {
+        const unsigned operation = random() % 10;
+        if (operation < 6) {
+            const bool accepted = queue.TryPushBack(i);
+            CHECK(accepted == (expected.size() < 7));
+            if (accepted) {
+                expected.push_back(i);
+            }
+        } else if (operation < 9 && !expected.empty()) {
+            CHECK(queue.PopFront() == expected.front());
+            expected.pop_front();
+        } else if (operation == 9 && i % 100 == 0) {
+            queue.Reset();
+            expected.clear();
+        }
+
+        CHECK(queue.Count() == static_cast<int>(expected.size()));
+        CHECK(queue.IsEmpty() == expected.empty());
+        CHECK(queue.IsFull() == (expected.size() == 7));
+        CHECK(queue.Capacity() == 7);
+        for (int index = 0; index < queue.Count(); ++index) {
+            CHECK(queue[index] == expected[index]);
+        }
+    }
+}
+
+static void TestStaticLifetimeAndMove() {
+    using Queue = BE1::StaticRingBuffer<Lifetime, 3>;
+    static_assert(!std::is_copy_constructible_v<Queue>);
+    static_assert(std::is_nothrow_move_constructible_v<Queue>);
+    static_assert(std::is_nothrow_move_assignable_v<Queue>);
+    {
+        Queue queue;
+        CHECK(Lifetime::live == 0);
+        queue.EmplaceBack(1);
+        queue.EmplaceBack(2);
+        queue.EmplaceBack(3);
+        CHECK(!queue.TryEmplaceBack(4) && Lifetime::live == 3);
+        CHECK(queue.PopFront().value == 1);
+        queue.EmplaceBack(4);
+
+        Queue moved(std::move(queue));
+        CHECK(queue.IsEmpty() && queue.Capacity() == 3);
+        CHECK(moved.Count() == 3 && Lifetime::live == 3);
+        CHECK(moved[0].value == 2 && moved[1].value == 3 && moved[2].value == 4);
+        queue.EmplaceBack(5);
+        CHECK(queue.PopFront().value == 5);
+
+        Queue assigned;
+        assigned.EmplaceBack(9);
+        assigned = std::move(moved);
+        CHECK(moved.IsEmpty() && moved.Capacity() == 3);
+        CHECK(assigned.Count() == 3 && Lifetime::live == 3);
+        assigned = std::move(assigned);
+        CHECK(assigned.Front().value == 2 && assigned.Back().value == 4);
+
+        // Reset must destroy a wrapped live range, and only that range.
+        CHECK(assigned.PopFront().value == 2);
+        assigned.EmplaceBack(6);
+        assigned.Reset();
+        CHECK(Lifetime::live == 0 && assigned.Capacity() == 3);
+        assigned.EmplaceBack(7);
+        assigned.Clear();
+        CHECK(Lifetime::live == 0 && assigned.IsEmpty());
+        assigned.EmplaceBack(8);
+    }
+    CHECK(Lifetime::live == 0);
+}
+
+static void TestStaticOwnershipOnRejection() {
+    BE1::StaticRingBuffer<std::unique_ptr<int>, 1> queue;
+    queue.PushBack(std::make_unique<int>(1));
+    auto next = std::make_unique<int>(2);
+    CHECK(!queue.TryPushBack(std::move(next)));
+    CHECK(next && *next == 2);
+
+    bool failed = false;
+    try {
+        queue.PushBack(std::move(next));
+    } catch (const std::length_error &) {
+        failed = true;
+    }
+    CHECK(failed && next && *next == 2);
+    CHECK(queue.Count() == 1 && *queue.Front() == 1);
+    CHECK(*queue.PopFront() == 1);
+    queue.PushBack(std::move(next));
+    CHECK(!next && *queue.PopFront() == 2);
+}
+
+static void TestStaticAlignmentAndStorage() {
+    BE1::StaticRingBuffer<AlignedValue, 3> queue;
+    const uintptr_t storageBegin = reinterpret_cast<uintptr_t>(&queue);
+    const uintptr_t storageEnd = storageBegin + sizeof(queue);
+    for (int i = 0; i < 50; ++i) {
+        if (queue.IsFull()) {
+            CHECK(queue.PopFront().value == i - 3);
+        }
+        AlignedValue &element = queue.EmplaceBack(i);
+        const uintptr_t address = reinterpret_cast<uintptr_t>(&element);
+        CHECK(address % alignof(AlignedValue) == 0);
+        CHECK(address >= storageBegin && address + sizeof(element) <= storageEnd);
+        CHECK(queue.Back().value == i);
+    }
+
+    // Reusing a slot must also work for types with const subobjects.
+    struct ImmutableValue {
+        const int value;
+        explicit ImmutableValue(int value) : value(value) {}
+    };
+    BE1::StaticRingBuffer<ImmutableValue, 1> single;
+    for (int i = 0; i < 100; ++i) {
+        single.EmplaceBack(i);
+        CHECK(single.Front().value == i);
+        CHECK(single.PopFront().value == i);
+    }
+}
+
+struct ThrowingMove {
+    static int live;
+    static int movesBeforeThrow;
+    int value;
+
+    explicit ThrowingMove(int value) : value(value) { ++live; }
+    ThrowingMove(const ThrowingMove &) = delete;
+    ThrowingMove(ThrowingMove &&rhs) : value(rhs.value) {
+        if (movesBeforeThrow == 0) {
+            throw std::runtime_error("move failure");
+        }
+        if (movesBeforeThrow > 0) {
+            --movesBeforeThrow;
+        }
+        rhs.value = -1;
+        ++live;
+    }
+    ~ThrowingMove() { --live; }
+};
+
+int ThrowingMove::live = 0;
+int ThrowingMove::movesBeforeThrow = -1;
+
+static void TestStaticConstructionFailures() {
+    {
+        BE1::StaticRingBuffer<CopyOnGrow, 2> queue;
+        queue.EmplaceBack(1);
+        CHECK(queue.PopFront().value == 1);
+        queue.EmplaceBack(2);
+        bool failed = false;
+        try {
+            (void)queue.TryEmplaceBack(-1);
+        } catch (const std::runtime_error &) {
+            failed = true;
+        }
+        CHECK(failed && queue.Count() == 1 && CopyOnGrow::live == 1);
+        CHECK(queue.Front().value == 2);
+
+        CopyOnGrow::copiesBeforeThrow = 0;
+        failed = false;
+        try {
+            queue.PopFront();
+        } catch (const std::runtime_error &) {
+            failed = true;
+        }
+        CHECK(failed && queue.Count() == 1 && queue.Front().value == 2);
+        CopyOnGrow::copiesBeforeThrow = -1;
+        queue.EmplaceBack(3);
+        CHECK(queue.PopFront().value == 2);
+        CHECK(queue.PopFront().value == 3);
+    }
+    CHECK(CopyOnGrow::live == 0);
+
+    using Queue = BE1::StaticRingBuffer<ThrowingMove, 3>;
+    static_assert(!std::is_nothrow_move_constructible_v<Queue>);
+    static_assert(!std::is_nothrow_move_assignable_v<Queue>);
+    {
+        Queue source;
+        source.EmplaceBack(1);
+        source.EmplaceBack(2);
+        source.EmplaceBack(3);
+
+        ThrowingMove::movesBeforeThrow = 1;
+        bool failed = false;
+        try {
+            Queue moved(std::move(source));
+        } catch (const std::runtime_error &) {
+            failed = true;
+        }
+        CHECK(failed && ThrowingMove::live == 3 && source.Count() == 3);
+        CHECK(source[0].value == -1 && source[1].value == 2 && source[2].value == 3);
+
+        Queue assigned;
+        assigned.EmplaceBack(9);
+        ThrowingMove::movesBeforeThrow = 1;
+        failed = false;
+        try {
+            assigned = std::move(source);
+        } catch (const std::runtime_error &) {
+            failed = true;
+        }
+        CHECK(failed && assigned.Count() == 1 && source.Count() == 3);
+        CHECK(ThrowingMove::live == 4);
+        assigned.Reset();
+        source.Reset();
+        CHECK(ThrowingMove::live == 0);
+        ThrowingMove::movesBeforeThrow = -1;
+        CHECK(source.TryEmplaceBack(4));
+        CHECK(assigned.TryEmplaceBack(5));
+    }
+    CHECK(ThrowingMove::live == 0);
+}
+
+static void TestStaticRingBuffer() {
+    TestStaticWrapAndCapacity();
+    TestStaticAgainstDeque();
+    TestStaticLifetimeAndMove();
+    TestStaticOwnershipOnRejection();
+    TestStaticAlignmentAndStorage();
+    TestStaticConstructionFailures();
+    std::puts("StaticRingBuffer tests passed");
+}
+
 #undef CHECK
 
 void Test::TestContainer() {
     TestHashLinkMap();
     TestRingBuffer();
+    TestStaticRingBuffer();
 }
