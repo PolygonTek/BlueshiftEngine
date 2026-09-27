@@ -21,37 +21,33 @@
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
-static uint32_t BuildFloatSortKey(float value) {
+// float 값을 작은 수에서 큰 수 순으로 정렬할 수 있도록 uint32_t 값을 계산한다.
+static uint32_t FloatToAscendingSortKey(float value) {
     uint32_t bits;
     memcpy(&bits, &value, sizeof(bits));
     return (bits & 0x80000000u) ? ~bits : (bits ^ 0x80000000u);
 }
 
-static uint32_t BuildRoughDepthKey(const VisSurf *visSurf) {
-    if (!visSurf) {
-        return 0;
-    }
-
-    // 가까운 물체일수록 작은 값 (0 에 가까움) 이 됨
-    const uint32_t depthKey = BuildFloatSortKey(visSurf->viewZ) ^ 0xFFFFFFFFu;
-    return (depthKey >> 20) & 0xFFF; // 상위 12 비트 추출 (0 ~ 4095)
+// float 값을 큰 수에서 작은 수 순으로 정렬할 수 있도록 uint32_t 값을 계산한다.
+static uint32_t FloatToDescendingSortKey(float value) {
+    return FloatToAscendingSortKey(value) ^ 0xFFFFFFFFu;
 }
 
 static uint64_t BuildOpaqueSortKey(const VisSurf *visSurf, RHI::PipelineState *pso) {
     //--------------------------------------------------------------
-    // 0xFFFF000000000000 (16비트, 0~65535)  : PSO sort index
+    // 0xFFFF000000000000 (16비트, 0~65535)  : PSO sort ID
     // 0x0000FFFF00000000 (16비트, 0~65535)  : subMesh index
     // 0x00000000F0000000 ( 4비트, 0~15)     : LOD level
     // 0x000000000FFFF000 (16비트, 0~65535)  : shader material index
     // 0x0000000000000FFF (12비트, 0~4095)   : rough view depth
     //--------------------------------------------------------------
-    const uint64_t psoIndex = pso ? (pso->sortIndex & 0xFFFF) : 0;
+    const uint64_t psoSortId = pso ? (pso->sortId & 0xFFFF) : 0;
     const uint64_t subMeshIndex = visSurf->subMesh ? (visSurf->subMesh->GetID() & 0xFFFF) : 0;
     const uint64_t lodLevel = visSurf->lodLevel & 0xF;
     const uint64_t shaderMaterialIndex = visSurf->shaderMaterialIndex & 0xFFFF;
-    const uint64_t roughDepth = BuildRoughDepthKey(visSurf);
+    const uint64_t roughDepth = (FloatToDescendingSortKey(visSurf->viewZ) >> 20) & 0xFFF;
 
-    return (psoIndex << 48) | (subMeshIndex << 32) | (lodLevel << 28) | (shaderMaterialIndex << 12) | roughDepth;
+    return (psoSortId << 48) | (subMeshIndex << 32) | (lodLevel << 28) | (shaderMaterialIndex << 12) | roughDepth;
 }
 
 static uint64_t BuildDepthSortKey(const VisSurf *visSurf) {
@@ -63,13 +59,14 @@ static uint64_t BuildDepthSortKey(const VisSurf *visSurf) {
     const bool alphaTest = visSurf->baseFeatureSet.HasFeature(ShaderFeature::Perforated);
     const uint64_t alphaTestBucket = alphaTest ? 1ull : 0ull;
     const uint64_t shaderMaterialIndex = alphaTest ? (visSurf->shaderMaterialIndex & 0x7FFFFFFFull) : 0;
-    const uint64_t depthKey = static_cast<uint64_t>(BuildFloatSortKey(visSurf->viewZ)) ^ 0xFFFFFFFFull;
+    const uint64_t depthKey = static_cast<uint64_t>(FloatToDescendingSortKey(visSurf->viewZ));
 
     return (alphaTestBucket << 63) | (shaderMaterialIndex << 32) | depthKey;
 }
 
 static uint64_t BuildTransparentSortKey(const VisSurf *visSurf) {
-    return BuildFloatSortKey(visSurf->viewZ);
+    // viewZ 는 전방이 음수를 나타내므로, 먼 물체에서 가까운 물체 순으로 정렬하도록 한다.
+    return FloatToAscendingSortKey(visSurf->viewZ);
 }
 
 static ShaderFeatureSet BuildSurfaceFeatureSet(const VisSurf *visSurf, const RenderPass *renderPass, bool directLighting, bool indirectLighting) {

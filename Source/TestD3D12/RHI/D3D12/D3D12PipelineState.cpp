@@ -464,7 +464,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
     // 없다면 PSO 객체를 새로 만든다.
     D3D12PipelineState *pipelineState = new D3D12PipelineState;
     pipelineState->hash = psoHash;
-    pipelineState->sortIndex = nextPipelineStateSortIndex.fetch_add(1);
+    pipelineState->sortId = nextGraphicsPipelineStateSortId.fetch_add(1);
     pipelineState->isGraphics = true;
 
     // PSO 객체를 만들려면 PSO 스트림을 구성해야 한다.
@@ -772,11 +772,11 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
 
     D3D12PipelineState *pipelineState = new D3D12PipelineState;
     pipelineState->hash = psoHash;
-    pipelineState->sortIndex = nextPipelineStateSortIndex.fetch_add(1);
     pipelineState->isGraphics = false;
 
     // rootSignature 를 유지하기 위해 레퍼런스 카운트를 증가시킨다.
     cs->rootSignature->AddRef();
+
     // rootSignatureDesc 를 유지하기 위해 rootSignatureDeserializer 의 레퍼런스 카운트를 증가시킨다.
     cs->rootSignatureDeserializer->AddRef();
 
@@ -944,7 +944,7 @@ RHI::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *rootSigna
 
     D3D12PipelineState *pipelineState = new D3D12PipelineState;
     pipelineState->pso = pso;
-    pipelineState->sortIndex = nextPipelineStateSortIndex.fetch_add(1);
+    pipelineState->sortId = nextGraphicsPipelineStateSortId.fetch_add(1);
     pipelineState->isGraphics = true;
     return pipelineState;
 }

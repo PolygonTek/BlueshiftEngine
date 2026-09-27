@@ -714,7 +714,7 @@ namespace RHI {
     class PipelineState : public GPUObject {
     public:
         uint64_t                        hash = 0;
-        uint32_t                        sortIndex = 0;
+        uint32_t                        sortId = 0;             ///< Graphics PSO 정렬용 식별자. Compute PSO 는 0.
         bool                            isGraphics;
         std::atomic_int                 refCount = 1;
     };

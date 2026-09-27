@@ -355,7 +355,7 @@ public:
     BE1::Str                            psoCacheDir;
 
     BE1::Mutex                          psoMapMutex;
-    std::atomic_uint32_t                nextPipelineStateSortIndex { 1 };
+    std::atomic_uint32_t                nextGraphicsPipelineStateSortId { 1 };
     BE1::HashMap<uint64_t, D3D12PipelineState *> graphicsPsoMap;
     BE1::HashMap<uint64_t, D3D12PipelineState *> computePsoMap;
 
