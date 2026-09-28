@@ -20,7 +20,7 @@ struct RenderFrameSettings;
 
 static constexpr int RenderGTAODepthMipMaxLevelCount = 5;
 
-struct ScreenSpaceAOTextures {
+struct ScreenSpaceAOTextureSet {
     RHI::Texture *                  outputTexture = nullptr;
     RHI::Texture *                  rawTexture = nullptr;
     RHI::Texture *                  tempTexture = nullptr;
@@ -42,12 +42,12 @@ public:
     void                            Ensure(uint32_t renderWidth, uint32_t renderHeight, const RenderFrameSettings &settings);
     void                            Destroy();
 
-    const ScreenSpaceAOTextures &   GetTextures() const { return textures; }
+    const ScreenSpaceAOTextureSet & GetTextureSet() const { return textureSet; }
 
 private:
     void                            DestroyFilterResources();
     void                            DestroyGTAOResources();
     bool                            CreateGTAOPrefilterDepthTexture(uint32_t width, uint32_t height, BE1::Image::Format imageFormat);
 
-    ScreenSpaceAOTextures           textures;
+    ScreenSpaceAOTextureSet         textureSet;
 };

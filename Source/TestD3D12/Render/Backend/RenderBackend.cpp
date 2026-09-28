@@ -243,7 +243,7 @@ bool RenderBackend::UploadCameraConstants() {
         return false;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
 
     cameraConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(CameraConstants));
     if (!cameraConstantBuffer) {
@@ -256,13 +256,13 @@ bool RenderBackend::UploadCameraConstants() {
     if (currentVisCamera->projectionOrthogonal) {
         flags |= ShaderCameraFlagProjectionOrthogonal;
     }
-    if (renderFrameSettings.lightCullingZBin) {
+    if (frameSettings.lightCullingZBin) {
         flags |= ShaderCameraFlagUseLightZBin;
     }
     if (currentVisCamera->directionalLightVisible) {
         flags |= ShaderCameraFlagUseDirectionalLight;
     }
-    if (renderFrameSettings.specularAA) {
+    if (frameSettings.specularAA) {
         flags |= ShaderCameraFlagUseSpecularAA;
     }
     if (currentVisCamera->applyAO) {
@@ -318,7 +318,7 @@ bool RenderBackend::UploadCameraConstants() {
     constants->lightCullingTileCountX = currentVisCamera->lightCulling.tileCountX;
     constants->lightCullingTileCountY = currentVisCamera->lightCulling.tileCountY;
     constants->lightCullingWordsPerTile = currentVisCamera->lightCulling.wordsPerTile;
-    constants->lightCullingDebugMode = renderFrameSettings.lightCullingDebugMode;
+    constants->lightCullingDebugMode = frameSettings.lightCullingDebugMode;
     constants->padding0 = 0;
 
     const BE1::Mat3 &envLightAxis = currentVisCamera->envLightAxis;
@@ -332,7 +332,7 @@ bool RenderBackend::UploadCameraConstants() {
     constants->envLightDiffuseIrradianceCubeMapIndex = currentVisCamera->envLightDiffuseIrradianceCubeMap ? currentVisCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularCubeMapIndex = currentVisCamera->envLightSpecularCubeMap ? currentVisCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularMipCount = currentVisCamera->envLightSpecularMipCount;
-    constants->aoTextureIndex = currentVisCamera->applyAO ? currentVisCamera->ao.textures.outputTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->aoTextureIndex = currentVisCamera->applyAO ? currentVisCamera->ao.textureSet.outputTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
 
     // Shadow depth 기록을 마친 뒤 해당 카메라의 샘플링 데이터를 활성화한다.
     constants->csm = {};
@@ -499,8 +499,8 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     currentVisCamera = cmd->visCamera;
 
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
-    if ((currentVisCamera->is2D && renderFrameSettings.skipDrawCamera2D) || (!currentVisCamera->is2D && renderFrameSettings.skipDrawCamera3D)) {
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
+    if ((currentVisCamera->is2D && frameSettings.skipDrawCamera2D) || (!currentVisCamera->is2D && frameSettings.skipDrawCamera3D)) {
         return (const void *)(cmd + 1);
     }
 
@@ -613,9 +613,9 @@ bool RenderBackend::DispatchScreenSpaceAO() {
 
     ScreenSpaceAO &screenSpaceAO = renderSystem->GetScreenSpaceAO();
     const ScreenSpaceAOFrameData &ao = currentVisCamera->ao;
-    const RenderFrameSettings &settings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     ScreenSpaceAO::DispatchParams params;
-    if (!screenSpaceAO.PrepareDispatch(ao, settings, params)) {
+    if (!screenSpaceAO.PrepareDispatch(ao, frameSettings, params)) {
         return false;
     }
 
@@ -695,19 +695,19 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         DispatchHiZDebugPreview();
     }
 
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     const RHI::Texture *outputOverrideTexture = nullptr;
 
-    const bool debugGTAO = currentVisCamera->ao.mode == RenderAOMode::GTAO && renderFrameSettings.gtaoDebug != 0;
+    const bool debugGTAO = currentVisCamera->ao.mode == RenderAOMode::GTAO && frameSettings.gtaoDebug != 0;
 
     if (debugGTAO && aoReady) {
-        if (renderFrameSettings.gtaoDebug > 1) {
+        if (frameSettings.gtaoDebug > 1) {
             renderSystem->GetScreenSpaceAO().DispatchDebugPreview(*this);
         }
-        outputOverrideTexture = currentVisCamera->ao.textures.outputTexture;
-    } else if (renderFrameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
+        outputOverrideTexture = currentVisCamera->ao.textureSet.outputTexture;
+    } else if (frameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
         outputOverrideTexture = useMSAA ? currentVisCamera->resolvedColorTexture : currentVisCamera->colorTexture;
-    } else if (renderFrameSettings.ssrDebug && ssrTraceReady) {
+    } else if (frameSettings.ssrDebug && ssrTraceReady) {
         outputOverrideTexture = currentVisCamera->ssrTraceTexture;
     }
 
@@ -1013,10 +1013,10 @@ void RenderBackend::PostProcessAndBlitToOutput(bool velocityReady, const RHI::Te
     currentPostProcessInputTexture = currentVisCamera->resolvedColorTexture ? currentVisCamera->resolvedColorTexture : currentVisCamera->colorTexture;
     const RHI::Texture *finalColorTexture = currentPostProcessInputTexture;
 
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     if (outputOverrideTexture) {
         finalColorTexture = outputOverrideTexture;
-    } else if (!renderFrameSettings.skipPostProcess && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
+    } else if (!frameSettings.skipPostProcess && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
         bool depthHistoryReady = true;
         if (currentVisCamera->taaResolve && currentVisCamera->depthTexture->GetSampleCount() > 1) {
             depthHistoryReady = DispatchMSAAResolveDepthHistory();
@@ -1037,7 +1037,7 @@ void RenderBackend::PostProcessAndBlitToOutput(bool velocityReady, const RHI::Te
 
     if (currentVisCamera->outputTexture) {
         if (finalColorTexture != currentVisCamera->outputTexture) {
-            BlitTextureToRenderTarget(finalColorTexture, currentVisCamera->outputTexture, currentVisCamera->outputViewID, currentVisCamera->outputBeforeState, currentVisCamera->outputAfterState, currentVisCamera->outputRect, currentVisCamera->outputImagePSO);
+            BlitTextureToRenderTarget(finalColorTexture, currentVisCamera->outputTexture, currentVisCamera->outputViewID, currentVisCamera->outputBeforeState, currentVisCamera->outputAfterState, currentVisCamera->outputRect, currentVisCamera->outputBlitPSO);
         }
     } else if (swapChainOutputEnabled) {
         // 백버퍼에 바로 blit 하지 않고, frameCompositionTexture 에 먼저 blit 한다.

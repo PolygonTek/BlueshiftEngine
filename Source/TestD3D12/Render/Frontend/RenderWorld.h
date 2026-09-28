@@ -230,7 +230,7 @@ private:
     void                        FindVisLights(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        SetupCascadedShadow(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
     void                        FindDirectionalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, const VisCascadedShadow *cascadedShadow);
-    static void                 ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax);
+    static uint32_t             ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax);
     static void                 BuildLightCullingData(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
     static void                 BuildLightZBins(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera);
     bool                        IsVisObjectRegisteredInCurrentView(const RenderObject *renderObject) const;

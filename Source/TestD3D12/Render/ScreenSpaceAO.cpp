@@ -113,20 +113,20 @@ void ScreenSpaceAO::UpdateFramePSOs(const RenderFrameSettings &settings) {
 }
 
 bool ScreenSpaceAO::HasRequiredResources(const ScreenSpaceAOFrameData &data) {
-    const ScreenSpaceAOTextures &textures = data.textures;
-    if (data.mode != RenderAOMode::GTAO || !data.depthTexture || !data.normalTexture || !textures.outputTexture) {
+    const ScreenSpaceAOTextureSet &textureSet = data.textureSet;
+    if (data.mode != RenderAOMode::GTAO || !data.depthTexture || !data.normalTexture || !textureSet.outputTexture) {
         return false;
     }
 
-    assert(!textures.gtaoPrefilterDepthTexture || textures.gtaoDepthMipCount > 0);
-    return textures.rawTexture && textures.gtaoPrefilterDepthTexture && textures.gtaoPackedEdgesTexture;
+    assert(!textureSet.gtaoPrefilterDepthTexture || textureSet.gtaoDepthMipCount > 0);
+    return textureSet.rawTexture && textureSet.gtaoPrefilterDepthTexture && textureSet.gtaoPackedEdgesTexture;
 }
 
 bool ScreenSpaceAO::PrepareDispatch(const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, DispatchParams &params) const {
     assert(HasRequiredResources(data));
     params = {};
 
-    const ScreenSpaceAOTextures &textures = data.textures;
+    const ScreenSpaceAOTextureSet &textureSet = data.textureSet;
 
     if (!frameGTAOPrefilterPSO || !frameGTAOMainPSO || !frameGTAODenoisePSO) {
         return false;
@@ -134,7 +134,7 @@ bool ScreenSpaceAO::PrepareDispatch(const ScreenSpaceAOFrameData &data, const Re
 
     // GTAO resources use the requested resolution; there is no full-resolution fallback.
     params.useHalfResolution = settings.aoHalfResolution;
-    if (params.useHalfResolution && (!frameAOUpsamplePSO || !textures.halfDepthTexture)) {
+    if (params.useHalfResolution && (!frameAOUpsamplePSO || !textureSet.halfDepthTexture)) {
         return false;
     }
 
@@ -142,7 +142,7 @@ bool ScreenSpaceAO::PrepareDispatch(const ScreenSpaceAOFrameData &data, const Re
     params.denoisePassCount = settings.gtaoDebug == 2 ? 1u : BE1::Max(settings.gtaoDenoisePasses, 1u);
 
     const bool needTempTexture = params.useHalfResolution || params.denoisePassCount > 1;
-    return !needTempTexture || textures.tempTexture;
+    return !needTempTexture || textureSet.tempTexture;
 }
 
 void ScreenSpaceAO::Dispatch(RenderBackend &backend, const DispatchParams &params) const {
@@ -156,13 +156,13 @@ void ScreenSpaceAO::Dispatch(RenderBackend &backend, const DispatchParams &param
 
     RHI::Texture *depthTexture = data.depthTexture;
     RHI::Texture *normalTexture = data.normalTexture;
-    RHI::Texture *aoTexture = data.textures.outputTexture;
-    RHI::Texture *rawAOTexture = data.textures.rawTexture;
-    RHI::Texture *tempAOTexture = data.textures.tempTexture;
-    RHI::Texture *halfDepthTexture = data.textures.halfDepthTexture;
-    RHI::Texture *prefilterDepthTexture = data.textures.gtaoPrefilterDepthTexture;
-    RHI::Texture *packedEdgesTexture = data.textures.gtaoPackedEdgesTexture;
-    const uint32_t mipCount = data.textures.gtaoDepthMipCount;
+    RHI::Texture *aoTexture = data.textureSet.outputTexture;
+    RHI::Texture *rawAOTexture = data.textureSet.rawTexture;
+    RHI::Texture *tempAOTexture = data.textureSet.tempTexture;
+    RHI::Texture *halfDepthTexture = data.textureSet.halfDepthTexture;
+    RHI::Texture *prefilterDepthTexture = data.textureSet.gtaoPrefilterDepthTexture;
+    RHI::Texture *packedEdgesTexture = data.textureSet.gtaoPackedEdgesTexture;
+    const uint32_t mipCount = data.textureSet.gtaoDepthMipCount;
     const bool useHalfResolution = params.useHalfResolution;
     const uint32_t denoisePassCount = params.denoisePassCount;
     const RHI::GPUResourceState depthInputState = RHI::GPUResourceState::ShaderResource;
@@ -211,11 +211,11 @@ void ScreenSpaceAO::DispatchGTAOPrefilterDepth(RenderBackend &backend, RHI::GPUR
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
     RHI::Texture *depthTexture = data.depthTexture;
-    RHI::Texture *aoTexture = data.textures.outputTexture;
-    RHI::Texture *rawAOTexture = data.textures.rawTexture;
-    RHI::Texture *halfDepthTexture = data.textures.halfDepthTexture;
-    RHI::Texture *prefilterDepthTexture = data.textures.gtaoPrefilterDepthTexture;
-    const uint32_t mipCount = data.textures.gtaoDepthMipCount;
+    RHI::Texture *aoTexture = data.textureSet.outputTexture;
+    RHI::Texture *rawAOTexture = data.textureSet.rawTexture;
+    RHI::Texture *halfDepthTexture = data.textureSet.halfDepthTexture;
+    RHI::Texture *prefilterDepthTexture = data.textureSet.gtaoPrefilterDepthTexture;
+    const uint32_t mipCount = data.textureSet.gtaoDepthMipCount;
     const uint32_t width = aoTexture->GetWidth();
     const uint32_t height = aoTexture->GetHeight();
     const uint32_t processWidth = rawAOTexture->GetWidth();
@@ -248,7 +248,7 @@ void ScreenSpaceAO::DispatchGTAOPrefilterDepth(RenderBackend &backend, RHI::GPUR
     RHI::renderer->SetTexture(commandList, 0, false, depthTexture);
     for (uint32_t slot = 0; slot < GTAODepthMipLevelCount; ++slot) {
         const uint32_t mipLevel = BE1::Min(slot, mipCount - 1u);
-        RHI::renderer->SetTexture(commandList, slot, true, prefilterDepthTexture, data.textures.gtaoDepthMipUAVs[mipLevel]);
+        RHI::renderer->SetTexture(commandList, slot, true, prefilterDepthTexture, data.textureSet.gtaoDepthMipUAVs[mipLevel]);
     }
     RHI::renderer->SetTexture(commandList, GTAODepthMipLevelCount, true, selectedDepthOutputTexture);
     RHI::renderer->SetConstants(commandList, 0, &prefilterParams, sizeof(prefilterParams), 0);
@@ -276,11 +276,11 @@ void ScreenSpaceAO::DispatchGTAOMain(RenderBackend &backend, bool useHalfResolut
 
     RHI::Texture *depthTexture = data.depthTexture;
     RHI::Texture *normalTexture = data.normalTexture;
-    RHI::Texture *aoTexture = data.textures.outputTexture;
-    RHI::Texture *rawAOTexture = data.textures.rawTexture;
-    RHI::Texture *prefilterDepthTexture = data.textures.gtaoPrefilterDepthTexture;
-    RHI::Texture *packedEdgesTexture = data.textures.gtaoPackedEdgesTexture;
-    const uint32_t mipCount = data.textures.gtaoDepthMipCount;
+    RHI::Texture *aoTexture = data.textureSet.outputTexture;
+    RHI::Texture *rawAOTexture = data.textureSet.rawTexture;
+    RHI::Texture *prefilterDepthTexture = data.textureSet.gtaoPrefilterDepthTexture;
+    RHI::Texture *packedEdgesTexture = data.textureSet.gtaoPackedEdgesTexture;
+    const uint32_t mipCount = data.textureSet.gtaoDepthMipCount;
     const uint32_t width = aoTexture->GetWidth();
     const uint32_t height = aoTexture->GetHeight();
     const uint32_t processWidth = rawAOTexture->GetWidth();
@@ -339,10 +339,10 @@ RHI::Texture *ScreenSpaceAO::DispatchGTAODenoise(RenderBackend &backend, uint32_
     const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
-    RHI::Texture *aoTexture = data.textures.outputTexture;
-    RHI::Texture *rawAOTexture = data.textures.rawTexture;
-    RHI::Texture *tempAOTexture = data.textures.tempTexture;
-    RHI::Texture *packedEdgesTexture = data.textures.gtaoPackedEdgesTexture;
+    RHI::Texture *aoTexture = data.textureSet.outputTexture;
+    RHI::Texture *rawAOTexture = data.textureSet.rawTexture;
+    RHI::Texture *tempAOTexture = data.textureSet.tempTexture;
+    RHI::Texture *packedEdgesTexture = data.textureSet.gtaoPackedEdgesTexture;
     const uint32_t processWidth = rawAOTexture->GetWidth();
     const uint32_t processHeight = rawAOTexture->GetHeight();
     RHI::Texture *denoiseSource = rawAOTexture;
@@ -404,7 +404,7 @@ bool ScreenSpaceAO::DispatchDebugPreview(RenderBackend &backend) const {
     const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
-    if (!frameGTAODebugPSO || !data.textures.outputTexture || settings.gtaoDebug <= 1) {
+    if (!frameGTAODebugPSO || !data.textureSet.outputTexture || settings.gtaoDebug <= 1) {
         return settings.gtaoDebug <= 1;
     }
 
@@ -413,17 +413,17 @@ bool ScreenSpaceAO::DispatchDebugPreview(RenderBackend &backend) const {
     uint32_t sourceType = 0;
     uint32_t mipLevel = 0;
     if (settings.gtaoDebug == 2) {
-        inputTexture = data.textures.rawTexture;
+        inputTexture = data.textureSet.rawTexture;
     } else if (settings.gtaoDebug == 3) {
-        inputTexture = data.textures.gtaoPackedEdgesTexture;
+        inputTexture = data.textureSet.gtaoPackedEdgesTexture;
         sourceType = 1;
     } else {
-        if (!data.textures.gtaoPrefilterDepthTexture || data.textures.gtaoDepthMipCount == 0) {
+        if (!data.textureSet.gtaoPrefilterDepthTexture || data.textureSet.gtaoDepthMipCount == 0) {
             return false;
         }
-        mipLevel = BE1::Min(settings.gtaoDebug - 4u, data.textures.gtaoDepthMipCount - 1u);
-        inputTexture = data.textures.gtaoPrefilterDepthTexture;
-        inputViewID = data.textures.gtaoDepthMipSRVs[mipLevel];
+        mipLevel = BE1::Min(settings.gtaoDebug - 4u, data.textureSet.gtaoDepthMipCount - 1u);
+        inputTexture = data.textureSet.gtaoPrefilterDepthTexture;
+        inputViewID = data.textureSet.gtaoDepthMipSRVs[mipLevel];
         sourceType = 2;
     }
 
@@ -435,27 +435,27 @@ bool ScreenSpaceAO::DispatchDebugPreview(RenderBackend &backend) const {
     params.inputSize = uint2(inputTexture->GetWidth() >> mipLevel, inputTexture->GetHeight() >> mipLevel);
     params.inputSize.x = BE1::Max(params.inputSize.x, 1u);
     params.inputSize.y = BE1::Max(params.inputSize.y, 1u);
-    params.outputSize = uint2(data.textures.outputTexture->GetWidth(), data.textures.outputTexture->GetHeight());
+    params.outputSize = uint2(data.textureSet.outputTexture->GetWidth(), data.textureSet.outputTexture->GetHeight());
     params.sourceType = sourceType;
     params.mipLevel = mipLevel;
     params.linearDepthScale = 1.0f / BE1::Max(settings.aoRadius * 16.0f, 1.0f);
 
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute, 0, mipLevel),
-        RHI::Renderer::MakeTextureBarrier(data.textures.outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
+        RHI::Renderer::MakeTextureBarrier(data.textureSet.outputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
     };
     RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(commandList, frameGTAODebugPSO);
     RHI::renderer->SetTexture(commandList, 0, false, inputTexture, inputViewID);
-    RHI::renderer->SetTexture(commandList, 0, true, data.textures.outputTexture);
+    RHI::renderer->SetTexture(commandList, 0, true, data.textureSet.outputTexture);
     RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
 
     RHI::renderer->Dispatch(commandList, BE1::DivCeil(params.outputSize.x, GTAOMainBlockSizeX), BE1::DivCeil(params.outputSize.y, GTAOMainBlockSizeY), 1);
 
     RHI::GPUBarrier endBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource, 0, mipLevel),
-        RHI::Renderer::MakeTextureBarrier(data.textures.outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeTextureBarrier(data.textureSet.outputTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
     return true;

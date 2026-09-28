@@ -151,10 +151,10 @@ void RenderPassBuilder::BuildCascadedShadow(RenderFrame *frame, VisCascadedShado
     pipelineDesc.depthClipEnabled = false;
 
     // 각 cascade 는 독립된 view/DSV/draw 목록과 해당 프레임에 캡처한 bias 를 사용한다.
-    const RenderFrameSettings &settings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     pipelineDesc.depthBiasOverride = true;
-    pipelineDesc.constantDepthBias = settings.csmConstantDepthBias[cascadeIndex];
-    pipelineDesc.slopeScaledDepthBias = settings.csmSlopeScaledDepthBias[cascadeIndex];
+    pipelineDesc.constantDepthBias = frameSettings.csmConstantDepthBias[cascadeIndex];
+    pipelineDesc.slopeScaledDepthBias = frameSettings.csmSlopeScaledDepthBias[cascadeIndex];
 
     BuildShadow(frame, shadowPass, static_cast<uint8_t>(1u << cascadeIndex), visSurfs, numVisSurfs, allowAsyncPSOBuild);
 }

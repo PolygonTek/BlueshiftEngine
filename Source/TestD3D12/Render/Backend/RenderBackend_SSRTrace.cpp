@@ -42,18 +42,18 @@ bool RenderBackend::DispatchSSRTrace() {
         return false;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
 
     SSRTraceParams params = {};
     params.inputSize = uint2(depthTexture->GetWidth(), depthTexture->GetHeight());
     params.outputSize = uint2(traceTexture->GetWidth(), traceTexture->GetHeight());
     params.depthPyramidMipCount = currentVisCamera->screenSpaceDepthPyramid.mipCount;
-    params.maxIterations = renderFrameSettings.ssrMaxIterations;
-    params.binaryRefinementSteps = renderFrameSettings.ssrBinaryRefinementSteps;
+    params.maxIterations = frameSettings.ssrMaxIterations;
+    params.binaryRefinementSteps = frameSettings.ssrBinaryRefinementSteps;
     params.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
-    params.maxDistance = renderFrameSettings.ssrMaxDistance;
-    params.thickness = renderFrameSettings.ssrThickness;
-    params.normalBias = renderFrameSettings.ssrNormalBias;
+    params.maxDistance = frameSettings.ssrMaxDistance;
+    params.thickness = frameSettings.ssrThickness;
+    params.normalBias = frameSettings.ssrNormalBias;
 
     const RHI::GPUResourceState depthInputState = useMSAA ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::DepthWrite;
     const RHI::GPUResourceState normalInputState = useMSAA ? RHI::GPUResourceState::ShaderResource : RHI::GPUResourceState::RenderTarget;

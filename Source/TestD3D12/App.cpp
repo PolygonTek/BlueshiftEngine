@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderContext.h"
-#include "Render/ShadowAtlasAllocatorTests.h"
 #include "Render/Backend/RenderBackend.h"
 #include "Render/RenderCapture.h"
 #include "Render/RenderCvars.h"

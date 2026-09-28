@@ -193,7 +193,7 @@ public:
     const ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() const { return screenSpaceDepthPyramidResources; }
 
     RHI::Texture *              GetSSRTraceTexture() const { return ssrTraceTexture; }
-    RHI::Texture *              GetAOTexture() const { return aoResources.GetTextures().outputTexture; }
+    RHI::Texture *              GetAOTexture() const { return screenSpaceAOResources.GetTextureSet().outputTexture; }
 
     RHI::Texture *              GetPostProcessColorTexture() const { return postProcessColorTexture; }
     RHI::Buffer *               GetLuminanceBuffer() const { return luminanceBuffer; }
@@ -291,7 +291,7 @@ private:
     bool                        historyValid = false;
 
     ScreenSpaceDepthPyramidResources screenSpaceDepthPyramidResources;
-    ScreenSpaceAOResources      aoResources;
+    ScreenSpaceAOResources      screenSpaceAOResources;
     HiZResources                hiZResources;
     BloomResources              bloomResources;
     RHI::Buffer *               luminanceBuffer = nullptr;

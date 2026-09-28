@@ -127,7 +127,7 @@ struct LocalShadowView {
     BE1::Rect                   tileRect = BE1::Rect(0, 0, 0, 0); // Border 를 포함한 atlas 내 물리적 영역.
     uint32_t                    borderTexels = 0;
     uint32_t                    shadowIndex = ~0u;
-    uint32_t                    faceIndex = 0;               // Point: +X, -X, +Y, -Y, +Z, -Z. Spot: 0.
+    uint32_t                    faceIndex = 0;              // Point: +X, -X, +Y, -Y, +Z, -Z. Spot: 0.
     uint32_t                    numSurfs = 0;
     const VisSurf **            surfs = nullptr;            // 공통 surface 를 복사하지 않고 참조한다.
     RenderPass                  renderPass {};
@@ -138,7 +138,7 @@ struct LocalShadowView {
 struct VisLocalShadow {
     const VisLight *            light = nullptr;            // 같은 카메라의 VisLight. RenderLight 를 직접 참조하지 않는다.
     uint32_t                    firstView = 0;
-    uint32_t                    numViews = 0;               // Spot: 1, Point: 6. Point 는 항상 6면을 함께 등록한다.
+    uint32_t                    numViews = 0;               // Spot: 1, Point: 6. Point 는 항상 6 면을 함께 등록한다.
     uint32_t                    requestedResolution = 0;
     uint32_t                    resolution = 0;             // 축소 할당 후 최종 해상도. Border 포함.
 };
@@ -156,7 +156,7 @@ struct VisLocalShadowAtlas {
     VisLocalShadow *            shadows = nullptr;
     LocalShadowView *           views = nullptr;
 
-    bool                        depthRendered = false; // 초기화 후 백엔드에서만 접근한다. 해당 카메라의 depth 기록이 성공한 뒤 true 로 바꾼다.
+    bool                        depthRendered = false;      // 초기화 후 백엔드에서만 접근한다. 해당 카메라의 depth 기록이 성공한 뒤 true 로 바꾼다.
 };
 
 // 같은 debug draw pipeline 을 사용하는 프리미티브들을 하나의 배치로 묶는다.
@@ -263,7 +263,7 @@ struct ScreenSpaceAOFrameData {
     RenderAOMode                mode = RenderAOMode::Off;
     RHI::Texture *              depthTexture = nullptr;
     RHI::Texture *              normalTexture = nullptr;
-    ScreenSpaceAOTextures       textures;
+    ScreenSpaceAOTextureSet     textureSet;
     RHI::ProjectionPolicy       projectionPolicy;
     bool                        temporalNoise = false;
 };
@@ -287,13 +287,6 @@ struct VisCamera {
     BE1::Frustum                viewFrustum;                // Perspective view culling volume
     BE1::OBB                    viewBox;                    // Orthographic view culling volume
 
-    BE1::Mat3                   envLightAxis = BE1::Mat3::identity;
-    BE1::Color3                 envLightColor = BE1::Color3::white;
-    float                       envLightIntensity = 0.0f;
-    RHI::Texture *              envLightDiffuseIrradianceCubeMap = nullptr;
-    RHI::Texture *              envLightSpecularCubeMap = nullptr;
-    uint32_t                    envLightSpecularMipCount = 0;
-
     BE1::Vec2                   jitterNDC = BE1::Vec2::zero;
     BE1::Vec2                   prevJitterNDC = BE1::Vec2::zero;
 
@@ -308,6 +301,13 @@ struct VisCamera {
     const VisSurf **            visSurfs = nullptr;         // 카메라에 보이는 모든 surfaces 와 shadow surfaces
 
     RHI::Buffer *               skinningJointBuffer = nullptr;
+
+    BE1::Mat3                   envLightAxis = BE1::Mat3::identity;
+    BE1::Color3                 envLightColor = BE1::Color3::white;
+    float                       envLightIntensity = 0.0f;
+    RHI::Texture *              envLightDiffuseIrradianceCubeMap = nullptr;
+    RHI::Texture *              envLightSpecularCubeMap = nullptr;
+    uint32_t                    envLightSpecularMipCount = 0;
 
     uint32_t                    maxVisLocalLights = 0;
     uint32_t                    numVisLocalLights = 0;
@@ -338,7 +338,7 @@ struct VisCamera {
     RHI::ViewID                 outputViewID = RHI::ViewID::PrimaryID;
     RHI::GPUResourceState       outputBeforeState = RHI::GPUResourceState::ShaderResource;
     RHI::GPUResourceState       outputAfterState = RHI::GPUResourceState::ShaderResource;
-    RHI::PipelineState *        outputImagePSO = nullptr;
+    RHI::PipelineState *        outputBlitPSO = nullptr;
     uint32_t                    renderWidth = 0;
     uint32_t                    renderHeight = 0;
     RenderCamera::ClearMethod   clearMethod;
@@ -502,6 +502,7 @@ struct VisLight {
     RenderLight::Type           type;
     RenderLight::Flag           flags;
     uint32_t                    localShadowIndex = ~0u;     ///< 카메라의 VisLocalShadowAtlas::shadows 인덱스. ~0u 이면 shadow 없음.
+    uint32_t                    shadowRequestedResolution = 0; ///< 화면 크기로 정한 border 포함 요청 해상도. Point 는 한 면 기준이며 비대상은 0.
 };
 
 static_assert(sizeof(VisLight) == 192, "VisLight layout changed");

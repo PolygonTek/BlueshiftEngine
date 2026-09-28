@@ -188,17 +188,17 @@ bool RenderBackend::DispatchTAAResolve() {
         return false;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     TAAResolveParams taaResolveParams = {};
     taaResolveParams.outputSize = uint2(outputW, outputH);
     taaResolveParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    taaResolveParams.historyWeight = renderFrameSettings.taaHistoryWeight;
+    taaResolveParams.historyWeight = frameSettings.taaHistoryWeight;
     taaResolveParams.historyValid = historyValid ? 1u : 0u;
     taaResolveParams.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
-    taaResolveParams.depthFallbackThreshold = renderFrameSettings.taaDepthFallbackThreshold;
-    taaResolveParams.maxSubpixelCurrentWeight = renderFrameSettings.taaSubpixelWeight;
-    taaResolveParams.luminanceWeight = renderFrameSettings.taaLuminanceWeight;
-    taaResolveParams.colorBoxSigma = renderFrameSettings.taaColorBoxSigma;
+    taaResolveParams.depthFallbackThreshold = frameSettings.taaDepthFallbackThreshold;
+    taaResolveParams.maxSubpixelCurrentWeight = frameSettings.taaSubpixelWeight;
+    taaResolveParams.luminanceWeight = frameSettings.taaLuminanceWeight;
+    taaResolveParams.colorBoxSigma = frameSettings.taaColorBoxSigma;
 
     RHI::ConstantBuffer *taaResolveConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(TAAResolveParams), &taaResolveParams);
     if (!taaResolveConstantBuffer) {
@@ -262,18 +262,18 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
         return false;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
 
     RHI::Texture *colorGradingLUTTexture = currentVisCamera->colorGradingLUTTexture;
     if (!colorGradingLUTTexture) {
         return false;
     }
     assert(colorGradingLUTTexture->GetStatus() == RHI::GPUResourceStatus::Ready);
-    const bool useColorGrading = renderFrameSettings.colorGrading;
+    const bool useColorGrading = frameSettings.colorGrading;
 
     RHI::Texture *bloomDirtMaskTexture = currentVisCamera->bloom.bloomDirtMaskTexture;
-    const float bloomIntensity = useBloom ? renderFrameSettings.bloomIntensity : 0.0f;
-    const float bloomDirtIntensity = renderFrameSettings.bloomDirtIntensity;
+    const float bloomIntensity = useBloom ? frameSettings.bloomIntensity : 0.0f;
+    const float bloomDirtIntensity = frameSettings.bloomDirtIntensity;
     const bool useBloomDirtMask = bloomIntensity > 0.0f && bloomDirtMaskTexture && bloomDirtIntensity > 0.0f;
     if (useBloomDirtMask) {
         assert(bloomDirtMaskTexture->GetStatus() == RHI::GPUResourceStatus::Ready);
@@ -289,7 +289,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.outputSize = uint2(outputW, outputH);
     finalPostProcessParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     finalPostProcessParams.flags = useToneMapping ? FinalPostProcessFlagToneMapping : 0u;
-    finalPostProcessParams.toneMappingOperator = renderFrameSettings.toneMappingOperator;
+    finalPostProcessParams.toneMappingOperator = frameSettings.toneMappingOperator;
     const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
     const bool hdrOutput = RHI::SwapChain::IsHDRColorSpace(currentContext->GetSwapChain()->GetColorSpace());
     finalPostProcessParams.paperWhiteNits = displayOutputSettings.paperWhiteNits;
@@ -306,9 +306,9 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
             finalPostProcessParams.bloomDirtUvScale.x = outputAspectRatio / dirtAspectRatio;
         }
     }
-    finalPostProcessParams.chromaticAberration = renderFrameSettings.chromaticAberration;
-    finalPostProcessParams.vignetteIntensity = renderFrameSettings.vignetteIntensity;
-    finalPostProcessParams.lensDistortion = renderFrameSettings.lensDistortion;
+    finalPostProcessParams.chromaticAberration = frameSettings.chromaticAberration;
+    finalPostProcessParams.vignetteIntensity = frameSettings.vignetteIntensity;
+    finalPostProcessParams.lensDistortion = frameSettings.lensDistortion;
     finalPostProcessParams.lensDistortionFitScale = 1.0f - BE1::Max(finalPostProcessParams.lensDistortion, 0.0f);
     const float outputWidth = static_cast<float>(outputW);
     const float outputHeight = static_cast<float>(outputH);
@@ -316,7 +316,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
 
     // 선택한 색온도의 광원 아래에서 촬영된 white 가 6500K 기준 white 로 보이도록 RGB gain 을 계산한다.
     static const BE1::Color3 referenceWhite = BE1::Color3::FromColorTemperature(6500.0f);
-    const BE1::Color3 sourceWhite = BE1::Color3::FromColorTemperature(renderFrameSettings.whiteBalanceTemperature);
+    const BE1::Color3 sourceWhite = BE1::Color3::FromColorTemperature(frameSettings.whiteBalanceTemperature);
     finalPostProcessParams.whiteBalance = float3(
         referenceWhite.r / BE1::Max(sourceWhite.r, referenceWhite.r * 0.01f),
         referenceWhite.g / BE1::Max(sourceWhite.g, referenceWhite.g * 0.01f),
@@ -325,7 +325,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     if (hdrOutput) {
         finalPostProcessParams.flags |= FinalPostProcessFlagHDROutput;
     }
-    if (renderFrameSettings.dithering && !hdrOutput) {
+    if (frameSettings.dithering && !hdrOutput) {
         finalPostProcessParams.flags |= FinalPostProcessFlagDithering;
     }
     if (useColorGrading) {

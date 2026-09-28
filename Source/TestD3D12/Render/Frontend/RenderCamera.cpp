@@ -21,7 +21,7 @@
 
 RenderCamera::~RenderCamera() {
     DestroyPostProcessResources();
-    aoResources.Destroy();
+    screenSpaceAOResources.Destroy();
     DestroySSRTraceTexture();
     DestroyResolvedDepthTexture();
     screenSpaceDepthPyramidResources.Destroy();

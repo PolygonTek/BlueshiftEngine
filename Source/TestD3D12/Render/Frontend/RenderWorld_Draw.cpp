@@ -214,10 +214,10 @@ void RenderWorld::SetupConvolutionBloom(RenderFrame *frame, RenderCamera *render
         return;
     }
 
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
-    resources.SetConvolutionBloomKernelRotation(renderFrameSettings.convolutionBloomKernelRotation);
-    resources.SetConvolutionBloomKernelScale(renderFrameSettings.convolutionBloomKernelScale);
-    resources.SetConvolutionBloomPaddingTrim(renderFrameSettings.convolutionBloomPaddingTrim);
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
+    resources.SetConvolutionBloomKernelRotation(frameSettings.convolutionBloomKernelRotation);
+    resources.SetConvolutionBloomKernelScale(frameSettings.convolutionBloomKernelScale);
+    resources.SetConvolutionBloomPaddingTrim(frameSettings.convolutionBloomPaddingTrim);
 
     const uint32_t fftBloomSize = resources.GetFFTBloomSize();
     const bool updateFFTBloomKernelBuffer = resources.IsFFTBloomKernelDirty();
@@ -265,7 +265,7 @@ void RenderWorld::SetupConvolutionBloom(RenderFrame *frame, RenderCamera *render
     visCamera->bloom.outputTexture = resources.GetFFTBloomConvolutionOutputTexture();
 }
 
-static RHI::PipelineState *GetOutputImagePSO(const RHI::Texture *outputTexture, RHI::ViewID outputViewID) {
+static RHI::PipelineState *GetOutputBlitPSO(const RHI::Texture *outputTexture, RHI::ViewID outputViewID) {
     RHI::TextureViewInfo outputViewInfo;
     if (!outputTexture || !outputTexture->GetViewInfo(RHI::ViewType::RTV, outputViewID, outputViewInfo)) {
         return nullptr;
@@ -307,95 +307,117 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     assert(BE1::Engine::IsInMainThread());
     assert(frameActive);
 
-    RenderFrame *frame = RenderContext::activeContext->GetCurrentFrontendFrame();
-    RenderContext *renderContext = RenderContext::activeContext;
-    const RenderFrameSettings &renderFrameSettings = frame->GetRenderFrameSettings();
-    const BE1::Rect &outputRect = renderCamera->desc.outputRect;
-
-    // VisLight stores each tile coordinate in 8 bits; limit internal render targets to 256 tiles per axis.
-    const uint32_t renderWidth = BE1::Min(renderCamera->desc.renderWidth > 0 ? renderCamera->desc.renderWidth : (outputRect.w > 0 ? static_cast<uint32_t>(outputRect.w) : 0), VisLight::MaxRenderDimension);
-    const uint32_t renderHeight = BE1::Min(renderCamera->desc.renderHeight > 0 ? renderCamera->desc.renderHeight : (outputRect.h > 0 ? static_cast<uint32_t>(outputRect.h) : 0), VisLight::MaxRenderDimension);
-
-    if (renderWidth <= 0 || renderHeight <= 0) {
+    const RenderCamera::Desc &cameraDesc = renderCamera->desc;
+    const BE1::Rect &outputRect = cameraDesc.outputRect;
+    if (outputRect.w <= 0 || outputRect.h <= 0) {
         return;
     }
 
-    RHI::PipelineState *outputImagePSO = nullptr;
-    if (renderCamera->desc.outputTexture) {
-        if (!renderCamera->desc.outputTexture->HasValidView(RHI::ViewType::RTV, renderCamera->desc.outputViewID)) {
+    RenderContext *renderContext = RenderContext::activeContext;
+    RenderFrame *frame = renderContext->GetCurrentFrontendFrame();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
+
+    // 렌더 해상도가 지정되지 않았으면 출력 영역의 크기를 사용한다.
+    const uint32_t renderWidth = cameraDesc.renderWidth != 0 ? cameraDesc.renderWidth : static_cast<uint32_t>(outputRect.w);
+    const uint32_t renderHeight = cameraDesc.renderHeight != 0 ? cameraDesc.renderHeight : static_cast<uint32_t>(outputRect.h);
+
+    // VisLight 는 축당 8 비트 타일 좌표를 저장하므로 최대 256 개 타일까지 지원한다. 즉, MaxRenderDimension x MaxRenderDimension 보다 큰 해상도는 지원하지 않는다.
+    if (renderWidth > VisLight::MaxRenderDimension || renderHeight > VisLight::MaxRenderDimension) {
+        BE_WARNLOG("RenderWorld::RenderScene: requested render size %ux%u exceeds the per-axis limit of %u\n", renderWidth, renderHeight, VisLight::MaxRenderDimension);
+        return;
+    }
+
+    // 출력 텍스처가 지정되면, 최종 렌더링 결과를 해당 텍스처에 blit 할 PSO 를 준비한다.
+    RHI::PipelineState *outputBlitPSO = nullptr;
+    if (cameraDesc.outputTexture) {
+        if (!cameraDesc.outputTexture->HasValidView(RHI::ViewType::RTV, cameraDesc.outputViewID)) {
             BE_WARNLOG("RenderWorld::RenderScene: output texture has no valid render target view\n");
             return;
         }
 
-        outputImagePSO = GetOutputImagePSO(renderCamera->desc.outputTexture, renderCamera->desc.outputViewID);
-        if (!outputImagePSO) {
-            BE_WARNLOG("RenderWorld::RenderScene: output image pipeline is not ready\n");
+        outputBlitPSO = GetOutputBlitPSO(cameraDesc.outputTexture, cameraDesc.outputViewID);
+        if (!outputBlitPSO) {
+            BE_WARNLOG("RenderWorld::RenderScene: output blit pipeline is not ready\n");
             return;
         }
     }
 
-    const bool skipPostProcess = renderFrameSettings.skipPostProcess || BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::SkipPostProcess);
-    const bool useAO = renderFrameSettings.aoMode != RenderAOMode::Off;
-    const bool debugAO = useAO && renderFrameSettings.gtaoDebug != 0;
-    const bool temporalHistoryEnabled = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableTemporalHistory);
-    const bool useTAA = temporalHistoryEnabled && renderFrameSettings.taa && !skipPostProcess && !debugAO && renderFrameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
-    const bool needNormalTexture = useAO || renderFrameSettings.ssr;
+    const bool skipPostProcess = frameSettings.skipPostProcess || BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::SkipPostProcess);
+    const bool useAO = frameSettings.aoMode != RenderAOMode::Off;
+    const bool debugAO = useAO && frameSettings.gtaoDebug != 0;
+    const bool temporalHistoryEnabled = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
+    const bool useTAA = temporalHistoryEnabled && frameSettings.taa && !skipPostProcess && !debugAO && frameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
+    const bool needNormalTexture = useAO || frameSettings.ssr;
     const bool needVelocityTexture = useTAA;
     const bool needColorHistory = useTAA;
     const bool needDepthHistory = useTAA;
-    const bool needHiZCullResources = !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::DisableHiZCulling) && renderFrameSettings.hiZOcclusionCulling;
+    const bool needHiZCullResources = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableHiZCulling) && frameSettings.hiZOcclusionCulling;
     const bool needHiZTexture = needHiZCullResources;
-    const bool needHiZDebugPreview = needHiZTexture && renderFrameSettings.hiZDebugPreview;
+    const bool needHiZDebugPreview = needHiZTexture && frameSettings.hiZDebugPreview;
 
-    const RenderBloomMode bloomMode = renderFrameSettings.bloomMode;
+    const RenderBloomMode bloomMode = frameSettings.bloomMode;
 
+    // 장면 렌더링에 필요한 컬러, 깊이, 노멀, velocity 텍스처를 준비한다.
     if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, needNormalTexture, needVelocityTexture, renderContext->GetBaseClearColor())) {
         return;
     }
 
+    // 이번 프레임에 사용할 카메라 슬롯을 확보한다.
+    VisCamera *visCamera = frame->AllocVisCamera();
+    if (!visCamera) {
+        return;
+    }
+
+    // SSR 에 사용할 화면 공간 깊이 피라미드 리소스를 준비한다.
     ScreenSpaceDepthPyramidResources &depthPyramidResources = renderCamera->GetScreenSpaceDepthPyramidResources();
-    depthPyramidResources.Ensure(renderWidth, renderHeight, renderFrameSettings.ssr);
-    renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, renderFrameSettings.ssr);
+    depthPyramidResources.Ensure(renderWidth, renderHeight, frameSettings.ssr);
 
-    renderCamera->EnsureResolvedDepthTexture(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), useAO || renderFrameSettings.ssr);
-    renderCamera->aoResources.Ensure(renderWidth, renderHeight, renderFrameSettings);
+    // SSR 추적 결과를 저장할 반해상도 텍스처를 준비한다.
+    renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, frameSettings.ssr);
 
+    // MSAA 깊이를 resolve 할 AO/SSR 공용 텍스처를 준비한다.
+    renderCamera->EnsureResolvedDepthTexture(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), useAO || frameSettings.ssr);
+
+    // AO 계산과 필터링에 필요한 텍스처를 설정에 맞게 준비한다.
+    renderCamera->screenSpaceAOResources.Ensure(renderWidth, renderHeight, frameSettings);
+
+    // Ocean 굴절에 사용할 장면 컬러와 깊이 스냅샷 리소스를 준비한다.
     const bool useMSAA = renderCamera->GetColorTexture()->GetSampleCount() > 1;
-    const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(renderCamera->desc.flags, RenderCamera::Flag::StaticOnly);
-    const bool requestHalfResSnapshot = needSceneSnapshot && renderFrameSettings.snapshotColorHalfRes && !useMSAA;
+    const bool needSceneSnapshot = hasOceanSurface && oceanSurface.desc.surface.refractionEnabled && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
+    const bool requestHalfResSnapshot = needSceneSnapshot && frameSettings.snapshotColorHalfRes && !useMSAA;
     RHI::PipelineState *sceneSnapshotDownsamplePSO = requestHalfResSnapshot ? GetSceneSnapshotDownsamplePSO(renderContext->GetMainRTColorFormat()) : nullptr;
     const bool useHalfResSnapshot = requestHalfResSnapshot && sceneSnapshotDownsamplePSO;
     renderCamera->EnsureSceneSnapshotResources(needSceneSnapshot, useHalfResSnapshot);
 
+    // Hi-Z 오클루전 컬링과 디버그 표시에 필요한 리소스를 준비한다.
     HiZResources &hiZResources = renderCamera->GetHiZResources();
     hiZResources.Ensure(renderWidth, renderHeight, needHiZTexture, needHiZCullResources, needHiZDebugPreview);
-    renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, renderFrameSettings);
 
-    const bool temporalJitterEnabled = useTAA && renderFrameSettings.taaJitter;
-    const uint32_t temporalJitterSampleCount = renderFrameSettings.taaJitterSampleCount;
+    // 후처리와 TAA 히스토리에 필요한 리소스를 준비한다.
+    renderCamera->EnsurePostProcessResources(skipPostProcess, renderContext->GetPostProcessColorFormat(), needColorHistory, needDepthHistory, frameSettings);
 
+    // TAA 설정에 따라 카메라의 서브픽셀 jitter 와 jitter 적용 행렬을 갱신한다.
+    const bool temporalJitterEnabled = useTAA && frameSettings.taaJitter;
+    const uint32_t temporalJitterSampleCount = frameSettings.taaJitterSampleCount;
     renderCamera->UpdateTemporalJitter(temporalJitterEnabled, temporalJitterSampleCount);
 
     const bool canUseHiZ = renderCamera->GetDepthTexture() && hiZResources.GetTexture();
     const bool requestHiZOcclusionCulling = canUseHiZ && needHiZCullResources && hiZResources.GetVisibleInstanceBuffer() && hiZResources.GetIndirectArgsBuffer();
     const bool requestHiZDebugPreview = canUseHiZ && needHiZDebugPreview && hiZResources.GetDebugPreviewTexture();
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
-    const bool hasSSRInputs = renderCamera->GetNormalTexture() && (!useMSAA || (renderCamera->GetResolvedDepthTexture() && renderCamera->GetResolvedNormalTexture()));
-    const bool requestScreenSpaceDepthPyramidGeneration = renderFrameSettings.ssr && hasSSRInputs && renderCamera->GetDepthTexture() && depthPyramidResources.GetTexture();
-    const bool requestSSRTrace = requestScreenSpaceDepthPyramidGeneration && renderCamera->GetSSRTraceTexture();
 
-    // RenderCamera 정보를 기반으로 프레임 데이터에 필요한 VisCamera 를 구성한다.
-    VisCamera *visCamera = frame->AllocVisCamera();
-    if (!visCamera) {
-        return;
-    }
+    const bool hasSSRInputs = renderCamera->GetNormalTexture() && (!useMSAA || (renderCamera->GetResolvedDepthTexture() && renderCamera->GetResolvedNormalTexture()));
+    const bool requestScreenSpaceDepthPyramidGeneration = frameSettings.ssr && hasSSRInputs && renderCamera->GetDepthTexture() && depthPyramidResources.GetTexture();
+    const bool requestSSRTrace = requestScreenSpaceDepthPyramidGeneration && renderCamera->GetSSRTraceTexture();
 
     visCamera->maxVisSurfs = VisCamera::MaxVisSurfs;
     visCamera->visSurfs = (const VisSurf **)frame->MemAlloc(visCamera->maxVisSurfs * sizeof(VisSurf *));
+
     visCamera->numRenderPasses = 0;
     visCamera->renderPasses = (RenderPass *)frame->MemAlloc(VisCamera::MaxRenderPasses * sizeof(RenderPass));
-    visCamera->origin = renderCamera->desc.origin;
-    visCamera->axis = renderCamera->desc.axis;
+
+    visCamera->origin = cameraDesc.origin;
+    visCamera->axis = cameraDesc.axis;
 
     if (hasEnvironmentLight) {
         const EnvironmentLight::Desc &envLightDesc = envLight.GetDesc();
@@ -418,20 +440,20 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 
     visCamera->outputRect = outputRect;
-    visCamera->outputTexture = renderCamera->desc.outputTexture;
-    visCamera->outputViewID = renderCamera->desc.outputViewID;
-    visCamera->outputBeforeState = renderCamera->desc.outputBeforeState;
-    visCamera->outputAfterState = renderCamera->desc.outputAfterState;
-    visCamera->outputImagePSO = outputImagePSO;
+    visCamera->outputTexture = cameraDesc.outputTexture;
+    visCamera->outputViewID = cameraDesc.outputViewID;
+    visCamera->outputBeforeState = cameraDesc.outputBeforeState;
+    visCamera->outputAfterState = cameraDesc.outputAfterState;
+    visCamera->outputBlitPSO = outputBlitPSO;
     visCamera->renderWidth = renderWidth;
     visCamera->renderHeight = renderHeight;
-    visCamera->clearMethod = renderCamera->desc.clearMethod;
-    visCamera->clearColorMode = renderCamera->desc.clearColorMode;
-    visCamera->clearColor = renderCamera->desc.clearColor;
-    visCamera->projectionPolicy = renderCamera->desc.projectionPolicy;
+    visCamera->clearMethod = cameraDesc.clearMethod;
+    visCamera->clearColorMode = cameraDesc.clearColorMode;
+    visCamera->clearColor = cameraDesc.clearColor;
+    visCamera->projectionPolicy = cameraDesc.projectionPolicy;
     visCamera->projectionZ = BE1::Vec2(renderCamera->projMatrix[2][2], renderCamera->projMatrix[2][3]);
-    visCamera->projectionOrthogonal = renderCamera->desc.orthogonal;
-    visCamera->projectionInfiniteZFar = renderCamera->desc.infiniteZFar;
+    visCamera->projectionOrthogonal = cameraDesc.orthogonal;
+    visCamera->projectionInfiniteZFar = cameraDesc.infiniteZFar;
 
     if (visCamera->projectionOrthogonal) {
         visCamera->projectionXY = BE1::Vec4(renderCamera->projMatrix[0][0], renderCamera->projMatrix[1][1], renderCamera->projMatrix[0][3], renderCamera->projMatrix[1][3]);
@@ -449,30 +471,33 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         visCamera->ndcDepthBias = 0.0f;
     }
 
-    visCamera->flags = renderCamera->desc.flags;
-    visCamera->needNormalOutput = renderFrameSettings.ssr;
+    visCamera->flags = cameraDesc.flags;
+    visCamera->needNormalOutput = frameSettings.ssr;
     visCamera->needVelocityOutput = useTAA;
+
     visCamera->colorTexture = renderCamera->GetColorTexture();
-    visCamera->resolvedColorTexture = renderCamera->GetResolvedColorTexture();
     visCamera->depthTexture = renderCamera->GetDepthTexture();
-    visCamera->resolvedDepthTexture = renderCamera->GetResolvedDepthTexture();
     visCamera->normalTexture = renderCamera->GetNormalTexture();
-    visCamera->resolvedNormalTexture = renderCamera->GetResolvedNormalTexture();
     visCamera->velocityTexture = renderCamera->GetVelocityTexture();
+
+    visCamera->resolvedColorTexture = renderCamera->GetResolvedColorTexture();
+    visCamera->resolvedDepthTexture = renderCamera->GetResolvedDepthTexture();
+    visCamera->resolvedNormalTexture = renderCamera->GetResolvedNormalTexture();
     visCamera->resolvedVelocityTexture = renderCamera->GetResolvedVelocityTexture();
 
     visCamera->sceneSnapshotDownsamplePSO = useHalfResSnapshot ? sceneSnapshotDownsamplePSO : nullptr;
     visCamera->snapshotColorTexture = renderCamera->GetSnapshotColorTexture();
     visCamera->snapshotDepthTexture = renderCamera->GetSnapshotDepthTexture();
 
-    ScreenSpaceAOFrameData &ao = visCamera->ao;
-    ao.textures = renderCamera->aoResources.GetTextures();
-    ao.depthTexture = useMSAA ? visCamera->resolvedDepthTexture : visCamera->depthTexture;
-    ao.normalTexture = useMSAA ? visCamera->resolvedNormalTexture : visCamera->normalTexture;
-    ao.projectionPolicy = visCamera->projectionPolicy;
-    ao.mode = renderFrameSettings.aoMode;
-    ao.temporalNoise = renderFrameSettings.aoTemporalNoise && !debugAO;
-    visCamera->applyAO = useAO && ScreenSpaceAO::HasRequiredResources(ao) && (!useMSAA || visCamera->normalTexture);
+    ScreenSpaceAOFrameData &screenSpaceAO = visCamera->ao;
+    screenSpaceAO.textureSet = renderCamera->screenSpaceAOResources.GetTextureSet();
+    screenSpaceAO.depthTexture = useMSAA ? visCamera->resolvedDepthTexture : visCamera->depthTexture;
+    screenSpaceAO.normalTexture = useMSAA ? visCamera->resolvedNormalTexture : visCamera->normalTexture;
+    screenSpaceAO.projectionPolicy = visCamera->projectionPolicy;
+    screenSpaceAO.mode = frameSettings.aoMode;
+    screenSpaceAO.temporalNoise = frameSettings.aoTemporalNoise && !debugAO;
+
+    visCamera->applyAO = useAO && ScreenSpaceAO::HasRequiredResources(screenSpaceAO) && (!useMSAA || visCamera->normalTexture);
     visCamera->needDepthNormalOutput = visCamera->applyAO;
 
     visCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;
@@ -516,7 +541,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         visCamera->hiZDebugPreview = requestHiZDebugPreview;
         if (visCamera->hiZDebugPreview) {
             visCamera->hiZ.debugPreviewTexture = hiZResources.GetDebugPreviewTexture();
-            visCamera->hiZ.debugLinearDepthScale = renderCamera->desc.zFar > 0.0f ? 1.0f / renderCamera->desc.zFar : 1.0f;
+            visCamera->hiZ.debugLinearDepthScale = cameraDesc.zFar > 0.0f ? 1.0f / cameraDesc.zFar : 1.0f;
         }
     }
 
@@ -527,6 +552,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->depthHistoryTextures[1] = renderCamera->GetDepthHistoryTexture(1);
     visCamera->currentHistoryTextureIndex = renderCamera->GetCurrentHistoryTextureIndex();
     visCamera->historyValid = renderCamera->IsHistoryValid();
+
     visCamera->luminanceBuffer = renderCamera->GetLuminanceBuffer();
     visCamera->bloom.renderWidth = renderWidth;
     visCamera->bloom.renderHeight = renderHeight;
@@ -572,7 +598,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     visCamera->taaResolve = useTAA;
 
     // freeze 가 되면 prevViewProjMatrix 를 유지하기 위해서 hiZCullViewProjMatrix 에 복사한다.
-    if (!renderFrameSettings.hiZOcclusionCullingFreeze || !hiZResources.IsHistoryValid()) {
+    if (!frameSettings.hiZOcclusionCullingFreeze || !hiZResources.IsHistoryValid()) {
         renderCamera->hiZCullViewProjMatrix = visCamera->prevViewProjMatrix;
     }
     visCamera->hiZCullViewProjMatrix = renderCamera->hiZCullViewProjMatrix;
@@ -595,7 +621,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         }
     }
 
-    if (!renderFrameSettings.hiZOcclusionCullingFreeze) {
+    if (!frameSettings.hiZOcclusionCullingFreeze) {
         hiZResources.SetHistoryValid(visCamera->generateHiZ);
     }
 }
@@ -632,7 +658,7 @@ void RenderWorld::DrawCamera(RenderFrame *frame, const RenderCamera *renderCamer
         frame->RegisterVisOceanSurface(oceanSurface.desc.simulation, oceanSurface.desc.surface, oceanSurface.revision, oceanSurface.queries.Ptr(), static_cast<uint32_t>(oceanSurface.queries.Count()));
     }
 
-    // 렌더 패스를 구성한다.
+    // CSM 렌더 패스를 구성한다.
     if (visCamera->cascadedShadow) {
         const bool allowAsyncPSOBuild = !BE1::HasFlag(visCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
         for (uint32_t cascadeIndex = 0; cascadeIndex < visCamera->cascadedShadow->cascadeCount; cascadeIndex++) {
@@ -640,6 +666,7 @@ void RenderWorld::DrawCamera(RenderFrame *frame, const RenderCamera *renderCamer
         }
     }
 
+    // 메인 렌더 패스를 구성한다.
     renderPassBuilder.BuildMain(frame, visCamera);
 
     // Post-Opaque 단계에서 그릴 ocean surface pipeline 을 준비한다.
@@ -725,10 +752,10 @@ void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *re
         return;
     }
 
-    const RenderFrameSettings &settings = frame->GetRenderFrameSettings();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
-    const float csmMaxDistance = BE1::Min(cameraDesc.zFar, settings.csmMaxDistance); // CSM 최대 거리
-    if (!settings.shadows || csmMaxDistance <= cameraDesc.zNear) {
+    const float csmMaxDistance = BE1::Min(cameraDesc.zFar, frameSettings.csmMaxDistance); // CSM 최대 거리
+    if (!frameSettings.shadows || csmMaxDistance <= cameraDesc.zNear) {
         return;
     }
 
@@ -739,16 +766,16 @@ void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *re
     }
 
     const uint32_t shadowMapResolution = renderContext->GetCSMResolution();
-    const uint32_t shadowMapBorderTexels = CalcShadowMapBorderTexels(shadowMapResolution, settings.shadowMapQuality);
+    const uint32_t shadowMapBorderTexels = CalcShadowMapBorderTexels(shadowMapResolution, frameSettings.shadowMapQuality);
     constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapFilterReferenceResolution - 2 * RenderFrameSettings::ShadowMapFilterReferenceBorderTexels);
     const float usableShadowResolution = static_cast<float>(shadowMapResolution - 2 * shadowMapBorderTexels);
     const float filterResolutionScale = usableShadowResolution / referenceUsableResolution;
 
     VisCascadedShadow *cascadedShadow = new (frame->MemAlloc(sizeof(VisCascadedShadow))) VisCascadedShadow();
-    cascadedShadow->cascadeCount = settings.csmCascadeCount;
+    cascadedShadow->cascadeCount = frameSettings.csmCascadeCount;
 
     // cascade 별 distance 를 계산한다.
-    ComputeCSMSplitDistances(cameraDesc.zNear, csmMaxDistance, settings.csmSplitLambda, cascadedShadow->cascadeCount, cameraDesc.orthogonal, cascadedShadow->splitDistances);
+    ComputeCSMSplitDistances(cameraDesc.zNear, csmMaxDistance, frameSettings.csmSplitLambda, cascadedShadow->cascadeCount, cameraDesc.orthogonal, cascadedShadow->splitDistances);
 
     // 모든 cascade 의 caster shadow volume 검사에 사용할 전체 CSM 카메라 view planes 를 구한다.
     renderCamera->CalcSlicedViewVolume(cameraDesc.zNear, csmMaxDistance, nullptr, cascadedShadow->viewVolumePlanes);
@@ -756,7 +783,7 @@ void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *re
     // 각 cascade 의 receiver 범위로 projection 과 caster 컬링 경계를 함께 정한다.
     for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
         // blending 중인 cascade 는 이전 receiver 구간까지 포함하여 map coverage overlap 을 보장한다.
-        const float cascadeNear = (cascadeIndex == 0 || settings.csmBlendFraction <= 0.0f) ? cascadedShadow->splitDistances[cascadeIndex] : cascadedShadow->splitDistances[cascadeIndex - 1];
+        const float cascadeNear = (cascadeIndex == 0 || frameSettings.csmBlendFraction <= 0.0f) ? cascadedShadow->splitDistances[cascadeIndex] : cascadedShadow->splitDistances[cascadeIndex - 1];
         const float cascadeFar = cascadedShadow->splitDistances[cascadeIndex + 1];
 
         BE1::Sphere cascadeSphere;
@@ -776,7 +803,7 @@ void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *re
 
     float cascadeFilterRadii[RenderFrameSettings::CSMCascadeCount] = { 1.0f, 1.0f, 1.0f, 1.0f };
     const float cascade0WorldUnitsPerTexel = cascadedShadow->cascades[0].worldUnitsPerTexel;
-    const float cascade0FilterRadius = settings.shadowMapFilterRadius * filterResolutionScale;
+    const float cascade0FilterRadius = frameSettings.shadowMapFilterRadius * filterResolutionScale;
     const float minFilterRadius = RenderFrameSettings::ShadowMapFilterRadiusMin * filterResolutionScale;
     const float worldFilterRadius = cascade0FilterRadius * cascade0WorldUnitsPerTexel;
 
@@ -800,10 +827,10 @@ void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *re
     cascadedShadow->shaderData.texelSize = float2(texelSize, texelSize);
     cascadedShadow->shaderData.normalizedBorder = shadowMapBorderTexels * texelSize;
     const float usableMapWidth = 1.0f - 2.0f * cascadedShadow->shaderData.normalizedBorder;
-    const float cascadeBlendWidth = usableMapWidth * settings.csmBlendFraction;
+    const float cascadeBlendWidth = usableMapWidth * frameSettings.csmBlendFraction;
     cascadedShadow->shaderData.invBlendWidth = cascadeBlendWidth > 0.0f ? 1.0f / cascadeBlendWidth : 0.0f;
 
-    const float farFadeRange = (csmMaxDistance - cameraDesc.zNear) * settings.csmFadeFraction;
+    const float farFadeRange = (csmMaxDistance - cameraDesc.zNear) * frameSettings.csmFadeFraction;
     cascadedShadow->shaderData.farFadeStart = csmMaxDistance - farFadeRange;
     cascadedShadow->shaderData.invFarFadeRange = 1.0f / farFadeRange;
 
@@ -1520,7 +1547,10 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *render
 void RenderWorld::FindVisLights(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindVisLights");
 
-    const bool skipViewCulling = frame->GetRenderFrameSettings().skipViewCulling;
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
+    const bool skipViewCulling = frameSettings.skipViewCulling;
+    const bool localShadowsEnabled = frameSettings.shadows && frameSettings.shadowAtlasMaxViews > 0;
+
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
     const BE1::Vec3 &viewZAxis = cameraDesc.axis[EngineAxis::Forward];
@@ -1561,7 +1591,6 @@ void RenderWorld::FindVisLights(RenderFrame *frame, const RenderCamera *renderCa
             if (!visLight) {
                 continue;
             }
-
         } else {
             if (!skipViewCulling) {
                 if (renderLight->Cull(*renderCamera)) {
@@ -1599,7 +1628,14 @@ void RenderWorld::FindVisLights(RenderFrame *frame, const RenderCamera *renderCa
             visLight->viewZMin = viewZMin;
             visLight->viewZMax = viewZMax;
 
-            ComputeLightTileRange(visCamera, screenClipRect, visLight->packedTileMin, visLight->packedTileMax);
+            const uint32_t projectedSize = ComputeLightTileRange(visCamera, screenClipRect, visLight->packedTileMin, visLight->packedTileMax);
+            if (localShadowsEnabled && BE1::HasFlag(visLight->flags, RenderLight::Flag::CastShadows)) {
+                if (projectedSize > 0 && (visLight->type == RenderLight::Type::Spot || visLight->type == RenderLight::Type::Point)) {
+                    // 광원 영향 영역으로 요청 해상도를 근사한다.
+                    const uint32_t clampedSize = BE1::Clamp(projectedSize, RenderFrameSettings::ShadowAtlasMinTileResolution, frameSettings.shadowAtlasMaxTileResolution);
+                    visLight->shadowRequestedResolution = BE1::Math::RoundUpPowerOfTwo(clampedSize);
+                }
+            }
 
             visCamera->visLocalLights[visCamera->numVisLocalLights++] = visLight;
         }
@@ -1614,12 +1650,13 @@ static BE_INLINE uint16_t PackLightTileCoord(uint32_t x, uint32_t y) {
     return static_cast<uint16_t>(x | (y << VisLight::TileCoordBitCount));
 }
 
-void RenderWorld::ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax) {
+// Light-culling 타일 범위를 계산하고, 렌더 픽셀 기준 광원 화면 영역의 긴 변 길이를 반환한다.
+uint32_t RenderWorld::ComputeLightTileRange(const VisCamera *visCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax) {
     if (visCamera->outputRect.w <= 0 || visCamera->outputRect.h <= 0 || visCamera->renderWidth == 0 || visCamera->renderHeight == 0) {
         assert(0);
         packedTileMin = 0;
         packedTileMax = 0;
-        return;
+        return 0;
     }
 
     const int32_t outputMinX = visCamera->outputRect.x;
@@ -1646,7 +1683,7 @@ void RenderWorld::ComputeLightTileRange(const VisCamera *visCamera, const BE1::R
         assert(0);
         packedTileMin = 0;
         packedTileMax = 0;
-        return;
+        return 0;
     }
 
     const uint32_t outputWidth = static_cast<uint32_t>(visCamera->outputRect.w);
@@ -1668,6 +1705,9 @@ void RenderWorld::ComputeLightTileRange(const VisCamera *visCamera, const BE1::R
 
     packedTileMin = PackLightTileCoord(tileMinX, tileMinY);
     packedTileMax = PackLightTileCoord(tileMaxX, tileMaxY);
+
+    // 타일 단위로 양자화하기 전의 크기를 shadow 요청 해상도 계산에서도 공유한다.
+    return BE1::Max(renderMaxX - renderMinX, renderMaxY - renderMinY);
 }
 
 void RenderWorld::BuildLightCullingData(RenderFrame *frame, const RenderCamera *renderCamera, VisCamera *visCamera) {
