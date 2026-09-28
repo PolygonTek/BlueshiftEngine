@@ -63,20 +63,20 @@ RenderPassPSOResolver::PSOEntry *RenderPassPSOResolver::FindPSOEntry(const Mater
     return nullptr;
 }
 
-RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const VisSurf *visSurf, const ShaderFeatureSet &featureSet, bool async) {
-    assert(visSurf);
-    assert(visSurf->material);
-    assert(visSurf->subMesh);
+RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const FrameSurf *frameSurf, const ShaderFeatureSet &featureSet, bool async) {
+    assert(frameSurf);
+    assert(frameSurf->material);
+    assert(frameSurf->subMesh);
 
     ResolveResult result;
     result.inputLayoutId = baseInputLayoutId;
 
-    const int maxVertexWeights = visSurf->subMesh->MaxVertexWeights();
+    const int maxVertexWeights = frameSurf->subMesh->MaxVertexWeights();
     if (maxVertexWeights > 0 && (featureSet.flags & ShaderFeatureSet::GpuSkinningWeightMask) != 0) {
         result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
     }
 
-    const Material *material = visSurf->material;
+    const Material *material = frameSurf->material;
     int hashKey;
     if (PSOEntry *entry = FindPSOEntry(material, featureSet, result.inputLayoutId, hashKey)) {
         result.pso = entry->pso;

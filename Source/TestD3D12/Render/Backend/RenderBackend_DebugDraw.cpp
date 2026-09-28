@@ -46,25 +46,25 @@ void RenderBackend::InitDebugDraw() {
 }
 
 // 월드 공간 반지름을 화면 픽셀 반지름으로 변환할 때 중심점의 clip W 로 나누기 전의 스케일을 계산한다.
-static float GetUnitRadiusToPixelsScale(const VisCamera *visCamera) {
+static float GetUnitRadiusToPixelsScale(const FrameCamera *frameCamera) {
     // 카메라의 월드 공간 right, up 단위 방향 벡터
-    const BE1::Vec3 cameraRightDir(visCamera->viewMatrix[0].x, visCamera->viewMatrix[0].y, visCamera->viewMatrix[0].z);
-    const BE1::Vec3 cameraUpDir(visCamera->viewMatrix[1].x, visCamera->viewMatrix[1].y, visCamera->viewMatrix[1].z);
+    const BE1::Vec3 cameraRightDir(frameCamera->viewMatrix[0].x, frameCamera->viewMatrix[0].y, frameCamera->viewMatrix[0].z);
+    const BE1::Vec3 cameraUpDir(frameCamera->viewMatrix[1].x, frameCamera->viewMatrix[1].y, frameCamera->viewMatrix[1].z);
 
     // 월드 공간에서 right, up 방향으로 1 만큼 이동할 때 클립 공간의 오프셋
-    const BE1::Vec4 rightClipOffset = visCamera->viewProjMatrix * BE1::Vec4(cameraRightDir, 0.0f);
-    const BE1::Vec4 upClipOffset = visCamera->viewProjMatrix * BE1::Vec4(cameraUpDir, 0.0f);
+    const BE1::Vec4 rightClipOffset = frameCamera->viewProjMatrix * BE1::Vec4(cameraRightDir, 0.0f);
+    const BE1::Vec4 upClipOffset = frameCamera->viewProjMatrix * BE1::Vec4(cameraUpDir, 0.0f);
 
-    const float radiusToPixelsX = BE1::Math::Abs(rightClipOffset.x) * static_cast<float>(visCamera->renderWidth) * 0.5f;
-    const float radiusToPixelsY = BE1::Math::Abs(upClipOffset.y) * static_cast<float>(visCamera->renderHeight) * 0.5f;
+    const float radiusToPixelsX = BE1::Math::Abs(rightClipOffset.x) * static_cast<float>(frameCamera->renderWidth) * 0.5f;
+    const float radiusToPixelsY = BE1::Math::Abs(upClipOffset.y) * static_cast<float>(frameCamera->renderHeight) * 0.5f;
 
     return BE1::Max(radiusToPixelsX, radiusToPixelsY);
 }
 
-static uint32_t GetDebugPointLightCircleSegments(const VisCamera *visCamera, const VisLight *visLight, float unitRadiusToPixelsScale) {
-    const BE1::Vec4 centerClip = visCamera->viewProjMatrix * BE1::Vec4(visLight->origin, 1.0f);
+static uint32_t GetDebugPointLightCircleSegments(const FrameCamera *frameCamera, const FrameLight *frameLight, float unitRadiusToPixelsScale) {
+    const BE1::Vec4 centerClip = frameCamera->viewProjMatrix * BE1::Vec4(frameLight->origin, 1.0f);
     if (centerClip.w > std::numeric_limits<float>::min()) {
-        const float radius = BE1::Max(visLight->size[0], MinDebugLightSize);
+        const float radius = BE1::Max(frameLight->size[0], MinDebugLightSize);
         const float radiusPixels = radius * unitRadiusToPixelsScale / centerClip.w;
 
         if (radiusPixels < MinDebugLightRadiusPixels) {
@@ -110,12 +110,12 @@ static void WriteDebugCircle(DebugDrawVertex *&vertexPtr, const BE1::Vec3 &origi
     }
 }
 
-static void WriteDebugPointLight(DebugDrawVertex *&vertexPtr, const VisLight *visLight, uint32_t numSegments, uint32_t color) {
-    const float radius = BE1::Max(visLight->size[0], MinDebugLightSize);
+static void WriteDebugPointLight(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, uint32_t numSegments, uint32_t color) {
+    const float radius = BE1::Max(frameLight->size[0], MinDebugLightSize);
 
-    WriteDebugCircle(vertexPtr, visLight->origin, BE1::Mat3::identity[1], BE1::Mat3::identity[2], radius, numSegments, color);
-    WriteDebugCircle(vertexPtr, visLight->origin, BE1::Mat3::identity[2], BE1::Mat3::identity[0], radius, numSegments, color);
-    WriteDebugCircle(vertexPtr, visLight->origin, BE1::Mat3::identity[0], BE1::Mat3::identity[1], radius, numSegments, color);
+    WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[1], BE1::Mat3::identity[2], radius, numSegments, color);
+    WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[2], BE1::Mat3::identity[0], radius, numSegments, color);
+    WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[0], BE1::Mat3::identity[1], radius, numSegments, color);
 }
 
 // 볼륨의 8 개 꼭짓점을 12 개 모서리로 연결해 LineList 정점을 기록한다.
@@ -125,30 +125,30 @@ static void WriteDebugVolumeEdges(DebugDrawVertex *&vertexPtr, const BE1::Vec3 p
     }
 }
 
-static void WriteDebugBoxDirLight(DebugDrawVertex *&vertexPtr, const VisLight *visLight, uint32_t color) {
+static void WriteDebugBoxDirLight(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, uint32_t color) {
     const BE1::Vec3 effectiveSize(
-        BE1::Max(visLight->size[0], MinDebugLightSize),
-        BE1::Max(visLight->size[1], MinDebugLightSize),
-        BE1::Max(visLight->size[2], MinDebugLightSize));
+        BE1::Max(frameLight->size[0], MinDebugLightSize),
+        BE1::Max(frameLight->size[1], MinDebugLightSize),
+        BE1::Max(frameLight->size[2], MinDebugLightSize));
     const BE1::OBB obb(
-        visLight->origin + visLight->axis[0] * effectiveSize[0] * 0.5f,
+        frameLight->origin + frameLight->axis[0] * effectiveSize[0] * 0.5f,
         BE1::Vec3(effectiveSize[0] * 0.5f, effectiveSize[1], effectiveSize[2]),
-        visLight->axis);
+        frameLight->axis);
 
     BE1::Vec3 points[8];
     obb.ToPoints(points);
     WriteDebugVolumeEdges(vertexPtr, points, color);
 }
 
-static void WriteDebugSpotLight(DebugDrawVertex *&vertexPtr, const VisLight *visLight, uint32_t color) {
-    const float zNear = BE1::Max(visLight->zNear, MinDebugLightSize);
-    const float zFar = BE1::Max3(visLight->size[0], MinDebugLightSize, zNear + MinDebugLightSize);
-    const float left = BE1::Max(visLight->size[1], MinDebugLightSize);
-    const float up = BE1::Max(visLight->size[2], MinDebugLightSize);
+static void WriteDebugSpotLight(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, uint32_t color) {
+    const float zNear = BE1::Max(frameLight->zNear, MinDebugLightSize);
+    const float zFar = BE1::Max3(frameLight->size[0], MinDebugLightSize, zNear + MinDebugLightSize);
+    const float left = BE1::Max(frameLight->size[1], MinDebugLightSize);
+    const float up = BE1::Max(frameLight->size[2], MinDebugLightSize);
 
     BE1::Frustum frustum;
-    frustum.SetOrigin(visLight->origin);
-    frustum.SetAxis(visLight->axis);
+    frustum.SetOrigin(frameLight->origin);
+    frustum.SetAxis(frameLight->axis);
     frustum.SetSize(zNear, zFar, left, up);
 
     BE1::Vec3 points[8];
@@ -159,8 +159,8 @@ static void WriteDebugSpotLight(DebugDrawVertex *&vertexPtr, const VisLight *vis
 void RenderBackend::DrawDebugLights() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawDebugLights");
 
-    RHI::PipelineState *pipelineState = currentVisCamera->debugDrawPSOs[static_cast<int>(DebugDrawPipelineId::DepthTestedLines)];
-    if (!currentVisCamera->showDebugLights || currentVisCamera->numVisLocalLights == 0 || !pipelineState) {
+    RHI::PipelineState *pipelineState = currentFrameCamera->debugDrawPSOs[static_cast<int>(DebugDrawPipelineId::DepthTestedLines)];
+    if (!currentFrameCamera->showDebugLights || currentFrameCamera->numFrameLocalLights == 0 || !pipelineState) {
         return;
     }
 
@@ -168,22 +168,22 @@ void RenderBackend::DrawDebugLights() {
     float unitRadiusToPixelsScale = 0.0f;
     uint64_t numVerts = 0;
 
-    for (uint32_t lightIndex = 0; lightIndex < currentVisCamera->numVisLocalLights; ++lightIndex) {
-        const VisLight *visLight = currentVisCamera->visLocalLights[lightIndex];
-        if (!visLight) {
+    for (uint32_t lightIndex = 0; lightIndex < currentFrameCamera->numFrameLocalLights; ++lightIndex) {
+        const FrameLight *frameLight = currentFrameCamera->frameLocalLights[lightIndex];
+        if (!frameLight) {
             continue;
         }
 
-        switch (visLight->type) {
+        switch (frameLight->type) {
         case RenderLight::Type::Point: {
             // point light radius 의 화면 픽셀의 크기에 따라서 circle segment 의 개수를 조절한다
             if (!hasPointLights) {
-                unitRadiusToPixelsScale = GetUnitRadiusToPixelsScale(currentVisCamera);
+                unitRadiusToPixelsScale = GetUnitRadiusToPixelsScale(currentFrameCamera);
                 hasPointLights = true;
             }
 
             // 너무 작으면 0 을 리턴한다.
-            const uint32_t numCircleSegments = GetDebugPointLightCircleSegments(currentVisCamera, visLight, unitRadiusToPixelsScale);
+            const uint32_t numCircleSegments = GetDebugPointLightCircleSegments(currentFrameCamera, frameLight, unitRadiusToPixelsScale);
             numVerts += 3 * numCircleSegments * 2;
             break;
         }
@@ -210,26 +210,26 @@ void RenderBackend::DrawDebugLights() {
     DebugDrawVertex *vertexPtr = reinterpret_cast<DebugDrawVertex *>(vertexBuffer->mappedPtr);
     DebugDrawVertex *const firstVertexPtr = vertexPtr;
 
-    for (uint32_t lightIndex = 0; lightIndex < currentVisCamera->numVisLocalLights; ++lightIndex) {
-        const VisLight *visLight = currentVisCamera->visLocalLights[lightIndex];
-        if (!visLight) {
+    for (uint32_t lightIndex = 0; lightIndex < currentFrameCamera->numFrameLocalLights; ++lightIndex) {
+        const FrameLight *frameLight = currentFrameCamera->frameLocalLights[lightIndex];
+        if (!frameLight) {
             continue;
         }
 
-        const uint32_t color = BE1::Color4(visLight->lightColor, 1.0f).ToUInt32();
-        switch (visLight->type) {
+        const uint32_t color = BE1::Color4(frameLight->lightColor, 1.0f).ToUInt32();
+        switch (frameLight->type) {
         case RenderLight::Type::Point: {
-            const uint32_t numCircleSegments = GetDebugPointLightCircleSegments(currentVisCamera, visLight, unitRadiusToPixelsScale);
+            const uint32_t numCircleSegments = GetDebugPointLightCircleSegments(currentFrameCamera, frameLight, unitRadiusToPixelsScale);
             if (numCircleSegments > 0) {
-                WriteDebugPointLight(vertexPtr, visLight, numCircleSegments, color);
+                WriteDebugPointLight(vertexPtr, frameLight, numCircleSegments, color);
             }
             break;
         }
         case RenderLight::Type::Spot:
-            WriteDebugSpotLight(vertexPtr, visLight, color);
+            WriteDebugSpotLight(vertexPtr, frameLight, color);
             break;
         case RenderLight::Type::BoxDir:
-            WriteDebugBoxDirLight(vertexPtr, visLight, color);
+            WriteDebugBoxDirLight(vertexPtr, frameLight, color);
             break;
         default:
             assert(0);
@@ -250,7 +250,7 @@ void RenderBackend::DrawDebugPrimitives() {
 
     DrawDebugLights();
 
-    const DebugDrawData *debugDrawData = currentVisCamera->debugDrawData;
+    const DebugDrawData *debugDrawData = currentFrameCamera->debugDrawData;
     if (!debugDrawData || !debugDrawData->vertexBuffer || debugDrawData->numBatches == 0) {
         return;
     }
@@ -261,7 +261,7 @@ void RenderBackend::DrawDebugPrimitives() {
 
     for (uint32_t batchIndex = 0; batchIndex < debugDrawData->numBatches; ++batchIndex) {
         const DebugDrawBatch &batch = debugDrawData->batches[batchIndex];
-        RHI::PipelineState *pipelineState = currentVisCamera->debugDrawPSOs[static_cast<int>(batch.pipelineId)];
+        RHI::PipelineState *pipelineState = currentFrameCamera->debugDrawPSOs[static_cast<int>(batch.pipelineId)];
         if (!pipelineState) {
             continue;
         }

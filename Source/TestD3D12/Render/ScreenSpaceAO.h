@@ -21,7 +21,7 @@ class RenderBackend;
 class ShaderTemplate;
 class ShaderPipeline;
 class ShaderPipelineBootstrap;
-struct ScreenSpaceAOFrameData;
+struct FrameScreenSpaceAO;
 
 class ScreenSpaceAO {
 public:
@@ -36,10 +36,10 @@ public:
     void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
     void                            UpdateFramePSOs(const RenderFrameSettings &settings);
-    static bool                     HasRequiredResources(const ScreenSpaceAOFrameData &data);
+    static bool                     HasRequiredResources(const FrameScreenSpaceAO &data);
 
                                     // Requires successful HasRequiredResources() and resources prepared for these settings.
-    bool                            PrepareDispatch(const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, DispatchParams &params) const;
+    bool                            PrepareDispatch(const FrameScreenSpaceAO &data, const RenderFrameSettings &settings, DispatchParams &params) const;
 
                                     // Requires successful PrepareDispatch() and ready single-sample inputs.
                                     // Inputs and scratch resources enter and leave in ShaderResource state.

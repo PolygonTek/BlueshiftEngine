@@ -17,8 +17,8 @@
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
-struct VisCamera;
-struct VisSurf;
+struct FrameCamera;
+struct FrameSurf;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ public:
 
     bool                            EnsureBufferCapacity(uint32_t count);
 
-    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera, bool allowResize);
+    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameCamera *frameCamera, bool allowResize);
 
     uint32_t                        GetBindlessIndex() const { return tableBuffer.bindlessIndex; }
 
@@ -54,7 +54,7 @@ private:
     };
 
     void                            DestroyBuffer();
-    void                            Build(const VisSurf *visSurf, ShaderSurface &outShaderSurface) const;
+    void                            Build(const FrameSurf *frameSurf, ShaderSurface &outShaderSurface) const;
 
     TableBuffer                     tableBuffer;
 };

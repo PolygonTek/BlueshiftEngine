@@ -24,7 +24,7 @@
 bool Bloom::DispatchConvolutionBloom(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloom");
 
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
     if (data.renderWidth == 0 || data.renderHeight == 0 || data.fftBloomSize == 0) {
         return false;
@@ -86,7 +86,7 @@ bool Bloom::DispatchConvolutionBloomKernelPrepare(RenderBackend &backend) const 
     RHI::CommandList *commandList = backend.GetCommandList();
     RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
     if (data.fftBloomSize == 0) {
         return false;
@@ -163,7 +163,7 @@ bool Bloom::DispatchConvolutionBloomScreenPrefilter(RenderBackend &backend) cons
     RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     RHI::Texture *inputColorTexture = backend.GetPostProcessInputTexture();
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
     const RenderFrameSettings &renderFrameSettings = backend.GetFrameSettings();
 
     RHI::Texture *inputTexture = inputColorTexture;
@@ -231,7 +231,7 @@ bool Bloom::DispatchConvolutionBloomScreenPrepare(RenderBackend &backend) const 
     RHI::CommandList *commandList = backend.GetCommandList();
     RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
     if (data.renderWidth == 0 || data.renderHeight == 0 || data.fftBloomSize == 0) {
         return false;
@@ -304,7 +304,7 @@ bool Bloom::DispatchConvolutionBloomMultiplySpectrum(RenderBackend &backend) con
     RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuFFT &gpuFFT = renderSystem->GetGpuFFT();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
     const RenderFrameSettings &renderFrameSettings = backend.GetFrameSettings();
 
     if (data.renderWidth == 0 || data.renderHeight == 0 || data.fftBloomSize == 0) {
@@ -338,7 +338,7 @@ bool Bloom::DispatchConvolutionBloomResolve(RenderBackend &backend) const {
     RHI::CommandList *commandList = backend.GetCommandList();
     RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
     if (data.fftBloomSize == 0) {
         return false;
@@ -401,7 +401,7 @@ bool Bloom::DispatchConvolutionBloomFFT(RenderBackend &backend, RHI::Buffer *inp
     RHI::CommandList *commandList = backend.GetCommandList();
     GpuFFT &gpuFFT = renderSystem->GetGpuFFT();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
     constexpr uint32_t PlaneCount = 2; // RG, B0
 
@@ -419,7 +419,7 @@ bool Bloom::DispatchConvolutionBloomIFFT(RenderBackend &backend, RHI::Buffer *in
     RHI::CommandList *commandList = backend.GetCommandList();
     GpuFFT &gpuFFT = renderSystem->GetGpuFFT();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
     constexpr uint32_t PlaneCount = 2; // RG, B0
 

@@ -70,8 +70,8 @@ public:
     uint32_t                        GetSize() const { return atlasSize; }
     uint32_t                        GetMaxTileResolution() const { return levelCount ? levels[0].resolution : 0; }
     uint32_t                        GetMinTileResolution() const { return levelCount ? levels[levelCount - 1].resolution : 0; }
-    uint32_t                        GetAllocatedTileCount() const { return allocatedTileCount; }
-    uint64_t                        GetAllocatedArea() const { return allocatedArea; }
+    uint32_t                        GetAllocedTileCount() const { return allocatedTileCount; }
+    uint64_t                        GetAllocedArea() const { return allocatedArea; }
 
 private:
     static constexpr uint32_t       MaxLevelCount = 16;

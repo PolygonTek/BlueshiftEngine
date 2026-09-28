@@ -69,9 +69,9 @@ static bool AllocShaderLightUploadBuffer(RHI::FrameThreadData *frameThreadData, 
 bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame, bool allowResize) {
     PROFILER_CPU_SCOPED_EVENT("ShaderLightTable::Upload");
 
-    const uint32_t pointLightCount = frame->NumVisPointLights();
-    const uint32_t spotLightCount = frame->NumVisSpotLights();
-    const uint32_t boxDirLightCount = frame->NumVisBoxDirLights();
+    const uint32_t pointLightCount = frame->NumFramePointLights();
+    const uint32_t spotLightCount = frame->NumFrameSpotLights();
+    const uint32_t boxDirLightCount = frame->NumFrameBoxDirLights();
 
     if (pointLightCount == 0 && spotLightCount == 0 && boxDirLightCount == 0) {
         Clear();
@@ -99,19 +99,19 @@ bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comman
         return false;
     }
 
-    for (const VisLight &visLight : frame->GetVisLights()) {
-        switch (visLight.type) {
+    for (const FrameLight &frameLight : frame->GetFrameLights()) {
+        switch (frameLight.type) {
         case RenderLight::Type::Point:
-            assert(visLight.typeIndex < pointLightCount);
-            Build(visLight, shaderPointLights[visLight.typeIndex]);
+            assert(frameLight.typeIndex < pointLightCount);
+            Build(frameLight, shaderPointLights[frameLight.typeIndex]);
             break;
         case RenderLight::Type::Spot:
-            assert(visLight.typeIndex < spotLightCount);
-            Build(visLight, shaderSpotLights[visLight.typeIndex]);
+            assert(frameLight.typeIndex < spotLightCount);
+            Build(frameLight, shaderSpotLights[frameLight.typeIndex]);
             break;
         case RenderLight::Type::BoxDir:
-            assert(visLight.typeIndex < boxDirLightCount);
-            Build(visLight, shaderBoxDirLights[visLight.typeIndex]);
+            assert(frameLight.typeIndex < boxDirLightCount);
+            Build(frameLight, shaderBoxDirLights[frameLight.typeIndex]);
             break;
         case RenderLight::Type::Directional:
             break;
@@ -186,45 +186,45 @@ void ShaderLightTable::DestroyBuffer(TableBuffer &tableBuffer) {
     tableBuffer.bindlessIndex = 0;
 }
 
-void ShaderLightTable::Build(const VisLight &visLight, ShaderPointLight &shaderLight) const {
-    BE1::simdProcessor->Memcpy(&shaderLight.worldToProjectionU, &visLight.viewProjScaleBiasMatrix[0], sizeof(shaderLight.worldToProjectionU) * 2);
+void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &shaderLight) const {
+    BE1::simdProcessor->Memcpy(&shaderLight.worldToProjectionU, &frameLight.viewProjScaleBiasMatrix[0], sizeof(shaderLight.worldToProjectionU) * 2);
 
-    const float invRadius = 1.0f / visLight.size[0];
-    shaderLight.origin = float3(visLight.origin.x, visLight.origin.y, visLight.origin.z);
+    const float invRadius = 1.0f / frameLight.size[0];
+    shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
     shaderLight.invRadiusSquared = invRadius * invRadius;
-    shaderLight.lightColor = float3(visLight.lightColor.r, visLight.lightColor.g, visLight.lightColor.b);
-    shaderLight.fallOffExponent = visLight.fallOffExponent;
-    shaderLight.flags = static_cast<uint32_t>(visLight.flags);
+    shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
+    shaderLight.fallOffExponent = frameLight.fallOffExponent;
+    shaderLight.flags = static_cast<uint32_t>(frameLight.flags);
     shaderLight.padding0 = float3(0.0f, 0.0f, 0.0f);
 }
 
-void ShaderLightTable::Build(const VisLight &visLight, ShaderSpotLight &shaderLight) const {
-    assert(visLight.spotLightData);
+void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shaderLight) const {
+    assert(frameLight.spotLightData);
 
-    BE1::simdProcessor->Memcpy(&shaderLight.viewProjScaleBiasMatrix, &visLight.viewProjScaleBiasMatrix, sizeof(shaderLight.viewProjScaleBiasMatrix));
-    BE1::simdProcessor->Memcpy(&shaderLight.fallOffMatrix, &visLight.spotLightData->fallOffMatrix, sizeof(shaderLight.fallOffMatrix));
+    BE1::simdProcessor->Memcpy(&shaderLight.viewProjScaleBiasMatrix, &frameLight.viewProjScaleBiasMatrix, sizeof(shaderLight.viewProjScaleBiasMatrix));
+    BE1::simdProcessor->Memcpy(&shaderLight.fallOffMatrix, &frameLight.spotLightData->fallOffMatrix, sizeof(shaderLight.fallOffMatrix));
 
-    const BE1::Vec3 &direction = visLight.axis[0];
-    shaderLight.origin = float3(visLight.origin.x, visLight.origin.y, visLight.origin.z);
-    shaderLight.fallOffExponent = visLight.fallOffExponent;
+    const BE1::Vec3 &direction = frameLight.axis[0];
+    shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
+    shaderLight.fallOffExponent = frameLight.fallOffExponent;
     shaderLight.direction = float3(direction.x, direction.y, direction.z);
-    shaderLight.zNear = visLight.zNear;
-    shaderLight.size = float3(visLight.size.x, visLight.size.y, visLight.size.z);
-    shaderLight.flags = static_cast<uint32_t>(visLight.flags);
-    shaderLight.lightColor = float3(visLight.lightColor.r, visLight.lightColor.g, visLight.lightColor.b);
+    shaderLight.zNear = frameLight.zNear;
+    shaderLight.size = float3(frameLight.size.x, frameLight.size.y, frameLight.size.z);
+    shaderLight.flags = static_cast<uint32_t>(frameLight.flags);
+    shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
     shaderLight.padding0 = 0.0f;
 }
 
-void ShaderLightTable::Build(const VisLight &visLight, ShaderBoxDirLight &shaderLight) const {
-    BE1::simdProcessor->Memcpy(&shaderLight.worldToLightVolumeMatrix, &visLight.viewProjScaleBiasMatrix, sizeof(shaderLight.worldToLightVolumeMatrix));
+void ShaderLightTable::Build(const FrameLight &frameLight, ShaderBoxDirLight &shaderLight) const {
+    BE1::simdProcessor->Memcpy(&shaderLight.worldToLightVolumeMatrix, &frameLight.viewProjScaleBiasMatrix, sizeof(shaderLight.worldToLightVolumeMatrix));
 
-    const BE1::Vec3 &direction = visLight.axis[0];
-    shaderLight.origin = float3(visLight.origin.x, visLight.origin.y, visLight.origin.z);
-    shaderLight.flags = static_cast<uint32_t>(visLight.flags);
+    const BE1::Vec3 &direction = frameLight.axis[0];
+    shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
+    shaderLight.flags = static_cast<uint32_t>(frameLight.flags);
     shaderLight.direction = float3(direction.x, direction.y, direction.z);
-    shaderLight.fallOffExponent = visLight.fallOffExponent;
-    shaderLight.size = float3(visLight.size.x, visLight.size.y, visLight.size.z);
+    shaderLight.fallOffExponent = frameLight.fallOffExponent;
+    shaderLight.size = float3(frameLight.size.x, frameLight.size.y, frameLight.size.z);
     shaderLight.padding1 = 0.0f;
-    shaderLight.lightColor = float3(visLight.lightColor.r, visLight.lightColor.g, visLight.lightColor.b);
+    shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
     shaderLight.padding2 = 0.0f;
 }

@@ -24,14 +24,16 @@ uint64_t                    RenderFrame::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr size_t     FrameMemoryBlockSize = 0x4000000;
 static constexpr int        FrameMemoryAlignment = 32;
-static constexpr uint32_t   MaxVisCamera = 1u << 3;
-static constexpr uint32_t   MaxVisObjects = 1u << 20;
-static constexpr uint32_t   MaxVisTexts = MaxVisObjects;
-static constexpr uint32_t   MaxVisLights = static_cast<uint32_t>(UINT16_MAX) + 1u; // All cameras combined; indices are uint16_t.
-static constexpr uint32_t   VisObjectChunkCapacity = 8192;
-static constexpr uint32_t   VisSkinnedMeshChunkCapacity = 256;
-static constexpr uint32_t   VisTextChunkCapacity = 256;
-static constexpr uint32_t   VisLightChunkCapacity = 1024;
+static constexpr uint32_t   MaxFrameCamera = 1u << 3;
+static constexpr uint32_t   MaxFrameObjects = 1u << 20;
+static constexpr uint32_t   MaxFrameTexts = MaxFrameObjects;
+static constexpr uint32_t   MaxFrameLights = static_cast<uint32_t>(UINT16_MAX) + 1u; // All cameras combined; indices are uint16_t.
+static constexpr uint32_t   FrameObjectChunkCapacity = 8192;
+static constexpr uint32_t   FrameSkinnedMeshChunkCapacity = 256;
+static constexpr uint32_t   FrameTextChunkCapacity = 256;
+static constexpr uint32_t   FrameLightChunkCapacity = 1024;
+
+static_assert(std::is_trivially_destructible<FrameOceanSurface>::value, "FrameOceanSurface must not require destruction before the frame arena is reset");
 
 void RenderFrame::Init(int32_t frameIndex, int32_t numFrames) {
     frameArena.Init(FrameMemoryBlockSize, FrameMemoryAlignment);
@@ -78,15 +80,15 @@ void RenderFrame::Shutdown() {
     delete [] threadData;
     threadData = nullptr;
 
-    FreeVisLights();
+    FreeFrameLights();
 
-    FreeVisTexts();
+    FreeFrameTexts();
 
-    FreeVisSkinnedMeshes();
+    FreeFrameSkinnedMeshes();
 
-    FreeVisObjects();
+    FreeFrameObjects();
 
-    FreeVisCameras();
+    FreeFrameCameras();
 
     ClearRetainedMaterials();
 
@@ -103,6 +105,7 @@ void RenderFrame::Shutdown() {
     shaderLightCullingTable.Shutdown();
     shaderSurfaceTable.Shutdown();
 
+    frameOceanSurface = nullptr;
     frameArena.Shutdown();
 }
 
@@ -133,10 +136,6 @@ void RenderFrame::BeginFrame(const RenderFrameSettings &renderFrameSettings) {
     elapsedTime = 0.0f;
     elapsedPrevTime = 0.0f;
     frameCount = 0;
-    hasVisOceanSurface = false;
-    visOceanSurface.surfaceQueries = nullptr;
-    visOceanSurface.surfaceQueryCount = 0;
-    visOceanSurface.settingsRevision = 0;
     statEnabled = false;
     maxShaderSurfaceCount = 0;
     numLightCullingZBins = 0;
@@ -163,15 +162,18 @@ void RenderFrame::EndFrame() {
     commands.used = 0;
 }
 
-void RenderFrame::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount) {
-    if (hasVisOceanSurface) {
-        assert(visOceanSurface.settingsRevision == settingsRevision); // 현재 한 frame 에서는 하나의 ocean simulation 만 지원한다.
+void RenderFrame::RegisterFrameOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount) {
+    if (frameOceanSurface) {
+        assert(frameOceanSurface->settingsRevision == settingsRevision); // 현재 한 frame 에서는 하나의 ocean simulation 만 지원한다.
         return;
     }
 
-    visOceanSurface.simulationSettings = simulationSettings;
-    visOceanSurface.surfaceSettings = surfaceSettings;
-    visOceanSurface.settingsRevision = settingsRevision;
+    void *memory = MemAlloc(sizeof(FrameOceanSurface));
+    if (!memory) {
+        return;
+    }
+    // 기본 설정의 cascade 계산 후 덮어쓰지 않고, 전달받은 설정으로 바로 생성한다.
+    FrameOceanSurface *data = new (memory) FrameOceanSurface{simulationSettings, surfaceSettings, nullptr, 0, settingsRevision};
 
     if (surfaceQueries && surfaceQueryCount > 0) {
         const int queryDataSize = static_cast<int>(surfaceQueryCount * sizeof(OceanSurfaceQueryInput));
@@ -179,23 +181,23 @@ void RenderFrame::RegisterVisOceanSurface(const GpuOcean::SimulationSettings &si
         if (queryCopy) {
             BE1::simdProcessor->Memcpy(queryCopy, surfaceQueries, queryDataSize);
 
-            visOceanSurface.surfaceQueries = queryCopy;
-            visOceanSurface.surfaceQueryCount = surfaceQueryCount;
+            data->surfaceQueries = queryCopy;
+            data->surfaceQueryCount = surfaceQueryCount;
         }
     }
-    hasVisOceanSurface = true;
+    frameOceanSurface = data;
 }
 
 void RenderFrame::ResetFrameData() {
-    FreeVisCameras();
+    FreeFrameCameras();
 
-    FreeVisLights();
+    FreeFrameLights();
 
-    FreeVisTexts();
+    FreeFrameTexts();
 
-    FreeVisSkinnedMeshes();
+    FreeFrameSkinnedMeshes();
 
-    FreeVisObjects();
+    FreeFrameObjects();
 
     ClearRetainedMaterials();
 
@@ -211,82 +213,83 @@ void RenderFrame::ResetFrameData() {
     shaderLightTable.Clear();
     shaderSurfaceTable.Clear();
 
+    frameOceanSurface = nullptr;
     frameArena.Reset();
 
-    InitVisCameras(MaxVisCamera);
+    InitFrameCameras(MaxFrameCamera);
 }
 
-void RenderFrame::InitVisCameras(uint32_t maxVisCameras) {
-    assert(!visCameras);
+void RenderFrame::InitFrameCameras(uint32_t maxFrameCameras) {
+    assert(!frameCameras);
 
-    this->maxVisCameras = maxVisCameras;
-    this->numVisCameras = 0;
-    this->visCameras = (VisCamera *)MemAlloc(sizeof(VisCamera) * maxVisCameras);
+    this->maxFrameCameras = maxFrameCameras;
+    this->numFrameCameras = 0;
+    this->frameCameras = (FrameCamera *)MemAlloc(sizeof(FrameCamera) * maxFrameCameras);
 }
 
-void RenderFrame::FreeVisCameras() {
-    if (!visCameras) {
+void RenderFrame::FreeFrameCameras() {
+    if (!frameCameras) {
         return;
     }
 
     // 소멸자 호출
-    for (int i = 0; i < numVisCameras; ++i) {
-        (visCameras + i)->~VisCamera();
+    for (int i = 0; i < numFrameCameras; ++i) {
+        (frameCameras + i)->~FrameCamera();
     }
 
-    visCameras = nullptr;
-    numVisCameras = 0;
+    frameCameras = nullptr;
+    numFrameCameras = 0;
 }
 
-void RenderFrame::FreeVisObjects() {
-    for (Chunk *chunk = firstVisObjectChunk; chunk; chunk = chunk->next) {
-        VisObject *visObjects = static_cast<VisObject *>(chunk->elements);
+void RenderFrame::FreeFrameObjects() {
+    for (Chunk *chunk = firstFrameObjectChunk; chunk; chunk = chunk->next) {
+        FrameObject *frameObjects = static_cast<FrameObject *>(chunk->elements);
         for (uint32_t i = 0; i < chunk->count; ++i) {
-            visObjects[i].~VisObject();
+            frameObjects[i].~FrameObject();
         }
     }
 
-    firstVisObjectChunk = nullptr;
-    lastVisObjectChunk = nullptr;
-    numVisObjects = 0;
+    firstFrameObjectChunk = nullptr;
+    lastFrameObjectChunk = nullptr;
+    numFrameObjects = 0;
 }
 
-void RenderFrame::FreeVisSkinnedMeshes() {
+void RenderFrame::FreeFrameSkinnedMeshes() {
     // 공유 자원의 수명은 retained 배열이 관리하므로 개별 소멸자 호출 없이 청크를 초기화한다.
-    static_assert(std::is_trivially_destructible<VisSkinnedMesh>::value, "VisSkinnedMesh must not require destruction");
-    firstVisSkinnedMeshChunk = nullptr;
-    lastVisSkinnedMeshChunk = nullptr;
-    numVisSkinnedMeshes = 0;
+    static_assert(std::is_trivially_destructible<FrameSkinnedMesh>::value, "FrameSkinnedMesh must not require destruction");
+    firstFrameSkinnedMeshChunk = nullptr;
+    lastFrameSkinnedMeshChunk = nullptr;
+    numFrameSkinnedMeshes = 0;
 }
 
-void RenderFrame::FreeVisTexts() {
-    for (Chunk *chunk = firstVisTextChunk; chunk; chunk = chunk->next) {
-        VisText *visTexts = static_cast<VisText *>(chunk->elements);
+void RenderFrame::FreeFrameTexts() {
+    for (Chunk *chunk = firstFrameTextChunk; chunk; chunk = chunk->next) {
+        FrameText *frameTexts = static_cast<FrameText *>(chunk->elements);
         for (uint32_t i = 0; i < chunk->count; ++i) {
-            visTexts[i].~VisText();
+            frameTexts[i].~FrameText();
         }
     }
 
-    firstVisTextChunk = nullptr;
-    lastVisTextChunk = nullptr;
-    numVisTexts = 0;
+    firstFrameTextChunk = nullptr;
+    lastFrameTextChunk = nullptr;
+    numFrameTexts = 0;
 }
 
-void RenderFrame::FreeVisLights() {
-    for (Chunk *chunk = firstVisLightChunk; chunk; chunk = chunk->next) {
-        VisLight *visLights = static_cast<VisLight *>(chunk->elements);
+void RenderFrame::FreeFrameLights() {
+    for (Chunk *chunk = firstFrameLightChunk; chunk; chunk = chunk->next) {
+        FrameLight *frameLights = static_cast<FrameLight *>(chunk->elements);
         for (uint32_t i = 0; i < chunk->count; ++i) {
-            visLights[i].~VisLight();
+            frameLights[i].~FrameLight();
         }
     }
 
-    firstVisLightChunk = nullptr;
-    lastVisLightChunk = nullptr;
-    numVisLights = 0;
-    numVisLocalLights = 0;
-    numVisPointLights = 0;
-    numVisSpotLights = 0;
-    numVisBoxDirLights = 0;
+    firstFrameLightChunk = nullptr;
+    lastFrameLightChunk = nullptr;
+    numFrameLights = 0;
+    numFrameLocalLights = 0;
+    numFramePointLights = 0;
+    numFrameSpotLights = 0;
+    numFrameBoxDirLights = 0;
     primaryDirectionalLight = nullptr;
 }
 
@@ -438,274 +441,277 @@ void RenderFrame::ClearPendingImGuiOverlay() {
     pendingImGuiOverlay = {};
 }
 
-VisCamera *RenderFrame::AllocVisCamera() {
-    if (numVisCameras >= maxVisCameras) {
+FrameCamera *RenderFrame::AllocFrameCamera() {
+    if (numFrameCameras >= maxFrameCameras) {
         assert(0);
         return nullptr;
     }
 
     // placement new 생성자 호출
-    VisCamera *newVisCamera = &visCameras[numVisCameras];
-    new (newVisCamera) VisCamera();
+    FrameCamera *newFrameCamera = &frameCameras[numFrameCameras];
+    new (newFrameCamera) FrameCamera();
 
-    newVisCamera->index = numVisCameras++;
+    newFrameCamera->index = numFrameCameras++;
 
-    return newVisCamera;
+    return newFrameCamera;
 }
 
-RenderFrame::ChunkRange<VisObject> RenderFrame::GetVisObjects(uint32_t firstIndex) const {
-    assert(firstIndex <= numVisObjects);
-    if (firstIndex >= numVisObjects) {
-        return ChunkRange<VisObject>(nullptr);
+RenderFrame::ChunkRange<FrameObject> RenderFrame::GetFrameObjects(uint32_t firstIndex) const {
+    assert(firstIndex <= numFrameObjects);
+    if (firstIndex >= numFrameObjects) {
+        return ChunkRange<FrameObject>(nullptr);
     }
 
     // 앞선 오브젝트를 개별 순회하지 않고 chunk 단위로 건너뛴다.
-    Chunk *firstChunk = firstVisObjectChunk;
+    Chunk *firstChunk = firstFrameObjectChunk;
     while (firstIndex >= firstChunk->count) {
         firstIndex -= firstChunk->count;
         firstChunk = firstChunk->next;
     }
-    return ChunkRange<VisObject>(firstChunk, firstIndex);
+    return ChunkRange<FrameObject>(firstChunk, firstIndex);
 }
 
-VisObject *RenderFrame::AllocVisObject() {
-    if (numVisObjects >= MaxVisObjects) {
+FrameObject *RenderFrame::AllocFrameObject() {
+    if (numFrameObjects >= MaxFrameObjects) {
         assert(0);
         return nullptr;
     }
 
-    if (!lastVisObjectChunk || lastVisObjectChunk->count >= VisObjectChunkCapacity) {
-        Chunk *newChunk = AllocChunk(sizeof(VisObject), VisObjectChunkCapacity);
-        if (lastVisObjectChunk) {
-            lastVisObjectChunk->next = newChunk;
+    if (!lastFrameObjectChunk || lastFrameObjectChunk->count >= FrameObjectChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(FrameObject), FrameObjectChunkCapacity);
+        if (lastFrameObjectChunk) {
+            lastFrameObjectChunk->next = newChunk;
         } else {
-            firstVisObjectChunk = newChunk;
+            firstFrameObjectChunk = newChunk;
         }
-        lastVisObjectChunk = newChunk;
+        lastFrameObjectChunk = newChunk;
     }
 
-    VisObject *visObjects = static_cast<VisObject *>(lastVisObjectChunk->elements);
-    VisObject *newVisObject = &visObjects[lastVisObjectChunk->count++];
+    FrameObject *frameObjects = static_cast<FrameObject *>(lastFrameObjectChunk->elements);
+    FrameObject *newFrameObject = &frameObjects[lastFrameObjectChunk->count++];
 
     // placement new 생성자 호출
-    new (newVisObject) VisObject();
+    new (newFrameObject) FrameObject();
     
-    ++numVisObjects;
+    ++numFrameObjects;
 
-    return newVisObject;
+    return newFrameObject;
 }
 
-RenderFrame::ChunkRange<VisSkinnedMesh> RenderFrame::GetVisSkinnedMeshes(uint32_t firstIndex) const {
-    assert(firstIndex <= numVisSkinnedMeshes);
-    if (firstIndex >= numVisSkinnedMeshes) {
-        return ChunkRange<VisSkinnedMesh>(nullptr);
+RenderFrame::ChunkRange<FrameSkinnedMesh> RenderFrame::GetFrameSkinnedMeshes(uint32_t firstIndex) const {
+    assert(firstIndex <= numFrameSkinnedMeshes);
+    if (firstIndex >= numFrameSkinnedMeshes) {
+        return ChunkRange<FrameSkinnedMesh>(nullptr);
     }
 
     // 앞선 카메라의 스키닝 메시를 개별 순회하지 않고 chunk 단위로 건너뛴다.
-    Chunk *firstChunk = firstVisSkinnedMeshChunk;
+    Chunk *firstChunk = firstFrameSkinnedMeshChunk;
     while (firstIndex >= firstChunk->count) {
         firstIndex -= firstChunk->count;
         firstChunk = firstChunk->next;
     }
-    return ChunkRange<VisSkinnedMesh>(firstChunk, firstIndex);
+    return ChunkRange<FrameSkinnedMesh>(firstChunk, firstIndex);
 }
 
-VisSkinnedMesh *RenderFrame::AllocVisSkinnedMesh() {
-    // VisObject 하나당 최대 한 개의 스키닝 레코드만 등록한다.
-    if (numVisSkinnedMeshes >= numVisObjects) {
+FrameSkinnedMesh *RenderFrame::AllocFrameSkinnedMesh() {
+    // FrameObject 하나당 최대 한 개의 스키닝 레코드만 등록한다.
+    if (numFrameSkinnedMeshes >= numFrameObjects) {
         assert(0);
         return nullptr;
     }
 
-    if (!lastVisSkinnedMeshChunk || lastVisSkinnedMeshChunk->count >= VisSkinnedMeshChunkCapacity) {
-        Chunk *newChunk = AllocChunk(sizeof(VisSkinnedMesh), VisSkinnedMeshChunkCapacity);
-        if (lastVisSkinnedMeshChunk) {
-            lastVisSkinnedMeshChunk->next = newChunk;
+    if (!lastFrameSkinnedMeshChunk || lastFrameSkinnedMeshChunk->count >= FrameSkinnedMeshChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(FrameSkinnedMesh), FrameSkinnedMeshChunkCapacity);
+        if (lastFrameSkinnedMeshChunk) {
+            lastFrameSkinnedMeshChunk->next = newChunk;
         } else {
-            firstVisSkinnedMeshChunk = newChunk;
+            firstFrameSkinnedMeshChunk = newChunk;
         }
-        lastVisSkinnedMeshChunk = newChunk;
+        lastFrameSkinnedMeshChunk = newChunk;
     }
 
-    VisSkinnedMesh *visSkinnedMeshes = static_cast<VisSkinnedMesh *>(lastVisSkinnedMeshChunk->elements);
-    VisSkinnedMesh *newVisSkinnedMesh = &visSkinnedMeshes[lastVisSkinnedMeshChunk->count++];
-    new (newVisSkinnedMesh) VisSkinnedMesh();
-    ++numVisSkinnedMeshes;
-    return newVisSkinnedMesh;
+    FrameSkinnedMesh *frameSkinnedMeshes = static_cast<FrameSkinnedMesh *>(lastFrameSkinnedMeshChunk->elements);
+    FrameSkinnedMesh *newFrameSkinnedMesh = &frameSkinnedMeshes[lastFrameSkinnedMeshChunk->count++];
+    new (newFrameSkinnedMesh) FrameSkinnedMesh();
+    ++numFrameSkinnedMeshes;
+    return newFrameSkinnedMesh;
 }
 
-RenderFrame::ChunkRange<VisText> RenderFrame::GetVisTexts(uint32_t firstIndex) const {
-    assert(firstIndex <= numVisTexts);
-    if (firstIndex >= numVisTexts) {
-        return ChunkRange<VisText>(nullptr);
+RenderFrame::ChunkRange<FrameText> RenderFrame::GetFrameTexts(uint32_t firstIndex) const {
+    assert(firstIndex <= numFrameTexts);
+    if (firstIndex >= numFrameTexts) {
+        return ChunkRange<FrameText>(nullptr);
     }
 
     // 앞선 텍스트를 개별 순회하지 않고 chunk 단위로 건너뛴다.
-    Chunk *firstChunk = firstVisTextChunk;
+    Chunk *firstChunk = firstFrameTextChunk;
     while (firstIndex >= firstChunk->count) {
         firstIndex -= firstChunk->count;
         firstChunk = firstChunk->next;
     }
-    return ChunkRange<VisText>(firstChunk, firstIndex);
+    return ChunkRange<FrameText>(firstChunk, firstIndex);
 }
 
-VisText *RenderFrame::AllocVisText() {
-    if (numVisTexts >= MaxVisTexts) {
+FrameText *RenderFrame::AllocFrameText() {
+    if (numFrameTexts >= MaxFrameTexts) {
         assert(0);
         return nullptr;
     }
 
-    if (!lastVisTextChunk || lastVisTextChunk->count >= VisTextChunkCapacity) {
-        Chunk *newChunk = AllocChunk(sizeof(VisText), VisTextChunkCapacity);
-        if (lastVisTextChunk) {
-            lastVisTextChunk->next = newChunk;
+    if (!lastFrameTextChunk || lastFrameTextChunk->count >= FrameTextChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(FrameText), FrameTextChunkCapacity);
+        if (lastFrameTextChunk) {
+            lastFrameTextChunk->next = newChunk;
         } else {
-            firstVisTextChunk = newChunk;
+            firstFrameTextChunk = newChunk;
         }
-        lastVisTextChunk = newChunk;
+        lastFrameTextChunk = newChunk;
     }
 
-    VisText *visTexts = static_cast<VisText *>(lastVisTextChunk->elements);
-    VisText *newVisText = &visTexts[lastVisTextChunk->count++];
+    FrameText *frameTexts = static_cast<FrameText *>(lastFrameTextChunk->elements);
+    FrameText *newFrameText = &frameTexts[lastFrameTextChunk->count++];
 
     // placement new 생성자 호출
-    new (newVisText) VisText();
+    new (newFrameText) FrameText();
 
-    numVisTexts++;
+    numFrameTexts++;
 
-    return newVisText;
+    return newFrameText;
 }
 
-RenderFrame::ChunkRange<VisLight> RenderFrame::GetVisLights(uint32_t firstIndex) const {
-    assert(firstIndex <= numVisLights);
-    if (firstIndex >= numVisLights) {
-        return ChunkRange<VisLight>(nullptr);
+RenderFrame::ChunkRange<FrameLight> RenderFrame::GetFrameLights(uint32_t firstIndex) const {
+    assert(firstIndex <= numFrameLights);
+    if (firstIndex >= numFrameLights) {
+        return ChunkRange<FrameLight>(nullptr);
     }
 
     // 앞선 라이트를 개별 순회하지 않고 chunk 단위로 건너뛴다.
-    Chunk *firstChunk = firstVisLightChunk;
+    Chunk *firstChunk = firstFrameLightChunk;
     while (firstIndex >= firstChunk->count) {
         firstIndex -= firstChunk->count;
         firstChunk = firstChunk->next;
     }
-    return ChunkRange<VisLight>(firstChunk, firstIndex);
+    return ChunkRange<FrameLight>(firstChunk, firstIndex);
 }
 
-VisSpotLightData *RenderFrame::AllocVisSpotLightData() {
-    void *memory = MemAlloc(sizeof(VisSpotLightData));
-    return new (memory) VisSpotLightData();
+FrameSpotLightData *RenderFrame::AllocFrameSpotLightData() {
+    void *memory = MemAlloc(sizeof(FrameSpotLightData));
+    return new (memory) FrameSpotLightData();
 }
 
-VisLocalShadowAtlas *RenderFrame::AllocVisLocalShadowAtlas(const ShadowAtlas &atlas) {
+FrameShadowAtlas *RenderFrame::AllocFrameShadowAtlas(const ShadowAtlas &atlas) {
     if (!renderFrameSettings.shadows || renderFrameSettings.shadowAtlasMaxViews == 0 ||
         !atlas.GetShadowTexture() || !atlas.GetShadowDSV().IsValid() || !atlas.GetShadowSRV().IsValid()) {
         return nullptr;
     }
 
-    void *memory = MemAlloc(sizeof(VisLocalShadowAtlas));
+    void *memory = MemAlloc(sizeof(FrameShadowAtlas));
     if (!memory) {
         return nullptr;
     }
-    VisLocalShadowAtlas *data = new (memory) VisLocalShadowAtlas();
+    FrameShadowAtlas *data = new (memory) FrameShadowAtlas();
     data->shadowTexture = atlas.GetShadowTexture();
     data->shadowDSV = atlas.GetShadowDSV();
     data->shadowSRV = atlas.GetShadowSRV();
     data->size = atlas.GetSize();
-    data->maxViews = renderFrameSettings.shadowAtlasMaxViews;
+    data->maxShadowViews = renderFrameSettings.shadowAtlasMaxViews;
     return data;
 }
 
-VisLocalShadow *RenderFrame::AllocVisLocalShadow(VisLocalShadowAtlas &atlas, VisLight &light) {
+FrameLocalShadow *RenderFrame::AllocFrameLocalShadow(FrameShadowAtlas &frameShadowAtlas, FrameLight &light) {
     if (light.localShadowIndex != ~0u || !BE1::HasFlag(light.flags, RenderLight::Flag::CastShadows)) {
         return nullptr;
     }
 
-    const uint32_t viewCount = light.type == RenderLight::Type::Spot ? 1u : light.type == RenderLight::Type::Point ? 6u : 0u;
-    if (viewCount == 0 || atlas.numViews > atlas.maxViews || viewCount > atlas.maxViews - atlas.numViews) {
+    const uint32_t shadowViewCount = light.type == RenderLight::Type::Spot ? 1u : light.type == RenderLight::Type::Point ? 6u : 0u;
+    if (shadowViewCount == 0 || shadowViewCount > frameShadowAtlas.maxShadowViews - frameShadowAtlas.numShadowViews) {
         return nullptr;
     }
 
-    if (!atlas.views) {
-        // 모두 Spot 일 때 광원 수도 maxViews 이다. 사용하지 않는 배열 요소는 생성/초기화하지 않는다.
-        VisLocalShadow *shadows = static_cast<VisLocalShadow *>(MemAlloc(sizeof(VisLocalShadow) * atlas.maxViews));
-        LocalShadowView *views = static_cast<LocalShadowView *>(MemAlloc(sizeof(LocalShadowView) * atlas.maxViews));
-        if (!shadows || !views) {
+    if (!frameShadowAtlas.shadowViews) {
+        // 모두 Spot 일 때 광원 수도 maxShadowViews 이다. 사용하지 않는 배열 요소는 생성/초기화하지 않는다.
+        FrameLocalShadow *shadows = static_cast<FrameLocalShadow *>(MemAlloc(sizeof(FrameLocalShadow) * frameShadowAtlas.maxShadowViews));
+        FrameLocalShadowView *shadowViews = static_cast<FrameLocalShadowView *>(MemAlloc(sizeof(FrameLocalShadowView) * frameShadowAtlas.maxShadowViews));
+        if (!shadows || !shadowViews) {
             return nullptr;
         }
-        atlas.shadows = shadows;
-        atlas.views = views;
+        frameShadowAtlas.shadows = shadows;
+        frameShadowAtlas.shadowViews = shadowViews;
     }
 
-    const uint32_t shadowIndex = atlas.numShadows;
-    VisLocalShadow *shadow = new (&atlas.shadows[shadowIndex]) VisLocalShadow();
+    const uint32_t shadowIndex = frameShadowAtlas.numShadows;
+    FrameLocalShadow *shadow = new (&frameShadowAtlas.shadows[shadowIndex]) FrameLocalShadow();
     shadow->light = &light;
-    shadow->firstView = atlas.numViews;
-    shadow->numViews = viewCount;
-    for (uint32_t faceIndex = 0; faceIndex < viewCount; ++faceIndex) {
-        LocalShadowView *view = new (&atlas.views[atlas.numViews + faceIndex]) LocalShadowView();
-        view->shadowIndex = shadowIndex;
-        view->faceIndex = faceIndex;
+    shadow->firstView = frameShadowAtlas.numShadowViews;
+    shadow->numViews = shadowViewCount;
+
+    for (uint32_t faceIndex = 0; faceIndex < shadowViewCount; ++faceIndex) {
+        FrameLocalShadowView *shadowView = new (&frameShadowAtlas.shadowViews[frameShadowAtlas.numShadowViews + faceIndex]) FrameLocalShadowView();
+        shadowView->shadowIndex = shadowIndex;
+        shadowView->faceIndex = faceIndex;
     }
-    atlas.numViews += viewCount;
-    ++atlas.numShadows;
+
+    frameShadowAtlas.numShadowViews += shadowViewCount;
+    frameShadowAtlas.numShadows++;
+
     light.localShadowIndex = shadowIndex;
     return shadow;
 }
 
-VisLight *RenderFrame::AllocVisLight(RenderLight::Type type) {
+FrameLight *RenderFrame::AllocFrameLight(RenderLight::Type type) {
     if (type == RenderLight::Type::Directional && primaryDirectionalLight) {
         assert(0);
         return nullptr;
     }
 
-    if (numVisLights >= MaxVisLights) {
+    if (numFrameLights >= MaxFrameLights) {
         assert(0);
         return nullptr;
     }
 
-    if (!lastVisLightChunk || lastVisLightChunk->count >= VisLightChunkCapacity) {
-        Chunk *newChunk = AllocChunk(sizeof(VisLight), VisLightChunkCapacity);
-        if (lastVisLightChunk) {
-            lastVisLightChunk->next = newChunk;
+    if (!lastFrameLightChunk || lastFrameLightChunk->count >= FrameLightChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(FrameLight), FrameLightChunkCapacity);
+        if (lastFrameLightChunk) {
+            lastFrameLightChunk->next = newChunk;
         } else {
-            firstVisLightChunk = newChunk;
+            firstFrameLightChunk = newChunk;
         }
-        lastVisLightChunk = newChunk;
+        lastFrameLightChunk = newChunk;
     }
 
-    VisLight *visLights = static_cast<VisLight *>(lastVisLightChunk->elements);
-    VisLight *newVisLight = &visLights[lastVisLightChunk->count++];
+    FrameLight *frameLights = static_cast<FrameLight *>(lastFrameLightChunk->elements);
+    FrameLight *newFrameLight = &frameLights[lastFrameLightChunk->count++];
 
     // placement new 생성자 호출
-    new (newVisLight) VisLight();
+    new (newFrameLight) FrameLight();
 
-    newVisLight->index = static_cast<uint16_t>(numVisLights++);
-    newVisLight->type = type;
+    newFrameLight->index = static_cast<uint16_t>(numFrameLights++);
+    newFrameLight->type = type;
 
     switch (type) {
     case RenderLight::Type::Point:
-        numVisLocalLights++;
-        newVisLight->typeIndex = static_cast<uint16_t>(numVisPointLights++);
+        numFrameLocalLights++;
+        newFrameLight->typeIndex = static_cast<uint16_t>(numFramePointLights++);
         break;
     case RenderLight::Type::Spot:
-        numVisLocalLights++;
-        newVisLight->typeIndex = static_cast<uint16_t>(numVisSpotLights++);
+        numFrameLocalLights++;
+        newFrameLight->typeIndex = static_cast<uint16_t>(numFrameSpotLights++);
         break;
     case RenderLight::Type::BoxDir:
-        numVisLocalLights++;
-        newVisLight->typeIndex = static_cast<uint16_t>(numVisBoxDirLights++);
+        numFrameLocalLights++;
+        newFrameLight->typeIndex = static_cast<uint16_t>(numFrameBoxDirLights++);
         break;
     case RenderLight::Type::Directional:
-        newVisLight->typeIndex = 0;
-        primaryDirectionalLight = newVisLight;
+        newFrameLight->typeIndex = 0;
+        primaryDirectionalLight = newFrameLight;
         break;
     default:
         assert(0);
-        newVisLight->typeIndex = 0;
+        newFrameLight->typeIndex = 0;
         break;
     }
 
-    return newVisLight;
+    return newFrameLight;
 }
 
 uint32_t RenderFrame::ReserveLightCullingZBins() {
@@ -770,17 +776,17 @@ void RenderFrame::CmdBeginContext(RenderContext *context, bool gpuTiming, bool t
     cmd->swapChainOutput = swapChainOutput;
 }
 
-void RenderFrame::CmdDrawCamera(const VisCamera *camera) {
+void RenderFrame::CmdDrawCamera(const FrameCamera *camera) {
     DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
     if (!cmd) {
         return;
     }
 
     cmd->commandId = RenderCommandId::DrawCamera;
-    cmd->visCamera = camera;
+    cmd->frameCamera = camera;
 
     if (camera) {
-        maxShaderSurfaceCount = BE1::Max(maxShaderSurfaceCount, camera->numVisSurfs);
+        maxShaderSurfaceCount = BE1::Max(maxShaderSurfaceCount, camera->numFrameSurfs);
     }
 }
 

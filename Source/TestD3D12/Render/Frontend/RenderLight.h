@@ -141,5 +141,5 @@ private:
 
     uint64_t                        visibleFrameIndex = 0;
     int                             index = -1;                     // RenderWorld::renderLights 의 인덱스
-    uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 VisLight 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
+    uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 FrameLight 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
 };

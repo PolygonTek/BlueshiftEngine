@@ -65,7 +65,7 @@ bool PostLuminance::Dispatch(RenderBackend &backend) const {
     const RHI::ConstantBuffer *frameConstantBuffer = backend.GetFrameConstantBuffer();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     RHI::Texture *inputTexture = backend.GetPostProcessInputTexture();
-    RHI::Buffer *luminanceBuffer = backend.GetVisCamera()->luminanceBuffer;
+    RHI::Buffer *luminanceBuffer = backend.GetFrameCamera()->luminanceBuffer;
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
     if (!settings.toneMapping || !frameLuminancePass1PSO || !frameLuminancePass2PSO) {

@@ -33,14 +33,15 @@ class MeshInstance;
 class Skeleton;
 class Font;
 class ShadowAtlas;
-struct VisCamera;
-struct VisObject;
-struct VisSkinnedMesh;
-struct VisText;
-struct VisSpotLightData;
-struct VisLight;
-struct VisLocalShadow;
-struct VisLocalShadowAtlas;
+struct FrameCamera;
+struct FrameObject;
+struct FrameSkinnedMesh;
+struct FrameText;
+struct FrameSpotLightData;
+struct FrameLight;
+struct FrameLocalShadow;
+struct FrameShadowAtlas;
+struct FrameOceanSurface;
 enum class DrawTextFlag : uint16_t;
 
 enum class FrameSyncState : uint8_t {
@@ -82,7 +83,7 @@ struct BeginContextRenderCommand {
 
 struct DrawCameraRenderCommand {
     RenderCommandId                 commandId;
-    const VisCamera *               visCamera;
+    const FrameCamera *             frameCamera;
 };
 
 struct ScreenShotRenderCommand {
@@ -113,14 +114,6 @@ static_assert(sizeof(EndRenderCommand) == sizeof(RenderCommandId), "End command 
 struct PendingImGuiOverlay {
     RHI::ImGuiOverlay *             overlay = nullptr;
     void *                          userData = nullptr;
-};
-
-struct VisOceanSurface {
-    GpuOcean::SimulationSettings    simulationSettings;
-    GpuOceanSurface::Settings       surfaceSettings;
-    const OceanSurfaceQueryInput *  surfaceQueries = nullptr;
-    uint32_t                        surfaceQueryCount = 0;
-    uint64_t                        settingsRevision = 0;
 };
 
 /*
@@ -197,46 +190,46 @@ public:
     [[nodiscard]] void *            MemAlloc(int size);
     [[nodiscard]] void *            ClearedMemAlloc(int size);
 
-    uint32_t                        NumVisCameras() const { return numVisCameras; }
-    VisCamera *                     GetVisCameras() const { return visCameras; }
-    [[nodiscard]] VisCamera *       AllocVisCamera();
+    uint32_t                        NumFrameCameras() const { return numFrameCameras; }
+    FrameCamera *                   GetFrameCameras() const { return frameCameras; }
+    FrameCamera *                   AllocFrameCamera();
 
-    uint32_t                        NumVisObjects() const { return numVisObjects; }
-    ChunkRange<VisObject>           GetVisObjects() const { return ChunkRange<VisObject>(firstVisObjectChunk); }
-    ChunkRange<VisObject>           GetVisObjects(uint32_t firstIndex) const;
-    [[nodiscard]] VisObject *       AllocVisObject();
+    uint32_t                        NumFrameObjects() const { return numFrameObjects; }
+    ChunkRange<FrameObject>         GetFrameObjects() const { return ChunkRange<FrameObject>(firstFrameObjectChunk); }
+    ChunkRange<FrameObject>         GetFrameObjects(uint32_t firstIndex) const;
+    FrameObject *                   AllocFrameObject();
 
-    uint32_t                        NumVisSkinnedMeshes() const { return numVisSkinnedMeshes; }
-    ChunkRange<VisSkinnedMesh>      GetVisSkinnedMeshes(uint32_t firstIndex) const;
-    [[nodiscard]] VisSkinnedMesh *  AllocVisSkinnedMesh();
+    uint32_t                        NumFrameSkinnedMeshes() const { return numFrameSkinnedMeshes; }
+    ChunkRange<FrameSkinnedMesh>    GetFrameSkinnedMeshes(uint32_t firstIndex) const;
+    FrameSkinnedMesh *              AllocFrameSkinnedMesh();
 
-    uint32_t                        NumVisTexts() const { return numVisTexts; }
-    ChunkRange<VisText>             GetVisTexts() const { return ChunkRange<VisText>(firstVisTextChunk); }
-    ChunkRange<VisText>             GetVisTexts(uint32_t firstIndex) const;
-    [[nodiscard]] VisText *         AllocVisText();
+    uint32_t                        NumFrameTexts() const { return numFrameTexts; }
+    ChunkRange<FrameText>           GetFrameTexts() const { return ChunkRange<FrameText>(firstFrameTextChunk); }
+    ChunkRange<FrameText>           GetFrameTexts(uint32_t firstIndex) const;
+    FrameText *                     AllocFrameText();
 
-    uint32_t                        NumVisLights() const { return numVisLights; }
-    uint32_t                        NumVisLocalLights() const { return numVisLocalLights; }
-    uint32_t                        NumVisPointLights() const { return numVisPointLights; }
-    uint32_t                        NumVisSpotLights() const { return numVisSpotLights; }
-    uint32_t                        NumVisBoxDirLights() const { return numVisBoxDirLights; }
-    const VisLight *                GetPrimaryDirectionalLight() const { return primaryDirectionalLight; }
-    ChunkRange<VisLight>            GetVisLights() const { return ChunkRange<VisLight>(firstVisLightChunk); }
-    ChunkRange<VisLight>            GetVisLights(uint32_t firstIndex) const;
-    [[nodiscard]] VisSpotLightData *AllocVisSpotLightData();
-    [[nodiscard]] VisLight *        AllocVisLight(RenderLight::Type type);
+    uint32_t                        NumFrameLights() const { return numFrameLights; }
+    uint32_t                        NumFrameLocalLights() const { return numFrameLocalLights; }
+    uint32_t                        NumFramePointLights() const { return numFramePointLights; }
+    uint32_t                        NumFrameSpotLights() const { return numFrameSpotLights; }
+    uint32_t                        NumFrameBoxDirLights() const { return numFrameBoxDirLights; }
+    const FrameLight *              GetPrimaryDirectionalLight() const { return primaryDirectionalLight; }
+    ChunkRange<FrameLight>          GetFrameLights() const { return ChunkRange<FrameLight>(firstFrameLightChunk); }
+    ChunkRange<FrameLight>          GetFrameLights(uint32_t firstIndex) const;
+    FrameSpotLightData *            AllocFrameSpotLightData();
+    FrameLight *                    AllocFrameLight(RenderLight::Type type);
 
                                     // 카메라마다 리소스 snapshot 을 만들고, 실제 shadow 등록 시에만 view 저장 공간을 확보한다.
-    [[nodiscard]] VisLocalShadowAtlas *AllocVisLocalShadowAtlas(const ShadowAtlas &atlas);
-    [[nodiscard]] VisLocalShadow *  AllocVisLocalShadow(VisLocalShadowAtlas &atlas, VisLight &light);
+    FrameShadowAtlas *              AllocFrameShadowAtlas(const ShadowAtlas &atlas);
+    FrameLocalShadow *              AllocFrameLocalShadow(FrameShadowAtlas &atlas, FrameLight &light);
 
-    const VisLocalShadowAtlas *     GetShadowAtlasDebugPreview() const { return shadowAtlasDebugPreview; }
-    void                            SetShadowAtlasDebugPreview(const VisLocalShadowAtlas *atlas) { shadowAtlasDebugPreview = atlas; }
+    const FrameShadowAtlas *        GetShadowAtlasDebugPreview() const { return shadowAtlasDebugPreview; }
+    void                            SetShadowAtlasDebugPreview(const FrameShadowAtlas *atlas) { shadowAtlasDebugPreview = atlas; }
 
     uint32_t                        NumLightCullingZBins() const { return numLightCullingZBins; }
-    [[nodiscard]] uint32_t          ReserveLightCullingZBins();
+    uint32_t                        ReserveLightCullingZBins();
     uint32_t                        NumLightCullingWords() const { return numLightCullingWords; }
-    [[nodiscard]] uint32_t          ReserveLightCullingWords(uint32_t count);
+    uint32_t                        ReserveLightCullingWords(uint32_t count);
 
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
@@ -244,7 +237,7 @@ public:
                                     // 렌더 커맨드들..
     bool                            CmdRenderWork(RenderWork *renderWork);
     void                            CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput);
-    void                            CmdDrawCamera(const VisCamera *camera);
+    void                            CmdDrawCamera(const FrameCamera *camera);
     void                            CmdFinalizeFrame(bool renderImGuiOverlay);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
@@ -270,8 +263,8 @@ public:
 
     const RenderFrameSettings &     GetRenderFrameSettings() const { return renderFrameSettings; }
 
-    const VisOceanSurface *         GetVisOceanSurface() const { return hasVisOceanSurface ? &visOceanSurface : nullptr; }
-    void                            RegisterVisOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount);
+    const FrameOceanSurface *       GetFrameOceanSurface() const { return frameOceanSurface; }
+    void                            RegisterFrameOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount);
 
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
@@ -298,7 +291,7 @@ public:
     bool                            UploadShaderLightTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightTable.Upload(frameThreadData, commandList, this, true); }
     bool                            UploadShaderLightCullingTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightCullingTable.Upload(frameThreadData, commandList, this, true); }
     bool                            DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState) { return shaderLightCullingTable.DispatchLightCulling(frameThreadData, commandList, pipelineState, this); }
-    bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera) { return shaderSurfaceTable.Upload(frameThreadData, commandList, visCamera, false); }
+    bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameCamera *frameCamera) { return shaderSurfaceTable.Upload(frameThreadData, commandList, frameCamera, false); }
     bool                            EnsureShaderSurfaceTableCapacity() { return shaderSurfaceTable.EnsureBufferCapacity(maxShaderSurfaceCount); }
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
@@ -314,12 +307,12 @@ private:
                                     // 이번 프레임의 데이터를 초기화한다. (메인 스레드에서 호출됨)
     void                            ResetFrameData();
 
-    void                            InitVisCameras(uint32_t maxVisCameras);
-    void                            FreeVisCameras();
-    void                            FreeVisObjects();
-    void                            FreeVisSkinnedMeshes();
-    void                            FreeVisTexts();
-    void                            FreeVisLights();
+    void                            InitFrameCameras(uint32_t maxFrameCameras);
+    void                            FreeFrameCameras();
+    void                            FreeFrameObjects();
+    void                            FreeFrameSkinnedMeshes();
+    void                            FreeFrameTexts();
+    void                            FreeFrameLights();
 
     [[nodiscard]] Chunk *           AllocChunk(uint32_t elementSize, uint32_t elementCount);
 
@@ -333,37 +326,37 @@ private:
 
     BE1::LinearAllocator            frameArena;
 
-    uint32_t                        maxVisCameras = 0;
-    uint32_t                        numVisCameras = 0;
-    VisCamera *                     visCameras = nullptr;
+    uint32_t                        maxFrameCameras = 0;
+    uint32_t                        numFrameCameras = 0;
+    FrameCamera *                   frameCameras = nullptr;
 
-    uint32_t                        numVisObjects = 0;
-    Chunk *                         firstVisObjectChunk = nullptr;
-    Chunk *                         lastVisObjectChunk = nullptr;
+    uint32_t                        numFrameObjects = 0;
+    Chunk *                         firstFrameObjectChunk = nullptr;
+    Chunk *                         lastFrameObjectChunk = nullptr;
 
-    uint32_t                        numVisSkinnedMeshes = 0;
-    Chunk *                         firstVisSkinnedMeshChunk = nullptr;
-    Chunk *                         lastVisSkinnedMeshChunk = nullptr;
+    uint32_t                        numFrameSkinnedMeshes = 0;
+    Chunk *                         firstFrameSkinnedMeshChunk = nullptr;
+    Chunk *                         lastFrameSkinnedMeshChunk = nullptr;
 
-    uint32_t                        numVisTexts = 0;
-    Chunk *                         firstVisTextChunk = nullptr;
-    Chunk *                         lastVisTextChunk = nullptr;
+    uint32_t                        numFrameTexts = 0;
+    Chunk *                         firstFrameTextChunk = nullptr;
+    Chunk *                         lastFrameTextChunk = nullptr;
 
-    uint32_t                        numVisLights = 0;
-    uint32_t                        numVisLocalLights = 0;
-    uint32_t                        numVisPointLights = 0;
-    uint32_t                        numVisSpotLights = 0;
-    uint32_t                        numVisBoxDirLights = 0;
-    VisLight *                      primaryDirectionalLight = nullptr;
-    Chunk *                         firstVisLightChunk = nullptr;
-    Chunk *                         lastVisLightChunk = nullptr;
+    uint32_t                        numFrameLights = 0;
+    uint32_t                        numFrameLocalLights = 0;
+    uint32_t                        numFramePointLights = 0;
+    uint32_t                        numFrameSpotLights = 0;
+    uint32_t                        numFrameBoxDirLights = 0;
+    FrameLight *                    primaryDirectionalLight = nullptr;
+    Chunk *                         firstFrameLightChunk = nullptr;
+    Chunk *                         lastFrameLightChunk = nullptr;
 
     uint32_t                        numLightCullingZBins = 0;
     uint32_t                        numLightCullingWords = 0;
 
     RenderCommandBuffer             commands;
     PendingImGuiOverlay             pendingImGuiOverlay;
-    const VisLocalShadowAtlas *     shadowAtlasDebugPreview = nullptr;
+    const FrameShadowAtlas *        shadowAtlasDebugPreview = nullptr;
 
     FrameSyncState                  frameSyncState = FrameSyncState::RenderCompleted;
     uint64_t                        frameFenceValue = 0;
@@ -374,8 +367,7 @@ private:
     float                           elapsedTime = 0.0f;
     float                           elapsedPrevTime = 0.0f;
     uint32_t                        frameCount = 0;
-    VisOceanSurface                 visOceanSurface;
-    bool                            hasVisOceanSurface = false;
+    FrameOceanSurface *             frameOceanSurface = nullptr;
 
     bool                            statEnabled = false;
 

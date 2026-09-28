@@ -29,14 +29,14 @@ bool RenderBackend::PrepareHiZCulling() {
     hiZCullDrawBatches.SetCount(0, false);
     hiZCullPassRanges.SetCount(0, false);
 
-    assert(currentVisCamera->hiZ.mipCount > 0 && currentVisCamera->hiZ.mipWidths[0] > 0 && currentVisCamera->hiZ.mipHeights[0] > 0);
+    assert(currentFrameCamera->hiZ.mipCount > 0 && currentFrameCamera->hiZ.mipWidths[0] > 0 && currentFrameCamera->hiZ.mipHeights[0] > 0);
 
     uint32_t totalBatchCount = 0;
     uint32_t totalInstanceCount = 0;
 
     // 전체 렌더패스들을 순회하면서 Hi-Z Culling 을 수행할 수 있는 DrawSurf 들을 찾아서 배치 개수, 인스턴스 개수를 계산한다.
-    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
-        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
         // 현재 Hi-Z Culling 은 DepthPrepass 와 Opaque Pass 에서만 수행한다.
         if (!IsHiZCullRenderPass(renderPass->type)) {
             continue;
@@ -78,8 +78,8 @@ bool RenderBackend::PrepareHiZCulling() {
 
     hiZCullDrawBatches.Reserve(totalBatchCount);
 
-    hiZCullPassRanges.SetCount(currentVisCamera->numRenderPasses, false);
-    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
+    hiZCullPassRanges.SetCount(currentFrameCamera->numRenderPasses, false);
+    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
         hiZCullPassRanges[passIndex] = {};
     }
 
@@ -87,8 +87,8 @@ bool RenderBackend::PrepareHiZCulling() {
     uint32_t instanceBaseOffset = 0;
     uint32_t batchIndex = 0;
 
-    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
-        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
         if (!IsHiZCullRenderPass(renderPass->type)) {
             continue;
         }
@@ -107,21 +107,21 @@ bool RenderBackend::PrepareHiZCulling() {
             const uint32_t instanceStartIndex = drawSurfIndex;
             drawSurfIndex = FindSurfaceInstanceBatchEnd(renderPass->drawSurfs, renderPass->numDrawSurfs, instanceStartIndex);
             const uint32_t instanceCount = drawSurfIndex - instanceStartIndex;
-            const VisSurf *firstVisSurf = renderPass->drawSurfs[instanceStartIndex]->visSurf;
+            const FrameSurf *firstFrameSurf = renderPass->drawSurfs[instanceStartIndex]->frameSurf;
 
             // 배치 정보를 hiZCullDrawBatches 에 기록한다.
             SurfaceInstanceBatch &batch = hiZCullDrawBatches.Alloc();
             batch.drawSurfIndex = instanceStartIndex; // renderPass->drawSurfs 의 시작 index
             batch.instanceCount = instanceCount;
-            batch.instanceToShaderSurfaceTable = currentVisCamera->hiZ.visibleInstanceBuffer;
+            batch.instanceToShaderSurfaceTable = currentFrameCamera->hiZ.visibleInstanceBuffer;
             batch.instanceBaseOffset = instanceBaseOffset;
-            batch.indirectArgsBuffer = currentVisCamera->hiZ.indirectArgsBuffer;
+            batch.indirectArgsBuffer = currentFrameCamera->hiZ.indirectArgsBuffer;
             batch.indirectArgsOffset = batchIndex * HiZCullIndirectArgSize;
             batch.valid = false;
 
             // indirectArgsUploadBuffer 에 배치별로 DrawIndexedInstancedIndirect 를 위한 인자들을 기록한다.
             uint32_t *batchIndirectArgs = indirectArgs + (batch.indirectArgsOffset / sizeof(uint32_t));
-            batchIndirectArgs[0] = firstVisSurf->numIndexes; // IndexCountPerInstance
+            batchIndirectArgs[0] = firstFrameSurf->numIndexes; // IndexCountPerInstance
             batchIndirectArgs[1] = 0; // InstanceCount
             batchIndirectArgs[2] = 0; // StartIndexLocation
             batchIndirectArgs[3] = 0; // BaseVertexLocation
@@ -137,8 +137,8 @@ bool RenderBackend::PrepareHiZCulling() {
     assert(batchIndex == totalBatchCount);
     assert(instanceBaseOffset == totalInstanceCount);
 
-    RHI::Buffer *visibleInstanceBuffer = currentVisCamera->hiZ.visibleInstanceBuffer;
-    RHI::Buffer *indirectArgsBuffer = currentVisCamera->hiZ.indirectArgsBuffer;
+    RHI::Buffer *visibleInstanceBuffer = currentFrameCamera->hiZ.visibleInstanceBuffer;
+    RHI::Buffer *indirectArgsBuffer = currentFrameCamera->hiZ.indirectArgsBuffer;
 
     RHI::GPUBarrier copyStartBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(indirectArgsBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::CopyDst)
@@ -154,13 +154,13 @@ bool RenderBackend::PrepareHiZCulling() {
     RHI::GPUBarrier dispatchStartBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(indirectArgsBuffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::UnorderedAccess),
         RHI::Renderer::MakeBufferBarrier(visibleInstanceBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess),
-        RHI::Renderer::MakeTextureBarrier(currentVisCamera->hiZ.texture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute)
+        RHI::Renderer::MakeTextureBarrier(currentFrameCamera->hiZ.texture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute)
     };
     RHI::renderer->Barrier(mainCommandList, dispatchStartBarriers, COUNT_OF(dispatchStartBarriers));
 
     // 각 배치 마다 인스턴스별 ShaderSurface 테이블을 GPU 에 업로드하고, DispatchHiZCullInstances 를 호출하여 Hi-Z Culling 을 수행한다.
-    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
-        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
         if (!IsHiZCullRenderPass(renderPass->type)) {
             continue;
         }
@@ -183,7 +183,7 @@ bool RenderBackend::PrepareHiZCulling() {
     RHI::GPUBarrier drawStartBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(visibleInstanceBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource),
         RHI::Renderer::MakeBufferBarrier(indirectArgsBuffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::IndirectArgument),
-        RHI::Renderer::MakeTextureBarrier(currentVisCamera->hiZ.texture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
+        RHI::Renderer::MakeTextureBarrier(currentFrameCamera->hiZ.texture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource)
     };
     RHI::renderer->Barrier(mainCommandList, drawStartBarriers, COUNT_OF(drawStartBarriers));
 
@@ -193,18 +193,18 @@ bool RenderBackend::PrepareHiZCulling() {
 bool RenderBackend::DispatchHiZCullInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) {
     return renderSystem->GetHiZ().DispatchCullInstances(
         commandList, frameThreadData, cameraConstantBuffer, frame->GetShaderSurfaceTableBindlessIndex(),
-        currentVisCamera->projectionPolicy, currentVisCamera->hiZ,
+        currentFrameCamera->projectionPolicy, currentFrameCamera->hiZ,
         instanceCount, inputInstanceToShaderSurfaceTable, instanceBaseOffset, indirectArgsOffset);
 }
 
 void RenderBackend::FinishHiZCulling() {
-    if (!currentVisCamera->hiZ.visibleInstanceBuffer || !currentVisCamera->hiZ.indirectArgsBuffer) {
+    if (!currentFrameCamera->hiZ.visibleInstanceBuffer || !currentFrameCamera->hiZ.indirectArgsBuffer) {
         return;
     }
 
     RHI::GPUBarrier endBarriers[] = {
-        RHI::Renderer::MakeBufferBarrier(currentVisCamera->hiZ.visibleInstanceBuffer, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::Undefined),
-        RHI::Renderer::MakeBufferBarrier(currentVisCamera->hiZ.indirectArgsBuffer, RHI::GPUResourceState::IndirectArgument, RHI::GPUResourceState::Undefined)
+        RHI::Renderer::MakeBufferBarrier(currentFrameCamera->hiZ.visibleInstanceBuffer, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::Undefined),
+        RHI::Renderer::MakeBufferBarrier(currentFrameCamera->hiZ.indirectArgsBuffer, RHI::GPUResourceState::IndirectArgument, RHI::GPUResourceState::Undefined)
     };
     RHI::renderer->Barrier(mainCommandList, endBarriers, COUNT_OF(endBarriers));
 }

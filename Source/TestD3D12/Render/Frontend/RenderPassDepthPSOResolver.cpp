@@ -93,10 +93,10 @@ ShaderPermutationKey RenderPassDepthPSOResolver::GetPermutationKey(ShaderTemplat
     return permutationKey;
 }
 
-RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(const VisSurf *visSurf, bool async) {
-    assert(visSurf);
-    assert(visSurf->subMesh);
-    assert(visSurf->material);
+RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(const FrameSurf *frameSurf, bool async) {
+    assert(frameSurf);
+    assert(frameSurf->subMesh);
+    assert(frameSurf->material);
 
     ResolveResult result;
     result.inputLayoutId = baseInputLayoutId;
@@ -105,15 +105,15 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
         return result;
     }
 
-    ShaderFeatureSet featureSet = BuildDepthFeatureSet(visSurf->baseFeatureSet | passFeatureSet);
+    ShaderFeatureSet featureSet = BuildDepthFeatureSet(frameSurf->baseFeatureSet | passFeatureSet);
     featureSet = shaderTemplate->MaskSupportedFeatures(featureSet);
 
-    const int maxVertexWeights = visSurf->subMesh->MaxVertexWeights();
+    const int maxVertexWeights = frameSurf->subMesh->MaxVertexWeights();
     if (maxVertexWeights > 0 && (featureSet.flags & ShaderFeatureSet::GpuSkinningWeightMask) != 0) {
         result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
     }
 
-    const RHI::CullMode cullMode = visSurf->material->GetCullMode();
+    const RHI::CullMode cullMode = frameSurf->material->GetCullMode();
     int hashKey;
     if (PSOEntry *entry = FindPSOEntry(featureSet, result.inputLayoutId, cullMode, hashKey)) {
         result.pso = entry->pso;

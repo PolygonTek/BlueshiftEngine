@@ -147,12 +147,12 @@ void RenderBackend::RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCou
 
 void RenderBackend::UpdateFrameStats() {
     RenderContext::Stats stats;
-    stats.visibleCameraCount = frame->NumVisCameras();
-    stats.visibleObjectCount = frame->NumVisObjects();
-    stats.visibleLightCount = frame->NumVisLights();
-    stats.visiblePointLightCount = frame->NumVisPointLights();
-    stats.visibleSpotLightCount = frame->NumVisSpotLights();
-    stats.visibleBoxDirLightCount = frame->NumVisBoxDirLights();
+    stats.visibleCameraCount = frame->NumFrameCameras();
+    stats.visibleObjectCount = frame->NumFrameObjects();
+    stats.visibleLightCount = frame->NumFrameLights();
+    stats.visiblePointLightCount = frame->NumFramePointLights();
+    stats.visibleSpotLightCount = frame->NumFrameSpotLights();
+    stats.visibleBoxDirLightCount = frame->NumFrameBoxDirLights();
     stats.drawCount = statDrawCount;
     stats.drawTriangleCount = statDrawTriangleCount;
     stats.instanceTableAllocCount = statInstanceTableAllocCount;
@@ -165,17 +165,17 @@ void RenderBackend::UpdateFrameStats() {
         stats.dynamicBufferUsedBytes += frame->GetThreadData(static_cast<int32_t>(threadIndex))->GetUsedBytes();
     }
 
-    const VisCamera *visCameras = frame->GetVisCameras();
-    for (uint32_t cameraIndex = 0; cameraIndex < frame->NumVisCameras(); ++cameraIndex) {
-        const VisCamera &visCamera = visCameras[cameraIndex];
-        if (visCamera.lightCulling.wordsPerTile == 0) {
+    const FrameCamera *frameCameras = frame->GetFrameCameras();
+    for (uint32_t cameraIndex = 0; cameraIndex < frame->NumFrameCameras(); ++cameraIndex) {
+        const FrameCamera &frameCamera = frameCameras[cameraIndex];
+        if (frameCamera.lightCulling.wordsPerTile == 0) {
             continue;
         }
 
-        const uint32_t threadGroupCountX = BE1::DivCeil(visCamera.lightCulling.tileCountX, ShaderLightCullingThreadGroupSizeX);
-        const uint32_t threadGroupCountY = BE1::DivCeil(visCamera.lightCulling.tileCountY, ShaderLightCullingThreadGroupSizeY);
+        const uint32_t threadGroupCountX = BE1::DivCeil(frameCamera.lightCulling.tileCountX, ShaderLightCullingThreadGroupSizeX);
+        const uint32_t threadGroupCountY = BE1::DivCeil(frameCamera.lightCulling.tileCountY, ShaderLightCullingThreadGroupSizeY);
 
-        stats.lightCullingThreadGroupCount += static_cast<uint64_t>(threadGroupCountX) * threadGroupCountY * visCamera.lightCulling.wordsPerTile;
+        stats.lightCullingThreadGroupCount += static_cast<uint64_t>(threadGroupCountX) * threadGroupCountY * frameCamera.lightCulling.wordsPerTile;
     }
 
     currentContext->SetStats(stats);
@@ -209,7 +209,7 @@ bool RenderBackend::UploadFrameConstants() {
     constants->padding2 = 0;
 
     ShaderDirectionalLight &shaderDirectionalLight = constants->directionalLight;
-    const VisLight *primaryDirectionalLight = frame->GetPrimaryDirectionalLight();
+    const FrameLight *primaryDirectionalLight = frame->GetPrimaryDirectionalLight();
     if (primaryDirectionalLight) {
         const BE1::Vec3 &direction = primaryDirectionalLight->axis[0];
         shaderDirectionalLight.direction = float3(direction.x, direction.y, direction.z);
@@ -239,7 +239,7 @@ static void RemoveProjectionJitter(BE1::Mat4 &unjitteredViewProjMatrix, const BE
 bool RenderBackend::UploadCameraConstants() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::UploadCameraConstants");
 
-    if (!currentVisCamera) {
+    if (!currentFrameCamera) {
         return false;
     }
 
@@ -253,86 +253,86 @@ bool RenderBackend::UploadCameraConstants() {
     CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
 
     uint32_t flags = 0;
-    if (currentVisCamera->projectionOrthogonal) {
+    if (currentFrameCamera->projectionOrthogonal) {
         flags |= ShaderCameraFlagProjectionOrthogonal;
     }
     if (frameSettings.lightCullingZBin) {
         flags |= ShaderCameraFlagUseLightZBin;
     }
-    if (currentVisCamera->directionalLightVisible) {
+    if (currentFrameCamera->directionalLightVisible) {
         flags |= ShaderCameraFlagUseDirectionalLight;
     }
     if (frameSettings.specularAA) {
         flags |= ShaderCameraFlagUseSpecularAA;
     }
-    if (currentVisCamera->applyAO) {
+    if (currentFrameCamera->applyAO) {
         flags |= ShaderCameraFlagUseAO;
     }
 
-    ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentVisCamera->viewProjMatrix;
-    ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentVisCamera->prevViewProjMatrix;
+    ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentFrameCamera->viewProjMatrix;
+    ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentFrameCamera->prevViewProjMatrix;
 
     // jittered view projection matrix 에서 jittering 제거
-    RemoveProjectionJitter(unjitteredViewProjMatrix, currentVisCamera->jitterNDC);
-    RemoveProjectionJitter(prevUnjitteredViewProjMatrix, currentVisCamera->prevJitterNDC);
+    RemoveProjectionJitter(unjitteredViewProjMatrix, currentFrameCamera->jitterNDC);
+    RemoveProjectionJitter(prevUnjitteredViewProjMatrix, currentFrameCamera->prevJitterNDC);
 
-    BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &currentVisCamera->viewProjMatrix, sizeof(constants->viewProjMatrix));
-    BE1::simdProcessor->Memcpy(&constants->invViewProjMatrix, &currentVisCamera->invViewProjMatrix, sizeof(constants->invViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &currentFrameCamera->viewProjMatrix, sizeof(constants->viewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->invViewProjMatrix, &currentFrameCamera->invViewProjMatrix, sizeof(constants->invViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->unjitteredViewProjMatrix, &unjitteredViewProjMatrix, sizeof(constants->unjitteredViewProjMatrix));
-    BE1::simdProcessor->Memcpy(&constants->prevViewProjMatrix, &currentVisCamera->prevViewProjMatrix, sizeof(constants->prevViewProjMatrix));
-    BE1::simdProcessor->Memcpy(&constants->prevInvViewProjMatrix, &currentVisCamera->prevInvViewProjMatrix, sizeof(constants->prevInvViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->prevViewProjMatrix, &currentFrameCamera->prevViewProjMatrix, sizeof(constants->prevViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->prevInvViewProjMatrix, &currentFrameCamera->prevInvViewProjMatrix, sizeof(constants->prevInvViewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->prevUnjitteredViewProjMatrix, &prevUnjitteredViewProjMatrix, sizeof(constants->prevUnjitteredViewProjMatrix));
-    BE1::simdProcessor->Memcpy(&constants->hiZCullViewProjMatrix, &currentVisCamera->hiZCullViewProjMatrix, sizeof(constants->hiZCullViewProjMatrix));
+    BE1::simdProcessor->Memcpy(&constants->hiZCullViewProjMatrix, &currentFrameCamera->hiZCullViewProjMatrix, sizeof(constants->hiZCullViewProjMatrix));
 
     for (uint32_t row = 0; row < 3; ++row) {
-        const BE1::Vec4 &viewRow = currentVisCamera->viewMatrix[row];
+        const BE1::Vec4 &viewRow = currentFrameCamera->viewMatrix[row];
         constants->viewRotation.m[row][0] = viewRow.x;
         constants->viewRotation.m[row][1] = viewRow.y;
         constants->viewRotation.m[row][2] = viewRow.z;
         constants->viewRotation.m[row][3] = 0.0f;
     }
 
-    constants->cameraOrigin = float3(currentVisCamera->origin.x, currentVisCamera->origin.y, currentVisCamera->origin.z);
-    constants->ndcFarZ = currentVisCamera->projectionPolicy.GetNDCFarZ();
-    constants->cameraForward = float3(currentVisCamera->axis[0].x, currentVisCamera->axis[0].y, currentVisCamera->axis[0].z);
+    constants->cameraOrigin = float3(currentFrameCamera->origin.x, currentFrameCamera->origin.y, currentFrameCamera->origin.z);
+    constants->ndcFarZ = currentFrameCamera->projectionPolicy.GetNDCFarZ();
+    constants->cameraForward = float3(currentFrameCamera->axis[0].x, currentFrameCamera->axis[0].y, currentFrameCamera->axis[0].z);
     constants->flags = flags;
 
-    constants->ndcDepthScaleBias = float2(currentVisCamera->ndcDepthScale, currentVisCamera->ndcDepthBias);
-    constants->projectionZ = float2(currentVisCamera->projectionZ.x, currentVisCamera->projectionZ.y);
+    constants->ndcDepthScaleBias = float2(currentFrameCamera->ndcDepthScale, currentFrameCamera->ndcDepthBias);
+    constants->projectionZ = float2(currentFrameCamera->projectionZ.x, currentFrameCamera->projectionZ.y);
 
     // Reconstruct directly in view space using the same jitter as the depth prepass.
-    const BE1::Vec4 &projectionXY = currentVisCamera->projectionXY;
-    constants->projectionXY = float4(projectionXY.x, projectionXY.y, projectionXY.z + currentVisCamera->jitterNDC.x, projectionXY.w + currentVisCamera->jitterNDC.y);
+    const BE1::Vec4 &projectionXY = currentFrameCamera->projectionXY;
+    constants->projectionXY = float4(projectionXY.x, projectionXY.y, projectionXY.z + currentFrameCamera->jitterNDC.x, projectionXY.w + currentFrameCamera->jitterNDC.y);
     const float inverseProjectionScaleX = 1.0f / projectionXY.x;
     const float inverseProjectionScaleY = 1.0f / projectionXY.y;
     // Keep reconstruction in UV coordinates so passes can use their own resolution.
     constants->uvToView = float4(2.0f * inverseProjectionScaleX, -2.0f * inverseProjectionScaleY, (-1.0f - constants->projectionXY.z) * inverseProjectionScaleX, (1.0f - constants->projectionXY.w) * inverseProjectionScaleY);
 
     constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
-    constants->numLocalLights = currentVisCamera->numVisLocalLights;
-    constants->lightCullingLightRefTableOffset = currentVisCamera->lightCulling.lightRefTableOffset;
-    constants->lightCullingZBinTableOffset = currentVisCamera->lightCulling.zBinTableOffset;
-    constants->lightCullingTileWordTableOffset = currentVisCamera->lightCulling.tileWordTableOffset;
-    constants->lightCullingZBinScale = currentVisCamera->lightCulling.zBinScale;
-    constants->lightCullingZBinBias = currentVisCamera->lightCulling.zBinBias;
-    constants->lightCullingTileCountX = currentVisCamera->lightCulling.tileCountX;
-    constants->lightCullingTileCountY = currentVisCamera->lightCulling.tileCountY;
-    constants->lightCullingWordsPerTile = currentVisCamera->lightCulling.wordsPerTile;
+    constants->numLocalLights = currentFrameCamera->numFrameLocalLights;
+    constants->lightCullingLightRefTableOffset = currentFrameCamera->lightCulling.lightRefTableOffset;
+    constants->lightCullingZBinTableOffset = currentFrameCamera->lightCulling.zBinTableOffset;
+    constants->lightCullingTileWordTableOffset = currentFrameCamera->lightCulling.tileWordTableOffset;
+    constants->lightCullingZBinScale = currentFrameCamera->lightCulling.zBinScale;
+    constants->lightCullingZBinBias = currentFrameCamera->lightCulling.zBinBias;
+    constants->lightCullingTileCountX = currentFrameCamera->lightCulling.tileCountX;
+    constants->lightCullingTileCountY = currentFrameCamera->lightCulling.tileCountY;
+    constants->lightCullingWordsPerTile = currentFrameCamera->lightCulling.wordsPerTile;
     constants->lightCullingDebugMode = frameSettings.lightCullingDebugMode;
     constants->padding0 = 0;
 
-    const BE1::Mat3 &envLightAxis = currentVisCamera->envLightAxis;
+    const BE1::Mat3 &envLightAxis = currentFrameCamera->envLightAxis;
     constants->envLightAxis = float3x4(
         envLightAxis[0].x, envLightAxis[0].y, envLightAxis[0].z, 0.0f,
         envLightAxis[1].x, envLightAxis[1].y, envLightAxis[1].z, 0.0f,
         envLightAxis[2].x, envLightAxis[2].y, envLightAxis[2].z, 0.0f);
-    constants->envLightColor = float3(currentVisCamera->envLightColor.r, currentVisCamera->envLightColor.g, currentVisCamera->envLightColor.b);
-    constants->envLightIntensity = currentVisCamera->envLightIntensity;
+    constants->envLightColor = float3(currentFrameCamera->envLightColor.r, currentFrameCamera->envLightColor.g, currentFrameCamera->envLightColor.b);
+    constants->envLightIntensity = currentFrameCamera->envLightIntensity;
 
-    constants->envLightDiffuseIrradianceCubeMapIndex = currentVisCamera->envLightDiffuseIrradianceCubeMap ? currentVisCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    constants->envLightSpecularCubeMapIndex = currentVisCamera->envLightSpecularCubeMap ? currentVisCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    constants->envLightSpecularMipCount = currentVisCamera->envLightSpecularMipCount;
-    constants->aoTextureIndex = currentVisCamera->applyAO ? currentVisCamera->ao.textureSet.outputTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->envLightDiffuseIrradianceCubeMapIndex = currentFrameCamera->envLightDiffuseIrradianceCubeMap ? currentFrameCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->envLightSpecularCubeMapIndex = currentFrameCamera->envLightSpecularCubeMap ? currentFrameCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->envLightSpecularMipCount = currentFrameCamera->envLightSpecularMipCount;
+    constants->aoTextureIndex = currentFrameCamera->applyAO ? currentFrameCamera->ao.textureSet.outputTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
 
     // Shadow depth 기록을 마친 뒤 해당 카메라의 샘플링 데이터를 활성화한다.
     constants->csm = {};
@@ -404,14 +404,14 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         gpuTiming.BeginFrame(mainCommandList, frame, currentContext);
     }
 
-    const VisOceanSurface *visOceanSurface = frame->GetVisOceanSurface();
-    if (visOceanSurface && swapChainOutputEnabled && currentContext == renderSystem->mainRenderContext) {
-        renderSystem->gpuOcean.ApplySimulationSettings(visOceanSurface->simulationSettings, visOceanSurface->settingsRevision);
+    const FrameOceanSurface *frameOceanSurface = frame->GetFrameOceanSurface();
+    if (frameOceanSurface && swapChainOutputEnabled && currentContext == renderSystem->mainRenderContext) {
+        renderSystem->gpuOcean.ApplySimulationSettings(frameOceanSurface->simulationSettings, frameOceanSurface->settingsRevision);
 
         // 메인 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
         if (renderSystem->gpuOcean.Update(mainCommandList, frame->GetThreadData(0), frame->GetFrameTime())) {
-            if (visOceanSurface->surfaceQueryCount > 0) {
-                oceanSurfaceQueryReadbackFrame = renderSystem->gpuOceanSurface.DispatchQueries(mainCommandList, frame->GetThreadData(0), visOceanSurface->surfaceQueries, visOceanSurface->surfaceQueryCount, visOceanSurface->surfaceSettings.height);
+            if (frameOceanSurface->surfaceQueryCount > 0) {
+                oceanSurfaceQueryReadbackFrame = renderSystem->gpuOceanSurface.DispatchQueries(mainCommandList, frame->GetThreadData(0), frameOceanSurface->surfaceQueries, frameOceanSurface->surfaceQueryCount, frameOceanSurface->surfaceSettings.height);
             }
         }
     }
@@ -482,9 +482,9 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     return (const void *)(cmd + 1);
 }
 
-static const RenderPass *FindRenderPass(const VisCamera *visCamera, RenderPassType passType) {
-    for (uint32_t passIndex = 0; passIndex < visCamera->numRenderPasses; ++passIndex) {
-        const RenderPass *renderPass = &visCamera->renderPasses[passIndex];
+static const RenderPass *FindRenderPass(const FrameCamera *frameCamera, RenderPassType passType) {
+    for (uint32_t passIndex = 0; passIndex < frameCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &frameCamera->renderPasses[passIndex];
         if (renderPass->type == passType) {
             return renderPass;
         }
@@ -497,10 +497,10 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     const DrawCameraRenderCommand *cmd = reinterpret_cast<const DrawCameraRenderCommand *>(data);
 
-    currentVisCamera = cmd->visCamera;
+    currentFrameCamera = cmd->frameCamera;
 
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
-    if ((currentVisCamera->is2D && frameSettings.skipDrawCamera2D) || (!currentVisCamera->is2D && frameSettings.skipDrawCamera3D)) {
+    if ((currentFrameCamera->is2D && frameSettings.skipDrawCamera2D) || (!currentFrameCamera->is2D && frameSettings.skipDrawCamera3D)) {
         return (const void *)(cmd + 1);
     }
 
@@ -508,7 +508,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     mainCommandList = frame->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
     // 현재 카메라에서 참조할 ShaderSurface 테이블을 GPU 에 업로드한다.
-    if (!frame->UploadShaderSurfaceTable(frame->GetThreadData(0), mainCommandList, currentVisCamera)) {
+    if (!frame->UploadShaderSurfaceTable(frame->GetThreadData(0), mainCommandList, currentFrameCamera)) {
         BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to upload shader surface table\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
@@ -522,13 +522,13 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     }
 
     // 컨텍스트의 CSM 자원을 공유하므로 카메라마다 shadow depth 를 기록한 뒤 메인 패스를 실행한다.
-    if (!currentVisCamera->is2D) {
+    if (!currentFrameCamera->is2D) {
         ExecuteDrawCamera3DShadowPass();
     }
 
-    BE1::Rect viewportRect = currentVisCamera->outputRect;
-    if (!currentVisCamera->is2D) {
-        viewportRect.Set(0, 0, currentVisCamera->renderWidth, currentVisCamera->renderHeight);
+    BE1::Rect viewportRect = currentFrameCamera->outputRect;
+    if (!currentFrameCamera->is2D) {
+        viewportRect.Set(0, 0, currentFrameCamera->renderWidth, currentFrameCamera->renderHeight);
     }
 
     // Shadow 패스에서 사용한 viewport/scissor 를 메인 카메라 영역으로 설정한다.
@@ -539,17 +539,17 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     BE1::Color4 clearColor = currentContext->baseClearColor;
     bool useExplicitClearColor = false;
 
-    if (currentVisCamera->clearMethod == RenderCamera::ClearMethod::Color) {
+    if (currentFrameCamera->clearMethod == RenderCamera::ClearMethod::Color) {
         clearFlags |= (RHI::ClearFlag::Color | RHI::ClearFlag::Depth);
-        if (currentVisCamera->clearColorMode == RenderCamera::ClearColorMode::Explicit) {
-            clearColor = currentVisCamera->clearColor;
+        if (currentFrameCamera->clearColorMode == RenderCamera::ClearColorMode::Explicit) {
+            clearColor = currentFrameCamera->clearColor;
             useExplicitClearColor = true;
         }
-    } else if (currentVisCamera->clearMethod == RenderCamera::ClearMethod::DepthOnly || currentVisCamera->clearMethod == RenderCamera::ClearMethod::Skybox) {
+    } else if (currentFrameCamera->clearMethod == RenderCamera::ClearMethod::DepthOnly || currentFrameCamera->clearMethod == RenderCamera::ClearMethod::Skybox) {
         clearFlags |= RHI::ClearFlag::Depth;
     }
 
-    if (currentVisCamera->is2D) {
+    if (currentFrameCamera->is2D) {
         ExecuteDrawCamera2D(clearFlags, clearColor);
     } else {
         ExecuteDrawCamera3D(clearFlags, clearColor, useExplicitClearColor);
@@ -584,22 +584,22 @@ void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Co
 
 // AO 에서 사용할 non-MSAA depth/normal 텍스쳐를 준비한다.
 bool RenderBackend::PrepareAOInputs() {
-    RHI::Texture *depthTexture = currentVisCamera->depthTexture;
+    RHI::Texture *depthTexture = currentFrameCamera->depthTexture;
     assert(depthTexture);
 
     if (depthTexture->GetSampleCount() == 1) {
         return true;
     }
 
-    return DispatchMSAAResolveDepth(currentVisCamera->ao.depthTexture, RHI::GPUResourceState::ShaderResource, currentVisCamera->ao.normalTexture);
+    return DispatchMSAAResolveDepth(currentFrameCamera->ao.depthTexture, RHI::GPUResourceState::ShaderResource, currentFrameCamera->ao.normalTexture);
 }
 
 bool RenderBackend::DispatchGenHiZ() {
-    return renderSystem->GetHiZ().DispatchGenerate(mainCommandList, frame->GetThreadData(0), gpuTiming, currentVisCamera->depthTexture, currentVisCamera->projectionPolicy, currentVisCamera->hiZ);
+    return renderSystem->GetHiZ().DispatchGenerate(mainCommandList, frame->GetThreadData(0), gpuTiming, currentFrameCamera->depthTexture, currentFrameCamera->projectionPolicy, currentFrameCamera->hiZ);
 }
 
 bool RenderBackend::DispatchHiZDebugPreview() {
-    return renderSystem->GetHiZ().DispatchDebugPreview(mainCommandList, frame->GetThreadData(0), cameraConstantBuffer, gpuTiming, frame->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentVisCamera->hiZ);
+    return renderSystem->GetHiZ().DispatchDebugPreview(mainCommandList, frame->GetThreadData(0), cameraConstantBuffer, gpuTiming, frame->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentFrameCamera->hiZ);
 }
 
 bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
@@ -607,12 +607,12 @@ bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
 }
 
 bool RenderBackend::DispatchScreenSpaceAO() {
-    if (!currentVisCamera->applyAO || !currentVisCamera->needDepthNormalOutput) {
+    if (!currentFrameCamera->applyAO || !currentFrameCamera->needDepthNormalOutput) {
         return false;
     }
 
     ScreenSpaceAO &screenSpaceAO = renderSystem->GetScreenSpaceAO();
-    const ScreenSpaceAOFrameData &ao = currentVisCamera->ao;
+    const FrameScreenSpaceAO &ao = currentFrameCamera->ao;
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     ScreenSpaceAO::DispatchParams params;
     if (!screenSpaceAO.PrepareDispatch(ao, frameSettings, params)) {
@@ -631,15 +631,15 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera3D");
 
     bool hiZCullingPrepared = false;
-    if (currentVisCamera->hiZOcclusionCulling) {
+    if (currentFrameCamera->hiZOcclusionCulling) {
         hiZCullingPrepared = PrepareHiZCulling();
     }
 
     const RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
     // 불투명 surface 가 없는 프레임도 velocity 와 prepass normal 을 clear 해야 이전 프레임 값이 남지 않는다.
-    const bool hasDepthPrepass = currentVisCamera->needVelocityOutput || currentVisCamera->needDepthNormalOutput || FindRenderPass(currentVisCamera, RenderPassType::DepthPrepass) != nullptr;
+    const bool hasDepthPrepass = currentFrameCamera->needVelocityOutput || currentFrameCamera->needDepthNormalOutput || FindRenderPass(currentFrameCamera, RenderPassType::DepthPrepass) != nullptr;
 
-    const bool useMSAA = currentVisCamera->colorTexture->GetSampleCount() > 1;
+    const bool useMSAA = currentFrameCamera->colorTexture->GetSampleCount() > 1;
     bool aoReady = false;
 
     // depth prepass
@@ -651,7 +651,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
 
     // Disable AO if its commands were not recorded before opaque shading.
     // The camera command list has not been submitted yet.
-    if (currentVisCamera->applyAO && !aoReady) {
+    if (currentFrameCamera->applyAO && !aoReady) {
         CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
         constants->flags &= ~ShaderCameraFlagUseAO;
     }
@@ -662,10 +662,10 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
 
     // SSR trace 를 위한 screen-space depth pyramid 를 생성한다.
     bool ssrTraceReady = false;
-    if (currentVisCamera->generateScreenSpaceDepthPyramid) {
+    if (currentFrameCamera->generateScreenSpaceDepthPyramid) {
         if (DispatchGenScreenSpaceDepthPyramid()) {
             // SSR trace 를 수행한다.
-            if (currentVisCamera->traceSSR) {
+            if (currentFrameCamera->traceSSR) {
                 ssrTraceReady = DispatchSSRTrace();
             }
         }
@@ -679,7 +679,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
 
     // Velocity 는 shading 이 끝난 뒤 TAA 전에 resolve 한다.
     bool velocityReady = true;
-    if (useMSAA && currentVisCamera->needVelocityOutput) {
+    if (useMSAA && currentFrameCamera->needVelocityOutput) {
         velocityReady = DispatchMSAAResolveVelocity();
     }
 
@@ -687,28 +687,28 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
         FinishHiZCulling();
     }
 
-    if (currentVisCamera->generateHiZ && !frame->GetRenderFrameSettings().hiZOcclusionCullingFreeze) {
+    if (currentFrameCamera->generateHiZ && !frame->GetRenderFrameSettings().hiZOcclusionCullingFreeze) {
         DispatchGenHiZ();
     }
 
-    if (currentVisCamera->hiZDebugPreview) {
+    if (currentFrameCamera->hiZDebugPreview) {
         DispatchHiZDebugPreview();
     }
 
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     const RHI::Texture *outputOverrideTexture = nullptr;
 
-    const bool debugGTAO = currentVisCamera->ao.mode == RenderAOMode::GTAO && frameSettings.gtaoDebug != 0;
+    const bool debugGTAO = currentFrameCamera->ao.mode == RenderAOMode::GTAO && frameSettings.gtaoDebug != 0;
 
     if (debugGTAO && aoReady) {
         if (frameSettings.gtaoDebug > 1) {
             renderSystem->GetScreenSpaceAO().DispatchDebugPreview(*this);
         }
-        outputOverrideTexture = currentVisCamera->ao.textureSet.outputTexture;
+        outputOverrideTexture = currentFrameCamera->ao.textureSet.outputTexture;
     } else if (frameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
-        outputOverrideTexture = useMSAA ? currentVisCamera->resolvedColorTexture : currentVisCamera->colorTexture;
+        outputOverrideTexture = useMSAA ? currentFrameCamera->resolvedColorTexture : currentFrameCamera->colorTexture;
     } else if (frameSettings.ssrDebug && ssrTraceReady) {
-        outputOverrideTexture = currentVisCamera->ssrTraceTexture;
+        outputOverrideTexture = currentFrameCamera->ssrTraceTexture;
     }
 
     PostProcessAndBlitToOutput(velocityReady, outputOverrideTexture);
@@ -717,7 +717,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
 void RenderBackend::ExecuteDrawCamera3DShadowPass() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera3DShadowPass");
 
-    const VisCascadedShadow *cascadedShadow = currentVisCamera->cascadedShadow;
+    const FrameCascadedShadow *cascadedShadow = currentFrameCamera->frameCascadedShadow;
     if (!cascadedShadow) {
         return;
     }
@@ -781,15 +781,15 @@ void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAc
     RHI::RenderPassImage renderPassImages[3];
     uint32_t renderPassImageCount = 0;
 
-    if (currentVisCamera->needVelocityOutput) {
+    if (currentFrameCamera->needVelocityOutput) {
         renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
-            currentVisCamera->velocityTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            currentFrameCamera->velocityTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
-    if (currentVisCamera->needDepthNormalOutput) {
-        const RHI::Texture *normalTexture = currentVisCamera->normalTexture;
-        assert(normalTexture->GetSampleCount() == currentVisCamera->depthTexture->GetSampleCount());
+    if (currentFrameCamera->needDepthNormalOutput) {
+        const RHI::Texture *normalTexture = currentFrameCamera->normalTexture;
+        assert(normalTexture->GetSampleCount() == currentFrameCamera->depthTexture->GetSampleCount());
 
         // AO consumes view normals before opaque writes SSR's shading normals to this attachment.
         renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
@@ -797,9 +797,9 @@ void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAc
             RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
-    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(currentVisCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
+    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(currentFrameCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
         RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource)
-        .WithClearValue(RHI::ClearValue::DepthStencil(currentVisCamera->projectionPolicy.GetDepthClearValue(), 0));
+        .WithClearValue(RHI::ClearValue::DepthStencil(currentFrameCamera->projectionPolicy.GetDepthClearValue(), 0));
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
     DrawCamera3DDepthPrepass();
@@ -824,23 +824,23 @@ struct RenderPassImagesDesc {
 // Camera3D render pass 에서 사용할 color, surface output, depth attachment 를 구성한다.
 // 각 attachment 의 종료 상태를 다음 pass 의 시작 상태와 연결해 불필요한 resource transition 을 피하고,
 // 지정된 resolve texture 로 MSAA color/depth 를 resolve 한다.
-static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const RenderPassImagesDesc &desc, const RHI::ClearValue *clearColorValue, RHI::RenderPassImage renderPassImages[6]) {
+static uint32_t BuildCamera3DRenderPassImages(const FrameCamera *frameCamera, const RenderPassImagesDesc &desc, const RHI::ClearValue *clearColorValue, RHI::RenderPassImage renderPassImages[6]) {
     uint32_t renderPassImageCount = 0;
 
-    const bool useMSAA = visCamera->colorTexture->GetSampleCount() > 1;
+    const bool useMSAA = frameCamera->colorTexture->GetSampleCount() > 1;
 
     // color
     RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(
-        visCamera->colorTexture, RHI::ViewID::PrimaryID, desc.colorLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
+        frameCamera->colorTexture, RHI::ViewID::PrimaryID, desc.colorLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
     if (clearColorValue && desc.colorLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
         colorImage = colorImage.WithClearValue(*clearColorValue);
     }
     renderPassImages[renderPassImageCount++] = colorImage;
 
     // normal
-    if (visCamera->needNormalOutput) {
+    if (frameCamera->needNormalOutput) {
         RHI::RenderPassImage normalImage = RHI::RenderPassImage::Color(
-            visCamera->normalTexture, RHI::ViewID::PrimaryID, desc.surfaceOutputLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
+            frameCamera->normalTexture, RHI::ViewID::PrimaryID, desc.surfaceOutputLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
         if (desc.surfaceOutputLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
             normalImage = normalImage.WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
         }
@@ -850,7 +850,7 @@ static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const 
     // velocity
     if (desc.outputVelocity) {
         // Prepass 의 velocity 를 보존하고 Ocean 등 후속 패스의 출력만 덧쓴다.
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(visCamera->velocityTexture, RHI::ViewID::PrimaryID,
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(frameCamera->velocityTexture, RHI::ViewID::PrimaryID,
             RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, desc.renderTargetAfterState);
     }
@@ -858,8 +858,8 @@ static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const 
     // depth
     // A reused texture can retain the optimized clear value of a different projection policy.
     renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(
-        visCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState)
-        .WithClearValue(RHI::ClearValue::DepthStencil(visCamera->projectionPolicy.GetDepthClearValue(), 0));
+        frameCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState)
+        .WithClearValue(RHI::ClearValue::DepthStencil(frameCamera->projectionPolicy.GetDepthClearValue(), 0));
 
     // MSAA resolve
     if (useMSAA) {
@@ -876,11 +876,11 @@ static uint32_t BuildCamera3DRenderPassImages(const VisCamera *visCamera, const 
 
 void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction) {
     RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-    if (currentVisCamera->clearMethod == RenderCamera::ClearMethod::Skybox) {
+    if (currentFrameCamera->clearMethod == RenderCamera::ClearMethod::Skybox) {
         colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
     }
 
-    const bool captureSceneSnapshot = currentVisCamera->oceanSurfacePSO && currentVisCamera->snapshotColorTexture && currentVisCamera->snapshotDepthTexture;
+    const bool captureSceneSnapshot = currentFrameCamera->oceanSurfacePSO && currentFrameCamera->snapshotColorTexture && currentFrameCamera->snapshotDepthTexture;
     const RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
     const RenderPassImagesDesc passDesc = {
         colorLoadAction,
@@ -890,13 +890,13 @@ void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, cons
         RHI::GPUResourceState::RenderTarget,
         RHI::GPUResourceState::ShaderResource,
         RHI::GPUResourceState::DepthWrite,
-        captureSceneSnapshot ? currentVisCamera->snapshotColorTexture : nullptr,
-        captureSceneSnapshot ? currentVisCamera->snapshotDepthTexture : nullptr,
-        currentVisCamera->projectionPolicy.reverseZ ? RHI::RenderPassImage::DepthResolveMode::Max : RHI::RenderPassImage::DepthResolveMode::Min,
+        captureSceneSnapshot ? currentFrameCamera->snapshotColorTexture : nullptr,
+        captureSceneSnapshot ? currentFrameCamera->snapshotDepthTexture : nullptr,
+        currentFrameCamera->projectionPolicy.reverseZ ? RHI::RenderPassImage::DepthResolveMode::Max : RHI::RenderPassImage::DepthResolveMode::Min,
         false
     };
     RHI::RenderPassImage renderPassImages[6];
-    const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentVisCamera, passDesc, useExplicitClearColor ? &clearColorValue : nullptr, renderPassImages);
+    const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentFrameCamera, passDesc, useExplicitClearColor ? &clearColorValue : nullptr, renderPassImages);
 
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
@@ -906,15 +906,15 @@ void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, cons
 }
 
 void RenderBackend::CaptureSceneSnapshot() {
-    RHI::Texture *snapshotColorTexture = currentVisCamera->snapshotColorTexture;
-    RHI::Texture *snapshotDepthTexture = currentVisCamera->snapshotDepthTexture;
+    RHI::Texture *snapshotColorTexture = currentFrameCamera->snapshotColorTexture;
+    RHI::Texture *snapshotDepthTexture = currentFrameCamera->snapshotDepthTexture;
 
-    if (!currentVisCamera->oceanSurfacePSO || !snapshotColorTexture || !snapshotDepthTexture || currentVisCamera->colorTexture->GetSampleCount() > 1) {
+    if (!currentFrameCamera->oceanSurfacePSO || !snapshotColorTexture || !snapshotDepthTexture || currentFrameCamera->colorTexture->GetSampleCount() > 1) {
         return;
     }
 
-    RHI::Texture *sourceColorTexture = currentVisCamera->colorTexture;
-    RHI::Texture *sourceDepthTexture = currentVisCamera->depthTexture;
+    RHI::Texture *sourceColorTexture = currentFrameCamera->colorTexture;
+    RHI::Texture *sourceDepthTexture = currentFrameCamera->depthTexture;
     assert(sourceColorTexture->GetSampleCount() == 1 && sourceDepthTexture->GetSampleCount() == 1);
     assert(sourceColorTexture->GetWidth() == sourceDepthTexture->GetWidth() && sourceColorTexture->GetHeight() == sourceDepthTexture->GetHeight());
 
@@ -927,7 +927,7 @@ void RenderBackend::CaptureSceneSnapshot() {
     }
 
     if (downsampleSnapshot) {
-        if (!currentVisCamera->sceneSnapshotDownsamplePSO ||
+        if (!currentFrameCamera->sceneSnapshotDownsamplePSO ||
             !snapshotColorTexture->HasValidView(RHI::ViewType::RTV) ||
             !snapshotDepthTexture->HasValidView(RHI::ViewType::RTV)) {
             return;
@@ -957,7 +957,7 @@ void RenderBackend::CaptureSceneSnapshot() {
         RHI::renderer->BeginRenderPass(mainCommandList, snapshotImages, COUNT_OF(snapshotImages));
         RHI::renderer->SetViewport(mainCommandList, snapshotRect);
         RHI::renderer->SetScissorRect(mainCommandList, snapshotRect);
-        RHI::renderer->SetPSO(mainCommandList, currentVisCamera->sceneSnapshotDownsamplePSO);
+        RHI::renderer->SetPSO(mainCommandList, currentFrameCamera->sceneSnapshotDownsamplePSO);
         RHI::renderer->SetTexture(mainCommandList, 0, false, sourceColorTexture);
         RHI::renderer->SetTexture(mainCommandList, 1, false, sourceDepthTexture);
         RHI::renderer->Draw(mainCommandList, 3, 0);
@@ -994,13 +994,13 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
         RHI::GPUResourceState::ShaderResource,
         RHI::GPUResourceState::DepthWrite,
         RHI::GPUResourceState::ShaderResource,
-        currentVisCamera->resolvedColorTexture,
+        currentFrameCamera->resolvedColorTexture,
         nullptr,
         RHI::RenderPassImage::DepthResolveMode::None,
-        currentVisCamera->needVelocityOutput
+        currentFrameCamera->needVelocityOutput
     };
     RHI::RenderPassImage renderPassImages[6];
-    const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentVisCamera, passDesc, nullptr, renderPassImages);
+    const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentFrameCamera, passDesc, nullptr, renderPassImages);
 
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
@@ -1010,20 +1010,20 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
 }
 
 void RenderBackend::PostProcessAndBlitToOutput(bool velocityReady, const RHI::Texture *outputOverrideTexture) {
-    currentPostProcessInputTexture = currentVisCamera->resolvedColorTexture ? currentVisCamera->resolvedColorTexture : currentVisCamera->colorTexture;
+    currentPostProcessInputTexture = currentFrameCamera->resolvedColorTexture ? currentFrameCamera->resolvedColorTexture : currentFrameCamera->colorTexture;
     const RHI::Texture *finalColorTexture = currentPostProcessInputTexture;
 
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     if (outputOverrideTexture) {
         finalColorTexture = outputOverrideTexture;
-    } else if (!frameSettings.skipPostProcess && !BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
+    } else if (!frameSettings.skipPostProcess && !BE1::HasFlag(currentFrameCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
         bool depthHistoryReady = true;
-        if (currentVisCamera->taaResolve && currentVisCamera->depthTexture->GetSampleCount() > 1) {
+        if (currentFrameCamera->taaResolve && currentFrameCamera->depthTexture->GetSampleCount() > 1) {
             depthHistoryReady = DispatchMSAAResolveDepthHistory();
         }
 
         if (velocityReady && depthHistoryReady && DispatchTAAResolve()) {
-            currentPostProcessInputTexture = currentVisCamera->colorHistoryTextures[currentVisCamera->currentHistoryTextureIndex];
+            currentPostProcessInputTexture = currentFrameCamera->colorHistoryTextures[currentFrameCamera->currentHistoryTextureIndex];
             finalColorTexture = currentPostProcessInputTexture;
         }
 
@@ -1031,18 +1031,18 @@ void RenderBackend::PostProcessAndBlitToOutput(bool velocityReady, const RHI::Te
         const bool useBloom = DispatchBloom();
 
         if (DispatchFinalPostProcess(useToneMapping, useBloom)) {
-            finalColorTexture = currentVisCamera->postProcessColorTexture;
+            finalColorTexture = currentFrameCamera->postProcessColorTexture;
         }
     }
 
-    if (currentVisCamera->outputTexture) {
-        if (finalColorTexture != currentVisCamera->outputTexture) {
-            BlitTextureToRenderTarget(finalColorTexture, currentVisCamera->outputTexture, currentVisCamera->outputViewID, currentVisCamera->outputBeforeState, currentVisCamera->outputAfterState, currentVisCamera->outputRect, currentVisCamera->outputBlitPSO);
+    if (currentFrameCamera->outputTexture) {
+        if (finalColorTexture != currentFrameCamera->outputTexture) {
+            BlitTextureToRenderTarget(finalColorTexture, currentFrameCamera->outputTexture, currentFrameCamera->outputViewID, currentFrameCamera->outputBeforeState, currentFrameCamera->outputAfterState, currentFrameCamera->outputRect, currentFrameCamera->outputBlitPSO);
         }
     } else if (swapChainOutputEnabled) {
         // 백버퍼에 바로 blit 하지 않고, frameCompositionTexture 에 먼저 blit 한다.
         RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
-        BlitTextureToRenderTarget(finalColorTexture, frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource, currentVisCamera->outputRect, frameImagePSO);
+        BlitTextureToRenderTarget(finalColorTexture, frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource, currentFrameCamera->outputRect, frameImagePSO);
     } else {
         BE_WARNLOG("RenderBackend::PostProcessAndBlitToOutput: no output render target was specified\n");
     }
@@ -1081,7 +1081,7 @@ void RenderBackend::BlitTextureToRenderTarget(const RHI::Texture *srcTexture, co
     imageParams.texCoordScale = float2(static_cast<float>(outputW) / destRect.w, static_cast<float>(outputH) / destRect.h);
     imageParams.texCoordOffset = float2(static_cast<float>(outputX0 - destRect.x) / destRect.w, static_cast<float>(outputY0 - destRect.y) / destRect.h);
 
-    if (BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::FlipOutputTextureY)) {
+    if (BE1::HasFlag(currentFrameCamera->flags, RenderCamera::Flag::FlipOutputTextureY)) {
         imageParams.texCoordScale.y = -imageParams.texCoordScale.y;
         imageParams.texCoordOffset.y = 1.0f - imageParams.texCoordOffset.y;
     }
@@ -1365,8 +1365,8 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
 void RenderBackend::DrawCamera3DDepthPrepass() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3DDepthPrepass");
 
-    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
-        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
         if (renderPass->type == RenderPassType::DepthPrepass) {
             DrawGenericPass(renderPass, cameraConstantBuffer);
         }
@@ -1376,11 +1376,11 @@ void RenderBackend::DrawCamera3DDepthPrepass() {
 void RenderBackend::DrawCamera3DScenePass() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3DScenePass");
 
-    if (const RenderPass *opaquePass = FindRenderPass(currentVisCamera, RenderPassType::Opaque)) {
+    if (const RenderPass *opaquePass = FindRenderPass(currentFrameCamera, RenderPassType::Opaque)) {
         DrawGenericPass(opaquePass, cameraConstantBuffer);
     }
 
-    if (const RenderPass *skyboxPass = FindRenderPass(currentVisCamera, RenderPassType::Skybox)) {
+    if (const RenderPass *skyboxPass = FindRenderPass(currentFrameCamera, RenderPassType::Skybox)) {
         DrawSkyPass(skyboxPass);
     }
 }
@@ -1391,7 +1391,7 @@ void RenderBackend::DrawCamera3DPostOpaquePass() {
     // GpuOcean surface 는 Transparent surface 보다 먼저 렌더링한다.
     DrawGpuOcean();
 
-    if (const RenderPass *transparentPass = FindRenderPass(currentVisCamera, RenderPassType::Transparent)) {
+    if (const RenderPass *transparentPass = FindRenderPass(currentFrameCamera, RenderPassType::Transparent)) {
         DrawGenericPass(transparentPass, cameraConstantBuffer);
     }
 
@@ -1401,8 +1401,8 @@ void RenderBackend::DrawCamera3DPostOpaquePass() {
 void RenderBackend::DrawCamera2D() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
 
-    for (uint32_t passIndex = 0; passIndex < currentVisCamera->numRenderPasses; ++passIndex) {
-        const RenderPass *renderPass = &currentVisCamera->renderPasses[passIndex];
+    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
         if (renderPass->type == RenderPassType::Gui) {
             DrawGuiPass(renderPass);
         }
@@ -1410,7 +1410,7 @@ void RenderBackend::DrawCamera2D() {
 }
 
 void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const {
-    const SubMesh *subMesh = drawSurf->visSurf->subMesh;
+    const SubMesh *subMesh = drawSurf->frameSurf->subMesh;
     RHI::renderer->SetVertexBuffer(commandList, 0, subMesh->vertexBuffer);
 
     if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
@@ -1454,8 +1454,8 @@ void RenderBackend::DrawGenericPass(const RenderPass *renderPass, const RHI::Con
     const SurfaceInstanceBatch *hiZCullBatches = nullptr;
     uint32_t hiZCullBatchCount = 0;
 
-    if (currentVisCamera->hiZOcclusionCulling && IsHiZCullRenderPass(renderPass->type)) {
-        const uint32_t passIndex = static_cast<uint32_t>(renderPass - currentVisCamera->renderPasses);
+    if (currentFrameCamera->hiZOcclusionCulling && IsHiZCullRenderPass(renderPass->type)) {
+        const uint32_t passIndex = static_cast<uint32_t>(renderPass - currentFrameCamera->renderPasses);
 
         if (passIndex < static_cast<uint32_t>(hiZCullPassRanges.Count())) {
             const HiZCullPassRange &passRange = hiZCullPassRanges[passIndex];
@@ -1486,8 +1486,8 @@ void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
 void RenderBackend::DrawGpuOcean() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGpuOcean");
 
-    const VisOceanSurface *visOceanSurface = frame->GetVisOceanSurface();
-    if (!visOceanSurface || BE1::HasFlag(currentVisCamera->flags, RenderCamera::Flag::StaticOnly) || !currentVisCamera->oceanSurfacePSO) {
+    const FrameOceanSurface *frameOceanSurface = frame->GetFrameOceanSurface();
+    if (!frameOceanSurface || BE1::HasFlag(currentFrameCamera->flags, RenderCamera::Flag::StaticOnly) || !currentFrameCamera->oceanSurfacePSO) {
         return;
     }
 
@@ -1499,19 +1499,19 @@ void RenderBackend::DrawGpuOcean() {
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::OceanPass);
     GpuOceanSurface::View surfaceView;
-    surfaceView.origin = currentVisCamera->origin;
-    surfaceView.renderWidth = currentVisCamera->renderWidth;
-    surfaceView.renderHeight = currentVisCamera->renderHeight;
-    surfaceView.infiniteZFar = currentVisCamera->projectionInfiniteZFar;
-    if (currentVisCamera->projectionOrthogonal) {
-        surfaceView.box = &currentVisCamera->viewBox;
+    surfaceView.origin = currentFrameCamera->origin;
+    surfaceView.renderWidth = currentFrameCamera->renderWidth;
+    surfaceView.renderHeight = currentFrameCamera->renderHeight;
+    surfaceView.infiniteZFar = currentFrameCamera->projectionInfiniteZFar;
+    if (currentFrameCamera->projectionOrthogonal) {
+        surfaceView.box = &currentFrameCamera->viewBox;
     } else {
-        surfaceView.frustum = &currentVisCamera->viewFrustum;
+        surfaceView.frustum = &currentFrameCamera->viewFrustum;
     }
 
     GpuOceanSurface::DrawStats drawStats;
-    if (gpuOceanSurface.Draw(mainCommandList, frame->GetThreadData(0), currentVisCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, visOceanSurface->surfaceSettings, surfaceView,
-        currentVisCamera->snapshotColorTexture, currentVisCamera->snapshotDepthTexture, &drawStats)) {
+    if (gpuOceanSurface.Draw(mainCommandList, frame->GetThreadData(0), currentFrameCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, frameOceanSurface->surfaceSettings, surfaceView,
+        currentFrameCamera->snapshotColorTexture, currentFrameCamera->snapshotDepthTexture, &drawStats)) {
         RecordDrawStats(drawStats.drawCount, drawStats.triangleCount, drawStats.instanceBufferAllocCount, drawStats.instanceBufferUploadBytes);
     }
 }
@@ -1538,8 +1538,8 @@ bool RenderBackend::DispatchLightCulling() {
 static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, const RenderPassDrawSurf *drawSurf) {
     return drawSurf->pso &&
         drawSurf->pso == baseDrawSurf->pso &&
-        drawSurf->visSurf->subMesh == baseDrawSurf->visSurf->subMesh &&
-        drawSurf->visSurf->lodLevel == baseDrawSurf->visSurf->lodLevel &&
+        drawSurf->frameSurf->subMesh == baseDrawSurf->frameSurf->subMesh &&
+        drawSurf->frameSurf->lodLevel == baseDrawSurf->frameSurf->lodLevel &&
         drawSurf->inputLayoutId == baseDrawSurf->inputLayoutId;
 }
 
@@ -1563,7 +1563,7 @@ RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadDa
 
     uint32_t *shaderSurfaceIndices = reinterpret_cast<uint32_t *>(buffer->mappedPtr);
     for (uint32_t instanceIndex = 0; instanceIndex < instanceCount; ++instanceIndex) {
-        shaderSurfaceIndices[instanceIndex] = drawSurfs[instanceIndex]->visSurf->index;
+        shaderSurfaceIndices[instanceIndex] = drawSurfs[instanceIndex]->frameSurf->index;
     }
 
     return buffer;
@@ -1600,7 +1600,7 @@ void RenderBackend::DrawSurfaceInstanceBatch(RHI::CommandList *commandList, cons
     SurfaceDrawParams surfaceDrawParams = {};
     surfaceDrawParams.instanceBaseOffset = batch.instanceBaseOffset;
 
-    const VisSurf *firstVisSurf = drawSurfs[0]->visSurf;
+    const FrameSurf *firstFrameSurf = drawSurfs[0]->frameSurf;
 
     RHI::renderer->SetConstants(commandList, 2, &surfaceDrawParams, sizeof(surfaceDrawParams), 0);
     RHI::renderer->SetBuffer(commandList, 0, false, batch.instanceToShaderSurfaceTable);
@@ -1608,9 +1608,9 @@ void RenderBackend::DrawSurfaceInstanceBatch(RHI::CommandList *commandList, cons
     if (batch.indirectArgsBuffer) {
         RHI::renderer->DrawIndexedInstancedIndirect(commandList, batch.indirectArgsBuffer, batch.indirectArgsOffset);
     } else {
-        RHI::renderer->DrawIndexedInstanced(commandList, firstVisSurf->numIndexes, batch.instanceCount, 0, 0, 0);
+        RHI::renderer->DrawIndexedInstanced(commandList, firstFrameSurf->numIndexes, batch.instanceCount, 0, 0, 0);
 
-        drawTriangleCount += firstVisSurf->numIndexes / 3 * batch.instanceCount;
+        drawTriangleCount += firstFrameSurf->numIndexes / 3 * batch.instanceCount;
     }
 
     drawCount++;

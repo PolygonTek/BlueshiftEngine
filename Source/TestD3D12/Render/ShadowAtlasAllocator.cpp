@@ -162,6 +162,7 @@ bool ShadowAtlasAllocator::AllocateAtLevel(uint32_t targetLevel, Tile &tile) {
     const uint32_t root = localIndex >> (targetLevel * 2);
     tile.x = (root % rootsPerRow) * levels[0].resolution;
     tile.y = (root / rootsPerRow) * levels[0].resolution;
+
     for (uint32_t depth = 1; depth <= targetLevel; ++depth) {
         const uint32_t quadrant = (localIndex >> ((targetLevel - depth) * 2)) & 3;
         tile.x += (quadrant & 1) * levels[depth].resolution;
@@ -237,6 +238,7 @@ bool ShadowAtlasAllocator::Free(Handle handle) {
     uint32_t nodeIndex = handle.nodeIndex;
     while (levelIndex > 0) {
         nodes[nodeIndex].state = NodeState::Free;
+
         const uint32_t parentOffset = (nodeIndex - levels[levelIndex].firstNode) / 4;
         const uint32_t firstChild = levels[levelIndex].firstNode + parentOffset * 4;
         bool allFree = true;

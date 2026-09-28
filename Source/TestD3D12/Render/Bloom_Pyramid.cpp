@@ -26,7 +26,7 @@ bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
     RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     RHI::Texture *inputColorTexture = backend.GetPostProcessInputTexture();
-    const BloomFrameData &data = backend.GetVisCamera()->bloom;
+    const FrameBloom &data = backend.GetFrameCamera()->bloom;
     const RenderFrameSettings &renderFrameSettings = backend.GetFrameSettings();
 
     if (data.bloomMipCount < 2) {

@@ -14,7 +14,7 @@
 
 #pragma once
 
-struct VisObject;
+struct FrameObject;
 class MeshInstance;
 class Skeleton;
 class Texture;
@@ -177,8 +177,8 @@ private:
     uint64_t                        visibleFrameIndex = 0;
 
     int                             index = -1;                     // RenderWorld::renderObjects 의 인덱스
-    uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 VisObject 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
-    VisObject *                     visObject = nullptr;            // viewCount 가 현재 view 와 일치할 때만 유효한 프레임 메모리 참조.
+    uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 FrameObject 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
+    FrameObject *                   frameObject = nullptr;            // viewCount 가 현재 view 와 일치할 때만 유효한 프레임 메모리 참조.
 };
 
 BE_INLINE RenderObject::TextDesc &RenderObject::Desc::GetTextDesc() {

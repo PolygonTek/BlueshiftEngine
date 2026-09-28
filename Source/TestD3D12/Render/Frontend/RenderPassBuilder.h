@@ -20,28 +20,28 @@
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
 class RenderFrame;
-struct VisCascadedShadow;
+struct FrameCascadedShadow;
 struct RenderPass;
 struct RenderPassDrawSurf;
-struct VisCamera;
-struct VisSurf;
+struct FrameCamera;
+struct FrameSurf;
 enum class RenderPassType : uint8_t;
 
 class RenderPassBuilder {
 public:
                                     // 대상 포맷/depth state/bias 는 호출자가 graphicsPipelineDesc 에 준비한다.
                                     // 해당 cascade bit 가 설정된 surface 로 패스를 구성한다.
-    void                            BuildShadow(RenderFrame *frame, RenderPass *shadowPass, uint8_t shadowCascadeMask, const VisSurf *const *visSurfs, uint32_t numVisSurfs, bool allowAsyncPSOBuild);
+    void                            BuildShadow(RenderFrame *frame, RenderPass *shadowPass, uint8_t shadowCascadeMask, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild);
 
                                     // 해당 cascade 의 DSV, bias, surface mask 로 depth pass 를 구성한다.
-    void                            BuildCascadedShadow(RenderFrame *frame, VisCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const VisSurf *const *visSurfs, uint32_t numVisSurfs, bool allowAsyncPSOBuild);
-    void                            BuildMain(RenderFrame *frame, VisCamera *visCamera);
-    void                            BuildGUI(RenderFrame *frame, VisCamera *visCamera);
+    void                            BuildCascadedShadow(RenderFrame *frame, FrameCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild);
+    void                            BuildMain(RenderFrame *frame, FrameCamera *frameCamera);
+    void                            BuildGUI(RenderFrame *frame, FrameCamera *frameCamera);
 
 private:
-    void                            AllocRenderPassDrawSurfs(RenderFrame *frame, VisCamera *visCamera, uint32_t maxDrawSurfs);
-    RenderPass *                    AllocRenderPass(VisCamera *visCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, VertexInputLayoutId passBaseInputLayoutId, uint32_t maxDrawSurfs);
-    void                            AddRenderPassDrawSurf(RenderPass *renderPass, const VisSurf *visSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso);
+    void                            AllocRenderPassDrawSurfs(RenderFrame *frame, FrameCamera *frameCamera, uint32_t maxDrawSurfs);
+    RenderPass *                    AllocRenderPass(FrameCamera *frameCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, VertexInputLayoutId passBaseInputLayoutId, uint32_t maxDrawSurfs);
+    void                            AddRenderPassDrawSurf(RenderPass *renderPass, const FrameSurf *frameSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso);
     void                            SortRenderPassDrawSurfs(RenderFrame *frame, RenderPass *renderPass);
     void                            RadixSortDrawSurfs(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RenderPassDrawSurf **tempDrawSurfs);
 

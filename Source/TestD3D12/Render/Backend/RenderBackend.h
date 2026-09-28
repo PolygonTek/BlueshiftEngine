@@ -24,9 +24,9 @@ class RenderFrame;
 class RenderContext;
 class ShaderPipeline;
 struct RenderFrameSettings;
-struct VisCamera;
+struct FrameCamera;
 struct RenderPass;
-struct VisSurf;
+struct FrameSurf;
 struct RenderPassDrawSurf;
 
 class RenderBackend {
@@ -46,7 +46,7 @@ public:
     RHI::FrameThreadData *          GetFrameThreadData() const;
     const RHI::ConstantBuffer *     GetFrameConstantBuffer() const { return frameConstantBuffer; }
     const RHI::ConstantBuffer *     GetCameraConstantBuffer() const { return cameraConstantBuffer; }
-    const VisCamera *               GetVisCamera() const { return currentVisCamera; }
+    const FrameCamera *             GetFrameCamera() const { return currentFrameCamera; }
     RHI::Texture *                  GetPostProcessInputTexture() const { return currentPostProcessInputTexture; }
     const RenderFrameSettings &     GetFrameSettings() const;
     uint32_t                        GetFrameIndex() const;
@@ -183,7 +183,7 @@ private:
     RHI::ConstantBuffer *           frameConstantBuffer = nullptr;
     RHI::ConstantBuffer *           cameraConstantBuffer = nullptr;
 
-    const VisCamera *               currentVisCamera = nullptr;
+    const FrameCamera *             currentFrameCamera = nullptr;
     RHI::Texture *                  currentPostProcessInputTexture = nullptr;
 
     uint32_t                        drawGroupId = -1;

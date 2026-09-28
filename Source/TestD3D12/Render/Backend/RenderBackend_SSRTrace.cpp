@@ -21,14 +21,14 @@
 bool RenderBackend::DispatchSSRTrace() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchSSRTrace");
 
-    RHI::Texture *renderDepthTexture = currentVisCamera->depthTexture;
+    RHI::Texture *renderDepthTexture = currentFrameCamera->depthTexture;
     const bool useMSAA = renderDepthTexture && renderDepthTexture->GetSampleCount() > 1;
-    RHI::Texture *depthTexture = useMSAA ? currentVisCamera->resolvedDepthTexture : renderDepthTexture;
-    RHI::Texture *normalTexture = useMSAA ? currentVisCamera->resolvedNormalTexture : currentVisCamera->normalTexture;
-    RHI::Texture *depthPyramidTexture = currentVisCamera->screenSpaceDepthPyramid.texture;
-    RHI::Texture *traceTexture = currentVisCamera->ssrTraceTexture;
+    RHI::Texture *depthTexture = useMSAA ? currentFrameCamera->resolvedDepthTexture : renderDepthTexture;
+    RHI::Texture *normalTexture = useMSAA ? currentFrameCamera->resolvedNormalTexture : currentFrameCamera->normalTexture;
+    RHI::Texture *depthPyramidTexture = currentFrameCamera->screenSpaceDepthPyramid.texture;
+    RHI::Texture *traceTexture = currentFrameCamera->ssrTraceTexture;
 
-    if (!depthTexture || !normalTexture || !depthPyramidTexture || !traceTexture || !cameraConstantBuffer || currentVisCamera->screenSpaceDepthPyramid.mipCount == 0) {
+    if (!depthTexture || !normalTexture || !depthPyramidTexture || !traceTexture || !cameraConstantBuffer || currentFrameCamera->screenSpaceDepthPyramid.mipCount == 0) {
         return false;
     }
 
@@ -47,10 +47,10 @@ bool RenderBackend::DispatchSSRTrace() {
     SSRTraceParams params = {};
     params.inputSize = uint2(depthTexture->GetWidth(), depthTexture->GetHeight());
     params.outputSize = uint2(traceTexture->GetWidth(), traceTexture->GetHeight());
-    params.depthPyramidMipCount = currentVisCamera->screenSpaceDepthPyramid.mipCount;
+    params.depthPyramidMipCount = currentFrameCamera->screenSpaceDepthPyramid.mipCount;
     params.maxIterations = frameSettings.ssrMaxIterations;
     params.binaryRefinementSteps = frameSettings.ssrBinaryRefinementSteps;
-    params.useMinDepth = currentVisCamera->projectionPolicy.reverseZ ? 0u : 1u;
+    params.useMinDepth = currentFrameCamera->projectionPolicy.reverseZ ? 0u : 1u;
     params.maxDistance = frameSettings.ssrMaxDistance;
     params.thickness = frameSettings.ssrThickness;
     params.normalBias = frameSettings.ssrNormalBias;

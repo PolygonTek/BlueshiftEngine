@@ -69,13 +69,13 @@ bool ScreenSpaceDepthPyramid::Dispatch(RenderBackend &backend) const {
 
     RHI::CommandList *commandList = backend.GetCommandList();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const VisCamera *visCamera = backend.GetVisCamera();
-    RHI::Texture *depthTexture = visCamera->depthTexture;
-    RHI::Texture *normalTexture = visCamera->normalTexture;
-    RHI::Texture *resolvedDepthTexture = visCamera->resolvedDepthTexture;
-    RHI::Texture *resolvedNormalTexture = visCamera->resolvedNormalTexture;
-    const RHI::ProjectionPolicy &projectionPolicy = visCamera->projectionPolicy;
-    const ScreenSpaceDepthPyramidFrameData &data = visCamera->screenSpaceDepthPyramid;
+    const FrameCamera *frameCamera = backend.GetFrameCamera();
+    RHI::Texture *depthTexture = frameCamera->depthTexture;
+    RHI::Texture *normalTexture = frameCamera->normalTexture;
+    RHI::Texture *resolvedDepthTexture = frameCamera->resolvedDepthTexture;
+    RHI::Texture *resolvedNormalTexture = frameCamera->resolvedNormalTexture;
+    const RHI::ProjectionPolicy &projectionPolicy = frameCamera->projectionPolicy;
+    const FrameScreenSpaceDepthPyramid &data = frameCamera->screenSpaceDepthPyramid;
 
     RHI::Texture *depthPyramidTexture = data.texture;
     const uint32_t mipCount = data.mipCount;

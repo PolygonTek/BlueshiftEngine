@@ -62,15 +62,15 @@ bool ShaderSurfaceTable::EnsureBufferCapacity(uint32_t count) {
     return true;
 }
 
-bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const VisCamera *visCamera, bool allowResize) {
+bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameCamera *frameCamera, bool allowResize) {
     PROFILER_CPU_SCOPED_EVENT("ShaderSurfaceTable::Upload");
 
-    if (visCamera->numVisSurfs == 0) {
+    if (frameCamera->numFrameSurfs == 0) {
         Clear();
         return true;
     }
 
-    const uint32_t surfaceCount = visCamera->numVisSurfs;
+    const uint32_t surfaceCount = frameCamera->numFrameSurfs;
     if (surfaceCount > tableBuffer.capacity) {
         assert(allowResize);
         if (!allowResize) {
@@ -88,10 +88,10 @@ bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comm
 
     ShaderSurface *shaderSurfaces = reinterpret_cast<ShaderSurface *>(uploadBuffer->mappedPtr);
     for (uint32_t surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex) {
-        const VisSurf *visSurf = visCamera->visSurfs[surfaceIndex];
-        assert(visSurf);
-        assert(visSurf->index == surfaceIndex);
-        Build(visSurf, shaderSurfaces[surfaceIndex]);
+        const FrameSurf *frameSurf = frameCamera->frameSurfs[surfaceIndex];
+        assert(frameSurf);
+        assert(frameSurf->index == surfaceIndex);
+        Build(frameSurf, shaderSurfaces[surfaceIndex]);
     }
 
     const uint32_t uploadSize = surfaceCount * sizeof(ShaderSurface);
@@ -116,16 +116,16 @@ void ShaderSurfaceTable::DestroyBuffer() {
     tableBuffer.bindlessIndex = 0;
 }
 
-void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderSurface) const {
-    assert(visSurf);
-    assert(visSurf->space);
+void ShaderSurfaceTable::Build(const FrameSurf *frameSurf, ShaderSurface &outShaderSurface) const {
+    assert(frameSurf);
+    assert(frameSurf->space);
 
-    const BE1::Mat3x4 &worldMatrix = visSurf->space->worldMatrix;
+    const BE1::Mat3x4 &worldMatrix = frameSurf->space->worldMatrix;
     BE1::simdProcessor->Memcpy(&outShaderSurface.worldMatrix, &worldMatrix, sizeof(outShaderSurface.worldMatrix));
-    BE1::simdProcessor->Memcpy(&outShaderSurface.prevWorldMatrix, &visSurf->space->prevWorldMatrix, sizeof(outShaderSurface.prevWorldMatrix));
+    BE1::simdProcessor->Memcpy(&outShaderSurface.prevWorldMatrix, &frameSurf->space->prevWorldMatrix, sizeof(outShaderSurface.prevWorldMatrix));
 
-    if (visSurf->subMesh) {
-        const BE1::Sphere &sphere = visSurf->subMesh->GetBoundingSphere();
+    if (frameSurf->subMesh) {
+        const BE1::Sphere &sphere = frameSurf->subMesh->GetBoundingSphere();
         const BE1::Vec3 &sphereCenter = sphere.Center();
         outShaderSurface.localBoundingSphere = float4(sphereCenter.x, sphereCenter.y, sphereCenter.z, sphere.Radius());
     } else {
@@ -143,13 +143,13 @@ void ShaderSurfaceTable::Build(const VisSurf *visSurf, ShaderSurface &outShaderS
     const bool nonUniformScale = maxScaleSqr - minScaleSqr > maxScaleSqr * MATRIX_EPSILON;
     */
 
-    outShaderSurface.shaderMaterialIndex = visSurf->shaderMaterialIndex;
+    outShaderSurface.shaderMaterialIndex = frameSurf->shaderMaterialIndex;
     outShaderSurface.flags = 0;
 
-    const VisSkinnedMesh *visSkinnedMesh = visSurf->space->skinnedMesh;
-    if (visSkinnedMesh) {
-        outShaderSurface.skinningJointOffset = visSkinnedMesh->skinningJointOffset;
-        outShaderSurface.prevSkinningJointOffset = visSkinnedMesh->prevSkinningJointOffset;
+    const FrameSkinnedMesh *frameSkinnedMesh = frameSurf->space->skinnedMesh;
+    if (frameSkinnedMesh) {
+        outShaderSurface.skinningJointOffset = frameSkinnedMesh->skinningJointOffset;
+        outShaderSurface.prevSkinningJointOffset = frameSkinnedMesh->prevSkinningJointOffset;
     } else {
         outShaderSurface.skinningJointOffset = ShaderSkinningJointOffsetInvalid;
         outShaderSurface.prevSkinningJointOffset = ShaderSkinningJointOffsetInvalid;

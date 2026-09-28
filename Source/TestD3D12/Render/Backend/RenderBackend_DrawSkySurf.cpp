@@ -108,15 +108,15 @@ void RenderBackend::DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32
             RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
         }
 
-        if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
-            currentSubMesh = drawSurf->visSurf->subMesh;
+        if (currentSubMesh != drawSurf->frameSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
+            currentSubMesh = drawSurf->frameSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
 
             RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
-            RHI::renderer->SetIndexBuffer(mainCommandList, drawSurf->visSurf->indexBuffer);
+            RHI::renderer->SetIndexBuffer(mainCommandList, drawSurf->frameSurf->indexBuffer);
         }
 
-        if (!BindSkyboxTextures(mainCommandList, drawSurf->visSurf->material)) {
+        if (!BindSkyboxTextures(mainCommandList, drawSurf->frameSurf->material)) {
             continue;
         }
 

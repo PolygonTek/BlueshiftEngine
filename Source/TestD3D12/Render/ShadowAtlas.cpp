@@ -14,24 +14,14 @@
 
 #include "Precompiled.h"
 #include "ShadowAtlas.h"
-#include "RenderFrameSettings.h"
 
-bool ShadowAtlas::Ensure(const RenderFrameSettings &settings) {
-    if (settings.shadowAtlasMaxViews == 0) {
-        Destroy();
-        return true;
-    }
-
-    const uint32_t atlasSize = settings.shadowAtlasSize;
-    const uint32_t minTileSize = RenderFrameSettings::ShadowAtlasMinTileResolution;
-    const uint32_t maxTileSize = settings.shadowAtlasMaxTileResolution;
-
+bool ShadowAtlas::Ensure(uint32_t atlasSize, uint32_t maxTileResolution, uint32_t minTileResolution) {
     if (shadowTexture && GetSize() == atlasSize) {
-        if (GetMaxTileResolution() == maxTileSize) {
+        if (GetMaxTileResolution() == maxTileResolution && allocator.GetMinTileResolution() == minTileResolution) {
             return true;
         }
-        // 타일의 최대 해상도만 바뀌었다면 texture 는 유지하고 allocator 의 구성과 핸들만 갱신한다.
-        return allocator.Init(atlasSize, maxTileSize, minTileSize);
+        // 타일의 최대/최소 해상도만 바뀌었다면 texture 는 유지하고 allocator 의 구성과 핸들만 갱신한다.
+        return allocator.Init(atlasSize, maxTileResolution, minTileResolution);
     }
 
     SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
@@ -47,7 +37,7 @@ bool ShadowAtlas::Ensure(const RenderFrameSettings &settings) {
 
     const RHI::ViewID newDSV = RHI::renderer->CreateView(newTexture, RHI::ViewType::DSV, RHI::Format::D32_FLOAT, 0, 1, 0, 1);
     const RHI::ViewID newSRV = RHI::renderer->CreateView(newTexture, RHI::ViewType::SRV, RHI::Format::R32_FLOAT, 0, 1, 0, 1);
-    if (!newDSV.IsValid() || !newSRV.IsValid() || !allocator.Init(atlasSize, maxTileSize, minTileSize)) {
+    if (!newDSV.IsValid() || !newSRV.IsValid() || !allocator.Init(atlasSize, maxTileResolution, minTileResolution)) {
         RHI::renderer->DestroyTexture(newTexture);
         return false;
     }

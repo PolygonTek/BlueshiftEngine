@@ -67,19 +67,19 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **dr
             RHI::renderer->SetConstantBuffer(mainCommandList, 1, viewConstantBuffer);
 
             if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
-                RHI::renderer->SetBuffer(mainCommandList, 1, false, currentVisCamera->skinningJointBuffer);
+                RHI::renderer->SetBuffer(mainCommandList, 1, false, currentFrameCamera->skinningJointBuffer);
             }
         }
 
-        if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
-            currentSubMesh = drawSurf->visSurf->subMesh;
+        if (currentSubMesh != drawSurf->frameSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
+            currentSubMesh = drawSurf->frameSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
 
             SetPassVertexBuffers(mainCommandList, drawSurf);
         }
 
-        if (currentIndexBuffer != drawSurf->visSurf->indexBuffer) {
-            currentIndexBuffer = drawSurf->visSurf->indexBuffer;
+        if (currentIndexBuffer != drawSurf->frameSurf->indexBuffer) {
+            currentIndexBuffer = drawSurf->frameSurf->indexBuffer;
             RHI::renderer->SetIndexBuffer(mainCommandList, currentIndexBuffer);
         }
 
@@ -138,19 +138,19 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
             RHI::renderer->SetConstantBuffer(commandList, 1, taskDesc->viewConstantBuffer);
 
             if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
-                RHI::renderer->SetBuffer(commandList, 1, false, currentVisCamera->skinningJointBuffer);
+                RHI::renderer->SetBuffer(commandList, 1, false, currentFrameCamera->skinningJointBuffer);
             }
         }
 
-        if (currentSubMesh != drawSurf->visSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
-            currentSubMesh = drawSurf->visSurf->subMesh;
+        if (currentSubMesh != drawSurf->frameSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
+            currentSubMesh = drawSurf->frameSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
 
             SetPassVertexBuffers(commandList, drawSurf);
         }
 
-        if (currentIndexBuffer != drawSurf->visSurf->indexBuffer) {
-            currentIndexBuffer = drawSurf->visSurf->indexBuffer;
+        if (currentIndexBuffer != drawSurf->frameSurf->indexBuffer) {
+            currentIndexBuffer = drawSurf->frameSurf->indexBuffer;
             RHI::renderer->SetIndexBuffer(commandList, currentIndexBuffer);
         }
 

@@ -90,7 +90,7 @@ static bool CanFastReduceHiZMip(uint32_t width, uint32_t height) {
 }
 
 // inputMipLevel 부터 시작해서 maxReductionCount 만큼의 mip level 을 fast reduce 할 수 있는지 확인하고, fast reduce 가능한 mip level 의 개수를 반환한다.
-static uint32_t CountFastHiZReductions(const HiZFrameData &data, uint32_t inputMipLevel, uint32_t maxReductionCount) {
+static uint32_t CountFastHiZReductions(const FrameHiZ &data, uint32_t inputMipLevel, uint32_t maxReductionCount) {
     uint32_t reductionCount = 0;
     while (reductionCount < maxReductionCount && inputMipLevel + reductionCount + 1 < data.mipCount) {
         const uint32_t mipLevel = inputMipLevel + reductionCount;
@@ -104,7 +104,7 @@ static uint32_t CountFastHiZReductions(const HiZFrameData &data, uint32_t inputM
 }
 
 // (연속된) input mip dimension 이 짝수인 경우 inputMipLevel 부터 시작해서 outputMipCount 만큼의 mip level 을 fast reduce 한다.
-static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const HiZFrameData &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t useMinDepth, uint32_t inputMipLevel, uint32_t outputMipCount) {
+static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t useMinDepth, uint32_t inputMipLevel, uint32_t outputMipCount) {
     const uint32_t startOutputMipLevel = inputMipLevel + 1;
     const RHI::ViewID inputViewID = data.mipSRVs[inputMipLevel];
 
@@ -161,7 +161,7 @@ static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData,
 }
 
 // input mip dimension 이 홀수인 경우, 2x3/3x2/3x3 까지 커버 가능하도록 inputMipLevel 을 reduce 한다.
-static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const HiZFrameData &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t useMinDepth, uint32_t inputMipLevel) {
+static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t useMinDepth, uint32_t inputMipLevel) {
     const uint32_t outputMipLevel = inputMipLevel + 1;
     const RHI::ViewID inputViewID = data.mipSRVs[inputMipLevel];
 
@@ -206,7 +206,7 @@ static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RH
     return true;
 }
 
-bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, RHI::Texture *depthTexture, const RHI::ProjectionPolicy &projectionPolicy, const HiZFrameData &data) const {
+bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, RHI::Texture *depthTexture, const RHI::ProjectionPolicy &projectionPolicy, const FrameHiZ &data) const {
     PROFILER_CPU_SCOPED_EVENT("HiZ::DispatchGenerate");
 
     RHI::Texture *hiZTexture = data.texture;
@@ -292,7 +292,7 @@ bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *
     return true;
 }
 
-bool HiZ::DispatchDebugPreview(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t requestedMipLevel, const HiZFrameData &data) const {
+bool HiZ::DispatchDebugPreview(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t requestedMipLevel, const FrameHiZ &data) const {
     PROFILER_CPU_SCOPED_EVENT("HiZ::DispatchDebugPreview");
 
     if (!cameraConstantBuffer) {
@@ -347,7 +347,7 @@ bool HiZ::DispatchDebugPreview(RHI::CommandList *commandList, RHI::FrameThreadDa
     return true;
 }
 
-bool HiZ::DispatchCullInstances(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::ConstantBuffer *cameraConstantBuffer, uint32_t surfaceTableIndex, const RHI::ProjectionPolicy &projectionPolicy, const HiZFrameData &data, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) const {
+bool HiZ::DispatchCullInstances(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::ConstantBuffer *cameraConstantBuffer, uint32_t surfaceTableIndex, const RHI::ProjectionPolicy &projectionPolicy, const FrameHiZ &data, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) const {
     if (instanceCount == 0 || instanceCount > RenderHiZCullMaxInstanceCount) {
         return false;
     }

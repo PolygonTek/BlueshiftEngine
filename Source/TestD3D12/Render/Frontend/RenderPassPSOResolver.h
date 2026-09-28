@@ -23,7 +23,7 @@
 
 class Material;
 struct RenderPass;
-struct VisSurf;
+struct FrameSurf;
 
 class RenderPassPSOResolver {
 public:
@@ -34,7 +34,7 @@ public:
 
     void                            Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity);
 
-    ResolveResult                   Resolve(const VisSurf *visSurf, const ShaderFeatureSet &featureSet, bool async = true);
+    ResolveResult                   Resolve(const FrameSurf *frameSurf, const ShaderFeatureSet &featureSet, bool async = true);
 
 private:
     struct PSOEntry {

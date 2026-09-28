@@ -112,7 +112,7 @@ void ScreenSpaceAO::UpdateFramePSOs(const RenderFrameSettings &settings) {
     frameGTAODebugPSO = ShaderPipeline::GetReadyPSO(gtaoDebugPipeline);
 }
 
-bool ScreenSpaceAO::HasRequiredResources(const ScreenSpaceAOFrameData &data) {
+bool ScreenSpaceAO::HasRequiredResources(const FrameScreenSpaceAO &data) {
     const ScreenSpaceAOTextureSet &textureSet = data.textureSet;
     if (data.mode != RenderAOMode::GTAO || !data.depthTexture || !data.normalTexture || !textureSet.outputTexture) {
         return false;
@@ -122,7 +122,7 @@ bool ScreenSpaceAO::HasRequiredResources(const ScreenSpaceAOFrameData &data) {
     return textureSet.rawTexture && textureSet.gtaoPrefilterDepthTexture && textureSet.gtaoPackedEdgesTexture;
 }
 
-bool ScreenSpaceAO::PrepareDispatch(const ScreenSpaceAOFrameData &data, const RenderFrameSettings &settings, DispatchParams &params) const {
+bool ScreenSpaceAO::PrepareDispatch(const FrameScreenSpaceAO &data, const RenderFrameSettings &settings, DispatchParams &params) const {
     assert(HasRequiredResources(data));
     params = {};
 
@@ -149,7 +149,7 @@ void ScreenSpaceAO::Dispatch(RenderBackend &backend, const DispatchParams &param
     PROFILER_CPU_SCOPED_EVENT("ScreenSpaceAO::Dispatch");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
+    const FrameScreenSpaceAO &data = backend.GetFrameCamera()->ao;
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
     assert(data.mode == RenderAOMode::GTAO);
@@ -207,7 +207,7 @@ void ScreenSpaceAO::DispatchGTAOPrefilterDepth(RenderBackend &backend, RHI::GPUR
     RHI::CommandList *commandList = backend.GetCommandList();
     const RHI::ConstantBuffer *cameraConstantBuffer = backend.GetCameraConstantBuffer();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
+    const FrameScreenSpaceAO &data = backend.GetFrameCamera()->ao;
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
     RHI::Texture *depthTexture = data.depthTexture;
@@ -271,7 +271,7 @@ void ScreenSpaceAO::DispatchGTAOMain(RenderBackend &backend, bool useHalfResolut
     const RHI::ConstantBuffer *cameraConstantBuffer = backend.GetCameraConstantBuffer();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     const uint32_t frameIndex = backend.GetFrameIndex();
-    const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
+    const FrameScreenSpaceAO &data = backend.GetFrameCamera()->ao;
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
     RHI::Texture *depthTexture = data.depthTexture;
@@ -336,7 +336,7 @@ void ScreenSpaceAO::DispatchGTAOMain(RenderBackend &backend, bool useHalfResolut
 RHI::Texture *ScreenSpaceAO::DispatchGTAODenoise(RenderBackend &backend, uint32_t denoisePassCount, bool useHalfResolution, RHI::GPUResourceState &rawAOState, RHI::GPUResourceState &tempAOState) const {
     RHI::CommandList *commandList = backend.GetCommandList();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
+    const FrameScreenSpaceAO &data = backend.GetFrameCamera()->ao;
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
     RHI::Texture *aoTexture = data.textureSet.outputTexture;
@@ -401,7 +401,7 @@ bool ScreenSpaceAO::DispatchDebugPreview(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("ScreenSpaceAO::DispatchDebugPreview");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
+    const FrameScreenSpaceAO &data = backend.GetFrameCamera()->ao;
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
     if (!frameGTAODebugPSO || !data.textureSet.outputTexture || settings.gtaoDebug <= 1) {
@@ -467,7 +467,7 @@ void ScreenSpaceAO::DispatchAOUpsample(RenderBackend &backend, RHI::Texture *dep
     RHI::CommandList *commandList = backend.GetCommandList();
     const RHI::ConstantBuffer *cameraConstantBuffer = backend.GetCameraConstantBuffer();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
-    const ScreenSpaceAOFrameData &data = backend.GetVisCamera()->ao;
+    const FrameScreenSpaceAO &data = backend.GetFrameCamera()->ao;
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, commandList, GpuTiming::Tag::AOUpsample);
 

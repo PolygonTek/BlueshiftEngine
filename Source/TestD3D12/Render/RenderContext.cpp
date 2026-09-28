@@ -65,7 +65,9 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
         BE_WARNLOG("RenderContext::Init: failed to create CSM depth texture\n");
     }
 
-    if (!shadowAtlas.Ensure(initialRenderFrameSettings)) {
+    if (initialRenderFrameSettings.shadowAtlasMaxViews == 0) {
+        shadowAtlas.Destroy();
+    } else if (!shadowAtlas.Ensure(initialRenderFrameSettings.shadowAtlasSize, initialRenderFrameSettings.shadowAtlasMaxTileResolution, RenderFrameSettings::ShadowAtlasMinTileResolution)) {
         BE_WARNLOG("RenderContext::Init: failed to create local shadow atlas\n");
     }
 
@@ -654,7 +656,9 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
         BE_WARNLOG("RenderContext::BeginFrame: failed to create CSM depth texture\n");
     }
 
-    if (!shadowAtlas.Ensure(renderFrameSettings)) {
+    if (renderFrameSettings.shadowAtlasMaxViews == 0) {
+        shadowAtlas.Destroy();
+    } else if (!shadowAtlas.Ensure(renderFrameSettings.shadowAtlasSize, renderFrameSettings.shadowAtlasMaxTileResolution, RenderFrameSettings::ShadowAtlasMinTileResolution)) {
         BE_WARNLOG("RenderContext::BeginFrame: failed to update local shadow atlas\n");
     }
 

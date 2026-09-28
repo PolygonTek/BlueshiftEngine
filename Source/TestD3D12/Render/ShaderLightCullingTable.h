@@ -18,7 +18,7 @@
 #include "Shaders/ShaderInterop.h"
 
 class RenderFrame;
-struct VisLight;
+struct FrameLight;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ private:
     void                            UploadBuffer(RHI::CommandList *commandList, TableBuffer &tableBuffer, RHI::Buffer *uploadBuffer, uint32_t uploadSize);
     void                            DestroyBuffer(TableBuffer &tableBuffer);
 
-    void                            BuildLightRef(const VisLight *visLight, ShaderLightRef &outShaderLightRef) const;
+    void                            BuildLightRef(const FrameLight *frameLight, ShaderLightRef &outShaderLightRef) const;
 
     TableBuffer                     lightRefBuffer;
     TableBuffer                     lightZBinBuffer;
