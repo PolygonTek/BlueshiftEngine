@@ -819,6 +819,15 @@ void OBB::ToPoints(Vec3 points[8]) const {
     points[7] = temp[0] + temp[3];
 }
 
+void OBB::ToPlanes(Plane planes[6]) const {
+    planes[0] = Plane(-axis[0], center - axis[0] * extents[0]);
+    planes[1] = Plane( axis[0], center + axis[0] * extents[0]);
+    planes[2] = Plane(-axis[1], center - axis[1] * extents[1]);
+    planes[3] = Plane( axis[1], center + axis[1] * extents[1]);
+    planes[4] = Plane(-axis[2], center - axis[2] * extents[2]);
+    planes[5] = Plane( axis[2], center + axis[2] * extents[2]);
+}
+
 AABB OBB::ToAABB() const {
     AABB aabb;
     ProjectOnAxis(Mat3::identity, aabb);

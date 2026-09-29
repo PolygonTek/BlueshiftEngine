@@ -184,6 +184,9 @@ public:
                         /// Calculates 8 vertices of OBB.
     void                ToPoints(Vec3 points[8]) const;
 
+                        /// Calculates 6 outward-facing planes in local axis order: -X, +X, -Y, +Y, -Z, +Z.
+    void                ToPlanes(Plane planes[6]) const;
+
                         /// Converts to AABB.
     AABB                ToAABB() const;
 
