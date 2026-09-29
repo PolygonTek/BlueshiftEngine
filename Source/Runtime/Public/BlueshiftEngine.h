@@ -57,6 +57,7 @@
 
 #include "Core/Timespan.h"
 #include "Core/DateTime.h"
+#include "Core/ScopedCpuTimer.h"
 #include "Core/MinMaxCurve.h"
 
 // Platform

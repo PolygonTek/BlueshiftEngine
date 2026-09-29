@@ -48,6 +48,7 @@ set(COMMON_ENGINE_FILES
     Public/Core/CVars.h
     Public/Core/Timespan.h
     Public/Core/DateTime.h
+    Public/Core/ScopedCpuTimer.h
     Public/Core/LinearSamplingKernel.h
     Public/Core/MinMaxCurve.h
     Public/Core/Dict.h
