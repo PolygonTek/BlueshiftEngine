@@ -107,11 +107,12 @@ SharedPtr<Material> MaterialManager::AllocMaterial(const char *hashName) {
     if (!hashName || !hashName[0]) {
         BE_FATALERROR("MaterialManager::AllocMaterial: empty material name");
     }
+
     if (const auto *entry = materialHashMap.Get(hashName)) {
         if (!entry->second.expired()) {
             BE_FATALERROR("MaterialManager::AllocMaterial: %s material already allocated", hashName);
         }
-        materialHashMap.Remove(hashName);
+        materialHashMap.RemoveFast(hashName);
     }
 
     SharedPtr<Material> material = MakeShared<Material>();
@@ -151,7 +152,7 @@ SharedPtr<Material> MaterialManager::GetMaterial(const char *hashName) {
     material = AllocMaterial(hashName);
     bool loaded = material->Load(hashName);
     if (!loaded) {
-        materialHashMap.Remove(material->hashName);
+        materialHashMap.RemoveFast(material->hashName);
         return defaultUnlitMaterial;
     }
 
@@ -223,7 +224,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
     material = AllocMaterial(materialName);
     if (!material->Create(text, "")) {
         BE_WARNLOG("MaterialManager::GetSingleTextureMaterial: failed to create material '%s' for texture '%s' (hint: %s)\n", materialName.c_str(), textureFilename, TextureHintName(hint));
-        materialHashMap.Remove(material->hashName);
+        materialHashMap.RemoveFast(material->hashName);
         return defaultUnlitMaterial;
     }
 
@@ -264,7 +265,7 @@ void MaterialManager::CleanExpiredMaterials() {
         assert(entry);
 
         if (entry->second.expired()) {
-            materialHashMap.Remove(entry->first);
+            materialHashMap.RemoveFast(entry->first);
             continue;
         }
 

@@ -113,7 +113,7 @@ SharedPtr<ShaderTemplate> ShaderTemplateManager::AllocShaderTemplate(const char 
         if (!entry->second.expired()) {
             BE_FATALERROR("ShaderTemplateManager::AllocShaderTemplate: %s shader template already allocated", hashName);
         }
-        shaderTemplateHashMap.Remove(hashName);
+        shaderTemplateHashMap.RemoveFast(hashName);
     }
 
     SharedPtr<ShaderTemplate> shaderTemplate = MakeShared<ShaderTemplate>();
@@ -186,7 +186,7 @@ SharedPtr<ShaderTemplate> ShaderTemplateManager::GetShaderTemplate(const char *h
     shaderTemplate = AllocShaderTemplate(hashName);
     bool loaded = shaderTemplate->Load(hashName);
     if (!loaded) {
-        shaderTemplateHashMap.Remove(shaderTemplate->hashName);
+        shaderTemplateHashMap.RemoveFast(shaderTemplate->hashName);
         return nullptr;
     }
 
@@ -309,7 +309,7 @@ void ShaderTemplateManager::CleanExpiredShaderTemplates() {
         assert(entry);
 
         if (entry->second.expired()) {
-            shaderTemplateHashMap.Remove(entry->first);
+            shaderTemplateHashMap.RemoveFast(entry->first);
             continue;
         }
 

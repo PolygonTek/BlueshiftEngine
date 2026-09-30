@@ -21,8 +21,8 @@
 
     NOTE:
     - The key-value pair is an Array.
-    - You can iterate sequentially in the order in which they were added.
-    - Deletion can be slow due to memory copy.
+    - You can iterate in insertion order unless RemoveFast is used.
+    - Remove preserves order but can be slow due to pair moves and index updates.
     - Faster to add key-value pair than HashTable. 
     - The bucket list is the simplest form.
 
@@ -140,6 +140,10 @@ public:
 
                             /// Removes the hash bucket corresponding to the key value. Memory cleanup occurs for the deleted array element.
     bool                    Remove(const KeyT &key);
+
+                            /// Removes a key by moving the last pair into its place; iteration order is not preserved.
+                            /// References and indices to the removed and moved pairs are invalidated.
+    bool                    RemoveFast(const KeyT &key);
 
                             /// Clears all hash buckets.
     void                    Clear();
@@ -296,6 +300,31 @@ BE_INLINE bool HASH_MAP_TEMPLATE::Remove(const KeyT &key) {
         if (HashCompareT::Compare(pairs[index].first, key) == true) {
             pairs.RemoveIndex(index);
             hashIndex.RemoveIndex(hash, index);
+            return true;
+        }
+    }
+    return false;
+}
+
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+BE_INLINE bool HASH_MAP_TEMPLATE::RemoveFast(const KeyT &key) {
+    const int hash = HashGeneratorT::Hash(hashIndex, key);
+
+    for (int index = hashIndex.First(hash); index != HashIndex::EmptyTable[0]; index = hashIndex.Next(index)) {
+        if (HashCompareT::Compare(pairs[index].first, key) == true) {
+            const int lastIndex = pairs.Count() - 1;
+            hashIndex.Remove(hash, index);
+            if (index != lastIndex) {
+                // Hash the last key before moving it; key may also refer to a stored key.
+                const int lastHash = HashGeneratorT::Hash(hashIndex, pairs[lastIndex].first);
+                hashIndex.Remove(lastHash, lastIndex);
+                pairs[index] = std::move(pairs[lastIndex]);
+                hashIndex.Add(lastHash, index);
+            }
+
+            // Release the vacated pair's resources while retaining the array capacity.
+            pairs[lastIndex] = KV{};
+            pairs.SetCount(lastIndex, false);
             return true;
         }
     }

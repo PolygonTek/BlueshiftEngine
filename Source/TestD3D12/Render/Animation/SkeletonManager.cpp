@@ -51,7 +51,7 @@ SharedPtr<Skeleton> SkeletonManager::AllocSkeleton(const char *hashName) {
         if (!entry->second.expired()) {
             BE_FATALERROR("SkeletonManager::AllocSkeleton: %s skeleton already allocated", hashName);
         }
-        skeletonHashMap.Remove(hashName);
+        skeletonHashMap.RemoveFast(hashName);
     }
 
     SharedPtr<Skeleton> skeleton = MakeShared<Skeleton>();
@@ -95,7 +95,7 @@ SharedPtr<Skeleton> SkeletonManager::GetSkeleton(const char *hashName, bool asyn
     skeleton = AllocSkeleton(hashName);
     bool loaded = useAsyncLoading ? skeleton->LoadAsync(hashName) : skeleton->Load(hashName);
     if (!loaded) {
-        skeletonHashMap.Remove(skeleton->hashName);
+        skeletonHashMap.RemoveFast(skeleton->hashName);
         return defaultSkeleton;
     }
 
@@ -129,7 +129,7 @@ void SkeletonManager::CleanExpiredSkeletons() {
         assert(entry);
 
         if (entry->second.expired()) {
-            skeletonHashMap.Remove(entry->first);
+            skeletonHashMap.RemoveFast(entry->first);
             continue;
         }
 

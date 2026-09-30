@@ -42,7 +42,7 @@ private:
     void                    CleanExpiredFonts();
 
     struct FontHashKey {
-        FontHashKey() {}
+        FontHashKey() : fontSize(0) {}
         FontHashKey(const BE1::Str &name, uint32_t fontSize) : name(name), fontSize(fontSize) {}
 
         BE1::Str            name;

@@ -58,7 +58,7 @@ SharedPtr<Font> FontManager::AllocFont(const char *hashName, uint32_t fontSize) 
         if (!entry->second.expired()) {
             BE_FATALERROR("FontManager::AllocFont: %s (size = %i) font already allocated", hashName, fontSize);
         }
-        fontHashMap.Remove(FontHashKey(hashName, fontSize));
+        fontHashMap.RemoveFast(FontHashKey(hashName, fontSize));
     }
 
     SharedPtr<Font> font = MakeShared<Font>();
@@ -97,7 +97,7 @@ SharedPtr<Font> FontManager::GetFont(const char *hashName, uint32_t fontSize) {
 
     font = AllocFont(hashName, fontSize);
     if (!font->Load(hashName)) {
-        fontHashMap.Remove(FontHashKey(font->hashName, fontSize));
+        fontHashMap.RemoveFast(FontHashKey(font->hashName, fontSize));
         return defaultFont;
     }
     return font;
@@ -116,7 +116,7 @@ void FontManager::CleanExpiredFonts() {
         assert(entry);
 
         if (entry->second.expired()) {
-            fontHashMap.Remove(entry->first);
+            fontHashMap.RemoveFast(entry->first);
             continue;
         }
 

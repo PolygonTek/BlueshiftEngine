@@ -49,7 +49,7 @@ SharedPtr<Anim> AnimManager::AllocAnim(const char *hashName) {
         if (!entry->second.expired()) {
             BE_FATALERROR("AnimManager::AllocAnim: %s anim already allocated", hashName);
         }
-        animHashMap.Remove(hashName);
+        animHashMap.RemoveFast(hashName);
     }
 
     SharedPtr<Anim> anim = MakeShared<Anim>();
@@ -94,7 +94,7 @@ SharedPtr<Anim> AnimManager::GetAnim(const char *hashName, bool async) {
     bool loaded = useAsyncLoading ? anim->LoadAsync(hashName) : anim->Load(hashName);
     if (!loaded) {
         BE_WARNLOG("Couldn't load anim '%s'\n", hashName);
-        animHashMap.Remove(anim->hashName);
+        animHashMap.RemoveFast(anim->hashName);
         anim = nullptr;
     }
 
@@ -151,7 +151,7 @@ void AnimManager::CleanExpiredAnims() {
         assert(entry);
 
         if (entry->second.expired()) {
-            animHashMap.Remove(entry->first);
+            animHashMap.RemoveFast(entry->first);
             continue;
         }
 

@@ -105,7 +105,7 @@ SharedPtr<Mesh> MeshManager::AllocMesh(const char *hashName) {
         if (!entry->second.expired()) {
             BE_FATALERROR("MeshManager::AllocMesh: %s mesh already allocated", hashName);
         }
-        meshHashMap.Remove(hashName);
+        meshHashMap.RemoveFast(hashName);
     }
 
     SharedPtr<Mesh> mesh = MakeShared<Mesh>();
@@ -158,7 +158,7 @@ SharedPtr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
     if (!loaded) {
         BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
 
-        meshHashMap.Remove(mesh->hashName);
+        meshHashMap.RemoveFast(mesh->hashName);
         return defaultMesh;
     }
     return mesh;
@@ -224,7 +224,7 @@ void MeshManager::CleanExpiredMeshes() {
         assert(entry);
 
         if (entry->second.expired()) {
-            meshHashMap.Remove(entry->first);
+            meshHashMap.RemoveFast(entry->first);
             continue;
         }
 

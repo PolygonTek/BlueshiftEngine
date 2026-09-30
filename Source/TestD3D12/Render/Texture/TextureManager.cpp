@@ -54,7 +54,7 @@ SharedPtr<Texture> TextureManager::AllocTexture(const char *hashName) {
         if (!entry->second.expired()) {
             BE_FATALERROR("TextureManager::AllocTexture: %s texture already allocated", hashName);
         }
-        textureHashMap.Remove(hashName);
+        textureHashMap.RemoveFast(hashName);
     }
 
     SharedPtr<Texture> texture = MakeShared<Texture>();
@@ -106,7 +106,7 @@ SharedPtr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Fla
 
     bool loaded = useAsyncLoading ? texture->LoadAsync(hashName, flags) : texture->Load(hashName, flags);
     if (!loaded) {
-        textureHashMap.Remove(texture->hashName);
+        textureHashMap.RemoveFast(texture->hashName);
         return defaultTexture;
     }
 
@@ -126,7 +126,7 @@ void TextureManager::CleanExpiredTextures() {
         assert(entry);
 
         if (entry->second.expired()) {
-            textureHashMap.Remove(entry->first);
+            textureHashMap.RemoveFast(entry->first);
             continue;
         }
 

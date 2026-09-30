@@ -687,7 +687,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
             // 다른 스레드가 이미 교체한 캐시는 유지하고, 실패한 blob 의 맵 참조만 해제한다.
             if (entry && entry->second == cachedPsoBlob.Get()) {
                 ID3DBlob *invalidBlob = entry->second;
-                cachedPsoBlobMap.Remove(psoHash);
+                cachedPsoBlobMap.RemoveFast(psoHash);
                 invalidBlob->Release();
             }
         }
@@ -829,9 +829,9 @@ void D3D12Renderer::DestroyPSO(RHI::PipelineState *pipelineState, bool immediate
         }
 
         if (pipelineState->isGraphics) {
-            graphicsPsoMap.Remove(pipelineState->hash);
+            graphicsPsoMap.RemoveFast(pipelineState->hash);
         } else {
-            computePsoMap.Remove(pipelineState->hash);
+            computePsoMap.RemoveFast(pipelineState->hash);
         }
     }
 

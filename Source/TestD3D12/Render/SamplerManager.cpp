@@ -112,7 +112,7 @@ void SamplerManager::DestroySampler(Sampler *sampler) {
 
     RHI::renderer->DestroySampler(sampler->sampler);
 
-    samplerHashMap.Remove(sampler->hash.value);
+    samplerHashMap.RemoveFast(sampler->hash.value);
 
     delete sampler;
 }
