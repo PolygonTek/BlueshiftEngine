@@ -1242,6 +1242,11 @@ namespace RHI {
         virtual void                    ResetQuery(CommandList *commandList, const QueryHeap *queryHeap, uint32_t index, uint32_t count) = 0;
         virtual uint64_t                GetTimestampFrequency(CommandQueueType queueType) const = 0;
         virtual void                    ClearUAV(CommandList *commandList, const GPUResource *resource, ViewID viewID, uint32_t value) = 0;
+
+                                        // 선택한 depth/stencil view 의 사각형 영역들을 clear 한다. ClearFlag::Color 는 지원하지 않는다.
+                                        // Render pass 밖에서 DepthWrite 상태로 호출해야 하며, 리소스 배리어는 호출부에서 처리한다.
+        virtual void                    ClearDepthStencilRects(CommandList *commandList, const Texture *texture, ViewID viewID, ClearFlag clearFlags, float clearDepth, uint8_t clearStencil, const BE1::Rect *rects, uint32_t numRects) = 0;
+
         virtual void                    CopyBuffer(CommandList *commandList, const Buffer *dstBuffer, uint32_t dstOffset, const Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) = 0;
         virtual void                    CopyTexture(CommandList *commandList, const Texture *dstTexture, uint32_t dstSlice, uint32_t dstMipLevel, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const Texture *srcTexture, uint32_t srcSlice, uint32_t srcMipLevel, uint32_t srcX, uint32_t srcY, uint32_t srcZ, uint32_t width, uint32_t height, uint32_t depth) = 0;
         virtual void                    GenerateMipChain(CommandList *commandList, const Texture *texture, const ViewID *srvMipSubresourceIDs, const ViewID *uavMipSubresourceIDs, bool preserveCoverage, uint32_t firstSlice = 0, uint32_t sliceCount = UINT32_MAX) = 0;

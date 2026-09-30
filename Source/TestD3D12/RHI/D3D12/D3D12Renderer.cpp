@@ -1136,6 +1136,52 @@ void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResour
     }
 }
 
+void D3D12Renderer::ClearDepthStencilRects(RHI::CommandList *commandList, const RHI::Texture *texture, RHI::ViewID viewID, RHI::ClearFlag clearFlags, float clearDepth, uint8_t clearStencil, const BE1::Rect *rects, uint32_t numRects) {
+    if (numRects == 0 || clearFlags == RHI::ClearFlag::None) {
+        return;
+    }
+
+    assert(!BE1::HasFlag(clearFlags, RHI::ClearFlag::Color));
+
+    const D3D12Texture *d3d12Texture = static_cast<const D3D12Texture *>(texture);
+    assert(d3d12Texture->HasValidView(RHI::ViewType::DSV, viewID));
+    const D3D12DSVEntry &dsv = d3d12Texture->dsvEntries[viewID.value];
+
+    D3D12_CLEAR_FLAGS flags = static_cast<D3D12_CLEAR_FLAGS>(0);
+    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
+        flags |= D3D12_CLEAR_FLAG_DEPTH;
+    }
+
+    if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
+        assert(IsStencilFormat(dsv.viewDesc.Format));
+        flags |= D3D12_CLEAR_FLAG_STENCIL;
+    }
+
+    if (flags == 0) {
+        return;
+    }
+
+    D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
+
+    constexpr uint32_t RectBatchSize = 64;
+    D3D12_RECT nativeRects[RectBatchSize];
+
+    for (uint32_t firstRect = 0; firstRect < numRects;) {
+        const uint32_t count = BE1::Min(numRects - firstRect, RectBatchSize);
+        for (uint32_t i = 0; i < count; ++i) {
+            const BE1::Rect &rect = rects[firstRect + i];
+            assert(rect.x >= 0 && rect.y >= 0);
+            assert(rect.w > 0 && rect.h > 0);
+
+            nativeRects[i] = { rect.x, rect.y, rect.X2(), rect.Y2() };
+        }
+
+        d3d12CommandList->GetGraphicsCommandList()->ClearDepthStencilView(dsv.cpuDescriptorHandle, flags, clearDepth, clearStencil, count, nativeRects);
+
+        firstRect += count;
+    }
+}
+
 void D3D12Renderer::CopyBuffer(RHI::CommandList *commandList, const RHI::Buffer *dstBuffer, uint32_t dstOffset, const RHI::Buffer *srcBuffer, uint32_t srcOffset, uint32_t size) {
     const D3D12Buffer *_dstBuffer = static_cast<const D3D12Buffer *>(dstBuffer);
     const D3D12Buffer *_srcBuffer = static_cast<const D3D12Buffer *>(srcBuffer);
