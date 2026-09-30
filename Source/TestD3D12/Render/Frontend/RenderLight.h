@@ -22,9 +22,11 @@ class RenderLight {
     friend class RenderWorld;
 
 public:
+    static constexpr float          MinLightSize = 0.01f;   // 광원 크기, near 거리, near-far 간격 보정용 최소 길이.
+
     enum class Type : uint8_t {
-        Point,
-        Spot,
+        Point,                      ///< Omnidirectional light within a sphere centered at origin
+        Spot,                       ///< Perspective-frustum light directed along axis[0]
         BoxDir,                     ///< Finite box-volume light with a constant direction along axis[0]
         Directional                 ///< Infinite-distance light whose rays travel along axis[0]
     };
@@ -46,7 +48,7 @@ public:
             Shape                   = BIT(3),   // type, size, zNear
             ProjectionPolicy        = BIT(4),   // projectionPolicy
             Lighting                = BIT(5),   // linearColor, intensity, fallOffExponent
-            Shadow                  = BIT(6)    // shadowOffsetFactor, shadowOffsetUnits
+            Shadow                  = BIT(6)    // shadowOffsetUnits, shadowOffsetFactor
         };
 
         friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
@@ -59,14 +61,14 @@ public:
         BE1::Mat3                   axis = BE1::Mat3::identity;         ///< Light orientation
         BE1::Vec3                   size = BE1::Vec3::one;              ///< Point: size[0] is radius. Spot/BoxDir: shape extents
 
-        float                       zNear = 1.0f;                       ///< Near distance for spot light
+        float                       zNear = 1.0f;                       ///< Spot near distance; Point shadow near distance (capped at half the radius)
         RHI::ProjectionPolicy       projectionPolicy;                   ///< projection convention used for shader-visible matrices
 
         BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB light tint in [0, 1]
         float                       intensity = 1.0f;                   ///< Light itensity
         float                       fallOffExponent = 1.25f;
+        float                       shadowOffsetUnits = 1500.0f;
         float                       shadowOffsetFactor = 3.0f;
-        float                       shadowOffsetUnits = 200.0f;
     };
 
     RenderLight() = default;
@@ -123,16 +125,16 @@ private:
     void                            UpdateShape(Type type, const BE1::Vec3 &size, float zNear);
     void                            UpdateProjectionPolicy(const RHI::ProjectionPolicy &projectionPolicy);
     void                            UpdateLighting(const BE1::Color3 &linearColor, float intensity, float fallOffExponent);
-    void                            UpdateShadow(float shadowOffsetFactor, float shadowOffsetUnits);
+    void                            UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor);
     void                            UpdateViewMatrix();
     void                            UpdateProjectionAndBounds();
 
     Desc                            desc;
 
-    BE1::Sphere                     worldSphere;                    // bounding volume for point light
-    BE1::OBB                        worldOBB;                       // bounding volume for box-dir light
-    BE1::Frustum                    worldFrustum;                   // bounding volume for spot light
-    BE1::AABB                       worldAABB = BE1::AABB::empty;
+    BE1::Sphere                     worldSphere;                        // bounding volume for point light
+    BE1::OBB                        worldOBB;                           // bounding volume for box-dir light
+    BE1::Frustum                    worldFrustum;                       // bounding volume for spot light
+    BE1::AABB                       worldAABB = BE1::AABB::empty;       // World-space AABB enclosing the light volume; empty for directional lights
 
     BE1::Mat4                       viewMatrix = BE1::Mat4::identity;
     BE1::Mat4                       projMatrix = BE1::Mat4::identity;
@@ -140,6 +142,7 @@ private:
     BE1::Mat3x4                     fallOffMatrix;
 
     uint64_t                        visibleFrameIndex = 0;
-    int                             index = -1;                     // RenderWorld::renderLights 의 인덱스
-    uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 FrameLight 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터
+    uint64_t                        lightId = 0;                        ///< 광원 생성 시 부여되는 고유 ID. Index 재사용이나 world 교체에도 이전 광원과 구분한다.
+    int                             index = -1;                         // RenderWorld::renderLights 의 인덱스
+    uint64_t                        viewCount = uint64_t(-1);           // 마지막으로 FrameLight 로 등록된 뷰의 카운터 값. 같은 뷰에서 중복 등록 방지.
 };

@@ -1,6 +1,8 @@
 #ifndef __SHADOW_LIBRARY_HLSLI__
 #define __SHADOW_LIBRARY_HLSLI__
 
+#include "../ShaderInterop.h"
+
 #ifndef SHADOW_MAP_QUALITY
 #define SHADOW_MAP_QUALITY 2
 #endif
@@ -83,6 +85,138 @@ float SampleShadowMap(Texture2D<float> shadowMap, float3 shadowCoord, float2 tex
 #endif
 }
 #endif
+
+float EvaluateSpotShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 worldPosition) {
+    const ShaderShadowAtlasData atlas = cameraConstants.shadowAtlas;
+    // Invalid index 와 비활성 atlas 모두 테이블/texture 에 접근하기 전에 걸러낸다.
+    [branch]
+    if (shadowIndex >= atlas.numShadows) {
+        return 1.0f;
+    }
+
+    const ShaderLocalShadow shadow = GetShaderLocalShadowTable(atlas.shadowTableIndex)[shadowIndex];
+    [branch]
+    if (shadow.numShadowViews != 1 || shadow.firstShadowView >= atlas.numShadowViews) {
+        return 1.0f;
+    }
+
+    const ShaderLocalShadowView view = GetShaderLocalShadowViewTable(atlas.shadowViewTableIndex)[shadow.firstShadowView];
+    const float4 projectedPosition = mul(view.worldToShadowCoordMatrix, float4(worldPosition, 1.0f));
+    if (projectedPosition.w <= 0.0f) {
+        return 1.0f;
+    }
+
+    const float3 shadowCoord = projectedPosition.xyz / projectedPosition.w;
+    // border 는 필터를 위한 caster 영역이다. receiver 는 원래 조명 영역과 정방향 depth [0, 1] 안에 있어야 한다.
+    if (any(shadowCoord.xy < shadow.normalizedBorder) || any(shadowCoord.xy > 1.0f - shadow.normalizedBorder) || shadowCoord.z < 0.0f || shadowCoord.z > 1.0f) {
+        return 1.0f;
+    }
+
+    const float3 atlasCoord = float3(shadowCoord.xy * view.atlasScaleBias.xy + view.atlasScaleBias.zw, shadowCoord.z);
+    Texture2D<float> shadowMap = GetTexture2DFloat(atlas.textureIndex);
+#if SHADOW_MAP_QUALITY == 3
+    const float4 rotMat = GetShadowRotationMatrix(pixelCoord);
+    return SampleShadowMap(shadowMap, atlasCoord, atlas.texelSize, shadow.filterRadius, rotMat);
+#else
+    return SampleShadowMap(shadowMap, atlasCoord, atlas.texelSize);
+#endif
+}
+
+// 입력은 worldPosition - lightOrigin 이다. Normalize 나 광원 회전을 적용하지 않는다.
+// 면 경계에서 절댓값이 같으면 X, Y, Z 순서로 선택한다. 광원 원점에서는 유효한 면이 없다.
+uint SelectPointShadowFace(float3 lightToReceiver) {
+    const float3 magnitude = abs(lightToReceiver);
+    if (max(max(magnitude.x, magnitude.y), magnitude.z) == 0.0f) {
+        return ShaderPointShadowFaceInvalid;
+    }
+    if (magnitude.x >= magnitude.y && magnitude.x >= magnitude.z) {
+        return lightToReceiver.x >= 0.0f ? ShaderPointShadowFacePositiveX : ShaderPointShadowFaceNegativeX;
+    }
+    if (magnitude.y >= magnitude.z) {
+        return lightToReceiver.y >= 0.0f ? ShaderPointShadowFacePositiveY : ShaderPointShadowFaceNegativeY;
+    }
+    return lightToReceiver.z >= 0.0f ? ShaderPointShadowFacePositiveZ : ShaderPointShadowFaceNegativeZ;
+}
+
+// CubeMapFaceToViewAxis + 정방향 90도 투영 + tile UV 변환과 같은 좌표를 만든다.
+// Atlas 는 최종 Y 반전 blit 없이 기록하므로 Cubemap.hlsli 의 cubemap UV 와 세로 방향이 반대다.
+// facePosition 은 (right, down, forward). Depth 는 radial distance 가 아닌 forward distance 로 비교한다.
+// normalizedBorder = borderTexels / tileResolution.
+// depthScaleBias = (A, B), A = far / (far - near), B = -near * A.
+// 0 < near < far 인 유한한 원근 투영이며 near 에서 depth 0, far 에서 1 이다.
+// 유효 90도 영역은 [border, 1-border] 이며 렌더링 FOV 는 border 만큼 확장한다.
+// 반환값은 (tileU, tileV, depth). 잘못된 면/뒤쪽 점은 depth -1 로 반환하며 near/far 밖 depth 를 clamp 하지 않는다.
+float3 CalcPointShadowFaceCoord(uint faceIndex, float3 lightToReceiver, float normalizedBorder, float2 depthScaleBias) {
+    float3 facePosition;
+    switch (faceIndex) {
+    case ShaderPointShadowFacePositiveX:
+        facePosition = float3(-lightToReceiver.z, lightToReceiver.y, lightToReceiver.x);
+        break;
+    case ShaderPointShadowFaceNegativeX:
+        facePosition = float3(lightToReceiver.z, lightToReceiver.y, -lightToReceiver.x);
+        break;
+    case ShaderPointShadowFacePositiveY:
+        facePosition = float3(lightToReceiver.x, -lightToReceiver.z, lightToReceiver.y);
+        break;
+    case ShaderPointShadowFaceNegativeY:
+        facePosition = float3(lightToReceiver.x, lightToReceiver.z, -lightToReceiver.y);
+        break;
+    case ShaderPointShadowFacePositiveZ:
+        facePosition = float3(lightToReceiver.x, lightToReceiver.y, lightToReceiver.z);
+        break;
+    case ShaderPointShadowFaceNegativeZ:
+        facePosition = float3(-lightToReceiver.x, lightToReceiver.y, -lightToReceiver.z);
+        break;
+    default:
+        return float3(0.5f, 0.5f, -1.0f);
+    }
+
+    if (facePosition.z <= 0.0f) {
+        return float3(0.5f, 0.5f, -1.0f);
+    }
+    const float invFaceDistance = rcp(facePosition.z);
+    const float2 tileUV = facePosition.xy * ((0.5f - normalizedBorder) * invFaceDistance) + 0.5f;
+    const float depth = depthScaleBias.x + depthScaleBias.y * invFaceDistance;
+    return float3(tileUV, depth);
+}
+
+float EvaluatePointShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 lightToReceiver, float2 depthScaleBias) {
+    const ShaderShadowAtlasData atlas = cameraConstants.shadowAtlas;
+    [branch]
+    if (shadowIndex >= atlas.numShadows) {
+        return 1.0f;
+    }
+
+    const ShaderLocalShadow shadow = GetShaderLocalShadowTable(atlas.shadowTableIndex)[shadowIndex];
+    // 6면 전체가 등록된 경우에만 view 테이블에 접근한다.
+    [branch]
+    if (shadow.numShadowViews != 6 || shadow.firstShadowView >= atlas.numShadowViews || atlas.numShadowViews - shadow.firstShadowView < 6) {
+        return 1.0f;
+    }
+
+    const uint faceIndex = SelectPointShadowFace(lightToReceiver);
+    if (faceIndex == ShaderPointShadowFaceInvalid) {
+        return 1.0f;
+    }
+
+    // 선택한 면의 UV 는 원래 90도 영역인 [border, 1 - border] 안에 들어간다.
+    // 방사 거리가 아닌 면의 전방 거리로 depth 를 비교하며 near/far 밖 receiver 는 제외한다.
+    const float3 shadowCoord = CalcPointShadowFaceCoord(faceIndex, lightToReceiver, shadow.normalizedBorder, depthScaleBias);
+    if (shadowCoord.z < 0.0f || shadowCoord.z > 1.0f) {
+        return 1.0f;
+    }
+
+    // Point 는 월드 축 좌표에서 UV/depth 를 직접 계산하므로 view 행렬은 읽지 않는다.
+    const float4 atlasScaleBias = GetShaderLocalShadowViewTable(atlas.shadowViewTableIndex)[shadow.firstShadowView + faceIndex].atlasScaleBias;
+    const float3 atlasCoord = float3(shadowCoord.xy * atlasScaleBias.xy + atlasScaleBias.zw, shadowCoord.z);
+    Texture2D<float> shadowMap = GetTexture2DFloat(atlas.textureIndex);
+#if SHADOW_MAP_QUALITY == 3
+    const float4 rotMat = GetShadowRotationMatrix(pixelCoord);
+    return SampleShadowMap(shadowMap, atlasCoord, atlas.texelSize, shadow.filterRadius, rotMat);
+#else
+    return SampleShadowMap(shadowMap, atlasCoord, atlas.texelSize);
+#endif
+}
 
 float SampleShadowMapArray_Q0(Texture2DArray<float> shadowMap, float3 shadowCoord, uint textureSlice) {
     return shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy, textureSlice), shadowCoord.z);

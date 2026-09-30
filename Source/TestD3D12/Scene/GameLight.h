@@ -32,7 +32,7 @@ public:
     BE1::Color3                 linearColor = BE1::Color3::white;
     float                       intensity = 1.0f;
     float                       fallOffExponent = 1.25f;
+    float                       shadowOffsetUnits = 1500.0f;
     float                       shadowOffsetFactor = 3.0f;
-    float                       shadowOffsetUnits = 200.0f;
     int                         renderLightHandle = -1;
 };

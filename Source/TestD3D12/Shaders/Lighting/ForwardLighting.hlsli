@@ -48,7 +48,7 @@ float2 CalcPointLightProjectionUV(ShaderPointLight pointLight, float3 worldPosit
     return float2(dot(pointLight.worldToProjectionU, position), dot(pointLight.worldToProjectionV, position));
 }
 
-float3 EvaluatePointLight(ShaderPointLight pointLight, float3 worldPosition, in ShadingParams shading) {
+float3 EvaluatePointLight(ShaderPointLight pointLight, uint2 pixelCoord, float3 worldPosition, in ShadingParams shading) {
     const float3 lightVector = pointLight.origin - worldPosition;
     const float lightDistanceSquared = dot(lightVector, lightVector);
     if (lightDistanceSquared <= FLT_MIN) {
@@ -62,15 +62,27 @@ float3 EvaluatePointLight(ShaderPointLight pointLight, float3 worldPosition, in 
     }
 
     const float3 lightDir = lightVector * rsqrt(lightDistanceSquared);
-    return pointLight.lightColor * attenuation * EvaluateStandardDirectBRDF(shading, lightDir);
+    const float3 lighting = pointLight.lightColor * attenuation * EvaluateStandardDirectBRDF(shading, lightDir);
+    // 조명 계산에서 구한 벡터를 재사용하고, 기여가 없는 픽셀의 shadow 테이블/PCF 접근은 생략한다.
+    [branch]
+    if (!any(lighting > 0.0f)) {
+        return lighting;
+    }
+    return lighting * EvaluatePointShadowLighting(pointLight.shadowIndex, pixelCoord, -lightVector, pointLight.shadowDepthScaleBias);
 }
 
-float3 EvaluateSpotLight(ShaderSpotLight spotLight, float3 worldPosition, in ShadingParams shading) {
+float3 EvaluateSpotLight(ShaderSpotLight spotLight, uint2 pixelCoord, float3 worldPosition, in ShadingParams shading) {
     const float4 projectedPosition = mul(spotLight.viewProjScaleBiasMatrix, float4(worldPosition, 1.0f));
     if (!IsInsideLightVolume(projectedPosition)) {
         return 0.0f;
     }
-    return EvaluateLocalLight(spotLight.origin, spotLight.lightColor, spotLight.fallOffMatrix, spotLight.fallOffExponent, worldPosition, shading);
+    const float3 lighting = EvaluateLocalLight(spotLight.origin, spotLight.lightColor, spotLight.fallOffMatrix, spotLight.fallOffExponent, worldPosition, shading);
+    // 감쇠나 BRDF 로 기여가 사라진 픽셀에서는 shadow 테이블과 PCF 샘플링을 생략한다.
+    [branch]
+    if (!any(lighting > 0.0f)) {
+        return lighting;
+    }
+    return lighting * EvaluateSpotShadowLighting(spotLight.shadowIndex, pixelCoord, worldPosition);
 }
 
 float3 EvaluateBoxDirLight(ShaderBoxDirLight boxDirLight, float3 worldPosition, in ShadingParams shading) {
@@ -94,18 +106,18 @@ float3 EvaluateDirectionalLight(ShaderDirectionalLight directionalLight, in Shad
     return directionalLight.lightColor * EvaluateStandardDirectBRDF(shading, lightDir);
 }
 
-float3 EvaluateShaderLight(uint packedLightRef, float3 worldPosition, in ShadingParams shading) {
+float3 EvaluateShaderLight(uint packedLightRef, uint2 pixelCoord, float3 worldPosition, in ShadingParams shading) {
     const uint lightType = packedLightRef & ShaderLightTypeMask;
     const uint lightTypeIndex = packedLightRef >> ShaderLightTypeBitCount;
 
     if (lightType == ShaderLightTypePoint) {
         const ShaderPointLight pointLight = GetShaderPointLightTable(frameConstants.shaderPointLightTableIndex)[lightTypeIndex];
-        return EvaluatePointLight(pointLight, worldPosition, shading);
+        return EvaluatePointLight(pointLight, pixelCoord, worldPosition, shading);
     }
 
     if (lightType == ShaderLightTypeSpot) {
         const ShaderSpotLight spotLight = GetShaderSpotLightTable(frameConstants.shaderSpotLightTableIndex)[lightTypeIndex];
-        return EvaluateSpotLight(spotLight, worldPosition, shading);
+        return EvaluateSpotLight(spotLight, pixelCoord, worldPosition, shading);
     }
 
     if (lightType == ShaderLightTypeBoxDir) {
@@ -168,7 +180,7 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcDepth, float3 worldPosi
 
             // 현재 lane 의 tile 및 Z-bin 에 포함된 light 만 실제로 계산한다.
             if ((laneLightMask & lightBit) != 0) {
-                directLighting += EvaluateShaderLight(packedLightRef, worldPosition, shading);
+                directLighting += EvaluateShaderLight(packedLightRef, pixelCoord, worldPosition, shading);
             }
 
             waveLightMask &= ~lightBit;
@@ -183,7 +195,7 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcDepth, float3 worldPosi
 
     [loop]
     while (NextShaderLight(lightIterator, shaderLightRef)) {
-        directLighting += EvaluateShaderLight(shaderLightRef.packedLightRef, worldPosition, shading);
+        directLighting += EvaluateShaderLight(shaderLightRef.packedLightRef, pixelCoord, worldPosition, shading);
     }
 
     return directLighting;

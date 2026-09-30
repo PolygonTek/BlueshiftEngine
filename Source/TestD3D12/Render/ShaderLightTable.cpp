@@ -195,7 +195,14 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &sha
     shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
     shaderLight.fallOffExponent = frameLight.fallOffExponent;
     shaderLight.flags = static_cast<uint32_t>(frameLight.flags);
-    shaderLight.padding0 = float3(0.0f, 0.0f, 0.0f);
+    // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
+    shaderLight.shadowIndex = frameLight.localShadowIndex;
+    shaderLight.shadowDepthScaleBias = float2(0.0f, 0.0f);
+    if (frameLight.localShadowIndex != ShaderLocalShadowIndexInvalid) {
+        const BE1::Vec2 depthRange = frameLight.GetPointShadowDepthRange();
+        const float depthScale = depthRange.y / (depthRange.y - depthRange.x);
+        shaderLight.shadowDepthScaleBias = float2(depthScale, -depthRange.x * depthScale);
+    }
 }
 
 void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shaderLight) const {
@@ -212,7 +219,8 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shad
     shaderLight.size = float3(frameLight.size.x, frameLight.size.y, frameLight.size.z);
     shaderLight.flags = static_cast<uint32_t>(frameLight.flags);
     shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
-    shaderLight.padding0 = 0.0f;
+    // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
+    shaderLight.shadowIndex = frameLight.localShadowIndex;
 }
 
 void ShaderLightTable::Build(const FrameLight &frameLight, ShaderBoxDirLight &shaderLight) const {

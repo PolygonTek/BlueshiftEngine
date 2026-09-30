@@ -35,13 +35,6 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     app.SetCameraPitchYaw(15.0f, -120.0f);
     app.SetCameraDistance(5.5f);
 
-    directionalLight.type = RenderLight::Type::Directional;
-    directionalLight.flags = RenderLight::Flag::CastShadows;
-    directionalLight.linearColor = BE1::Color3::white;
-    directionalLight.intensity = 2.0f;
-    UpdateDirectionalLightDirection();
-    directionalLightEnabled = directionalLight.SetEnabled(renderWorld, true);
-
     EnvironmentLight::Desc envLightDesc;
     if (renderWorld->AddEnvironmentLight(envLightDesc)) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
@@ -81,25 +74,31 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     }
 
     renderWorld->AddRenderObject(meshDesc);
+
+    const float meshRadius = BE1::Max(meshAABB.Extents().Length(), RenderLight::MinLightSize);
+
+    pointLight.type = RenderLight::Type::Point;
+    pointLight.flags = RenderLight::Flag::CastShadows;
+    pointLight.linearColor = BE1::Color3(1.0f, 0.8f, 0.19f);
+    pointLight.intensity = 10.0f;
+    pointLight.size.Set(2.5f, 2.5f, 2.5f);
+    pointLight.zNear = BE1::Max(meshRadius * 0.01f, RenderLight::MinLightSize);
+    pointLight.origin.Set(-0.2f, 1.35f, -0.175f);
+    pointLightEnabled = pointLight.SetEnabled(renderWorld, true);
 }
 
 void SceneStaticMesh::Shutdown() {
     if (renderWorld) {
         renderWorld->ClearScene();
     }
-    directionalLight.renderLightHandle = -1;
-    directionalLightEnabled = false;
+    pointLight.renderLightHandle = -1;
+    pointLightEnabled = false;
     testMesh.reset();
     renderWorld = nullptr;
 }
 
 void SceneStaticMesh::Update(uint64_t elapsedUsec) {
     (void)elapsedUsec;
-}
-
-void SceneStaticMesh::UpdateDirectionalLightDirection() {
-    // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
-    directionalLight.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
 }
 
 #ifdef ENABLE_IMGUI
@@ -112,47 +111,66 @@ void SceneStaticMesh::BuildImGui() {
     }
 
     ImGui::Separator();
-    ImGui::Text("Directional Light");
+    ImGui::Text("Point Light");
+    ImGui::BeginDisabled(!testMesh);
 
-    if (ImGui::Checkbox("Enabled##DirectionalLight", &directionalLightEnabled)) {
-        directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
+    if (ImGui::Checkbox("Enabled##PointLight", &pointLightEnabled)) {
+        pointLightEnabled = pointLight.SetEnabled(renderWorld, pointLightEnabled);
     }
 
-    ImGui::BeginDisabled(!directionalLightEnabled);
-    ImGui::TextDisabled("Azimuth: 0 = +X, 90 = +Y; Elevation: 0 = horizon");
+    ImGui::BeginDisabled(!pointLightEnabled);
 
-    bool directionalLightLightingChanged = false;
-    bool directionalLightDirectionChanged = false;
-
-    ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Azimuth##DirectionalLight", &directionalLightAzimuth, 0.0f, 360.0f, "%.1f deg")) {
-        directionalLightDirectionChanged = true;
-    }
+    bool pointLightLightingChanged = false;
+    bool pointLightTransformChanged = false;
+    bool pointLightShapeChanged = false;
+    bool pointLightShadowChanged = false;
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Elevation##DirectionalLight", &directionalLightElevation, -90.0f, 90.0f, "%.1f deg")) {
-        directionalLightDirectionChanged = true;
+    if (ImGui::DragFloat3("Position##PointLight", pointLight.origin.Ptr(), BE1::Max(pointLight.size.x * 0.002f, 0.001f), 0.0f, 0.0f, "%.3f")) {
+        pointLightTransformChanged = true;
     }
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::ColorEdit3("Color##DirectionalLight", directionalLight.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
-        directionalLightLightingChanged = true;
+    if (ImGui::DragFloat("Radius##PointLight", &pointLight.size.x, BE1::Max(pointLight.size.x * 0.002f, 0.001f), RenderLight::MinLightSize, 10000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+        pointLight.size.Set(pointLight.size.x, pointLight.size.x, pointLight.size.x);
+        pointLightShapeChanged = true;
     }
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLight.intensity, 0.0f, 10.0f, "%.3f")) {
-        directionalLightLightingChanged = true;
+    if (ImGui::ColorEdit3("Color##PointLight", pointLight.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
+        pointLightLightingChanged = true;
     }
 
-    if (directionalLightDirectionChanged) {
-        UpdateDirectionalLightDirection();
-        renderWorld->UpdateRenderLightTransform(directionalLight.renderLightHandle, directionalLight.origin, directionalLight.axis);
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::SliderFloat("Intensity##PointLight", &pointLight.intensity, 0.0f, 10.0f, "%.3f")) {
+        pointLightLightingChanged = true;
     }
 
-    if (directionalLightLightingChanged) {
-        renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::DragFloat("Attenuation##PointLight", &pointLight.fallOffExponent, 0.01f, 0.01f, 16.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+        pointLightLightingChanged = true;
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Falloff exponent. Higher values make light fade faster with distance.");
     }
 
+    if (pointLightTransformChanged) {
+        renderWorld->UpdateRenderLightTransform(pointLight.renderLightHandle, pointLight.origin, pointLight.axis);
+    }
+
+    if (pointLightShapeChanged) {
+        renderWorld->UpdateRenderLightShape(pointLight.renderLightHandle, pointLight.type, pointLight.size, pointLight.zNear);
+    }
+
+    if (pointLightLightingChanged) {
+        renderWorld->UpdateRenderLightLighting(pointLight.renderLightHandle, pointLight.linearColor, pointLight.intensity, pointLight.fallOffExponent);
+    }
+
+    if (pointLightShadowChanged) {
+        renderWorld->UpdateRenderLightShadow(pointLight.renderLightHandle, pointLight.shadowOffsetUnits, pointLight.shadowOffsetFactor);
+    }
+
+    ImGui::EndDisabled();
     ImGui::EndDisabled();
 }
 #endif

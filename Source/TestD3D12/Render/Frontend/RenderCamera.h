@@ -16,6 +16,8 @@
 
 #include "RHI/RHI.h"
 #include "Render/RenderFrameSettings.h"
+#include "Render/ShadowAtlas.h"
+#include "Render/ShadowResolutionHistory.h"
 #include "Render/ScreenSpaceAOResources.h"
 #include "Render/ScreenSpaceDepthPyramidResources.h"
 #include "Render/HiZResources.h"
@@ -95,11 +97,11 @@ public:
                                 /// Returns perspective projection frustum bounds.
     const BE1::Frustum &        GetFrustum() const { return frustum; }
 
-                                /// Returns perspective projection frustum planes.
-    const BE1::Plane &          GetFrustumPlane(int index) const { return frustumPlanes[index]; }
+                                /// Returns the six outward-facing view volume planes for either projection type.
+    const BE1::Plane *          GetViewPlanes() const { return viewPlanes; }
 
-                                /// Calculates the requested bounding sphere and/or planes of the camera view between the given distances.
-    void                        CalcSlicedViewVolume(float nearDistance, float farDistance, BE1::Sphere *boundingSphere, BE1::Plane *planes = nullptr) const;
+                                /// Calculates the requested minimum bounding sphere and/or planes of the camera view between the given distances.
+    void                        CalcSlicedViewVolume(float nearDistance, float farDistance, BE1::Sphere *outBoundingSphere, BE1::Plane *outViewPlanes = nullptr) const;
 
     const BE1::Mat4 &           GetViewMatrix() const { return viewMatrix; }
     const BE1::Mat4 &           GetProjMatrix() const { return projMatrix; }
@@ -158,6 +160,7 @@ public:
     const BloomResources &      GetBloomResources() const { return bloomResources; }
 
     bool                        EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, bool needNormalTexture, bool needVelocityTexture, const BE1::Color4 &optimizedClearColor);
+    bool                        EnsureShadowAtlas(const RenderFrameSettings &renderFrameSettings, bool hasShadowCandidates);
     void                        EnsureResolvedDepthTexture(uint32_t width, uint32_t height, uint32_t sampleCount, bool needed);
     bool                        EnsureSceneSnapshotResources(bool needed, bool halfResolution);
     void                        EnsureSSRTraceResources(uint32_t width, uint32_t height, bool needed);
@@ -188,6 +191,9 @@ public:
 
     HiZResources &              GetHiZResources() { return hiZResources; }
     const HiZResources &        GetHiZResources() const { return hiZResources; }
+
+    ShadowAtlas &               GetShadowAtlas() { return shadowAtlas; }
+    const ShadowAtlas &         GetShadowAtlas() const { return shadowAtlas; }
 
     ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() { return screenSpaceDepthPyramidResources; }
     const ScreenSpaceDepthPyramidResources &GetScreenSpaceDepthPyramidResources() const { return screenSpaceDepthPyramidResources; }
@@ -236,8 +242,7 @@ private:
     float                       tanHalfFovX;
     float                       tanHalfFovY;
     BE1::Frustum                frustum;
-    BE1::Plane                  frustumPlanes[6];
-    BE1::Vec3                   frustumPoints[8];
+    BE1::Plane                  viewPlanes[6];
     BE1::OBB                    box; // for orthogoanl projection
 
     ALIGN_AS32 BE1::Mat4        viewMatrix;
@@ -289,6 +294,9 @@ private:
     uint32_t                    currentHistoryTextureIndex = 0;
     bool                        depthHistoryAsRenderTarget = false; // MSAA off, TAA on 상태에서는 depthHistoryTextures 를 렌더 타겟으로 삼는다.
     bool                        historyValid = false;
+
+    ShadowAtlas                 shadowAtlas;
+    ShadowResolutionHistory     localShadowResolutionHistory;
 
     ScreenSpaceDepthPyramidResources screenSpaceDepthPyramidResources;
     ScreenSpaceAOResources      screenSpaceAOResources;

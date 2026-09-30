@@ -17,8 +17,6 @@
 #include "RenderCamera.h"
 #include "Render/RenderUtils.h"
 
-static constexpr float MinLightSize = 0.01f;
-
 void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFlags) {
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Flags)) {
         desc.flags = src.flags;
@@ -48,8 +46,8 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shadow)) {
-        desc.shadowOffsetFactor = src.shadowOffsetFactor;
         desc.shadowOffsetUnits = src.shadowOffsetUnits;
+        desc.shadowOffsetFactor = src.shadowOffsetFactor;
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Transform)) {
@@ -121,9 +119,9 @@ void RenderLight::UpdateLighting(const BE1::Color3 &linearColor, float intensity
     desc.fallOffExponent = fallOffExponent;
 }
 
-void RenderLight::UpdateShadow(float shadowOffsetFactor, float shadowOffsetUnits) {
-    desc.shadowOffsetFactor = shadowOffsetFactor;
+void RenderLight::UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor) {
     desc.shadowOffsetUnits = shadowOffsetUnits;
+    desc.shadowOffsetFactor = shadowOffsetFactor;
 }
 
 void RenderLight::UpdateViewMatrix() {

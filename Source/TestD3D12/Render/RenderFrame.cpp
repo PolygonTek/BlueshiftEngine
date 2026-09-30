@@ -16,11 +16,13 @@
 #include "RenderFrame.h"
 #include "RenderContext.h"
 #include "RenderInternal.h"
-#include "Render/Animation/Skeleton.h"
-#include "Render/Material/Material.h"
-#include "Render/Texture/Texture.h"
+#include "ShadowAtlas.h"
+#include "Animation/Skeleton.h"
+#include "Material/Material.h"
+#include "Texture/Texture.h"
 
 uint64_t                    RenderFrame::globalFrameSerial = 0;
+
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr size_t     FrameMemoryBlockSize = 0x4000000;
 static constexpr int        FrameMemoryAlignment = 32;
@@ -104,6 +106,7 @@ void RenderFrame::Shutdown() {
     shaderLightTable.Shutdown();
     shaderLightCullingTable.Shutdown();
     shaderSurfaceTable.Shutdown();
+    shaderShadowTable.Shutdown();
 
     frameOceanSurface = nullptr;
     frameArena.Shutdown();
@@ -160,32 +163,6 @@ void RenderFrame::EndFrame() {
 
     // 커맨드 버퍼 비우기.
     commands.used = 0;
-}
-
-void RenderFrame::RegisterFrameOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount) {
-    if (frameOceanSurface) {
-        assert(frameOceanSurface->settingsRevision == settingsRevision); // 현재 한 frame 에서는 하나의 ocean simulation 만 지원한다.
-        return;
-    }
-
-    void *memory = MemAlloc(sizeof(FrameOceanSurface));
-    if (!memory) {
-        return;
-    }
-    // 기본 설정의 cascade 계산 후 덮어쓰지 않고, 전달받은 설정으로 바로 생성한다.
-    FrameOceanSurface *data = new (memory) FrameOceanSurface{simulationSettings, surfaceSettings, nullptr, 0, settingsRevision};
-
-    if (surfaceQueries && surfaceQueryCount > 0) {
-        const int queryDataSize = static_cast<int>(surfaceQueryCount * sizeof(OceanSurfaceQueryInput));
-        OceanSurfaceQueryInput *queryCopy = static_cast<OceanSurfaceQueryInput *>(MemAlloc(queryDataSize));
-        if (queryCopy) {
-            BE1::simdProcessor->Memcpy(queryCopy, surfaceQueries, queryDataSize);
-
-            data->surfaceQueries = queryCopy;
-            data->surfaceQueryCount = surfaceQueryCount;
-        }
-    }
-    frameOceanSurface = data;
 }
 
 void RenderFrame::ResetFrameData() {
@@ -599,9 +576,24 @@ FrameSpotLightData *RenderFrame::AllocFrameSpotLightData() {
     return new (memory) FrameSpotLightData();
 }
 
-FrameShadowAtlas *RenderFrame::AllocFrameShadowAtlas(const ShadowAtlas &atlas) {
+FrameOceanSurface *RenderFrame::AllocFrameOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings) {
+    if (frameOceanSurface) {
+        assert(0);
+        return nullptr;
+    }
+
+    void *memory = MemAlloc(sizeof(FrameOceanSurface));
+    if (!memory) {
+        return nullptr;
+    }
+    // 기본 설정의 cascade 계산 후 덮어쓰지 않고, 전달받은 설정으로 바로 생성한다.
+    frameOceanSurface = new (memory) FrameOceanSurface{simulationSettings, surfaceSettings};
+    return frameOceanSurface;
+}
+
+FrameShadowAtlas *RenderFrame::AllocFrameShadowAtlas(const ShadowAtlas &shadowAtlas) {
     if (!renderFrameSettings.shadows || renderFrameSettings.shadowAtlasMaxViews == 0 ||
-        !atlas.GetShadowTexture() || !atlas.GetShadowDSV().IsValid() || !atlas.GetShadowSRV().IsValid()) {
+        !shadowAtlas.GetShadowTexture() || !shadowAtlas.GetShadowDSV().IsValid() || !shadowAtlas.GetShadowSRV().IsValid()) {
         return nullptr;
     }
 
@@ -610,51 +602,53 @@ FrameShadowAtlas *RenderFrame::AllocFrameShadowAtlas(const ShadowAtlas &atlas) {
         return nullptr;
     }
     FrameShadowAtlas *data = new (memory) FrameShadowAtlas();
-    data->shadowTexture = atlas.GetShadowTexture();
-    data->shadowDSV = atlas.GetShadowDSV();
-    data->shadowSRV = atlas.GetShadowSRV();
-    data->size = atlas.GetSize();
+    data->shadowTexture = shadowAtlas.GetShadowTexture();
+    data->shadowDSV = shadowAtlas.GetShadowDSV();
+    data->shadowSRV = shadowAtlas.GetShadowSRV();
+    data->size = shadowAtlas.GetSize();
     data->maxShadowViews = renderFrameSettings.shadowAtlasMaxViews;
     return data;
 }
 
-FrameLocalShadow *RenderFrame::AllocFrameLocalShadow(FrameShadowAtlas &frameShadowAtlas, FrameLight &light) {
-    if (light.localShadowIndex != ~0u || !BE1::HasFlag(light.flags, RenderLight::Flag::CastShadows)) {
+// FrameShadowAtlas 에 shadows 와 필요한 shadowViews 를 추가한다.
+FrameLocalShadow *RenderFrame::AllocFrameLocalShadow(FrameShadowAtlas &frameShadowAtlas, FrameLight &shadowLight) {
+    if (shadowLight.localShadowIndex != ~0u || !BE1::HasFlag(shadowLight.flags, RenderLight::Flag::CastShadows)) {
         return nullptr;
     }
 
-    const uint32_t shadowViewCount = light.type == RenderLight::Type::Spot ? 1u : light.type == RenderLight::Type::Point ? 6u : 0u;
+    const uint32_t shadowViewCount = shadowLight.GetShadowViewCount();
     if (shadowViewCount == 0 || shadowViewCount > frameShadowAtlas.maxShadowViews - frameShadowAtlas.numShadowViews) {
         return nullptr;
     }
 
     if (!frameShadowAtlas.shadowViews) {
-        // 모두 Spot 일 때 광원 수도 maxShadowViews 이다. 사용하지 않는 배열 요소는 생성/초기화하지 않는다.
+        // 최악의 경우 모두 spot shadow 일 때 numShadows == numShadowViews 이므로 maxShadowViews 만큼 shadows 를 할당한다.
         FrameLocalShadow *shadows = static_cast<FrameLocalShadow *>(MemAlloc(sizeof(FrameLocalShadow) * frameShadowAtlas.maxShadowViews));
         FrameLocalShadowView *shadowViews = static_cast<FrameLocalShadowView *>(MemAlloc(sizeof(FrameLocalShadowView) * frameShadowAtlas.maxShadowViews));
         if (!shadows || !shadowViews) {
             return nullptr;
         }
+
         frameShadowAtlas.shadows = shadows;
         frameShadowAtlas.shadowViews = shadowViews;
     }
 
-    const uint32_t shadowIndex = frameShadowAtlas.numShadows;
-    FrameLocalShadow *shadow = new (&frameShadowAtlas.shadows[shadowIndex]) FrameLocalShadow();
-    shadow->light = &light;
-    shadow->firstView = frameShadowAtlas.numShadowViews;
-    shadow->numViews = shadowViewCount;
+    const uint32_t newShadowIndex = frameShadowAtlas.numShadows;
+    FrameLocalShadow *shadow = new (&frameShadowAtlas.shadows[newShadowIndex]) FrameLocalShadow();
+    shadow->light = &shadowLight;
+    shadow->firstShadowView = frameShadowAtlas.numShadowViews;
+    shadow->numShadowViews = shadowViewCount;
 
     for (uint32_t faceIndex = 0; faceIndex < shadowViewCount; ++faceIndex) {
         FrameLocalShadowView *shadowView = new (&frameShadowAtlas.shadowViews[frameShadowAtlas.numShadowViews + faceIndex]) FrameLocalShadowView();
-        shadowView->shadowIndex = shadowIndex;
+        shadowView->shadowIndex = newShadowIndex;
         shadowView->faceIndex = faceIndex;
     }
 
     frameShadowAtlas.numShadowViews += shadowViewCount;
     frameShadowAtlas.numShadows++;
 
-    light.localShadowIndex = shadowIndex;
+    shadowLight.localShadowIndex = newShadowIndex;
     return shadow;
 }
 

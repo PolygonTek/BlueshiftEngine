@@ -32,6 +32,7 @@ public:
     enum class Tag : uint8_t {
         GpuFrame,
         ShadowPass,
+        ShadowAtlas,
         DepthPrepass,
         OpaquePass,
         SkyPass,

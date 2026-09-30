@@ -28,7 +28,9 @@
 struct FrameCamera;
 struct FrameLight;
 struct FrameObject;
+struct FrameSurf;
 struct FrameSkinnedMesh;
+struct FrameShadowAtlas;
 struct FrameCascadedShadow;
 struct DebugDrawData;
 class RenderCamera;
@@ -118,7 +120,7 @@ public:
     void                        UpdateRenderLightShape(int index, RenderLight::Type type, const BE1::Vec3 &size, float zNear);
     void                        UpdateRenderLightProjectionPolicy(int index, const RHI::ProjectionPolicy &projectionPolicy);
     void                        UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity, float fallOffExponent);
-    void                        UpdateRenderLightShadow(int index, float shadowOffsetFactor, float shadowOffsetUnits);
+    void                        UpdateRenderLightShadow(int index, float shadowOffsetUnits, float shadowOffsetFactor);
     void                        RemoveRenderLight(int index);
 
     const EnvironmentLight *    GetEnvironmentLight() const { return hasEnvironmentLight ? &envLight : nullptr; }
@@ -207,9 +209,20 @@ private:
         uint32_t                numSkinnedMeshObjects = 0;
     };
 
+    struct LocalShadowCasterRef {
+        FrameObject *           object;
+        uint32_t                shadowViewIndex;
+    };
+
+    struct LocalShadowSurfRef {
+        const FrameSurf *       surface;
+        uint32_t                shadowViewIndex;
+    };
+
     bool                        IsFrameLightRegisteredInCurrentView(const RenderLight *renderLight) const;
     FrameLight *                RegisterFrameLight(RenderFrame *frame, RenderLight *renderLight);
     FrameObject *               RegisterFrameObject(RenderFrame *frame, RenderObject *renderObject);
+    void                        RegisterFrameOceanSurface(RenderFrame *frame);
     RenderObject *              GetRenderObjectForUpdate(int index, const char *functionName) const;
     RenderLight *               GetRenderLightForUpdate(int index, const char *functionName) const;
     void                        CapturePrevWorldMatrix(RenderObject *renderObject);
@@ -226,10 +239,12 @@ private:
     void                        AddTextMeshes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
     SkyboxState                 GetSkyboxState() const;
     void                        AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
-    void                        FindFrameLights(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
-    void                        SetupShadowAtlas(RenderFrame *frame, FrameCamera *frameCamera);
-    void                        SetupCascadedShadow(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
+    void                        FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
+    void                        SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
+    void                        SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        FindDirectionalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, const FrameCascadedShadow *cascadedShadow);
+    void                        FindLocalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
+    void                        BuildLocalShadowSurfaceLists(RenderFrame *frame, FrameShadowAtlas *frameShadowAtlas);
     static uint32_t             ComputeLightTileRange(const FrameCamera *frameCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax);
     static void                 BuildLightCullingData(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
     static void                 BuildLightZBins(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
@@ -246,18 +261,21 @@ private:
     void                        PrepareDebugDrawPipelines(FrameCamera *frameCamera);
     void                        PrepareOceanSurfacePipeline(FrameCamera *frameCamera);
 
-    void                        DrawCamera(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
+    void                        DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
-    void                        AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameLight *frameLight, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel = 0);
+    const FrameSurf *           AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameLight *frameLight, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel = 0);
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
-    BE1::Array<FrameLight *>    localShadowCandidates = BE1::Array<FrameLight *>(64); // 프런트엔드 전용 임시 목록. 카메라/프레임 간 저장 공간을 재사용한다.
     EnvironmentLight            envLight;
     bool                        hasEnvironmentLight = false;
     OceanSurface                oceanSurface;
     bool                        hasOceanSurface = false;
+
+    BE1::Array<FrameLight *>    localShadowLightCandidates = BE1::Array<FrameLight *>(64);  // 현재 카메라의 shadow light 가 될 수 있는 후보
+    BE1::Array<LocalShadowCasterRef> localShadowCasterRefs = BE1::Array<LocalShadowCasterRef>(256); // 현재 카메라의 모든 shadow caster 목록
+    BE1::Array<LocalShadowSurfRef> localShadowSurfRefs = BE1::Array<LocalShadowSurfRef>(256); // 현재 카메라의 모든 shadow surface 목록
 
     bool                        frameActive = false;
     uint64_t                    frameIndex = 0;

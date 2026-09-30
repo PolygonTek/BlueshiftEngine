@@ -44,6 +44,9 @@ void RenderCamera::Update(const Desc &desc) {
         box.SetExtents(extents);
         box.SetAxis(desc.axis);
 
+        // Calculate view volume planes.
+        box.ToPlanes(viewPlanes);
+
         // 직교 투영 행렬을 계산한다. viewMatrix 가 오른손 좌표계이므로, 오른손 좌표계용 투영 행렬을 계산한다.
         projMatrix.SetOrthoRH(-desc.sizeX, desc.sizeX, -desc.sizeY, desc.sizeY, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ);
     } else {
@@ -57,11 +60,8 @@ void RenderCamera::Update(const Desc &desc) {
         frustum.SetAxis(desc.axis);
         frustum.SetSize(desc.zNear, desc.zFar, desc.zFar * tanHalfFovX, desc.zFar * tanHalfFovY);
 
-        // Calculate view frustum planes.
-        frustum.ToPlanes(frustumPlanes);
-
-        // Calculate view frustum points.
-        frustum.ToPoints(frustumPoints);
+        // Calculate view volume planes.
+        frustum.ToPlanes(viewPlanes);
 
         // 원근 투영 행렬을 계산한다. viewMatrix 가 오른손 좌표계이므로, 오른손 좌표계용 투영 행렬을 계산한다.
         projMatrix.SetPerspectiveRH(desc.fovY, aspectRatio, desc.zNear, desc.zFar, zNegativeOneToOne, reverseZ, desc.infiniteZFar);
@@ -73,9 +73,9 @@ void RenderCamera::Update(const Desc &desc) {
     jitteredInvViewProjMatrix = invViewProjMatrix;
 }
 
-void RenderCamera::CalcSlicedViewVolume(float nearDistance, float farDistance, BE1::Sphere *boundingSphere, BE1::Plane *planes) const {
+void RenderCamera::CalcSlicedViewVolume(float nearDistance, float farDistance, BE1::Sphere *outBoundingSphere, BE1::Plane *outViewPlanes) const {
     assert(farDistance > nearDistance);
-    assert(boundingSphere || planes);
+    assert(outBoundingSphere || outViewPlanes);
 
     if (desc.orthogonal) {
         BE1::OBB viewBox = box;
@@ -83,21 +83,12 @@ void RenderCamera::CalcSlicedViewVolume(float nearDistance, float farDistance, B
         viewBox.SetCenter(desc.origin + desc.axis[EngineAxis::Forward] * (nearDistance + halfDepth));
         viewBox.SetExtents(BE1::Vec3(halfDepth, desc.sizeX, desc.sizeY));
 
-        if (planes) {
-            const BE1::Vec3 &center = viewBox.Center();
-            const BE1::Vec3 &extents = viewBox.Extents();
-            const BE1::Mat3 &axis = viewBox.Axis();
-
-            planes[0] = BE1::Plane(-axis[EngineAxis::Forward], center - axis[EngineAxis::Forward] * extents[EngineAxis::Forward]);
-            planes[1] = BE1::Plane( axis[EngineAxis::Forward], center + axis[EngineAxis::Forward] * extents[EngineAxis::Forward]);
-            planes[2] = BE1::Plane(-axis[EngineAxis::Left], center - axis[EngineAxis::Left] * extents[EngineAxis::Left]);
-            planes[3] = BE1::Plane( axis[EngineAxis::Left], center + axis[EngineAxis::Left] * extents[EngineAxis::Left]);
-            planes[4] = BE1::Plane(-axis[EngineAxis::Up], center - axis[EngineAxis::Up] * extents[EngineAxis::Up]);
-            planes[5] = BE1::Plane( axis[EngineAxis::Up], center + axis[EngineAxis::Up] * extents[EngineAxis::Up]);
+        if (outViewPlanes) {
+            viewBox.ToPlanes(outViewPlanes);
         }
 
-        if (boundingSphere) {
-            *boundingSphere = viewBox.ToSphere();
+        if (outBoundingSphere) {
+            *outBoundingSphere = viewBox.ToSphere();
         }
         return;
     }
@@ -106,12 +97,12 @@ void RenderCamera::CalcSlicedViewVolume(float nearDistance, float farDistance, B
     viewFrustum.MoveNearDistance(nearDistance);
     viewFrustum.MoveFarDistance(farDistance);
 
-    if (planes) {
-        viewFrustum.ToPlanes(planes);
+    if (outViewPlanes) {
+        viewFrustum.ToPlanes(outViewPlanes);
     }
 
-    if (boundingSphere) {
-        *boundingSphere = viewFrustum.ToSphere();
+    if (outBoundingSphere) {
+        *outBoundingSphere = viewFrustum.ToSphere();
     }
 }
 
@@ -560,6 +551,20 @@ bool RenderCamera::EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Fo
     return true;
 }
 
+bool RenderCamera::EnsureShadowAtlas(const RenderFrameSettings &renderFrameSettings, bool hasShadowCandidates) {
+    if (!renderFrameSettings.shadows || renderFrameSettings.shadowAtlasMaxViews == 0) {
+        shadowAtlas.Destroy();
+        return true;
+    }
+
+    // 후보가 생길 때 처음 생성한다. 이미 생성한 atlas 는 후보가 잠시 없어져도 재사용한다.
+    if (!hasShadowCandidates && !shadowAtlas.GetShadowTexture()) {
+        return true;
+    }
+
+    return shadowAtlas.Ensure(renderFrameSettings.shadowAtlasSize, renderFrameSettings.shadowAtlasMaxTileResolution, RenderFrameSettings::ShadowAtlasMinTileResolution);
+}
+
 void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format colorFormat, bool needColorHistory, bool needDepthHistory, const RenderFrameSettings &renderFrameSettings) {
     if (skipPostProcess) {
         DestroyPostProcessResources();
@@ -605,6 +610,7 @@ void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format 
 }
 
 void RenderCamera::InvalidateTemporalHistory() {
+    localShadowResolutionHistory.Reset();
     temporalHistoryInvalidated = true;
     temporalFrameIndex = 0;
     temporalJitterSampleCount = 0;

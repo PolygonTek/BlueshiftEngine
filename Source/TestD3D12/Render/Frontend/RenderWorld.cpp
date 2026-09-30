@@ -284,6 +284,8 @@ int RenderWorld::AddRenderLight(const RenderLight::Desc &desc) {
     }
 
     RenderLight *renderLight = new RenderLight;
+    static uint64_t nextLightId = 0;
+    renderLight->lightId = ++nextLightId;
     renderLight->index = index;
     renderLights[index] = renderLight;
 
@@ -379,10 +381,10 @@ void RenderWorld::UpdateRenderLightLighting(int index, const BE1::Color3 &linear
     }
 }
 
-void RenderWorld::UpdateRenderLightShadow(int index, float shadowOffsetFactor, float shadowOffsetUnits) {
+void RenderWorld::UpdateRenderLightShadow(int index, float shadowOffsetUnits, float shadowOffsetFactor) {
     RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightShadow");
     if (renderLight) {
-        renderLight->UpdateShadow(shadowOffsetFactor, shadowOffsetUnits);
+        renderLight->UpdateShadow(shadowOffsetUnits, shadowOffsetFactor);
     }
 }
 

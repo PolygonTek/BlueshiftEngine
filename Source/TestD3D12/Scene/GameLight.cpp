@@ -44,8 +44,8 @@ bool GameLight::SetEnabled(RenderWorld *renderWorld, bool enabled) {
     desc.linearColor = linearColor;
     desc.intensity = intensity;
     desc.fallOffExponent = fallOffExponent;
-    desc.shadowOffsetFactor = shadowOffsetFactor;
     desc.shadowOffsetUnits = shadowOffsetUnits;
+    desc.shadowOffsetFactor = shadowOffsetFactor;
 
     renderLightHandle = renderWorld->AddRenderLight(desc);
     return renderLightHandle >= 0;

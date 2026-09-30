@@ -39,10 +39,6 @@ BE1::CVar       app_convolutionBloomAperturePreset("app_convolutionBloomAperture
 App             app;
 
 void App::Init(void *mainWindowHandle) {
-#ifdef ENABLE_SHADOW_ATLAS_ALLOCATOR_TESTS
-    std::exit(RunShadowAtlasAllocatorTests());
-#endif
-
     PROFILER_INIT();
 
     loadingSystem.Init();
@@ -118,7 +114,12 @@ void App::Shutdown() {
 void App::Update(uint64_t frameUsec) {
     PROFILER_CPU_SCOPED_EVENT("App::Update");
 
-    uint64_t t0 = BE1::PlatformTime::Microseconds();
+    uint64_t updateUsec = 0;
+    BE1::ScopedCpuTimer updateTimer(updateUsec, true, [this](uint64_t elapsedUsec) noexcept {
+        if (state == State::Running) {
+            UpdateGameFrameTime(elapsedUsec);
+        }
+    });
 
     loadingSystem.ProcessLoadCompletions();
     loadingSystem.ProcessPendingReloads();
@@ -161,9 +162,6 @@ void App::Update(uint64_t frameUsec) {
     UpdateCamera(frameUsec);
 
     CheckModifiedCVars();
-
-    uint64_t t1 = BE1::PlatformTime::Microseconds();
-    UpdateGameFrameTime(t1 - t0);
 }
 
 void App::FixedUpdate(float timeStep) {
@@ -320,7 +318,10 @@ void App::RenderRunningFrame(uint64_t frameUsec) {
         }
     }
 
-    uint64_t t0 = BE1::PlatformTime::Microseconds();
+    uint64_t renderFrontendUsec = 0;
+    BE1::ScopedCpuTimer renderFrontendTimer(renderFrontendUsec, true, [this](uint64_t elapsedUsec) noexcept {
+        UpdateRenderFrontendFrameTime(elapsedUsec);
+    });
 
     renderSystem->UpdateFrame();
 
@@ -339,9 +340,6 @@ void App::RenderRunningFrame(uint64_t frameUsec) {
 #endif
 
     mainRenderContext->EndFrame();
-
-    uint64_t t1 = BE1::PlatformTime::Microseconds();
-    UpdateRenderFrontendFrameTime(t1 - t0);
 }
 
 void App::RenderBootstrapFrame(uint64_t frameUsec) {
@@ -358,8 +356,6 @@ void App::RenderBootstrapFrame(uint64_t frameUsec) {
 
     mainRenderContext->BeginFrame(frameOptions);
 
-    uint64_t t0 = BE1::PlatformTime::Microseconds();
-
     renderSystem->UpdateFrame();
 
     renderWorld->BeginFrame();
@@ -369,9 +365,6 @@ void App::RenderBootstrapFrame(uint64_t frameUsec) {
     renderWorld->EndFrame();
 
     mainRenderContext->EndFrame();
-
-    uint64_t t1 = BE1::PlatformTime::Microseconds();
-    UpdateRenderFrontendFrameTime(t1 - t0);
 }
 
 void App::UpdateFrameTime(uint64_t frameUsec) {
@@ -774,6 +767,14 @@ void App::RenderGUI() {
         mainRenderContext->DrawString(x, y, BE1::va("Light Culling Thread Groups: %llu", renderStats.lightCullingThreadGroupCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Light Culling Z-bins: %u, Memory: %s", renderStats.lightCullingZBinCount, BE1::Str::FormatBytes(statLightCullingZBinBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Light Culling Tile Masks: %u words, Memory: %s", renderStats.lightCullingWordCount, BE1::Str::FormatBytes(statLightCullingWordBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+
+        mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Candidates: %u, Downgraded: %u", renderStats.shadowAtlasCandidateCount, renderStats.shadowAtlasResolutionDowngradeCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Full: %u, View Budget Skipped: %u", renderStats.shadowAtlasAllocationFailureCount, renderStats.shadowAtlasViewBudgetSkippedCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Rendered Views: %u, Draw Surfaces: %u", renderStats.shadowAtlasRenderedViewCount, renderStats.shadowAtlasDrawSurfaceCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+
+        if (renderStats.shadowAtlasFrameAllocationSkippedCount > 0) {
+            mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Frame Allocation Skipped: %u", renderStats.shadowAtlasFrameAllocationSkippedCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        }
 
         mainRenderContext->DrawString(x, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;

@@ -21,6 +21,7 @@ const char *GpuTiming::TagName(Tag tag) {
     static const char *tagNames[static_cast<int>(GpuTiming::Tag::Count)] = {
         "GPU Frame",
         "Shadow Pass",
+        "Shadow Atlas",
         "Depth Prepass",
         "Opaque Pass",
         "Sky Pass",

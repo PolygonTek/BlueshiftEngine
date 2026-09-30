@@ -65,12 +65,6 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
         BE_WARNLOG("RenderContext::Init: failed to create CSM depth texture\n");
     }
 
-    if (initialRenderFrameSettings.shadowAtlasMaxViews == 0) {
-        shadowAtlas.Destroy();
-    } else if (!shadowAtlas.Ensure(initialRenderFrameSettings.shadowAtlasSize, initialRenderFrameSettings.shadowAtlasMaxTileResolution, RenderFrameSettings::ShadowAtlasMinTileResolution)) {
-        BE_WARNLOG("RenderContext::Init: failed to create local shadow atlas\n");
-    }
-
     InitPipelines();
 
     if (!textureStreamingFeedback.Init()) {
@@ -100,8 +94,6 @@ void RenderContext::Shutdown() {
     textureStreamingFeedback.Shutdown();
 
     ReleasePipelines();
-
-    shadowAtlas.Destroy();
 
     DestroyCSMDepthTexture();
     DestroyFrameCompositionTexture();
@@ -547,6 +539,13 @@ RenderContext::Stats RenderContext::GetStats() const {
         snapshot.lightCullingZBinCount = stats.lightCullingZBinCount.load();
         snapshot.lightCullingWordCount = stats.lightCullingWordCount.load();
         snapshot.lightCullingThreadGroupCount = stats.lightCullingThreadGroupCount.load();
+        snapshot.shadowAtlasCandidateCount = stats.shadowAtlasCandidateCount.load();
+        snapshot.shadowAtlasResolutionDowngradeCount = stats.shadowAtlasResolutionDowngradeCount.load();
+        snapshot.shadowAtlasAllocationFailureCount = stats.shadowAtlasAllocationFailureCount.load();
+        snapshot.shadowAtlasViewBudgetSkippedCount = stats.shadowAtlasViewBudgetSkippedCount.load();
+        snapshot.shadowAtlasFrameAllocationSkippedCount = stats.shadowAtlasFrameAllocationSkippedCount.load();
+        snapshot.shadowAtlasRenderedViewCount = stats.shadowAtlasRenderedViewCount.load();
+        snapshot.shadowAtlasDrawSurfaceCount = stats.shadowAtlasDrawSurfaceCount.load();
 
         if (sequence == statSequence.load()) {
             return snapshot;
@@ -572,6 +571,13 @@ void RenderContext::SetStats(const Stats &snapshot) {
     stats.lightCullingZBinCount.store(snapshot.lightCullingZBinCount);
     stats.lightCullingWordCount.store(snapshot.lightCullingWordCount);
     stats.lightCullingThreadGroupCount.store(snapshot.lightCullingThreadGroupCount);
+    stats.shadowAtlasCandidateCount.store(snapshot.shadowAtlasCandidateCount);
+    stats.shadowAtlasResolutionDowngradeCount.store(snapshot.shadowAtlasResolutionDowngradeCount);
+    stats.shadowAtlasAllocationFailureCount.store(snapshot.shadowAtlasAllocationFailureCount);
+    stats.shadowAtlasViewBudgetSkippedCount.store(snapshot.shadowAtlasViewBudgetSkippedCount);
+    stats.shadowAtlasFrameAllocationSkippedCount.store(snapshot.shadowAtlasFrameAllocationSkippedCount);
+    stats.shadowAtlasRenderedViewCount.store(snapshot.shadowAtlasRenderedViewCount);
+    stats.shadowAtlasDrawSurfaceCount.store(snapshot.shadowAtlasDrawSurfaceCount);
 
     statSequence.fetch_add(1);
 }
@@ -654,12 +660,6 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
     // CSM depth texture 가 없거나 해상도가 바뀌었으면 새로 생성한다.
     if (!EnsureCSMDepthTexture(renderFrameSettings.csmResolution)) {
         BE_WARNLOG("RenderContext::BeginFrame: failed to create CSM depth texture\n");
-    }
-
-    if (renderFrameSettings.shadowAtlasMaxViews == 0) {
-        shadowAtlas.Destroy();
-    } else if (!shadowAtlas.Ensure(renderFrameSettings.shadowAtlasSize, renderFrameSettings.shadowAtlasMaxTileResolution, RenderFrameSettings::ShadowAtlasMinTileResolution)) {
-        BE_WARNLOG("RenderContext::BeginFrame: failed to update local shadow atlas\n");
     }
 
     if (options.swapChainOutput && this == renderSystem->mainRenderContext) {

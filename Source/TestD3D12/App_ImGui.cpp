@@ -381,7 +381,7 @@ void App::BuildImGuiShadowAtlasPreview() {
         }
     }
 
-    // 공유 atlas 에 마지막으로 기록할 3D 카메라의 타일만 표시하여 depth 와 경계가 일치하게 한다.
+    // 마지막 3D 카메라의 atlas 와 해당 프레임의 타일 경계를 표시한다.
     const FrameShadowAtlas *shadowAtlas = camera ? camera->frameShadowAtlas : nullptr;
     if (!shadowAtlas || shadowAtlas->size == 0) {
         ImGui::TextDisabled("No active local shadow atlas for this frame.");
@@ -390,16 +390,17 @@ void App::BuildImGuiShadowAtlasPreview() {
 
     uint64_t usedArea = 0;
     for (uint32_t shadowViewIndex = 0; shadowViewIndex < shadowAtlas->numShadowViews; ++shadowViewIndex) {
-        const BE1::Rect &rect = shadowAtlas->shadowViews[shadowViewIndex].tileRect;
+        const FrameLocalShadowView &view = shadowAtlas->shadowViews[shadowViewIndex];
+        const BE1::Rect &rect = view.tileRect;
         usedArea += static_cast<uint64_t>(rect.w) * rect.h;
     }
     const float occupancy = 100.0f * static_cast<float>(usedArea) / (static_cast<uint64_t>(shadowAtlas->size) * shadowAtlas->size);
     ImGui::Text("Atlas: %u x %u | Used: %.1f%%", shadowAtlas->size, shadowAtlas->size, occupancy);
     ImGui::Text("Camera %u | Lights: %u | Views: %u / %u", camera->index, shadowAtlas->numShadows, shadowAtlas->numShadowViews, shadowAtlas->maxShadowViews);
-    ImGui::TextDisabled("Red = depth (0 near, 1 far). Cyan = Spot, orange = Point.");
+    ImGui::TextDisabled("Cyan = Spot, orange = Point.");
 
     static bool showTileBounds = true;
-    ImGui::Checkbox("Tile bounds##ShadowAtlas", &showTileBounds);
+    ImGui::Checkbox("Show tile bounds##ShadowAtlas", &showTileBounds);
 
     const float previewSize = BE1::Min(ImGui::GetFontSize() * 24.0f, ImGui::GetContentRegionAvail().x);
     if (!DrawImGuiTexturePreview(shadowAtlas->shadowTexture, shadowAtlas->shadowSRV, previewSize, true)) {
@@ -448,14 +449,10 @@ void App::BuildImGuiShadowAtlasPreview() {
                 ImGui::Text("Light %u | %s | View %u", shadow.light->index, faceName, shadowViewIndex);
                 ImGui::Text("Tile: (%d, %d), %d x %d | Border: %u", shadowView.tileRect.x, shadowView.tileRect.y, shadowView.tileRect.w, shadowView.tileRect.h, shadowView.borderTexels);
                 ImGui::Text("Resolution: %u requested, %u allocated", shadow.requestedResolution, shadow.resolution);
-                ImGui::Text("Surfaces: %u | Draws: %u", shadowView.numSurfs, shadowView.renderPass.numDrawSurfs);
+                ImGui::Text("Surfaces: %u | Draw surfaces: %u", shadowView.numShadowSurfs, shadowView.renderPass.numDrawSurfs);
                 ImGui::EndTooltip();
             }
         }
-    }
-
-    if (shadowAtlas->numShadowViews == 0) {
-        ImGui::TextDisabled("No local shadow views. Preview shows cleared depth.");
     }
 }
 
@@ -1098,7 +1095,7 @@ void App::BuildImGuiOverlay() {
                         ImGui::SliderInt("Cascade##ShadowMapDepth", &selectedCascade, 0, cascadeCount - 1);
                     }
 
-                    ImGui::TextDisabled("Cascade %d. Red = depth (0 near, 1 far).", selectedCascade);
+                    ImGui::TextDisabled("Cascade %d.", selectedCascade);
                     if (!DrawImGuiTexturePreview(shadowTexture, mainRenderContext->GetCSMDepthSRV(), fontSize * 24.0f, true, static_cast<uint32_t>(selectedCascade))) {
                         ImGui::TextDisabled("Shadow map is unavailable.");
                     }
@@ -1106,7 +1103,57 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
-            if (roundedCollapsingHeader("Local Shadow Atlas##ShadowAtlasHeader")) {
+            if (roundedCollapsingHeader("Shadow Atlas##ShadowAtlasHeader")) {
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::BeginCombo("Atlas size##ShadowAtlas", r_shadowAtlasSize.GetString())) {
+                    static constexpr int atlasSizes[] = { 1024, 2048, 4096, 8192 };
+                    const int currentSize = r_shadowAtlasSize.GetInteger();
+                    for (int atlasSize : atlasSizes) {
+                        const bool selected = atlasSize == currentSize;
+                        if (ImGui::Selectable(BE1::va("%d", atlasSize), selected)) {
+                            r_shadowAtlasSize.SetInteger(atlasSize);
+                        }
+                        if (selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::SetItemTooltip("r_shadowAtlasSize\nAtlas side length in texels. Uses power-of-two sizes; other values are rounded down.");
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::BeginCombo("Max tile resolution##ShadowAtlas", r_shadowAtlasMaxTileResolution.GetString())) {
+                    static constexpr int tileResolutions[] = { 64, 128, 256, 512, 1024, 2048 };
+                    const int currentResolution = r_shadowAtlasMaxTileResolution.GetInteger();
+                    for (int tileResolution : tileResolutions) {
+                        const bool selected = tileResolution == currentResolution;
+                        if (ImGui::Selectable(BE1::va("%d", tileResolution), selected)) {
+                            r_shadowAtlasMaxTileResolution.SetInteger(tileResolution);
+                        }
+                        if (selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::SetItemTooltip("r_shadowAtlasMaxTileResolution\nMaximum tile resolution including border. Applies per face for Point lights. Limited by atlas size; non-power-of-two values are rounded down.");
+
+                int maxShadowViews = r_shadowAtlasMaxViews.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderInt("Max shadow views##ShadowAtlas", &maxShadowViews,
+                    static_cast<int>(r_shadowAtlasMaxViews.GetMinValue()), static_cast<int>(r_shadowAtlasMaxViews.GetMaxValue()), "%d", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_shadowAtlasMaxViews.SetInteger(maxShadowViews);
+                }
+                ImGui::SetItemTooltip("r_shadowAtlasMaxViews\nMaximum shadow views per camera. Spot uses 1 view, Point uses 6. 0 disables local shadows. Ctrl+click to enter a value.");
+
+                float projectedSizeScale = r_shadowProjectedSizeScale.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Projected size scale##ShadowAtlas", &projectedSizeScale,
+                    r_shadowProjectedSizeScale.GetMinValue(), r_shadowProjectedSizeScale.GetMaxValue(), "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_shadowProjectedSizeScale.SetFloat(projectedSizeScale);
+                }
+                ImGui::SetItemTooltip("r_shadowProjectedSizeScale\nScales projected light size when selecting Spot/Point shadow resolution. Higher values request higher resolutions.");
+
                 BuildImGuiShadowAtlasPreview();
             }
 

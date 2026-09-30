@@ -158,6 +158,17 @@ static const uint ShaderShadowDebugModeVisibility = 1;
 static const uint ShaderShadowDebugModeCascadeCoverage = 2;
 static const uint ShaderCSMCascadeCount = 4;
 
+static const uint ShaderLocalShadowIndexInvalid = 0xFFFFFFFFu;
+
+// Point shadow 는 광원 회전과 무관한 월드 축 6면을 사용한다. View 는 firstShadowView + faceIndex 로 찾는다.
+static const uint ShaderPointShadowFacePositiveX = 0;
+static const uint ShaderPointShadowFaceNegativeX = 1;
+static const uint ShaderPointShadowFacePositiveY = 2;
+static const uint ShaderPointShadowFaceNegativeY = 3;
+static const uint ShaderPointShadowFacePositiveZ = 4;
+static const uint ShaderPointShadowFaceNegativeZ = 5;
+static const uint ShaderPointShadowFaceInvalid = 0xFFFFFFFFu;
+
 static const uint ShaderCameraFlagProjectionOrthogonal = 1u << 0;
 static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
 static const uint ShaderCameraFlagUseDirectionalLight = 1u << 2;
@@ -698,11 +709,14 @@ struct ShaderPointLight {
     float3 lightColor;
     float fallOffExponent;
     uint flags;
-    float3 padding0;
+    uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
+    float2 shadowDepthScaleBias; // Point 면의 전방 거리 d 로 depth = X + Y / d 를 계산한다.
 };
 
 #ifdef __cplusplus
 static_assert(sizeof(ShaderPointLight) == 80, "ShaderPointLight must remain a tightly packed StructuredBuffer element");
+static_assert(offsetof(ShaderPointLight, shadowIndex) == 68, "Point shadow index must reuse the existing padding");
+static_assert(offsetof(ShaderPointLight, shadowDepthScaleBias) == 72, "Point shadow depth coefficients must reuse the remaining padding");
 #endif
 
 struct ShaderSpotLight {
@@ -715,8 +729,13 @@ struct ShaderSpotLight {
     float3 size;
     uint flags;
     float3 lightColor;
-    float padding0;
+    uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderSpotLight) == 176, "ShaderSpotLight must remain a tightly packed StructuredBuffer element");
+static_assert(offsetof(ShaderSpotLight, shadowIndex) == 172, "Spot shadow index must reuse the existing padding");
+#endif
 
 struct ShaderBoxDirLight {
     row_major float4x4 worldToLightVolumeMatrix;
@@ -763,6 +782,44 @@ struct ShadowViewConstants {
 
 #ifdef __cplusplus
 static_assert(sizeof(ShadowViewConstants) == 80, "ShadowViewConstants must match the HLSL constant-buffer layout");
+#endif
+
+// 광원 하나의 샘플링 정보. 광원 타입은 ShaderPointLight/ShaderSpotLight 에서 이미 결정된다.
+// 인덱스는 현재 카메라의 GPU 테이블 기준이며 CPU allocator handle 이나 영속 광원 ID 가 아니다.
+struct ShaderLocalShadow {
+    uint firstShadowView;       // View 테이블에서 이 광원의 첫 요소. Point 6면도 연속된 요소를 사용한다.
+    uint numShadowViews;        // Spot: 1, Point: 6. 0 이면 유효한 view 가 없다.
+    float filterRadius;        // Atlas texel 단위의 PCF 반경. 업로드 시 border 안에 들어가도록 제한한다.
+    float normalizedBorder;    // borderTexels / 할당된 타일 해상도. Point 는 모든 면이 같은 해상도/border 를 사용한다.
+};
+
+// Spot 한 개 또는 Point 한 면의 샘플링 정보. 렌더링용 ShadowViewConstants 와 별도다.
+struct ShaderLocalShadowView {
+    // world position -> homogeneous tile coordinate. XYZ 를 W 로 나눈 뒤 XY 는 타일 전체의 UV (Y down), Z 는 비교 depth [0, 1].
+    // Border 를 포함한 렌더링 투영을 사용하며 near = 0, far = 1 이다. Perspective divide 전 W <= 0 은 샘플링하지 않는다.
+    // Point 의 W 는 선택한 면의 전방 거리 max(abs(worldPosition - lightOrigin)) 이며 방사 거리가 아니다.
+    row_major float4x4 worldToShadowCoordMatrix;
+    float4 atlasScaleBias;      // XY = tileSize / atlasSize, ZW = tileOrigin / atlasSize. atlasUV = tileUV * XY + ZW.
+};
+
+// 현재 카메라의 atlas 와 두 StructuredBuffer 를 참조하는 샘플링 데이터.
+struct ShaderShadowAtlasData {
+    uint textureIndex;          // Texture2D<float> 의 bindless SRV index.
+    uint shadowTableIndex;      // StructuredBuffer<ShaderLocalShadow> 의 bindless SRV index.
+    uint shadowViewTableIndex;  // StructuredBuffer<ShaderLocalShadowView> 의 bindless SRV index.
+    uint numShadows;            // 0 이면 atlas/테이블에 접근하지 않는다. 업로드와 depth 기록을 마친 뒤에만 활성화한다.
+    float2 texelSize;           // 1 / atlas 크기. 모든 타일의 PCF offset 에 공유한다.
+    uint numShadowViews;
+    uint padding;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(ShaderLocalShadow) == 16, "ShaderLocalShadow must match the HLSL structured-buffer stride");
+static_assert(offsetof(ShaderLocalShadow, numShadowViews) == 4 && offsetof(ShaderLocalShadow, filterRadius) == 8 && offsetof(ShaderLocalShadow, normalizedBorder) == 12, "Local shadow field offsets must match HLSL");
+static_assert(sizeof(ShaderLocalShadowView) == 80, "ShaderLocalShadowView must match the HLSL structured-buffer stride");
+static_assert(offsetof(ShaderLocalShadowView, atlasScaleBias) == 64, "Local shadow view field offsets must match HLSL");
+static_assert(sizeof(ShaderShadowAtlasData) == 32, "ShaderShadowAtlasData must match the HLSL constant-buffer layout");
+static_assert(offsetof(ShaderShadowAtlasData, numShadows) == 12 && offsetof(ShaderShadowAtlasData, texelSize) == 16 && offsetof(ShaderShadowAtlasData, numShadowViews) == 24 && offsetof(ShaderShadowAtlasData, padding) == 28, "Shadow atlas field offsets must match HLSL");
 #endif
 
 // CSM 을 샘플링하는 데 필요한 데이터.
@@ -835,10 +892,12 @@ struct CameraConstants {
     uint aoTextureIndex;
 
     ShaderCSMData csm;
+    ShaderShadowAtlasData shadowAtlas;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(CameraConstants) == 960, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, csm) == 704 && offsetof(CameraConstants, shadowAtlas) == 960, "Shadow atlas data must follow the existing camera constants");
+static_assert(sizeof(CameraConstants) == 992, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {

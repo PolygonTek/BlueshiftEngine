@@ -19,6 +19,7 @@
 #include "RenderCamera.h"
 #include "Render/RenderInternal.h"
 #include "Render/RenderUtils.h"
+#include "Render/LocalShadowCasterCuller.h"
 #include "Render/Animation/Skeleton.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
@@ -76,10 +77,10 @@ static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubM
     return featureSet;
 }
 
-void RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameLight *frameLight, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel) {
+const FrameSurf *RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameLight *frameLight, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel) {
     if (frameCamera->numFrameSurfs + 1 > frameCamera->maxFrameSurfs) {
         BE_WARNLOG("RenderWorld::AddFrameSurf: not enough available visible surfaces\n");
-        return;
+        return nullptr;
     }
 
     assert(material);
@@ -93,7 +94,7 @@ void RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, Fra
 
     if (!subMesh->vertexBuffer || !indexBuffer || (subMesh->vertWeights && !subMesh->vertexWeightBuffer)) {
         BE_WARNLOG("RenderWorld::AddFrameSurf: failed to prepare static submesh buffers\n");
-        return;
+        return nullptr;
     }
 
     // 카메라 뷰 공간 z 깊이를 미리 계산한다 (불필요한 x, y 계산 생략)
@@ -110,6 +111,9 @@ void RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, Fra
     const FrameSkinnedMesh *frameSkinnedMesh = frameObject->skinnedMesh;
 
     FrameSurf *drawSurf = (FrameSurf *)frame->MemAlloc(sizeof(FrameSurf));
+    if (!drawSurf) {
+        return nullptr;
+    }
     drawSurf->index = frameCamera->numFrameSurfs;
     drawSurf->space = frameObject;
     drawSurf->subMesh = subMesh;
@@ -124,6 +128,7 @@ void RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, Fra
     drawSurf->shadowCascadeMask = shadowCascadeMask;
 
     frameCamera->frameSurfs[frameCamera->numFrameSurfs++] = drawSurf;
+    return drawSurf;
 }
 
 void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
@@ -626,20 +631,24 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 }
 
-void RenderWorld::DrawCamera(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
+void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::DrawCamera");
 
-    // RenderObject 중에서 컬링한 오브젝트를 프레임 데이터에 FrameObject 로 등록한다.
+    // RenderObject 중에서 컬링한 오브젝트를 프레임 스냅샷에 FrameObject 로 등록한다.
     FindFrameObjects(frame, renderCamera, frameCamera);
 
-    // RenderLight 중에서 컬링한 라이트를 프레임 데이터에 FrameLight 로 등록한다.
+    // RenderLight 중에서 컬링한 라이트를 프레임 스냅샷에 FrameLight 로 등록한다.
     FindFrameLights(frame, renderCamera, frameCamera);
 
-    // 우선순위에 따라 local shadow 타일을 할당하고 카메라 전용 snapshot 에 등록한다.
-    SetupShadowAtlas(frame, frameCamera);
-
     // 각 CSM split 의 receiver 영역으로 directional shadow 투영을 준비하고 caster 를 수집한다.
-    SetupCascadedShadow(frame, renderCamera, frameCamera);
+    SetupFrameCascadedShadow(frame, renderCamera, frameCamera);
+
+    // local shadow 들을 우선순위에 따라 atlas 에 타일을 할당하고 atlas 는 frameCamera 에 등록한다.
+    SetupFrameShadowAtlas(frame, renderCamera, frameCamera);
+
+    // RenderObject 중에서 shadow caster 가 될 오브젝트들을 프레임 스냅샷에 FrameObject 로 등록한다.
+    // 카메라에 보이진 않지만 shadow caster 가 될 수 있는 오브젝트도 공통 FrameObject 로 등록한다.
+    FindLocalShadowCasters(frame, renderCamera, frameCamera);
 
     // frameObjects 중에서 mesh surface 들을 frameCamera->frameSurfs 에 추가한다.
     AddMeshes(frame, renderCamera, frameCamera);
@@ -654,15 +663,21 @@ void RenderWorld::DrawCamera(RenderFrame *frame, const RenderCamera *renderCamer
     AddSkyBoxMeshes(frame, renderCamera, frameCamera);
 
     // Ocean surface 와 query 정보를 프레임 데이터에 등록한다.
-    if (hasOceanSurface) {
-        frame->RegisterFrameOceanSurface(oceanSurface.desc.simulation, oceanSurface.desc.surface, oceanSurface.revision, oceanSurface.queries.Ptr(), static_cast<uint32_t>(oceanSurface.queries.Count()));
-    }
+    RegisterFrameOceanSurface(frame);
+
+    const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
 
     // CSM 렌더 패스를 구성한다.
     if (frameCamera->frameCascadedShadow) {
-        const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
         for (uint32_t cascadeIndex = 0; cascadeIndex < frameCamera->frameCascadedShadow->cascadeCount; cascadeIndex++) {
             renderPassBuilder.BuildCascadedShadow(frame, frameCamera->frameCascadedShadow, cascadeIndex, frameCamera->frameSurfs, frameCamera->numFrameSurfs, allowAsyncPSOBuild);
+        }
+    }
+
+    // Local shadow view 별로 atlas 타일의 렌더 패스를 구성한다.
+    if (frameCamera->frameShadowAtlas) {
+        for (uint32_t shadowViewIndex = 0; shadowViewIndex < frameCamera->frameShadowAtlas->numShadowViews; shadowViewIndex++) {
+            renderPassBuilder.BuildLocalShadow(frame, frameCamera->frameShadowAtlas, shadowViewIndex, allowAsyncPSOBuild);
         }
     }
 
@@ -742,7 +757,9 @@ static float3x4 BuildWorldToShadowCoordMatrix(const BE1::Mat4 &viewProjMatrix) {
     return matrix;
 }
 
-void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
+void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::SetupFrameCascadedShadow");
+
     if (!frameCamera->directionalLightVisible) {
         return;
     }
@@ -771,25 +788,25 @@ void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *re
     const float usableShadowResolution = static_cast<float>(shadowMapResolution - 2 * shadowMapBorderTexels);
     const float filterResolutionScale = usableShadowResolution / referenceUsableResolution;
 
-    FrameCascadedShadow *cascadedShadow = new (frame->MemAlloc(sizeof(FrameCascadedShadow))) FrameCascadedShadow();
-    cascadedShadow->cascadeCount = frameSettings.csmCascadeCount;
+    FrameCascadedShadow *frameCascadedShadow = new (frame->MemAlloc(sizeof(FrameCascadedShadow))) FrameCascadedShadow();
+    frameCascadedShadow->cascadeCount = frameSettings.csmCascadeCount;
 
     // cascade 별 distance 를 계산한다.
-    ComputeCSMSplitDistances(cameraDesc.zNear, csmMaxDistance, frameSettings.csmSplitLambda, cascadedShadow->cascadeCount, cameraDesc.orthogonal, cascadedShadow->splitDistances);
+    ComputeCSMSplitDistances(cameraDesc.zNear, csmMaxDistance, frameSettings.csmSplitLambda, frameCascadedShadow->cascadeCount, cameraDesc.orthogonal, frameCascadedShadow->splitDistances);
 
     // 모든 cascade 의 caster shadow volume 검사에 사용할 전체 CSM 카메라 view planes 를 구한다.
-    renderCamera->CalcSlicedViewVolume(cameraDesc.zNear, csmMaxDistance, nullptr, cascadedShadow->viewVolumePlanes);
+    renderCamera->CalcSlicedViewVolume(cameraDesc.zNear, csmMaxDistance, nullptr, frameCascadedShadow->viewPlanes);
 
     // 각 cascade 의 receiver 범위로 projection 과 caster 컬링 경계를 함께 정한다.
-    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < frameCascadedShadow->cascadeCount; cascadeIndex++) {
         // blending 중인 cascade 는 이전 receiver 구간까지 포함하여 map coverage overlap 을 보장한다.
-        const float cascadeNear = (cascadeIndex == 0 || frameSettings.csmBlendFraction <= 0.0f) ? cascadedShadow->splitDistances[cascadeIndex] : cascadedShadow->splitDistances[cascadeIndex - 1];
-        const float cascadeFar = cascadedShadow->splitDistances[cascadeIndex + 1];
+        const float cascadeNear = (cascadeIndex == 0 || frameSettings.csmBlendFraction <= 0.0f) ? frameCascadedShadow->splitDistances[cascadeIndex] : frameCascadedShadow->splitDistances[cascadeIndex - 1];
+        const float cascadeFar = frameCascadedShadow->splitDistances[cascadeIndex + 1];
 
         BE1::Sphere cascadeSphere;
         renderCamera->CalcSlicedViewVolume(cascadeNear, cascadeFar, &cascadeSphere);
 
-        CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
+        CSMCascade &cascade = frameCascadedShadow->cascades[cascadeIndex];
         if (!CalcCSMCascadeProjection(cascade, directionalLight->axis, cascadeSphere, shadowMapResolution, shadowMapBorderTexels)) {
             return;
         }
@@ -798,43 +815,43 @@ void RenderWorld::SetupCascadedShadow(RenderFrame *frame, const RenderCamera *re
 
         // worldToShadowCoordMatrix * worldPos = shadowCoord (UV.xy, depth.z).
         // near 밖 caster 는 depth clamp 로 처리하므로 caster 수집 후 projection 을 바꾸지 않는다.
-        cascadedShadow->shaderData.worldToShadowCoordMatrices[cascadeIndex] = BuildWorldToShadowCoordMatrix(cascade.viewProjMatrix);
+        frameCascadedShadow->shaderData.worldToShadowCoordMatrices[cascadeIndex] = BuildWorldToShadowCoordMatrix(cascade.viewProjMatrix);
     }
 
     float cascadeFilterRadii[RenderFrameSettings::CSMCascadeCount] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    const float cascade0WorldUnitsPerTexel = cascadedShadow->cascades[0].worldUnitsPerTexel;
+    const float cascade0WorldUnitsPerTexel = frameCascadedShadow->cascades[0].worldUnitsPerTexel;
     const float cascade0FilterRadius = frameSettings.shadowMapFilterRadius * filterResolutionScale;
     const float minFilterRadius = RenderFrameSettings::ShadowMapFilterRadiusMin * filterResolutionScale;
     const float worldFilterRadius = cascade0FilterRadius * cascade0WorldUnitsPerTexel;
 
-    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
-        const float worldUnitsPerTexel = cascadedShadow->cascades[cascadeIndex].worldUnitsPerTexel;
+    for (uint32_t cascadeIndex = 0; cascadeIndex < frameCascadedShadow->cascadeCount; cascadeIndex++) {
+        const float worldUnitsPerTexel = frameCascadedShadow->cascades[cascadeIndex].worldUnitsPerTexel;
         cascadeFilterRadii[cascadeIndex] = BE1::Clamp(worldFilterRadius / worldUnitsPerTexel, minFilterRadius, cascade0FilterRadius);
     }
 
     // RenderObject 를 한 번 순회하여 caster 와 cascade mask 를 수집한다.
-    FindDirectionalShadowCasters(frame, renderCamera, cascadedShadow);
+    FindDirectionalShadowCasters(frame, renderCamera, frameCascadedShadow);
 
-    cascadedShadow->depthTexture = depthTexture;
+    frameCascadedShadow->depthTexture = depthTexture;
 
-    cascadedShadow->shaderData.textureIndex = depthTexture->GetBindlessIndex(RHI::ViewType::SRV, renderContext->GetCSMDepthSRV());
-    cascadedShadow->shaderData.cascadeCount = cascadedShadow->cascadeCount;
-    cascadedShadow->shaderData.maxDistance = csmMaxDistance;
+    frameCascadedShadow->shaderData.textureIndex = depthTexture->GetBindlessIndex(RHI::ViewType::SRV, renderContext->GetCSMDepthSRV());
+    frameCascadedShadow->shaderData.cascadeCount = frameCascadedShadow->cascadeCount;
+    frameCascadedShadow->shaderData.maxDistance = csmMaxDistance;
 
-    cascadedShadow->shaderData.cascadeFilterRadii = float4(cascadeFilterRadii[0], cascadeFilterRadii[1], cascadeFilterRadii[2], cascadeFilterRadii[3]);
+    frameCascadedShadow->shaderData.cascadeFilterRadii = float4(cascadeFilterRadii[0], cascadeFilterRadii[1], cascadeFilterRadii[2], cascadeFilterRadii[3]);
 
     const float texelSize = 1.0f / shadowMapResolution;
-    cascadedShadow->shaderData.texelSize = float2(texelSize, texelSize);
-    cascadedShadow->shaderData.normalizedBorder = shadowMapBorderTexels * texelSize;
-    const float usableMapWidth = 1.0f - 2.0f * cascadedShadow->shaderData.normalizedBorder;
+    frameCascadedShadow->shaderData.texelSize = float2(texelSize, texelSize);
+    frameCascadedShadow->shaderData.normalizedBorder = shadowMapBorderTexels * texelSize;
+    const float usableMapWidth = 1.0f - 2.0f * frameCascadedShadow->shaderData.normalizedBorder;
     const float cascadeBlendWidth = usableMapWidth * frameSettings.csmBlendFraction;
-    cascadedShadow->shaderData.invBlendWidth = cascadeBlendWidth > 0.0f ? 1.0f / cascadeBlendWidth : 0.0f;
+    frameCascadedShadow->shaderData.invBlendWidth = cascadeBlendWidth > 0.0f ? 1.0f / cascadeBlendWidth : 0.0f;
 
     const float farFadeRange = (csmMaxDistance - cameraDesc.zNear) * frameSettings.csmFadeFraction;
-    cascadedShadow->shaderData.farFadeStart = csmMaxDistance - farFadeRange;
-    cascadedShadow->shaderData.invFarFadeRange = 1.0f / farFadeRange;
+    frameCascadedShadow->shaderData.farFadeStart = csmMaxDistance - farFadeRange;
+    frameCascadedShadow->shaderData.invFarFadeRange = 1.0f / farFadeRange;
 
-    frameCamera->frameCascadedShadow = cascadedShadow;
+    frameCamera->frameCascadedShadow = frameCascadedShadow;
 }
 
 static float CalcDirectionalShadowSquaredLODErrorLimit(const FrameCascadedShadow *cascadedShadow, uint8_t shadowCascadeMask, const BE1::Mat3x4 &worldMatrix, float shadowTexelErrorLimit) {
@@ -864,7 +881,7 @@ void RenderWorld::FindDirectionalShadowCasters(RenderFrame *frame, const RenderC
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindDirectionalShadowCasters");
 
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
-    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
+    const bool renderStaticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
     const float meshLODPixelError = frame->GetRenderFrameSettings().meshLODPixelError;
 
     for (RenderObject *renderObject : renderObjects) {
@@ -876,7 +893,7 @@ void RenderWorld::FindDirectionalShadowCasters(RenderFrame *frame, const RenderC
             continue;
         }
 
-        if (staticOnly && !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::Static)) {
+        if (renderStaticOnly && !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::Static)) {
             continue;
         }
 
@@ -884,7 +901,7 @@ void RenderWorld::FindDirectionalShadowCasters(RenderFrame *frame, const RenderC
         for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
             const CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
 
-            if (!CullShadowCaster(cascadedShadow->viewVolumePlanes, cascade.shadowMapBounds, renderObject->worldAABB)) {
+            if (!CullShadowCaster(cascadedShadow->viewPlanes, cascade.shadowMapBounds, renderObject->worldAABB)) {
                 shadowCascadeMask |= (uint8_t)BIT(cascadeIndex);
             }
         }
@@ -915,6 +932,167 @@ void RenderWorld::FindDirectionalShadowCasters(RenderFrame *frame, const RenderC
         }
 
         frameObject->shadowCascadeMask |= shadowCascadeMask;
+    }
+}
+
+static float CalcLocalShadowTexelsPerWorldUnit(const FrameLocalShadowView &shadowView, float minDepth) {
+    const BE1::Frustum &frustum = shadowView.frustum;
+
+    // 광원 near plane 에 걸치거나 뒤에 있는 caster 는 카메라 LOD 와 동일하게 LOD 0 를 사용한다.
+    if (minDepth <= frustum.GetNearDistance()) {
+        return 0.0f;
+    }
+
+    // border 만큼 확장된 frustum 과 실제 할당된 전체 tile 크기를 함께 사용한다.
+    // 할당 실패로 낮아진 해상도도 반영하며 border 를 이중으로 차감하지 않는다.
+    const float projectedTexels = 0.5f * frustum.GetFarDistance() * BE1::Max(shadowView.tileRect.w / frustum.GetLeft(), shadowView.tileRect.h / frustum.GetUp());
+    return projectedTexels / minDepth;
+}
+
+void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindLocalShadowCasters");
+
+    FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
+    if (!frameShadowAtlas || frameShadowAtlas->numShadowViews == 0) {
+        return;
+    }
+
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    const bool renderStaticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
+
+    const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
+    const float meshLODPixelError = frame->GetRenderFrameSettings().meshLODPixelError;
+
+    // shadow caster 정보를 담는 배열
+    localShadowCasterRefs.SetCount(0, false);
+
+    // 전체 render objects 를 순회하면서 shadow caster 가 될 수 있는 오브젝트들은 frame object 로 등록한다.
+    for (RenderObject *renderObject : renderObjects) {
+        if (!renderObject || !renderObject->desc.meshInstance || !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::CastShadows)) {
+            continue;
+        }
+
+        if (!IsRenderLayerVisible(cameraDesc.layerMask, renderObject->desc.layer) ||
+            (renderStaticOnly && !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::Static))) {
+            continue;
+        }
+
+        if (renderObject->worldAABB.IsCleared()) {
+            continue;
+        }
+
+        FrameObject *frameObject = nullptr;
+        bool calcShadowLOD = false;
+        bool useFinestLOD = false;
+        float finestTexelsPerWorldUnit = 0.0f;
+        LocalShadowCasterCuller casterCuller(renderObject->worldAABB, viewPlanes);
+
+        for (uint32_t shadowIndex = 0; shadowIndex < frameShadowAtlas->numShadows; ++shadowIndex) {
+            const FrameLocalShadow &shadow = frameShadowAtlas->shadows[shadowIndex];
+            const FrameLight &light = *shadow.light;
+
+            // Point 라이트의 영향 범위는 광원당 한 번 검사하고, 통과한 경우에만 6면에 접근한다.
+            if (light.type == RenderLight::Type::Point && casterCuller.CullPointLight(light.origin, shadow.squaredRadius)) {
+                continue;
+            }
+
+            bool registrationFailed = false;
+            const uint32_t endShadowView = shadow.firstShadowView + shadow.numShadowViews;
+            for (uint32_t shadowViewIndex = shadow.firstShadowView; shadowViewIndex < endShadowView; ++shadowViewIndex) {
+                FrameLocalShadowView &shadowView = frameShadowAtlas->shadowViews[shadowViewIndex];
+
+                // shadow frustum 과 카메라 view volume 기준으로 shadow caster 를 컬링한다.
+                float minDepth;
+                if (casterCuller.Cull(shadowView, shadow.viewPlaneToOriginDistances, minDepth)) {
+                    continue;
+                }
+
+                if (!frameObject) {
+                    const bool alreadyRegistered = IsFrameObjectRegisteredInCurrentView(renderObject);
+                    frameObject = RegisterFrameObject(frame, renderObject);
+                    if (!frameObject) {
+                        registrationFailed = true;
+                        break;
+                    }
+
+                    if (!alreadyRegistered) {
+                        // shadow caster 전용 객체에는 motion history 가 필요 없지만 공통 surface 업로드를 위해 두 행렬을 초기화한다.
+                        frameObject->worldMatrix = renderObject->GetWorldMatrix();
+                        frameObject->prevWorldMatrix = frameObject->worldMatrix;
+                    }
+
+                    // 이미 공유 LOD 가 0 으로 결정되었거나 LOD 를 명시한 경우 추가 계산이 필요 없다.
+                    if (frameObject->meshLOD < 0 && meshLODPixelError > 0.0f && (!frameObject->IsRenderable() || frameObject->squaredLODErrorLimit > 0.0f)) {
+                        const Mesh *mesh = frameObject->meshInstance->GetSourceMesh().get();
+                        calcShadowLOD = mesh && mesh->HasLODs();
+                    }
+
+                    frameObject->firstLocalShadowCasterRef = static_cast<uint32_t>(localShadowCasterRefs.Count());
+                    frameObject->flags |= FrameObject::Flag::LocalShadowCaster;
+                }
+
+                if (calcShadowLOD && !useFinestLOD) {
+                    const float texelsPerWorldUnit = CalcLocalShadowTexelsPerWorldUnit(shadowView, minDepth);
+                    useFinestLOD = texelsPerWorldUnit <= 0.0f;
+                    finestTexelsPerWorldUnit = BE1::Max(finestTexelsPerWorldUnit, texelsPerWorldUnit);
+                }
+
+                // localShadowCasterRefs 이 꽉차면 2배씩 용량을 증가시킨다.
+                if (localShadowCasterRefs.Count() == localShadowCasterRefs.Capacity()) {
+                    localShadowCasterRefs.Reserve(BE1::Max(256, localShadowCasterRefs.Capacity() * 2));
+                }
+
+                LocalShadowCasterRef &casterRef = localShadowCasterRefs.Alloc();
+                casterRef.object = frameObject; // shadow caster object
+                casterRef.shadowViewIndex = shadowViewIndex; // shadow atlas 의 shadow view index
+
+                frameObject->numLocalShadowCasterRefs++;
+            }
+
+            // 등록 실패 시 이후 광원에서도 재시도하지 않고 다음 오브젝트로 넘어간다.
+            if (registrationFailed) {
+                break;
+            }
+        }
+
+        if (calcShadowLOD) {
+            // 모든 관련 shadow view 중 가장 정밀한 texel 밀도를 선택한 뒤 world scale 은 객체당 한 번만 적용한다.
+            const float squaredShadowLODErrorLimit = useFinestLOD ? 0.0f : CalcLocalLODErrorLimitSqr(frameObject->worldMatrix, finestTexelsPerWorldUnit, meshLODPixelError);
+            const bool hasSharedLOD = BE1::HasFlag(frameObject->flags, FrameObject::Flag::CameraVisible) || frameObject->shadowCascadeMask != 0;
+            frameObject->squaredLODErrorLimit = hasSharedLOD ? BE1::Min(frameObject->squaredLODErrorLimit, squaredShadowLODErrorLimit) : squaredShadowLODErrorLimit;
+        }
+    }
+}
+
+void RenderWorld::RegisterFrameOceanSurface(RenderFrame *frame) {
+    assert(frameActive);
+
+    if (!hasOceanSurface) {
+        return;
+    }
+
+    if (const FrameOceanSurface *frameOceanSurface = frame->GetFrameOceanSurface()) {
+        assert(frameOceanSurface->settingsRevision == oceanSurface.revision); // 현재 한 frame 에서는 하나의 ocean simulation 만 지원한다.
+        return;
+    }
+
+    FrameOceanSurface *frameOceanSurface = frame->AllocFrameOceanSurface(oceanSurface.desc.simulation, oceanSurface.desc.surface);
+    if (!frameOceanSurface) {
+        return;
+    }
+    frameOceanSurface->settingsRevision = oceanSurface.revision;
+
+    const OceanSurfaceQueryInput *surfaceQueries = oceanSurface.queries.Ptr();
+    const uint32_t surfaceQueryCount = static_cast<uint32_t>(oceanSurface.queries.Count());
+    if (surfaceQueries && surfaceQueryCount > 0) {
+        const int queryDataSize = static_cast<int>(surfaceQueryCount * sizeof(OceanSurfaceQueryInput));
+        OceanSurfaceQueryInput *queryCopy = static_cast<OceanSurfaceQueryInput *>(frame->MemAlloc(queryDataSize));
+        if (queryCopy) {
+            BE1::simdProcessor->Memcpy(queryCopy, surfaceQueries, queryDataSize);
+
+            frameOceanSurface->surfaceQueries = queryCopy;
+            frameOceanSurface->surfaceQueryCount = surfaceQueryCount;
+        }
     }
 }
 
@@ -987,8 +1165,8 @@ FrameLight *RenderWorld::RegisterFrameLight(RenderFrame *frame, RenderLight *ren
     frameLight->lightColor = renderLight->desc.linearColor * renderLight->desc.intensity;
     frameLight->zNear = renderLight->desc.zNear;
     frameLight->fallOffExponent = renderLight->desc.fallOffExponent;
-    frameLight->shadowOffsetFactor = renderLight->desc.shadowOffsetFactor;
     frameLight->shadowOffsetUnits = renderLight->desc.shadowOffsetUnits;
+    frameLight->shadowOffsetFactor = renderLight->desc.shadowOffsetFactor;
     frameLight->type = renderLight->desc.type;
     frameLight->flags = renderLight->desc.flags;
 
@@ -1080,7 +1258,7 @@ void RenderWorld::FindFrameObjects(RenderFrame *frame, const RenderCamera *rende
     const bool skipViewCulling = frame->GetRenderFrameSettings().skipViewCulling;
     const float meshLODPixelError = frame->GetRenderFrameSettings().meshLODPixelError;
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
-    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
+    const bool renderStaticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
 
     // 같은 프레임 데이터로 RenderScene 을 여러 번 호출하면 앞선 카메라의 FrameObject, FrameSkinnedMesh, FrameText 가 누적되어 있다.
     // 현재 카메라에서 새로 등록할 각 레코드의 범위를 구분하기 위해 시작 인덱스를 기록한다.
@@ -1100,7 +1278,7 @@ void RenderWorld::FindFrameObjects(RenderFrame *frame, const RenderCamera *rende
             continue;
         }
 
-        if (staticOnly && !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::Static)) {
+        if (renderStaticOnly && !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::Static)) {
             continue;
         }
 
@@ -1258,6 +1436,7 @@ void RenderWorld::BuildSkinningJointBuffer(RenderFrame *frame, FrameCamera *fram
     const auto frameSkinnedMeshes = frame->GetFrameSkinnedMeshes(frameCamera->firstFrameSkinnedMeshIndex);
     const uint64_t currentFrameSerial = frame->GetFrameSerial();
 
+    // 카메라/CSM/local shadow 가 공유하는 FrameSkinnedMesh 를 순회하여 광원 수와 무관하게 한 번만 준비한다.
     for (const FrameSkinnedMesh &frameSkinnedMesh : frameSkinnedMeshes) {
         if (!frameSkinnedMesh.space->IsRenderable()) {
             continue;
@@ -1364,38 +1543,10 @@ static int SelectMeshLOD(const SubMesh *subMesh, int requestedLOD, float squared
     return 0;
 }
 
-static BE_INLINE void CullMeshSurface(const BE1::AABB &localAABB, const BE1::Mat3x4 &worldMatrix, const RenderCamera *renderCamera, const FrameCascadedShadow *cascadedShadow, bool cullCamera, bool &surfaceCameraVisible, uint8_t &surfaceShadowCascadeMask) {
-    if (localAABB.IsCleared()) {
-        return;
-    }
-
-    // Static submesh 의 world bounds 는 카메라와 shadow 컬링에 한 번만 계산하여 공유한다.
-    BE1::AABB surfaceWorldAABB;
-    surfaceWorldAABB.SetFromTransformedAABB(localAABB, worldMatrix);
-
-    if (cullCamera) {
-        surfaceCameraVisible = !renderCamera->Cull(surfaceWorldAABB);
-    }
-
-    if (surfaceShadowCascadeMask == 0) {
-        return;
-    }
-
-    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; ++cascadeIndex) {
-        const uint8_t cascadeBit = static_cast<uint8_t>(BIT(cascadeIndex));
-        if ((surfaceShadowCascadeMask & cascadeBit) == 0) {
-            continue;
-        }
-
-        const CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
-        if (CullShadowCaster(cascadedShadow->viewVolumePlanes, cascade.shadowMapBounds, surfaceWorldAABB)) {
-            surfaceShadowCascadeMask &= ~cascadeBit;
-        }
-    }
-}
-
 void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddMeshes");
+
+    localShadowSurfRefs.SetCount(0, false);
 
     // 현재 카메라에서 새로 등록된 FrameObject 가 없으면 메시 처리를 생략한다.
     if (frame->NumFrameObjects() == frameCamera->firstFrameObjectIndex) {
@@ -1405,12 +1556,16 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
     BuildSkinningJointBuffer(frame, frameCamera);
 
     const bool skipViewCulling = frame->GetRenderFrameSettings().skipViewCulling;
-    const FrameCascadedShadow *cascadedShadow = frameCamera->frameCascadedShadow;
+    const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
+    const FrameCascadedShadow *frameCascadedShadow = frameCamera->frameCascadedShadow;
+    FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
 
     for (FrameObject &frameObject : frame->GetFrameObjects(frameCamera->firstFrameObjectIndex)) {
         const bool objectCameraVisible = BE1::HasFlag(frameObject.flags, FrameObject::Flag::CameraVisible);
-        const uint8_t objectShadowCascadeMask = cascadedShadow ? frameObject.shadowCascadeMask : 0;
-        if (!objectCameraVisible && objectShadowCascadeMask == 0) {
+        const uint8_t objectShadowCascadeMask = frameCascadedShadow ? frameObject.shadowCascadeMask : 0;
+        const uint32_t objectLocalShadowViewCount = frameShadowAtlas && BE1::HasFlag(frameObject.flags, FrameObject::Flag::LocalShadowCaster) ? frameObject.numLocalShadowCasterRefs : 0;
+
+        if (!objectCameraVisible && objectShadowCascadeMask == 0 && objectLocalShadowViewCount == 0) {
             continue;
         }
 
@@ -1421,17 +1576,16 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
 
         const bool skinned = meshInstance->IsSkinned();
 
-        // Pose 준비에 실패한 skinned mesh 를 bind pose 상태로 등록하지 않는다.
-        if (skinned && (!frameObject.skinnedMesh ||
-            frameObject.skinnedMesh->skinningJointOffset == ShaderSkinningJointOffsetInvalid)) {
+        // pose 준비에 실패한 skinned mesh 를 bind pose 상태로 등록하지 않는다.
+        if (skinned && (!frameObject.skinnedMesh || frameObject.skinnedMesh->skinningJointOffset == ShaderSkinningJointOffsetInvalid)) {
             continue;
         }
 
         const int numSurfaces = meshInstance->NumSurfaces();
 
-        // Skinned submesh 의 bounds 는 bind pose 기준이므로 오브젝트 수집 단계의 bounds 판정을 유지한다.
-        const bool cullSurfaces = numSurfaces > 1 && !skinned;
-        const bool cullCameraSurfaces = objectCameraVisible && !skipViewCulling;
+        // skinned submesh 의 bounds 는 bind pose 기준이므로 오브젝트 수집 단계의 bounds 판정을 유지한다.
+        const bool canCullSurfaces = numSurfaces > 1 && !skinned;
+        const bool cullCameraSurfaces = canCullSurfaces && objectCameraVisible && !skipViewCulling;
 
         for (int meshSurfIndex = 0; meshSurfIndex < numSurfaces; ++meshSurfIndex) {
             const Mesh::Surface *meshSurf = meshInstance->GetSurface(meshSurfIndex);
@@ -1446,27 +1600,136 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
 
             const bool castsShadow = !BE1::HasFlag(material->GetFlags(), Material::Flag::NoShadow) && material->GetRenderingMode() != Material::RenderingMode::Blend;
 
+            // 아래 가시성 값은 오브젝트 컬링 결과를 물려받은 렌더링 후보 상태이며, 아직 surface 단위 컬링 전이다.
             bool surfaceCameraVisible = objectCameraVisible;
             uint8_t surfaceShadowCascadeMask = castsShadow ? objectShadowCascadeMask : 0;
-            if (!surfaceCameraVisible && surfaceShadowCascadeMask == 0) {
+            const uint32_t surfaceLocalShadowViewCount = castsShadow ? objectLocalShadowViewCount : 0;
+            bool surfaceShadowVisible = surfaceShadowCascadeMask != 0 || surfaceLocalShadowViewCount != 0;
+
+            // camera 와 shadow 렌더링에 모두 필요 없는 오브젝트는 건너뛴다.
+            if (!surfaceCameraVisible && !surfaceShadowVisible) {
                 continue;
             }
 
-            if (cullSurfaces && (cullCameraSurfaces || surfaceShadowCascadeMask != 0)) {
-                CullMeshSurface(meshSurf->subMesh->GetBoundingBox(), frameObject.worldMatrix, renderCamera, cascadedShadow, cullCameraSurfaces, surfaceCameraVisible, surfaceShadowCascadeMask);
+            // surface 단위로 camera 와 CSM 컬링을 수행한다.
+            BE1::AABB surfaceWorldAABB;
+            bool hasSurfaceWorldBounds = false;
+            if (cullCameraSurfaces || (canCullSurfaces && surfaceShadowVisible)) {
+                const BE1::AABB &localAABB = meshSurf->subMesh->GetBoundingBox();
+                if (!localAABB.IsCleared()) {
+                    // static submesh 의 world bounds 는 카메라, CSM, 모든 local shadow 컬링에 한 번만 계산하여 공유한다.
+                    surfaceWorldAABB.SetFromTransformedAABB(localAABB, frameObject.worldMatrix);
+                    hasSurfaceWorldBounds = true;
+
+                    if (!surfaceWorldAABB.IsCleared()) {
+                        if (cullCameraSurfaces) {
+                            surfaceCameraVisible = !renderCamera->Cull(surfaceWorldAABB);
+                        }
+
+                        if (surfaceShadowCascadeMask != 0) {
+                            surfaceShadowCascadeMask = frameCascadedShadow->CullCascades(surfaceWorldAABB, surfaceShadowCascadeMask);
+                        }
+                    }
+                }
             }
 
-            if (!surfaceCameraVisible && surfaceShadowCascadeMask == 0) {
+            // 이 surface 를 그릴 local shadow view 들의 참조를 수집한다.
+            const int firstSurfaceRef = localShadowSurfRefs.Count();
+            uint32_t testedShadowIndex = ~0u;
+            bool outsidePointShadow = false;
+            LocalShadowCasterCuller surfaceCuller(surfaceWorldAABB, viewPlanes);
+
+            for (uint32_t viewRefIndex = 0; viewRefIndex < surfaceLocalShadowViewCount; ++viewRefIndex) {
+                const LocalShadowCasterRef &casterRef = localShadowCasterRefs[frameObject.firstLocalShadowCasterRef + viewRefIndex];
+                assert(casterRef.object == &frameObject);
+
+                // local shadow view 에 대해 컬링을 수행한다.
+                const FrameLocalShadowView &shadowView = frameShadowAtlas->shadowViews[casterRef.shadowViewIndex];
+                if (hasSurfaceWorldBounds) {
+                    const FrameLocalShadow &shadow = frameShadowAtlas->shadows[shadowView.shadowIndex];
+                    // 같은 광원의 참조는 연속된다. 오브젝트와 교차한 포인트 라이트 구라도 submesh 는 바깥일 수 있으므로 광원당 한 번 검사한다.
+                    if (testedShadowIndex != shadowView.shadowIndex) {
+                        testedShadowIndex = shadowView.shadowIndex;
+                        const FrameLight &light = *shadow.light;
+                        outsidePointShadow = light.type == RenderLight::Type::Point && surfaceCuller.CullPointLight(light.origin, shadow.squaredRadius);
+                    }
+
+                    float minDepth;
+                    if (outsidePointShadow || surfaceCuller.Cull(shadowView, shadow.viewPlaneToOriginDistances, minDepth)) {
+                        continue;
+                    }
+                }
+
+                // localShadowSurfRefs 이 꽉차면 2배씩 용량을 증가시킨다.
+                if (localShadowSurfRefs.Count() == localShadowSurfRefs.Capacity()) {
+                    localShadowSurfRefs.Reserve(BE1::Max(256, localShadowSurfRefs.Capacity() * 2));
+                }
+
+                LocalShadowSurfRef &surfRef = localShadowSurfRefs.Alloc();
+                surfRef.surface = nullptr;
+                surfRef.shadowViewIndex = casterRef.shadowViewIndex;
+            }
+
+            // surface 컬링 후 남은 CSM cascade 와 local shadow 참조로 최종 shadow 가시성을 갱신한다.
+            surfaceShadowVisible = surfaceShadowCascadeMask != 0 || localShadowSurfRefs.Count() != firstSurfaceRef;
+
+            // camera, CSM, local shadow 어디에도 필요없는 surface 는 건너뛴다.
+            if (!surfaceCameraVisible && !surfaceShadowVisible) {
                 continue;
             }
 
-            const FrameSurf::Flag flags = surfaceCameraVisible ? FrameSurf::Flag::CameraVisible : FrameSurf::Flag::None;
+            const FrameSurf::Flag surfaceflags = surfaceCameraVisible ? FrameSurf::Flag::CameraVisible : FrameSurf::Flag::None;
 
-            // 카메라에 보이는 surface 는 카메라 기준, shadow 전용 surface 는 가장 정밀한 관련 cascade 기준 LOD 를 사용한다.
-            // 한 surface 가 여러 cascade 에 투영되어도 같은 LOD 를 공유하여 blend 영역의 caster silhouette 를 일치시킨다.
+            // camera 또는 CSM 기준 LOD 에 local shadow 의 texel 오차 제한을 함께 적용한다.
+            // 한 surface 가 여러 shadow view 에 투영되어도 같은 LOD 를 공유하여 cascade blend 영역과 Point 면 경계에서 caster silhouette 를 일치시킨다.
             const int lodLevel = SelectMeshLOD(meshSurf->subMesh, frameObject.meshLOD, frameObject.squaredLODErrorLimit);
-            AddFrameSurf(frame, frameCamera, nullptr, &frameObject, material, meshSurf->subMesh, flags, surfaceShadowCascadeMask, lodLevel);
+            const FrameSurf *frameSurf = AddFrameSurf(frame, frameCamera, nullptr, &frameObject, material, meshSurf->subMesh, surfaceflags, surfaceShadowCascadeMask, lodLevel);
+            if (!frameSurf) {
+                // 공통 surface 생성 실패 시 어느 shadow view 에도 미완성 참조를 남기지 않는다.
+                localShadowSurfRefs.SetCount(firstSurfaceRef, false);
+                continue;
+            }
+
+            for (int surfRefIndex = firstSurfaceRef; surfRefIndex < localShadowSurfRefs.Count(); ++surfRefIndex) {
+                LocalShadowSurfRef &surfRef = localShadowSurfRefs[surfRefIndex];
+                surfRef.surface = frameSurf;
+                frameShadowAtlas->shadowViews[surfRef.shadowViewIndex].numShadowSurfs++;
+            }
         }
+    }
+
+    BuildLocalShadowSurfaceLists(frame, frameShadowAtlas);
+}
+
+void RenderWorld::BuildLocalShadowSurfaceLists(RenderFrame *frame, FrameShadowAtlas *frameShadowAtlas) {
+    if (localShadowSurfRefs.Count() == 0) {
+        return;
+    }
+
+    assert(frameShadowAtlas);
+
+    // shadowView 에 들어갈 모든 shadow surface 포인터들을 한꺼번에 할당한다.
+    const size_t size = sizeof(FrameSurf *) * static_cast<size_t>(localShadowSurfRefs.Count());
+    const FrameSurf **surfs = static_cast<const FrameSurf **>(frame->MemAlloc(static_cast<int>(size)));
+    if (!surfs) {
+        for (uint32_t shadowViewIndex = 0; shadowViewIndex < frameShadowAtlas->numShadowViews; ++shadowViewIndex) {
+            frameShadowAtlas->shadowViews[shadowViewIndex].numShadowSurfs = 0;
+        }
+        return;
+    }
+
+    for (uint32_t shadowViewIndex = 0; shadowViewIndex < frameShadowAtlas->numShadowViews; ++shadowViewIndex) {
+        FrameLocalShadowView &shadowView = frameShadowAtlas->shadowViews[shadowViewIndex];
+        if (shadowView.numShadowSurfs > 0) {
+            shadowView.shadowSurfs = surfs;
+            surfs += shadowView.numShadowSurfs;
+            shadowView.numShadowSurfs = 0;
+        }
+    }
+
+    for (const LocalShadowSurfRef &surfRef : localShadowSurfRefs) {
+        FrameLocalShadowView &shadowView = frameShadowAtlas->shadowViews[surfRef.shadowViewIndex];
+        shadowView.shadowSurfs[shadowView.numShadowSurfs++] = surfRef.surface;
     }
 }
 
@@ -1544,17 +1807,23 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *render
     AddFrameSurf(frame, frameCamera, nullptr, frameObject, material, meshSurf->subMesh, FrameSurf::Flag::CameraVisible | FrameSurf::Flag::SkipSelection | FrameSurf::Flag::Skybox, 0);
 }
 
-void RenderWorld::FindFrameLights(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
+void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindFrameLights");
 
-    localShadowCandidates.SetCount(0, false);
+    localShadowLightCandidates.SetCount(0, false);
 
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     const bool skipViewCulling = frameSettings.skipViewCulling;
     const bool localShadowsEnabled = frameSettings.shadows && frameSettings.shadowAtlasMaxViews > 0;
 
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
-    const bool staticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
+    const bool useShadowResolutionHistory = localShadowsEnabled && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
+    if (useShadowResolutionHistory) {
+        renderCamera->localShadowResolutionHistory.BeginView();
+    } else {
+        renderCamera->localShadowResolutionHistory.Reset();
+    }
+    const bool renderStaticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
     const BE1::Vec3 &viewZAxis = cameraDesc.axis[EngineAxis::Forward];
     const float viewZOffset = -viewZAxis.Dot(cameraDesc.origin);
 
@@ -1567,7 +1836,7 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, const RenderCamera *render
         frameCamera->frameLocalLights = (const FrameLight **)frame->MemAlloc(frameCamera->maxFrameLocalLights * sizeof(frameCamera->frameLocalLights[0]));
     }
 
-    // 등록된 모든 RenderLight 들을 프레임 데이터에 FrameLight 로 등록한다.
+    // 등록된 모든 RenderLight 들을 프레임 스냅샷에 FrameLight 로 등록한다.
     for (RenderLight *renderLight : renderLights) {
         if (!renderLight) {
             continue;
@@ -1577,7 +1846,7 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, const RenderCamera *render
             continue;
         }
 
-        if (staticOnly && !BE1::HasFlag(renderLight->desc.flags, RenderLight::Flag::Static)) {
+        if (renderStaticOnly && !BE1::HasFlag(renderLight->desc.flags, RenderLight::Flag::Static)) {
             continue;
         }
 
@@ -1630,13 +1899,22 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, const RenderCamera *render
             frameLight->viewZMin = viewZMin;
             frameLight->viewZMax = viewZMax;
 
+            // 광원의 light culling 타일 범위와 화면 투영 크기를 계산한다.
             const uint32_t projectedSize = ComputeLightTileRange(frameCamera, screenClipRect, frameLight->packedTileMin, frameLight->packedTileMax);
+
             if (localShadowsEnabled && BE1::HasFlag(frameLight->flags, RenderLight::Flag::CastShadows)) {
-                if (projectedSize > 0 && (frameLight->type == RenderLight::Type::Spot || frameLight->type == RenderLight::Type::Point)) {
-                    // 광원 영향 영역으로 요청 해상도를 근사한다.
-                    const uint32_t clampedSize = BE1::Clamp(projectedSize, RenderFrameSettings::ShadowAtlasMinTileResolution, frameSettings.shadowAtlasMaxTileResolution);
-                    frameLight->shadowRequestedResolution = BE1::Math::RoundUpPowerOfTwo(clampedSize);
-                    localShadowCandidates.Alloc() = frameLight;
+                // 투영 영역의 긴 변이 최소 크기 미만이면 shadow light 후보에서 제외한다.
+                if (projectedSize >= RenderFrameSettings::LocalShadowMinProjectedSize && (frameLight->type == RenderLight::Type::Spot || frameLight->type == RenderLight::Type::Point)) {
+                    const float scaledProjectedSize = projectedSize * frameSettings.shadowProjectedSizeScale;
+
+                    if (useShadowResolutionHistory) {
+                        // 광원 영향 영역에 해상도 배율을 적용해 요청 해상도를 근사하고, 카메라별 history 로 경계 부근의 반복 변경을 막는다.
+                        // shadow atlas 의 공간 부족으로 축소된 실제 할당 해상도는 요청 history 에 반영하지 않는다.
+                        frameLight->shadowRequestedResolution = renderCamera->localShadowResolutionHistory.Update(renderLight->index, renderLight->lightId, frameSettings.shadowAtlasMaxTileResolution, scaledProjectedSize);
+                    } else {
+                        frameLight->shadowRequestedResolution = ShadowResolutionHistory::SelectResolution(0, frameSettings.shadowAtlasMaxTileResolution, scaledProjectedSize);
+                    }
+                    localShadowLightCandidates.Alloc() = frameLight;
                 }
             }
 
@@ -1647,27 +1925,34 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, const RenderCamera *render
     }
 }
 
-void RenderWorld::SetupShadowAtlas(RenderFrame *frame, FrameCamera *frameCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::SetupShadowAtlas");
+void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::SetupFrameShadowAtlas");
 
-    ShadowAtlas &shadowAtlas = RenderContext::activeContext->GetShadowAtlas();
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
+    if (!renderCamera->EnsureShadowAtlas(frameSettings, localShadowLightCandidates.Count() > 0)) {
+        BE_WARNLOG("RenderWorld::SetupFrameShadowAtlas: failed to update camera shadow atlas\n");
+        return;
+    }
+    ShadowAtlas &shadowAtlas = renderCamera->GetShadowAtlas();
 
-    // 현재는 카메라마다 다시 배치한다. 이전 카메라의 좌표는 snapshot 에 복사되어 allocator 와 독립적이다.
+    // 현재 구현은 캐싱 없이 렌더링 호출마다 다시 배치한다. 같은 카메라를 여러 번 제출해도 이전 호출의 좌표는 frame snapshot 에 보존된다.
     if (shadowAtlas.GetAllocedTileCount() > 0) {
         shadowAtlas.ResetAllocations();
     }
 
     frameCamera->frameShadowAtlas = frame->AllocFrameShadowAtlas(shadowAtlas);
-    if (!frameCamera->frameShadowAtlas || localShadowCandidates.Count() == 0) {
+    if (!frameCamera->frameShadowAtlas || localShadowLightCandidates.Count() == 0) {
         return;
     }
 
     FrameShadowAtlas &frameShadowAtlas = *frameCamera->frameShadowAtlas;
+    frameShadowAtlas.numCandidates = static_cast<uint32_t>(localShadowLightCandidates.Count());
+    const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
+    const uint32_t shadowMapQuality = frameSettings.shadowMapQuality;
 
-    if (localShadowCandidates.Count() > 1) {
-        // 요청 해상도가 큰 광원부터 처리한다. 같으면 가까운 영향 영역, 그다음 등록 인덱스 순으로 고정한다.
-        // 조명용 frameLocalLights 는 이후 Z-bin 순으로 정렬되므로 shadow 후보 목록만 정렬한다.
-        std::sort(localShadowCandidates.Ptr(), localShadowCandidates.Ptr() + localShadowCandidates.Count(), [](const FrameLight *lhs, const FrameLight *rhs) {
+    // 그림자 라이트 후보를 shadow 요청 해상도가 크고, 카메라에 가까운 순으로 정렬한다.
+    if (localShadowLightCandidates.Count() > 1) {
+        std::sort(localShadowLightCandidates.Ptr(), localShadowLightCandidates.Ptr() + localShadowLightCandidates.Count(), [](const FrameLight *lhs, const FrameLight *rhs) {
             if (lhs->shadowRequestedResolution != rhs->shadowRequestedResolution) {
                 return lhs->shadowRequestedResolution > rhs->shadowRequestedResolution;
             }
@@ -1680,36 +1965,72 @@ void RenderWorld::SetupShadowAtlas(RenderFrame *frame, FrameCamera *frameCamera)
         });
     }
 
-    for (FrameLight *light : localShadowCandidates) {
-        // Point 는 후보에 포함하되, 6 면의 투영/할당 연결 전까지 view 예산을 소비하지 않는다.
-        if (light->type != RenderLight::Type::Spot) {
-            continue;
-        }
-
+    for (uint32_t candidateIndex = 0; candidateIndex < frameShadowAtlas.numCandidates; ++candidateIndex) {
         if (frameShadowAtlas.numShadowViews >= frameShadowAtlas.maxShadowViews) {
+            // 남은 후보는 모두 Spot/Point 이므로 추가 순회 없이 shadow view 예산 초과로 집계한다.
+            frameShadowAtlas.numViewBudgetSkipped += frameShadowAtlas.numCandidates - candidateIndex;
             break;
         }
 
-        ShadowAtlas::Tile tile;
-        // 리소스 재설정이 실패해 이전 atlas 를 사용하는 경우에도 실제 allocator 의 최대 해상도를 따른다.
-        const uint32_t requestedResolution = BE1::Min(light->shadowRequestedResolution, shadowAtlas.GetMaxTileResolution());
-        if (!shadowAtlas.Allocate(requestedResolution, 1, &tile)) {
+        FrameLight *shadowLight = localShadowLightCandidates[candidateIndex];
+        const uint32_t shadowViewCount = shadowLight->GetShadowViewCount();
+        assert(shadowViewCount > 0);
+        if (shadowViewCount > frameShadowAtlas.maxShadowViews - frameShadowAtlas.numShadowViews) {
+            frameShadowAtlas.numViewBudgetSkipped++;
             continue;
         }
 
-        FrameLocalShadow *shadow = frame->AllocFrameLocalShadow(frameShadowAtlas, *light);
+        ShadowAtlas::Tile tiles[6];
+        const uint32_t requestedResolution = BE1::Min(shadowLight->shadowRequestedResolution, shadowAtlas.GetMaxTileResolution());
+        // 포인트 라이트의 6면은 동일한 해상도로 함께 할당하며, 부족하면 allocator 가 해상도를 절반씩 낮춘다.
+        if (!shadowAtlas.Allocate(requestedResolution, shadowViewCount, tiles)) {
+            frameShadowAtlas.numAllocationFailures++;
+            continue;
+        }
+
+        FrameLocalShadow *shadow = frame->AllocFrameLocalShadow(frameShadowAtlas, *shadowLight);
         if (!shadow) {
-            // Snapshot 등록 실패 시 타일과 view 예산을 남기지 않는다.
-            const bool freed = shadowAtlas.Free(tile.handle);
-            assert(freed);
-            (void)freed;
+            for (uint32_t viewIndex = 0; viewIndex < shadowViewCount; ++viewIndex) {
+                const bool freed = shadowAtlas.Free(tiles[viewIndex].handle);
+                assert(freed);
+                (void)freed;
+            }
+            // 프레임 메모리 부족으로 중단한 요청들은 atlas 공간 부족과 구분한다.
+            frameShadowAtlas.numFrameAllocationSkipped = frameShadowAtlas.numCandidates - candidateIndex;
             break;
         }
 
-        shadow->requestedResolution = light->shadowRequestedResolution;
-        shadow->resolution = tile.resolution;
+        // 그림자 라이트별 공통 계산은 카메라마다 한 번 준비한다.
+        if (shadowLight->type == RenderLight::Type::Point) {
+            const float lightRadius = BE1::Max(shadowLight->size[0], RenderLight::MinLightSize);
+            shadow->squaredRadius = lightRadius * lightRadius;
+        }
+        for (int planeIndex = 0; planeIndex < 6; ++planeIndex) {
+            shadow->viewPlaneToOriginDistances[planeIndex] = viewPlanes[planeIndex].Distance(shadowLight->origin);
+        }
 
-        frameShadowAtlas.shadowViews[shadow->firstView].tileRect = BE1::Rect(tile.x, tile.y, tile.resolution, tile.resolution);
+        shadow->requestedResolution = shadowLight->shadowRequestedResolution;
+        shadow->resolution = tiles[0].resolution;
+        if (shadow->resolution < requestedResolution) {
+            frameShadowAtlas.numResolutionDowngrades++;
+        }
+        assert(shadow->numShadowViews == shadowViewCount);
+
+        // 실제 해상도에 맞춰 PCF 와 bilinear comparison footprint 를 위한 border 를 확보한다.
+        const uint32_t borderTexels = CalcShadowMapBorderTexels(shadow->resolution, shadowMapQuality);
+        FrameLocalShadowView *shadowViews = &frameShadowAtlas.shadowViews[shadow->firstShadowView];
+        for (uint32_t viewIndex = 0; viewIndex < shadowViewCount; ++viewIndex) {
+            const ShadowAtlas::Tile &tile = tiles[viewIndex];
+            assert(tile.resolution == shadow->resolution);
+            shadowViews[viewIndex].tileRect = BE1::Rect(tile.x, tile.y, tile.resolution, tile.resolution);
+            shadowViews[viewIndex].borderTexels = borderTexels;
+        }
+
+        if (shadowLight->type == RenderLight::Type::Point) {
+            shadowLight->CalcPointShadowProjections(shadowViews);
+        } else {
+            shadowLight->CalcSpotShadowProjection(shadowViews[0]);
+        }
     }
 }
 

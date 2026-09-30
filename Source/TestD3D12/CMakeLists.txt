@@ -146,8 +146,8 @@ set(SRC_FILES
     Render/ShadowAtlas.cpp
     Render/ShadowAtlasAllocator.h
     Render/ShadowAtlasAllocator.cpp
-    Render/ShadowAtlasAllocatorTests.h
-    Render/ShadowAtlasAllocatorTests.cpp
+    Render/ShadowResolutionHistory.h
+    Render/ShadowResolutionHistory.cpp
     Render/ColorGradingLUTGenerator.h
     Render/ColorGradingLUTGenerator.cpp
     Render/ConvolutionBloomKernelGenerator.h
@@ -212,6 +212,8 @@ set(SRC_FILES
     Render/ShaderLightCullingTable.cpp
     Render/ShaderSurfaceTable.h
     Render/ShaderSurfaceTable.cpp
+    Render/ShaderShadowTable.h
+    Render/ShaderShadowTable.cpp
     Render/RenderSystem.h
     Render/RenderSystem.cpp
     Render/DebugDrawPipeline.h
@@ -240,7 +242,10 @@ set(SRC_FILES
     Render/Frontend/RenderCamera.cpp
     Render/RenderUtils.h
     Render/RenderUtils.cpp
+    Render/LocalShadowCasterCuller.h
+    Render/LocalShadowCasterCuller.cpp
     Render/RenderInternal.h
+    Render/RenderInternal.cpp
     Render/Frontend/RenderPassDepthPSOResolver.h
     Render/Frontend/RenderPassDepthPSOResolver.cpp
     Render/Frontend/RenderPassPSOResolver.h

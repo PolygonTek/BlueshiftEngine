@@ -187,7 +187,7 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
             for (uint32_t x = 0; x < lightCountX; ++x) {
                 GameLight &gameLight = gameLights.Alloc();
                 gameLight.type = RenderLight::Type::Point;
-                gameLight.flags = RenderLight::Flag::None;
+                gameLight.flags = pointLightShadows ? RenderLight::Flag::CastShadows : RenderLight::Flag::None;
                 gameLight.origin.Set(
                     startX + lightSpacing * x,
                     startY + lightSpacing * y,
@@ -307,6 +307,18 @@ void SceneMatrix::BuildImGui() {
     ImGui::Spacing();
     ImGui::Text("Point Lights (%i)", gameLights.Count());
     ImGui::Checkbox("Animate Lights", &animateLights);
+    if (ImGui::Checkbox("Cast Shadows##PointLights", &pointLightShadows)) {
+        for (GameLight &gameLight : gameLights) {
+            if (pointLightShadows) {
+                gameLight.flags |= RenderLight::Flag::CastShadows;
+            } else {
+                gameLight.flags &= ~RenderLight::Flag::CastShadows;
+            }
+            if (gameLight.renderLightHandle >= 0) {
+                renderWorld->UpdateRenderLightFlags(gameLight.renderLightHandle, gameLight.flags);
+            }
+        }
+    }
 
     ImGui::SetNextItemWidth(itemWidth);
     ImGui::SliderInt("Count X##Lights", &imguiLightCountX, 1, 50);

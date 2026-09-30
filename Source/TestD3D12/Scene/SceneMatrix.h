@@ -63,6 +63,7 @@ private:
 
     bool                        animateObjects = true;
     bool                        animateLights = true;
+    bool                        pointLightShadows = false;
 
 #ifdef ENABLE_IMGUI
     int                         imguiObjectCountX = 1;

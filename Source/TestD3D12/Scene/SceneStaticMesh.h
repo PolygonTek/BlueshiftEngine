@@ -31,13 +31,9 @@ public:
 #endif
 
 private:
-    void                        UpdateDirectionalLightDirection();
-
     RenderWorld *               renderWorld = nullptr;
     SharedPtr<Mesh>             testMesh;
-    GameLight                   directionalLight;
+    GameLight                   pointLight;
 
-    float                       directionalLightAzimuth = 145.0f;
-    float                       directionalLightElevation = 55.0f;
-    bool                        directionalLightEnabled = false;
+    bool                        pointLightEnabled = false;
 };

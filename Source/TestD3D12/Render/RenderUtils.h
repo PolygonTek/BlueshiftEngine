@@ -48,12 +48,10 @@ float CalcLocalLODErrorLimitSqr(const BE1::Mat3x4 &worldMatrix, float pixelsPerW
 
 // view volume 과 광원 방향 shadow cull bounds 에 의한 caster bounds 의 컬링 검사.
 // Shadow bounds 의 XY/far 만 검사하며, near 밖 caster 는 depth clamp 를 위해 유지한다.
-bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::OBB &shadowMapBounds, const BE1::AABB &casterBounds);
-
-// view volume 과 광원 방향 shadow frustum 에 의한 caster bounds 의 컬링 검사.
-bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::Frustum &shadowFrustum, const BE1::AABB &casterBounds);
+bool CullShadowCaster(const BE1::Plane viewPlanes[6], const BE1::OBB &shadowMapBounds, const BE1::AABB &casterBounds);
 
 // EngineAxis cubemap face 를 렌더링할 view axis 를 만든다.
+// Point shadow 도 광원 회전을 곱하지 않고 이 월드 축을 사용한다. Atlas 에는 cubemap 캡처의 최종 Y 반전을 적용하지 않는다.
 void CubeMapFaceToViewAxis(RHI::CubemapFace cubemapFace, BE1::Mat3 &axis);
 
 // 삼각형의 position/UV 로 tangent, bitangent, handedness 를 계산한다.

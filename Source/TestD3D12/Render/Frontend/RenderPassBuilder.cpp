@@ -159,6 +159,40 @@ void RenderPassBuilder::BuildCascadedShadow(RenderFrame *frame, FrameCascadedSha
     BuildShadow(frame, shadowPass, static_cast<uint8_t>(1u << cascadeIndex), frameSurfs, numFrameSurfs, allowAsyncPSOBuild);
 }
 
+void RenderPassBuilder::BuildLocalShadow(RenderFrame *frame, FrameShadowAtlas *shadowAtlas, uint32_t shadowViewIndex, bool allowAsyncPSOBuild) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildLocalShadow");
+
+    assert(shadowAtlas);
+    assert(shadowAtlas->shadowTexture);
+    assert(shadowAtlas->shadowDSV.IsValid());
+    assert(shadowViewIndex < shadowAtlas->numShadowViews);
+
+    FrameLocalShadowView &shadowView = shadowAtlas->shadowViews[shadowViewIndex];
+    assert(shadowView.shadowIndex < shadowAtlas->numShadows);
+    const FrameLight *shadowLight = shadowAtlas->shadows[shadowView.shadowIndex].light;
+    assert(shadowLight);
+
+    RenderPass *shadowPass = &shadowView.renderPass;
+    assert(!shadowPass->drawSurfs && !shadowPass->drawSurfStorage);
+
+    GraphicsPipelineDesc &pipelineDesc = shadowPass->graphicsPipelineDesc;
+    pipelineDesc = {};
+    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualWrite;
+    pipelineDesc.renderDest.renderTargetCount = 0;
+    // ShadowAtlas 의 DSV 포맷. Typeless texture 의 리소스 포맷을 사용하지 않는다.
+    pipelineDesc.renderDest.depthStencilFormat = RHI::Format::D32_FLOAT;
+    pipelineDesc.renderDest.sampleCount = shadowAtlas->shadowTexture->GetSampleCount();
+
+    // Local shadow 는 유한한 perspective 투영의 near/far 범위로 depth 를 clip 한다.
+    pipelineDesc.depthClipEnabled = true;
+    pipelineDesc.depthBiasOverride = true;
+    pipelineDesc.constantDepthBias = shadowLight->shadowOffsetUnits;
+    pipelineDesc.slopeScaledDepthBias = shadowLight->shadowOffsetFactor;
+
+    // View 별 caster/submesh 컬링을 마친 목록은 CSM mask 와 무관하게 그대로 사용한다.
+    BuildShadow(frame, shadowPass, 0, shadowView.shadowSurfs, shadowView.numShadowSurfs, allowAsyncPSOBuild);
+}
+
 void RenderPassBuilder::BuildShadow(RenderFrame *frame, RenderPass *shadowPass, uint8_t shadowCascadeMask, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild) {
     PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildShadow");
 
@@ -167,17 +201,20 @@ void RenderPassBuilder::BuildShadow(RenderFrame *frame, RenderPass *shadowPass, 
     assert(frameSurfs || numFrameSurfs == 0);
     assert(shadowPass->graphicsPipelineDesc.renderDest.renderTargetCount == 0);
     assert(shadowPass->graphicsPipelineDesc.renderDest.depthStencilFormat != RHI::Format::Unknown);
-    assert(shadowCascadeMask != 0);
 
     shadowPass->type = RenderPassType::Shadow;
     shadowPass->baseInputLayoutId = VertexInputLayoutId::XyzStColor;
     // Depth 대상과 bias 등 호출자가 준비한 설정은 유지한다.
     shadowPass->graphicsPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(shadowPass->baseInputLayoutId);
 
-    uint32_t numShadowDrawSurfs = 0;
-    for (uint32_t i = 0; i < numFrameSurfs; ++i) {
-        if ((frameSurfs[i]->shadowCascadeMask & shadowCascadeMask) != 0) {
-            numShadowDrawSurfs++;
+    // Local shadow 는 이미 선별된 목록의 크기를 사용하여 별도의 count 순회를 생략한다.
+    uint32_t numShadowDrawSurfs = numFrameSurfs;
+    if (shadowCascadeMask != 0) {
+        numShadowDrawSurfs = 0;
+        for (uint32_t i = 0; i < numFrameSurfs; ++i) {
+            if ((frameSurfs[i]->shadowCascadeMask & shadowCascadeMask) != 0) {
+                numShadowDrawSurfs++;
+            }
         }
     }
 
@@ -195,7 +232,7 @@ void RenderPassBuilder::BuildShadow(RenderFrame *frame, RenderPass *shadowPass, 
 
     for (uint32_t i = 0; i < numFrameSurfs; ++i) {
         const FrameSurf *frameSurf = frameSurfs[i];
-        if ((frameSurf->shadowCascadeMask & shadowCascadeMask) == 0) {
+        if (shadowCascadeMask != 0 && (frameSurf->shadowCascadeMask & shadowCascadeMask) == 0) {
             continue;
         }
 

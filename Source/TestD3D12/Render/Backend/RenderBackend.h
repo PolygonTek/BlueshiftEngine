@@ -101,6 +101,7 @@ private:
     void                            ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor);
     void                            ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
     void                            ExecuteDrawCamera3DShadowPass();
+    void                            ExecuteDrawCamera3DLocalShadowPass();
     void                            ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            CaptureSceneSnapshot();
@@ -116,6 +117,7 @@ private:
     void                            BlitTextureToSwapChain(const RHI::Texture *texture, const BE1::Rect &destinationRect);
 
     void                            DrawGenericPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer);
+    bool                            DrawLocalShadowPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer);
     void                            DrawSkyPass(const RenderPass *renderPass);
     void                            DrawGpuOcean();
     void                            DrawGuiPass(const RenderPass *renderPass);
@@ -189,6 +191,7 @@ private:
     uint32_t                        drawGroupId = -1;
     BE1::Array<DrawSurfsTaskDesc>   drawSurfsTaskDescs;
     BE1::Array<SurfaceInstanceBatch> hiZCullDrawBatches;
+    BE1::Array<SurfaceInstanceBatch> localShadowDrawBatches;
     BE1::Array<HiZCullPassRange>    hiZCullPassRanges;
 
     GpuOceanSurface::QueryReadbackFrame *oceanSurfaceQueryReadbackFrame = nullptr;
@@ -200,6 +203,7 @@ private:
     uint64_t                        statDrawTriangleCount = 0;
     uint32_t                        statInstanceTableAllocCount = 0;
     uint32_t                        statInstanceTableUploadBytes = 0;
+    uint32_t                        statShadowAtlasRenderedViewCount = 0;
 
     GpuTiming                       gpuTiming;
 };

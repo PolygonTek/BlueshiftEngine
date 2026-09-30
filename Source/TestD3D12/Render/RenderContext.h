@@ -18,7 +18,6 @@
 #include "GpuTiming.h"
 #include "RenderFrame.h"
 #include "RenderFrameSettings.h"
-#include "ShadowAtlas.h"
 #include "Texture/TextureStreamingFeedback.h"
 #include "Mesh/GuiMesh.h"
 
@@ -70,6 +69,13 @@ class RenderContext {
         Value<uint32_t>             lightCullingZBinCount = 0;
         Value<uint32_t>             lightCullingWordCount = 0;
         Value<uint64_t>             lightCullingThreadGroupCount = 0;
+        Value<uint32_t>             shadowAtlasCandidateCount = 0;
+        Value<uint32_t>             shadowAtlasResolutionDowngradeCount = 0;
+        Value<uint32_t>             shadowAtlasAllocationFailureCount = 0;
+        Value<uint32_t>             shadowAtlasViewBudgetSkippedCount = 0;
+        Value<uint32_t>             shadowAtlasFrameAllocationSkippedCount = 0;
+        Value<uint32_t>             shadowAtlasRenderedViewCount = 0; // 빈 view 를 제외하고 실제 draw 명령을 기록한 shadow view 수.
+        Value<uint32_t>             shadowAtlasDrawSurfaceCount = 0;
     };
 
 public:
@@ -129,8 +135,6 @@ public:
     RHI::ViewID                     GetCSMDepthSliceDSV(uint32_t cascadeIndex) const { assert(cascadeIndex < CSMCascadeCount); return csmDepthSliceDSVs[cascadeIndex]; }
     RHI::Format                     GetCSMDepthFormat() const { return RHI::Format::D24_UNORM_S8_UINT; }
     uint32_t                        GetCSMResolution() const { return csmDepthTexture ? csmDepthTexture->GetWidth() : 0; }
-    ShadowAtlas &                   GetShadowAtlas() { return shadowAtlas; }
-    const ShadowAtlas &             GetShadowAtlas() const { return shadowAtlas; }
 
     GuiMesh &                       GetGuiMesh() { return guiMesh; }
 
@@ -216,7 +220,6 @@ private:
     RHI::Texture *                  csmDepthTexture = nullptr;
     RHI::ViewID                     csmDepthSRV = RHI::ViewID::InvalidID;
     RHI::ViewID                     csmDepthSliceDSVs[CSMCascadeCount] = {};
-    ShadowAtlas                     shadowAtlas;
     RHI::ImGuiOverlay *             imguiOverlay = nullptr;
     BE1::Color4                     baseClearColor = BE1::Color4::black;
 

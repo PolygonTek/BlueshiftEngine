@@ -66,7 +66,10 @@ void RenderBackend::Execute(RenderFrame *frame) {
 }
 
 void RenderBackend::ExecuteFrame(RenderFrame *frame) {
-    uint64_t t0 = BE1::PlatformTime::Microseconds();
+    uint64_t renderUsec = 0;
+    BE1::ScopedCpuTimer renderTimer(renderUsec, true, [this](uint64_t elapsedUsec) noexcept {
+        UpdateRenderFrameTime(elapsedUsec);
+    });
 
     // 백엔드가 처리할 프레임 데이터
     this->frame = frame;
@@ -110,9 +113,6 @@ void RenderBackend::ExecuteFrame(RenderFrame *frame) {
             continue;
         }
     }
-
-    uint64_t t1 = BE1::PlatformTime::Microseconds();
-    UpdateRenderFrameTime(t1 - t0);
 }
 
 void RenderBackend::UpdateRenderFrameTime(uint64_t frameUsec) {
@@ -157,6 +157,7 @@ void RenderBackend::UpdateFrameStats() {
     stats.drawTriangleCount = statDrawTriangleCount;
     stats.instanceTableAllocCount = statInstanceTableAllocCount;
     stats.instanceTableUploadBytes = statInstanceTableUploadBytes;
+    stats.shadowAtlasRenderedViewCount = statShadowAtlasRenderedViewCount;
     stats.lightCullingZBinCount = frame->NumLightCullingZBins();
     stats.lightCullingWordCount = frame->NumLightCullingWords();
 
@@ -168,6 +169,21 @@ void RenderBackend::UpdateFrameStats() {
     const FrameCamera *frameCameras = frame->GetFrameCameras();
     for (uint32_t cameraIndex = 0; cameraIndex < frame->NumFrameCameras(); ++cameraIndex) {
         const FrameCamera &frameCamera = frameCameras[cameraIndex];
+        if (frameCamera.frameShadowAtlas) {
+            const FrameShadowAtlas &shadowAtlas = *frameCamera.frameShadowAtlas;
+            stats.shadowAtlasCandidateCount += shadowAtlas.numCandidates;
+            stats.shadowAtlasResolutionDowngradeCount += shadowAtlas.numResolutionDowngrades;
+            stats.shadowAtlasAllocationFailureCount += shadowAtlas.numAllocationFailures;
+            stats.shadowAtlasViewBudgetSkippedCount += shadowAtlas.numViewBudgetSkipped;
+            stats.shadowAtlasFrameAllocationSkippedCount += shadowAtlas.numFrameAllocationSkipped;
+
+            // Shared surfaces count once per view. Draw surfaces are counted before instancing.
+            for (uint32_t shadowViewIndex = 0; shadowViewIndex < shadowAtlas.numShadowViews; ++shadowViewIndex) {
+                const FrameLocalShadowView &view = shadowAtlas.shadowViews[shadowViewIndex];
+                stats.shadowAtlasDrawSurfaceCount += view.renderPass.numDrawSurfs;
+            }
+        }
+
         if (frameCamera.lightCulling.wordsPerTile == 0) {
             continue;
         }
@@ -336,6 +352,7 @@ bool RenderBackend::UploadCameraConstants() {
 
     // Shadow depth 기록을 마친 뒤 해당 카메라의 샘플링 데이터를 활성화한다.
     constants->csm = {};
+    constants->shadowAtlas = {};
 
     return true;
 }
@@ -397,6 +414,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     statDrawTriangleCount = 0;
     statInstanceTableAllocCount = 0;
     statInstanceTableUploadBytes = 0;
+    statShadowAtlasRenderedViewCount = 0;
 
     mainCommandList = frame->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
@@ -521,9 +539,12 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         return (const void *)(cmd + 1);
     }
 
-    // 컨텍스트의 CSM 자원을 공유하므로 카메라마다 shadow depth 를 기록한 뒤 메인 패스를 실행한다.
     if (!currentFrameCamera->is2D) {
+        // Directional light 의 CSM depth 를 렌더링한다.
         ExecuteDrawCamera3DShadowPass();
+
+        // Spot/Point light 의 shadow depth 를 shadow atlas 에 렌더링한다.
+        ExecuteDrawCamera3DLocalShadowPass();
     }
 
     BE1::Rect viewportRect = currentFrameCamera->outputRect;
@@ -775,6 +796,124 @@ void RenderBackend::ExecuteDrawCamera3DShadowPass() {
     CameraConstants *cameraConstants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
     cameraConstants->csm = cascadedShadow->shaderData;
     cameraConstants->csm.enabled = 1;
+}
+
+void RenderBackend::ExecuteDrawCamera3DLocalShadowPass() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera3DLocalShadowPass");
+
+    FrameShadowAtlas *shadowAtlas = currentFrameCamera->frameShadowAtlas;
+    if (!shadowAtlas) {
+        return;
+    }
+    shadowAtlas->depthRendered = false;
+
+    // 할당된 view 가 없으면 atlas 를 사용할 조명도 없다. 미리보기용 clear 는 finalize 에서 처리한다.
+    if (shadowAtlas->numShadowViews == 0) {
+        return;
+    }
+    assert(shadowAtlas->shadowTexture);
+    assert(shadowAtlas->shadowDSV.IsValid());
+
+    // Clear/리소스 전환/전체 view 를 카메라당 한 쌍으로 측정하여 광원 수에 따른 query 증가를 피한다.
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ShadowAtlas);
+
+    // 캐싱 없이 카메라마다 전체 atlas 를 한 번 clear 한다. 빈 view 의 타일과 미사용 영역도 far depth 가 된다.
+    // 모든 view 를 같은 pass 에서 그려 타일 사이의 clear 와 SRV/DSV 전환을 생략한다.
+    RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(shadowAtlas->shadowTexture, shadowAtlas->shadowDSV,
+        RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource)
+        .WithClearValue(RHI::ClearValue::DepthStencil(1.0f, 0));
+    RHI::renderer->BeginRenderPass(mainCommandList, &depthImage, 1);
+
+    bool depthRendered = true;
+    RHI::FrameThreadData *frameThreadData = frame->GetThreadData(0);
+    for (uint32_t shadowViewIndex = 0; shadowViewIndex < shadowAtlas->numShadowViews; ++shadowViewIndex) {
+        const FrameLocalShadowView &shadowView = shadowAtlas->shadowViews[shadowViewIndex];
+        if (shadowView.renderPass.numDrawSurfs == 0) {
+            continue;
+        }
+
+        RHI::ConstantBuffer *shadowViewConstantBuffer = frameThreadData->AllocConstant(sizeof(ShadowViewConstants));
+        if (!shadowViewConstantBuffer) {
+            BE_WARNLOG("RenderBackend::ExecuteDrawCamera3DLocalShadowPass: failed to allocate view constants\n");
+            depthRendered = false;
+            break;
+        }
+
+        ShadowViewConstants *constants = reinterpret_cast<ShadowViewConstants *>(shadowViewConstantBuffer->mappedPtr);
+        BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &shadowView.viewProjMatrix, sizeof(constants->viewProjMatrix));
+        constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
+        constants->padding = uint3(0, 0, 0);
+
+        // 투영은 border 를 포함해 확장되어 있으므로 타일 전체에 기록한다. Scissor 로 이웃 타일을 보호한다.
+        const BE1::Rect &tileRect = shadowView.tileRect;
+        assert(tileRect.x >= 0 && tileRect.y >= 0 && tileRect.w > 0 && tileRect.h > 0);
+        assert(tileRect.X2() <= shadowAtlas->size && tileRect.Y2() <= shadowAtlas->size);
+        RHI::renderer->SetViewport(mainCommandList, tileRect);
+        RHI::renderer->SetScissorRect(mainCommandList, tileRect);
+
+        if (!DrawLocalShadowPass(&shadowView.renderPass, shadowViewConstantBuffer)) {
+            depthRendered = false;
+            break;
+        }
+
+        if (frame->IsStatEnabled()) {
+            statShadowAtlasRenderedViewCount++;
+        }
+    }
+
+    // 중간에 상수/instance 할당 또는 PSO 준비가 실패해도 pass 를 닫아 ShaderResource 상태로 복구한다.
+    RHI::renderer->EndRenderPass(mainCommandList);
+
+    shadowAtlas->depthRendered = depthRendered;
+
+    if (depthRendered) {
+        // 카메라 CB 를 사용하는 draw 명령은 아직 기록하지 않았다. Depth 와 두 테이블이 준비된 경우에만 활성화한다.
+        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
+        if (!frame->UploadShaderShadowTable(frameThreadData, mainCommandList, *shadowAtlas, constants->shadowAtlas)) {
+            BE_WARNLOG("RenderBackend::ExecuteDrawCamera3DLocalShadowPass: failed to upload shadow tables\n");
+        }
+    }
+}
+
+bool RenderBackend::DrawLocalShadowPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawLocalShadowPass");
+
+    const uint32_t numDrawSurfs = renderPass->numDrawSurfs;
+    if (numDrawSurfs == 0) {
+        return true;
+    }
+
+    // 공용 draw 경로가 생략할 수 있는 PSO/instance 할당을 먼저 확인하여 불완전한 atlas 의 활성화를 방지한다.
+    // 준비한 instance table 은 그대로 전달하므로 공용 draw 경로에서 다시 할당/업로드하지 않는다.
+    localShadowDrawBatches.SetCount(0, false);
+    uint32_t instanceTableAllocCount = 0;
+    uint32_t instanceTableUploadBytes = 0;
+    bool drawsReady = true;
+
+    for (uint32_t drawSurfIndex = 0; drawSurfIndex < numDrawSurfs;) {
+        if (!renderPass->drawSurfs[drawSurfIndex]->pso) {
+            drawsReady = false;
+            break;
+        }
+
+        const uint32_t batchEnd = FindSurfaceInstanceBatchEnd(renderPass->drawSurfs, numDrawSurfs, drawSurfIndex);
+        SurfaceInstanceBatch &batch = localShadowDrawBatches.Alloc();
+        if (!PrepareSurfaceInstanceBatch(frame->GetThreadData(0), &renderPass->drawSurfs[drawSurfIndex], drawSurfIndex, batchEnd - drawSurfIndex, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
+            drawsReady = false;
+            break;
+        }
+        drawSurfIndex = batchEnd;
+    }
+
+    RecordDrawStats(0, 0, instanceTableAllocCount, instanceTableUploadBytes);
+
+    if (!drawsReady) {
+        return false;
+    }
+
+    DrawGenericSurfaces(renderPass->drawSurfs, numDrawSurfs, viewConstantBuffer, localShadowDrawBatches.Ptr(), localShadowDrawBatches.Count());
+    return true;
 }
 
 void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
@@ -1292,6 +1431,18 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
 
         if (renderImGuiOverlay) {
             GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ImGuiOverlay);
+
+            const FrameShadowAtlas *shadowAtlas = frame->GetShadowAtlasDebugPreview();
+            if (shadowAtlas && !shadowAtlas->depthRendered && shadowAtlas->shadowTexture && shadowAtlas->shadowDSV.IsValid()) {
+                // 미리보기 대상 카메라가 depth 를 기록하지 않았다면 이전 렌더링의 내용 대신 far depth 를 표시한다.
+                RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(shadowAtlas->shadowTexture, shadowAtlas->shadowDSV,
+                    RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+                    RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource)
+                    .WithClearValue(RHI::ClearValue::DepthStencil(1.0f, 0));
+                RHI::renderer->BeginRenderPass(mainCommandList, &depthImage, 1);
+                RHI::renderer->EndRenderPass(mainCommandList);
+                // 미리보기용 clear 는 해당 카메라의 shadow 렌더링 완료를 뜻하지 않으므로 depthRendered 는 유지한다.
+            }
 
             BE1::Rect viewportRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
 

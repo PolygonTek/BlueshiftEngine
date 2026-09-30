@@ -24,6 +24,7 @@
 #include "ShaderLightTable.h"
 #include "ShaderMaterialTable.h"
 #include "ShaderSurfaceTable.h"
+#include "ShaderShadowTable.h"
 
 class RenderContext;
 class RenderWork;
@@ -219,17 +220,19 @@ public:
     FrameSpotLightData *            AllocFrameSpotLightData();
     FrameLight *                    AllocFrameLight(RenderLight::Type type);
 
-                                    // 카메라마다 리소스 snapshot 을 만들고, 실제 shadow 등록 시에만 view 저장 공간을 확보한다.
-    FrameShadowAtlas *              AllocFrameShadowAtlas(const ShadowAtlas &atlas);
-    FrameLocalShadow *              AllocFrameLocalShadow(FrameShadowAtlas &atlas, FrameLight &light);
+    FrameShadowAtlas *              AllocFrameShadowAtlas(const ShadowAtlas &shadowAtlas);
+    FrameLocalShadow *              AllocFrameLocalShadow(FrameShadowAtlas &shadowAtlas, FrameLight &shadowLight);
 
     const FrameShadowAtlas *        GetShadowAtlasDebugPreview() const { return shadowAtlasDebugPreview; }
-    void                            SetShadowAtlasDebugPreview(const FrameShadowAtlas *atlas) { shadowAtlasDebugPreview = atlas; }
+    void                            SetShadowAtlasDebugPreview(const FrameShadowAtlas *shadowAtlas) { shadowAtlasDebugPreview = shadowAtlas; }
 
     uint32_t                        NumLightCullingZBins() const { return numLightCullingZBins; }
     uint32_t                        ReserveLightCullingZBins();
     uint32_t                        NumLightCullingWords() const { return numLightCullingWords; }
     uint32_t                        ReserveLightCullingWords(uint32_t count);
+
+    const FrameOceanSurface *       GetFrameOceanSurface() const { return frameOceanSurface; }
+    FrameOceanSurface *             AllocFrameOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings);
 
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
@@ -263,9 +266,6 @@ public:
 
     const RenderFrameSettings &     GetRenderFrameSettings() const { return renderFrameSettings; }
 
-    const FrameOceanSurface *       GetFrameOceanSurface() const { return frameOceanSurface; }
-    void                            RegisterFrameOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings, uint64_t settingsRevision, const OceanSurfaceQueryInput *surfaceQueries, uint32_t surfaceQueryCount);
-
     bool                            IsStatEnabled() const { return statEnabled; }
     void                            SetStatEnabled(bool enabled) { statEnabled = enabled; }
 
@@ -293,6 +293,7 @@ public:
     bool                            DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState) { return shaderLightCullingTable.DispatchLightCulling(frameThreadData, commandList, pipelineState, this); }
     bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameCamera *frameCamera) { return shaderSurfaceTable.Upload(frameThreadData, commandList, frameCamera, false); }
     bool                            EnsureShaderSurfaceTableCapacity() { return shaderSurfaceTable.EnsureBufferCapacity(maxShaderSurfaceCount); }
+    bool                            UploadShaderShadowTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameShadowAtlas &shadowAtlas, ShaderShadowAtlasData &outData) { return shaderShadowTable.Upload(frameThreadData, commandList, shadowAtlas, renderFrameSettings, outData); }
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
     void                            BeginFrame(const RenderFrameSettings &renderFrameSettings);
@@ -380,6 +381,7 @@ private:
     ShaderLightTable                shaderLightTable;
     ShaderLightCullingTable         shaderLightCullingTable;
     ShaderSurfaceTable              shaderSurfaceTable;
+    ShaderShadowTable               shaderShadowTable;
 
     BE1::Array<SharedPtr<Material>> retainedMaterials;
     BE1::Array<SharedPtr<MeshInstance>> retainedMeshInstances;

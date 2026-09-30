@@ -157,7 +157,7 @@ float CalcLocalLODErrorLimitSqr(const BE1::Mat3x4 &worldMatrix, float pixelsPerW
     return pixelErrorLimit * pixelErrorLimit / pixelsPerLocalUnitSqr;
 }
 
-bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::OBB &shadowMapBounds, const BE1::AABB &casterBounds) {
+bool CullShadowCaster(const BE1::Plane viewPlanes[6], const BE1::OBB &shadowMapBounds, const BE1::AABB &casterBounds) {
     if (casterBounds.IsCleared()) {
         return true;
     }
@@ -210,34 +210,7 @@ bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::OBB &shad
 
     // World-space caster shadow bounds 가 view volume 바깥에 있으면 컬링한다.
     for (int planeIndex = 0; planeIndex < 6; planeIndex++) {
-        if (worldSpaceCasterShadowBounds.PlaneSide(viewVolumePlanes[planeIndex]) == BE1::Plane::Side::Front) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool CullShadowCaster(const BE1::Plane viewVolumePlanes[6], const BE1::Frustum &shadowFrustum, const BE1::AABB &casterBounds) {
-    if (casterBounds.IsCleared()) {
-        return true;
-    }
-
-    // caster bounds 를 shadow frustum 원점에서 투영한 caster shadow volume 을 만든다.
-    BE1::Frustum projectedCasterFrustum;
-    if (!projectedCasterFrustum.FromProjection(casterBounds, shadowFrustum.GetOrigin(), shadowFrustum.GetFarDistance())) {
-        return false;
-    }
-
-    if (shadowFrustum.CullFrustum(projectedCasterFrustum)) {
-        return true;
-    }
-
-    // 실제 caster shadow volume 은 shadowFrustum 과 projectedCasterFrustum 의 교집합이다.
-    // 두 frustum 중 하나라도 view volume plane 바깥에 있으면 교집합도 해당 plane 바깥에 있다.
-    for (int planeIndex = 0; planeIndex < 6; planeIndex++) {
-        const BE1::Plane &viewPlane = viewVolumePlanes[planeIndex];
-        if (shadowFrustum.PlaneSide(viewPlane) == BE1::Plane::Side::Front || projectedCasterFrustum.PlaneSide(viewPlane) == BE1::Plane::Side::Front) {
+        if (worldSpaceCasterShadowBounds.PlaneSide(viewPlanes[planeIndex]) == BE1::Plane::Side::Front) {
             return true;
         }
     }

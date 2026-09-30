@@ -21,6 +21,7 @@
 
 class RenderFrame;
 struct FrameCascadedShadow;
+struct FrameShadowAtlas;
 struct RenderPass;
 struct RenderPassDrawSurf;
 struct FrameCamera;
@@ -30,11 +31,14 @@ enum class RenderPassType : uint8_t;
 class RenderPassBuilder {
 public:
                                     // 대상 포맷/depth state/bias 는 호출자가 graphicsPipelineDesc 에 준비한다.
-                                    // 해당 cascade bit 가 설정된 surface 로 패스를 구성한다.
+                                    // mask 가 0 이면 이미 선별된 전체 목록을, 아니면 해당 cascade bit 가 설정된 surface 를 사용한다.
     void                            BuildShadow(RenderFrame *frame, RenderPass *shadowPass, uint8_t shadowCascadeMask, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild);
 
                                     // 해당 cascade 의 DSV, bias, surface mask 로 depth pass 를 구성한다.
     void                            BuildCascadedShadow(RenderFrame *frame, FrameCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild);
+
+                                    // 해당 local shadow view 의 surface 목록과 광원 bias 로 depth pass 를 구성한다.
+    void                            BuildLocalShadow(RenderFrame *frame, FrameShadowAtlas *shadowAtlas, uint32_t shadowViewIndex, bool allowAsyncPSOBuild);
     void                            BuildMain(RenderFrame *frame, FrameCamera *frameCamera);
     void                            BuildGUI(RenderFrame *frame, FrameCamera *frameCamera);
 

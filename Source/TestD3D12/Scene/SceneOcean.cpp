@@ -33,7 +33,7 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
 
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
-    app.SetCameraPitchYaw(10, 145);
+    app.SetCameraPitchYaw(15, 160);
     app.SetCameraDistance(80.0f);
 
     directionalLight.type = RenderLight::Type::Directional;
@@ -42,6 +42,7 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     directionalLight.intensity = 2.0f;
     directionalLightElevation = 20;
     directionalLightEnabled = true;
+    directionalLightAzimuth = 185;
     UpdateDirectionalLightDirection();
     directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
 
