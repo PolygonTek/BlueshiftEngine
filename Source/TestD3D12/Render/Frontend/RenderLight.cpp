@@ -18,11 +18,17 @@
 #include "Render/RenderUtils.h"
 
 void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFlags) {
+    const Flag nextFlags = BE1::HasFlag(updateFlags, Desc::UpdateFlag::Flags) ? src.flags : desc.flags;
+    const bool trackShadowChanges = BE1::HasFlag(desc.flags | nextFlags, Flag::CastShadows);
+    bool shadowChanged = false;
+
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Flags)) {
+        shadowChanged |= trackShadowChanges && desc.flags != src.flags;
         desc.flags = src.flags;
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Layer)) {
+        shadowChanged |= trackShadowChanges && desc.layer != src.layer;
         desc.layer = src.layer;
     }
 
@@ -46,11 +52,14 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shadow)) {
+        shadowChanged |= trackShadowChanges && (desc.shadowOffsetUnits != src.shadowOffsetUnits || desc.shadowOffsetFactor != src.shadowOffsetFactor);
         desc.shadowOffsetUnits = src.shadowOffsetUnits;
         desc.shadowOffsetFactor = src.shadowOffsetFactor;
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Transform)) {
+        // 포인트 라이트 그림자는 월드 축 6면을 사용하므로 회전만 바뀌면 depth 를 유지할 수 있다.
+        shadowChanged |= trackShadowChanges && (desc.origin != src.origin || (desc.type != Type::Point && desc.axis != src.axis));
         desc.origin = src.origin;
         desc.axis = src.axis;
 
@@ -59,12 +68,14 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shape)) {
-        desc.type = src.type;
-        desc.size = src.size;
-        if (desc.type == Type::Point) {
-            const float radius = BE1::Max(desc.size[0], MinLightSize);
-            desc.size.Set(radius, radius, radius);
+        BE1::Vec3 size = src.size;
+        if (src.type == Type::Point) {
+            const float radius = BE1::Max(size[0], MinLightSize);
+            size.Set(radius, radius, radius);
         }
+        shadowChanged |= trackShadowChanges && (desc.type != src.type || desc.size != size || desc.zNear != src.zNear);
+        desc.type = src.type;
+        desc.size = size;
         desc.zNear = src.zNear;
         updateProjectionAndBounds = true;
     }
@@ -72,17 +83,30 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     if (updateProjectionAndBounds) {
         UpdateProjectionAndBounds();
     }
+
+    if (shadowChanged) {
+        ++shadowRevision;
+    }
 }
 
 void RenderLight::UpdateFlags(Flag flags) {
+    if (BE1::HasFlag(desc.flags | flags, Flag::CastShadows) && desc.flags != flags) {
+        ++shadowRevision;
+    }
     desc.flags = flags;
 }
 
 void RenderLight::UpdateLayer(uint8_t layer) {
+    if (BE1::HasFlag(desc.flags, Flag::CastShadows) && desc.layer != layer) {
+        ++shadowRevision;
+    }
     desc.layer = layer;
 }
 
 void RenderLight::UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis) {
+    if (BE1::HasFlag(desc.flags, Flag::CastShadows) && (desc.origin != origin || (desc.type != Type::Point && desc.axis != axis))) {
+        ++shadowRevision;
+    }
     desc.origin = origin;
     desc.axis = axis;
 
@@ -91,12 +115,17 @@ void RenderLight::UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis
 }
 
 void RenderLight::UpdateShape(Type type, const BE1::Vec3 &size, float zNear) {
-    desc.type = type;
-    desc.size = size;
-    if (desc.type == Type::Point) {
-        const float radius = BE1::Max(desc.size[0], MinLightSize);
-        desc.size.Set(radius, radius, radius);
+    BE1::Vec3 lightSize = size;
+    if (type == Type::Point) {
+        const float radius = BE1::Max(lightSize[0], MinLightSize);
+        lightSize.Set(radius, radius, radius);
     }
+
+    if (BE1::HasFlag(desc.flags, Flag::CastShadows) && (desc.type != type || desc.size != lightSize || desc.zNear != zNear)) {
+        ++shadowRevision;
+    }
+    desc.type = type;
+    desc.size = lightSize;
     desc.zNear = zNear;
 
     UpdateProjectionAndBounds();
@@ -120,6 +149,9 @@ void RenderLight::UpdateLighting(const BE1::Color3 &linearColor, float intensity
 }
 
 void RenderLight::UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor) {
+    if (BE1::HasFlag(desc.flags, Flag::CastShadows) && (desc.shadowOffsetUnits != shadowOffsetUnits || desc.shadowOffsetFactor != shadowOffsetFactor)) {
+        ++shadowRevision;
+    }
     desc.shadowOffsetUnits = shadowOffsetUnits;
     desc.shadowOffsetFactor = shadowOffsetFactor;
 }

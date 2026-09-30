@@ -525,7 +525,7 @@ struct FrameLight {
     uint32_t                        localShadowIndex = ~0u;         ///< 카메라의 FrameShadowAtlas::shadows 인덱스. ~0u 이면 shadow 없음.
     uint32_t                        shadowRequestedResolution = 0;  ///< 화면 크기로 정한 border 포함 요청 해상도. Point 는 한 면 기준이며 비대상은 0.
 
-    int                             GetShadowViewCount() const { return type == RenderLight::Type::Point ? 6 : type == RenderLight::Type::Spot ? 1 : 0; }
+    int                             GetShadowViewCount() const { return type == RenderLight::Type::Point ? 6 : (type == RenderLight::Type::Spot || type == RenderLight::Type::BoxDir ? 1 : 0); }
     void                            CalcSpotShadowProjection(FrameLocalShadowView &shadowView) const;
     BE1::Vec2                       GetPointShadowDepthRange() const; // X = near, Y = far. Depth 렌더링과 샘플링 계수에 같은 범위를 사용한다.
     void                            CalcPointShadowProjections(FrameLocalShadowView shadowViews[6]) const;

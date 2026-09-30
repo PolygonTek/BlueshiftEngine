@@ -38,26 +38,6 @@ static BE_INLINE bool IsRenderLayerVisible(uint32_t layerMask, uint8_t layer) {
     return layer < 32 && (layerMask & BIT(layer)) != 0;
 }
 
-static uint32_t CalcShadowMapBorderTexels(uint32_t resolution, uint32_t shadowMapQuality) {
-    constexpr uint32_t fixedKernelMaxOffsetTexels = 1;
-    constexpr uint32_t fixedKernelBorderTexels = fixedKernelMaxOffsetTexels + 1; // bilinear comparison footprint 를 위해 1 texel border 를 추가한다.
-    assert(resolution > 2 * fixedKernelBorderTexels);
-
-    // Q0~Q2 의 fixed kernel offset 의 최대 크기는 1 이다.
-    if (shadowMapQuality < 3) {
-        return fixedKernelBorderTexels;
-    }
-
-    constexpr float usableResolution = static_cast<float>(RenderFrameSettings::ShadowMapFilterReferenceResolution - 2 * RenderFrameSettings::ShadowMapFilterReferenceBorderTexels);
-    constexpr float maxFilterRadiusScale = RenderFrameSettings::ShadowMapFilterRadiusMax / usableResolution;
-    constexpr float maxPoissonKernelRadiusScale = RenderFrameSettings::ShadowMapPoissonKernelMaxRadius * maxFilterRadiusScale;
-
-    // effective radius 가 border 로 줄어드는 관계까지 풀어서 필요한 최소 border 를 계산한다.
-    const float requiredBorder = (maxPoissonKernelRadiusScale * resolution + 1.0f) / (1.0f + 2.0f * maxPoissonKernelRadiusScale);
-
-    return BE1::Max(fixedKernelBorderTexels, static_cast<uint32_t>(BE1::Math::Ceil(requiredBorder)));
-}
-
 static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubMesh *subMesh, bool skinning) {
     ShaderFeatureSet featureSet;
 
