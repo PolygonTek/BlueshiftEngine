@@ -70,10 +70,11 @@ class RenderContext {
         Value<uint32_t>             lightCullingWordCount = 0;
         Value<uint64_t>             lightCullingThreadGroupCount = 0;
         Value<uint32_t>             shadowAtlasCandidateCount = 0;
+        Value<uint32_t>             shadowAtlasSkippedLightCount = 0; // shadow view 수 제한으로 제외된 광원 수.
         Value<uint32_t>             shadowAtlasResolutionDowngradeCount = 0;
         Value<uint32_t>             shadowAtlasAllocationFailureCount = 0;
-        Value<uint32_t>             shadowAtlasViewBudgetSkippedCount = 0;
-        Value<uint32_t>             shadowAtlasFrameAllocationSkippedCount = 0;
+        Value<uint32_t>             shadowAtlasUpdateViewCount = 0; // depth 갱신 대상으로 선택한 view 수. Caster 가 없는 view 도 포함한다.
+        Value<uint32_t>             shadowAtlasReusedViewCount = 0; // depth 갱신을 생략하고 이전 결과를 재사용할 view 수.
         Value<uint32_t>             shadowAtlasRenderedViewCount = 0; // 빈 view 를 제외하고 실제 draw 명령을 기록한 shadow view 수.
         Value<uint32_t>             shadowAtlasDrawSurfaceCount = 0;
     };

@@ -274,8 +274,8 @@ private:
     bool                        hasOceanSurface = false;
 
     BE1::Array<FrameLight *>    localShadowLightCandidates = BE1::Array<FrameLight *>(64);  // 현재 카메라의 shadow light 가 될 수 있는 후보
-    BE1::Array<LocalShadowCasterRef> localShadowCasterRefs = BE1::Array<LocalShadowCasterRef>(256); // 현재 카메라의 모든 shadow caster 목록
-    BE1::Array<LocalShadowSurfRef> localShadowSurfRefs = BE1::Array<LocalShadowSurfRef>(256); // 현재 카메라의 모든 shadow surface 목록
+    BE1::Array<LocalShadowCasterRef> localShadowCasterRefs = BE1::Array<LocalShadowCasterRef>(256); // 현재 카메라에서 갱신할 local shadow 의 caster 참조
+    BE1::Array<LocalShadowSurfRef> localShadowSurfRefs = BE1::Array<LocalShadowSurfRef>(256); // 현재 카메라에서 갱신할 local shadow 의 surface 참조
 
     bool                        frameActive = false;
     uint64_t                    frameIndex = 0;

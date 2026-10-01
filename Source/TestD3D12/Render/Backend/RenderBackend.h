@@ -25,6 +25,7 @@ class RenderContext;
 class ShaderPipeline;
 struct RenderFrameSettings;
 struct FrameCamera;
+struct FrameShadowAtlas;
 struct RenderPass;
 struct FrameSurf;
 struct RenderPassDrawSurf;
@@ -98,19 +99,16 @@ private:
 
     void                            UpdateFramePSOs();
 
-    void                            ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor);
-    void                            ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
-    void                            ExecuteDrawCamera3DShadowPass();
-    void                            ExecuteDrawCamera3DLocalShadowPass();
-    void                            ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
-    void                            ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
+    void                            DrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor);
+    void                            DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
+    void                            DrawCSMPass();
+    void                            DrawShadowAtlasPass();
+    void                            ClearShadowAtlasTiles(const FrameShadowAtlas &shadowAtlas);
+    bool                            DrawShadowAtlasViews(FrameShadowAtlas &shadowAtlas, RHI::FrameThreadData *frameThreadData);
+    void                            DrawDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
+    void                            DrawScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            CaptureSceneSnapshot();
-    void                            ExecuteDrawCamera3DPostOpaquePass();
-
-    void                            DrawCamera3DDepthPrepass();
-    void                            DrawCamera3DScenePass();
-    void                            DrawCamera3DPostOpaquePass();
-    void                            DrawCamera2D();
+    void                            DrawPostOpaquePass();
 
     void                            PostProcessAndBlitToOutput(bool velocityReady, const RHI::Texture *outputOverrideTexture);
     void                            BlitTextureToRenderTarget(const RHI::Texture *texture, const RHI::Texture *renderTargetTexture, RHI::ViewID renderTargetViewID, RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destinationRect, RHI::PipelineState *imagePSO);

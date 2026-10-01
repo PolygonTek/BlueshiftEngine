@@ -204,6 +204,14 @@ void App::ChangeScene(int sceneIndex) {
     }
 
     DestroyScene();
+
+    // 카메라 리소스는 재사용하되 이전 씬의 shadow atlas 는 초기화한다.
+    renderCamera->GetShadowAtlas().ResetAllocations();
+
+    if (renderCamera->GetRenderWidth() > 0) {
+        renderCamera->InvalidateTemporalHistory();
+    }
+
     ResetCamera();
 
     scene = SceneRegistry::Create(sceneIndex);
@@ -761,20 +769,15 @@ void App::RenderGUI() {
 
         mainRenderContext->DrawString(x, y, BE1::va("Objects: %u, Draws: %u, Tris: %llu", renderStats.visibleObjectCount, renderStats.drawCount, renderStats.drawTriangleCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Instance Tables: %u, Upload: %s", renderStats.instanceTableAllocCount, BE1::Str::FormatBytes(renderStats.instanceTableUploadBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-        mainRenderContext->DrawString(x, y, BE1::va("Dynamic buffer used: %s", BE1::Str::FormatBytes(renderStats.dynamicBufferUsedBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Dynamic Buffer Used: %s", BE1::Str::FormatBytes(renderStats.dynamicBufferUsedBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
 
         mainRenderContext->DrawString(x, y, BE1::va("Lights: %u (Point: %u, Spot: %u, BoxDir: %u)", renderStats.visibleLightCount, renderStats.visiblePointLightCount, renderStats.visibleSpotLightCount, renderStats.visibleBoxDirLightCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Light Culling Thread Groups: %llu", renderStats.lightCullingThreadGroupCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Light Culling Z-bins: %u, Memory: %s", renderStats.lightCullingZBinCount, BE1::Str::FormatBytes(statLightCullingZBinBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Light Culling Tile Masks: %u words, Memory: %s", renderStats.lightCullingWordCount, BE1::Str::FormatBytes(statLightCullingWordBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
 
-        mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Candidates: %u, Downgraded: %u", renderStats.shadowAtlasCandidateCount, renderStats.shadowAtlasResolutionDowngradeCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-        mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Full: %u, View Budget Skipped: %u", renderStats.shadowAtlasAllocationFailureCount, renderStats.shadowAtlasViewBudgetSkippedCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-        mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Rendered Views: %u, Draw Surfaces: %u", renderStats.shadowAtlasRenderedViewCount, renderStats.shadowAtlasDrawSurfaceCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-
-        if (renderStats.shadowAtlasFrameAllocationSkippedCount > 0) {
-            mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Frame Allocation Skipped: %u", renderStats.shadowAtlasFrameAllocationSkippedCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
-        }
+        mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Lights Candidates: %u, Skipped: %u, Downgraded: %u, Failed: %u", renderStats.shadowAtlasCandidateCount, renderStats.shadowAtlasSkippedLightCount, renderStats.shadowAtlasResolutionDowngradeCount, renderStats.shadowAtlasAllocationFailureCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
+        mainRenderContext->DrawString(x, y, BE1::va("Shadow Atlas Views Update: %u, Reused: %u, Rendered: %u", renderStats.shadowAtlasUpdateViewCount, renderStats.shadowAtlasReusedViewCount, renderStats.shadowAtlasRenderedViewCount), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
 
         mainRenderContext->DrawString(x, y, BE1::va("Video Memory: %s / %s", BE1::Str::FormatBytes(videoMemUsageBytes).c_str(), BE1::Str::FormatBytes(videoMemBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;
         mainRenderContext->DrawString(x, y, BE1::va("Mipmap Streaming: %s / %s", BE1::Str::FormatBytes(textureStreamingUsageBytes).c_str(), BE1::Str::FormatBytes(textureStreamingBudgetBytes).c_str()), DrawTextFlag::Right | DrawTextFlag::AddOutlines); y += textLineHeight;

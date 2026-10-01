@@ -211,6 +211,16 @@ void RenderFrame::FreeFrameCameras() {
 
     // 소멸자 호출
     for (int i = 0; i < numFrameCameras; ++i) {
+        FrameShadowAtlas *shadowAtlas = frameCameras[i].frameShadowAtlas;
+        if (shadowAtlas) {
+            for (uint32_t viewIndex = 0; viewIndex < shadowAtlas->numShadowViews; ++viewIndex) {
+                shadowAtlas->shadowViews[viewIndex].~FrameLocalShadowView();
+            }
+            for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas->numShadows; ++shadowIndex) {
+                shadowAtlas->shadows[shadowIndex].~FrameLocalShadow();
+            }
+            shadowAtlas->~FrameShadowAtlas();
+        }
         (frameCameras + i)->~FrameCamera();
     }
 
@@ -611,44 +621,46 @@ FrameShadowAtlas *RenderFrame::AllocFrameShadowAtlas(const ShadowAtlas &shadowAt
 }
 
 // FrameShadowAtlas 에 shadows 와 필요한 shadowViews 를 추가한다.
-FrameLocalShadow *RenderFrame::AllocFrameLocalShadow(FrameShadowAtlas &frameShadowAtlas, FrameLight &shadowLight) {
-    if (shadowLight.localShadowIndex != ~0u || !BE1::HasFlag(shadowLight.flags, RenderLight::Flag::CastShadows)) {
+FrameLocalShadow *RenderFrame::AllocFrameLocalShadow(FrameShadowAtlas *frameShadowAtlas, FrameLight *shadowLight) {
+    assert(frameShadowAtlas && shadowLight);
+
+    if (shadowLight->localShadowIndex != ~0u || !BE1::HasFlag(shadowLight->flags, RenderLight::Flag::CastShadows)) {
         return nullptr;
     }
 
-    const uint32_t shadowViewCount = shadowLight.GetShadowViewCount();
-    if (shadowViewCount == 0 || shadowViewCount > frameShadowAtlas.maxShadowViews - frameShadowAtlas.numShadowViews) {
+    const uint32_t shadowViewCount = shadowLight->GetShadowViewCount();
+    if (shadowViewCount == 0 || shadowViewCount > frameShadowAtlas->maxShadowViews - frameShadowAtlas->numShadowViews) {
         return nullptr;
     }
 
-    if (!frameShadowAtlas.shadowViews) {
+    if (!frameShadowAtlas->shadowViews) {
         // 최악의 경우 모두 spot shadow 일 때 numShadows == numShadowViews 이므로 maxShadowViews 만큼 shadows 를 할당한다.
-        FrameLocalShadow *shadows = static_cast<FrameLocalShadow *>(MemAlloc(sizeof(FrameLocalShadow) * frameShadowAtlas.maxShadowViews));
-        FrameLocalShadowView *shadowViews = static_cast<FrameLocalShadowView *>(MemAlloc(sizeof(FrameLocalShadowView) * frameShadowAtlas.maxShadowViews));
+        FrameLocalShadow *shadows = static_cast<FrameLocalShadow *>(MemAlloc(sizeof(FrameLocalShadow) * frameShadowAtlas->maxShadowViews));
+        FrameLocalShadowView *shadowViews = static_cast<FrameLocalShadowView *>(MemAlloc(sizeof(FrameLocalShadowView) * frameShadowAtlas->maxShadowViews));
         if (!shadows || !shadowViews) {
             return nullptr;
         }
 
-        frameShadowAtlas.shadows = shadows;
-        frameShadowAtlas.shadowViews = shadowViews;
+        frameShadowAtlas->shadows = shadows;
+        frameShadowAtlas->shadowViews = shadowViews;
     }
 
-    const uint32_t newShadowIndex = frameShadowAtlas.numShadows;
-    FrameLocalShadow *shadow = new (&frameShadowAtlas.shadows[newShadowIndex]) FrameLocalShadow();
-    shadow->light = &shadowLight;
-    shadow->firstShadowView = frameShadowAtlas.numShadowViews;
+    const uint32_t newShadowIndex = frameShadowAtlas->numShadows;
+    FrameLocalShadow *shadow = new (&frameShadowAtlas->shadows[newShadowIndex]) FrameLocalShadow();
+    shadow->light = shadowLight;
+    shadow->firstShadowView = frameShadowAtlas->numShadowViews;
     shadow->numShadowViews = shadowViewCount;
 
     for (uint32_t faceIndex = 0; faceIndex < shadowViewCount; ++faceIndex) {
-        FrameLocalShadowView *shadowView = new (&frameShadowAtlas.shadowViews[frameShadowAtlas.numShadowViews + faceIndex]) FrameLocalShadowView();
+        FrameLocalShadowView *shadowView = new (&frameShadowAtlas->shadowViews[frameShadowAtlas->numShadowViews + faceIndex]) FrameLocalShadowView();
         shadowView->shadowIndex = newShadowIndex;
         shadowView->faceIndex = faceIndex;
     }
 
-    frameShadowAtlas.numShadowViews += shadowViewCount;
-    frameShadowAtlas.numShadows++;
+    frameShadowAtlas->numShadowViews += shadowViewCount;
+    frameShadowAtlas->numShadows++;
 
-    shadowLight.localShadowIndex = newShadowIndex;
+    shadowLight->localShadowIndex = newShadowIndex;
     return shadow;
 }
 

@@ -540,10 +540,11 @@ RenderContext::Stats RenderContext::GetStats() const {
         snapshot.lightCullingWordCount = stats.lightCullingWordCount.load();
         snapshot.lightCullingThreadGroupCount = stats.lightCullingThreadGroupCount.load();
         snapshot.shadowAtlasCandidateCount = stats.shadowAtlasCandidateCount.load();
+        snapshot.shadowAtlasSkippedLightCount = stats.shadowAtlasSkippedLightCount.load();
         snapshot.shadowAtlasResolutionDowngradeCount = stats.shadowAtlasResolutionDowngradeCount.load();
         snapshot.shadowAtlasAllocationFailureCount = stats.shadowAtlasAllocationFailureCount.load();
-        snapshot.shadowAtlasViewBudgetSkippedCount = stats.shadowAtlasViewBudgetSkippedCount.load();
-        snapshot.shadowAtlasFrameAllocationSkippedCount = stats.shadowAtlasFrameAllocationSkippedCount.load();
+        snapshot.shadowAtlasUpdateViewCount = stats.shadowAtlasUpdateViewCount.load();
+        snapshot.shadowAtlasReusedViewCount = stats.shadowAtlasReusedViewCount.load();
         snapshot.shadowAtlasRenderedViewCount = stats.shadowAtlasRenderedViewCount.load();
         snapshot.shadowAtlasDrawSurfaceCount = stats.shadowAtlasDrawSurfaceCount.load();
 
@@ -572,10 +573,11 @@ void RenderContext::SetStats(const Stats &snapshot) {
     stats.lightCullingWordCount.store(snapshot.lightCullingWordCount);
     stats.lightCullingThreadGroupCount.store(snapshot.lightCullingThreadGroupCount);
     stats.shadowAtlasCandidateCount.store(snapshot.shadowAtlasCandidateCount);
+    stats.shadowAtlasSkippedLightCount.store(snapshot.shadowAtlasSkippedLightCount);
     stats.shadowAtlasResolutionDowngradeCount.store(snapshot.shadowAtlasResolutionDowngradeCount);
     stats.shadowAtlasAllocationFailureCount.store(snapshot.shadowAtlasAllocationFailureCount);
-    stats.shadowAtlasViewBudgetSkippedCount.store(snapshot.shadowAtlasViewBudgetSkippedCount);
-    stats.shadowAtlasFrameAllocationSkippedCount.store(snapshot.shadowAtlasFrameAllocationSkippedCount);
+    stats.shadowAtlasUpdateViewCount.store(snapshot.shadowAtlasUpdateViewCount);
+    stats.shadowAtlasReusedViewCount.store(snapshot.shadowAtlasReusedViewCount);
     stats.shadowAtlasRenderedViewCount.store(snapshot.shadowAtlasRenderedViewCount);
     stats.shadowAtlasDrawSurfaceCount.store(snapshot.shadowAtlasDrawSurfaceCount);
 

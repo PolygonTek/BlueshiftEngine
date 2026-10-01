@@ -710,13 +710,12 @@ struct ShaderPointLight {
     float fallOffExponent;
     uint flags;
     uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
-    float2 shadowDepthScaleBias; // Point 면의 전방 거리 d 로 depth = X + Y / d 를 계산한다.
+    float2 padding;
 };
 
 #ifdef __cplusplus
 static_assert(sizeof(ShaderPointLight) == 80, "ShaderPointLight must remain a tightly packed StructuredBuffer element");
 static_assert(offsetof(ShaderPointLight, shadowIndex) == 68, "Point shadow index must reuse the existing padding");
-static_assert(offsetof(ShaderPointLight, shadowDepthScaleBias) == 72, "Point shadow depth coefficients must reuse the remaining padding");
 #endif
 
 struct ShaderSpotLight {
@@ -789,15 +788,17 @@ static_assert(sizeof(ShadowViewConstants) == 80, "ShadowViewConstants must match
 struct ShaderLocalShadow {
     uint firstShadowView;       // View 테이블에서 이 광원의 첫 요소. Point 6면도 연속된 요소를 사용한다.
     uint numShadowViews;        // Spot: 1, Point: 6. 0 이면 유효한 view 가 없다.
-    float filterRadius;        // Atlas texel 단위의 PCF 반경. 업로드 시 border 안에 들어가도록 제한한다.
-    float normalizedBorder;    // borderTexels / 할당된 타일 해상도. Point 는 모든 면이 같은 해상도/border 를 사용한다.
+    float filterRadius;         // Atlas texel 단위의 PCF 반경. 업로드 시 border 안에 들어가도록 제한한다.
+    float normalizedBorder;     // borderTexels / 할당된 타일 해상도. Point 는 모든 면이 같은 해상도/border 를 사용한다.
+    float3 pointOrigin;         // Point depth 기록 당시의 광원 위치. 조명 계산의 현재 위치와 별개다.
+    float2 pointDepthScaleBias; // Point 면의 전방 거리 d 로 depth = X + Y / d 를 계산한다.
 };
 
 // Spot 한 개 또는 Point 한 면의 샘플링 정보. 렌더링용 ShadowViewConstants 와 별도다.
 struct ShaderLocalShadowView {
     // world position -> homogeneous tile coordinate. XYZ 를 W 로 나눈 뒤 XY 는 타일 전체의 UV (Y down), Z 는 비교 depth [0, 1].
-    // Border 를 포함한 렌더링 투영을 사용하며 near = 0, far = 1 이다. Perspective divide 전 W <= 0 은 샘플링하지 않는다.
-    // Point 의 W 는 선택한 면의 전방 거리 max(abs(worldPosition - lightOrigin)) 이며 방사 거리가 아니다.
+    // border 를 포함한 렌더링 투영을 사용하며 near = 0, far = 1 이다. perspective divide 전 W <= 0 은 샘플링하지 않는다.
+    // 포인트 라이트는 보존한 위치와 depth 계수로 좌표를 직접 계산하므로 이 행렬을 사용하지 않는다.
     row_major float4x4 worldToShadowCoordMatrix;
     float4 atlasScaleBias;      // XY = tileSize / atlasSize, ZW = tileOrigin / atlasSize. atlasUV = tileUV * XY + ZW.
 };
@@ -814,8 +815,9 @@ struct ShaderShadowAtlasData {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderLocalShadow) == 16, "ShaderLocalShadow must match the HLSL structured-buffer stride");
+static_assert(sizeof(ShaderLocalShadow) == 36, "ShaderLocalShadow must match the HLSL structured-buffer stride");
 static_assert(offsetof(ShaderLocalShadow, numShadowViews) == 4 && offsetof(ShaderLocalShadow, filterRadius) == 8 && offsetof(ShaderLocalShadow, normalizedBorder) == 12, "Local shadow field offsets must match HLSL");
+static_assert(offsetof(ShaderLocalShadow, pointOrigin) == 16 && offsetof(ShaderLocalShadow, pointDepthScaleBias) == 28, "Point shadow sampling offsets must match HLSL");
 static_assert(sizeof(ShaderLocalShadowView) == 80, "ShaderLocalShadowView must match the HLSL structured-buffer stride");
 static_assert(offsetof(ShaderLocalShadowView, atlasScaleBias) == 64, "Local shadow view field offsets must match HLSL");
 static_assert(sizeof(ShaderShadowAtlasData) == 32, "ShaderShadowAtlasData must match the HLSL constant-buffer layout");

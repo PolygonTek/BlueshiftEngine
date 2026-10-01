@@ -29,6 +29,7 @@
 #include "Frontend/RenderLight.h"
 #include "RenderFrameSettings.h"
 #include "RenderUtils.h"
+#include "ShadowAtlas.h"
 #include "ScreenSpaceAOResources.h"
 #include "ScreenSpaceDepthPyramidResources.h"
 #include "HiZResources.h"
@@ -131,19 +132,24 @@ static_assert(ShaderCSMCascadeCount == RenderFrameSettings::CSMCascadeCount, "CP
 
 struct FrameLocalShadow {
     const FrameLight *              light = nullptr;
+    SharedPtr<ShadowAtlas::RenderState> renderState;                // 프레임이 공유 렌더링 상태의 수명을 보장한다.
+    bool                            hasValidDepth = false;          // 이 프레임에서 depth 를 사용할 수 있는지 여부. 갱신/재사용 결과는 백엔드에서 확정한다.
+    bool                            updateDepth = false;            // 이번 프레임에 depth 를 갱신할 지 여부
+    BE1::Vec3                       pointOrigin = BE1::Vec3::zero;   // Point depth 기록 당시의 위치. 현재 조명 위치와 별도로 유지한다.
+    BE1::Vec2                       pointDepthScaleBias = BE1::Vec2::zero; // Point depth = X + Y / 면의 전방 거리.
     float                           squaredRadius = 0.0f;           // 포인트 라이트의 반경 제곱
-    float                           viewPlaneToOriginDistances[6];  // 각 view volume 평면에서 광원까지 거리.
+    float                           viewPlaneToOriginDistances[6];  // 각 view volume 평면에서 광원까지 거리
     uint32_t                        firstShadowView = 0;            // FrameShadowAtlas::shadowViews 의 첫번째 index
     uint32_t                        numShadowViews = 0;             // shadow view 개수 (Spot: 1, Point: 6)
     uint32_t                        requestedResolution = 0;        // 요청한 해상도
-    uint32_t                        resolution = 0;                 // 할당된 해상도. (border 포함)
+    uint32_t                        resolution = 0;                 // 할당된 해상도 (border 포함)
 };
 
 struct FrameLocalShadowView {
     ALIGN_AS32 BE1::Mat4            viewProjMatrix;
     BE1::Frustum                    frustum;                        // shadow view frustum
     BE1::Plane                      frustumPlanes[6];               // shadow view frustum planes
-    BE1::Rect                       tileRect;                       // border 를 포함한 atlas 내 물리적 영역.
+    BE1::Rect                       tileRect;                       // border 를 포함한 atlas 내 물리적 영역
     uint32_t                        borderTexels = 0;               // 한쪽 border texel 수. shadow map 의 valid area 한 변은 tileRect.w - 2 * borderTexels.
     uint32_t                        shadowIndex = ~0u;              // FrameShadowAtlas::shadows 의 index
     uint32_t                        faceIndex = 0;                  // Point: 0 = +X, 1 = -X, 2 = +Y, 3 = -Y, 4 = +Z, 5 = -Z. Spot: 0.
@@ -159,20 +165,17 @@ struct FrameShadowAtlas {
     RHI::ViewID                     shadowDSV = RHI::ViewID::InvalidID;
     RHI::ViewID                     shadowSRV = RHI::ViewID::InvalidID;
     uint32_t                        size = 0;
-    uint32_t                        numShadows = 0;
+    uint32_t                        numShadows = 0;                 // 아틀라스에서 사용 중인 모든 shadow 개수
     FrameLocalShadow *              shadows = nullptr;
-    uint32_t                        maxShadowViews = 0;
-    uint32_t                        numShadowViews = 0;
+    uint32_t                        maxShadowViews = 0;             // 아틀라스에서 사용할 수 있는 최대 shadow view 개수
+    uint32_t                        numShadowViews = 0;             // 아틀라스에서 유지 중인 모든 shadow view 개수
     FrameLocalShadowView *          shadowViews = nullptr;
 
     // 할당 결과는 광원 단위로 집계한다. Point 의 6면도 한 요청이며, 축소 수는 할당 성공 중 일부이다.
     uint32_t                        numCandidates = 0;              // shadow atlas 할당 후보 광원 수.
     uint32_t                        numResolutionDowngrades = 0;    // 해상도를 낮춰 할당에 성공한 광원 수.
     uint32_t                        numAllocationFailures = 0;      // atlas 타일 할당에 실패한 광원 수.
-    uint32_t                        numViewBudgetSkipped = 0;       // shadow view 수 제한으로 제외된 광원 수.
-    uint32_t                        numFrameAllocationSkipped = 0;  // 프레임 메모리 할당 실패로 제외된 광원 수.
-
-    bool                            depthRendered = false;          // 초기화 후 백엔드에서만 접근한다. 해당 카메라의 depth 기록이 성공한 뒤 true 로 바꾼다.
+    uint32_t                        numSkippedLights = 0;           // shadow view 수 제한으로 제외된 광원 수.
 };
 
 // 같은 debug draw pipeline 을 사용하는 프리미티브들을 하나의 배치로 묶는다.
@@ -501,6 +504,7 @@ struct FrameLight {
 
     const FrameSpotLightData *      spotLightData = nullptr;
 
+    uint64_t                        lightId = 0;                    ///< 원본 RenderLight 의 고유 ID
     uint16_t                        index;                          ///< FrameLight index
     uint16_t                        typeIndex;                      ///< FrameLight index for same light type
     uint16_t                        packedTileMin;                  ///< Packed minimum light-culling tile coordinate: low 8 bits X, high 8 bits Y
@@ -523,10 +527,11 @@ struct FrameLight {
     RenderLight::Type               type;
     RenderLight::Flag               flags;
     uint32_t                        localShadowIndex = ~0u;         ///< 카메라의 FrameShadowAtlas::shadows 인덱스. ~0u 이면 shadow 없음.
+    uint32_t                        projectedSize = 0;              ///< 광원 투영 영역의 긴 변. 내부 렌더 해상도 기준 픽셀이며 해상도 선택 배율 적용 전의 값.
     uint32_t                        shadowRequestedResolution = 0;  ///< 화면 크기로 정한 border 포함 요청 해상도. Point 는 한 면 기준이며 비대상은 0.
 
     int                             GetShadowViewCount() const { return type == RenderLight::Type::Point ? 6 : (type == RenderLight::Type::Spot || type == RenderLight::Type::BoxDir ? 1 : 0); }
     void                            CalcSpotShadowProjection(FrameLocalShadowView &shadowView) const;
     BE1::Vec2                       GetPointShadowDepthRange() const; // X = near, Y = far. Depth 렌더링과 샘플링 계수에 같은 범위를 사용한다.
-    void                            CalcPointShadowProjections(FrameLocalShadowView shadowViews[6]) const;
+    BE1::Vec2                       CalcPointShadowProjections(FrameLocalShadowView shadowViews[6]) const; // 6면이 공유하는 depth scale/bias 를 반환한다.
 };

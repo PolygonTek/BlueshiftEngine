@@ -81,9 +81,9 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     pointLight.flags = RenderLight::Flag::CastShadows;
     pointLight.linearColor = BE1::Color3(1.0f, 0.8f, 0.19f);
     pointLight.intensity = 10.0f;
-    pointLight.size.Set(2.5f, 2.5f, 2.5f);
+    pointLight.size.Set(2.8f, 2.8f, 2.8f);
     pointLight.zNear = BE1::Max(meshRadius * 0.01f, RenderLight::MinLightSize);
-    pointLight.origin.Set(-0.2f, 1.35f, -0.175f);
+    pointLight.origin.Set(0.8f, -0.5f, 0.0f);
     pointLightEnabled = pointLight.SetEnabled(renderWorld, true);
 }
 

@@ -221,7 +221,7 @@ public:
     FrameLight *                    AllocFrameLight(RenderLight::Type type);
 
     FrameShadowAtlas *              AllocFrameShadowAtlas(const ShadowAtlas &shadowAtlas);
-    FrameLocalShadow *              AllocFrameLocalShadow(FrameShadowAtlas &shadowAtlas, FrameLight &shadowLight);
+    FrameLocalShadow *              AllocFrameLocalShadow(FrameShadowAtlas *frameShadowAtlas, FrameLight *shadowLight);
 
     const FrameShadowAtlas *        GetShadowAtlasDebugPreview() const { return shadowAtlasDebugPreview; }
     void                            SetShadowAtlasDebugPreview(const FrameShadowAtlas *shadowAtlas) { shadowAtlasDebugPreview = shadowAtlas; }

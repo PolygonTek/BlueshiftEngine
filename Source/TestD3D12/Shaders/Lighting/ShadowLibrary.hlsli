@@ -180,7 +180,7 @@ float3 CalcPointShadowFaceCoord(uint faceIndex, float3 lightToReceiver, float no
     return float3(tileUV, depth);
 }
 
-float EvaluatePointShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 lightToReceiver, float2 depthScaleBias) {
+float EvaluatePointShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 worldPosition) {
     const ShaderShadowAtlasData atlas = cameraConstants.shadowAtlas;
     [branch]
     if (shadowIndex >= atlas.numShadows) {
@@ -194,6 +194,8 @@ float EvaluatePointShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 lig
         return 1.0f;
     }
 
+    // 조명은 현재 광원 위치를 사용하지만, 유지 중인 depth 는 기록 당시의 위치와 투영 계수로 읽는다.
+    const float3 lightToReceiver = worldPosition - shadow.pointOrigin;
     const uint faceIndex = SelectPointShadowFace(lightToReceiver);
     if (faceIndex == ShaderPointShadowFaceInvalid) {
         return 1.0f;
@@ -201,7 +203,7 @@ float EvaluatePointShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 lig
 
     // 선택한 면의 UV 는 원래 90도 영역인 [border, 1 - border] 안에 들어간다.
     // 방사 거리가 아닌 면의 전방 거리로 depth 를 비교하며 near/far 밖 receiver 는 제외한다.
-    const float3 shadowCoord = CalcPointShadowFaceCoord(faceIndex, lightToReceiver, shadow.normalizedBorder, depthScaleBias);
+    const float3 shadowCoord = CalcPointShadowFaceCoord(faceIndex, lightToReceiver, shadow.normalizedBorder, shadow.pointDepthScaleBias);
     if (shadowCoord.z < 0.0f || shadowCoord.z > 1.0f) {
         return 1.0f;
     }

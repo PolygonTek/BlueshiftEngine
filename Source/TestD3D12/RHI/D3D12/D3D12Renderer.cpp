@@ -1163,11 +1163,12 @@ void D3D12Renderer::ClearDepthStencilRects(RHI::CommandList *commandList, const 
 
     D3D12CommandList *d3d12CommandList = static_cast<D3D12CommandList *>(commandList);
 
-    constexpr uint32_t RectBatchSize = 64;
+    constexpr uint32_t RectBatchSize = 1024;
     D3D12_RECT nativeRects[RectBatchSize];
 
     for (uint32_t firstRect = 0; firstRect < numRects;) {
         const uint32_t count = BE1::Min(numRects - firstRect, RectBatchSize);
+
         for (uint32_t i = 0; i < count; ++i) {
             const BE1::Rect &rect = rects[firstRect + i];
             assert(rect.x >= 0 && rect.y >= 0);

@@ -89,7 +89,7 @@ BE1::Vec2 FrameLight::GetPointShadowDepthRange() const {
 }
 
 // Point shadow 6 면의 view-projection 행렬과 frustum 컬링 영역을 계산한다.
-void FrameLight::CalcPointShadowProjections(FrameLocalShadowView shadowViews[6]) const {
+BE1::Vec2 FrameLight::CalcPointShadowProjections(FrameLocalShadowView shadowViews[6]) const {
     assert(type == RenderLight::Type::Point);
 
     const uint32_t resolution = static_cast<uint32_t>(shadowViews[0].tileRect.w);
@@ -142,4 +142,5 @@ void FrameLight::CalcPointShadowProjections(FrameLocalShadowView shadowViews[6])
         shadowView.viewProjMatrix[3] = BE1::Vec4(faceAxis[EngineAxis::Forward], -distForward);
 #endif
     }
+    return BE1::Vec2(depthScale, depthBias);
 }

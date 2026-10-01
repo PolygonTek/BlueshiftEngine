@@ -172,14 +172,18 @@ void RenderBackend::UpdateFrameStats() {
         if (frameCamera.frameShadowAtlas) {
             const FrameShadowAtlas &shadowAtlas = *frameCamera.frameShadowAtlas;
             stats.shadowAtlasCandidateCount += shadowAtlas.numCandidates;
+            stats.shadowAtlasSkippedLightCount += shadowAtlas.numSkippedLights;
             stats.shadowAtlasResolutionDowngradeCount += shadowAtlas.numResolutionDowngrades;
             stats.shadowAtlasAllocationFailureCount += shadowAtlas.numAllocationFailures;
-            stats.shadowAtlasViewBudgetSkippedCount += shadowAtlas.numViewBudgetSkipped;
-            stats.shadowAtlasFrameAllocationSkippedCount += shadowAtlas.numFrameAllocationSkipped;
 
-            // Shared surfaces count once per view. Draw surfaces are counted before instancing.
+            // 갱신/재사용 대상 shadow view 를 집계한다. 갱신 대상의 shadow surface 는 view 별로, instancing 전에 센다.
             for (uint32_t shadowViewIndex = 0; shadowViewIndex < shadowAtlas.numShadowViews; ++shadowViewIndex) {
                 const FrameLocalShadowView &view = shadowAtlas.shadowViews[shadowViewIndex];
+                if (!shadowAtlas.shadows[view.shadowIndex].updateDepth) {
+                    stats.shadowAtlasReusedViewCount++;
+                    continue;
+                }
+                stats.shadowAtlasUpdateViewCount++;
                 stats.shadowAtlasDrawSurfaceCount += view.renderPass.numDrawSurfs;
             }
         }
@@ -510,6 +514,21 @@ static const RenderPass *FindRenderPass(const FrameCamera *frameCamera, RenderPa
     return nullptr;
 }
 
+static void InvalidateShadowAtlasUpdates(const FrameCamera *frameCamera) {
+    const FrameShadowAtlas *shadowAtlas = frameCamera->frameShadowAtlas;
+    if (!shadowAtlas) {
+        return;
+    }
+
+    // 프런트엔드에서 border 를 갱신했어도 depth 기록을 실행하지 못했다면 이전 결과를 재사용할 수 없다.
+    for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas->numShadows; ++shadowIndex) {
+        const FrameLocalShadow &shadow = shadowAtlas->shadows[shadowIndex];
+        if (shadow.updateDepth) {
+            shadow.renderState->SetDepthValid(false);
+        }
+    }
+}
+
 const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera");
 
@@ -519,6 +538,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     if ((currentFrameCamera->is2D && frameSettings.skipDrawCamera2D) || (!currentFrameCamera->is2D && frameSettings.skipDrawCamera3D)) {
+        InvalidateShadowAtlasUpdates(currentFrameCamera);
         return (const void *)(cmd + 1);
     }
 
@@ -528,6 +548,7 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     // 현재 카메라에서 참조할 ShaderSurface 테이블을 GPU 에 업로드한다.
     if (!frame->UploadShaderSurfaceTable(frame->GetThreadData(0), mainCommandList, currentFrameCamera)) {
         BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to upload shader surface table\n");
+        InvalidateShadowAtlasUpdates(currentFrameCamera);
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
@@ -535,16 +556,17 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     // 현재 카메라의 상수 데이터들을 준비한다.
     if (!UploadCameraConstants()) {
         BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to upload camera constants\n");
+        InvalidateShadowAtlasUpdates(currentFrameCamera);
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
 
     if (!currentFrameCamera->is2D) {
         // Directional light 의 CSM depth 를 렌더링한다.
-        ExecuteDrawCamera3DShadowPass();
+        DrawCSMPass();
 
         // Spot/Point light 의 shadow depth 를 shadow atlas 에 렌더링한다.
-        ExecuteDrawCamera3DLocalShadowPass();
+        DrawShadowAtlasPass();
     }
 
     BE1::Rect viewportRect = currentFrameCamera->outputRect;
@@ -571,9 +593,9 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     }
 
     if (currentFrameCamera->is2D) {
-        ExecuteDrawCamera2D(clearFlags, clearColor);
+        DrawCamera2D(clearFlags, clearColor);
     } else {
-        ExecuteDrawCamera3D(clearFlags, clearColor, useExplicitClearColor);
+        DrawCamera3D(clearFlags, clearColor, useExplicitClearColor);
     }
 
     // command list 에 기록을 마치고 실행
@@ -582,11 +604,11 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     return (const void *)(cmd + 1);
 }
 
-void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera2D");
+void RenderBackend::DrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
 
     if (!swapChainOutputEnabled) {
-        BE_WARNLOG("RenderBackend::ExecuteDrawCamera2D: swap chain output is disabled\n");
+        BE_WARNLOG("RenderBackend::DrawCamera2D: swap chain output is disabled\n");
         return;
     }
 
@@ -598,7 +620,12 @@ void RenderBackend::ExecuteDrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Co
         .WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
     RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
 
-    DrawCamera2D();
+    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
+        if (renderPass->type == RenderPassType::Gui) {
+            DrawGuiPass(renderPass);
+        }
+    }
 
     RHI::renderer->EndRenderPass(mainCommandList);
 }
@@ -648,8 +675,8 @@ bool RenderBackend::DispatchScreenSpaceAO() {
     return true;
 }
 
-void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera3D");
+void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3D");
 
     bool hiZCullingPrepared = false;
     if (currentFrameCamera->hiZOcclusionCulling) {
@@ -665,7 +692,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
 
     // depth prepass
     if (hasDepthPrepass) {
-        ExecuteDrawCamera3DDepthPrepass(depthLoadAction);
+        DrawDepthPrepass(depthLoadAction);
 
         aoReady = DispatchScreenSpaceAO();
     }
@@ -679,7 +706,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
 
     // Opaque 와 Skybox 를 렌더링한다.
     const RHI::RenderPassImage::LoadAction sceneDepthLoadAction = hasDepthPrepass ? RHI::RenderPassImage::LoadAction::Load : depthLoadAction;
-    ExecuteDrawCamera3DScenePass(clearFlags, clearColor, useExplicitClearColor, sceneDepthLoadAction);
+    DrawScenePass(clearFlags, clearColor, useExplicitClearColor, sceneDepthLoadAction);
 
     // SSR trace 를 위한 screen-space depth pyramid 를 생성한다.
     bool ssrTraceReady = false;
@@ -696,7 +723,7 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     CaptureSceneSnapshot();
 
     // Ocean, Transparent, Debug primitive 를 렌더링한다.
-    ExecuteDrawCamera3DPostOpaquePass();
+    DrawPostOpaquePass();
 
     // Velocity 는 shading 이 끝난 뒤 TAA 전에 resolve 한다.
     bool velocityReady = true;
@@ -735,8 +762,8 @@ void RenderBackend::ExecuteDrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Co
     PostProcessAndBlitToOutput(velocityReady, outputOverrideTexture);
 }
 
-void RenderBackend::ExecuteDrawCamera3DShadowPass() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera3DShadowPass");
+void RenderBackend::DrawCSMPass() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCSMPass");
 
     const FrameCascadedShadow *cascadedShadow = currentFrameCamera->frameCascadedShadow;
     if (!cascadedShadow) {
@@ -755,7 +782,7 @@ void RenderBackend::ExecuteDrawCamera3DShadowPass() {
 
         RHI::ConstantBuffer *shadowViewConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(ShadowViewConstants));
         if (!shadowViewConstantBuffer) {
-            BE_WARNLOG("RenderBackend::ExecuteDrawCamera3DShadowPass: failed to allocate cascade constants\n");
+            BE_WARNLOG("RenderBackend::DrawCSMPass: failed to allocate cascade constants\n");
             return;
         }
 
@@ -798,82 +825,155 @@ void RenderBackend::ExecuteDrawCamera3DShadowPass() {
     cameraConstants->csm.enabled = 1;
 }
 
-void RenderBackend::ExecuteDrawCamera3DLocalShadowPass() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::ExecuteDrawCamera3DLocalShadowPass");
+void RenderBackend::DrawShadowAtlasPass() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawShadowAtlasPass");
 
     FrameShadowAtlas *shadowAtlas = currentFrameCamera->frameShadowAtlas;
     if (!shadowAtlas) {
         return;
     }
-    shadowAtlas->depthRendered = false;
 
-    // 할당된 view 가 없으면 atlas 를 사용할 조명도 없다. 미리보기용 clear 는 finalize 에서 처리한다.
     if (shadowAtlas->numShadowViews == 0) {
         return;
     }
+
     assert(shadowAtlas->shadowTexture);
     assert(shadowAtlas->shadowDSV.IsValid());
 
-    // Clear/리소스 전환/전체 view 를 카메라당 한 쌍으로 측정하여 광원 수에 따른 query 증가를 피한다.
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ShadowAtlas);
+    bool hasUpdates = false;
+    bool allShadowsValid = true;
 
-    // 캐싱 없이 카메라마다 전체 atlas 를 한 번 clear 한다. 빈 view 의 타일과 미사용 영역도 far depth 가 된다.
-    // 모든 view 를 같은 pass 에서 그려 타일 사이의 clear 와 SRV/DSV 전환을 생략한다.
-    RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(shadowAtlas->shadowTexture, shadowAtlas->shadowDSV,
-        RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
-        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource)
-        .WithClearValue(RHI::ClearValue::DepthStencil(1.0f, 0));
-    RHI::renderer->BeginRenderPass(mainCommandList, &depthImage, 1);
+    // 갱신 대상은 depth 기록이 성공할 때까지 무효로 둔다. 유지 대상은 앞선 프레임의 최종 기록 결과를 다시 확인한다.
+    for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas->numShadows; ++shadowIndex) {
+        FrameLocalShadow &shadow = shadowAtlas->shadows[shadowIndex];
 
-    bool depthRendered = true;
+        if (shadow.updateDepth) {
+            shadow.hasValidDepth = false;
+            hasUpdates = true;
+        } else {
+            shadow.hasValidDepth = shadow.renderState->HasValidDepth();
+            if (!shadow.hasValidDepth) {
+                allShadowsValid = false;
+            }
+        }
+    }
+
     RHI::FrameThreadData *frameThreadData = frame->GetThreadData(0);
-    for (uint32_t shadowViewIndex = 0; shadowViewIndex < shadowAtlas->numShadowViews; ++shadowViewIndex) {
-        const FrameLocalShadowView &shadowView = shadowAtlas->shadowViews[shadowViewIndex];
-        if (shadowView.renderPass.numDrawSurfs == 0) {
+
+    if (hasUpdates) {
+        GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ShadowAtlas);
+
+        // atlas 영역 clear 는 render pass 밖에서 DepthWrite 상태로 수행한다.
+        RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(shadowAtlas->shadowTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite));
+
+        ClearShadowAtlasTiles(*shadowAtlas);
+
+        // 부분 clear 결과와 유지 영역을 보존하며, 갱신할 view 를 같은 pass 에서 그려 타일 사이의 SRV/DSV 전환을 생략한다.
+        RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(shadowAtlas->shadowTexture, shadowAtlas->shadowDSV,
+            RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource);
+        RHI::renderer->BeginRenderPass(mainCommandList, &depthImage, 1);
+
+        // 갱신 대상만 렌더링하고, 하나라도 실패하면 이번 카메라의 atlas 샘플링을 비활성화한다.
+        if (!DrawShadowAtlasViews(*shadowAtlas, frameThreadData)) {
+            allShadowsValid = false;
+        }
+
+        RHI::renderer->EndRenderPass(mainCommandList);
+    }
+
+    if (allShadowsValid) {
+        // 갱신이 없는 프레임도 유지 중인 그림자를 조명에서 사용하도록 전체 shadow 테이블을 연결한다.
+        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
+        if (!frame->UploadShaderShadowTable(frameThreadData, mainCommandList, *shadowAtlas, constants->shadowAtlas)) {
+            BE_WARNLOG("RenderBackend::DrawShadowAtlasPass: failed to upload shadow tables\n");
+        }
+    }
+
+    // 이번에 갱신한 shadow 의 depth 기록 결과만 공유 저장소에 반영한다.
+    for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas->numShadows; ++shadowIndex) {
+        const FrameLocalShadow &shadow = shadowAtlas->shadows[shadowIndex];
+        if (shadow.updateDepth) {
+            shadow.renderState->SetDepthValid(shadow.hasValidDepth);
+        }
+    }
+}
+
+void RenderBackend::ClearShadowAtlasTiles(const FrameShadowAtlas &shadowAtlas) {
+    // 갱신할 타일만 지운다. shadow caster 가 없어도 타일 전체를 far depth 로 지운다.
+    constexpr uint32_t rectBatchSize = 1024;
+    BE1::Rect clearRects[rectBatchSize];
+
+    for (uint32_t firstView = 0; firstView < shadowAtlas.numShadowViews;) {
+        const uint32_t viewCount = BE1::Min(shadowAtlas.numShadowViews - firstView, rectBatchSize);
+        uint32_t numClearRects = 0;
+
+        for (uint32_t i = 0; i < viewCount; ++i) {
+            const FrameLocalShadowView &view = shadowAtlas.shadowViews[firstView + i];
+
+            if (shadowAtlas.shadows[view.shadowIndex].updateDepth) {
+                const BE1::Rect &tileRect = view.tileRect;
+                assert(tileRect.x >= 0 && tileRect.y >= 0 && tileRect.w > 0 && tileRect.h > 0);
+                assert(tileRect.X2() <= shadowAtlas.size && tileRect.Y2() <= shadowAtlas.size);
+                clearRects[numClearRects++] = tileRect;
+            }
+        }
+
+        if (numClearRects > 0) {
+            numClearRects = BE1::Rect::MergeAdjacentRects(clearRects, numClearRects);
+            RHI::renderer->ClearDepthStencilRects(mainCommandList, shadowAtlas.shadowTexture, shadowAtlas.shadowDSV, RHI::ClearFlag::Depth, 1.0f, 0, clearRects, numClearRects);
+        }
+
+        firstView += viewCount;
+    }
+}
+
+bool RenderBackend::DrawShadowAtlasViews(FrameShadowAtlas &shadowAtlas, RHI::FrameThreadData *frameThreadData) {
+    for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas.numShadows; ++shadowIndex) {
+        FrameLocalShadow &shadow = shadowAtlas.shadows[shadowIndex];
+        if (!shadow.updateDepth) {
             continue;
         }
 
-        RHI::ConstantBuffer *shadowViewConstantBuffer = frameThreadData->AllocConstant(sizeof(ShadowViewConstants));
-        if (!shadowViewConstantBuffer) {
-            BE_WARNLOG("RenderBackend::ExecuteDrawCamera3DLocalShadowPass: failed to allocate view constants\n");
-            depthRendered = false;
-            break;
+        assert(shadow.firstShadowView < shadowAtlas.numShadowViews);
+        assert(shadow.numShadowViews <= shadowAtlas.numShadowViews - shadow.firstShadowView);
+
+        for (uint32_t viewIndex = 0; viewIndex < shadow.numShadowViews; ++viewIndex) {
+            const FrameLocalShadowView &shadowView = shadowAtlas.shadowViews[shadow.firstShadowView + viewIndex];
+            if (shadowView.renderPass.numDrawSurfs == 0) {
+                continue;
+            }
+
+            RHI::ConstantBuffer *shadowViewConstantBuffer = frameThreadData->AllocConstant(sizeof(ShadowViewConstants));
+            if (!shadowViewConstantBuffer) {
+                BE_WARNLOG("RenderBackend::DrawShadowAtlasViews: failed to allocate view constants\n");
+                return false;
+            }
+
+            ShadowViewConstants *constants = reinterpret_cast<ShadowViewConstants *>(shadowViewConstantBuffer->mappedPtr);
+            BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &shadowView.viewProjMatrix, sizeof(constants->viewProjMatrix));
+            constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
+            constants->padding = uint3(0, 0, 0);
+
+            const BE1::Rect &tileRect = shadowView.tileRect;
+            RHI::renderer->SetViewport(mainCommandList, tileRect);
+            RHI::renderer->SetScissorRect(mainCommandList, tileRect);
+
+            if (!DrawLocalShadowPass(&shadowView.renderPass, shadowViewConstantBuffer)) {
+                return false;
+            }
+
+            if (frame->IsStatEnabled()) {
+                statShadowAtlasRenderedViewCount++;
+            }
         }
 
-        ShadowViewConstants *constants = reinterpret_cast<ShadowViewConstants *>(shadowViewConstantBuffer->mappedPtr);
-        BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &shadowView.viewProjMatrix, sizeof(constants->viewProjMatrix));
-        constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
-        constants->padding = uint3(0, 0, 0);
-
-        // 투영은 border 를 포함해 확장되어 있으므로 타일 전체에 기록한다. Scissor 로 이웃 타일을 보호한다.
-        const BE1::Rect &tileRect = shadowView.tileRect;
-        assert(tileRect.x >= 0 && tileRect.y >= 0 && tileRect.w > 0 && tileRect.h > 0);
-        assert(tileRect.X2() <= shadowAtlas->size && tileRect.Y2() <= shadowAtlas->size);
-        RHI::renderer->SetViewport(mainCommandList, tileRect);
-        RHI::renderer->SetScissorRect(mainCommandList, tileRect);
-
-        if (!DrawLocalShadowPass(&shadowView.renderPass, shadowViewConstantBuffer)) {
-            depthRendered = false;
-            break;
-        }
-
-        if (frame->IsStatEnabled()) {
-            statShadowAtlasRenderedViewCount++;
-        }
+        // 모든 view 의 depth 기록이 성공했으므로 이번 프레임의 depth 를 사용할 수 있다.
+        // shadow caster 가 없는 타일도 far depth 로 clear 되었으므로 유효하다.
+        shadow.hasValidDepth = true;
     }
 
-    // 중간에 상수/instance 할당 또는 PSO 준비가 실패해도 pass 를 닫아 ShaderResource 상태로 복구한다.
-    RHI::renderer->EndRenderPass(mainCommandList);
-
-    shadowAtlas->depthRendered = depthRendered;
-
-    if (depthRendered) {
-        // 카메라 CB 를 사용하는 draw 명령은 아직 기록하지 않았다. Depth 와 두 테이블이 준비된 경우에만 활성화한다.
-        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
-        if (!frame->UploadShaderShadowTable(frameThreadData, mainCommandList, *shadowAtlas, constants->shadowAtlas)) {
-            BE_WARNLOG("RenderBackend::ExecuteDrawCamera3DLocalShadowPass: failed to upload shadow tables\n");
-        }
-    }
+    return true;
 }
 
 bool RenderBackend::DrawLocalShadowPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer) {
@@ -916,7 +1016,9 @@ bool RenderBackend::DrawLocalShadowPass(const RenderPass *renderPass, const RHI:
     return true;
 }
 
-void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
+void RenderBackend::DrawDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawDepthPrepass");
+
     RHI::RenderPassImage renderPassImages[3];
     uint32_t renderPassImageCount = 0;
 
@@ -941,7 +1043,12 @@ void RenderBackend::ExecuteDrawCamera3DDepthPrepass(RHI::RenderPassImage::LoadAc
         .WithClearValue(RHI::ClearValue::DepthStencil(currentFrameCamera->projectionPolicy.GetDepthClearValue(), 0));
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
-    DrawCamera3DDepthPrepass();
+    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
+        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
+        if (renderPass->type == RenderPassType::DepthPrepass) {
+            DrawGenericPass(renderPass, cameraConstantBuffer);
+        }
+    }
 
     RHI::renderer->EndRenderPass(mainCommandList);
 }
@@ -1013,7 +1120,9 @@ static uint32_t BuildCamera3DRenderPassImages(const FrameCamera *frameCamera, co
     return renderPassImageCount;
 }
 
-void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction) {
+void RenderBackend::DrawScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawScenePass");
+
     RHI::RenderPassImage::LoadAction colorLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
     if (currentFrameCamera->clearMethod == RenderCamera::ClearMethod::Skybox) {
         colorLoadAction = RHI::RenderPassImage::LoadAction::DontCare;
@@ -1039,7 +1148,13 @@ void RenderBackend::ExecuteDrawCamera3DScenePass(RHI::ClearFlag clearFlags, cons
 
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
-    DrawCamera3DScenePass();
+    if (const RenderPass *opaquePass = FindRenderPass(currentFrameCamera, RenderPassType::Opaque)) {
+        DrawGenericPass(opaquePass, cameraConstantBuffer);
+    }
+
+    if (const RenderPass *skyboxPass = FindRenderPass(currentFrameCamera, RenderPassType::Skybox)) {
+        DrawSkyPass(skyboxPass);
+    }
 
     RHI::renderer->EndRenderPass(mainCommandList);
 }
@@ -1124,7 +1239,9 @@ void RenderBackend::CaptureSceneSnapshot() {
     RHI::renderer->Barrier(mainCommandList, finishBarriers, finishBarrierCount);
 }
 
-void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
+void RenderBackend::DrawPostOpaquePass() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawPostOpaquePass");
+
     const RenderPassImagesDesc passDesc = {
         RHI::RenderPassImage::LoadAction::Load,
         RHI::RenderPassImage::LoadAction::Load,
@@ -1143,7 +1260,14 @@ void RenderBackend::ExecuteDrawCamera3DPostOpaquePass() {
 
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
-    DrawCamera3DPostOpaquePass();
+    // GpuOcean surface 는 Transparent surface 보다 먼저 렌더링한다.
+    DrawGpuOcean();
+
+    if (const RenderPass *transparentPass = FindRenderPass(currentFrameCamera, RenderPassType::Transparent)) {
+        DrawGenericPass(transparentPass, cameraConstantBuffer);
+    }
+
+    DrawDebugPrimitives();
 
     RHI::renderer->EndRenderPass(mainCommandList);
 }
@@ -1432,18 +1556,6 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
         if (renderImGuiOverlay) {
             GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::ImGuiOverlay);
 
-            const FrameShadowAtlas *shadowAtlas = frame->GetShadowAtlasDebugPreview();
-            if (shadowAtlas && !shadowAtlas->depthRendered && shadowAtlas->shadowTexture && shadowAtlas->shadowDSV.IsValid()) {
-                // 미리보기 대상 카메라가 depth 를 기록하지 않았다면 이전 렌더링의 내용 대신 far depth 를 표시한다.
-                RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(shadowAtlas->shadowTexture, shadowAtlas->shadowDSV,
-                    RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
-                    RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource)
-                    .WithClearValue(RHI::ClearValue::DepthStencil(1.0f, 0));
-                RHI::renderer->BeginRenderPass(mainCommandList, &depthImage, 1);
-                RHI::renderer->EndRenderPass(mainCommandList);
-                // 미리보기용 clear 는 해당 카메라의 shadow 렌더링 완료를 뜻하지 않으므로 depthRendered 는 유지한다.
-            }
-
             BE1::Rect viewportRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
 
             // 뷰포트 & ScissorRect 의 초기값 설정
@@ -1511,53 +1623,6 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     frameCount++;
 
     return (const void *)(cmd + 1);
-}
-
-void RenderBackend::DrawCamera3DDepthPrepass() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3DDepthPrepass");
-
-    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
-        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
-        if (renderPass->type == RenderPassType::DepthPrepass) {
-            DrawGenericPass(renderPass, cameraConstantBuffer);
-        }
-    }
-}
-
-void RenderBackend::DrawCamera3DScenePass() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3DScenePass");
-
-    if (const RenderPass *opaquePass = FindRenderPass(currentFrameCamera, RenderPassType::Opaque)) {
-        DrawGenericPass(opaquePass, cameraConstantBuffer);
-    }
-
-    if (const RenderPass *skyboxPass = FindRenderPass(currentFrameCamera, RenderPassType::Skybox)) {
-        DrawSkyPass(skyboxPass);
-    }
-}
-
-void RenderBackend::DrawCamera3DPostOpaquePass() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3DPostOpaquePass");
-
-    // GpuOcean surface 는 Transparent surface 보다 먼저 렌더링한다.
-    DrawGpuOcean();
-
-    if (const RenderPass *transparentPass = FindRenderPass(currentFrameCamera, RenderPassType::Transparent)) {
-        DrawGenericPass(transparentPass, cameraConstantBuffer);
-    }
-
-    DrawDebugPrimitives();
-}
-
-void RenderBackend::DrawCamera2D() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
-
-    for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
-        const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
-        if (renderPass->type == RenderPassType::Gui) {
-            DrawGuiPass(renderPass);
-        }
-    }
 }
 
 void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const {

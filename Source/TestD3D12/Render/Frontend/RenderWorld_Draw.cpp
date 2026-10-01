@@ -654,10 +654,17 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
         }
     }
 
-    // Local shadow view 별로 atlas 타일의 렌더 패스를 구성한다.
-    if (frameCamera->frameShadowAtlas) {
-        for (uint32_t shadowViewIndex = 0; shadowViewIndex < frameCamera->frameShadowAtlas->numShadowViews; shadowViewIndex++) {
-            renderPassBuilder.BuildLocalShadow(frame, frameCamera->frameShadowAtlas, shadowViewIndex, allowAsyncPSOBuild);
+    // 갱신할 local shadow 의 view 들만 렌더 패스를 구성한다.
+    FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
+    if (frameShadowAtlas) {
+        for (uint32_t shadowIndex = 0; shadowIndex < frameShadowAtlas->numShadows; ++shadowIndex) {
+            const FrameLocalShadow &shadow = frameShadowAtlas->shadows[shadowIndex];
+            if (shadow.updateDepth) {
+                const uint32_t endShadowView = shadow.firstShadowView + shadow.numShadowViews;
+                for (uint32_t shadowViewIndex = shadow.firstShadowView; shadowViewIndex < endShadowView; ++shadowViewIndex) {
+                    renderPassBuilder.BuildLocalShadow(frame, frameShadowAtlas, shadowViewIndex, allowAsyncPSOBuild);
+                }
+            }
         }
     }
 
@@ -932,8 +939,24 @@ static float CalcLocalShadowTexelsPerWorldUnit(const FrameLocalShadowView &shado
 void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindLocalShadowCasters");
 
+    // 현재 카메라에서 갱신할 shadow 의 caster 참조만 수집한다.
+    localShadowCasterRefs.SetCount(0, false);
+
     FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
     if (!frameShadowAtlas || frameShadowAtlas->numShadowViews == 0) {
+        return;
+    }
+
+    // 모든 그림자가 기존 depth 를 사용한다면 caster 오브젝트 순회와 컬링 준비도 생략한다.
+    bool hasUpdates = false;
+    for (uint32_t shadowIndex = 0; shadowIndex < frameShadowAtlas->numShadows; ++shadowIndex) {
+        if (frameShadowAtlas->shadows[shadowIndex].updateDepth) {
+            hasUpdates = true;
+            break;
+        }
+    }
+
+    if (!hasUpdates) {
         return;
     }
 
@@ -942,9 +965,6 @@ void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera 
 
     const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
     const float meshLODPixelError = frame->GetRenderFrameSettings().meshLODPixelError;
-
-    // shadow caster 정보를 담는 배열
-    localShadowCasterRefs.SetCount(0, false);
 
     // 전체 render objects 를 순회하면서 shadow caster 가 될 수 있는 오브젝트들은 frame object 로 등록한다.
     for (RenderObject *renderObject : renderObjects) {
@@ -969,6 +989,10 @@ void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera 
 
         for (uint32_t shadowIndex = 0; shadowIndex < frameShadowAtlas->numShadows; ++shadowIndex) {
             const FrameLocalShadow &shadow = frameShadowAtlas->shadows[shadowIndex];
+            if (!shadow.updateDepth) {
+                continue;
+            }
+
             const FrameLight &light = *shadow.light;
 
             // Point 라이트의 영향 범위는 광원당 한 번 검사하고, 통과한 경우에만 6면에 접근한다.
@@ -1122,6 +1146,7 @@ FrameLight *RenderWorld::RegisterFrameLight(RenderFrame *frame, RenderLight *ren
     }
 
     renderLight->viewCount = viewCount;
+    frameLight->lightId = renderLight->lightId;
 
     if (renderLight->desc.type == RenderLight::Type::Point) {
         frameLight->viewProjScaleBiasMatrix[0] = renderLight->viewProjScaleBiasMatrix[0];
@@ -1625,6 +1650,7 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
 
                 // local shadow view 에 대해 컬링을 수행한다.
                 const FrameLocalShadowView &shadowView = frameShadowAtlas->shadowViews[casterRef.shadowViewIndex];
+                assert(frameShadowAtlas->shadows[shadowView.shadowIndex].updateDepth);
                 if (hasSurfaceWorldBounds) {
                     const FrameLocalShadow &shadow = frameShadowAtlas->shadows[shadowView.shadowIndex];
                     // 같은 광원의 참조는 연속된다. 오브젝트와 교차한 포인트 라이트 구라도 submesh 는 바깥일 수 있으므로 광원당 한 번 검사한다.
@@ -1688,7 +1714,7 @@ void RenderWorld::BuildLocalShadowSurfaceLists(RenderFrame *frame, FrameShadowAt
 
     assert(frameShadowAtlas);
 
-    // shadowView 에 들어갈 모든 shadow surface 포인터들을 한꺼번에 할당한다.
+    // 갱신할 shadowView 에 들어갈 모든 shadow surface 포인터들을 한꺼번에 할당한다.
     const size_t size = sizeof(FrameSurf *) * static_cast<size_t>(localShadowSurfRefs.Count());
     const FrameSurf **surfs = static_cast<const FrameSurf **>(frame->MemAlloc(static_cast<int>(size)));
     if (!surfs) {
@@ -1881,6 +1907,7 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera
 
             // 광원의 light culling 타일 범위와 화면 투영 크기를 계산한다.
             const uint32_t projectedSize = ComputeLightTileRange(frameCamera, screenClipRect, frameLight->packedTileMin, frameLight->packedTileMax);
+            frameLight->projectedSize = projectedSize;
 
             if (localShadowsEnabled && BE1::HasFlag(frameLight->flags, RenderLight::Flag::CastShadows)) {
                 // 투영 영역의 긴 변이 최소 크기 미만이면 shadow light 후보에서 제외한다.
@@ -1915,22 +1942,24 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
     }
     ShadowAtlas &shadowAtlas = renderCamera->GetShadowAtlas();
 
-    // 현재 구현은 캐싱 없이 렌더링 호출마다 다시 배치한다. 같은 카메라를 여러 번 제출해도 이전 호출의 좌표는 frame snapshot 에 보존된다.
-    if (shadowAtlas.GetAllocedTileCount() > 0) {
-        shadowAtlas.ResetAllocations();
-    }
-
+    // 타일 할당은 광원별로 유지한다. 같은 카메라를 여러 번 제출해도 이전 호출의 좌표는 frame snapshot 에 보존된다.
     frameCamera->frameShadowAtlas = frame->AllocFrameShadowAtlas(shadowAtlas);
-    if (!frameCamera->frameShadowAtlas || localShadowLightCandidates.Count() == 0) {
+    if (localShadowLightCandidates.Count() == 0) {
+        shadowAtlas.FreeUnusedEntries();
         return;
     }
 
-    FrameShadowAtlas &frameShadowAtlas = *frameCamera->frameShadowAtlas;
-    frameShadowAtlas.numCandidates = static_cast<uint32_t>(localShadowLightCandidates.Count());
+    if (!frameCamera->frameShadowAtlas) {
+        return;
+    }
+
+    FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
+    frameShadowAtlas->numCandidates = static_cast<uint32_t>(localShadowLightCandidates.Count());
     const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
     const uint32_t shadowMapQuality = frameSettings.shadowMapQuality;
+    const uint32_t frameCount = frame->GetFrameCount();
 
-    // 그림자 라이트 후보를 shadow 요청 해상도가 크고, 카메라에 가까운 순으로 정렬한다.
+    // 그림자 라이트 후보들을 shadow 요청 해상도가 크고, 카메라에 가까운 순으로 정렬한다.
     if (localShadowLightCandidates.Count() > 1) {
         std::sort(localShadowLightCandidates.Ptr(), localShadowLightCandidates.Ptr() + localShadowLightCandidates.Count(), [](const FrameLight *lhs, const FrameLight *rhs) {
             if (lhs->shadowRequestedResolution != rhs->shadowRequestedResolution) {
@@ -1945,71 +1974,135 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
         });
     }
 
-    for (uint32_t candidateIndex = 0; candidateIndex < frameShadowAtlas.numCandidates; ++candidateIndex) {
-        if (frameShadowAtlas.numShadowViews >= frameShadowAtlas.maxShadowViews) {
-            // 남은 후보는 모두 Spot/Point 이므로 추가 순회 없이 shadow view 예산 초과로 집계한다.
-            frameShadowAtlas.numViewBudgetSkipped += frameShadowAtlas.numCandidates - candidateIndex;
+    // 새 타일 묶음을 할당 전에 재사용 가능한 타일 묶음을 keep 처리한다.
+    // 면 수가 같으며 기존 요청 해상도 또는 실제 해상도가 새 요청 해상도와 일치하는 라이트의 타일 묶음만 유지한다.
+    uint32_t reservedShadowViews = 0;
+    for (const FrameLight *shadowLight : localShadowLightCandidates) {
+        if (reservedShadowViews == frameShadowAtlas->maxShadowViews) {
+            break;
+        }
+
+        const uint32_t shadowViewCount = shadowLight->GetShadowViewCount();
+        if (shadowViewCount > frameShadowAtlas->maxShadowViews - reservedShadowViews) {
+            continue;
+        }
+
+        reservedShadowViews += shadowViewCount;
+        const uint32_t requestedResolution = BE1::Min(shadowLight->shadowRequestedResolution, shadowAtlas.GetMaxTileResolution());
+        shadowAtlas.KeepEntry(shadowLight->lightId, requestedResolution, shadowViewCount);
+    }
+    shadowAtlas.FreeUnusedEntries();
+
+    for (uint32_t candidateIndex = 0; candidateIndex < frameShadowAtlas->numCandidates; ++candidateIndex) {
+        if (frameShadowAtlas->numShadowViews >= frameShadowAtlas->maxShadowViews) {
+            // shadow view 예산을 초과했다면 남은 라이트 후보는 추가 순회 없이 제외된 라이트로 집계한다.
+            frameShadowAtlas->numSkippedLights += frameShadowAtlas->numCandidates - candidateIndex;
             break;
         }
 
         FrameLight *shadowLight = localShadowLightCandidates[candidateIndex];
         const uint32_t shadowViewCount = shadowLight->GetShadowViewCount();
         assert(shadowViewCount > 0);
-        if (shadowViewCount > frameShadowAtlas.maxShadowViews - frameShadowAtlas.numShadowViews) {
-            frameShadowAtlas.numViewBudgetSkipped++;
+        if (shadowViewCount > frameShadowAtlas->maxShadowViews - frameShadowAtlas->numShadowViews) {
+            frameShadowAtlas->numSkippedLights++;
             continue;
         }
 
-        ShadowAtlas::Tile tiles[6];
         const uint32_t requestedResolution = BE1::Min(shadowLight->shadowRequestedResolution, shadowAtlas.GetMaxTileResolution());
-        // 포인트 라이트의 6면은 동일한 해상도로 함께 할당하며, 부족하면 allocator 가 해상도를 절반씩 낮춘다.
-        if (!shadowAtlas.Allocate(requestedResolution, shadowViewCount, tiles)) {
-            frameShadowAtlas.numAllocationFailures++;
-            continue;
+
+        // 아틀라스에 shadow entry 가 존재하지 않는다면 새로 할당한다.
+        ShadowAtlas::Entry *entry = shadowAtlas.FindEntry(shadowLight->lightId);
+        const bool newAllocation = entry == nullptr;
+        if (newAllocation) {
+            // 포인트 라이트의 6면은 동일한 해상도로 함께 할당하며, 부족하면 allocator 가 해상도를 절반씩 낮춘다.
+            entry = shadowAtlas.Alloc(shadowLight->lightId, requestedResolution, shadowViewCount);
+            if (!entry) {
+                frameShadowAtlas->numAllocationFailures++;
+                continue;
+            }
         }
 
-        FrameLocalShadow *shadow = frame->AllocFrameLocalShadow(frameShadowAtlas, *shadowLight);
-        if (!shadow) {
-            for (uint32_t viewIndex = 0; viewIndex < shadowViewCount; ++viewIndex) {
-                const bool freed = shadowAtlas.Free(tiles[viewIndex].handle);
+        // 라이트의 shadow 와 shadowViews 를 할당한다.
+        FrameLocalShadow *frameShadow = frame->AllocFrameLocalShadow(frameShadowAtlas, shadowLight);
+        if (!frameShadow) {
+            // 프레임 데이터 생성을 실패했다면 아틀라스에서도 제거한다.
+            if (newAllocation) {
+                const bool freed = shadowAtlas.Free(shadowLight->lightId);
                 assert(freed);
                 (void)freed;
             }
-            // 프레임 메모리 부족으로 중단한 요청들은 atlas 공간 부족과 구분한다.
-            frameShadowAtlas.numFrameAllocationSkipped = frameShadowAtlas.numCandidates - candidateIndex;
             break;
         }
 
-        // 그림자 라이트별 공통 계산은 카메라마다 한 번 준비한다.
-        if (shadowLight->type == RenderLight::Type::Point) {
-            const float lightRadius = BE1::Max(shadowLight->size[0], RenderLight::MinLightSize);
-            shadow->squaredRadius = lightRadius * lightRadius;
+        // 백엔드의 depth 기록 결과를 관리하는 상태를 entry 와 공유한다.
+        frameShadow->renderState = entry->renderState;
+
+        frameShadow->requestedResolution = shadowLight->shadowRequestedResolution;
+        frameShadow->resolution = entry->tiles[0].resolution;
+        if (frameShadow->resolution < requestedResolution) {
+            frameShadowAtlas->numResolutionDowngrades++;
         }
-        for (int planeIndex = 0; planeIndex < 6; ++planeIndex) {
-            shadow->viewPlaneToOriginDistances[planeIndex] = viewPlanes[planeIndex].Distance(shadowLight->origin);
+        assert(frameShadow->numShadowViews == shadowViewCount);
+
+        // 백엔드의 최근 depth 기록 결과를 확인한다. 신규/재할당 타일과 이전 기록 실패는 유효한 결과가 없다.
+        frameShadow->hasValidDepth = entry->renderState->HasValidDepth();
+
+        // 유효한 depth 가 없거나 load balancing 이 꺼져 있으면 주기 계산 없이 갱신한다.
+        frameShadow->updateDepth = true;
+        if (frameSettings.shadowAtlasLoadBalancing && frameShadow->hasValidDepth) {
+            // 투영 크기가 기준 크기의 절반이 될 때마다 갱신 간격을 2배로 늘린다.
+            uint32_t updateInterval = 1;
+            uint32_t projectedSize = shadowLight->projectedSize;
+
+            while (projectedSize < frameSettings.shadowUpdateMinProjectedSize && updateInterval < RenderFrameSettings::ShadowAtlasMaxUpdateInterval) {
+                projectedSize <<= 1;
+                updateInterval <<= 1;
+            }
+
+            // Light ID 로 갱신 프레임을 분산하며, 포인트 라이트 그림자의 6면은 함께 갱신한다.
+            const uint32_t frameMask = updateInterval - 1;
+            frameShadow->updateDepth = (frameCount & frameMask) == (shadowLight->lightId & frameMask);
         }
 
-        shadow->requestedResolution = shadowLight->shadowRequestedResolution;
-        shadow->resolution = tiles[0].resolution;
-        if (shadow->resolution < requestedResolution) {
-            frameShadowAtlas.numResolutionDowngrades++;
+        // 갱신할 때만 실제 해상도와 현재 품질에 맞는 PCF/bilinear footprint 용 border 를 적용한다.
+        // 스킵 프레임은 기존 depth 와 같은 border 로 투영/샘플링 정보를 구성한다.
+        if (frameShadow->updateDepth) {
+            entry->borderTexels = CalcShadowMapBorderTexels(frameShadow->resolution, shadowMapQuality);
+            frameShadow->hasValidDepth = false; // 갱신 결과는 백엔드에서 depth 기록 후 확정한다.
         }
-        assert(shadow->numShadowViews == shadowViewCount);
 
-        // 실제 해상도에 맞춰 PCF 와 bilinear comparison footprint 를 위한 border 를 확보한다.
-        const uint32_t borderTexels = CalcShadowMapBorderTexels(shadow->resolution, shadowMapQuality);
-        FrameLocalShadowView *shadowViews = &frameShadowAtlas.shadowViews[shadow->firstShadowView];
+        FrameLocalShadowView *shadowViews = &frameShadowAtlas->shadowViews[frameShadow->firstShadowView];
         for (uint32_t viewIndex = 0; viewIndex < shadowViewCount; ++viewIndex) {
-            const ShadowAtlas::Tile &tile = tiles[viewIndex];
-            assert(tile.resolution == shadow->resolution);
+            const ShadowAtlas::Tile &tile = entry->tiles[viewIndex];
+            assert(tile.resolution == frameShadow->resolution);
             shadowViews[viewIndex].tileRect = BE1::Rect(tile.x, tile.y, tile.resolution, tile.resolution);
-            shadowViews[viewIndex].borderTexels = borderTexels;
+            shadowViews[viewIndex].borderTexels = entry->borderTexels;
         }
 
+        if (frameShadow->updateDepth) {
+            // 갱신할 그림자의 컬링 공통 계산은 카메라마다 한 번 준비한다.
+            if (shadowLight->type == RenderLight::Type::Point) {
+                const float lightRadius = BE1::Max(shadowLight->size[0], RenderLight::MinLightSize);
+                frameShadow->squaredRadius = lightRadius * lightRadius;
+
+                entry->pointOrigin = shadowLight->origin;
+                entry->pointDepthScaleBias = shadowLight->CalcPointShadowProjections(shadowViews);
+            } else {
+                shadowLight->CalcSpotShadowProjection(shadowViews[0]);
+                entry->spotViewProjMatrix = shadowViews[0].viewProjMatrix;
+            }
+
+            for (int planeIndex = 0; planeIndex < 6; ++planeIndex) {
+                frameShadow->viewPlaneToOriginDistances[planeIndex] = viewPlanes[planeIndex].Distance(shadowLight->origin);
+            }
+        }
+
+        // 스킵 프레임도 기존 depth 와 같은 좌표계로 샘플링한다. 컬링용 frustum/평면은 갱신할 때만 필요하다.
         if (shadowLight->type == RenderLight::Type::Point) {
-            shadowLight->CalcPointShadowProjections(shadowViews);
-        } else {
-            shadowLight->CalcSpotShadowProjection(shadowViews[0]);
+            frameShadow->pointOrigin = entry->pointOrigin;
+            frameShadow->pointDepthScaleBias = entry->pointDepthScaleBias;
+        } else if (!frameShadow->updateDepth) {
+            shadowViews[0].viewProjMatrix = entry->spotViewProjMatrix;
         }
     }
 }

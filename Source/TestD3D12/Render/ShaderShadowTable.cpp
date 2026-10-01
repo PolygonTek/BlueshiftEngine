@@ -23,6 +23,8 @@ static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLo
     outShadow.firstShadowView = shadow.firstShadowView;
     outShadow.numShadowViews = shadow.numShadowViews;
     outShadow.normalizedBorder = static_cast<float>(firstView.borderTexels) / shadow.resolution;
+    outShadow.pointOrigin = float3(shadow.pointOrigin.x, shadow.pointOrigin.y, shadow.pointOrigin.z);
+    outShadow.pointDepthScaleBias = float2(shadow.pointDepthScaleBias.x, shadow.pointDepthScaleBias.y);
 
     float filterRadius = settings.shadowMapQuality == 0 ? 0.0f : 1.0f;
     if (settings.shadowMapQuality == 3) {
@@ -37,14 +39,19 @@ static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLo
     outShadow.filterRadius = BE1::Clamp(filterRadius, 0.0f, maxFilterRadius);
 }
 
-static void BuildShaderLocalShadowView(const FrameLocalShadowView &view, float invAtlasSize, ShaderLocalShadowView &outView) {
-    // XY 만 clip [-W, W] 에서 타일 UV [0, W] 로 변환한다. Z/W 와 perspective divide 용 W 는 보존한다.
-    const BE1::Mat4 &matrix = view.viewProjMatrix;
-    for (uint32_t column = 0; column < 4; ++column) {
-        outView.worldToShadowCoordMatrix.m[0][column] = (matrix[3][column] + matrix[0][column]) * 0.5f;
-        outView.worldToShadowCoordMatrix.m[1][column] = (matrix[3][column] - matrix[1][column]) * 0.5f;
-        outView.worldToShadowCoordMatrix.m[2][column] = matrix[2][column];
-        outView.worldToShadowCoordMatrix.m[3][column] = matrix[3][column];
+static void BuildShaderLocalShadowView(const FrameLocalShadowView &view, bool point, float invAtlasSize, ShaderLocalShadowView &outView) {
+    if (point) {
+        // Point 샘플링은 행렬을 사용하지 않는다. 스킵 프레임에는 viewProjMatrix 도 계산하지 않는다.
+        outView.worldToShadowCoordMatrix = {};
+    } else {
+        // XY 만 clip [-W, W] 에서 타일 UV [0, W] 로 변환한다. Z/W 와 perspective divide 용 W 는 보존한다.
+        const BE1::Mat4 &matrix = view.viewProjMatrix;
+        for (uint32_t column = 0; column < 4; ++column) {
+            outView.worldToShadowCoordMatrix.m[0][column] = (matrix[3][column] + matrix[0][column]) * 0.5f;
+            outView.worldToShadowCoordMatrix.m[1][column] = (matrix[3][column] - matrix[1][column]) * 0.5f;
+            outView.worldToShadowCoordMatrix.m[2][column] = matrix[2][column];
+            outView.worldToShadowCoordMatrix.m[3][column] = matrix[3][column];
+        }
     }
 
     const BE1::Rect &tile = view.tileRect;
@@ -64,7 +71,8 @@ bool ShaderShadowTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comma
     if (shadowAtlas.numShadows == 0) {
         return true;
     }
-    if (!shadowAtlas.depthRendered || !shadowAtlas.shadowTexture || !shadowAtlas.shadowSRV.IsValid() || shadowAtlas.size == 0 ||
+
+    if (!shadowAtlas.shadowTexture || !shadowAtlas.shadowSRV.IsValid() || shadowAtlas.size == 0 ||
         !shadowAtlas.shadows || !shadowAtlas.shadowViews || shadowAtlas.numShadowViews == 0) {
         return false;
     }
@@ -78,6 +86,7 @@ bool ShaderShadowTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comma
     if (!shadowUploadBuffer || !shadowUploadBuffer->mappedPtr) {
         return false;
     }
+
     RHI::Buffer *viewUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderLocalShadowView), shadowAtlas.numShadowViews, nullptr);
     if (!viewUploadBuffer || !viewUploadBuffer->mappedPtr) {
         return false;
@@ -94,7 +103,9 @@ bool ShaderShadowTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comma
     const float invAtlasSize = 1.0f / shadowAtlas.size;
     ShaderLocalShadowView *views = reinterpret_cast<ShaderLocalShadowView *>(viewUploadBuffer->mappedPtr);
     for (uint32_t viewIndex = 0; viewIndex < shadowAtlas.numShadowViews; ++viewIndex) {
-        BuildShaderLocalShadowView(shadowAtlas.shadowViews[viewIndex], invAtlasSize, views[viewIndex]);
+        const FrameLocalShadowView &view = shadowAtlas.shadowViews[viewIndex];
+        const bool point = shadowAtlas.shadows[view.shadowIndex].numShadowViews == 6;
+        BuildShaderLocalShadowView(view, point, invAtlasSize, views[viewIndex]);
     }
 
     // 두 테이블의 CPU 데이터를 준비한 뒤 copy 를 기록한다. 카메라 draw 와 같은 graphics queue 순서로 갱신된다.

@@ -25,7 +25,9 @@
 #include "Core/Str.h"
 #include "Math/Point.h"
 #include "Math/Size.h"
+#include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <type_traits>
 #include <utility>
@@ -173,6 +175,10 @@ public:
 
                         /// Creates from the string.
     static RectT        FromString(const char *str);
+
+                        /// 변이 맞닿아 빈틈없는 직사각형이 되는 영역만 병합한다. 폭과 높이는 양수여야 한다.
+                        /// 배열을 제자리에서 정렬/압축하고 결과 개수를 반환한다. 모든 병합 가능 쌍을 찾지는 않는다.
+    static uint32_t     MergeAdjacentRects(RectT *rects, uint32_t numRects);
 
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return 4; }
@@ -461,6 +467,100 @@ BE_INLINE RectT<T> RectT<T>::FromString(const char *str) {
 
     assert(count == r.GetDimension());
     return r;
+}
+
+template <typename T>
+inline uint32_t RectT<T>::MergeAdjacentRects(RectT *rects, uint32_t numRects) {
+    if (numRects < 2) {
+        return numRects;
+    }
+
+#if 0
+    // 빠른 경로: 한 번 정렬한 뒤 결과 스택의 마지막 항목과만 병합한다.
+    std::sort(rects, rects + numRects, [](const RectT &a, const RectT &b) {
+        return a.y != b.y ? a.y < b.y : a.x < b.x;
+    });
+
+    // 배열 앞부분을 결과 스택으로 사용한다. 병합할 때마다 하나를 pop 하므로 정렬 후 처리는 O(n) 이다.
+    uint32_t numMergedRects = 1;
+    for (uint32_t i = 1; i < numRects; ++i) {
+        RectT current = rects[i];
+        while (numMergedRects > 0) {
+            const RectT &previous = rects[numMergedRects - 1];
+            if (previous.y == current.y && previous.h == current.h && previous.X2() == current.x) {
+                current.x = previous.x;
+                current.w += previous.w;
+            } else if (previous.x == current.x && previous.w == current.w && previous.Y2() == current.y) {
+                current.y = previous.y;
+                current.h += previous.h;
+            } else {
+                break;
+            }
+            --numMergedRects;
+        }
+
+        if (numMergedRects != i) {
+            rects[numMergedRects] = current;
+        }
+        ++numMergedRects;
+    }
+#else
+    // 가로와 세로를 각각 정렬해 병합한다. 모든 병합 가능 쌍을 찾는 방식은 아니다.
+    std::sort(rects, rects + numRects, [](const RectT &a, const RectT &b) {
+        if (a.y != b.y) {
+            return a.y < b.y;
+        }
+        if (a.h != b.h) {
+            return a.h < b.h;
+        }
+        return a.x < b.x;
+    });
+
+    uint32_t numMergedRects = 1;
+    for (uint32_t i = 1; i < numRects; ++i) {
+        RectT &previous = rects[numMergedRects - 1];
+        const RectT &current = rects[i];
+        if (previous.y == current.y && previous.h == current.h && previous.X2() == current.x) {
+            previous.w += current.w;
+        } else {
+            if (numMergedRects != i) {
+                rects[numMergedRects] = current;
+            }
+            ++numMergedRects;
+        }
+    }
+
+    numRects = numMergedRects;
+    if (numRects < 2) {
+        return numRects;
+    }
+
+    std::sort(rects, rects + numRects, [](const RectT &a, const RectT &b) {
+        if (a.x != b.x) {
+            return a.x < b.x;
+        }
+        if (a.w != b.w) {
+            return a.w < b.w;
+        }
+        return a.y < b.y;
+    });
+
+    numMergedRects = 1;
+    for (uint32_t i = 1; i < numRects; ++i) {
+        RectT &previous = rects[numMergedRects - 1];
+        const RectT &current = rects[i];
+        if (previous.x == current.x && previous.w == current.w && previous.Y2() == current.y) {
+            previous.h += current.h;
+        } else {
+            if (numMergedRects != i) {
+                rects[numMergedRects] = current;
+            }
+            ++numMergedRects;
+        }
+    }
+#endif
+
+    return numMergedRects;
 }
 
 template <typename T>

@@ -77,9 +77,6 @@ public:
                                     /// Returns light index in world.
     int                             GetIndex() const { return index; }
 
-                                    /// 그림자 입력의 변경 번호. 카메라별 캐시가 저장한 번호와 비교한다.
-    uint64_t                        GetShadowRevision() const { return shadowRevision; }
-
                                     /// Returns light type which is one of the [Point, Spot, BoxDir, Directional].
     Type                            GetType() const { return desc.type; }
 
@@ -134,10 +131,10 @@ private:
 
     Desc                            desc;
 
-    BE1::Sphere                     worldSphere;                        // bounding volume for point light
-    BE1::OBB                        worldOBB;                           // bounding volume for box-dir light
-    BE1::Frustum                    worldFrustum;                       // bounding volume for spot light
-    BE1::AABB                       worldAABB = BE1::AABB::empty;       // World-space AABB enclosing the light volume; empty for directional lights
+    BE1::Sphere                     worldSphere;                        ///< Bounding volume for point light
+    BE1::OBB                        worldOBB;                           ///< Bounding volume for box-dir light
+    BE1::Frustum                    worldFrustum;                       ///< Bounding volume for spot light
+    BE1::AABB                       worldAABB = BE1::AABB::empty;       ///< World-space AABB enclosing the light volume; empty for directional lights
 
     BE1::Mat4                       viewMatrix = BE1::Mat4::identity;
     BE1::Mat4                       projMatrix = BE1::Mat4::identity;
@@ -145,8 +142,7 @@ private:
     BE1::Mat3x4                     fallOffMatrix;
 
     uint64_t                        visibleFrameIndex = 0;
-    uint64_t                        lightId = 0;                        ///< 광원 생성 시 부여되는 고유 ID. Index 재사용이나 world 교체에도 이전 광원과 구분한다.
-    uint64_t                        shadowRevision = 1;                 ///< 0 은 아직 렌더링하지 않은 캐시의 초기값으로 남긴다.
-    int                             index = -1;                         // RenderWorld::renderLights 의 인덱스
-    uint64_t                        viewCount = uint64_t(-1);           // 마지막으로 FrameLight 로 등록된 뷰의 카운터 값. 같은 뷰에서 중복 등록 방지.
+    uint64_t                        lightId = 0;                        ///< 광원 생성 시 부여되는 고유 ID.
+    int                             index = -1;                         ///< RenderWorld::renderLights 의 인덱스
+    uint64_t                        viewCount = uint64_t(-1);           ///< 마지막으로 FrameLight 로 등록된 뷰의 카운터 값. 같은 뷰에서 중복 등록 방지.
 };

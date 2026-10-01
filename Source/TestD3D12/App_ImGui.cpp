@@ -449,7 +449,11 @@ void App::BuildImGuiShadowAtlasPreview() {
                 ImGui::Text("Light %u | %s | View %u", shadow.light->index, faceName, shadowViewIndex);
                 ImGui::Text("Tile: (%d, %d), %d x %d | Border: %u", shadowView.tileRect.x, shadowView.tileRect.y, shadowView.tileRect.w, shadowView.tileRect.h, shadowView.borderTexels);
                 ImGui::Text("Resolution: %u requested, %u allocated", shadow.requestedResolution, shadow.resolution);
-                ImGui::Text("Surfaces: %u | Draw surfaces: %u", shadowView.numShadowSurfs, shadowView.renderPass.numDrawSurfs);
+                ImGui::Text("Projected light size: %u px (render resolution)", shadow.light->projectedSize);
+                ImGui::Text("Depth: %s", shadow.updateDepth ? "Update scheduled this frame" : "Reuse previous result");
+                if (shadow.updateDepth) {
+                    ImGui::Text("Surfaces: %u | Draw surfaces: %u", shadowView.numShadowSurfs, shadowView.renderPass.numDrawSurfs);
+                }
                 ImGui::EndTooltip();
             }
         }
@@ -1153,6 +1157,22 @@ void App::BuildImGuiOverlay() {
                     r_shadowProjectedSizeScale.SetFloat(projectedSizeScale);
                 }
                 ImGui::SetItemTooltip("r_shadowProjectedSizeScale\nScales projected light size when selecting Spot/Point shadow resolution. Higher values request higher resolutions.");
+
+                bool shadowLoadBalancing = r_shadowAtlasLoadBalancing.GetBool();
+                if (ImGui::Checkbox("Load balancing##ShadowAtlas", &shadowLoadBalancing)) {
+                    r_shadowAtlasLoadBalancing.SetBool(shadowLoadBalancing);
+                }
+                ImGui::SetItemTooltip("r_shadowAtlasLoadBalancing\nEach halving of projected size below the every-frame threshold doubles the update interval, up to %u frames. Previous depth is reused in between. Shadows without valid depth always update. Point light faces update together.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
+
+                ImGui::BeginDisabled(!shadowLoadBalancing);
+                int updateMinProjectedSize = r_shadowUpdateMinProjectedSize.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderInt("Every-frame size##ShadowAtlas", &updateMinProjectedSize,
+                    static_cast<int>(r_shadowUpdateMinProjectedSize.GetMinValue()), static_cast<int>(r_shadowUpdateMinProjectedSize.GetMaxValue()), "%d px", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+                    r_shadowUpdateMinProjectedSize.SetInteger(updateMinProjectedSize);
+                }
+                ImGui::SetItemTooltip("r_shadowUpdateMinProjectedSize\nLights at or above this projected size update their shadows every frame. Each halving of size doubles the update interval, up to %u frames.\nUses the longer edge in render-resolution pixels, before projected size scaling. Ctrl+click to enter a value.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
+                ImGui::EndDisabled();
 
                 BuildImGuiShadowAtlasPreview();
             }
