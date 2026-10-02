@@ -61,7 +61,7 @@ public:
         BE1::Mat3                   axis = BE1::Mat3::identity;         ///< Light orientation
         BE1::Vec3                   size = BE1::Vec3::one;              ///< Point: size[0] is radius. Spot/BoxDir: shape extents
 
-        float                       zNear = 1.0f;                       ///< Spot near distance; Point shadow near distance (capped at half the radius)
+        float                       zNear = 0.1f;                       ///< Spot near distance; Point shadow base near distance (capped at half the radius)
         RHI::ProjectionPolicy       projectionPolicy;                   ///< projection convention used for shader-visible matrices
 
         BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB light tint in [0, 1]
