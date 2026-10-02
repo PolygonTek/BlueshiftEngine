@@ -668,9 +668,6 @@ void D3D12Renderer::Shutdown() {
     samplerShaderVisibleDescriptorHeap.Shutdown();
     resourceShaderVisibleDescriptorHeap.Shutdown();
 
-    SAFE_RELEASE(dxcCompiler);
-    SAFE_RELEASE(dxcUtils);
-    SAFE_RELEASE(dxcLibrary);
     SAFE_RELEASE(drawInstancedIndirectCommandSignature);
     SAFE_RELEASE(drawIndexedInstancedIndirectCommandSignature);
     SAFE_RELEASE(dispatchIndirectCommandSignature);
@@ -689,7 +686,9 @@ void D3D12Renderer::Shutdown() {
 
     if (dxcompilerLibrary) {
         BE1::PlatformProcess::CloseLibrary(dxcompilerLibrary);
+        dxcompilerLibrary = nullptr;
     }
+    dxcCreateInstance = nullptr;
 
     ULONG refCount = device->Release();
     if (refCount > 0) {
@@ -755,41 +754,6 @@ void D3D12Renderer::WaitFence(RHI::CommandQueueType queueType, uint64_t expected
         if (FAILED(hr)) {
             BE_FATALERROR("SetEventOnCompletion failed, ERROR: 0x%x", hr);
         }
-    }
-}
-
-void D3D12Renderer::CreateShaderCompiler() {
-#if 1
-    dxcompilerLibrary = BE1::PlatformProcess::OpenLibrary("dxcompiler.dll");
-    if (!dxcompilerLibrary) {
-        return;
-    }
-
-    DxcCreateInstanceProc DxcCreateInstance = (DxcCreateInstanceProc)BE1::PlatformProcess::GetSymbol(dxcompilerLibrary, "DxcCreateInstance");
-    if (!DxcCreateInstance) {
-        BE_WARNLOG("Failed to get symbol \"DxcCreateInstance\"\n");
-        return;
-    }
-#endif
-
-    HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    if (FAILED(hr)) {
-        BE_FATALERROR("Create dxc compiler failed, ERROR: 0x%x", hr);
-    }
-
-    dxcCompilerCacheHashValid = GenerateDxcCompilerCacheHash(dxcCompilerCacheHash);
-    if (!dxcCompilerCacheHashValid) {
-        BE_WARNLOG("Could not identify the DXC compiler build; compiled shader disk cache is disabled\n");
-    }
-
-    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    if (FAILED(hr)) {
-        BE_FATALERROR("Create dxc util failed, ERROR: 0x%x", hr);
-    }
-
-    hr = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&dxcLibrary));
-    if (FAILED(hr)) {
-        BE_FATALERROR("Create dxc library failed, ERROR: 0x%x", hr);
     }
 }
 

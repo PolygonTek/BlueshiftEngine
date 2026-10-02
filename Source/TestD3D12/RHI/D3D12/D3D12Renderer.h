@@ -251,7 +251,7 @@ public:
     bool                                CompileShader(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
     bool                                CompileShaderD3D(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
     bool                                CompileShaderDXC(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput);
-    bool                                GenerateDxcCompilerCacheHash(uint64_t &outHash) const;
+    bool                                GenerateDxcCompilerCacheHash(IDxcCompiler3 *compiler, uint64_t &outHash) const;
     void                                GetCompiledShaderCacheFilename(const char *name, BE1::Str &outFilename) const;
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
     void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize, const BE1::Array<RHI::ShaderSourceDependency> &dependencies);
@@ -364,9 +364,7 @@ public:
     BE1::HashMap<uint64_t, ID3DBlob *>  cachedPsoBlobMap;
 #endif
 
-    IDxcCompiler3 *                     dxcCompiler = nullptr;
-    IDxcUtils *                         dxcUtils = nullptr;
-    IDxcLibrary *                       dxcLibrary = nullptr;
+    DxcCreateInstanceProc               dxcCreateInstance = nullptr;
     uint64_t                            dxcCompilerCacheHash = 0;
     bool                                dxcCompilerCacheHashValid = false;
 

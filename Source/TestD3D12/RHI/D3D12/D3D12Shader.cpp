@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/PlatformProcess.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
 #include "D3D12Shader.h"
@@ -44,9 +45,93 @@ static constexpr const wchar_t *dxcCompileOptions[] = {
     //L"DEFAULT_ROOTSIGNATURE",
 };
 
-bool D3D12Renderer::GenerateDxcCompilerCacheHash(uint64_t &outHash) const {
+// DXC 객체는 생성한 스레드에서만 사용하고, 같은 스레드의 다음 컴파일에서 재사용한다.
+struct DxcThreadContext {
+    DxcThreadContext() = default;
+    DxcThreadContext(const DxcThreadContext &) = delete;
+    DxcThreadContext &operator=(const DxcThreadContext &) = delete;
+
+    ~DxcThreadContext() {
+        library.Reset();
+        compiler.Reset();
+        if (module) {
+            FreeLibrary(module);
+        }
+    }
+
+    HRESULT Initialize(DxcCreateInstanceProc createInstance) {
+        if (!createInstance) {
+            return E_UNEXPECTED;
+        }
+        if (compiler) {
+            return S_OK;
+        }
+
+        // Renderer 종료보다 TLS 소멸이 늦어도 COM 객체의 Release 가 끝날 때까지 DLL 을 유지한다.
+        // 함수 주소로 참조를 얻어 renderer 가 로드한 것과 정확히 같은 DLL 을 사용한다.
+        HMODULE newModule = nullptr;
+        if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCWSTR>(createInstance), &newModule)) {
+            return HRESULT_FROM_WIN32(GetLastError());
+        }
+
+        Microsoft::WRL::ComPtr<IDxcCompiler3> newCompiler;
+        Microsoft::WRL::ComPtr<IDxcLibrary> newLibrary;
+        HRESULT hr = createInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&newCompiler));
+        if (SUCCEEDED(hr)) {
+            hr = createInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&newLibrary));
+        }
+        if (FAILED(hr)) {
+            newLibrary.Reset();
+            newCompiler.Reset();
+            FreeLibrary(newModule);
+            return hr;
+        }
+
+        module = newModule;
+        compiler = std::move(newCompiler);
+        library = std::move(newLibrary);
+        return S_OK;
+    }
+
+    HMODULE module = nullptr;
+    Microsoft::WRL::ComPtr<IDxcCompiler3> compiler;
+    Microsoft::WRL::ComPtr<IDxcLibrary> library;
+};
+
+static DxcThreadContext &GetDxcThreadContext() {
+    static thread_local DxcThreadContext context;
+    return context;
+}
+
+void D3D12Renderer::CreateShaderCompiler() {
+    dxcompilerLibrary = BE1::PlatformProcess::OpenLibrary("dxcompiler.dll");
+    if (!dxcompilerLibrary) {
+        BE_FATALERROR("Failed to load dxcompiler.dll");
+        return;
+    }
+
+    dxcCreateInstance = reinterpret_cast<DxcCreateInstanceProc>(BE1::PlatformProcess::GetSymbol(dxcompilerLibrary, "DxcCreateInstance"));
+    if (!dxcCreateInstance) {
+        BE_FATALERROR("Failed to get symbol \"DxcCreateInstance\"");
+        return;
+    }
+
+    DxcThreadContext &context = GetDxcThreadContext();
+    const HRESULT hr = context.Initialize(dxcCreateInstance);
+    if (FAILED(hr)) {
+        BE_FATALERROR("Create DXC thread context failed, ERROR: 0x%x", hr);
+        return;
+    }
+
+    dxcCompilerCacheHashValid = GenerateDxcCompilerCacheHash(context.compiler.Get(), dxcCompilerCacheHash);
+    if (!dxcCompilerCacheHashValid) {
+        BE_WARNLOG("Could not identify the DXC compiler build; compiled shader disk cache is disabled\n");
+    }
+}
+
+bool D3D12Renderer::GenerateDxcCompilerCacheHash(IDxcCompiler3 *compiler, uint64_t &outHash) const {
     Microsoft::WRL::ComPtr<IDxcVersionInfo2> versionInfo;
-    if (FAILED(dxcCompiler->QueryInterface(IID_PPV_ARGS(&versionInfo)))) {
+    if (FAILED(compiler->QueryInterface(IID_PPV_ARGS(&versionInfo)))) {
         return false;
     }
 
@@ -206,6 +291,13 @@ bool D3D12Renderer::CompileShaderD3D(const RHI::ShaderCompileInput *compileInput
 }
 
 bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput, RHI::ShaderCompileOutput *compileOutput) {
+    DxcThreadContext &context = GetDxcThreadContext();
+    const HRESULT contextResult = context.Initialize(dxcCreateInstance);
+    if (FAILED(contextResult)) {
+        compileOutput->errorMessage = BE1::va("Create DXC thread context failed, HRESULT: 0x%08x\n", static_cast<uint32_t>(contextResult));
+        return false;
+    }
+
     std::vector<std::wstring> args(dxcCompileOptions, dxcCompileOptions + COUNT_OF(dxcCompileOptions));
 
     args.push_back(L"-T");
@@ -494,7 +586,7 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
 
             // shaderText 를 IDxcBlob 으로 변환
             Microsoft::WRL::ComPtr<IDxcBlobEncoding> blobEncoding;
-            HRESULT hr = D3D12Renderer::GetRenderer()->dxcLibrary->CreateBlobWithEncodingFromPinned(
+            HRESULT hr = library->CreateBlobWithEncodingFromPinned(
                 reinterpret_cast<LPBYTE>(const_cast<char *>(shaderText)),
                 static_cast<UINT32>(shaderTextSize), CP_UTF8, &blobEncoding);
             if (FAILED(hr)) {
@@ -516,6 +608,7 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
         }
 
         ULONG refCount = 1;
+        IDxcLibrary *library = nullptr; // 이 동기 Compile 호출보다 오래 유지되는 현재 스레드 context 소유이다.
         BE1::Array<RHI::ShaderSourceDependency> *dependencies = nullptr;
         std::vector<void *> shaderTextPtrs;
     };
@@ -523,6 +616,7 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
     // Custom include 핸들러 생성
     Microsoft::WRL::ComPtr<CustomIncludeHandler> customIncludeHandler;
     customIncludeHandler.Attach(new CustomIncludeHandler);
+    customIncludeHandler->library = context.library.Get();
     customIncludeHandler->dependencies = &compileOutput->dependencies;
 
     DxcBuffer source;
@@ -532,7 +626,7 @@ bool D3D12Renderer::CompileShaderDXC(const RHI::ShaderCompileInput *compileInput
 
     // Shader 컴파일
     Microsoft::WRL::ComPtr<IDxcResult> dxcResult;
-    HRESULT hr = dxcCompiler->Compile(&source, argv.data(), (UINT32)args.size(), customIncludeHandler.Get(), IID_PPV_ARGS(&dxcResult));
+    HRESULT hr = context.compiler->Compile(&source, argv.data(), (UINT32)args.size(), customIncludeHandler.Get(), IID_PPV_ARGS(&dxcResult));
     if (FAILED(hr) || !dxcResult) {
         compileOutput->errorMessage = BE1::va("DXC Compile failed, HRESULT: 0x%08x\n", static_cast<uint32_t>(hr));
         return false;
