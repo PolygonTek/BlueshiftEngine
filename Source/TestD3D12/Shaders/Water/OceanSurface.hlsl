@@ -1,6 +1,7 @@
 #include "../ShaderInterop.h"
 #include "../Common.hlsli"
 #include "OceanFieldCommon.hlsli"
+#include "../GeometryClipmap.hlsli"
 #include "../CommonBindless.hlsli"
 #include "../CameraPassOutputCommon.hlsli"
 #include "../PBR/BRDFLibrary.hlsli"
@@ -30,10 +31,10 @@ cbuffer OceanSurfaceCB : register(b2) {
 };
 
 cbuffer OceanSurfaceDrawCB : register(b3) {
-    uint oceanSurfaceTileInstanceOffset;
+    uint oceanSurfacePatchInstanceOffset;
 };
 
-StructuredBuffer<OceanSurfaceTileInstance> surfaceTileInstances : register(t0);
+StructuredBuffer<GeometryClipmapPatch> surfacePatchInstances : register(t0);
 Texture2DArray<float4> displacementAndDerivativeMap : register(t1);
 Texture2DArray<float> foamHistoryMap : register(t2);
 Texture2D<float4> foamDetailMap : register(t3);
@@ -59,55 +60,6 @@ float GetCascadePatchSize(uint cascadeIndex) {
     return oceanSurfaceParams.cascadePatchSizes[cascadeIndex];
 }
 
-uint GetOceanSurfaceGridLodStep(uint lodLevel) {
-    return lodLevel == 0u ? 1u : (lodLevel == 1u ? 3u : 5u);
-}
-
-float GetOceanSurfaceGridLodMipOffset(uint lodLevel) {
-    return lodLevel == 0u ? 0.0f : (lodLevel == 1u ? 1.5849625f : 2.3219281f);
-}
-
-uint GetOceanSurfaceNeighborLodLevel(uint packedNeighborLodLevels, uint bitOffset) {
-    return (packedNeighborLodLevels >> bitOffset) & 0xffu;
-}
-
-uint SnapOceanSurfaceGridCoordinate(uint coordinate, uint gridStep) {
-    return min(((coordinate + gridStep / 2u) / gridStep) * gridStep, OceanSurfaceGridResolution - 1u);
-}
-
-// 고해상도 타일의 경계 정점을 coarse 이웃의 정점 위치와 displacement mip 에 맞춘다.
-void StitchOceanSurfaceGridEdges(inout uint2 gridCoord, OceanSurfaceTileInstance tileInstance, out uint vertexLodLevel) {
-    vertexLodLevel = tileInstance.lodLevel;
-
-    if (gridCoord.x == 0u) {
-        const uint neighborLodLevel = GetOceanSurfaceNeighborLodLevel(tileInstance.packedNeighborLodLevels, 0u);
-        if (neighborLodLevel > vertexLodLevel) {
-            gridCoord.y = SnapOceanSurfaceGridCoordinate(gridCoord.y, GetOceanSurfaceGridLodStep(neighborLodLevel));
-            vertexLodLevel = neighborLodLevel;
-        }
-    } else if (gridCoord.x == OceanSurfaceGridResolution - 1u) {
-        const uint neighborLodLevel = GetOceanSurfaceNeighborLodLevel(tileInstance.packedNeighborLodLevels, 8u);
-        if (neighborLodLevel > vertexLodLevel) {
-            gridCoord.y = SnapOceanSurfaceGridCoordinate(gridCoord.y, GetOceanSurfaceGridLodStep(neighborLodLevel));
-            vertexLodLevel = neighborLodLevel;
-        }
-    }
-
-    if (gridCoord.y == 0u) {
-        const uint neighborLodLevel = GetOceanSurfaceNeighborLodLevel(tileInstance.packedNeighborLodLevels, 16u);
-        if (neighborLodLevel > vertexLodLevel) {
-            gridCoord.x = SnapOceanSurfaceGridCoordinate(gridCoord.x, GetOceanSurfaceGridLodStep(neighborLodLevel));
-            vertexLodLevel = neighborLodLevel;
-        }
-    } else if (gridCoord.y == OceanSurfaceGridResolution - 1u) {
-        const uint neighborLodLevel = GetOceanSurfaceNeighborLodLevel(tileInstance.packedNeighborLodLevels, 24u);
-        if (neighborLodLevel > vertexLodLevel) {
-            gridCoord.x = SnapOceanSurfaceGridCoordinate(gridCoord.x, GetOceanSurfaceGridLodStep(neighborLodLevel));
-            vertexLodLevel = neighborLodLevel;
-        }
-    }
-}
-
 // 카메라 거리에 따라 각 cascade 의 기여도를 smoothstep 곡선으로 감쇠한다.
 float4 GetOceanCascadeLodWeights(float viewDistance) {
     const float4 fadeStartDistances = oceanSurfaceParams.cascadePatchSizes * oceanSurfaceParams.cascadeFadeScale;
@@ -131,6 +83,14 @@ float3 SampleOceanDisplacement(float2 worldPositionXY, float4 cascadeLodWeights,
         }
     }
     return displacement * oceanSurfaceParams.displacementScale;
+}
+
+// geometry clipmap 은 XY 와 전환 규칙만 제공하고 ocean 이 XYZ 변위와 필터링을 평가한다.
+float3 SampleOceanClipmapPosition(float2 positionXY, uint level) {
+    const float3 basePosition = float3(positionXY, oceanSurfaceParams.surfaceHeight);
+    const float viewDistance = length(cameraConstants.cameraOrigin - basePosition);
+    const float4 cascadeLodWeights = GetOceanCascadeLodWeights(viewDistance);
+    return basePosition + SampleOceanDisplacement(positionXY, cascadeLodWeights, float(level));
 }
 
 // 환경광 specular cubemap 을 거칠기에 맞는 mip 에서 샘플링하여 수면 반사광을 계산한다.
@@ -241,27 +201,24 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
 PSInput VSMain(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) {
     PSInput result;
 
-    // 타일과 이웃 타일의 LOD 를 반영하여 경계 정점을 coarse 격자에 맞춘다.
-    uint2 gridCoord = uint2(vertexID % OceanSurfaceGridResolution, vertexID / OceanSurfaceGridResolution);
-    const OceanSurfaceTileInstance tileInstance = surfaceTileInstances[oceanSurfaceTileInstanceOffset + instanceID];
-    uint vertexLodLevel;
-    StitchOceanSurfaceGridEdges(gridCoord, tileInstance, vertexLodLevel);
-
-    const float gridHalfExtent = float(OceanSurfaceGridResolution - 1u) * 0.5f;
-    const float2 gridPosition = float2(gridCoord) - gridHalfExtent;
-    const float2 tiledGridPosition = gridPosition + tileInstance.tilePosition * float(OceanSurfaceGridResolution - 1u);
-
-    // 활성 LOD stride 의 최소공배수 간격으로 이동하여 모든 LOD 의 world-space 정점 격자 위상을 유지한다.
-    const float2 snappedCameraPosition = floor(cameraConstants.cameraOrigin.xy / oceanSurfaceParams.gridSnapSpacing + 0.5f) * oceanSurfaceParams.gridSnapSpacing;
-    const float2 samplePositionXY = snappedCameraPosition + tiledGridPosition * oceanSurfaceParams.gridSpacing;
-    const float3 baseWorldPosition = float3(samplePositionXY, oceanSurfaceParams.surfaceHeight);
-
-    // 카메라 거리와 정점 LOD 에 맞는 cascade 및 mip 에서 displacement 를 합성한다.
-    const float viewDistance = length(cameraConstants.cameraOrigin - baseWorldPosition);
-    const float4 cascadeLodWeights = GetOceanCascadeLodWeights(viewDistance);
-    const float vertexMipLevelOffset = GetOceanSurfaceGridLodMipOffset(vertexLodLevel);
-    const float3 displacement = SampleOceanDisplacement(samplePositionXY, cascadeLodWeights, vertexMipLevelOffset);
-    const float3 worldPosition = float3(samplePositionXY + displacement.xy, oceanSurfaceParams.surfaceHeight + displacement.z);
+    const GeometryClipmapPatch patch = surfacePatchInstances[oceanSurfacePatchInstanceOffset + instanceID];
+    const GeometryClipmapVertex vertex = GetGeometryClipmapVertex(vertexID, patch, cameraConstants.cameraOrigin.xy);
+    float2 samplePositionXY;
+    float3 worldPosition;
+    // 전환 구간 밖은 한 번만 샘플링한다. 경계에서는 parent 와 같은 좌표/mip/거리 가중치를 사용한다.
+    [branch]
+    if (vertex.morph <= 0.0f) {
+        samplePositionXY = vertex.position;
+        worldPosition = SampleOceanClipmapPosition(vertex.position, patch.level);
+    } else if (vertex.morph >= 1.0f) {
+        samplePositionXY = vertex.parentPosition;
+        worldPosition = SampleOceanClipmapPosition(vertex.parentPosition, patch.level + 1u);
+    } else {
+        const float3 finePosition = SampleOceanClipmapPosition(vertex.position, patch.level);
+        const float3 parentPosition = SampleOceanClipmapPosition(vertex.parentPosition, patch.level + 1u);
+        worldPosition = MorphGeometryClipmapPosition(finePosition, parentPosition, vertex.morph);
+        samplePositionXY = lerp(vertex.position, vertex.parentPosition, vertex.morph);
+    }
     const float4 worldPosition4 = float4(worldPosition, 1.0f);
 
     // 변위가 적용된 world position 과 surface sampling 좌표를 pixel shader 로 전달한다.

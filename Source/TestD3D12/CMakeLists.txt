@@ -198,6 +198,9 @@ set(SRC_FILES
     Render/GpuFFT.cpp
     Render/GpuOcean.h
     Render/GpuOceanSettings.cpp
+    Render/GeometryClipmap.h
+    Render/GeometryClipmap.cpp
+    Shaders/GeometryClipmapInterop.h
     Render/GpuOceanSurface.h
     Render/GpuOceanSurface.cpp
     Render/GpuOcean.cpp

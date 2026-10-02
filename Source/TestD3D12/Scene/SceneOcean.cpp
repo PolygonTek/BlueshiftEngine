@@ -438,17 +438,30 @@ void SceneOcean::BuildImGui() {
         }
 
         ImGui::SetNextItemWidth(itemWidth);
-        if (ImGui::DragFloat("Surface grid spacing", &surfaceSettings.gridSpacing, 0.05f, 0.01f, 100.0f, "%.2f m")) {
-            surfaceSettings.gridSpacing = BE1::Max(surfaceSettings.gridSpacing, 0.01f);
+        if (ImGui::DragFloat("Surface grid spacing", &surfaceSettings.clipmap.baseSpacing, 0.05f, 0.01f, 100.0f, "%.2f m")) {
+            surfaceSettings.clipmap.baseSpacing = BE1::Max(surfaceSettings.clipmap.baseSpacing, 0.01f);
             oceanSettingsChanged = true;
         }
 
-        int surfaceGridTileCountPerAxis = static_cast<int>(surfaceSettings.gridTileCountPerAxis);
+        int clipmapLevels = static_cast<int>(surfaceSettings.clipmap.levelCount);
         ImGui::SetNextItemWidth(itemWidth);
-        if (ImGui::SliderInt("Surface grid tiles per axis", &surfaceGridTileCountPerAxis, 1, GpuOceanSurface::MaxGridTileCountPerAxis)) {
-            surfaceSettings.gridTileCountPerAxis = static_cast<uint32_t>(surfaceGridTileCountPerAxis);
+        if (ImGui::SliderInt("Surface clipmap levels", &clipmapLevels, 1, GeometryClipmap::MaxLevelCount)) {
+            surfaceSettings.clipmap.levelCount = static_cast<uint32_t>(clipmapLevels);
             oceanSettingsChanged = true;
         }
+
+        static const char *patchResolutionNames[] = { "16", "32", "64", "128" };
+        int patchResolutionIndex = static_cast<int>(GeometryClipmap::GetResolutionIndex(surfaceSettings.clipmap.patchCellCount));
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::Combo("Surface patch cells", &patchResolutionIndex, patchResolutionNames, COUNT_OF(patchResolutionNames))) {
+            surfaceSettings.clipmap.patchCellCount = GeometryClipmap::MinPatchCellCount << patchResolutionIndex;
+            oceanSettingsChanged = true;
+        }
+        ImGui::SetNextItemWidth(itemWidth);
+        oceanSettingsChanged |= ImGui::SliderFloat("Surface morph width", &surfaceSettings.clipmap.morphWidth, 0.05f, 0.75f, "%.2f");
+        const float finestWidth = 4.0f * surfaceSettings.clipmap.patchCellCount * surfaceSettings.clipmap.baseSpacing;
+        const float surfaceWidth = finestWidth * static_cast<float>(1u << (surfaceSettings.clipmap.levelCount - 1));
+        ImGui::Text("Finest level: %.0f m / Surface: %.0f m", finestWidth, surfaceWidth);
 
         oceanSettingsChanged |= ImGui::Checkbox("Wireframe", &surfaceSettings.wireframe);
         oceanSettingsChanged |= ImGui::Checkbox("Surface frustum culling", &surfaceSettings.frustumCulling);

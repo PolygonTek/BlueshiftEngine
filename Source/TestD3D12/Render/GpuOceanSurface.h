@@ -18,6 +18,7 @@
 
 #include "Containers/HashMap.h"
 #include "GpuOcean.h"
+#include "GeometryClipmap.h"
 #include "Math/Color3.h"
 #include "Math/Vector3.h"
 
@@ -43,9 +44,6 @@ class GpuOceanSurface {
     friend class RenderSystem;
 
 public:
-    static constexpr uint32_t       GridResolution = 256;
-    static constexpr uint32_t       GridLodCount = 3;
-    static constexpr uint32_t       MaxGridTileCountPerAxis = 32;
     static constexpr uint32_t       MaxQueryCount = 4096;
 
     struct QueryReadbackFrame {
@@ -64,10 +62,9 @@ public:
     };
 
     struct Settings {
-        float                       gridSpacing = 1.0f;
-        uint32_t                    gridTileCountPerAxis = 16;
+        GeometryClipmap::Settings   clipmap;
         float                       height = 0.0f;
-        float                       maxDisplacement = 32.0f;        ///< CPU tile culling bounds 를 모든 축으로 확장하는 최대 수면 변위 (m)
+        float                       maxDisplacement = 32.0f;        ///< CPU patch culling bounds 를 모든 축으로 확장하는 최대 수면 변위 (m)
         bool                        frustumCulling = true;
 
         bool                        wireframe = false;
@@ -109,7 +106,7 @@ public:
     void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
     const SharedPtr<ShaderTemplate> &GetShaderTemplate() const { return shaderTemplate; }
-    bool                            IsGridReady() const { return gridIndexBuffer != nullptr; }
+    bool                            IsGridReady() const { return clipmap.IsReady(); }
 
                                     /// 최대 MaxQueryCount 개의 query 를 GPU 에 기록하고 readback frame 을 반환한다.
     [[nodiscard]]                   /// 반환된 frame 의 fence 값은 command list 제출 시 backend 가 설정한다.
@@ -118,19 +115,12 @@ public:
                                     /// 완료된 query 결과 cache 에서 queryId 에 해당하는 최신 값을 반환한다.
     bool                            GetQueryResult(uint32_t queryId, OceanSurfaceQueryResult &outResult) const;
 
-                                    /// 현재 ocean field 로 카메라 중심의 NxN 수면 grid 중 view volume 에 보이는 tile 을 렌더링한다.
+                                    /// 현재 ocean field 로 카메라를 따라가는 geometry clipmap 의 보이는 patch 를 렌더링한다.
     bool                            Draw(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
                                         const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const Settings &settings, const View &view,
                                         const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture, DrawStats *drawStats = nullptr) const;
 
 private:
-    struct GridLodRange {
-        uint32_t                    firstIndex = 0;
-        uint32_t                    indexCount = 0;
-    };
-
-    bool                            CreateGrid();
-    void                            DestroyGrid();
     bool                            EnsureQueryResources();
     void                            DestroyQueryResources();
     void                            ConsumeCompletedQueries();
@@ -141,8 +131,7 @@ private:
     SharedPtr<ShaderTemplate>       queryShaderTemplate;
     SharedPtr<ShaderPipeline>       queryPipeline;
     SharedPtr<Texture>              foamDetailTexture;
-    RHI::IndexBuffer *              gridIndexBuffer = nullptr;
-    GridLodRange                    gridLodRanges[GridLodCount] = {};
+    GeometryClipmap                 clipmap;
 
     RHI::Buffer *                   queryOutputBuffer = nullptr;
     RHI::ViewID                     queryOutputUAV = RHI::ViewID::InvalidID;
