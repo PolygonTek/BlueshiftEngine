@@ -21,21 +21,25 @@ bool IsInsideLightVolume(float4 projectedPosition) {
     return GetLightVolumePosition(projectedPosition, volumePosition);
 }
 
-float CalcLightFallOff(row_major float3x4 fallOffMatrix, float fallOffExponent, float3 worldPosition) {
-    const float3 lightFallOff = mul(fallOffMatrix, float4(worldPosition, 1.0f));
-    const float fallOff = saturate(1.0f - dot(lightFallOff, lightFallOff));
-    return pow(fallOff, fallOffExponent);
+float CalcLightDistanceAttenuation(float lightDistanceSquared, float invRadiusSquared) {
+    // 역제곱 감쇠에 반경 경계에서 부드럽게 0 이 되는 범위 감쇠를 적용한다.
+    const float normalizedDistanceSquared = lightDistanceSquared * invRadiusSquared;
+    const float rangeFade = saturate(1.0f - normalizedDistanceSquared * normalizedDistanceSquared);
+
+    // 1cm 이내의 역제곱 감쇠는 고정하여 발산을 제한한다.
+    const float minDistanceSquared = 0.01f * 0.01f;
+    return (rangeFade * rangeFade) / max(lightDistanceSquared, minDistanceSquared);
 }
 
-float3 EvaluateLocalLight(float3 lightOrigin, float3 lightColor, row_major float3x4 fallOffMatrix, float fallOffExponent, float3 worldPosition, in ShadingParams shading) {
-    const float attenuation = CalcLightFallOff(fallOffMatrix, fallOffExponent, worldPosition);
-    if (attenuation <= 0.0f) {
-        return 0.0f;
-    }
-
+float3 EvaluateLocalLight(float3 lightOrigin, float3 lightColor, float invRadiusSquared, float3 worldPosition, in ShadingParams shading) {
     const float3 lightVector = lightOrigin - worldPosition;
     const float lightDistanceSquared = dot(lightVector, lightVector);
     if (lightDistanceSquared <= FLT_MIN) {
+        return 0.0f;
+    }
+
+    const float attenuation = CalcLightDistanceAttenuation(lightDistanceSquared, invRadiusSquared);
+    if (attenuation <= 0.0f) {
         return 0.0f;
     }
 
@@ -55,8 +59,7 @@ float3 EvaluatePointLight(ShaderPointLight pointLight, uint2 pixelCoord, float3 
         return 0.0f;
     }
 
-    const float fallOff = saturate(1.0f - lightDistanceSquared * pointLight.invRadiusSquared);
-    const float attenuation = pow(fallOff, pointLight.fallOffExponent);
+    const float attenuation = CalcLightDistanceAttenuation(lightDistanceSquared, pointLight.invRadiusSquared);
     if (attenuation <= 0.0f) {
         return 0.0f;
     }
@@ -76,29 +79,13 @@ float3 EvaluateSpotLight(ShaderSpotLight spotLight, uint2 pixelCoord, float3 wor
     if (!IsInsideLightVolume(projectedPosition)) {
         return 0.0f;
     }
-    const float3 lighting = EvaluateLocalLight(spotLight.origin, spotLight.lightColor, spotLight.fallOffMatrix, spotLight.fallOffExponent, worldPosition, shading);
+    const float3 lighting = EvaluateLocalLight(spotLight.origin, spotLight.lightColor, spotLight.invRadiusSquared, worldPosition, shading);
     // 감쇠나 BRDF 로 기여가 사라진 픽셀에서는 shadow 테이블과 PCF 샘플링을 생략한다.
     [branch]
     if (!any(lighting > 0.0f)) {
         return lighting;
     }
     return lighting * EvaluateSpotShadowLighting(spotLight.shadowIndex, pixelCoord, worldPosition);
-}
-
-float3 EvaluateBoxDirLight(ShaderBoxDirLight boxDirLight, float3 worldPosition, in ShadingParams shading) {
-    const float4 projectedPosition = mul(boxDirLight.worldToLightVolumeMatrix, float4(worldPosition, 1.0f));
-    float3 volumePosition;
-    if (!GetLightVolumePosition(projectedPosition, volumePosition)) {
-        return 0.0f;
-    }
-
-    const float3 centeredVolumePosition = volumePosition * 2.0f - 1.0f;
-    const float3 boxDistance3 = abs(centeredVolumePosition);
-    const float boxDistance = max(boxDistance3.x, max(boxDistance3.y, boxDistance3.z));
-    const float fallOff = pow(saturate(1.0f - boxDistance * boxDistance), boxDirLight.fallOffExponent);
-
-    const float3 lightDir = -boxDirLight.direction;
-    return boxDirLight.lightColor * fallOff * EvaluateStandardDirectBRDF(shading, lightDir);
 }
 
 float3 EvaluateDirectionalLight(ShaderDirectionalLight directionalLight, in ShadingParams shading) {
@@ -118,11 +105,6 @@ float3 EvaluateShaderLight(uint packedLightRef, uint2 pixelCoord, float3 worldPo
     if (lightType == ShaderLightTypeSpot) {
         const ShaderSpotLight spotLight = GetShaderSpotLightTable(frameConstants.shaderSpotLightTableIndex)[lightTypeIndex];
         return EvaluateSpotLight(spotLight, pixelCoord, worldPosition, shading);
-    }
-
-    if (lightType == ShaderLightTypeBoxDir) {
-        const ShaderBoxDirLight boxDirLight = GetShaderBoxDirLightTable(frameConstants.shaderBoxDirLightTableIndex)[lightTypeIndex];
-        return EvaluateBoxDirLight(boxDirLight, worldPosition, shading);
     }
 
     return 0.0f;

@@ -495,7 +495,7 @@ void SceneSkinnedMesh::BuildImGui() {
     }
 
     if (directionalLightLightingChanged) {
-        renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
+        renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity);
     }
 
     ImGui::EndDisabled();

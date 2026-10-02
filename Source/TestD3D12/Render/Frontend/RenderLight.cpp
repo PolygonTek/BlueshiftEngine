@@ -42,7 +42,6 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
 
         desc.linearColor = src.linearColor;
         desc.intensity = src.intensity;
-        desc.fallOffExponent = src.fallOffExponent;
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shadow)) {
@@ -112,14 +111,13 @@ void RenderLight::UpdateProjectionPolicy(const RHI::ProjectionPolicy &projection
     }
 }
 
-void RenderLight::UpdateLighting(const BE1::Color3 &linearColor, float intensity, float fallOffExponent) {
+void RenderLight::UpdateLighting(const BE1::Color3 &linearColor, float intensity) {
     assert(linearColor.r >= 0.0f && linearColor.r <= 1.0f);
     assert(linearColor.g >= 0.0f && linearColor.g <= 1.0f);
     assert(linearColor.b >= 0.0f && linearColor.b <= 1.0f);
 
     desc.linearColor = linearColor;
     desc.intensity = intensity;
-    desc.fallOffExponent = fallOffExponent;
 }
 
 void RenderLight::UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor) {
@@ -153,13 +151,6 @@ void RenderLight::UpdateProjectionAndBounds() {
         // Project a planar texture through the spherical light volume along axis[0].
         const float radius = effectiveSize[0];
         projMatrix.SetOrthoRH(-radius, radius, -radius, radius, -radius, radius, zNegativeOneToOne, reverseZ);
-    } else if (desc.type == Type::BoxDir) {
-        // Set bounding volume for box-directional light.
-        worldOBB = BE1::OBB(desc.origin + desc.axis[0] * effectiveSize[0] * 0.5f, BE1::Vec3(effectiveSize[0] * 0.5f, effectiveSize[1], effectiveSize[2]), desc.axis);
-
-        // Calculate box-directional light orthogonal projection matrix.
-        const BE1::Vec3 &obbExtents = worldOBB.Extents();
-        projMatrix.SetOrthoRH(-obbExtents[1], obbExtents[1], -obbExtents[2], obbExtents[2], 0, 2 * obbExtents[0], zNegativeOneToOne, reverseZ);
     } else if (desc.type == Type::Spot) {
         const float zNear = BE1::Max(desc.zNear, MinLightSize);
         const float zFar = BE1::Max(effectiveSize[0], zNear + MinLightSize);
@@ -176,11 +167,6 @@ void RenderLight::UpdateProjectionAndBounds() {
         // Calculate spot light perspective projection matrix.
         const float aspect = worldFrustum.GetLeft() / worldFrustum.GetUp();
         projMatrix.SetPerspectiveRH(yFov, aspect, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), zNegativeOneToOne, reverseZ, false);
-
-        // Calculate light fall-off matrix.
-        ALIGN_AS32 BE1::Mat4 fallOffProjMatrix;
-        fallOffProjMatrix.SetOrthoRH(-left, left, -up, up, 0.0f, zFar, true);
-        fallOffMatrix = fallOffProjMatrix * viewMatrix;
     } else {
         assert(0);
     }
@@ -197,8 +183,6 @@ void RenderLight::UpdateProjectionAndBounds() {
 
     if (desc.type == Type::Point) {
         worldAABB = worldSphere.ToAABB();
-    } else if (desc.type == Type::BoxDir) {
-        worldAABB = worldOBB.ToAABB();
     } else if (desc.type == Type::Spot) {
         worldAABB = worldFrustum.ToOBB().ToAABB();
     }
@@ -207,10 +191,6 @@ void RenderLight::UpdateProjectionAndBounds() {
 bool RenderLight::IsIntersectAABB(const BE1::AABB &aabb) const {
     if (desc.type == Type::Point) {
         return worldSphere.IsIntersectAABB(aabb);
-    }
-
-    if (desc.type == Type::BoxDir) {
-        return worldOBB.IsIntersectAABB(aabb);
     }
 
     if (desc.type == Type::Spot) {
@@ -229,10 +209,6 @@ bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
         return obb.IsIntersectSphere(worldSphere);
     }
 
-    if (desc.type == Type::BoxDir) {
-        return worldOBB.IsIntersectOBB(obb);
-    }
-
     if (desc.type == Type::Spot) {
         if (!worldFrustum.CullOBB(obb)) {
             return true;
@@ -245,11 +221,6 @@ bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
 }
 
 void RenderLight::ProjectOnAxis(const BE1::Vec3 &axis, float &min, float &max) const {
-    if (desc.type == Type::BoxDir) {
-        worldOBB.ProjectOnAxis(axis, min, max);
-        return;
-    }
-
     if (desc.type == Type::Spot) {
         worldFrustum.ProjectOnAxis(axis, min, max);
         return;
@@ -265,10 +236,6 @@ void RenderLight::ProjectOnAxis(const BE1::Vec3 &axis, float &min, float &max) c
 }
 
 bool RenderLight::Cull(const RenderCamera &camera) const {
-    if (desc.type == Type::BoxDir) {
-        return camera.Cull(worldOBB);
-    }
-
     if (desc.type == Type::Spot) {
         return camera.Cull(worldFrustum);
     }
@@ -282,10 +249,6 @@ bool RenderLight::Cull(const RenderCamera &camera) const {
 }
 
 bool RenderLight::ComputeScreenClipRect(const RenderCamera &camera, BE1::Rect &clipRect) const {
-    if (desc.type == Type::BoxDir) {
-        return camera.CalcClipRectFromOBB(worldOBB, clipRect);
-    }
-
     if (desc.type == Type::Spot) {
         return camera.CalcClipRectFromFrustum(worldFrustum, clipRect);
     }

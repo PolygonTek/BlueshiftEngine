@@ -136,7 +136,6 @@ static const uint ShaderLightTypeBitCount = 2;
 static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
 static const uint ShaderLightTypePoint = 0;
 static const uint ShaderLightTypeSpot = 1;
-static const uint ShaderLightTypeBoxDir = 2;
 static const uint ShaderLightTileSize = 32;
 static const uint ShaderLightTileCoordBitCount = 16;
 static const uint ShaderLightTileCoordMask = (1u << ShaderLightTileCoordBitCount) - 1u;
@@ -694,46 +693,26 @@ struct ShaderPointLight {
     float3 origin;
     float invRadiusSquared;
     float3 lightColor;
-    float fallOffExponent;
-    uint flags;
     uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
-    float2 padding;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderPointLight) == 80, "ShaderPointLight must remain a tightly packed StructuredBuffer element");
-static_assert(offsetof(ShaderPointLight, shadowIndex) == 68, "Point shadow index must reuse the existing padding");
+static_assert(sizeof(ShaderPointLight) == 64, "ShaderPointLight must remain a tightly packed StructuredBuffer element");
+static_assert(offsetof(ShaderPointLight, shadowIndex) == 60, "Point shadow index must match the HLSL structured-buffer layout");
 #endif
 
 struct ShaderSpotLight {
     row_major float4x4 viewProjScaleBiasMatrix;
-    row_major float3x4 fallOffMatrix;
     float3 origin;
-    float fallOffExponent;
-    float3 direction;
-    float zNear;
-    float3 size;
-    uint flags;
+    float invRadiusSquared;
     float3 lightColor;
     uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderSpotLight) == 176, "ShaderSpotLight must remain a tightly packed StructuredBuffer element");
-static_assert(offsetof(ShaderSpotLight, shadowIndex) == 172, "Spot shadow index must reuse the existing padding");
+static_assert(sizeof(ShaderSpotLight) == 96, "ShaderSpotLight must remain a tightly packed StructuredBuffer element");
+static_assert(offsetof(ShaderSpotLight, shadowIndex) == 92, "Spot shadow index must match the HLSL structured-buffer layout");
 #endif
-
-struct ShaderBoxDirLight {
-    row_major float4x4 worldToLightVolumeMatrix;
-    float3 origin;
-    uint flags;
-    float3 direction;
-    float fallOffExponent;
-    float3 size;
-    float padding1;
-    float3 lightColor;
-    float padding2;
-};
 
 struct FrameConstants {
     float frameTime;
@@ -743,13 +722,13 @@ struct FrameConstants {
     uint shaderMaterialTableIndex;
     uint shaderPointLightTableIndex;
     uint shaderSpotLightTableIndex;
-    uint shaderBoxDirLightTableIndex;
     uint shaderLightRefTableIndex;
     uint shaderLightZBinTableIndex;
     uint shaderLightTileWordTableIndex;
     uint feedbackBufferIndex;
     uint dfgSumGGXTextureIndex;
     uint randomRotMatTextureIndex;
+    uint padding0;
     uint padding1;
     uint padding2;
     ShaderDirectionalLight directionalLight;
@@ -757,6 +736,7 @@ struct FrameConstants {
 
 #ifdef __cplusplus
 static_assert(sizeof(FrameConstants) == 96, "FrameConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(FrameConstants, directionalLight) == 64, "Directional light must start at a constant-buffer register boundary");
 #endif
 
 // Shadow depth 기록에 필요한 광원 행렬과 surface table. 샘플링용 데이터와 별도로 전달한다.

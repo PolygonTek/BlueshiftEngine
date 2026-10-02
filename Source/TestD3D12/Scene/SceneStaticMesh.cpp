@@ -36,6 +36,7 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     app.SetCameraDistance(5.5f);
 
     EnvironmentLight::Desc envLightDesc;
+    envLightDesc.intensity = 0.1f;
     if (renderWorld->AddEnvironmentLight(envLightDesc)) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
     }
@@ -80,10 +81,10 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     pointLight.type = RenderLight::Type::Point;
     pointLight.flags = RenderLight::Flag::CastShadows;
     pointLight.linearColor = BE1::Color3(1.0f, 0.8f, 0.19f);
-    pointLight.intensity = 10.0f;
-    pointLight.size.Set(2.8f, 2.8f, 2.8f);
+    pointLight.intensity = 2.0f;
+    pointLight.size.Set(2.0f, 2.0f, 2.0f);
     pointLight.zNear = BE1::Max(meshRadius * 0.01f, RenderLight::MinLightSize);
-    pointLight.origin.Set(0.8f, -0.5f, 0.0f);
+    pointLight.origin.Set(0.217f, -0.181f, 0.017f);
     pointLightEnabled = pointLight.SetEnabled(renderWorld, true);
 }
 
@@ -146,14 +147,6 @@ void SceneStaticMesh::BuildImGui() {
         pointLightLightingChanged = true;
     }
 
-    ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::DragFloat("Attenuation##PointLight", &pointLight.fallOffExponent, 0.01f, 0.01f, 16.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
-        pointLightLightingChanged = true;
-    }
-    if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Falloff exponent. Higher values make light fade faster with distance.");
-    }
-
     if (pointLightTransformChanged) {
         renderWorld->UpdateRenderLightTransform(pointLight.renderLightHandle, pointLight.origin, pointLight.axis);
     }
@@ -163,7 +156,7 @@ void SceneStaticMesh::BuildImGui() {
     }
 
     if (pointLightLightingChanged) {
-        renderWorld->UpdateRenderLightLighting(pointLight.renderLightHandle, pointLight.linearColor, pointLight.intensity, pointLight.fallOffExponent);
+        renderWorld->UpdateRenderLightLighting(pointLight.renderLightHandle, pointLight.linearColor, pointLight.intensity);
     }
 
     if (pointLightShadowChanged) {

@@ -125,21 +125,6 @@ static void WriteDebugVolumeEdges(DebugDrawVertex *&vertexPtr, const BE1::Vec3 p
     }
 }
 
-static void WriteDebugBoxDirLight(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, uint32_t color) {
-    const BE1::Vec3 effectiveSize(
-        BE1::Max(frameLight->size[0], MinDebugLightSize),
-        BE1::Max(frameLight->size[1], MinDebugLightSize),
-        BE1::Max(frameLight->size[2], MinDebugLightSize));
-    const BE1::OBB obb(
-        frameLight->origin + frameLight->axis[0] * effectiveSize[0] * 0.5f,
-        BE1::Vec3(effectiveSize[0] * 0.5f, effectiveSize[1], effectiveSize[2]),
-        frameLight->axis);
-
-    BE1::Vec3 points[8];
-    obb.ToPoints(points);
-    WriteDebugVolumeEdges(vertexPtr, points, color);
-}
-
 static void WriteDebugSpotLight(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, uint32_t color) {
     const float zNear = BE1::Max(frameLight->zNear, MinDebugLightSize);
     const float zFar = BE1::Max3(frameLight->size[0], MinDebugLightSize, zNear + MinDebugLightSize);
@@ -188,7 +173,6 @@ void RenderBackend::DrawDebugLights() {
             break;
         }
         case RenderLight::Type::Spot:
-        case RenderLight::Type::BoxDir:
             numVerts += DebugVolumeLightVertexCount;
             break;
         default:
@@ -227,9 +211,6 @@ void RenderBackend::DrawDebugLights() {
         }
         case RenderLight::Type::Spot:
             WriteDebugSpotLight(vertexPtr, frameLight, color);
-            break;
-        case RenderLight::Type::BoxDir:
-            WriteDebugBoxDirLight(vertexPtr, frameLight, color);
             break;
         default:
             assert(0);

@@ -530,7 +530,7 @@ RenderContext::Stats RenderContext::GetStats() const {
         snapshot.visibleLightCount = stats.visibleLightCount.load();
         snapshot.visiblePointLightCount = stats.visiblePointLightCount.load();
         snapshot.visibleSpotLightCount = stats.visibleSpotLightCount.load();
-        snapshot.visibleBoxDirLightCount = stats.visibleBoxDirLightCount.load();
+        snapshot.visibleDirectionalLightCount = stats.visibleDirectionalLightCount.load();
         snapshot.drawCount = stats.drawCount.load();
         snapshot.drawTriangleCount = stats.drawTriangleCount.load();
         snapshot.instanceTableAllocCount = stats.instanceTableAllocCount.load();
@@ -563,7 +563,7 @@ void RenderContext::SetStats(const Stats &snapshot) {
     stats.visibleLightCount.store(snapshot.visibleLightCount);
     stats.visiblePointLightCount.store(snapshot.visiblePointLightCount);
     stats.visibleSpotLightCount.store(snapshot.visibleSpotLightCount);
-    stats.visibleBoxDirLightCount.store(snapshot.visibleBoxDirLightCount);
+    stats.visibleDirectionalLightCount.store(snapshot.visibleDirectionalLightCount);
     stats.drawCount.store(snapshot.drawCount);
     stats.drawTriangleCount.store(snapshot.drawTriangleCount);
     stats.instanceTableAllocCount.store(snapshot.instanceTableAllocCount);

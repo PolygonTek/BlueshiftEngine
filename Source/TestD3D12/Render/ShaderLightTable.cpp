@@ -17,8 +17,8 @@
 #include "RenderFrame.h"
 #include "RenderInternal.h"
 
-bool ShaderLightTable::Init(uint32_t initialPointLightCapacity, uint32_t initialSpotLightCapacity, uint32_t initialBoxDirLightCapacity) {
-    if (!EnsureBufferCapacity(initialPointLightCapacity, initialSpotLightCapacity, initialBoxDirLightCapacity)) {
+bool ShaderLightTable::Init(uint32_t initialPointLightCapacity, uint32_t initialSpotLightCapacity) {
+    if (!EnsureBufferCapacity(initialPointLightCapacity, initialSpotLightCapacity)) {
         Shutdown();
         return false;
     }
@@ -29,20 +29,16 @@ bool ShaderLightTable::Init(uint32_t initialPointLightCapacity, uint32_t initial
 void ShaderLightTable::Shutdown() {
     DestroyBuffer(pointLightBuffer);
     DestroyBuffer(spotLightBuffer);
-    DestroyBuffer(boxDirLightBuffer);
 }
 
 void ShaderLightTable::Clear() {
 }
 
-bool ShaderLightTable::EnsureBufferCapacity(uint32_t pointLightCount, uint32_t spotLightCount, uint32_t boxDirLightCount) {
+bool ShaderLightTable::EnsureBufferCapacity(uint32_t pointLightCount, uint32_t spotLightCount) {
     if (!EnsureBufferCapacity(pointLightBuffer, pointLightCount, sizeof(ShaderPointLight), "shaderPointLightTableBuffer")) {
         return false;
     }
     if (!EnsureBufferCapacity(spotLightBuffer, spotLightCount, sizeof(ShaderSpotLight), "shaderSpotLightTableBuffer")) {
-        return false;
-    }
-    if (!EnsureBufferCapacity(boxDirLightBuffer, boxDirLightCount, sizeof(ShaderBoxDirLight), "shaderBoxDirLightTableBuffer")) {
         return false;
     }
     return true;
@@ -71,31 +67,27 @@ bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comman
 
     const uint32_t pointLightCount = frame->NumFramePointLights();
     const uint32_t spotLightCount = frame->NumFrameSpotLights();
-    const uint32_t boxDirLightCount = frame->NumFrameBoxDirLights();
 
-    if (pointLightCount == 0 && spotLightCount == 0 && boxDirLightCount == 0) {
+    if (pointLightCount == 0 && spotLightCount == 0) {
         Clear();
         return true;
     }
 
-    if (pointLightCount > pointLightBuffer.capacity || spotLightCount > spotLightBuffer.capacity || boxDirLightCount > boxDirLightBuffer.capacity) {
+    if (pointLightCount > pointLightBuffer.capacity || spotLightCount > spotLightBuffer.capacity) {
         assert(allowResize);
-        if (!allowResize || !EnsureBufferCapacity(pointLightCount, spotLightCount, boxDirLightCount)) {
+        if (!allowResize || !EnsureBufferCapacity(pointLightCount, spotLightCount)) {
             return false;
         }
     }
 
     RHI::Buffer *pointLightUploadBuffer;
     RHI::Buffer *spotLightUploadBuffer;
-    RHI::Buffer *boxDirLightUploadBuffer;
 
     ShaderPointLight *shaderPointLights;
     ShaderSpotLight *shaderSpotLights;
-    ShaderBoxDirLight *shaderBoxDirLights;
 
     if (!AllocShaderLightUploadBuffer(frameThreadData, pointLightCount, pointLightUploadBuffer, shaderPointLights) ||
-        !AllocShaderLightUploadBuffer(frameThreadData, spotLightCount, spotLightUploadBuffer, shaderSpotLights) ||
-        !AllocShaderLightUploadBuffer(frameThreadData, boxDirLightCount, boxDirLightUploadBuffer, shaderBoxDirLights)) {
+        !AllocShaderLightUploadBuffer(frameThreadData, spotLightCount, spotLightUploadBuffer, shaderSpotLights)) {
         return false;
     }
 
@@ -109,10 +101,6 @@ bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comman
             assert(frameLight.typeIndex < spotLightCount);
             Build(frameLight, shaderSpotLights[frameLight.typeIndex]);
             break;
-        case RenderLight::Type::BoxDir:
-            assert(frameLight.typeIndex < boxDirLightCount);
-            Build(frameLight, shaderBoxDirLights[frameLight.typeIndex]);
-            break;
         case RenderLight::Type::Directional:
             break;
         default:
@@ -123,7 +111,6 @@ bool ShaderLightTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comman
 
     UploadBuffer(commandList, pointLightBuffer, pointLightUploadBuffer, pointLightCount * sizeof(ShaderPointLight));
     UploadBuffer(commandList, spotLightBuffer, spotLightUploadBuffer, spotLightCount * sizeof(ShaderSpotLight));
-    UploadBuffer(commandList, boxDirLightBuffer, boxDirLightUploadBuffer, boxDirLightCount * sizeof(ShaderBoxDirLight));
     return true;
 }
 
@@ -193,41 +180,20 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &sha
     shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
     shaderLight.invRadiusSquared = invRadius * invRadius;
     shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
-    shaderLight.fallOffExponent = frameLight.fallOffExponent;
-    shaderLight.flags = static_cast<uint32_t>(frameLight.flags);
     // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
     shaderLight.shadowIndex = frameLight.localShadowIndex;
-    shaderLight.padding = float2(0.0f, 0.0f);
 }
 
 void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shaderLight) const {
-    assert(frameLight.spotLightData);
-
     BE1::simdProcessor->Memcpy(&shaderLight.viewProjScaleBiasMatrix, &frameLight.viewProjScaleBiasMatrix, sizeof(shaderLight.viewProjScaleBiasMatrix));
-    BE1::simdProcessor->Memcpy(&shaderLight.fallOffMatrix, &frameLight.spotLightData->fallOffMatrix, sizeof(shaderLight.fallOffMatrix));
 
-    const BE1::Vec3 &direction = frameLight.axis[0];
+    // Spot frustum 의 유효 far 거리를 방사형 감쇠 반경으로 사용한다.
+    const float zNear = BE1::Max(frameLight.zNear, RenderLight::MinLightSize);
+    const float radius = BE1::Max(frameLight.size[0], zNear + RenderLight::MinLightSize);
+    const float invRadius = 1.0f / radius;
     shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
-    shaderLight.fallOffExponent = frameLight.fallOffExponent;
-    shaderLight.direction = float3(direction.x, direction.y, direction.z);
-    shaderLight.zNear = frameLight.zNear;
-    shaderLight.size = float3(frameLight.size.x, frameLight.size.y, frameLight.size.z);
-    shaderLight.flags = static_cast<uint32_t>(frameLight.flags);
+    shaderLight.invRadiusSquared = invRadius * invRadius;
     shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
     // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
     shaderLight.shadowIndex = frameLight.localShadowIndex;
-}
-
-void ShaderLightTable::Build(const FrameLight &frameLight, ShaderBoxDirLight &shaderLight) const {
-    BE1::simdProcessor->Memcpy(&shaderLight.worldToLightVolumeMatrix, &frameLight.viewProjScaleBiasMatrix, sizeof(shaderLight.worldToLightVolumeMatrix));
-
-    const BE1::Vec3 &direction = frameLight.axis[0];
-    shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
-    shaderLight.flags = static_cast<uint32_t>(frameLight.flags);
-    shaderLight.direction = float3(direction.x, direction.y, direction.z);
-    shaderLight.fallOffExponent = frameLight.fallOffExponent;
-    shaderLight.size = float3(frameLight.size.x, frameLight.size.y, frameLight.size.z);
-    shaderLight.padding1 = 0.0f;
-    shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
-    shaderLight.padding2 = 0.0f;
 }

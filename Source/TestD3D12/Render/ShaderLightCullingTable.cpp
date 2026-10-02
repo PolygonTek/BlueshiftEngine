@@ -288,7 +288,7 @@ static BE_INLINE uint32_t PackShaderLightTileCoord(uint16_t packedTileCoord) {
 
 void ShaderLightCullingTable::BuildLightRef(const FrameLight *frameLight, ShaderLightRef &outShaderLightRef) const {
     const uint32_t lightType = static_cast<uint32_t>(frameLight->type);
-    assert(lightType <= ShaderLightTypeMask);
+    assert(lightType == ShaderLightTypePoint || lightType == ShaderLightTypeSpot);
 
     // 하위 비트: 라이트 타입
     // 상위 비트: 라이트 타입 별 인덱스

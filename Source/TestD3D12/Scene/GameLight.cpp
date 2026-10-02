@@ -43,7 +43,6 @@ bool GameLight::SetEnabled(RenderWorld *renderWorld, bool enabled) {
     desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
     desc.linearColor = linearColor;
     desc.intensity = intensity;
-    desc.fallOffExponent = fallOffExponent;
     desc.shadowOffsetUnits = shadowOffsetUnits;
     desc.shadowOffsetFactor = shadowOffsetFactor;
 

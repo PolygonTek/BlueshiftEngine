@@ -33,18 +33,17 @@ struct FrameLight;
 
 class ShaderLightTable {
 public:
-    bool                            Init(uint32_t initialPointLightCapacity = 1024, uint32_t initialSpotLightCapacity = 256, uint32_t initialBoxDirLightCapacity = 64);
+    bool                            Init(uint32_t initialPointLightCapacity = 1024, uint32_t initialSpotLightCapacity = 256);
     void                            Shutdown();
 
     void                            Clear();
 
-    bool                            EnsureBufferCapacity(uint32_t pointLightCount, uint32_t spotLightCount, uint32_t boxDirLightCount);
+    bool                            EnsureBufferCapacity(uint32_t pointLightCount, uint32_t spotLightCount);
 
     bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame, bool allowResize);
 
     uint32_t                        GetPointLightBindlessIndex() const { return pointLightBuffer.bindlessIndex; }
     uint32_t                        GetSpotLightBindlessIndex() const { return spotLightBuffer.bindlessIndex; }
-    uint32_t                        GetBoxDirLightBindlessIndex() const { return boxDirLightBuffer.bindlessIndex; }
 
 private:
     struct TableBuffer {
@@ -61,9 +60,7 @@ private:
 
     void                            Build(const FrameLight &frameLight, ShaderPointLight &shaderLight) const;
     void                            Build(const FrameLight &frameLight, ShaderSpotLight &shaderLight) const;
-    void                            Build(const FrameLight &frameLight, ShaderBoxDirLight &shaderLight) const;
 
     TableBuffer                     pointLightBuffer;
     TableBuffer                     spotLightBuffer;
-    TableBuffer                     boxDirLightBuffer;
 };

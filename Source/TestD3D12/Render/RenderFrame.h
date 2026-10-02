@@ -38,7 +38,6 @@ struct FrameCamera;
 struct FrameObject;
 struct FrameSkinnedMesh;
 struct FrameText;
-struct FrameSpotLightData;
 struct FrameLight;
 struct FrameLocalShadow;
 struct FrameShadowAtlas;
@@ -213,11 +212,9 @@ public:
     uint32_t                        NumFrameLocalLights() const { return numFrameLocalLights; }
     uint32_t                        NumFramePointLights() const { return numFramePointLights; }
     uint32_t                        NumFrameSpotLights() const { return numFrameSpotLights; }
-    uint32_t                        NumFrameBoxDirLights() const { return numFrameBoxDirLights; }
     const FrameLight *              GetPrimaryDirectionalLight() const { return primaryDirectionalLight; }
     ChunkRange<FrameLight>          GetFrameLights() const { return ChunkRange<FrameLight>(firstFrameLightChunk); }
     ChunkRange<FrameLight>          GetFrameLights(uint32_t firstIndex) const;
-    FrameSpotLightData *            AllocFrameSpotLightData();
     FrameLight *                    AllocFrameLight(RenderLight::Type type);
 
     FrameShadowAtlas *              AllocFrameShadowAtlas(const ShadowAtlas &shadowAtlas);
@@ -279,7 +276,6 @@ public:
     uint32_t                        GetShaderSurfaceTableBindlessIndex() const { return shaderSurfaceTable.GetBindlessIndex(); }
     uint32_t                        GetShaderPointLightTableBindlessIndex() const { return shaderLightTable.GetPointLightBindlessIndex(); }
     uint32_t                        GetShaderSpotLightTableBindlessIndex() const { return shaderLightTable.GetSpotLightBindlessIndex(); }
-    uint32_t                        GetShaderBoxDirLightTableBindlessIndex() const { return shaderLightTable.GetBoxDirLightBindlessIndex(); }
     uint32_t                        GetShaderLightRefTableBindlessIndex() const { return shaderLightCullingTable.GetLightRefBindlessIndex(); }
     uint32_t                        GetShaderLightZBinTableBindlessIndex() const { return shaderLightCullingTable.GetLightZBinBindlessIndex(); }
     uint32_t                        GetShaderLightTileWordTableBindlessIndex() const { return shaderLightCullingTable.GetLightTileWordBindlessIndex(); }
@@ -347,7 +343,6 @@ private:
     uint32_t                        numFrameLocalLights = 0;
     uint32_t                        numFramePointLights = 0;
     uint32_t                        numFrameSpotLights = 0;
-    uint32_t                        numFrameBoxDirLights = 0;
     FrameLight *                    primaryDirectionalLight = nullptr;
     Chunk *                         firstFrameLightChunk = nullptr;
     Chunk *                         lastFrameLightChunk = nullptr;

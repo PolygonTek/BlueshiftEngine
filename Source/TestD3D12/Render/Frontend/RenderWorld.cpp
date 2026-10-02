@@ -374,10 +374,10 @@ void RenderWorld::UpdateRenderLightProjectionPolicy(int index, const RHI::Projec
     }
 }
 
-void RenderWorld::UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity, float fallOffExponent) {
+void RenderWorld::UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity) {
     RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightLighting");
     if (renderLight) {
-        renderLight->UpdateLighting(linearColor, intensity, fallOffExponent);
+        renderLight->UpdateLighting(linearColor, intensity);
     }
 }
 

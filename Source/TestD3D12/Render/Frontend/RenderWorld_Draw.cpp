@@ -32,7 +32,6 @@
 
 static_assert(static_cast<uint32_t>(RenderLight::Type::Point) == ShaderLightTypePoint);
 static_assert(static_cast<uint32_t>(RenderLight::Type::Spot) == ShaderLightTypeSpot);
-static_assert(static_cast<uint32_t>(RenderLight::Type::BoxDir) == ShaderLightTypeBoxDir);
 
 static BE_INLINE bool IsRenderLayerVisible(uint32_t layerMask, uint8_t layer) {
     return layer < 32 && (layerMask & BIT(layer)) != 0;
@@ -1154,13 +1153,6 @@ FrameLight *RenderWorld::RegisterFrameLight(RenderFrame *frame, RenderLight *ren
     } else if (renderLight->desc.type == RenderLight::Type::Spot) {
         frameLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
 
-        FrameSpotLightData *spotLightData = frame->AllocFrameSpotLightData();
-        spotLightData->fallOffMatrix = renderLight->fallOffMatrix;
-        frameLight->spotLightData = spotLightData;
-
-        frameLight->axis = renderLight->desc.axis;
-    } else if (renderLight->desc.type == RenderLight::Type::BoxDir) {
-        frameLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
         frameLight->axis = renderLight->desc.axis;
     } else if (renderLight->desc.type == RenderLight::Type::Directional) {
         frameLight->axis = renderLight->desc.axis;
@@ -1169,7 +1161,6 @@ FrameLight *RenderWorld::RegisterFrameLight(RenderFrame *frame, RenderLight *ren
     frameLight->size = renderLight->desc.size;
     frameLight->lightColor = renderLight->desc.linearColor * renderLight->desc.intensity;
     frameLight->zNear = renderLight->desc.zNear;
-    frameLight->fallOffExponent = renderLight->desc.fallOffExponent;
     frameLight->shadowOffsetUnits = renderLight->desc.shadowOffsetUnits;
     frameLight->shadowOffsetFactor = renderLight->desc.shadowOffsetFactor;
     frameLight->type = renderLight->desc.type;

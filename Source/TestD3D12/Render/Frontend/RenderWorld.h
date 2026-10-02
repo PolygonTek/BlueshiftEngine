@@ -119,7 +119,7 @@ public:
     void                        UpdateRenderLightTransform(int index, const BE1::Vec3 &origin, const BE1::Mat3 &axis);
     void                        UpdateRenderLightShape(int index, RenderLight::Type type, const BE1::Vec3 &size, float zNear);
     void                        UpdateRenderLightProjectionPolicy(int index, const RHI::ProjectionPolicy &projectionPolicy);
-    void                        UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity, float fallOffExponent);
+    void                        UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity);
     void                        UpdateRenderLightShadow(int index, float shadowOffsetUnits, float shadowOffsetFactor);
     void                        RemoveRenderLight(int index);
 

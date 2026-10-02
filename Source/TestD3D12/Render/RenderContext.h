@@ -60,7 +60,7 @@ class RenderContext {
         Value<uint32_t>             visibleLightCount = 0;
         Value<uint32_t>             visiblePointLightCount = 0;
         Value<uint32_t>             visibleSpotLightCount = 0;
-        Value<uint32_t>             visibleBoxDirLightCount = 0;
+        Value<uint32_t>             visibleDirectionalLightCount = 0; // 프레임당 최대 하나의 Directional 광원을 사용한다.
         Value<uint32_t>             drawCount = 0;
         Value<uint64_t>             drawTriangleCount = 0;
         Value<uint32_t>             instanceTableAllocCount = 0;

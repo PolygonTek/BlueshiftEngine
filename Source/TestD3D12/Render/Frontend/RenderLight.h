@@ -27,7 +27,6 @@ public:
     enum class Type : uint8_t {
         Point,                      ///< Omnidirectional light within a sphere centered at origin
         Spot,                       ///< Perspective-frustum light directed along axis[0]
-        BoxDir,                     ///< Finite box-volume light with a constant direction along axis[0]
         Directional                 ///< Infinite-distance light whose rays travel along axis[0]
     };
 
@@ -47,7 +46,7 @@ public:
             Transform               = BIT(2),   // origin, axis
             Shape                   = BIT(3),   // type, size, zNear
             ProjectionPolicy        = BIT(4),   // projectionPolicy
-            Lighting                = BIT(5),   // linearColor, intensity, fallOffExponent
+            Lighting                = BIT(5),   // linearColor, intensity
             Shadow                  = BIT(6)    // shadowOffsetUnits, shadowOffsetFactor
         };
 
@@ -59,14 +58,13 @@ public:
 
         BE1::Vec3                   origin = BE1::Vec3::origin;         ///< Light position in world space
         BE1::Mat3                   axis = BE1::Mat3::identity;         ///< Light orientation
-        BE1::Vec3                   size = BE1::Vec3::one;              ///< Point: size[0] is radius. Spot/BoxDir: shape extents
+        BE1::Vec3                   size = BE1::Vec3::one;              ///< Point: size[0] is radius. Spot: shape extents
 
         float                       zNear = 0.1f;                       ///< Spot near distance; Point shadow base near distance (capped at half the radius)
         RHI::ProjectionPolicy       projectionPolicy;                   ///< projection convention used for shader-visible matrices
 
         BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB light tint in [0, 1]
         float                       intensity = 1.0f;                   ///< Light itensity
-        float                       fallOffExponent = 1.25f;
         float                       shadowOffsetUnits = 1500.0f;
         float                       shadowOffsetFactor = 3.0f;
     };
@@ -77,7 +75,7 @@ public:
                                     /// Returns light index in world.
     int                             GetIndex() const { return index; }
 
-                                    /// Returns light type which is one of the [Point, Spot, BoxDir, Directional].
+                                    /// Returns light type which is one of the [Point, Spot, Directional].
     Type                            GetType() const { return desc.type; }
 
                                     /// Returns light origin in world space.
@@ -97,9 +95,6 @@ public:
 
                                     /// Returns matrix = texture scale-bias * projection * view using the engine-wide D3D convention.
     const BE1::Mat4 &               GetViewProjScaleBiasMatrix() const { return viewProjScaleBiasMatrix; }
-
-                                    /// Returns fall off matrix.
-    const BE1::Mat3x4 &             GetFallOffMatrix() const { return fallOffMatrix; }
 
                                     /// Check intersection of AABB and light bounding volume.
     bool                            IsIntersectAABB(const BE1::AABB &aabb) const;
@@ -124,7 +119,7 @@ private:
     void                            UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis);
     void                            UpdateShape(Type type, const BE1::Vec3 &size, float zNear);
     void                            UpdateProjectionPolicy(const RHI::ProjectionPolicy &projectionPolicy);
-    void                            UpdateLighting(const BE1::Color3 &linearColor, float intensity, float fallOffExponent);
+    void                            UpdateLighting(const BE1::Color3 &linearColor, float intensity);
     void                            UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor);
     void                            UpdateViewMatrix();
     void                            UpdateProjectionAndBounds();
@@ -132,14 +127,12 @@ private:
     Desc                            desc;
 
     BE1::Sphere                     worldSphere;                        ///< Bounding volume for point light
-    BE1::OBB                        worldOBB;                           ///< Bounding volume for box-dir light
     BE1::Frustum                    worldFrustum;                       ///< Bounding volume for spot light
     BE1::AABB                       worldAABB = BE1::AABB::empty;       ///< World-space AABB enclosing the light volume; empty for directional lights
 
     BE1::Mat4                       viewMatrix = BE1::Mat4::identity;
     BE1::Mat4                       projMatrix = BE1::Mat4::identity;
     BE1::Mat4                       viewProjScaleBiasMatrix = BE1::Mat4::identity;
-    BE1::Mat3x4                     fallOffMatrix;
 
     uint64_t                        visibleFrameIndex = 0;
     uint64_t                        lightId = 0;                        ///< 광원 생성 시 부여되는 고유 ID.

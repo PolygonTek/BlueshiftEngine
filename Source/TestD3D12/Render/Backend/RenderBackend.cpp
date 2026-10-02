@@ -152,7 +152,7 @@ void RenderBackend::UpdateFrameStats() {
     stats.visibleLightCount = frame->NumFrameLights();
     stats.visiblePointLightCount = frame->NumFramePointLights();
     stats.visibleSpotLightCount = frame->NumFrameSpotLights();
-    stats.visibleBoxDirLightCount = frame->NumFrameBoxDirLights();
+    stats.visibleDirectionalLightCount = frame->GetPrimaryDirectionalLight() ? 1u : 0u;
     stats.drawCount = statDrawCount;
     stats.drawTriangleCount = statDrawTriangleCount;
     stats.instanceTableAllocCount = statInstanceTableAllocCount;
@@ -215,7 +215,6 @@ bool RenderBackend::UploadFrameConstants() {
     constants->shaderMaterialTableIndex = frame->GetShaderMaterialTableBindlessIndex();
     constants->shaderPointLightTableIndex = frame->GetShaderPointLightTableBindlessIndex();
     constants->shaderSpotLightTableIndex = frame->GetShaderSpotLightTableBindlessIndex();
-    constants->shaderBoxDirLightTableIndex = frame->GetShaderBoxDirLightTableBindlessIndex();
     constants->shaderLightRefTableIndex = frame->GetShaderLightRefTableBindlessIndex();
     constants->shaderLightZBinTableIndex = frame->GetShaderLightZBinTableBindlessIndex();
     constants->shaderLightTileWordTableIndex = frame->GetShaderLightTileWordTableBindlessIndex();
@@ -225,6 +224,7 @@ bool RenderBackend::UploadFrameConstants() {
     constants->dfgSumGGXTextureIndex = dfgSumGGXTexture ? dfgSumGGXTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     const RHI::Texture *randomRotMatTexture = textureManager.randomRotMatTexture->GetRHITexture();
     constants->randomRotMatTextureIndex = randomRotMatTexture->GetBindlessIndex(RHI::ViewType::SRV);
+    constants->padding0 = 0;
     constants->padding1 = 0;
     constants->padding2 = 0;
 

@@ -487,11 +487,6 @@ struct FrameText {
     float                           textLineSpacing;
 };
 
-// Spot 광원에서만 사용하는 한 프레임 렌더링 데이터.
-struct FrameSpotLightData {
-    ALIGN_AS32 BE1::Mat3x4          fallOffMatrix;
-};
-
 // 한 프레임 렌더링에서만 유효한 카메라별 렌더링 광원.
 // 하나의 RenderLight 가 여러 카메라에 보이면 각 카메라 (view) 마다 별도의 FrameLight 로 등록된다.
 // RenderLight 의 렌더링 데이터를 프레임 메모리에 복사하여 생성하므로 별도의 힙 할당은 발생하지 않는다.
@@ -502,8 +497,6 @@ struct FrameLight {
 
     ALIGN_AS32 BE1::Mat4            viewProjScaleBiasMatrix;
 
-    const FrameSpotLightData *      spotLightData = nullptr;
-
     uint64_t                        lightId = 0;                    ///< 원본 RenderLight 의 고유 ID
     uint16_t                        index;                          ///< FrameLight index
     uint16_t                        typeIndex;                      ///< FrameLight index for same light type
@@ -512,7 +505,7 @@ struct FrameLight {
 
     BE1::Mat3                       axis;
     BE1::Vec3                       origin;
-    BE1::Vec3                       size;                           ///< Point: x is radius. Spot/BoxDir: shape extents
+    BE1::Vec3                       size;                           ///< Point: x is radius. Spot: shape extents
     float                           zNear;
 
     BE1::Color3                     lightColor;                     ///< Linear RGB light color multiplied by intensity
@@ -520,7 +513,6 @@ struct FrameLight {
     float                           viewZMin;                       ///< Minimum positive-forward linear view Z
     float                           viewZMax;                       ///< Maximum positive-forward linear view Z
 
-    float                           fallOffExponent;
     float                           shadowOffsetUnits;
     float                           shadowOffsetFactor;
 
@@ -530,7 +522,7 @@ struct FrameLight {
     uint32_t                        projectedSize = 0;              ///< 광원 투영 영역의 긴 변. 내부 렌더 해상도 기준 픽셀이며 해상도 선택 배율 적용 전의 값.
     uint32_t                        shadowRequestedResolution = 0;  ///< 화면 크기로 정한 border 포함 요청 해상도. Point 는 한 면 기준이며 비대상은 0.
 
-    int                             GetShadowViewCount() const { return type == RenderLight::Type::Point ? 6 : (type == RenderLight::Type::Spot || type == RenderLight::Type::BoxDir ? 1 : 0); }
+    int                             GetShadowViewCount() const { return type == RenderLight::Type::Point ? 6 : (type == RenderLight::Type::Spot ? 1 : 0); }
     void                            CalcSpotShadowProjection(FrameLocalShadowView &shadowView) const;
     BE1::Vec2                       GetPointShadowDepthRange() const; // X = near, Y = far. Depth 렌더링과 샘플링 계수에 같은 범위를 사용한다.
     BE1::Vec2                       CalcPointShadowProjections(FrameLocalShadowView shadowViews[6]) const; // 6면이 공유하는 depth scale/bias 를 반환한다.

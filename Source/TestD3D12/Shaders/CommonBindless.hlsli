@@ -53,7 +53,6 @@ StructuredBuffer<ShaderSurface> GetShaderSurfaceTable(uint index) { return Resou
 StructuredBuffer<ShaderMaterial> GetShaderMaterialTable(uint index) { return ResourceDescriptorHeap[index]; }
 StructuredBuffer<ShaderPointLight> GetShaderPointLightTable(uint index) { return ResourceDescriptorHeap[index]; }
 StructuredBuffer<ShaderSpotLight> GetShaderSpotLightTable(uint index) { return ResourceDescriptorHeap[index]; }
-StructuredBuffer<ShaderBoxDirLight> GetShaderBoxDirLightTable(uint index) { return ResourceDescriptorHeap[index]; }
 StructuredBuffer<ShaderLightRef> GetShaderLightRefTable(uint index) { return ResourceDescriptorHeap[index]; }
 StructuredBuffer<ShaderLocalShadow> GetShaderLocalShadowTable(uint index) { return ResourceDescriptorHeap[index]; }
 StructuredBuffer<ShaderLocalShadowView> GetShaderLocalShadowViewTable(uint index) { return ResourceDescriptorHeap[index]; }
@@ -109,7 +108,6 @@ SamplerState GetSampler(uint index) { return SamplerDescriptorHeap[index]; }
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 28, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 29, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 30, flags = DESCRIPTORS_VOLATILE)), " \
-    "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 31, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 32, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 33, flags = DESCRIPTORS_VOLATILE)), " \
     "DescriptorTable(SRV(t0, numDescriptors = unbounded, space = 34, flags = DESCRIPTORS_VOLATILE)), " \
@@ -163,7 +161,6 @@ StructuredBuffer<ShaderSurface> bindlessShaderSurfaceTable[] : register(t0, spac
 StructuredBuffer<ShaderMaterial> bindlessShaderMaterialTable[] : register(t0, space28);
 StructuredBuffer<ShaderPointLight> bindlessShaderPointLightTable[] : register(t0, space29);
 StructuredBuffer<ShaderSpotLight> bindlessShaderSpotLightTable[] : register(t0, space30);
-StructuredBuffer<ShaderBoxDirLight> bindlessShaderBoxDirLightTable[] : register(t0, space31);
 StructuredBuffer<ShaderLightRef> bindlessShaderLightRefTable[] : register(t0, space32);
 StructuredBuffer<ShaderLocalShadow> bindlessShaderLocalShadowTable[] : register(t0, space34);
 StructuredBuffer<ShaderLocalShadowView> bindlessShaderLocalShadowViewTable[] : register(t0, space35);
@@ -216,7 +213,6 @@ StructuredBuffer<ShaderSurface> GetShaderSurfaceTable(uint index) { return bindl
 StructuredBuffer<ShaderMaterial> GetShaderMaterialTable(uint index) { return bindlessShaderMaterialTable[index]; }
 StructuredBuffer<ShaderPointLight> GetShaderPointLightTable(uint index) { return bindlessShaderPointLightTable[index]; }
 StructuredBuffer<ShaderSpotLight> GetShaderSpotLightTable(uint index) { return bindlessShaderSpotLightTable[index]; }
-StructuredBuffer<ShaderBoxDirLight> GetShaderBoxDirLightTable(uint index) { return bindlessShaderBoxDirLightTable[index]; }
 StructuredBuffer<ShaderLightRef> GetShaderLightRefTable(uint index) { return bindlessShaderLightRefTable[index]; }
 StructuredBuffer<ShaderLocalShadow> GetShaderLocalShadowTable(uint index) { return bindlessShaderLocalShadowTable[index]; }
 StructuredBuffer<ShaderLocalShadowView> GetShaderLocalShadowViewTable(uint index) { return bindlessShaderLocalShadowViewTable[index]; }

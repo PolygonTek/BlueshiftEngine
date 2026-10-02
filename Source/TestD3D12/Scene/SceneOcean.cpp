@@ -700,7 +700,7 @@ void SceneOcean::BuildImGui() {
         }
 
         if (lightingChanged) {
-            renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity, directionalLight.fallOffExponent);
+            renderWorld->UpdateRenderLightLighting(directionalLight.renderLightHandle, directionalLight.linearColor, directionalLight.intensity);
         }
     }
 

@@ -276,7 +276,6 @@ void RenderFrame::FreeFrameLights() {
     numFrameLocalLights = 0;
     numFramePointLights = 0;
     numFrameSpotLights = 0;
-    numFrameBoxDirLights = 0;
     primaryDirectionalLight = nullptr;
 }
 
@@ -581,11 +580,6 @@ RenderFrame::ChunkRange<FrameLight> RenderFrame::GetFrameLights(uint32_t firstIn
     return ChunkRange<FrameLight>(firstChunk, firstIndex);
 }
 
-FrameSpotLightData *RenderFrame::AllocFrameSpotLightData() {
-    void *memory = MemAlloc(sizeof(FrameSpotLightData));
-    return new (memory) FrameSpotLightData();
-}
-
 FrameOceanSurface *RenderFrame::AllocFrameOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings) {
     if (frameOceanSurface) {
         assert(0);
@@ -702,10 +696,6 @@ FrameLight *RenderFrame::AllocFrameLight(RenderLight::Type type) {
     case RenderLight::Type::Spot:
         numFrameLocalLights++;
         newFrameLight->typeIndex = static_cast<uint16_t>(numFrameSpotLights++);
-        break;
-    case RenderLight::Type::BoxDir:
-        numFrameLocalLights++;
-        newFrameLight->typeIndex = static_cast<uint16_t>(numFrameBoxDirLights++);
         break;
     case RenderLight::Type::Directional:
         newFrameLight->typeIndex = 0;
