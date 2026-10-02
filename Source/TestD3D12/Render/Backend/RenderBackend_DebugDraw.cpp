@@ -194,7 +194,7 @@ void RenderBackend::DrawDebugLights() {
             continue;
         }
 
-        const uint32_t color = BE1::Color4(frameLight->lightColor, 1.0f).ToUInt32();
+        const uint32_t color = BE1::Color4(frameLight->intensityRGB, 1.0f).ToUInt32();
         switch (frameLight->type) {
         case RenderLight::Type::Point: {
             const uint32_t numCircleSegments = GetDebugPointLightCircleSegments(currentFrameCamera, frameLight, unitRadiusToPixelsScale);

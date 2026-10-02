@@ -39,7 +39,7 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     directionalLight.type = RenderLight::Type::Directional;
     directionalLight.flags = RenderLight::Flag::CastShadows;
     directionalLight.linearColor = BE1::Color3::white;
-    directionalLight.intensity = 2.0f;
+    directionalLight.intensity = 5.0f;
     directionalLightEnabled = true;
     UpdateDirectionalLightDirection();
     directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
@@ -485,7 +485,7 @@ void SceneSkinnedMesh::BuildImGui() {
     }
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLight.intensity, 0.0f, 10.0f, "%.3f")) {
+    if (ImGui::DragFloat("Illuminance##DirectionalLight", &directionalLight.intensity, BE1::Max(directionalLight.intensity * 0.01f, 0.01f), 0.0f, 200000.0f, "%.3f lux", ImGuiSliderFlags_AlwaysClamp)) {
         directionalLightLightingChanged = true;
     }
 

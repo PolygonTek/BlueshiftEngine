@@ -141,7 +141,7 @@ float3 GetMultipleScatteringEnergyCompensation(float dfgFirstSum, float3 F0) {
 }
 #endif
 
-// 단위 incident radiance 에 대한 standard material 의 direct lighting 응답을 계산한다.
+// 광선에 수직인 면의 단위 조도에 대한 standard material 의 direct lighting 응답을 계산한다.
 float3 EvaluateStandardDirectBRDF(in ShadingParams shading, float3 lightDir) {
     const float3 halfVectorUnnormalized = lightDir + shading.viewDir;
     const float halfVectorLengthSquared = dot(halfVectorUnnormalized, halfVectorUnnormalized);
@@ -176,9 +176,9 @@ float3 EvaluateStandardDirectBRDF(in ShadingParams shading, float3 lightDir) {
     clearCoatSpecular *= shading.clearCoatEnergyCompensation;
 #endif
 
-    return ((diffuse + specular) * baseLayerAttenuation * baseLayerAttenuation * NdotL + clearCoatSpecular * clearCoatNdotL) * PI;
+    return (diffuse + specular) * baseLayerAttenuation * baseLayerAttenuation * NdotL + clearCoatSpecular * clearCoatNdotL;
 #else
-    return (diffuse + specular) * NdotL * PI;
+    return (diffuse + specular) * NdotL;
 #endif
 }
 

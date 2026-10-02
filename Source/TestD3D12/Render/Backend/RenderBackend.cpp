@@ -234,11 +234,11 @@ bool RenderBackend::UploadFrameConstants() {
         const BE1::Vec3 &direction = primaryDirectionalLight->axis[0];
         shaderDirectionalLight.direction = float3(direction.x, direction.y, direction.z);
         shaderDirectionalLight.flags = static_cast<uint32_t>(primaryDirectionalLight->flags);
-        shaderDirectionalLight.lightColor = float3(primaryDirectionalLight->lightColor.r, primaryDirectionalLight->lightColor.g, primaryDirectionalLight->lightColor.b);
+        shaderDirectionalLight.intensityRGB = float3(primaryDirectionalLight->intensityRGB.r, primaryDirectionalLight->intensityRGB.g, primaryDirectionalLight->intensityRGB.b);
     } else {
         shaderDirectionalLight.direction = float3(0.0f, 0.0f, 0.0f);
         shaderDirectionalLight.flags = 0;
-        shaderDirectionalLight.lightColor = float3(0.0f, 0.0f, 0.0f);
+        shaderDirectionalLight.intensityRGB = float3(0.0f, 0.0f, 0.0f);
     }
     shaderDirectionalLight.padding0 = 0.0f;
 

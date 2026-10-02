@@ -39,7 +39,7 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     directionalLight.type = RenderLight::Type::Directional;
     directionalLight.flags = RenderLight::Flag::CastShadows;
     directionalLight.linearColor = BE1::Color3::white;
-    directionalLight.intensity = 2.0f;
+    directionalLight.intensity = 5.0f;
     directionalLightElevation = 20;
     directionalLightEnabled = true;
     directionalLightAzimuth = 185;
@@ -688,8 +688,7 @@ void SceneOcean::BuildImGui() {
     lightingChanged |= ImGui::ColorEdit3("Color##OceanDirectionalLight", directionalLight.linearColor.Ptr(), ImGuiColorEditFlags_Float);
 
     ImGui::SetNextItemWidth(directionalLightItemWidth);
-    if (ImGui::DragFloat("Intensity##OceanDirectionalLight", &directionalLight.intensity, 0.01f, 0.0f, 100.0f, "%.2f")) {
-        directionalLight.intensity = BE1::Max(directionalLight.intensity, 0.0f);
+    if (ImGui::DragFloat("Illuminance##OceanDirectionalLight", &directionalLight.intensity, BE1::Max(directionalLight.intensity * 0.01f, 0.01f), 0.0f, 200000.0f, "%.3f lux", ImGuiSliderFlags_AlwaysClamp)) {
         lightingChanged = true;
     }
 

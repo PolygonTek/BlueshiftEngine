@@ -36,12 +36,7 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Lighting)) {
-        assert(src.linearColor.r >= 0.0f && src.linearColor.r <= 1.0f);
-        assert(src.linearColor.g >= 0.0f && src.linearColor.g <= 1.0f);
-        assert(src.linearColor.b >= 0.0f && src.linearColor.b <= 1.0f);
-
-        desc.linearColor = src.linearColor;
-        desc.intensity = src.intensity;
+        UpdateLighting(src.linearColor, src.intensity);
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shadow)) {
@@ -111,9 +106,20 @@ void RenderLight::UpdateLighting(const BE1::Color3 &linearColor, float intensity
     assert(linearColor.r >= 0.0f && linearColor.r <= 1.0f);
     assert(linearColor.g >= 0.0f && linearColor.g <= 1.0f);
     assert(linearColor.b >= 0.0f && linearColor.b <= 1.0f);
+    assert(BE1::Math::IsFinite(intensity) && intensity >= 0.0f);
 
     desc.linearColor = linearColor;
-    desc.intensity = intensity;
+    desc.intensity = BE1::Math::IsFinite(intensity) ? BE1::Max(intensity, 0.0f) : 0.0f;
+
+    // Shaders/Colors.hlsli 의 GetLuma 와 같은 계수로 색상과 무관하게 입력 lux/cd 를 유지한다.
+    // 매우 어두운 색상도 정규화 중 overflow/underflow 가 나지 않도록 중간값은 double 로 계산한다.
+    const double luminance = 0.212655 * linearColor.r + 0.715158 * linearColor.g + 0.072187 * linearColor.b;
+    if (luminance > 0.0 && desc.intensity > 0.0f) {
+        const double scale = static_cast<double>(desc.intensity) / luminance;
+        intensityRGB = BE1::Color3(static_cast<float>(linearColor.r * scale), static_cast<float>(linearColor.g * scale), static_cast<float>(linearColor.b * scale));
+    } else {
+        intensityRGB = BE1::Color3::black;
+    }
 }
 
 void RenderLight::UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor) {

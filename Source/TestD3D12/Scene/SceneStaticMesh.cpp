@@ -94,7 +94,7 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     spotLight.innerConeAngle = 10.0f;
     spotLight.outerConeAngle = 20.0f;
     spotLight.linearColor = BE1::Color3(1.0f, 0.5f, 0.2f);
-    spotLight.intensity = 20.0f;
+    spotLight.intensity = 30.0f;
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
 }
 
@@ -170,7 +170,7 @@ static void BuildLightControls(RenderWorld *renderWorld, GameLight &light, bool 
     }
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::DragFloat("Intensity", &light.intensity, BE1::Max(light.intensity * 0.01f, 0.01f), 0.0f, 100000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+    if (ImGui::DragFloat("Intensity", &light.intensity, BE1::Max(light.intensity * 0.01f, 0.01f), 0.0f, 100000.0f, "%.3f cd", ImGuiSliderFlags_AlwaysClamp)) {
         lightingChanged = true;
     }
 

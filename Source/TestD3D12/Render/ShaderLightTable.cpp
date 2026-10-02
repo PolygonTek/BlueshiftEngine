@@ -179,7 +179,7 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &sha
     const float invRadius = 1.0f / frameLight.range;
     shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
     shaderLight.invRadiusSquared = invRadius * invRadius;
-    shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
+    shaderLight.intensityRGB = float3(frameLight.intensityRGB.r, frameLight.intensityRGB.g, frameLight.intensityRGB.b);
     // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
     shaderLight.shadowIndex = frameLight.localShadowIndex;
 }
@@ -193,7 +193,7 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shad
     shaderLight.direction = float3(direction.x, direction.y, direction.z);
     shaderLight.cosOuterCone = frameLight.spotCosCone.y;
     shaderLight.invCosConeDifference = frameLight.spotInvCosConeDifference;
-    shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
+    shaderLight.intensityRGB = float3(frameLight.intensityRGB.r, frameLight.intensityRGB.g, frameLight.intensityRGB.b);
     // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
     shaderLight.shadowIndex = frameLight.localShadowIndex;
 }

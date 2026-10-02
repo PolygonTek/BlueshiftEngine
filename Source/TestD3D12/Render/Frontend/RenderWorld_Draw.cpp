@@ -1160,7 +1160,7 @@ FrameLight *RenderWorld::RegisterFrameLight(RenderFrame *frame, RenderLight *ren
     }
     frameLight->origin = renderLight->desc.origin;
     frameLight->range = renderLight->desc.range;
-    frameLight->lightColor = renderLight->desc.linearColor * renderLight->desc.intensity;
+    frameLight->intensityRGB = renderLight->intensityRGB;
     frameLight->zNear = renderLight->desc.zNear;
     frameLight->shadowOffsetUnits = renderLight->desc.shadowOffsetUnits;
     frameLight->shadowOffsetFactor = renderLight->desc.shadowOffsetFactor;

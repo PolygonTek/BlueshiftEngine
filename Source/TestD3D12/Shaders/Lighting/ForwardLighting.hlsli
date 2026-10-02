@@ -40,7 +40,7 @@ float3 EvaluatePointLight(ShaderPointLight pointLight, uint2 pixelCoord, float3 
     }
 
     const float3 lightDir = lightVector * rsqrt(lightDistanceSquared);
-    const float3 lighting = pointLight.lightColor * attenuation * EvaluateStandardDirectBRDF(shading, lightDir);
+    const float3 lighting = pointLight.intensityRGB * attenuation * EvaluateStandardDirectBRDF(shading, lightDir);
     // 기여가 없는 픽셀의 shadow 테이블/PCF 접근은 생략한다. 그림자 좌표는 depth 기록 당시의 광원 위치로 계산한다.
     [branch]
     if (!any(lighting > 0.0f)) {
@@ -68,7 +68,7 @@ float3 EvaluateSpotLight(ShaderSpotLight spotLight, uint2 pixelCoord, float3 wor
         return 0.0f;
     }
 
-    const float3 lighting = spotLight.lightColor * (distanceAttenuation * angularAttenuation) * EvaluateStandardDirectBRDF(shading, lightDir);
+    const float3 lighting = spotLight.intensityRGB * (distanceAttenuation * angularAttenuation) * EvaluateStandardDirectBRDF(shading, lightDir);
     // 감쇠나 BRDF 로 기여가 사라진 픽셀에서는 shadow 테이블과 PCF 샘플링을 생략한다.
     [branch]
     if (!any(lighting > 0.0f)) {
@@ -79,7 +79,7 @@ float3 EvaluateSpotLight(ShaderSpotLight spotLight, uint2 pixelCoord, float3 wor
 
 float3 EvaluateDirectionalLight(ShaderDirectionalLight directionalLight, in ShadingParams shading) {
     const float3 lightDir = -directionalLight.direction;
-    return directionalLight.lightColor * EvaluateStandardDirectBRDF(shading, lightDir);
+    return directionalLight.intensityRGB * EvaluateStandardDirectBRDF(shading, lightDir);
 }
 
 float3 EvaluateShaderLight(uint packedLightRef, uint2 pixelCoord, float3 worldPosition, in ShadingParams shading) {

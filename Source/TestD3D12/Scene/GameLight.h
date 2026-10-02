@@ -27,12 +27,12 @@ public:
     uint8_t                     layer = 0;
     BE1::Vec3                   origin = BE1::Vec3::origin;
     BE1::Mat3                   axis = BE1::Mat3::identity;
-    float                       range = 1.0f;                       // Point/Spot 거리 감쇠 반경 (m).
-    float                       innerConeAngle = 30.0f;             // Spot 중심축에서 잰 반각 (도).
-    float                       outerConeAngle = 45.0f;             // Spot 중심축에서 잰 반각 (도).
+    float                       range = 1.0f;                       // Point/Spot 거리 감쇠 반경 (meter)
+    float                       innerConeAngle = 30.0f;             // Spot 중심축에서 잰 반각 (degree)
+    float                       outerConeAngle = 45.0f;             // Spot 중심축에서 잰 반각 (degree)
     float                       zNear = 0.01f;
-    BE1::Color3                 linearColor = BE1::Color3::white;
-    float                       intensity = 1.0f;
+    BE1::Color3                 linearColor = BE1::Color3::white;   // Linear RGB 색상. 휘도 정규화하며 검정색은 발광하지 않는다.
+    float                       intensity = 1.0f;                   // Directional: 수직 입사면 조도 (lux), Point/Spot: 광도 (cd). Spot 은 inner cone 기준.
     float                       shadowOffsetUnits = 1500.0f;
     float                       shadowOffsetFactor = 3.0f;
     int                         renderLightHandle = -1;

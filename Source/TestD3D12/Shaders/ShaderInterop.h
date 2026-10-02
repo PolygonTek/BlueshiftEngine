@@ -679,7 +679,7 @@ static_assert(sizeof(ShaderLightCullingParams) == 32, "ShaderLightCullingParams 
 struct ShaderDirectionalLight {
     float3 direction;
     uint flags;
-    float3 lightColor;
+    float3 intensityRGB; // Luminance-normalized RGB times normal illuminance (lux).
     float padding0;
 };
 
@@ -692,7 +692,7 @@ struct ShaderPointLight {
     float4 worldToProjectionV;
     float3 origin;
     float invRadiusSquared;
-    float3 lightColor;
+    float3 intensityRGB; // Luminance-normalized RGB times luminous intensity (cd).
     uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
 };
 
@@ -706,7 +706,7 @@ struct ShaderSpotLight {
     float invRadiusSquared;
     float3 direction; // 광원에서 나가는 단위 방향.
     float cosOuterCone;
-    float3 lightColor;
+    float3 intensityRGB; // Luminance-normalized RGB times luminous intensity inside the inner cone (cd).
     float invCosConeDifference;
     uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
 };

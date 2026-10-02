@@ -305,7 +305,7 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
         const float NdotL = saturate(dot(normal, L));
 
         const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition);
-        const float3 lightColor = frameConstants.directionalLight.lightColor * shadowLighting;
+        const float3 lightIntensityRGB = frameConstants.directionalLight.intensityRGB * shadowLighting;
 
         // 얇은 파도 마루를 통과한 직접광은 광원이 시선 반대편에 있을수록 강하게 보인다.
         const float normalizedCrestHeight = saturate((input.worldPosition.z - oceanSurfaceParams.surfaceHeight) / oceanSurfaceParams.scatterHeight);
@@ -314,10 +314,10 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
         const float scatterPhase = backLight * backLight;
         const float scatterAmount = (1.0f - fresnel) * crestScatter * scatterPhase;
         const float3 relativeScatter = oceanSurfaceParams.scatterColor * (1.0f - oceanSurfaceParams.waterColor);
-        color += lightColor * relativeScatter * scatterAmount;
+        color += lightIntensityRGB * relativeScatter * scatterAmount;
         
         if (NdotL > 0.0f) {
-            color += lightColor * oceanSurfaceParams.waterColor * (0.02f * NdotL);
+            color += lightIntensityRGB * oceanSurfaceParams.waterColor * (0.02f * NdotL);
 
             const float3 halfVectorUnnormalized = L + V;
             const float halfVectorLengthSquared = dot(halfVectorUnnormalized, halfVectorUnnormalized);
@@ -329,9 +329,9 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
                 const float distribution = D_GGX(NdotH, linearRoughness);
                 const float visibility = G_SmithGGXCorrelated(max(NdotV, 1e-4f), NdotL, linearRoughness);
                 const float sunFresnel = oceanSurfaceParams.fresnelF0 + (1.0f - oceanSurfaceParams.fresnelF0) * Pow5(1.0f - VdotH);
-                const float sunSpecular = distribution * visibility * sunFresnel * NdotL * PI;
+                const float sunSpecular = distribution * visibility * sunFresnel * NdotL;
 
-                color += lightColor * sunSpecular;
+                color += lightIntensityRGB * sunSpecular;
             }
         }
     }

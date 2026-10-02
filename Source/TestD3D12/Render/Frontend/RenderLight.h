@@ -68,8 +68,8 @@ public:
         float                       zNear = 0.1f;                       ///< Shadow near distance, capped at half the range; does not clip illumination
         RHI::ProjectionPolicy       projectionPolicy;                   ///< projection convention used for shader-visible matrices
 
-        BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB light tint in [0, 1]
-        float                       intensity = 1.0f;                   ///< Light itensity
+        BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB chromaticity in [0, 1], normalized by luminance; black emits no light
+        float                       intensity = 1.0f;                   ///< Finite, nonnegative: Directional normal illuminance in lux; Point/Spot intensity in cd (inside the Spot inner cone)
         float                       shadowOffsetUnits = 1500.0f;
         float                       shadowOffsetFactor = 3.0f;
     };
@@ -127,12 +127,13 @@ private:
     void                            UpdateProjectionAndBounds();
 
     Desc                            desc;
+    BE1::Color3                     intensityRGB = BE1::Color3::white;  ///< Luminance-normalized RGB times intensity, cached when lighting changes
 
     BE1::Sphere                     worldSphere;                        ///< Radial range bound for Point/Spot lights
     BE1::Frustum                    worldFrustum;                       ///< Conservative square frustum enclosing the circular Spot cone, starting at its apex
     BE1::AABB                       worldAABB = BE1::AABB::empty;       ///< World-space AABB enclosing the light volume; empty for directional lights
 
-    BE1::Vec2                       spotCosCone = BE1::Vec2::zero;     ///< X = cos(inner), Y = cos(outer); updated only when shape changes
+    BE1::Vec2                       spotCosCone = BE1::Vec2::zero;      ///< X = cos(inner), Y = cos(outer); updated only when shape changes
     float                           spotInvCosConeDifference = 0.0f;
     float                           spotTanOuterCone = 0.0f;
 

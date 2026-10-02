@@ -511,7 +511,7 @@ struct FrameLight {
     float                           spotTanOuterCone;
     float                           zNear;
 
-    BE1::Color3                     lightColor;                     ///< Linear RGB light color multiplied by intensity
+    BE1::Color3                     intensityRGB;                   ///< Luminance-normalized RGB times intensity: Directional lux, Point/Spot cd
 
     float                           viewZMin;                       ///< Minimum positive-forward linear view Z
     float                           viewZMax;                       ///< Maximum positive-forward linear view Z

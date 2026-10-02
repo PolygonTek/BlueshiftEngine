@@ -280,7 +280,7 @@ void SceneMaterialBall::BuildImGui() {
     }
 
     ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Intensity##DirectionalLight", &directionalLight.intensity, 0.0f, 10.0f, "%.3f")) {
+    if (ImGui::DragFloat("Illuminance##DirectionalLight", &directionalLight.intensity, BE1::Max(directionalLight.intensity * 0.01f, 0.01f), 0.0f, 200000.0f, "%.3f lux", ImGuiSliderFlags_AlwaysClamp)) {
         directionalLightLightingChanged = true;
     }
 
