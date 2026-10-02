@@ -192,7 +192,7 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
                     startX + lightSpacing * x,
                     startY + lightSpacing * y,
                     startZ + lightSpacing * z + lightOriginZOffset);
-                gameLight.size[0] = radius;
+                gameLight.range = radius;
 
                 // 밝기와 색상을 독립적으로 무작위 선택한다.
                 gameLight.intensity = rng.GetNextFloat(minLightIntensity, maxLightIntensity);

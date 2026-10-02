@@ -38,7 +38,9 @@ bool GameLight::SetEnabled(RenderWorld *renderWorld, bool enabled) {
     desc.layer = layer;
     desc.origin = origin;
     desc.axis = axis;
-    desc.size = size;
+    desc.range = range;
+    desc.innerConeAngle = innerConeAngle;
+    desc.outerConeAngle = outerConeAngle;
     desc.zNear = zNear;
     desc.projectionPolicy = RHI::renderer->GetProjectionPolicy();
     desc.linearColor = linearColor;

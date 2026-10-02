@@ -22,11 +22,14 @@ class RenderLight {
     friend class RenderWorld;
 
 public:
-    static constexpr float          MinLightSize = 0.01f;   // 광원 크기, near 거리, near-far 간격 보정용 최소 길이.
+    static constexpr float          MinLightSize = 0.01f;   // 광원 거리 및 shadow near 보정용 최소 길이.
+    static constexpr float          MinSpotOuterConeAngle = 1.0f;
+    static constexpr float          MaxSpotOuterConeAngle = 89.0f;
+    static constexpr float          MinSpotConeAngleGap = 0.1f; // 코사인 차의 역수가 발산하지 않도록 유지할 최소 각도 차이 (도).
 
     enum class Type : uint8_t {
         Point,                      ///< Omnidirectional light within a sphere centered at origin
-        Spot,                       ///< Perspective-frustum light directed along axis[0]
+        Spot,                       ///< Circular cone light directed along axis[0], bounded by range
         Directional                 ///< Infinite-distance light whose rays travel along axis[0]
     };
 
@@ -44,7 +47,7 @@ public:
             Flags                   = BIT(0),   // flags
             Layer                   = BIT(1),   // layer
             Transform               = BIT(2),   // origin, axis
-            Shape                   = BIT(3),   // type, size, zNear
+            Shape                   = BIT(3),   // type, range, zNear, innerConeAngle, outerConeAngle
             ProjectionPolicy        = BIT(4),   // projectionPolicy
             Lighting                = BIT(5),   // linearColor, intensity
             Shadow                  = BIT(6)    // shadowOffsetUnits, shadowOffsetFactor
@@ -58,9 +61,11 @@ public:
 
         BE1::Vec3                   origin = BE1::Vec3::origin;         ///< Light position in world space
         BE1::Mat3                   axis = BE1::Mat3::identity;         ///< Light orientation
-        BE1::Vec3                   size = BE1::Vec3::one;              ///< Point: size[0] is radius. Spot: shape extents
+        float                       range = 1.0f;                       ///< Point/Spot radial attenuation range in meters
+        float                       innerConeAngle = 30.0f;             ///< Spot half-angle from the forward axis, in degrees
+        float                       outerConeAngle = 45.0f;             ///< Spot half-angle from the forward axis, in degrees
 
-        float                       zNear = 0.1f;                       ///< Spot near distance; Point shadow base near distance (capped at half the radius)
+        float                       zNear = 0.1f;                       ///< Shadow near distance, capped at half the range; does not clip illumination
         RHI::ProjectionPolicy       projectionPolicy;                   ///< projection convention used for shader-visible matrices
 
         BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB light tint in [0, 1]
@@ -81,11 +86,8 @@ public:
                                     /// Returns light origin in world space.
     const BE1::Vec3 &               GetOrigin() const { return desc.origin; }
 
-                                    /// Returns extent for each axis.
-    const BE1::Vec3 &               GetExtents() const { return desc.size; }
-
-                                    /// Returns radius. Valid only for point light.
-    float                           GetRadius() const { return desc.size[0]; }
+                                    /// Returns radial attenuation range for Point/Spot lights.
+    float                           GetRange() const { return desc.range; }
 
                                     /// Returns AABB in world space.
     const BE1::AABB &               GetWorldAABB() const { return worldAABB; }
@@ -117,7 +119,7 @@ private:
     void                            UpdateFlags(Flag flags);
     void                            UpdateLayer(uint8_t layer);
     void                            UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis);
-    void                            UpdateShape(Type type, const BE1::Vec3 &size, float zNear);
+    void                            UpdateShape(Type type, float range, float zNear, float innerConeAngle, float outerConeAngle);
     void                            UpdateProjectionPolicy(const RHI::ProjectionPolicy &projectionPolicy);
     void                            UpdateLighting(const BE1::Color3 &linearColor, float intensity);
     void                            UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor);
@@ -126,9 +128,13 @@ private:
 
     Desc                            desc;
 
-    BE1::Sphere                     worldSphere;                        ///< Bounding volume for point light
-    BE1::Frustum                    worldFrustum;                       ///< Bounding volume for spot light
+    BE1::Sphere                     worldSphere;                        ///< Radial range bound for Point/Spot lights
+    BE1::Frustum                    worldFrustum;                       ///< Conservative square frustum enclosing the circular Spot cone, starting at its apex
     BE1::AABB                       worldAABB = BE1::AABB::empty;       ///< World-space AABB enclosing the light volume; empty for directional lights
+
+    BE1::Vec2                       spotCosCone = BE1::Vec2::zero;     ///< X = cos(inner), Y = cos(outer); updated only when shape changes
+    float                           spotInvCosConeDifference = 0.0f;
+    float                           spotTanOuterCone = 0.0f;
 
     BE1::Mat4                       viewMatrix = BE1::Mat4::identity;
     BE1::Mat4                       projMatrix = BE1::Mat4::identity;

@@ -58,18 +58,9 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shape)) {
-        BE1::Vec3 size = src.size;
-        if (src.type == Type::Point) {
-            const float radius = BE1::Max(size[0], MinLightSize);
-            size.Set(radius, radius, radius);
-        }
-        desc.type = src.type;
-        desc.size = size;
-        desc.zNear = src.zNear;
-        updateProjectionAndBounds = true;
-    }
-
-    if (updateProjectionAndBounds) {
+        // Transform 과 projection policy 는 위에서 반영했으므로 경계 계산은 한 번만 수행한다.
+        UpdateShape(src.type, src.range, src.zNear, src.innerConeAngle, src.outerConeAngle);
+    } else if (updateProjectionAndBounds) {
         UpdateProjectionAndBounds();
     }
 }
@@ -90,16 +81,21 @@ void RenderLight::UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis
     UpdateProjectionAndBounds();
 }
 
-void RenderLight::UpdateShape(Type type, const BE1::Vec3 &size, float zNear) {
-    BE1::Vec3 lightSize = size;
-    if (type == Type::Point) {
-        const float radius = BE1::Max(lightSize[0], MinLightSize);
-        lightSize.Set(radius, radius, radius);
-    }
-
+void RenderLight::UpdateShape(Type type, float range, float zNear, float innerConeAngle, float outerConeAngle) {
     desc.type = type;
-    desc.size = lightSize;
+    desc.range = BE1::Max(range, MinLightSize);
     desc.zNear = zNear;
+    desc.outerConeAngle = BE1::Clamp(outerConeAngle, MinSpotOuterConeAngle, MaxSpotOuterConeAngle);
+    desc.innerConeAngle = BE1::Clamp(innerConeAngle, 0.0f, desc.outerConeAngle - MinSpotConeAngleGap);
+
+    if (type == Type::Spot) {
+        // 각도 감쇠와 shadow 투영 계수는 모양이 바뀔 때만 계산한다.
+        float sinOuter;
+        BE1::Math::SinCos(DEG2RAD(desc.outerConeAngle), sinOuter, spotCosCone.y);
+        spotCosCone.x = BE1::Math::Cos(DEG2RAD(desc.innerConeAngle));
+        spotInvCosConeDifference = 1.0f / (spotCosCone.x - spotCosCone.y);
+        spotTanOuterCone = sinOuter / spotCosCone.y;
+    }
 
     UpdateProjectionAndBounds();
 }
@@ -138,35 +134,25 @@ void RenderLight::UpdateProjectionAndBounds() {
 
     const bool zNegativeOneToOne = desc.projectionPolicy.IsZNegativeOneToOne();
     const bool reverseZ = desc.projectionPolicy.reverseZ;
-
-    const BE1::Vec3 effectiveSize(
-        BE1::Max(desc.size[0], MinLightSize),
-        BE1::Max(desc.size[1], MinLightSize),
-        BE1::Max(desc.size[2], MinLightSize));
+    worldSphere = BE1::Sphere(desc.origin, desc.range);
 
     if (desc.type == Type::Point) {
         // Point lights always use a spherical bounding volume and radial fall-off.
-        worldSphere = BE1::Sphere(desc.origin, effectiveSize[0]);
-
         // Project a planar texture through the spherical light volume along axis[0].
-        const float radius = effectiveSize[0];
+        const float radius = desc.range;
         projMatrix.SetOrthoRH(-radius, radius, -radius, radius, -radius, radius, zNegativeOneToOne, reverseZ);
     } else if (desc.type == Type::Spot) {
-        const float zNear = BE1::Max(desc.zNear, MinLightSize);
-        const float zFar = BE1::Max(effectiveSize[0], zNear + MinLightSize);
-        const float left = effectiveSize[1];
-        const float up = effectiveSize[2];
+        const float zNear = BE1::Min(BE1::Max(desc.zNear, MinLightSize), desc.range * 0.5f);
+        const float halfSize = desc.range * spotTanOuterCone;
 
-        // Set bounding frustum for spot light.
+        // 원형 콘을 감싸는 사각 frustum 으로 보수적으로 컬링한다.
+        // 조명은 원점부터 시작한다. Shadow near plane 으로 가까운 조명을 잘라내지 않는다.
         worldFrustum.SetOrigin(desc.origin);
         worldFrustum.SetAxis(desc.axis);
-        worldFrustum.SetSize(zNear, zFar, left, up);
+        worldFrustum.SetSize(0.0f, desc.range, halfSize, halfSize);
 
-        const float yFov = RAD2DEG(BE1::Math::ATan2(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
-
-        // Calculate spot light perspective projection matrix.
-        const float aspect = worldFrustum.GetLeft() / worldFrustum.GetUp();
-        projMatrix.SetPerspectiveRH(yFov, aspect, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), zNegativeOneToOne, reverseZ, false);
+        // 정사각 투영의 FOV 는 outer 반각의 두 배다. 조명 감쇠는 이 투영과 독립적이다.
+        projMatrix.SetPerspectiveRH(desc.outerConeAngle * 2.0f, 1.0f, zNear, desc.range, zNegativeOneToOne, reverseZ, false);
     } else {
         assert(0);
     }
@@ -185,6 +171,7 @@ void RenderLight::UpdateProjectionAndBounds() {
         worldAABB = worldSphere.ToAABB();
     } else if (desc.type == Type::Spot) {
         worldAABB = worldFrustum.ToOBB().ToAABB();
+        worldAABB.IntersectSelf(worldSphere.ToAABB());
     }
 }
 
@@ -194,10 +181,7 @@ bool RenderLight::IsIntersectAABB(const BE1::AABB &aabb) const {
     }
 
     if (desc.type == Type::Spot) {
-        if (!worldFrustum.CullAABB(aabb)) {
-            return true;
-        }
-        return false;
+        return worldSphere.IsIntersectAABB(aabb) && !worldFrustum.CullAABB(aabb);
     }
 
     assert(0);
@@ -210,10 +194,7 @@ bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
     }
 
     if (desc.type == Type::Spot) {
-        if (!worldFrustum.CullOBB(obb)) {
-            return true;
-        }
-        return false;
+        return obb.IsIntersectSphere(worldSphere) && !worldFrustum.CullOBB(obb);
     }
 
     assert(0);
@@ -223,6 +204,11 @@ bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
 void RenderLight::ProjectOnAxis(const BE1::Vec3 &axis, float &min, float &max) const {
     if (desc.type == Type::Spot) {
         worldFrustum.ProjectOnAxis(axis, min, max);
+        float radialMin;
+        float radialMax;
+        worldSphere.ProjectOnAxis(axis, radialMin, radialMax);
+        min = BE1::Max(min, radialMin);
+        max = BE1::Min(max, radialMax);
         return;
     }
 
@@ -237,7 +223,7 @@ void RenderLight::ProjectOnAxis(const BE1::Vec3 &axis, float &min, float &max) c
 
 bool RenderLight::Cull(const RenderCamera &camera) const {
     if (desc.type == Type::Spot) {
-        return camera.Cull(worldFrustum);
+        return camera.Cull(worldSphere) || camera.Cull(worldFrustum);
     }
 
     if (desc.type == Type::Point) {
@@ -250,7 +236,13 @@ bool RenderLight::Cull(const RenderCamera &camera) const {
 
 bool RenderLight::ComputeScreenClipRect(const RenderCamera &camera, BE1::Rect &clipRect) const {
     if (desc.type == Type::Spot) {
-        return camera.CalcClipRectFromFrustum(worldFrustum, clipRect);
+        // 넓은 콘에서도 range 밖으로 light-culling 타일과 shadow 요청 해상도가 커지지 않게 제한한다.
+        BE1::Rect coneClipRect;
+        if (!camera.CalcClipRectFromSphere(worldSphere, clipRect) || !camera.CalcClipRectFromFrustum(worldFrustum, coneClipRect)) {
+            return false;
+        }
+        clipRect.IntersectSelf(coneClipRect);
+        return clipRect.w > 0 && clipRect.h > 0;
     }
 
     if (desc.type == Type::Point) {

@@ -117,7 +117,7 @@ public:
     void                        UpdateRenderLightFlags(int index, RenderLight::Flag flags);
     void                        UpdateRenderLightLayer(int index, uint8_t layer);
     void                        UpdateRenderLightTransform(int index, const BE1::Vec3 &origin, const BE1::Mat3 &axis);
-    void                        UpdateRenderLightShape(int index, RenderLight::Type type, const BE1::Vec3 &size, float zNear);
+    void                        UpdateRenderLightShape(int index, RenderLight::Type type, float range, float zNear, float innerConeAngle, float outerConeAngle);
     void                        UpdateRenderLightProjectionPolicy(int index, const RHI::ProjectionPolicy &projectionPolicy);
     void                        UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity);
     void                        UpdateRenderLightShadow(int index, float shadowOffsetUnits, float shadowOffsetFactor);

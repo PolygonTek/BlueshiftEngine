@@ -76,16 +76,26 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
 
     renderWorld->AddRenderObject(meshDesc);
 
-    const float meshRadius = BE1::Max(meshAABB.Extents().Length(), RenderLight::MinLightSize);
-
     pointLight.type = RenderLight::Type::Point;
     pointLight.flags = RenderLight::Flag::CastShadows;
-    pointLight.linearColor = BE1::Color3(1.0f, 0.8f, 0.19f);
-    pointLight.intensity = 2.0f;
-    pointLight.size.Set(2.0f, 2.0f, 2.0f);
-    pointLight.zNear = BE1::Max(meshRadius * 0.01f, RenderLight::MinLightSize);
     pointLight.origin.Set(0.217f, -0.181f, 0.017f);
+    pointLight.range = 3.0f;
+    pointLight.linearColor = BE1::Color3(1.0f, 0.8f, 0.19f);
+    pointLight.intensity = 1.0f;
     pointLightEnabled = pointLight.SetEnabled(renderWorld, true);
+
+    spotPitch = 45.0f;
+    spotYaw = -20.0f;
+    spotLight.type = RenderLight::Type::Spot;
+    spotLight.flags = RenderLight::Flag::CastShadows;
+    spotLight.origin.Set(-3.5f, 2.0f, 1.5f);
+    spotLight.axis = BE1::Angles(0.0f, spotPitch, spotYaw).ToMat3();
+    spotLight.range = 5.0f;
+    spotLight.innerConeAngle = 10.0f;
+    spotLight.outerConeAngle = 20.0f;
+    spotLight.linearColor = BE1::Color3(1.0f, 0.5f, 0.2f);
+    spotLight.intensity = 20.0f;
+    spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
 }
 
 void SceneStaticMesh::Shutdown() {
@@ -94,6 +104,8 @@ void SceneStaticMesh::Shutdown() {
     }
     pointLight.renderLightHandle = -1;
     pointLightEnabled = false;
+    spotLight.renderLightHandle = -1;
+    spotLightEnabled = false;
     testMesh.reset();
     renderWorld = nullptr;
 }
@@ -103,67 +115,100 @@ void SceneStaticMesh::Update(uint64_t elapsedUsec) {
 }
 
 #ifdef ENABLE_IMGUI
-void SceneStaticMesh::BuildImGui() {
+static void BuildLightControls(RenderWorld *renderWorld, GameLight &light, bool &enabled, float *pitch = nullptr, float *yaw = nullptr) {
     const float itemWidth = ImGui::GetFontSize() * 17.0f;
 
+    if (ImGui::Checkbox("Enabled", &enabled)) {
+        enabled = light.SetEnabled(renderWorld, enabled);
+    }
+
+    ImGui::BeginDisabled(!enabled);
+
+    bool lightingChanged = false;
+    bool transformChanged = false;
+    bool shapeChanged = false;
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::DragFloat3("Position", light.origin.Ptr(), BE1::Max(light.range * 0.002f, 0.001f), 0.0f, 0.0f, "%.3f")) {
+        transformChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::DragFloat("Range", &light.range, BE1::Max(light.range * 0.002f, 0.001f), RenderLight::MinLightSize, 10000.0f, "%.3f m", ImGuiSliderFlags_AlwaysClamp)) {
+        shapeChanged = true;
+    }
+
+    if (light.type == RenderLight::Type::Spot) {
+        assert(pitch && yaw);
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Pitch", pitch, -90.0f, 90.0f, "%.1f deg", ImGuiSliderFlags_AlwaysClamp)) {
+            transformChanged = true;
+        }
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Yaw", yaw, -180.0f, 180.0f, "%.1f deg", ImGuiSliderFlags_AlwaysClamp)) {
+            transformChanged = true;
+        }
+        if (transformChanged) {
+            light.axis = BE1::Angles(0.0f, *pitch, *yaw).ToMat3();
+        }
+
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Outer Cone Angle", &light.outerConeAngle, RenderLight::MinSpotOuterConeAngle, RenderLight::MaxSpotOuterConeAngle, "%.1f deg", ImGuiSliderFlags_AlwaysClamp)) {
+            light.innerConeAngle = BE1::Min(light.innerConeAngle, light.outerConeAngle - RenderLight::MinSpotConeAngleGap);
+            shapeChanged = true;
+        }
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderFloat("Inner Cone Angle", &light.innerConeAngle, 0.0f, light.outerConeAngle - RenderLight::MinSpotConeAngleGap, "%.1f deg", ImGuiSliderFlags_AlwaysClamp)) {
+            shapeChanged = true;
+        }
+        ImGui::TextDisabled("Cone angles are measured from the forward axis.");
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::ColorEdit3("Color", light.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
+        lightingChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::DragFloat("Intensity", &light.intensity, BE1::Max(light.intensity * 0.01f, 0.01f), 0.0f, 100000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+        lightingChanged = true;
+    }
+
+    if (transformChanged) {
+        renderWorld->UpdateRenderLightTransform(light.renderLightHandle, light.origin, light.axis);
+    }
+
+    if (shapeChanged) {
+        renderWorld->UpdateRenderLightShape(light.renderLightHandle, light.type, light.range, light.zNear, light.innerConeAngle, light.outerConeAngle);
+    }
+
+    if (lightingChanged) {
+        renderWorld->UpdateRenderLightLighting(light.renderLightHandle, light.linearColor, light.intensity);
+    }
+
+    ImGui::EndDisabled();
+}
+
+void SceneStaticMesh::BuildImGui() {
     ImGui::TextWrapped("Mesh: %s", meshPath);
     if (!testMesh) {
         ImGui::TextDisabled("Mesh is unavailable.");
     }
 
-    ImGui::Separator();
-    ImGui::Text("Point Light");
     ImGui::BeginDisabled(!testMesh);
 
-    if (ImGui::Checkbox("Enabled##PointLight", &pointLightEnabled)) {
-        pointLightEnabled = pointLight.SetEnabled(renderWorld, pointLightEnabled);
-    }
+    ImGui::Separator();
+    ImGui::Text("Point Light");
+    ImGui::PushID("PointLight");
+    BuildLightControls(renderWorld, pointLight, pointLightEnabled);
+    ImGui::PopID();
 
-    ImGui::BeginDisabled(!pointLightEnabled);
+    ImGui::Separator();
+    ImGui::Text("Spot Light");
+    ImGui::PushID("SpotLight");
+    BuildLightControls(renderWorld, spotLight, spotLightEnabled, &spotPitch, &spotYaw);
+    ImGui::PopID();
 
-    bool pointLightLightingChanged = false;
-    bool pointLightTransformChanged = false;
-    bool pointLightShapeChanged = false;
-    bool pointLightShadowChanged = false;
-
-    ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::DragFloat3("Position##PointLight", pointLight.origin.Ptr(), BE1::Max(pointLight.size.x * 0.002f, 0.001f), 0.0f, 0.0f, "%.3f")) {
-        pointLightTransformChanged = true;
-    }
-
-    ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::DragFloat("Radius##PointLight", &pointLight.size.x, BE1::Max(pointLight.size.x * 0.002f, 0.001f), RenderLight::MinLightSize, 10000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
-        pointLight.size.Set(pointLight.size.x, pointLight.size.x, pointLight.size.x);
-        pointLightShapeChanged = true;
-    }
-
-    ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::ColorEdit3("Color##PointLight", pointLight.linearColor.Ptr(), ImGuiColorEditFlags_Float)) {
-        pointLightLightingChanged = true;
-    }
-
-    ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Intensity##PointLight", &pointLight.intensity, 0.0f, 10.0f, "%.3f")) {
-        pointLightLightingChanged = true;
-    }
-
-    if (pointLightTransformChanged) {
-        renderWorld->UpdateRenderLightTransform(pointLight.renderLightHandle, pointLight.origin, pointLight.axis);
-    }
-
-    if (pointLightShapeChanged) {
-        renderWorld->UpdateRenderLightShape(pointLight.renderLightHandle, pointLight.type, pointLight.size, pointLight.zNear);
-    }
-
-    if (pointLightLightingChanged) {
-        renderWorld->UpdateRenderLightLighting(pointLight.renderLightHandle, pointLight.linearColor, pointLight.intensity);
-    }
-
-    if (pointLightShadowChanged) {
-        renderWorld->UpdateRenderLightShadow(pointLight.renderLightHandle, pointLight.shadowOffsetUnits, pointLight.shadowOffsetFactor);
-    }
-
-    ImGui::EndDisabled();
     ImGui::EndDisabled();
 }
 #endif

@@ -23,17 +23,11 @@ static constexpr uint32_t DebugLightCircleMediumSegments = 24;
 static constexpr uint32_t DebugUnitCircleSegmentCount = 48;
 static constexpr float DebugLightCircleLowMaxRadiusPixels = 24.0f;
 static constexpr float DebugLightCircleMediumMaxRadiusPixels = 96.0f;
-static constexpr uint32_t DebugVolumeLightVertexCount = 24;
+static constexpr uint32_t DebugSpotConeVertexCount = DebugLightCircleMediumSegments * 2 + 8;
 static constexpr float MinDebugLightSize = 0.01f;
 static constexpr float MinDebugLightRadiusPixels = 1.0f;
 
 static BE1::Vec2 debugUnitCircle[DebugUnitCircleSegmentCount];
-
-static constexpr uint8_t DebugLightBoxEdgeIndices[DebugVolumeLightVertexCount] = {
-    0, 1, 1, 2, 2, 3, 3, 0,
-    4, 5, 5, 6, 6, 7, 7, 4,
-    0, 4, 1, 5, 2, 6, 3, 7
-};
 
 void RenderBackend::InitDebugDraw() {
     for (uint32_t segmentIndex = 0; segmentIndex < DebugUnitCircleSegmentCount; ++segmentIndex) {
@@ -64,7 +58,7 @@ static float GetUnitRadiusToPixelsScale(const FrameCamera *frameCamera) {
 static uint32_t GetDebugPointLightCircleSegments(const FrameCamera *frameCamera, const FrameLight *frameLight, float unitRadiusToPixelsScale) {
     const BE1::Vec4 centerClip = frameCamera->viewProjMatrix * BE1::Vec4(frameLight->origin, 1.0f);
     if (centerClip.w > std::numeric_limits<float>::min()) {
-        const float radius = BE1::Max(frameLight->size[0], MinDebugLightSize);
+        const float radius = BE1::Max(frameLight->range, MinDebugLightSize);
         const float radiusPixels = radius * unitRadiusToPixelsScale / centerClip.w;
 
         if (radiusPixels < MinDebugLightRadiusPixels) {
@@ -111,34 +105,34 @@ static void WriteDebugCircle(DebugDrawVertex *&vertexPtr, const BE1::Vec3 &origi
 }
 
 static void WriteDebugPointLight(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, uint32_t numSegments, uint32_t color) {
-    const float radius = BE1::Max(frameLight->size[0], MinDebugLightSize);
+    const float radius = BE1::Max(frameLight->range, MinDebugLightSize);
 
     WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[1], BE1::Mat3::identity[2], radius, numSegments, color);
     WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[2], BE1::Mat3::identity[0], radius, numSegments, color);
     WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[0], BE1::Mat3::identity[1], radius, numSegments, color);
 }
 
-// 볼륨의 8 개 꼭짓점을 12 개 모서리로 연결해 LineList 정점을 기록한다.
-static void WriteDebugVolumeEdges(DebugDrawVertex *&vertexPtr, const BE1::Vec3 points[8], uint32_t color) {
-    for (uint32_t vertexIndex = 0; vertexIndex < COUNT_OF(DebugLightBoxEdgeIndices); ++vertexIndex) {
-        WriteDebugDrawVertex(vertexPtr, points[DebugLightBoxEdgeIndices[vertexIndex]], color);
+// 방사형 range 구면과 콘이 만나는 원, 원점에서 원으로 향하는 네 모서리를 LineList 로 기록한다.
+static void WriteDebugSpotCone(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, float cosCone, uint32_t color) {
+    const float coneLength = frameLight->range * cosCone;
+    const float coneRadius = frameLight->range * BE1::Math::Sqrt(BE1::Max(0.0f, 1.0f - cosCone * cosCone));
+    const BE1::Vec3 center = frameLight->origin + frameLight->axis[EngineAxis::Forward] * coneLength;
+    const BE1::Vec3 &left = frameLight->axis[EngineAxis::Left];
+    const BE1::Vec3 &up = frameLight->axis[EngineAxis::Up];
+    WriteDebugCircle(vertexPtr, center, left, up, coneRadius, DebugLightCircleMediumSegments, color);
+
+    for (uint32_t pointIndex = 0; pointIndex < DebugUnitCircleSegmentCount; pointIndex += DebugUnitCircleSegmentCount / 4) {
+        const BE1::Vec2 &point = debugUnitCircle[pointIndex];
+        WriteDebugDrawVertex(vertexPtr, frameLight->origin, color);
+        WriteDebugDrawVertex(vertexPtr, center + (left * point.x + up * point.y) * coneRadius, color);
     }
 }
 
 static void WriteDebugSpotLight(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, uint32_t color) {
-    const float zNear = BE1::Max(frameLight->zNear, MinDebugLightSize);
-    const float zFar = BE1::Max3(frameLight->size[0], MinDebugLightSize, zNear + MinDebugLightSize);
-    const float left = BE1::Max(frameLight->size[1], MinDebugLightSize);
-    const float up = BE1::Max(frameLight->size[2], MinDebugLightSize);
-
-    BE1::Frustum frustum;
-    frustum.SetOrigin(frameLight->origin);
-    frustum.SetAxis(frameLight->axis);
-    frustum.SetSize(zNear, zFar, left, up);
-
-    BE1::Vec3 points[8];
-    frustum.ToPoints(points);
-    WriteDebugVolumeEdges(vertexPtr, points, color);
+    WriteDebugSpotCone(vertexPtr, frameLight, frameLight->spotCosCone.y, color);
+    if (frameLight->spotCosCone.x < 1.0f) {
+        WriteDebugSpotCone(vertexPtr, frameLight, frameLight->spotCosCone.x, color);
+    }
 }
 
 void RenderBackend::DrawDebugLights() {
@@ -173,7 +167,7 @@ void RenderBackend::DrawDebugLights() {
             break;
         }
         case RenderLight::Type::Spot:
-            numVerts += DebugVolumeLightVertexCount;
+            numVerts += DebugSpotConeVertexCount * (frameLight->spotCosCone.x < 1.0f ? 2u : 1u);
             break;
         default:
             assert(0);

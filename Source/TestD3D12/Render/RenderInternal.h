@@ -505,7 +505,10 @@ struct FrameLight {
 
     BE1::Mat3                       axis;
     BE1::Vec3                       origin;
-    BE1::Vec3                       size;                           ///< Point: x is radius. Spot: shape extents
+    float                           range;                          ///< Point/Spot radial attenuation range in meters
+    BE1::Vec2                       spotCosCone;                    ///< X = cos(inner), Y = cos(outer)
+    float                           spotInvCosConeDifference;
+    float                           spotTanOuterCone;
     float                           zNear;
 
     BE1::Color3                     lightColor;                     ///< Linear RGB light color multiplied by intensity

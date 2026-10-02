@@ -40,11 +40,11 @@ void FrameLight::CalcSpotShadowProjection(FrameLocalShadowView &shadowView) cons
     const uint32_t usableResolution = resolution - 2 * borderTexels;
     const float borderScale = static_cast<float>(resolution) / usableResolution;
 
-    // RenderLight 의 조명 영역과 같은 보정 규칙을 사용한다. Left/Up 은 far 평면에서의 반폭/반높이다.
-    const float zNear = BE1::Max(this->zNear, RenderLight::MinLightSize);
-    const float zFar = BE1::Max(size[EngineAxis::Forward], zNear + RenderLight::MinLightSize);
-    const float left = BE1::Max(size[EngineAxis::Left], RenderLight::MinLightSize) * borderScale;
-    const float up = BE1::Max(size[EngineAxis::Up], RenderLight::MinLightSize) * borderScale;
+    // Outer cone 을 감싸는 정사각 shadow 투영. Near 는 shadow 정밀도만 제어하며 조명 범위와 독립적이다.
+    const float zFar = range;
+    const float zNear = BE1::Min(BE1::Max(this->zNear, RenderLight::MinLightSize), zFar * 0.5f);
+    const float left = zFar * spotTanOuterCone * borderScale;
+    const float up = left;
 
     // 타일 전체에 렌더링하면 원래 조명 영역은 border 안쪽에 들어간다. Caster 컬링에도 확장된 영역을 사용한다.
     shadowView.frustum.SetOrigin(origin);
@@ -83,7 +83,7 @@ void FrameLight::CalcSpotShadowProjection(FrameLocalShadowView &shadowView) cons
 
 BE1::Vec2 FrameLight::GetPointShadowDepthRange() const {
     assert(type == RenderLight::Type::Point);
-    const float zFar = BE1::Max(size[0], RenderLight::MinLightSize);
+    const float zFar = range;
     const float zNear = BE1::Min(BE1::Max(this->zNear, RenderLight::MinLightSize), zFar * 0.5f);
     return BE1::Vec2(zNear, zFar);
 }

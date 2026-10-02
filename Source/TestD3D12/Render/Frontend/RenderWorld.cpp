@@ -350,7 +350,7 @@ void RenderWorld::UpdateRenderLightTransform(int index, const BE1::Vec3 &origin,
     }
 }
 
-void RenderWorld::UpdateRenderLightShape(int index, RenderLight::Type type, const BE1::Vec3 &size, float zNear) {
+void RenderWorld::UpdateRenderLightShape(int index, RenderLight::Type type, float range, float zNear, float innerConeAngle, float outerConeAngle) {
     RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightShape");
     if (!renderLight) {
         return;
@@ -364,7 +364,7 @@ void RenderWorld::UpdateRenderLightShape(int index, RenderLight::Type type, cons
         return;
     }
 
-    renderLight->UpdateShape(type, size, zNear);
+    renderLight->UpdateShape(type, range, zNear, innerConeAngle, outerConeAngle);
 }
 
 void RenderWorld::UpdateRenderLightProjectionPolicy(int index, const RHI::ProjectionPolicy &projectionPolicy) {

@@ -702,16 +702,19 @@ static_assert(offsetof(ShaderPointLight, shadowIndex) == 60, "Point shadow index
 #endif
 
 struct ShaderSpotLight {
-    row_major float4x4 viewProjScaleBiasMatrix;
     float3 origin;
     float invRadiusSquared;
+    float3 direction; // 광원에서 나가는 단위 방향.
+    float cosOuterCone;
     float3 lightColor;
+    float invCosConeDifference;
     uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderSpotLight) == 96, "ShaderSpotLight must remain a tightly packed StructuredBuffer element");
-static_assert(offsetof(ShaderSpotLight, shadowIndex) == 92, "Spot shadow index must match the HLSL structured-buffer layout");
+static_assert(sizeof(ShaderSpotLight) == 52, "ShaderSpotLight must remain a tightly packed StructuredBuffer element");
+static_assert(offsetof(ShaderSpotLight, direction) == 16, "Spot direction must match the HLSL structured-buffer layout");
+static_assert(offsetof(ShaderSpotLight, shadowIndex) == 48, "Spot shadow index must match the HLSL structured-buffer layout");
 #endif
 
 struct FrameConstants {

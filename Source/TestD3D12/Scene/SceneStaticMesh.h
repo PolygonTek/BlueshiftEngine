@@ -34,6 +34,10 @@ private:
     RenderWorld *               renderWorld = nullptr;
     SharedPtr<Mesh>             testMesh;
     GameLight                   pointLight;
+    GameLight                   spotLight;
+    float                       spotPitch = 90.0f;
+    float                       spotYaw = 0.0f;
 
     bool                        pointLightEnabled = false;
+    bool                        spotLightEnabled = false;
 };

@@ -176,7 +176,7 @@ void ShaderLightTable::DestroyBuffer(TableBuffer &tableBuffer) {
 void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &shaderLight) const {
     BE1::simdProcessor->Memcpy(&shaderLight.worldToProjectionU, &frameLight.viewProjScaleBiasMatrix[0], sizeof(shaderLight.worldToProjectionU) * 2);
 
-    const float invRadius = 1.0f / frameLight.size[0];
+    const float invRadius = 1.0f / frameLight.range;
     shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
     shaderLight.invRadiusSquared = invRadius * invRadius;
     shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
@@ -185,14 +185,14 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &sha
 }
 
 void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shaderLight) const {
-    BE1::simdProcessor->Memcpy(&shaderLight.viewProjScaleBiasMatrix, &frameLight.viewProjScaleBiasMatrix, sizeof(shaderLight.viewProjScaleBiasMatrix));
-
-    // Spot frustum 의 유효 far 거리를 방사형 감쇠 반경으로 사용한다.
-    const float zNear = BE1::Max(frameLight.zNear, RenderLight::MinLightSize);
-    const float radius = BE1::Max(frameLight.size[0], zNear + RenderLight::MinLightSize);
-    const float invRadius = 1.0f / radius;
+    // 방사형 거리 감쇠와 원형 콘의 각도 감쇠를 각각 전달한다.
+    const float invRadius = 1.0f / frameLight.range;
     shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
     shaderLight.invRadiusSquared = invRadius * invRadius;
+    const BE1::Vec3 &direction = frameLight.axis[EngineAxis::Forward];
+    shaderLight.direction = float3(direction.x, direction.y, direction.z);
+    shaderLight.cosOuterCone = frameLight.spotCosCone.y;
+    shaderLight.invCosConeDifference = frameLight.spotInvCosConeDifference;
     shaderLight.lightColor = float3(frameLight.lightColor.r, frameLight.lightColor.g, frameLight.lightColor.b);
     // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
     shaderLight.shadowIndex = frameLight.localShadowIndex;

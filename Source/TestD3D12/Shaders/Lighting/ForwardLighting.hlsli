@@ -6,21 +6,6 @@
 #include "ShadowLibrary.hlsli"
 #include "../PBR/StandardBRDF.hlsli"
 
-bool GetLightVolumePosition(float4 projectedPosition, out float3 volumePosition) {
-    if (projectedPosition.w <= 0.0f) {
-        volumePosition = 0.0f;
-        return false;
-    }
-
-    volumePosition = projectedPosition.xyz / projectedPosition.w;
-    return all(volumePosition >= 0.0f) && all(volumePosition <= 1.0f);
-}
-
-bool IsInsideLightVolume(float4 projectedPosition) {
-    float3 volumePosition;
-    return GetLightVolumePosition(projectedPosition, volumePosition);
-}
-
 float CalcLightDistanceAttenuation(float lightDistanceSquared, float invRadiusSquared) {
     // 역제곱 감쇠에 반경 경계에서 부드럽게 0 이 되는 범위 감쇠를 적용한다.
     const float normalizedDistanceSquared = lightDistanceSquared * invRadiusSquared;
@@ -31,20 +16,10 @@ float CalcLightDistanceAttenuation(float lightDistanceSquared, float invRadiusSq
     return (rangeFade * rangeFade) / max(lightDistanceSquared, minDistanceSquared);
 }
 
-float3 EvaluateLocalLight(float3 lightOrigin, float3 lightColor, float invRadiusSquared, float3 worldPosition, in ShadingParams shading) {
-    const float3 lightVector = lightOrigin - worldPosition;
-    const float lightDistanceSquared = dot(lightVector, lightVector);
-    if (lightDistanceSquared <= FLT_MIN) {
-        return 0.0f;
-    }
-
-    const float attenuation = CalcLightDistanceAttenuation(lightDistanceSquared, invRadiusSquared);
-    if (attenuation <= 0.0f) {
-        return 0.0f;
-    }
-
-    const float3 lightDir = lightVector * rsqrt(lightDistanceSquared);
-    return lightColor * attenuation * EvaluateStandardDirectBRDF(shading, lightDir);
+float CalcSpotLightAngularAttenuation(float cosTheta, float cosOuterCone, float invCosConeDifference) {
+    // Inner 안쪽은 1, outer 바깥은 0. CPU 에서 준비한 계수로 픽셀당 삼각함수/나눗셈을 피한다.
+    const float coneFade = saturate((cosTheta - cosOuterCone) * invCosConeDifference);
+    return coneFade * coneFade;
 }
 
 float2 CalcPointLightProjectionUV(ShaderPointLight pointLight, float3 worldPosition) {
@@ -75,11 +50,25 @@ float3 EvaluatePointLight(ShaderPointLight pointLight, uint2 pixelCoord, float3 
 }
 
 float3 EvaluateSpotLight(ShaderSpotLight spotLight, uint2 pixelCoord, float3 worldPosition, in ShadingParams shading) {
-    const float4 projectedPosition = mul(spotLight.viewProjScaleBiasMatrix, float4(worldPosition, 1.0f));
-    if (!IsInsideLightVolume(projectedPosition)) {
+    const float3 lightVector = spotLight.origin - worldPosition;
+    const float lightDistanceSquared = dot(lightVector, lightVector);
+    if (lightDistanceSquared <= FLT_MIN) {
         return 0.0f;
     }
-    const float3 lighting = EvaluateLocalLight(spotLight.origin, spotLight.lightColor, spotLight.invRadiusSquared, worldPosition, shading);
+
+    const float distanceAttenuation = CalcLightDistanceAttenuation(lightDistanceSquared, spotLight.invRadiusSquared);
+    if (distanceAttenuation <= 0.0f) {
+        return 0.0f;
+    }
+
+    const float3 lightDir = lightVector * rsqrt(lightDistanceSquared);
+    const float cosTheta = dot(spotLight.direction, -lightDir);
+    const float angularAttenuation = CalcSpotLightAngularAttenuation(cosTheta, spotLight.cosOuterCone, spotLight.invCosConeDifference);
+    if (angularAttenuation <= 0.0f) {
+        return 0.0f;
+    }
+
+    const float3 lighting = spotLight.lightColor * (distanceAttenuation * angularAttenuation) * EvaluateStandardDirectBRDF(shading, lightDir);
     // 감쇠나 BRDF 로 기여가 사라진 픽셀에서는 shadow 테이블과 PCF 샘플링을 생략한다.
     [branch]
     if (!any(lighting > 0.0f)) {

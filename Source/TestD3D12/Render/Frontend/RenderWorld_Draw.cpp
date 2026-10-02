@@ -1151,14 +1151,15 @@ FrameLight *RenderWorld::RegisterFrameLight(RenderFrame *frame, RenderLight *ren
         frameLight->viewProjScaleBiasMatrix[0] = renderLight->viewProjScaleBiasMatrix[0];
         frameLight->viewProjScaleBiasMatrix[1] = renderLight->viewProjScaleBiasMatrix[1];
     } else if (renderLight->desc.type == RenderLight::Type::Spot) {
-        frameLight->viewProjScaleBiasMatrix = renderLight->viewProjScaleBiasMatrix;
-
+        frameLight->spotCosCone = renderLight->spotCosCone;
+        frameLight->spotInvCosConeDifference = renderLight->spotInvCosConeDifference;
+        frameLight->spotTanOuterCone = renderLight->spotTanOuterCone;
         frameLight->axis = renderLight->desc.axis;
     } else if (renderLight->desc.type == RenderLight::Type::Directional) {
         frameLight->axis = renderLight->desc.axis;
     }
     frameLight->origin = renderLight->desc.origin;
-    frameLight->size = renderLight->desc.size;
+    frameLight->range = renderLight->desc.range;
     frameLight->lightColor = renderLight->desc.linearColor * renderLight->desc.intensity;
     frameLight->zNear = renderLight->desc.zNear;
     frameLight->shadowOffsetUnits = renderLight->desc.shadowOffsetUnits;
@@ -2073,7 +2074,7 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
         if (frameShadow->updateDepth) {
             // 갱신할 그림자의 컬링 공통 계산은 카메라마다 한 번 준비한다.
             if (shadowLight->type == RenderLight::Type::Point) {
-                const float lightRadius = BE1::Max(shadowLight->size[0], RenderLight::MinLightSize);
+                const float lightRadius = shadowLight->range;
                 frameShadow->squaredRadius = lightRadius * lightRadius;
 
                 entry->pointOrigin = shadowLight->origin;
