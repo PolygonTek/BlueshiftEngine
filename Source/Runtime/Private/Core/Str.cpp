@@ -1415,13 +1415,13 @@ int BE_CDECL vsprintf(Str &string, const char *fmt, va_list argptr) {
     return l;
 }
 
-// does a varargs printf into a temp buffer
-// NOTE: not thread safe
+// does a varargs printf into a per-thread temp buffer
+// The returned buffer is reused after four more calls on the same thread and expires when that thread exits.
 #define VA_BUF_LEN 16384
 char BE_CDECL *va(const char *fmt, ...) {
     va_list argptr;
-    static int index = 0;
-    static char string[4][VA_BUF_LEN];  // 재귀 호출이 4번까지는 가능하다.
+    static thread_local int index = 0;
+    static thread_local char string[4][VA_BUF_LEN];  // 재귀 호출이 4번까지는 가능하다.
     char *buf = string[index];
     index = (index + 1) & 3;
 
