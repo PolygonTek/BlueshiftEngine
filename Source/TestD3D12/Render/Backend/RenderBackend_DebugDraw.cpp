@@ -23,7 +23,8 @@ static constexpr uint32_t DebugLightCircleMediumSegments = 24;
 static constexpr uint32_t DebugUnitCircleSegmentCount = 48;
 static constexpr float DebugLightCircleLowMaxRadiusPixels = 24.0f;
 static constexpr float DebugLightCircleMediumMaxRadiusPixels = 96.0f;
-static constexpr uint32_t DebugSpotConeVertexCount = DebugLightCircleMediumSegments * 2 + 8;
+static constexpr uint32_t DebugSpotArcSegments = 16;
+static constexpr uint32_t DebugSpotConeVertexCount = DebugLightCircleMediumSegments * 2 + 8 + DebugSpotArcSegments * 4;
 static constexpr float MinDebugLightSize = 0.01f;
 static constexpr float MinDebugLightRadiusPixels = 1.0f;
 
@@ -112,11 +113,13 @@ static void WriteDebugPointLight(DebugDrawVertex *&vertexPtr, const FrameLight *
     WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[0], BE1::Mat3::identity[1], radius, numSegments, color);
 }
 
-// 방사형 range 구면과 콘이 만나는 원, 원점에서 원으로 향하는 네 모서리를 LineList 로 기록한다.
+// 방사형 range 구면과 콘이 만나는 원, 원점에서 원으로 향하는 네 모서리, 구면 끝의 직교하는 두 arc 를 LineList 로 기록한다.
 static void WriteDebugSpotCone(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, float cosCone, uint32_t color) {
+    const float sinCone = BE1::Math::Sqrt(BE1::Max(0.0f, 1.0f - cosCone * cosCone));
     const float coneLength = frameLight->range * cosCone;
-    const float coneRadius = frameLight->range * BE1::Math::Sqrt(BE1::Max(0.0f, 1.0f - cosCone * cosCone));
-    const BE1::Vec3 center = frameLight->origin + frameLight->axis[EngineAxis::Forward] * coneLength;
+    const float coneRadius = frameLight->range * sinCone;
+    const BE1::Vec3 &forward = frameLight->axis[EngineAxis::Forward];
+    const BE1::Vec3 center = frameLight->origin + forward * coneLength;
     const BE1::Vec3 &left = frameLight->axis[EngineAxis::Left];
     const BE1::Vec3 &up = frameLight->axis[EngineAxis::Up];
     WriteDebugCircle(vertexPtr, center, left, up, coneRadius, DebugLightCircleMediumSegments, color);
@@ -125,6 +128,41 @@ static void WriteDebugSpotCone(DebugDrawVertex *&vertexPtr, const FrameLight *fr
         const BE1::Vec2 &point = debugUnitCircle[pointIndex];
         WriteDebugDrawVertex(vertexPtr, frameLight->origin, color);
         WriteDebugDrawVertex(vertexPtr, center + (left * point.x + up * point.y) * coneRadius, color);
+    }
+
+    // 한 번 계산한 회전 증분을 두 arc 에 공유하여 세그먼트마다 삼각함수를 계산하지 않는다.
+    float sinStep;
+    float cosStep;
+    BE1::Math::SinCos(2.0f * BE1::Math::ACos(cosCone) / static_cast<float>(DebugSpotArcSegments), sinStep, cosStep);
+    float cosAngle = cosCone;
+    float sinAngle = -sinCone;
+    BE1::Vec3 previousLeft = center - left * coneRadius;
+    BE1::Vec3 previousUp = center - up * coneRadius;
+
+    for (uint32_t segmentIndex = 1; segmentIndex <= DebugSpotArcSegments; ++segmentIndex) {
+        // 중앙과 끝점은 정확히 맞춰 두 arc 의 교차점과 경계 원의 연결을 유지한다.
+        if (segmentIndex == DebugSpotArcSegments / 2) {
+            cosAngle = 1.0f;
+            sinAngle = 0.0f;
+        } else if (segmentIndex == DebugSpotArcSegments) {
+            cosAngle = cosCone;
+            sinAngle = sinCone;
+        } else {
+            const float nextCosAngle = cosAngle * cosStep - sinAngle * sinStep;
+            sinAngle = sinAngle * cosStep + cosAngle * sinStep;
+            cosAngle = nextCosAngle;
+        }
+
+        const BE1::Vec3 arcCenter = frameLight->origin + forward * (frameLight->range * cosAngle);
+        const float arcRadius = frameLight->range * sinAngle;
+        const BE1::Vec3 nextLeft = arcCenter + left * arcRadius;
+        const BE1::Vec3 nextUp = arcCenter + up * arcRadius;
+        WriteDebugDrawVertex(vertexPtr, previousLeft, color);
+        WriteDebugDrawVertex(vertexPtr, nextLeft, color);
+        WriteDebugDrawVertex(vertexPtr, previousUp, color);
+        WriteDebugDrawVertex(vertexPtr, nextUp, color);
+        previousLeft = nextLeft;
+        previousUp = nextUp;
     }
 }
 
