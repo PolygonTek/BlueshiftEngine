@@ -48,9 +48,8 @@ public:
             Layer                   = BIT(1),   // layer
             Transform               = BIT(2),   // origin, axis
             Shape                   = BIT(3),   // type, range, zNear, innerConeAngle, outerConeAngle
-            ProjectionPolicy        = BIT(4),   // projectionPolicy
-            Lighting                = BIT(5),   // linearColor, intensity
-            Shadow                  = BIT(6)    // shadowOffsetUnits, shadowOffsetFactor
+            Lighting                = BIT(4),   // linearColor, intensity
+            Shadow                  = BIT(5)    // shadowOffsetUnits, shadowOffsetFactor
         };
 
         friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
@@ -66,12 +65,11 @@ public:
         float                       outerConeAngle = 45.0f;             ///< Spot half-angle from the forward axis, in degrees
 
         float                       zNear = 0.1f;                       ///< Shadow near distance, capped at half the range; does not clip illumination
-        RHI::ProjectionPolicy       projectionPolicy;                   ///< projection convention used for shader-visible matrices
+        float                       shadowOffsetUnits = 1500.0f;
+        float                       shadowOffsetFactor = 3.0f;
 
         BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB chromaticity in [0, 1], normalized by luminance; black emits no light
         float                       intensity = 1.0f;                   ///< Finite, nonnegative: Directional normal illuminance in lux; Point/Spot intensity in cd (inside the Spot inner cone)
-        float                       shadowOffsetUnits = 1500.0f;
-        float                       shadowOffsetFactor = 3.0f;
     };
 
     RenderLight() = default;
@@ -120,7 +118,6 @@ private:
     void                            UpdateLayer(uint8_t layer);
     void                            UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis);
     void                            UpdateShape(Type type, float range, float zNear, float innerConeAngle, float outerConeAngle);
-    void                            UpdateProjectionPolicy(const RHI::ProjectionPolicy &projectionPolicy);
     void                            UpdateLighting(const BE1::Color3 &linearColor, float intensity);
     void                            UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor);
     void                            UpdateViewMatrix();

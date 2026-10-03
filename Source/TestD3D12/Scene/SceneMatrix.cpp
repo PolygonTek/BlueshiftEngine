@@ -174,8 +174,6 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
     gameLights.Reserve(lightCount);
 
     constexpr float radius = 8.0f;
-    constexpr float minLightIntensity = 1.0f;
-    constexpr float maxLightIntensity = 5.0f;
 
     const float startX = -lightSpacing * (lightCountX - 1) * 0.5f;
     const float startY = -lightSpacing * (lightCountY - 1) * 0.5f;
@@ -194,8 +192,7 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
                     startZ + lightSpacing * z + lightOriginZOffset);
                 gameLight.range = radius;
 
-                // 밝기와 색상을 독립적으로 무작위 선택한다.
-                gameLight.intensity = rng.GetNextFloat(minLightIntensity, maxLightIntensity);
+                gameLight.intensity = 8.0f;
                 const float hue = rng.GetNextFloat();
                 gameLight.linearColor = BE1::Color3::FromHSL(hue, 1.0f, 0.5f).SRGBToLinear();
 

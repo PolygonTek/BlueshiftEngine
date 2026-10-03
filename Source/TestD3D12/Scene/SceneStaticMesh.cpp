@@ -93,7 +93,7 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     spotLight.range = 5.0f;
     spotLight.innerConeAngle = 10.0f;
     spotLight.outerConeAngle = 20.0f;
-    spotLight.linearColor = BE1::Color3(1.0f, 0.5f, 0.2f);
+    spotLight.linearColor = BE1::Color3(0.2f, 0.45f, 1.0f);
     spotLight.intensity = 30.0f;
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
 }

@@ -28,13 +28,6 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
 
     bool updateProjectionAndBounds = false;
 
-    if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::ProjectionPolicy)) {
-        if (desc.projectionPolicy != src.projectionPolicy) {
-            desc.projectionPolicy = src.projectionPolicy;
-            updateProjectionAndBounds = true;
-        }
-    }
-
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Lighting)) {
         UpdateLighting(src.linearColor, src.intensity);
     }
@@ -53,7 +46,7 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shape)) {
-        // Transform 과 projection policy 는 위에서 반영했으므로 경계 계산은 한 번만 수행한다.
+        // Transform 은 위에서 반영했으므로 경계 계산은 한 번만 수행한다.
         UpdateShape(src.type, src.range, src.zNear, src.innerConeAngle, src.outerConeAngle);
     } else if (updateProjectionAndBounds) {
         UpdateProjectionAndBounds();
@@ -95,13 +88,6 @@ void RenderLight::UpdateShape(Type type, float range, float zNear, float innerCo
     UpdateProjectionAndBounds();
 }
 
-void RenderLight::UpdateProjectionPolicy(const RHI::ProjectionPolicy &projectionPolicy) {
-    if (desc.projectionPolicy != projectionPolicy) {
-        desc.projectionPolicy = projectionPolicy;
-        UpdateProjectionAndBounds();
-    }
-}
-
 void RenderLight::UpdateLighting(const BE1::Color3 &linearColor, float intensity) {
     assert(linearColor.r >= 0.0f && linearColor.r <= 1.0f);
     assert(linearColor.g >= 0.0f && linearColor.g <= 1.0f);
@@ -138,15 +124,14 @@ void RenderLight::UpdateProjectionAndBounds() {
         return;
     }
 
-    const bool zNegativeOneToOne = desc.projectionPolicy.IsZNegativeOneToOne();
-    const bool reverseZ = desc.projectionPolicy.reverseZ;
     worldSphere = BE1::Sphere(desc.origin, desc.range);
 
+    // 광원 투영은 카메라와 독립적으로 [0, 1] 정방향 depth 를 사용한다.
     if (desc.type == Type::Point) {
         // Point lights always use a spherical bounding volume and radial fall-off.
         // Project a planar texture through the spherical light volume along axis[0].
         const float radius = desc.range;
-        projMatrix.SetOrthoRH(-radius, radius, -radius, radius, -radius, radius, zNegativeOneToOne, reverseZ);
+        projMatrix.SetOrthoRH(-radius, radius, -radius, radius, -radius, radius, false, false);
     } else if (desc.type == Type::Spot) {
         const float zNear = BE1::Min(BE1::Max(desc.zNear, MinLightSize), desc.range * 0.5f);
         const float halfSize = desc.range * spotTanOuterCone;
@@ -158,7 +143,7 @@ void RenderLight::UpdateProjectionAndBounds() {
         worldFrustum.SetSize(0.0f, desc.range, halfSize, halfSize);
 
         // 정사각 투영의 FOV 는 outer 반각의 두 배다. 조명 감쇠는 이 투영과 독립적이다.
-        projMatrix.SetPerspectiveRH(desc.outerConeAngle * 2.0f, 1.0f, zNear, desc.range, zNegativeOneToOne, reverseZ, false);
+        projMatrix.SetPerspectiveRH(desc.outerConeAngle * 2.0f, 1.0f, zNear, desc.range, false, false, false);
     } else {
         assert(0);
     }

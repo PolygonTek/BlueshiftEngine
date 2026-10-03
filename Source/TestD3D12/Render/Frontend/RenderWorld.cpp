@@ -367,13 +367,6 @@ void RenderWorld::UpdateRenderLightShape(int index, RenderLight::Type type, floa
     renderLight->UpdateShape(type, range, zNear, innerConeAngle, outerConeAngle);
 }
 
-void RenderWorld::UpdateRenderLightProjectionPolicy(int index, const RHI::ProjectionPolicy &projectionPolicy) {
-    RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightProjectionPolicy");
-    if (renderLight) {
-        renderLight->UpdateProjectionPolicy(projectionPolicy);
-    }
-}
-
 void RenderWorld::UpdateRenderLightLighting(int index, const BE1::Color3 &linearColor, float intensity) {
     RenderLight *renderLight = GetRenderLightForUpdate(index, "RenderWorld::UpdateRenderLightLighting");
     if (renderLight) {
