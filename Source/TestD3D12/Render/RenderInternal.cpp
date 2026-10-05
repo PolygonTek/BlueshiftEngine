@@ -52,7 +52,7 @@ void FrameLight::CalcSpotShadowProjection(FrameLocalShadowView &shadowView) cons
     shadowView.frustum.SetSize(zNear, zFar, left, up);
     shadowView.frustum.ToPlanes(shadowView.frustumPlanes);
 
-    // Shadow 는 카메라 projection policy 와 무관하게 near = 0, far = 1 의 유한 정방향 depth 를 사용한다.
+    // Local shadow 는 카메라 projection policy 와 무관하게 near = 1, far = 0 의 유한 reverse-Z 를 사용한다.
 #if 0
     // 아래 직접 계산과 동등한 참조 구현. SetFrustumRH 는 near 평면의 반폭/반높이를 받는다.
     ALIGN_AS32 BE1::Mat4 viewMatrix;
@@ -63,12 +63,13 @@ void FrameLight::CalcSpotShadowProjection(FrameLocalShadowView &shadowView) cons
     const float nearUp = up * nearScale;
 
     ALIGN_AS32 BE1::Mat4 projMatrix;
-    projMatrix.SetFrustumRH(-nearLeft, nearLeft, -nearUp, nearUp, zNear, zFar, false, false, false);
+    projMatrix.SetFrustumRH(-nearLeft, nearLeft, -nearUp, nearUp, zNear, zFar, false, true, false);
     shadowView.viewProjMatrix = projMatrix * viewMatrix;
 #else
     const float xScale = zFar / left;
     const float yScale = zFar / up;
-    const float depthScale = zFar / (zFar - zNear);
+    const float depthScale = -zNear / (zFar - zNear);
+    const float depthBias = -zFar * depthScale;
     const float distLeft = axis[EngineAxis::Left].Dot(origin);
     const float distUp = axis[EngineAxis::Up].Dot(origin);
     const float distForward = axis[EngineAxis::Forward].Dot(origin);
@@ -76,7 +77,7 @@ void FrameLight::CalcSpotShadowProjection(FrameLocalShadowView &shadowView) cons
     // viewProjMatrix 를 직접 구성하여 별도의 view/projection 행렬 구성과 행렬 곱을 생략한다.
     shadowView.viewProjMatrix[0] = BE1::Vec4(axis[EngineAxis::Left] * -xScale, distLeft * xScale);
     shadowView.viewProjMatrix[1] = BE1::Vec4(axis[EngineAxis::Up] * yScale, -distUp * yScale);
-    shadowView.viewProjMatrix[2] = BE1::Vec4(axis[EngineAxis::Forward] * depthScale, -(distForward + zNear) * depthScale);
+    shadowView.viewProjMatrix[2] = BE1::Vec4(axis[EngineAxis::Forward] * depthScale, depthBias - distForward * depthScale);
     shadowView.viewProjMatrix[3] = BE1::Vec4(axis[EngineAxis::Forward], -distForward);
 #endif
 }
@@ -102,8 +103,8 @@ BE1::Vec2 FrameLight::CalcPointShadowProjections(FrameLocalShadowView shadowView
     const float zNear = depthRange.x;
     const float zFar = depthRange.y;
     const float halfSize = zFar / xyScale;
-    const float depthScale = zFar / (zFar - zNear);
-    const float depthBias = -zNear * depthScale;
+    const float depthScale = -zNear / (zFar - zNear);
+    const float depthBias = -zFar * depthScale;
 
     for (uint32_t faceIndex = 0; faceIndex < 6; ++faceIndex) {
         FrameLocalShadowView &shadowView = shadowViews[faceIndex];
@@ -128,14 +129,14 @@ BE1::Vec2 FrameLight::CalcPointShadowProjections(FrameLocalShadowView shadowView
         const float nearHalfSize = halfSize * nearScale;
 
         ALIGN_AS32 BE1::Mat4 projMatrix;
-        projMatrix.SetFrustumRH(-nearHalfSize, nearHalfSize, -nearHalfSize, nearHalfSize, zNear, zFar, false, false, false);
+        projMatrix.SetFrustumRH(-nearHalfSize, nearHalfSize, -nearHalfSize, nearHalfSize, zNear, zFar, false, true, false);
         shadowView.viewProjMatrix = projMatrix * viewMatrix;
 #else
         const float distLeft = faceAxis[EngineAxis::Left].Dot(origin);
         const float distUp = faceAxis[EngineAxis::Up].Dot(origin);
         const float distForward = faceAxis[EngineAxis::Forward].Dot(origin);
 
-        // 6면이 공유하는 투영 계수로 직접 구성한다. Z/W 는 near = 0, far = 1 이며 W 는 면의 전방 거리이다.
+        // 6면이 공유하는 투영 계수로 직접 구성한다. Z/W 는 near = 1, far = 0 이며 W 는 면의 전방 거리이다.
         shadowView.viewProjMatrix[0] = BE1::Vec4(faceAxis[EngineAxis::Left] * -xyScale, distLeft * xyScale);
         shadowView.viewProjMatrix[1] = BE1::Vec4(faceAxis[EngineAxis::Up] * xyScale, -distUp * xyScale);
         shadowView.viewProjMatrix[2] = BE1::Vec4(faceAxis[EngineAxis::Forward] * depthScale, depthBias - distForward * depthScale);

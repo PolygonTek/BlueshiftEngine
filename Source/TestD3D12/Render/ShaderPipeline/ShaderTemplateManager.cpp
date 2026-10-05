@@ -21,6 +21,7 @@
 ShaderTemplateManager       shaderTemplateManager;
 
 static constexpr char       SpecularEnergyCompensationDefine[] = "USE_MULTIPLE_SCATTERING_COMPENSATION=1";
+static constexpr char       ShadowRotationTextureDefine[] = "USE_SHADOW_ROTATION_TEXTURE=1";
 
 void ShaderTemplateManager::Init() {
     shaderTemplateHashMap.Init(128, 128, 128);
@@ -79,6 +80,19 @@ void ShaderTemplateManager::ProcessPendingGlobalDefineChanges() {
             shadowMapQuality = quality;
             RemoveGlobalDefine("SHADOW_MAP_QUALITY");
             AddGlobalDefine(BE1::va("SHADOW_MAP_QUALITY=%i", shadowMapQuality));
+        }
+    }
+
+    if (r_shadowMapRotationUseTexture.IsModified()) {
+        r_shadowMapRotationUseTexture.ClearModified();
+
+        const bool defineExists = FindGlobalDefine(ShadowRotationTextureDefine);
+        if (r_shadowMapRotationUseTexture.GetBool()) {
+            if (!defineExists) {
+                AddGlobalDefine(ShadowRotationTextureDefine);
+            }
+        } else if (defineExists) {
+            RemoveGlobalDefine(ShadowRotationTextureDefine);
         }
     }
 
@@ -200,11 +214,15 @@ void ShaderTemplateManager::InitGlobalDefines() {
         AddGlobalDefine("PACKED_TANGENT_FRAME_DIAMOND_ENCODING");
     #endif
 #endif
-    AddGlobalDefine(BE1::va("CSM_COUNT=%i", static_cast<int>(RenderContext::CSMCascadeCount)));
+    AddGlobalDefine(BE1::va("CSM_COUNT=%i", static_cast<int>(RenderContext::CSMCascadeMaxCount)));
     AddGlobalDefine(BE1::va("CASCADE_SELECTION_METHOD=%i", 1));
 
     shadowMapQuality = r_shadowMapQuality2.GetInteger();
     AddGlobalDefine(BE1::va("SHADOW_MAP_QUALITY=%i", shadowMapQuality));
+
+    if (r_shadowMapRotationUseTexture.GetBool()) {
+        AddGlobalDefine(ShadowRotationTextureDefine);
+    }
 
     if (r_specularEnergyCompensation2.GetBool()) {
         AddGlobalDefine(SpecularEnergyCompensationDefine);

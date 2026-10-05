@@ -30,39 +30,38 @@ enum class RenderAOMode : uint32_t {
 // 메인 스레드에서 프레임 시작 시 생성되고, 해당 프레임 동안 변경되지 않는 렌더 설정이다.
 // 모든 멤버는 사용 전에 CaptureRenderFrameSettings() 에서 설정한다.
 struct RenderFrameSettings {
-    static constexpr float      ShadowMapFilterRadiusMin = 1.0f;
-    static constexpr float      ShadowMapFilterRadiusMax = 4.0f;
-    static constexpr uint32_t   ShadowMapFilterReferenceResolution = 1024;  ///< Filter radius 와 border 를 shadow map 해상도에 맞춰 환산하는 기준 해상도.
-    static constexpr uint32_t   ShadowMapFilterReferenceBorderTexels = 6;   ///< 기준 해상도에서 한쪽 shadow map border texel 수 (1.25 * 4 + 1 = 6 texel safety).
-    static constexpr float      ShadowMapPoissonKernelMaxRadius = 1.25f;    ///< Shadow map border 계산용. 회전된 Poisson sample 의 최대 정규화 반경 (실제 약 1.234).
+    static constexpr uint32_t   CSMCascadeMaxCount = 4;
+    static constexpr uint32_t   CSMFilterReferenceResolution = 1024;        ///< CSM filter radius 와 border 의 기준 해상도.
+    static constexpr float      CSMFilterReferenceMinRadius = 1.0f;
+    static constexpr float      CSMFilterReferenceMaxRadius = 5.0f;
+    static constexpr uint32_t   CSMFilterReferenceBorderTexels = 6;         ///< 최대 샘플 반경 5 texel + bilinear 여유 1 texel.
 
     static constexpr uint32_t   LocalShadowMinProjectedSize = 32;           ///< Local shadow 후보의 최소 투영 크기 (긴 변). 내부 렌더 해상도 기준 픽셀.
     static constexpr uint32_t   ShadowAtlasMinTileResolution = 64;          ///< Border 를 포함한 local shadow atlas 타일의 최소 해상도.
     static constexpr uint32_t   ShadowAtlasMaxUpdateInterval = 16;          ///< 최대 shadow 갱신 간격 (프레임 수, 2의 거듭제곱).
 
-    static constexpr uint32_t   CSMCascadeCount = 4;
-
     uint32_t                    mainRTSampleCount;
 
     uint32_t                    shadowDebugMode;
     uint32_t                    shadowMapQuality;
-    float                       shadowMapFilterRadius;
+    float                       shadowMapLocalFilterTanHalfAngle;           ///< Point/Spot Q3 필터 반각의 tangent.
 
     uint32_t                    shadowAtlasSize;
     uint32_t                    shadowAtlasMaxTileResolution;               ///< Spot 또는 Point 한 면의 최대 타일 해상도. Border 포함.
-    uint32_t                    shadowAtlasMaxViews;                        ///< 카메라별 view 예산. Spot 은 1, Point 는 6 을 사용하며 0 이면 비활성화.
-    bool                        shadowAtlasLoadBalancing;                   ///< 투영 크기가 작을수록 local shadow 의 갱신 간격을 늘린다.
-    float                       shadowProjectedSizeScale;                   ///< Spot/Point 요청 해상도 선택 시 광원 투영 크기에 곱하는 배율.
+    uint32_t                    shadowAtlasMaxViews;                        ///< 카메라별 shadow view 예산. Spot 은 1, Point 는 6 을 사용하며 0 이면 비활성화.
+    bool                        shadowAtlasLoadBalancing;                   ///< 광원의 화면 투영 크기가 작을수록 shadow 의 갱신 프레임 간격을 늘린다.
+    float                       shadowProjectedSizeScale;                   ///< Spot/Point 라이트의 요청 해상도 계산 시 광원의 화면 투영 크기에 곱하는 배율.
     uint32_t                    shadowUpdateMinProjectedSize;               ///< 매 프레임 갱신할 광원 투영 영역의 최소 긴 변. 배율 적용 전 내부 렌더 픽셀 기준.
 
     uint32_t                    csmResolution;
+    float                       csmFilterRadius;                             ///< 기준 해상도에서의 Q3 최대 샘플 반경 (texel).
     uint32_t                    csmCascadeCount;
     float                       csmSplitLambda;
     float                       csmMaxDistance;
     float                       csmBlendFraction;
     float                       csmFadeFraction;
-    float                       csmConstantDepthBias[CSMCascadeCount];
-    float                       csmSlopeScaledDepthBias[CSMCascadeCount];
+    float                       csmConstantDepthBias[CSMCascadeMaxCount];
+    float                       csmSlopeScaledDepthBias[CSMCascadeMaxCount];
     
     uint32_t                    lightCullingDebugMode;
 

@@ -716,17 +716,17 @@ static bool CalcCSMCascadeProjection(CSMCascade &cascade, const BE1::Mat3 &light
     // caster 출입이나 sphere 중심 이동이 depthRange 를 바꾸지 않도록 반경에서 직접 계산한다.
     const float depthPadding = BE1::Max(0.001f, 2.0f * radius * 0.0001f);
     const float depthExtent = radius + depthPadding;
-    const float depthMin = distForward - depthExtent;
+    const float depthMax = distForward + depthExtent;
     const float invDepthRange = 0.5f / depthExtent;
 
     // world-space sphere center 로 OBB 를 만든다. 광원 near 밖의 caster 는 depth clamp 로 보존한다.
     cascade.shadowMapBounds = BE1::OBB(shadowCenter, BE1::Vec3(depthExtent, shadowMapExtent, shadowMapExtent), lightAxis);
 
-    // receiver sphere 만으로 view-projection matrix 를 완성한다.
+    // receiver sphere 만으로 reverse-Z (near 1, far 0) view-projection matrix 를 완성한다.
     const float invExtent = 1.0f / shadowMapExtent;
     cascade.viewProjMatrix[0] = BE1::Vec4(lightAxis[EngineAxis::Left] * -invExtent, distLeft * invExtent);
     cascade.viewProjMatrix[1] = BE1::Vec4(lightAxis[EngineAxis::Up] * invExtent, -distUp * invExtent);
-    cascade.viewProjMatrix[2] = BE1::Vec4(lightAxis[EngineAxis::Forward] * invDepthRange, -depthMin * invDepthRange);
+    cascade.viewProjMatrix[2] = BE1::Vec4(lightAxis[EngineAxis::Forward] * -invDepthRange, depthMax * invDepthRange);
     cascade.viewProjMatrix[3] = BE1::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
     return true;
@@ -769,10 +769,9 @@ void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamer
     }
 
     const uint32_t shadowMapResolution = renderContext->GetCSMResolution();
-    const uint32_t shadowMapBorderTexels = CalcShadowMapBorderTexels(shadowMapResolution, frameSettings.shadowMapQuality);
-    constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapFilterReferenceResolution - 2 * RenderFrameSettings::ShadowMapFilterReferenceBorderTexels);
-    const float usableShadowResolution = static_cast<float>(shadowMapResolution - 2 * shadowMapBorderTexels);
-    const float filterResolutionScale = usableShadowResolution / referenceUsableResolution;
+    constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::CSMFilterReferenceResolution - 2 * RenderFrameSettings::CSMFilterReferenceBorderTexels);
+    constexpr float filterRadiusScale = RenderFrameSettings::CSMFilterReferenceMaxRadius / referenceUsableResolution;
+    const uint32_t shadowMapBorderTexels = frameSettings.shadowMapQuality < 3 ? 2 : CalcShadowMapBorderTexels(shadowMapResolution, filterRadiusScale);
 
     FrameCascadedShadow *frameCascadedShadow = new (frame->MemAlloc(sizeof(FrameCascadedShadow))) FrameCascadedShadow();
     frameCascadedShadow->cascadeCount = frameSettings.csmCascadeCount;
@@ -804,15 +803,20 @@ void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamer
         frameCascadedShadow->shaderData.worldToShadowCoordMatrices[cascadeIndex] = BuildWorldToShadowCoordMatrix(cascade.viewProjMatrix);
     }
 
-    float cascadeFilterRadii[RenderFrameSettings::CSMCascadeCount] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    const float cascade0WorldUnitsPerTexel = frameCascadedShadow->cascades[0].worldUnitsPerTexel;
-    const float cascade0FilterRadius = frameSettings.shadowMapFilterRadius * filterResolutionScale;
-    const float minFilterRadius = RenderFrameSettings::ShadowMapFilterRadiusMin * filterResolutionScale;
-    const float worldFilterRadius = cascade0FilterRadius * cascade0WorldUnitsPerTexel;
+    // csmFilterRadius 는 reference resolution 기준으로 되어 있으므로 shadow map resolution 에 맞추기 위해 scale 값을 계산한다.
+    const float shadowMapUsableResolution = static_cast<float>(shadowMapResolution - 2 * shadowMapBorderTexels);
+    const float filterResolutionScale = shadowMapUsableResolution / referenceUsableResolution;
+
+    const float minFilterRadius = RenderFrameSettings::CSMFilterReferenceMinRadius * filterResolutionScale;
+    const float maxFilterRadius = frameSettings.csmFilterRadius * filterResolutionScale;
+    const float cascade0FilterRadiusInWorld = maxFilterRadius * frameCascadedShadow->cascades[0].worldUnitsPerTexel;
+
+    // 각 cascade 의 filter radius 를 cascade 0 와 동일한 월드 반경이 되도록 texel 단위로 계산한다.
+    float cascadeFilterRadii[RenderFrameSettings::CSMCascadeMaxCount] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
     for (uint32_t cascadeIndex = 0; cascadeIndex < frameCascadedShadow->cascadeCount; cascadeIndex++) {
         const float worldUnitsPerTexel = frameCascadedShadow->cascades[cascadeIndex].worldUnitsPerTexel;
-        cascadeFilterRadii[cascadeIndex] = BE1::Clamp(worldFilterRadius / worldUnitsPerTexel, minFilterRadius, cascade0FilterRadius);
+        cascadeFilterRadii[cascadeIndex] = BE1::Max(cascade0FilterRadiusInWorld / worldUnitsPerTexel, minFilterRadius);
     }
 
     // RenderObject 를 한 번 순회하여 caster 와 cascade mask 를 수집한다.
@@ -2057,11 +2061,17 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
         }
 
         // 갱신할 때만 실제 해상도와 현재 품질에 맞는 PCF/bilinear footprint 용 border 를 적용한다.
-        // 스킵 프레임은 기존 depth 와 같은 border 로 투영/샘플링 정보를 구성한다.
         if (frameShadow->updateDepth) {
-            entry->borderTexels = CalcShadowMapBorderTexels(frameShadow->resolution, shadowMapQuality);
+            // filterRadiusScale = 필터 반경 / 전체 너비
+            // filterRadiusScale = dist * tan(filterHalfAngle) / (dist * tan(projectionHalfAngle) * 2)
+            // filterRadiusScale = tan(filterHalfAngle) * 0.5 / tan(projectionHalfAngle)
+            entry->filterProjectionScale = shadowLight->type == RenderLight::Type::Point ? 0.5f : 0.5f / shadowLight->spotTanOuterCone;
+            const float filterRadiusScale = frameSettings.shadowMapLocalFilterTanHalfAngle * entry->filterProjectionScale;
+
+            entry->borderTexels = shadowMapQuality < 3 ? 2 : CalcShadowMapBorderTexels(frameShadow->resolution, filterRadiusScale);
             frameShadow->hasValidDepth = false; // 갱신 결과는 백엔드에서 depth 기록 후 확정한다.
         }
+        frameShadow->filterProjectionScale = entry->filterProjectionScale;
 
         FrameLocalShadowView *shadowViews = &frameShadowAtlas->shadowViews[frameShadow->firstShadowView];
         for (uint32_t viewIndex = 0; viewIndex < shadowViewCount; ++viewIndex) {

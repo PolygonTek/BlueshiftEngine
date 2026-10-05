@@ -155,7 +155,7 @@ static const uint ShaderLightCullingDebugModeTileMaskAndZBin = 2;
 static const uint ShaderShadowDebugModeNone = 0;
 static const uint ShaderShadowDebugModeVisibility = 1;
 static const uint ShaderShadowDebugModeCascadeCoverage = 2;
-static const uint ShaderCSMCascadeCount = 4;
+static const uint ShaderCSMCascadeMaxCount = 4;
 
 static const uint ShaderLocalShadowIndexInvalid = 0xFFFFFFFFu;
 
@@ -767,7 +767,7 @@ struct ShaderLocalShadow {
 // Spot 한 개 또는 Point 한 면의 샘플링 정보. 렌더링용 ShadowViewConstants 와 별도다.
 struct ShaderLocalShadowView {
     // world position -> homogeneous tile coordinate. XYZ 를 W 로 나눈 뒤 XY 는 타일 전체의 UV (Y down), Z 는 비교 depth [0, 1].
-    // border 를 포함한 렌더링 투영을 사용하며 near = 0, far = 1 이다. perspective divide 전 W <= 0 은 샘플링하지 않는다.
+    // border 를 포함한 reverse-Z 렌더링 투영을 사용하며 near = 1, far = 0 이다. perspective divide 전 W <= 0 은 샘플링하지 않는다.
     // 포인트 라이트는 보존한 위치와 depth 계수로 좌표를 직접 계산하므로 이 행렬을 사용하지 않는다.
     row_major float4x4 worldToShadowCoordMatrix;
     float4 atlasScaleBias;      // XY = tileSize / atlasSize, ZW = tileOrigin / atlasSize. atlasUV = tileUV * XY + ZW.
@@ -799,7 +799,7 @@ struct ShaderCSMData {
     // world position -> shadow texture coordinate.
     // XY 는 UV, Z 는 비교할 depth [0, 1].
     // orthogonal projection 이므로 perspective divide 없이 float3x4 로 표현할 수 있다.
-    row_major float3x4 worldToShadowCoordMatrices[ShaderCSMCascadeCount];
+    row_major float3x4 worldToShadowCoordMatrices[ShaderCSMCascadeMaxCount];
 
     uint textureIndex;          // Texture2DArray<float> 의 bindless SRV index.
     uint cascadeCount;

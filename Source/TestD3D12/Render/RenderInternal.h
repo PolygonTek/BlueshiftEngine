@@ -102,9 +102,9 @@ struct RenderPass {
     RenderPassDrawSurf *            drawSurfStorage;
 };
 
-// 한 cascade 의 광원 투영과 depth pass 데이터.
+// XY 범위는 border 를 포함하고, XY 중심은 texel grid 에 snap 된다.
+// Z 범위는 receiver sphere 와 깊이 여유분으로 정한다.
 struct CSMCascade {
-    // XY 는 border 를 포함하여 texel grid 에 snap 되고, Z 범위는 receiver sphere 와 깊이 여유분으로 정한다.
     BE1::OBB                        shadowMapBounds;                ///< shadow-map 투영 영역의 world space OBB.
     float                           worldUnitsPerTexel = 0.0f;      ///< shadow-map texel 하나가 차지하는 world-space 길이.
     ALIGN_AS32 BE1::Mat4            viewProjMatrix;                 ///< shadow-map view-projection matrix.
@@ -114,12 +114,11 @@ struct CSMCascade {
     CSMCascade() { renderPass.type = RenderPassType::Shadow; }
 };
 
-// 한 프레임 동안 한 카메라의 cascaded shadow 렌더링에 사용하는 공통 데이터.
 struct FrameCascadedShadow {
     uint32_t                        cascadeCount = 0;
-    float                           splitDistances[RenderFrameSettings::CSMCascadeCount + 1] = {};
+    float                           splitDistances[RenderFrameSettings::CSMCascadeMaxCount + 1] = {};
     BE1::Plane                      viewPlanes[6];                  ///< 전체 CSM 카메라 view volume. 모든 cascade caster 컬링에 공유한다.
-    CSMCascade                      cascades[RenderFrameSettings::CSMCascadeCount];
+    CSMCascade                      cascades[RenderFrameSettings::CSMCascadeMaxCount];
 
     ShaderCSMData                   shaderData {};                  ///< 메인 조명 패스에서 사용할 샘플링 데이터.
     RHI::Texture *                  depthTexture = nullptr;         ///< RenderContext 소유 shadow texture 에 대한 비소유 참조.
@@ -128,7 +127,7 @@ struct FrameCascadedShadow {
     uint8_t                         CullCascades(const BE1::AABB &worldBounds, uint8_t cascadeMask) const;
 };
 
-static_assert(ShaderCSMCascadeCount == RenderFrameSettings::CSMCascadeCount, "CPU and shader cascade counts must match");
+static_assert(ShaderCSMCascadeMaxCount == RenderFrameSettings::CSMCascadeMaxCount, "CPU and shader cascade counts must match");
 
 struct FrameLocalShadow {
     const FrameLight *              light = nullptr;
@@ -138,6 +137,7 @@ struct FrameLocalShadow {
     BE1::Vec3                       pointOrigin = BE1::Vec3::zero;   // Point depth 기록 당시의 위치. 현재 조명 위치와 별도로 유지한다.
     BE1::Vec2                       pointDepthScaleBias = BE1::Vec2::zero; // Point depth = X + Y / 면의 전방 거리.
     float                           squaredRadius = 0.0f;           // 포인트 라이트의 반경 제곱
+    float                           filterProjectionScale = 0.5f;   // Depth 기록 당시의 0.5 / tan(투영 반각). 필터 각도를 유효 타일 UV 반경으로 환산한다.
     float                           viewPlaneToOriginDistances[6];  // 각 view volume 평면에서 광원까지 거리
     uint32_t                        firstShadowView = 0;            // FrameShadowAtlas::shadowViews 의 첫번째 index
     uint32_t                        numShadowViews = 0;             // shadow view 개수 (Spot: 1, Point: 6)

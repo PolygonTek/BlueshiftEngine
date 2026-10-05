@@ -65,8 +65,8 @@ public:
         float                       outerConeAngle = 45.0f;             ///< Spot half-angle from the forward axis, in degrees
 
         float                       zNear = 0.1f;                       ///< Shadow near distance, capped at half the range; does not clip illumination
-        float                       shadowOffsetUnits = 1500.0f;
-        float                       shadowOffsetFactor = 3.0f;
+        float                       shadowOffsetUnits = 500.0f;
+        float                       shadowOffsetFactor = 5.0f;
 
         BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB chromaticity in [0, 1], normalized by luminance; black emits no light
         float                       intensity = 1.0f;                   ///< Finite, nonnegative: Directional normal illuminance in lux; Point/Spot intensity in cd (inside the Spot inner cone)

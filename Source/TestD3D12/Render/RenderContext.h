@@ -82,7 +82,7 @@ class RenderContext {
 public:
     using Stats = StatsT<PlainStatValue>;
 
-    static constexpr uint32_t       CSMCascadeCount = RenderFrameSettings::CSMCascadeCount;
+    static constexpr uint32_t       CSMCascadeMaxCount = RenderFrameSettings::CSMCascadeMaxCount;
 
     struct DisplayOutputSettings {
         float                       paperWhiteNits = 200.0f;            // 출력 1.0 이 의미하는 절대 휘도
@@ -133,7 +133,7 @@ public:
 
     RHI::Texture *                  GetCSMDepthTexture() const { return csmDepthTexture; }
     RHI::ViewID                     GetCSMDepthSRV() const { return csmDepthSRV; }
-    RHI::ViewID                     GetCSMDepthSliceDSV(uint32_t cascadeIndex) const { assert(cascadeIndex < CSMCascadeCount); return csmDepthSliceDSVs[cascadeIndex]; }
+    RHI::ViewID                     GetCSMDepthSliceDSV(uint32_t cascadeIndex) const { assert(cascadeIndex < CSMCascadeMaxCount); return csmDepthSliceDSVs[cascadeIndex]; }
     RHI::Format                     GetCSMDepthFormat() const { return RHI::Format::D24_UNORM_S8_UINT; }
     uint32_t                        GetCSMResolution() const { return csmDepthTexture ? csmDepthTexture->GetWidth() : 0; }
 
@@ -220,7 +220,7 @@ private:
     bool                            frameCompositionTextureNeedsClear = false;
     RHI::Texture *                  csmDepthTexture = nullptr;
     RHI::ViewID                     csmDepthSRV = RHI::ViewID::InvalidID;
-    RHI::ViewID                     csmDepthSliceDSVs[CSMCascadeCount] = {};
+    RHI::ViewID                     csmDepthSliceDSVs[CSMCascadeMaxCount] = {};
     RHI::ImGuiOverlay *             imguiOverlay = nullptr;
     BE1::Color4                     baseClearColor = BE1::Color4::black;
 

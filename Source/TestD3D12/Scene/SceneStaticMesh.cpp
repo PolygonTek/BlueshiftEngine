@@ -80,6 +80,8 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     pointLight.flags = RenderLight::Flag::CastShadows;
     pointLight.origin.Set(0.217f, -0.181f, 0.017f);
     pointLight.range = 3.0f;
+    pointLight.shadowOffsetUnits = 500.0f;
+    pointLight.shadowOffsetFactor = 6.0f;
     pointLight.linearColor = BE1::Color3(1.0f, 0.8f, 0.19f);
     pointLight.intensity = 1.0f;
     pointLightEnabled = pointLight.SetEnabled(renderWorld, true);
@@ -93,6 +95,8 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     spotLight.range = 5.0f;
     spotLight.innerConeAngle = 10.0f;
     spotLight.outerConeAngle = 20.0f;
+    spotLight.shadowOffsetUnits = 500.0f;
+    spotLight.shadowOffsetFactor = 6.0f;
     spotLight.linearColor = BE1::Color3(0.2f, 0.45f, 1.0f);
     spotLight.intensity = 30.0f;
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
@@ -127,6 +131,7 @@ static void BuildLightControls(RenderWorld *renderWorld, GameLight &light, bool 
     bool lightingChanged = false;
     bool transformChanged = false;
     bool shapeChanged = false;
+    bool shadowChanged = false;
 
     ImGui::SetNextItemWidth(itemWidth);
     if (ImGui::DragFloat3("Position", light.origin.Ptr(), BE1::Max(light.range * 0.002f, 0.001f), 0.0f, 0.0f, "%.3f")) {
@@ -174,6 +179,16 @@ static void BuildLightControls(RenderWorld *renderWorld, GameLight &light, bool 
         lightingChanged = true;
     }
 
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::DragFloat("Shadow Offset Units", &light.shadowOffsetUnits, 1.0f, 0.0f, 0.0f, "%.0f")) {
+        shadowChanged = true;
+    }
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::DragFloat("Shadow Offset Factor", &light.shadowOffsetFactor, 0.01f, 0.0f, 0.0f, "%.3f")) {
+        shadowChanged = true;
+    }
+
     if (transformChanged) {
         renderWorld->UpdateRenderLightTransform(light.renderLightHandle, light.origin, light.axis);
     }
@@ -184,6 +199,10 @@ static void BuildLightControls(RenderWorld *renderWorld, GameLight &light, bool 
 
     if (lightingChanged) {
         renderWorld->UpdateRenderLightLighting(light.renderLightHandle, light.linearColor, light.intensity);
+    }
+
+    if (shadowChanged) {
+        renderWorld->UpdateRenderLightShadow(light.renderLightHandle, light.shadowOffsetUnits, light.shadowOffsetFactor);
     }
 
     ImGui::EndDisabled();

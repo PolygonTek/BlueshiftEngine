@@ -51,6 +51,7 @@ public:
     struct Entry {
         uint64_t                    lightId = 0;
         uint32_t                    borderTexels = 0;           // 마지막으로 갱신을 요청한 border. 스킵 프레임에도 같은 값을 사용한다.
+        float                       filterProjectionScale = 0.5f; // Depth 기록 당시의 0.5 / tan(투영 반각). Point 는 0.5, Spot 은 원래 cone 기준이다.
         BE1::Mat4                   spotViewProjMatrix = BE1::Mat4::identity; // 마지막으로 갱신을 요청한 spot 라이트의 view-projection 행렬. 스킵 프레임에도 같은 값을 사용한다.
         BE1::Vec3                   pointOrigin = BE1::Vec3::zero;  // 마지막으로 갱신을 요청한 point 라이트의 origin. 스킵 프레임에도 같은 값을 사용한다.
         BE1::Vec2                   pointDepthScaleBias = BE1::Vec2::zero; // 마지막으로 갱신을 요청한 point 라이트의 depth scale bias. 스킵 프레임에도 같은 값을 사용한다.

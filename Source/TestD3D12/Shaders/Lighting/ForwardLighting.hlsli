@@ -27,7 +27,7 @@ float2 CalcPointLightProjectionUV(ShaderPointLight pointLight, float3 worldPosit
     return float2(dot(pointLight.worldToProjectionU, position), dot(pointLight.worldToProjectionV, position));
 }
 
-float3 EvaluatePointLight(ShaderPointLight pointLight, uint2 pixelCoord, float3 worldPosition, in ShadingParams shading) {
+float3 EvaluatePointLight(ShaderPointLight pointLight, inout ShadowSamplingContext shadowSampling, float3 worldPosition, in ShadingParams shading) {
     const float3 lightVector = pointLight.origin - worldPosition;
     const float lightDistanceSquared = dot(lightVector, lightVector);
     if (lightDistanceSquared <= FLT_MIN) {
@@ -46,10 +46,10 @@ float3 EvaluatePointLight(ShaderPointLight pointLight, uint2 pixelCoord, float3 
     if (!any(lighting > 0.0f)) {
         return lighting;
     }
-    return lighting * EvaluatePointShadowLighting(pointLight.shadowIndex, pixelCoord, worldPosition);
+    return lighting * EvaluatePointShadowLighting(pointLight.shadowIndex, shadowSampling, worldPosition);
 }
 
-float3 EvaluateSpotLight(ShaderSpotLight spotLight, uint2 pixelCoord, float3 worldPosition, in ShadingParams shading) {
+float3 EvaluateSpotLight(ShaderSpotLight spotLight, inout ShadowSamplingContext shadowSampling, float3 worldPosition, in ShadingParams shading) {
     const float3 lightVector = spotLight.origin - worldPosition;
     const float lightDistanceSquared = dot(lightVector, lightVector);
     if (lightDistanceSquared <= FLT_MIN) {
@@ -74,7 +74,7 @@ float3 EvaluateSpotLight(ShaderSpotLight spotLight, uint2 pixelCoord, float3 wor
     if (!any(lighting > 0.0f)) {
         return lighting;
     }
-    return lighting * EvaluateSpotShadowLighting(spotLight.shadowIndex, pixelCoord, worldPosition);
+    return lighting * EvaluateSpotShadowLighting(spotLight.shadowIndex, shadowSampling, worldPosition);
 }
 
 float3 EvaluateDirectionalLight(ShaderDirectionalLight directionalLight, in ShadingParams shading) {
@@ -82,18 +82,18 @@ float3 EvaluateDirectionalLight(ShaderDirectionalLight directionalLight, in Shad
     return directionalLight.intensityRGB * EvaluateStandardDirectBRDF(shading, lightDir);
 }
 
-float3 EvaluateShaderLight(uint packedLightRef, uint2 pixelCoord, float3 worldPosition, in ShadingParams shading) {
+float3 EvaluateShaderLight(uint packedLightRef, inout ShadowSamplingContext shadowSampling, float3 worldPosition, in ShadingParams shading) {
     const uint lightType = packedLightRef & ShaderLightTypeMask;
     const uint lightTypeIndex = packedLightRef >> ShaderLightTypeBitCount;
 
     if (lightType == ShaderLightTypePoint) {
         const ShaderPointLight pointLight = GetShaderPointLightTable(frameConstants.shaderPointLightTableIndex)[lightTypeIndex];
-        return EvaluatePointLight(pointLight, pixelCoord, worldPosition, shading);
+        return EvaluatePointLight(pointLight, shadowSampling, worldPosition, shading);
     }
 
     if (lightType == ShaderLightTypeSpot) {
         const ShaderSpotLight spotLight = GetShaderSpotLightTable(frameConstants.shaderSpotLightTableIndex)[lightTypeIndex];
-        return EvaluateSpotLight(spotLight, pixelCoord, worldPosition, shading);
+        return EvaluateSpotLight(spotLight, shadowSampling, worldPosition, shading);
     }
 
     return 0.0f;
@@ -118,9 +118,10 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcDepth, float3 worldPosi
     }
 #endif
 
+    ShadowSamplingContext shadowSampling = InitShadowSamplingContext(pixelCoord);
     float3 directLighting = 0.0f;
     if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0) {
-        const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting(pixelCoord, worldPosition);
+        const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting(shadowSampling, worldPosition);
         directLighting = shadowLighting * EvaluateDirectionalLight(frameConstants.directionalLight, shading);
     }
 
@@ -151,7 +152,7 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcDepth, float3 worldPosi
 
             // 현재 lane 의 tile 및 Z-bin 에 포함된 light 만 실제로 계산한다.
             if ((laneLightMask & lightBit) != 0) {
-                directLighting += EvaluateShaderLight(packedLightRef, pixelCoord, worldPosition, shading);
+                directLighting += EvaluateShaderLight(packedLightRef, shadowSampling, worldPosition, shading);
             }
 
             waveLightMask &= ~lightBit;
@@ -166,7 +167,7 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcDepth, float3 worldPosi
 
     [loop]
     while (NextShaderLight(lightIterator, shaderLightRef)) {
-        directLighting += EvaluateShaderLight(shaderLightRef.packedLightRef, pixelCoord, worldPosition, shading);
+        directLighting += EvaluateShaderLight(shaderLightRef.packedLightRef, shadowSampling, worldPosition, shading);
     }
 
     return directLighting;

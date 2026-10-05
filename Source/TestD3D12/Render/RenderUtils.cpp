@@ -158,24 +158,22 @@ float CalcLocalLODErrorLimitSqr(const BE1::Mat3x4 &worldMatrix, float pixelsPerW
     return pixelErrorLimit * pixelErrorLimit / pixelsPerLocalUnitSqr;
 }
 
-uint32_t CalcShadowMapBorderTexels(uint32_t resolution, uint32_t shadowMapQuality) {
-    constexpr uint32_t fixedKernelMaxOffsetTexels = 1;
-    constexpr uint32_t fixedKernelBorderTexels = fixedKernelMaxOffsetTexels + 1; // bilinear comparison footprint 를 위해 1 texel border 를 추가한다.
+uint32_t CalcShadowMapBorderTexels(uint32_t resolution, float filterRadiusScale) {
+    static constexpr uint32_t fixedKernelMaxOffsetTexels = 1;
+    static constexpr uint32_t fixedKernelBorderTexels = fixedKernelMaxOffsetTexels + 1; // bilinear comparison footprint 를 위해 1 texel border 를 추가한다.
+
     assert(resolution > 2 * fixedKernelBorderTexels);
+    assert(filterRadiusScale >= 0.0f);
 
-    // Q0~Q2 의 fixed kernel offset 의 최대 크기는 1 이다.
-    if (shadowMapQuality < 3) {
-        return fixedKernelBorderTexels;
-    }
+    // border = 반경 스케일 * 유효 해상도 + 1
+    // border = filterRadiusScale * (resolution - 2 * border) + 1
+    // border = filterRadiusScale * resolution - 2 * filterRadiusScale * border + 1
+    // border + 2 * filterRadiusScale * border = filterRadiusScale * resolution + 1
+    // border * (1 + 2 * filterRadiusScale) = filterRadiusScale * resolution + 1
+    // border = (filterRadiusScale * resolution + 1) / (1 + 2 * filterRadiusScale)
+    const float border = (filterRadiusScale * resolution + 1.0f) / (1.0f + 2.0f * filterRadiusScale);
 
-    constexpr float usableResolution = static_cast<float>(RenderFrameSettings::ShadowMapFilterReferenceResolution - 2 * RenderFrameSettings::ShadowMapFilterReferenceBorderTexels);
-    constexpr float maxFilterRadiusScale = RenderFrameSettings::ShadowMapFilterRadiusMax / usableResolution;
-    constexpr float maxPoissonKernelRadiusScale = RenderFrameSettings::ShadowMapPoissonKernelMaxRadius * maxFilterRadiusScale;
-
-    // effective radius 가 border 로 줄어드는 관계까지 풀어서 필요한 최소 border 를 계산한다.
-    const float requiredBorder = (maxPoissonKernelRadiusScale * resolution + 1.0f) / (1.0f + 2.0f * maxPoissonKernelRadiusScale);
-
-    return BE1::Max(fixedKernelBorderTexels, static_cast<uint32_t>(BE1::Math::Ceil(requiredBorder)));
+    return BE1::Max(fixedKernelBorderTexels, static_cast<uint32_t>(BE1::Math::Ceil(border)));
 }
 
 bool CullShadowCaster(const BE1::Plane viewPlanes[6], const BE1::OBB &shadowMapBounds, const BE1::AABB &casterBounds) {

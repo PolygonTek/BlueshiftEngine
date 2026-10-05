@@ -28,14 +28,12 @@ static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLo
 
     float filterRadius = settings.shadowMapQuality == 0 ? 0.0f : 1.0f;
     if (settings.shadowMapQuality == 3) {
-        constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapFilterReferenceResolution - 2 * RenderFrameSettings::ShadowMapFilterReferenceBorderTexels);
         const float usableResolution = static_cast<float>(shadow.resolution - 2 * firstView.borderTexels);
-        filterRadius = settings.shadowMapFilterRadius * (usableResolution / referenceUsableResolution);
+        const float filterRadiusScale = settings.shadowMapLocalFilterTanHalfAngle * shadow.filterProjectionScale;
+        filterRadius = filterRadiusScale * usableResolution;
     }
 
-    // Bilinear comparison footprint 에 1 texel 을 남기고 회전된 Q3 kernel 의 최대 반경까지 고려한다.
-    const float kernelMaxRadius = settings.shadowMapQuality == 3 ? RenderFrameSettings::ShadowMapPoissonKernelMaxRadius : 1.0f;
-    const float maxFilterRadius = BE1::Max(0.0f, static_cast<float>(firstView.borderTexels) - 1.0f) / kernelMaxRadius;
+    const float maxFilterRadius = BE1::Max(0.0f, static_cast<float>(firstView.borderTexels) - 1.0f);
     outShadow.filterRadius = BE1::Clamp(filterRadius, 0.0f, maxFilterRadius);
 }
 

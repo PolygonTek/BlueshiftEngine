@@ -320,19 +320,19 @@ bool RenderContext::CreateCSMDepthTexture(uint32_t resolution) {
     assert(resolution > 0);
 
     SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
-    depthImage->Init2DArrayFromMemory(resolution, resolution, CSMCascadeCount, 1, BE1::Image::Format::D24S8, BE1::Image::GammaSpace::Linear, nullptr);
+    depthImage->Init2DArrayFromMemory(resolution, resolution, CSMCascadeMaxCount, 1, BE1::Image::Format::D24S8, BE1::Image::GammaSpace::Linear, nullptr);
 
     const RHI::TextureFlag textureFlags = RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless;
-    const RHI::ClearValue optimizedClearValue = RHI::ClearValue::DepthStencil(1.0f, 0);
+    const RHI::ClearValue optimizedClearValue = RHI::ClearValue::DepthStencil(0.0f, 0);
     RHI::Texture *newTexture = RHI::renderer->CreateTexture2DArray(textureFlags, depthImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
     if (!newTexture) {
         return false;
     }
 
-    RHI::ViewID newSRV = RHI::renderer->CreateView(newTexture, RHI::ViewType::SRV, RHI::Format::Auto, 0, CSMCascadeCount, 0, 1);
-    RHI::ViewID newSliceDSVs[CSMCascadeCount] = {};
+    RHI::ViewID newSRV = RHI::renderer->CreateView(newTexture, RHI::ViewType::SRV, RHI::Format::Auto, 0, CSMCascadeMaxCount, 0, 1);
+    RHI::ViewID newSliceDSVs[CSMCascadeMaxCount] = {};
     bool viewsCreated = newSRV.IsValid();
-    for (uint32_t cascadeIndex = 0; cascadeIndex < CSMCascadeCount && viewsCreated; ++cascadeIndex) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < CSMCascadeMaxCount && viewsCreated; ++cascadeIndex) {
         newSliceDSVs[cascadeIndex] = RHI::renderer->CreateView(newTexture, RHI::ViewType::DSV, RHI::Format::Auto, cascadeIndex, 1, 0, 1);
         viewsCreated = newSliceDSVs[cascadeIndex].IsValid();
     }
@@ -348,7 +348,7 @@ bool RenderContext::CreateCSMDepthTexture(uint32_t resolution) {
 
     csmDepthTexture = newTexture;
     csmDepthSRV = newSRV;
-    for (uint32_t cascadeIndex = 0; cascadeIndex < CSMCascadeCount; ++cascadeIndex) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < CSMCascadeMaxCount; ++cascadeIndex) {
         csmDepthSliceDSVs[cascadeIndex] = newSliceDSVs[cascadeIndex];
     }
     return true;

@@ -46,8 +46,9 @@ void ComputeCSMSplitDistances(float nearDistance, float farDistance, float split
 // 월드 단위당 픽셀 수와 world transform 을 반영하여 로컬 공간의 LOD 허용 오차 제곱을 계산한다.
 float CalcLocalLODErrorLimitSqr(const BE1::Mat3x4 &worldMatrix, float pixelsPerWorldUnit, float pixelErrorLimit);
 
-// PCF 와 bilinear comparison 의 샘플링 범위에 필요한 한쪽 border 의 texel 수를 계산한다.
-uint32_t CalcShadowMapBorderTexels(uint32_t resolution, uint32_t shadowMapQuality);
+// PCF shadow map 샘플링 범위에 필요한 border texel 수를 계산한다.
+// filterRadiusScale 은 border texel 을 제외한 유효 영역 너비에 대한 필터 반경의 비율이다.
+uint32_t CalcShadowMapBorderTexels(uint32_t resolution, float filterRadiusScale);
 
 // view volume 과 광원 방향 shadow cull bounds 에 의한 caster bounds 의 컬링 검사.
 // Shadow bounds 의 XY/far 만 검사하며, near 밖 caster 는 depth clamp 를 위해 유지한다.

@@ -142,19 +142,20 @@ void RenderPassBuilder::BuildCascadedShadow(RenderFrame *frame, FrameCascadedSha
 
     GraphicsPipelineDesc &pipelineDesc = shadowPass->graphicsPipelineDesc;
     pipelineDesc = {};
-    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualWrite;
+    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::GEqualWrite;
     pipelineDesc.renderDest.renderTargetCount = 0;
     pipelineDesc.renderDest.depthStencilFormat = RenderContext::activeContext->GetCSMDepthFormat();
     pipelineDesc.renderDest.sampleCount = cascadedShadow->depthTexture->GetSampleCount();
 
-    // CSM 패스에서만 depth clipping 을 꺼 near 밖 caster 를 depth 0 에 clamp 한다 (shadow pancaking).
+    // CSM 패스에서만 depth clipping 을 꺼 near 밖 caster 를 reverse-Z 의 depth 1 에 clamp 한다 (shadow pancaking).
     pipelineDesc.depthClipEnabled = false;
 
     // 각 cascade 는 독립된 view/DSV/draw 목록과 해당 프레임에 캡처한 bias 를 사용한다.
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     pipelineDesc.depthBiasOverride = true;
-    pipelineDesc.constantDepthBias = frameSettings.csmConstantDepthBias[cascadeIndex];
-    pipelineDesc.slopeScaledDepthBias = frameSettings.csmSlopeScaledDepthBias[cascadeIndex];
+    // 양수 설정은 caster 를 광원에서 멀리 민다. reverse-Z 에서는 depth 를 줄여 같은 방향을 유지한다.
+    pipelineDesc.constantDepthBias = -frameSettings.csmConstantDepthBias[cascadeIndex];
+    pipelineDesc.slopeScaledDepthBias = -frameSettings.csmSlopeScaledDepthBias[cascadeIndex];
 
     BuildShadow(frame, shadowPass, static_cast<uint8_t>(1u << cascadeIndex), frameSurfs, numFrameSurfs, allowAsyncPSOBuild);
 }
@@ -177,7 +178,7 @@ void RenderPassBuilder::BuildLocalShadow(RenderFrame *frame, FrameShadowAtlas *s
 
     GraphicsPipelineDesc &pipelineDesc = shadowPass->graphicsPipelineDesc;
     pipelineDesc = {};
-    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::LEqualWrite;
+    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::GEqualWrite;
     pipelineDesc.renderDest.renderTargetCount = 0;
     // ShadowAtlas 의 DSV 포맷. Typeless texture 의 리소스 포맷을 사용하지 않는다.
     pipelineDesc.renderDest.depthStencilFormat = RHI::Format::D32_FLOAT;
@@ -186,8 +187,9 @@ void RenderPassBuilder::BuildLocalShadow(RenderFrame *frame, FrameShadowAtlas *s
     // Local shadow 는 유한한 perspective 투영의 near/far 범위로 depth 를 clip 한다.
     pipelineDesc.depthClipEnabled = true;
     pipelineDesc.depthBiasOverride = true;
-    pipelineDesc.constantDepthBias = shadowLight->shadowOffsetUnits;
-    pipelineDesc.slopeScaledDepthBias = shadowLight->shadowOffsetFactor;
+    // 양수 설정값은 caster 를 광원에서 멀어지게 한다. Reverse-Z 에서는 depth 를 줄인다.
+    pipelineDesc.constantDepthBias = -shadowLight->shadowOffsetUnits;
+    pipelineDesc.slopeScaledDepthBias = -shadowLight->shadowOffsetFactor;
 
     // View 별 caster/submesh 컬링을 마친 목록은 CSM mask 와 무관하게 그대로 사용한다.
     BuildShadow(frame, shadowPass, 0, shadowView.shadowSurfs, shadowView.numShadowSurfs, allowAsyncPSOBuild);

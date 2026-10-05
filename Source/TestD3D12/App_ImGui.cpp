@@ -1008,210 +1008,235 @@ void App::BuildImGuiOverlay() {
                 }
 
                 ImGui::BeginDisabled(shadowQuality != 3);
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                float filterRadius = r_shadowMapFilterRadius.GetFloat();
-                if (ImGui::SliderFloat("Poisson filter radius", &filterRadius,
-                    r_shadowMapFilterRadius.GetMinValue(), r_shadowMapFilterRadius.GetMaxValue(), "%.4f", ImGuiSliderFlags_AlwaysClamp)) {
-                    r_shadowMapFilterRadius.SetFloat(filterRadius);
+                bool shadowRotationUseTexture = r_shadowMapRotationUseTexture.GetBool();
+                if (ImGui::Checkbox("Use rotation texture##Shadows", &shadowRotationUseTexture)) {
+                    r_shadowMapRotationUseTexture.SetBool(shadowRotationUseTexture);
                 }
-                ImGui::SetItemTooltip("Q3 filter radius at 1024x1024. The effective texel radius scales with CSM resolution.");
+                ImGui::SetItemTooltip("Q3 Poisson rotation for CSM, point and spot shadows.\nChecked: 64x64 rotation texture. Unchecked: fixed-seed hash.\nSwitching recompiles shaders.");
                 ImGui::EndDisabled();
 
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::BeginCombo("CSM resolution##Shadows", r_csmResolution.GetString())) {
-                    static constexpr int resolutions[] = { 256, 512, 1024, 2048, 4096 };
-                    const int currentResolution = r_csmResolution.GetInteger();
-                    for (int resolution : resolutions) {
-                        const bool selected = resolution == currentResolution;
-                        if (ImGui::Selectable(BE1::va("%d", resolution), selected)) {
-                            r_csmResolution.SetInteger(resolution);
-                        }
-                        if (selected) {
-                            ImGui::SetItemDefaultFocus();
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                int cascadeCount = r_csmCount.GetInteger();
-                if (ImGui::SliderInt("CSM cascade count##Shadows", &cascadeCount,
-                    static_cast<int>(r_csmCount.GetMinValue()), static_cast<int>(r_csmCount.GetMaxValue()), "%d", ImGuiSliderFlags_AlwaysClamp)) {
-                    r_csmCount.SetInteger(cascadeCount);
-                }
-
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                float distance = r_csmMaxDistance.GetFloat();
-                if (ImGui::DragFloat("CSM max distance##Shadows", &distance, 1.0f, 0.0f, 1000000.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp)) {
-                    r_csmMaxDistance.SetFloat(distance);
-                }
-
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                float splitLambda = r_csmSplitLambda.GetFloat();
-                if (ImGui::SliderFloat("CSM split lambda##Shadows", &splitLambda,
-                    r_csmSplitLambda.GetMinValue(), r_csmSplitLambda.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
-                    r_csmSplitLambda.SetFloat(splitLambda);
-                }
-                ImGui::SetItemTooltip("0 = uniform, 1 = logarithmic.");
-
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                float blendFraction = r_csmBlendFraction.GetFloat();
-                if (ImGui::SliderFloat("CSM blend fraction##Shadows", &blendFraction,
-                    r_csmBlendFraction.GetMinValue(), r_csmBlendFraction.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
-                    r_csmBlendFraction.SetFloat(blendFraction);
-                }
-
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                float fadeFraction = r_csmFadeFraction.GetFloat();
-                if (ImGui::SliderFloat("CSM distance fade fraction", &fadeFraction, 0.01f, 1.0f, "%.2f")) {
-                    r_csmFadeFraction.SetFloat(fadeFraction);
-                }
-
-                if (ImGui::TreeNode("CSM depth bias")) {
-                    static constexpr BE1::CVar *constantBiasCvars[RenderFrameSettings::CSMCascadeCount] = {
-                        &r_csmConstantDepthBias0,
-                        &r_csmConstantDepthBias1,
-                        &r_csmConstantDepthBias2,
-                        &r_csmConstantDepthBias3
-                    };
-                    static constexpr BE1::CVar *slopeBiasCvars[RenderFrameSettings::CSMCascadeCount] = {
-                        &r_csmSlopeScaledDepthBias0,
-                        &r_csmSlopeScaledDepthBias1,
-                        &r_csmSlopeScaledDepthBias2,
-                        &r_csmSlopeScaledDepthBias3
-                    };
-
-                    const ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV;
-                    if (ImGui::BeginTable("CSMDepthBiasTable", 3, tableFlags)) {
-                        ImGui::TableSetupColumn("Cascade", ImGuiTableColumnFlags_WidthFixed, fontSize * 5.0f);
-                        ImGui::TableSetupColumn("Constant", ImGuiTableColumnFlags_WidthFixed, fontSize * 8.0f);
-                        ImGui::TableSetupColumn("Slope-scaled", ImGuiTableColumnFlags_WidthFixed, fontSize * 9.0f);
-                        ImGui::TableHeadersRow();
-
-                        for (int cascadeIndex = 0; cascadeIndex < static_cast<int>(RenderFrameSettings::CSMCascadeCount); ++cascadeIndex) {
-                            ImGui::PushID(cascadeIndex);
-                            ImGui::TableNextRow();
-                            ImGui::TableSetColumnIndex(0);
-                            ImGui::AlignTextToFramePadding();
-                            ImGui::Text("%d", cascadeIndex);
-
-                            ImGui::TableSetColumnIndex(1);
-                            ImGui::SetNextItemWidth(fontSize * 8.0f);
-                            float constantBias = constantBiasCvars[cascadeIndex]->GetFloat();
-                            if (ImGui::DragFloat("##ConstantDepthBias", &constantBias, 1.0f, 0.0f, 0.0f, "%.0f")) {
-                                constantBiasCvars[cascadeIndex]->SetFloat(constantBias);
-                            }
-                            ImGui::SetItemTooltip("r_csmConstantDepthBias%d\nCtrl+click to enter a value. D24 depth units, rounded to an integer.", cascadeIndex);
-
-                            ImGui::TableSetColumnIndex(2);
-                            ImGui::SetNextItemWidth(fontSize * 9.0f);
-                            float slopeBias = slopeBiasCvars[cascadeIndex]->GetFloat();
-                            if (ImGui::DragFloat("##SlopeScaledDepthBias", &slopeBias, 0.05f, 0.0f, 0.0f, "%.2f")) {
-                                slopeBiasCvars[cascadeIndex]->SetFloat(slopeBias);
-                            }
-                            ImGui::SetItemTooltip("r_csmSlopeScaledDepthBias%d\nCtrl+click to enter a value.", cascadeIndex);
-
-                            ImGui::PopID();
-                        }
-                        ImGui::EndTable();
-                    }
-                    ImGui::TreePop();
-                }
-
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                int debugMode = r_shadowDebug.GetInteger();
-                if (ImGui::Combo("Debug view##Shadows", &debugMode, "Off\0Visibility\0Coverage\0")) {
-                    r_shadowDebug.SetInteger(debugMode);
-                }
-                ImGui::SetItemTooltip("Visibility: black = shadow, white = lit.\nCoverage: cascade 0 = sky blue, 1 = green, 2 = yellow, 3 = violet; red = outside, gray = inactive.");
-
-                if (ImGui::TreeNode("Shadow map depth")) {
-                    const RHI::Texture *shadowTexture = mainRenderContext->GetCSMDepthTexture();
-                    static int selectedCascade = 0;
-                    const int cascadeCount = BE1::Clamp(r_csmCount.GetInteger(), 1, static_cast<int>(RenderFrameSettings::CSMCascadeCount));
-                    selectedCascade = BE1::Clamp(selectedCascade, 0, cascadeCount - 1);
-
-                    if (cascadeCount > 1) {
+                if (ImGui::BeginTabBar("ShadowTabs")) {
+                    if (ImGui::BeginTabItem("Cascaded Shadow Map")) {
+                        ImGui::BeginDisabled(shadowQuality != 3);
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        ImGui::SliderInt("Cascade##ShadowMapDepth", &selectedCascade, 0, cascadeCount - 1);
+                        float filterRadius = r_csmFilterRadius.GetFloat();
+                        if (ImGui::SliderFloat("CSM Poisson filter radius", &filterRadius,
+                            r_csmFilterRadius.GetMinValue(), r_csmFilterRadius.GetMaxValue(), "%.4f", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_csmFilterRadius.SetFloat(filterRadius);
+                        }
+                        ImGui::SetItemTooltip("Q3 filter radius at 1024x1024. The effective texel radius scales with CSM resolution.");
+                        ImGui::EndDisabled();
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::BeginCombo("CSM resolution##Shadows", r_csmResolution.GetString())) {
+                            static constexpr int resolutions[] = { 256, 512, 1024, 2048, 4096 };
+                            const int currentResolution = r_csmResolution.GetInteger();
+                            for (int resolution : resolutions) {
+                                const bool selected = resolution == currentResolution;
+                                if (ImGui::Selectable(BE1::va("%d", resolution), selected)) {
+                                    r_csmResolution.SetInteger(resolution);
+                                }
+                                if (selected) {
+                                    ImGui::SetItemDefaultFocus();
+                                }
+                            }
+                            ImGui::EndCombo();
+                        }
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        int cascadeCount = r_csmCount.GetInteger();
+                        if (ImGui::SliderInt("CSM cascade count##Shadows", &cascadeCount,
+                            static_cast<int>(r_csmCount.GetMinValue()), static_cast<int>(r_csmCount.GetMaxValue()), "%d", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_csmCount.SetInteger(cascadeCount);
+                        }
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        float distance = r_csmMaxDistance.GetFloat();
+                        if (ImGui::DragFloat("CSM max distance##Shadows", &distance, 1.0f, 0.0f, 1000000.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_csmMaxDistance.SetFloat(distance);
+                        }
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        float splitLambda = r_csmSplitLambda.GetFloat();
+                        if (ImGui::SliderFloat("CSM split lambda##Shadows", &splitLambda,
+                            r_csmSplitLambda.GetMinValue(), r_csmSplitLambda.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_csmSplitLambda.SetFloat(splitLambda);
+                        }
+                        ImGui::SetItemTooltip("0 = uniform, 1 = logarithmic.");
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        float blendFraction = r_csmBlendFraction.GetFloat();
+                        if (ImGui::SliderFloat("CSM blend fraction##Shadows", &blendFraction,
+                            r_csmBlendFraction.GetMinValue(), r_csmBlendFraction.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_csmBlendFraction.SetFloat(blendFraction);
+                        }
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        float fadeFraction = r_csmFadeFraction.GetFloat();
+                        if (ImGui::SliderFloat("CSM distance fade fraction", &fadeFraction, 0.01f, 1.0f, "%.2f")) {
+                            r_csmFadeFraction.SetFloat(fadeFraction);
+                        }
+
+                        if (ImGui::TreeNode("CSM depth bias")) {
+                            static constexpr BE1::CVar *constantBiasCvars[RenderFrameSettings::CSMCascadeMaxCount] = {
+                                &r_csmConstantDepthBias0,
+                                &r_csmConstantDepthBias1,
+                                &r_csmConstantDepthBias2,
+                                &r_csmConstantDepthBias3
+                            };
+                            static constexpr BE1::CVar *slopeBiasCvars[RenderFrameSettings::CSMCascadeMaxCount] = {
+                                &r_csmSlopeScaledDepthBias0,
+                                &r_csmSlopeScaledDepthBias1,
+                                &r_csmSlopeScaledDepthBias2,
+                                &r_csmSlopeScaledDepthBias3
+                            };
+
+                            const ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV;
+                            if (ImGui::BeginTable("CSMDepthBiasTable", 3, tableFlags)) {
+                                ImGui::TableSetupColumn("Cascade", ImGuiTableColumnFlags_WidthFixed, fontSize * 5.0f);
+                                ImGui::TableSetupColumn("Constant", ImGuiTableColumnFlags_WidthFixed, fontSize * 8.0f);
+                                ImGui::TableSetupColumn("Slope-scaled", ImGuiTableColumnFlags_WidthFixed, fontSize * 9.0f);
+                                ImGui::TableHeadersRow();
+
+                                for (int cascadeIndex = 0; cascadeIndex < static_cast<int>(RenderFrameSettings::CSMCascadeMaxCount); ++cascadeIndex) {
+                                    ImGui::PushID(cascadeIndex);
+                                    ImGui::TableNextRow();
+                                    ImGui::TableSetColumnIndex(0);
+                                    ImGui::AlignTextToFramePadding();
+                                    ImGui::Text("%d", cascadeIndex);
+
+                                    ImGui::TableSetColumnIndex(1);
+                                    ImGui::SetNextItemWidth(fontSize * 8.0f);
+                                    float constantBias = constantBiasCvars[cascadeIndex]->GetFloat();
+                                    if (ImGui::DragFloat("##ConstantDepthBias", &constantBias, 1.0f, 0.0f, 0.0f, "%.0f")) {
+                                        constantBiasCvars[cascadeIndex]->SetFloat(constantBias);
+                                    }
+                                    ImGui::SetItemTooltip("r_csmConstantDepthBias%d\nCtrl+click to enter a value. D24 depth units, rounded to an integer.", cascadeIndex);
+
+                                    ImGui::TableSetColumnIndex(2);
+                                    ImGui::SetNextItemWidth(fontSize * 9.0f);
+                                    float slopeBias = slopeBiasCvars[cascadeIndex]->GetFloat();
+                                    if (ImGui::DragFloat("##SlopeScaledDepthBias", &slopeBias, 0.05f, 0.0f, 0.0f, "%.2f")) {
+                                        slopeBiasCvars[cascadeIndex]->SetFloat(slopeBias);
+                                    }
+                                    ImGui::SetItemTooltip("r_csmSlopeScaledDepthBias%d\nCtrl+click to enter a value.", cascadeIndex);
+
+                                    ImGui::PopID();
+                                }
+                                ImGui::EndTable();
+                            }
+                            ImGui::TreePop();
+                        }
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        int debugMode = r_shadowDebug.GetInteger();
+                        if (ImGui::Combo("Debug view##Shadows", &debugMode, "Off\0Visibility\0Coverage\0")) {
+                            r_shadowDebug.SetInteger(debugMode);
+                        }
+                        ImGui::SetItemTooltip("Visibility: black = shadow, white = lit.\nCoverage: cascade 0 = sky blue, 1 = green, 2 = yellow, 3 = violet; red = outside, gray = inactive.");
+
+                        ImGui::SeparatorText("Shadow map depth");
+                        const RHI::Texture *shadowTexture = mainRenderContext->GetCSMDepthTexture();
+                        static int selectedCascade = 0;
+                        const int previewCascadeCount = BE1::Clamp(r_csmCount.GetInteger(), 1, static_cast<int>(RenderFrameSettings::CSMCascadeMaxCount));
+                        selectedCascade = BE1::Clamp(selectedCascade, 0, previewCascadeCount - 1);
+
+                        if (previewCascadeCount > 1) {
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            ImGui::SliderInt("Cascade##ShadowMapDepth", &selectedCascade, 0, previewCascadeCount - 1);
+                        }
+
+                        if (!DrawImGuiTexturePreview(shadowTexture, mainRenderContext->GetCSMDepthSRV(), fontSize * 24.0f, true, static_cast<uint32_t>(selectedCascade))) {
+                            ImGui::TextDisabled("Shadow map is unavailable.");
+                        }
+
+                        ImGui::EndTabItem();
                     }
 
-                    ImGui::TextDisabled("Cascade %d.", selectedCascade);
-                    if (!DrawImGuiTexturePreview(shadowTexture, mainRenderContext->GetCSMDepthSRV(), fontSize * 24.0f, true, static_cast<uint32_t>(selectedCascade))) {
-                        ImGui::TextDisabled("Shadow map is unavailable.");
+                    if (ImGui::BeginTabItem("Shadow Atlas")) {
+                        ImGui::BeginDisabled(shadowQuality != 3);
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        float localFilterHalfAngle = r_shadowMapLocalFilterHalfAngle.GetFloat();
+                        if (ImGui::SliderFloat("Local Poisson half-angle", &localFilterHalfAngle,
+                            r_shadowMapLocalFilterHalfAngle.GetMinValue(), r_shadowMapLocalFilterHalfAngle.GetMaxValue(), "%.3f deg", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowMapLocalFilterHalfAngle.SetFloat(localFilterHalfAngle);
+                        }
+                        ImGui::SetItemTooltip("Point/Spot Q3 filter half-angle around the projection axis. Compensates for tile resolution and spot cone angle.\nCached shadows limit the filter radius to their stored border until the next depth update.");
+                        ImGui::EndDisabled();
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::BeginCombo("Atlas size##ShadowAtlas", r_shadowAtlasSize.GetString())) {
+                            static constexpr int atlasSizes[] = { 1024, 2048, 4096, 8192 };
+                            const int currentSize = r_shadowAtlasSize.GetInteger();
+                            for (int atlasSize : atlasSizes) {
+                                const bool selected = atlasSize == currentSize;
+                                if (ImGui::Selectable(BE1::va("%d", atlasSize), selected)) {
+                                    r_shadowAtlasSize.SetInteger(atlasSize);
+                                }
+                                if (selected) {
+                                    ImGui::SetItemDefaultFocus();
+                                }
+                            }
+                            ImGui::EndCombo();
+                        }
+                        ImGui::SetItemTooltip("r_shadowAtlasSize\nAtlas side length in texels. Uses power-of-two sizes; other values are rounded down.");
+
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::BeginCombo("Max tile resolution##ShadowAtlas", r_shadowAtlasMaxTileResolution.GetString())) {
+                            static constexpr int tileResolutions[] = { 64, 128, 256, 512, 1024, 2048 };
+                            const int currentResolution = r_shadowAtlasMaxTileResolution.GetInteger();
+                            for (int tileResolution : tileResolutions) {
+                                const bool selected = tileResolution == currentResolution;
+                                if (ImGui::Selectable(BE1::va("%d", tileResolution), selected)) {
+                                    r_shadowAtlasMaxTileResolution.SetInteger(tileResolution);
+                                }
+                                if (selected) {
+                                    ImGui::SetItemDefaultFocus();
+                                }
+                            }
+                            ImGui::EndCombo();
+                        }
+                        ImGui::SetItemTooltip("r_shadowAtlasMaxTileResolution\nMaximum tile resolution including border. Applies per face for Point lights. Limited by atlas size; non-power-of-two values are rounded down.");
+
+                        int maxShadowViews = r_shadowAtlasMaxViews.GetInteger();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderInt("Max shadow views##ShadowAtlas", &maxShadowViews,
+                            static_cast<int>(r_shadowAtlasMaxViews.GetMinValue()), static_cast<int>(r_shadowAtlasMaxViews.GetMaxValue()), "%d", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowAtlasMaxViews.SetInteger(maxShadowViews);
+                        }
+                        ImGui::SetItemTooltip("r_shadowAtlasMaxViews\nMaximum shadow views per camera. Spot uses 1 view, Point uses 6. 0 disables local shadows. Ctrl+click to enter a value.");
+
+                        float projectedSizeScale = r_shadowProjectedSizeScale.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Projected size scale##ShadowAtlas", &projectedSizeScale,
+                            r_shadowProjectedSizeScale.GetMinValue(), r_shadowProjectedSizeScale.GetMaxValue(), "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowProjectedSizeScale.SetFloat(projectedSizeScale);
+                        }
+                        ImGui::SetItemTooltip("r_shadowProjectedSizeScale\nScales projected light size when selecting Spot/Point shadow resolution. Higher values request higher resolutions.");
+
+                        bool shadowLoadBalancing = r_shadowAtlasLoadBalancing.GetBool();
+                        if (ImGui::Checkbox("Load balancing##ShadowAtlas", &shadowLoadBalancing)) {
+                            r_shadowAtlasLoadBalancing.SetBool(shadowLoadBalancing);
+                        }
+                        ImGui::SetItemTooltip("r_shadowAtlasLoadBalancing\nEach halving of projected size below the every-frame threshold doubles the update interval, up to %u frames. Previous depth is reused in between. Shadows without valid depth always update. Point light faces update together.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
+
+                        ImGui::BeginDisabled(!shadowLoadBalancing);
+                        int updateMinProjectedSize = r_shadowUpdateMinProjectedSize.GetInteger();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderInt("Every-frame size##ShadowAtlas", &updateMinProjectedSize,
+                            static_cast<int>(r_shadowUpdateMinProjectedSize.GetMinValue()), static_cast<int>(r_shadowUpdateMinProjectedSize.GetMaxValue()), "%d px", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowUpdateMinProjectedSize.SetInteger(updateMinProjectedSize);
+                        }
+                        ImGui::SetItemTooltip("r_shadowUpdateMinProjectedSize\nLights at or above this projected size update their shadows every frame. Each halving of size doubles the update interval, up to %u frames.\nUses the longer edge in render-resolution pixels, before projected size scaling. Ctrl+click to enter a value.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
+                        ImGui::EndDisabled();
+
+                        BuildImGuiShadowAtlasPreview();
+
+                        ImGui::EndTabItem();
                     }
-                    ImGui::TreePop();
-                }
-            }
 
-            if (roundedCollapsingHeader("Shadow Atlas##ShadowAtlasHeader")) {
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::BeginCombo("Atlas size##ShadowAtlas", r_shadowAtlasSize.GetString())) {
-                    static constexpr int atlasSizes[] = { 1024, 2048, 4096, 8192 };
-                    const int currentSize = r_shadowAtlasSize.GetInteger();
-                    for (int atlasSize : atlasSizes) {
-                        const bool selected = atlasSize == currentSize;
-                        if (ImGui::Selectable(BE1::va("%d", atlasSize), selected)) {
-                            r_shadowAtlasSize.SetInteger(atlasSize);
-                        }
-                        if (selected) {
-                            ImGui::SetItemDefaultFocus();
-                        }
-                    }
-                    ImGui::EndCombo();
+                    ImGui::EndTabBar();
                 }
-                ImGui::SetItemTooltip("r_shadowAtlasSize\nAtlas side length in texels. Uses power-of-two sizes; other values are rounded down.");
-
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::BeginCombo("Max tile resolution##ShadowAtlas", r_shadowAtlasMaxTileResolution.GetString())) {
-                    static constexpr int tileResolutions[] = { 64, 128, 256, 512, 1024, 2048 };
-                    const int currentResolution = r_shadowAtlasMaxTileResolution.GetInteger();
-                    for (int tileResolution : tileResolutions) {
-                        const bool selected = tileResolution == currentResolution;
-                        if (ImGui::Selectable(BE1::va("%d", tileResolution), selected)) {
-                            r_shadowAtlasMaxTileResolution.SetInteger(tileResolution);
-                        }
-                        if (selected) {
-                            ImGui::SetItemDefaultFocus();
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-                ImGui::SetItemTooltip("r_shadowAtlasMaxTileResolution\nMaximum tile resolution including border. Applies per face for Point lights. Limited by atlas size; non-power-of-two values are rounded down.");
-
-                int maxShadowViews = r_shadowAtlasMaxViews.GetInteger();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderInt("Max shadow views##ShadowAtlas", &maxShadowViews,
-                    static_cast<int>(r_shadowAtlasMaxViews.GetMinValue()), static_cast<int>(r_shadowAtlasMaxViews.GetMaxValue()), "%d", ImGuiSliderFlags_AlwaysClamp)) {
-                    r_shadowAtlasMaxViews.SetInteger(maxShadowViews);
-                }
-                ImGui::SetItemTooltip("r_shadowAtlasMaxViews\nMaximum shadow views per camera. Spot uses 1 view, Point uses 6. 0 disables local shadows. Ctrl+click to enter a value.");
-
-                float projectedSizeScale = r_shadowProjectedSizeScale.GetFloat();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Projected size scale##ShadowAtlas", &projectedSizeScale,
-                    r_shadowProjectedSizeScale.GetMinValue(), r_shadowProjectedSizeScale.GetMaxValue(), "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
-                    r_shadowProjectedSizeScale.SetFloat(projectedSizeScale);
-                }
-                ImGui::SetItemTooltip("r_shadowProjectedSizeScale\nScales projected light size when selecting Spot/Point shadow resolution. Higher values request higher resolutions.");
-
-                bool shadowLoadBalancing = r_shadowAtlasLoadBalancing.GetBool();
-                if (ImGui::Checkbox("Load balancing##ShadowAtlas", &shadowLoadBalancing)) {
-                    r_shadowAtlasLoadBalancing.SetBool(shadowLoadBalancing);
-                }
-                ImGui::SetItemTooltip("r_shadowAtlasLoadBalancing\nEach halving of projected size below the every-frame threshold doubles the update interval, up to %u frames. Previous depth is reused in between. Shadows without valid depth always update. Point light faces update together.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
-
-                ImGui::BeginDisabled(!shadowLoadBalancing);
-                int updateMinProjectedSize = r_shadowUpdateMinProjectedSize.GetInteger();
-                ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderInt("Every-frame size##ShadowAtlas", &updateMinProjectedSize,
-                    static_cast<int>(r_shadowUpdateMinProjectedSize.GetMinValue()), static_cast<int>(r_shadowUpdateMinProjectedSize.GetMaxValue()), "%d px", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
-                    r_shadowUpdateMinProjectedSize.SetInteger(updateMinProjectedSize);
-                }
-                ImGui::SetItemTooltip("r_shadowUpdateMinProjectedSize\nLights at or above this projected size update their shadows every frame. Each halving of size doubles the update interval, up to %u frames.\nUses the longer edge in render-resolution pixels, before projected size scaling. Ctrl+click to enter a value.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
-                ImGui::EndDisabled();
-
-                BuildImGuiShadowAtlasPreview();
             }
 
             if (roundedCollapsingHeader("Screen Space Reflection##SSRHeader")) {

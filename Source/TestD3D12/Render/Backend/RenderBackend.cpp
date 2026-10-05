@@ -771,7 +771,7 @@ void RenderBackend::DrawCSMPass() {
     }
     assert(cascadedShadow->depthTexture);
 
-    RHI::ConstantBuffer *shadowViewConstantBuffers[RenderFrameSettings::CSMCascadeCount] = {};
+    RHI::ConstantBuffer *shadowViewConstantBuffers[RenderFrameSettings::CSMCascadeMaxCount] = {};
     for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
         const CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
         assert(cascade.depthDSV.IsValid());
@@ -805,11 +805,11 @@ void RenderBackend::DrawCSMPass() {
     for (uint32_t cascadeIndex = 0; cascadeIndex < cascadedShadow->cascadeCount; cascadeIndex++) {
         const CSMCascade &cascade = cascadedShadow->cascades[cascadeIndex];
 
-        // Caster 가 없어도 active slice 를 far depth 로 지워 이전 카메라/프레임의 그림자를 제거한다.
+        // Caster 가 없어도 active slice 를 reverse-Z 의 far depth 0 으로 지워 이전 카메라/프레임의 그림자를 제거한다.
         RHI::RenderPassImage depthImage = RHI::RenderPassImage::DepthStencil(cascadedShadow->depthTexture, cascade.depthDSV,
             RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::DepthWrite)
-        .WithClearValue(RHI::ClearValue::DepthStencil(1.0f, 0));
+        .WithClearValue(RHI::ClearValue::DepthStencil(0.0f, 0));
         RHI::renderer->BeginRenderPass(mainCommandList, &depthImage, 1);
 
         DrawGenericPass(&cascade.renderPass, shadowViewConstantBuffers[cascadeIndex]);
@@ -900,7 +900,7 @@ void RenderBackend::DrawShadowAtlasPass() {
 }
 
 void RenderBackend::ClearShadowAtlasTiles(const FrameShadowAtlas &shadowAtlas) {
-    // 갱신할 타일만 지운다. shadow caster 가 없어도 타일 전체를 far depth 로 지운다.
+    // 갱신할 타일만 지운다. shadow caster 가 없어도 타일 전체를 reverse-Z 의 far depth 0 으로 지운다.
     constexpr uint32_t rectBatchSize = 1024;
     BE1::Rect clearRects[rectBatchSize];
 
@@ -921,7 +921,7 @@ void RenderBackend::ClearShadowAtlasTiles(const FrameShadowAtlas &shadowAtlas) {
 
         if (numClearRects > 0) {
             numClearRects = BE1::Rect::MergeAdjacentRects(clearRects, numClearRects);
-            RHI::renderer->ClearDepthStencilRects(mainCommandList, shadowAtlas.shadowTexture, shadowAtlas.shadowDSV, RHI::ClearFlag::Depth, 1.0f, 0, clearRects, numClearRects);
+            RHI::renderer->ClearDepthStencilRects(mainCommandList, shadowAtlas.shadowTexture, shadowAtlas.shadowDSV, RHI::ClearFlag::Depth, 0.0f, 0, clearRects, numClearRects);
         }
 
         firstView += viewCount;

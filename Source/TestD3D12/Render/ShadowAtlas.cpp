@@ -33,7 +33,7 @@ bool ShadowAtlas::Ensure(uint32_t atlasSize, uint32_t maxTileResolution, uint32_
     depthImage->Init2DFromMemory(atlasSize, atlasSize, 1, BE1::Image::Format::D32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
 
     const RHI::TextureFlag flags = RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless;
-    const RHI::ClearValue clearValue = RHI::ClearValue::DepthStencil(1.0f, 0);
+    const RHI::ClearValue clearValue = RHI::ClearValue::DepthStencil(0.0f, 0);
     RHI::Texture *newTexture = RHI::renderer->CreateTexture2D(flags, depthImage, RHI::TextureMipInitMode::FromImage, clearValue, 1, RHI::GPUResourceState::ShaderResource);
     if (!newTexture) {
         return false;

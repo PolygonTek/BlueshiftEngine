@@ -31,9 +31,9 @@ public:
     float                       innerConeAngle = 30.0f;             // Spot 중심축에서 잰 반각 (degree)
     float                       outerConeAngle = 45.0f;             // Spot 중심축에서 잰 반각 (degree)
     float                       zNear = 0.01f;
+    float                       shadowOffsetUnits = 100.0f;
+    float                       shadowOffsetFactor = 3.0f;
     BE1::Color3                 linearColor = BE1::Color3::white;   // Linear RGB 색상. 휘도 정규화하며 검정색은 발광하지 않는다.
     float                       intensity = 1.0f;                   // Directional: 수직 입사면 조도 (lux), Point/Spot: 광도 (cd). Spot 은 inner cone 기준.
-    float                       shadowOffsetUnits = 1500.0f;
-    float                       shadowOffsetFactor = 3.0f;
     int                         renderLightHandle = -1;
 };

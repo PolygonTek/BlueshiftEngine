@@ -7,40 +7,84 @@
 #define SHADOW_MAP_QUALITY 2
 #endif
 
+// r_shadowMapRotationUseTexture 의 global define. 0 = 고정 seed 해시, 1 = 기존 64x64 회전 텍스처.
+#ifndef USE_SHADOW_ROTATION_TEXTURE
+#define USE_SHADOW_ROTATION_TEXTURE 0
+#endif
+
 // 0: Off, 1: Visibility, 2: Coverage.
 #ifndef DEBUG_CASCADED_SHADOW_MAP
 #define DEBUG_CASCADED_SHADOW_MAP 0
 #endif
 
+// 한 픽셀에서 필요한 Q3 회전을 최초 샘플링 때 계산하고 모든 shadow light 에 재사용한다.
+struct ShadowSamplingContext {
+    uint2 pixelCoord;
 #if SHADOW_MAP_QUALITY == 3
+    float2 rotationCosSin;
+    bool hasRotation;
+#endif
+};
+
+ShadowSamplingContext InitShadowSamplingContext(uint2 pixelCoord) {
+    ShadowSamplingContext context = (ShadowSamplingContext)0;
+    context.pixelCoord = pixelCoord;
+    return context;
+}
+
+#if SHADOW_MAP_QUALITY == 3
+#if !USE_SHADOW_ROTATION_TEXTURE
+#include "../Random.hlsli"
+#endif
+
 static const float4 poissonDisk16[8] = {
-    float4(-0.94201624f, -0.39906216f, +0.94558609f, -0.76890725f),
-    float4(-0.09418410f, -0.92938870f, +0.34495938f, +0.29387760f),
-    float4(-0.91588581f, +0.45771432f, -0.81544232f, -0.87912464f),
-    float4(-0.38277543f, +0.27676845f, +0.97484398f, +0.75648379f),
-    float4(+0.44323325f, -0.97511554f, +0.53742981f, -0.47373420f),
-    float4(-0.26496911f, -0.41893023f, +0.79197514f, +0.19090188f),
-    float4(-0.24188840f, +0.99706507f, -0.81409955f, +0.91437590f),
-    float4(+0.19984126f, +0.78641367f, +0.14383161f, -0.14100790f)
+    float4(-0.763426298f, -0.323406895f, +0.766319366f, -0.623135770f),
+    float4(-0.076328428f, -0.753192720f, +0.279561064f, +0.238163504f),
+    float4(-0.742249744f, +0.370939623f, -0.660848598f, -0.712457854f),
+    float4(-0.310207847f, +0.224297952f, +0.790030467f, +0.613067582f),
+    float4(+0.359203912f, -0.790250544f, +0.435542438f, -0.383922411f),
+    float4(-0.214735562f, -0.339508324f, +0.641830388f, +0.154710194f),
+    float4(-0.196030554f, +0.808038824f, -0.659760394f, +0.741026087f),
+    float4(+0.161954823f, +0.637323276f, +0.116563631f, -0.114275248f)
 };
 
 float4 GetShadowRotationMatrix(uint2 pixelCoord) {
+#if USE_SHADOW_ROTATION_TEXTURE
     const float2 rotationTexCoord = (float2(pixelCoord) + 0.5f) * (1.0f / 64.0f);
-    const float2 cs = GetTexture2D(frameConstants.randomRotMatTextureIndex).SampleLevel(pointWrapSampler, rotationTexCoord, 0.0f).rg * 2.0f - 1.0f;
+    const float2 encodedRotation = GetTexture2D(frameConstants.randomRotMatTextureIndex).SampleLevel(pointWrapSampler, rotationTexCoord, 0.0f).rg;
+    const float2 cs = normalize(encodedRotation * 2.0f - 1.0f);
+    return float4(cs.x, -cs.y, cs.y, cs.x); // column-major rotation matrix
+#else
+    // 전체 픽셀 좌표와 고정 seed 로 64x64 반복 및 프레임마다 바뀌는 노이즈를 피한다.
+    const uint h = Hash(pixelCoord.x ^ Hash(pixelCoord.y ^ 23119u));
+    const float angle = TWO_PI * UintToUniform01(h);
+    float s, c;
+    sincos(angle, s, c);
+    return float4(c, -s, s, c); // column-major rotation matrix
+#endif
+}
+
+float4 GetShadowRotationMatrix(inout ShadowSamplingContext context) {
+    [branch]
+    if (!context.hasRotation) {
+        context.rotationCosSin = GetShadowRotationMatrix(context.pixelCoord).xz;
+        context.hasRotation = true;
+    }
+    const float2 cs = context.rotationCosSin;
     return float4(cs.x, -cs.y, cs.y, cs.x); // column-major rotation matrix
 }
 #endif
 
 float SampleShadowMap_Q0(Texture2D<float> shadowMap, float3 shadowCoord) {
-    return shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy, shadowCoord.z);
+    return shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy, shadowCoord.z);
 }
 
 float SampleShadowMap_Q1(Texture2D<float> shadowMap, float3 shadowCoord, float2 filterOffset) {
-    float shadowSum = shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy, shadowCoord.z);
-    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy + float2(0.0f, filterOffset.y), shadowCoord.z);
-    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy + float2(0.0f, -filterOffset.y), shadowCoord.z);
-    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy + float2(filterOffset.x, 0.0f), shadowCoord.z);
-    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy + float2(-filterOffset.x, 0.0f), shadowCoord.z);
+    float shadowSum = shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy, shadowCoord.z);
+    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy + float2(0.0f, filterOffset.y), shadowCoord.z);
+    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy + float2(0.0f, -filterOffset.y), shadowCoord.z);
+    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy + float2(filterOffset.x, 0.0f), shadowCoord.z);
+    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy + float2(-filterOffset.x, 0.0f), shadowCoord.z);
     return shadowSum * 0.2f;
 }
 
@@ -50,7 +94,7 @@ float SampleShadowMap_Q2(Texture2D<float> shadowMap, float3 shadowCoord, float2 
     for (int y = -1; y <= 1; ++y) {
         [unroll]
         for (int x = -1; x <= 1; ++x) {
-            shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy + float2(x, y) * filterOffset, shadowCoord.z);
+            shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy + float2(x, y) * filterOffset, shadowCoord.z);
         }
     }
     return shadowSum * (1.0f / 9.0f);
@@ -63,8 +107,8 @@ float SampleShadowMap_Q3(Texture2D<float> shadowMap, float3 shadowCoord, float2 
     for (int i = 0; i < 8; ++i) {
         const float4 kernel = poissonDisk16[i];
         const float4 rotated = rotMat.xyzw * kernel.xxww + rotMat.zwxy * kernel.yyzz;
-        shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy + filterOffset * rotated.xy, shadowCoord.z);
-        shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, shadowCoord.xy + filterOffset * rotated.zw, shadowCoord.z);
+        shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy + filterOffset * rotated.xy, shadowCoord.z);
+        shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, shadowCoord.xy + filterOffset * rotated.zw, shadowCoord.z);
     }
     return shadowSum * 0.0625f;
 }
@@ -86,7 +130,7 @@ float SampleShadowMap(Texture2D<float> shadowMap, float3 shadowCoord, float2 tex
 }
 #endif
 
-float EvaluateSpotShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 worldPosition) {
+float EvaluateSpotShadowLighting(uint shadowIndex, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
     const ShaderShadowAtlasData atlas = cameraConstants.shadowAtlas;
     // Invalid index 와 비활성 atlas 모두 테이블/texture 에 접근하기 전에 걸러낸다.
     [branch]
@@ -107,7 +151,7 @@ float EvaluateSpotShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 worl
     }
 
     const float3 shadowCoord = projectedPosition.xyz / projectedPosition.w;
-    // border 는 필터를 위한 caster 영역이다. receiver 는 원래 조명 영역과 정방향 depth [0, 1] 안에 있어야 한다.
+    // border 는 필터를 위한 caster 영역이다. receiver 는 원래 조명 영역과 reverse-Z depth [0, 1] 안에 있어야 한다.
     if (any(shadowCoord.xy < shadow.normalizedBorder) || any(shadowCoord.xy > 1.0f - shadow.normalizedBorder) || shadowCoord.z < 0.0f || shadowCoord.z > 1.0f) {
         return 1.0f;
     }
@@ -115,7 +159,7 @@ float EvaluateSpotShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 worl
     const float3 atlasCoord = float3(shadowCoord.xy * view.atlasScaleBias.xy + view.atlasScaleBias.zw, shadowCoord.z);
     Texture2D<float> shadowMap = GetTexture2DFloat(atlas.textureIndex);
 #if SHADOW_MAP_QUALITY == 3
-    const float4 rotMat = GetShadowRotationMatrix(pixelCoord);
+    const float4 rotMat = GetShadowRotationMatrix(shadowSampling);
     return SampleShadowMap(shadowMap, atlasCoord, atlas.texelSize, shadow.filterRadius, rotMat);
 #else
     return SampleShadowMap(shadowMap, atlasCoord, atlas.texelSize);
@@ -138,12 +182,12 @@ uint SelectPointShadowFace(float3 lightToReceiver) {
     return lightToReceiver.z >= 0.0f ? ShaderPointShadowFacePositiveZ : ShaderPointShadowFaceNegativeZ;
 }
 
-// CubeMapFaceToViewAxis + 정방향 90도 투영 + tile UV 변환과 같은 좌표를 만든다.
+// CubeMapFaceToViewAxis + reverse-Z 90도 투영 + tile UV 변환과 같은 좌표를 만든다.
 // Atlas 는 최종 Y 반전 blit 없이 기록하므로 Cubemap.hlsli 의 cubemap UV 와 세로 방향이 반대다.
 // facePosition 은 (right, down, forward). Depth 는 radial distance 가 아닌 forward distance 로 비교한다.
 // normalizedBorder = borderTexels / tileResolution.
-// depthScaleBias = (A, B), A = far / (far - near), B = -near * A.
-// 0 < near < far 인 유한한 원근 투영이며 near 에서 depth 0, far 에서 1 이다.
+// depthScaleBias = (A, B), A = -near / (far - near), B = -far * A.
+// 0 < near < far 인 유한한 원근 투영이며 near 에서 depth 1, far 에서 0 이다.
 // 유효 90도 영역은 [border, 1-border] 이며 렌더링 FOV 는 border 만큼 확장한다.
 // 반환값은 (tileU, tileV, depth). 잘못된 면/뒤쪽 점은 depth -1 로 반환하며 near/far 밖 depth 를 clamp 하지 않는다.
 float3 CalcPointShadowFaceCoord(uint faceIndex, float3 lightToReceiver, float normalizedBorder, float2 depthScaleBias) {
@@ -180,7 +224,7 @@ float3 CalcPointShadowFaceCoord(uint faceIndex, float3 lightToReceiver, float no
     return float3(tileUV, depth);
 }
 
-float EvaluatePointShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 worldPosition) {
+float EvaluatePointShadowLighting(uint shadowIndex, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
     const ShaderShadowAtlasData atlas = cameraConstants.shadowAtlas;
     [branch]
     if (shadowIndex >= atlas.numShadows) {
@@ -213,7 +257,7 @@ float EvaluatePointShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 wor
     const float3 atlasCoord = float3(shadowCoord.xy * atlasScaleBias.xy + atlasScaleBias.zw, shadowCoord.z);
     Texture2D<float> shadowMap = GetTexture2DFloat(atlas.textureIndex);
 #if SHADOW_MAP_QUALITY == 3
-    const float4 rotMat = GetShadowRotationMatrix(pixelCoord);
+    const float4 rotMat = GetShadowRotationMatrix(shadowSampling);
     return SampleShadowMap(shadowMap, atlasCoord, atlas.texelSize, shadow.filterRadius, rotMat);
 #else
     return SampleShadowMap(shadowMap, atlasCoord, atlas.texelSize);
@@ -221,15 +265,15 @@ float EvaluatePointShadowLighting(uint shadowIndex, uint2 pixelCoord, float3 wor
 }
 
 float SampleShadowMapArray_Q0(Texture2DArray<float> shadowMap, float3 shadowCoord, uint textureSlice) {
-    return shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy, textureSlice), shadowCoord.z);
+    return shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy, textureSlice), shadowCoord.z);
 }
 
 float SampleShadowMapArray_Q1(Texture2DArray<float> shadowMap, float3 shadowCoord, uint textureSlice, float2 filterOffset) {
-    float shadowSum = shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy, textureSlice), shadowCoord.z);
-    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy + float2(0.0f, filterOffset.y), textureSlice), shadowCoord.z);
-    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy + float2(0.0f, -filterOffset.y), textureSlice), shadowCoord.z);
-    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy + float2(filterOffset.x, 0.0f), textureSlice), shadowCoord.z);
-    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy + float2(-filterOffset.x, 0.0f), textureSlice), shadowCoord.z);
+    float shadowSum = shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy, textureSlice), shadowCoord.z);
+    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy + float2(0.0f, filterOffset.y), textureSlice), shadowCoord.z);
+    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy + float2(0.0f, -filterOffset.y), textureSlice), shadowCoord.z);
+    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy + float2(filterOffset.x, 0.0f), textureSlice), shadowCoord.z);
+    shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy + float2(-filterOffset.x, 0.0f), textureSlice), shadowCoord.z);
     return shadowSum * 0.2f;
 }
 
@@ -239,7 +283,7 @@ float SampleShadowMapArray_Q2(Texture2DArray<float> shadowMap, float3 shadowCoor
     for (int y = -1; y <= 1; ++y) {
         [unroll]
         for (int x = -1; x <= 1; ++x) {
-            shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy + float2(x, y) * filterOffset, textureSlice), shadowCoord.z);
+            shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy + float2(x, y) * filterOffset, textureSlice), shadowCoord.z);
         }
     }
     return shadowSum * (1.0f / 9.0f);
@@ -252,8 +296,8 @@ float SampleShadowMapArray_Q3(Texture2DArray<float> shadowMap, float3 shadowCoor
     for (int i = 0; i < 8; ++i) {
         const float4 kernel = poissonDisk16[i];
         const float4 rotated = rotMat.xyzw * kernel.xxww + rotMat.zwxy * kernel.yyzz;
-        shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy + filterOffset * rotated.xy, textureSlice), shadowCoord.z);
-        shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonSampler, float3(shadowCoord.xy + filterOffset * rotated.zw, textureSlice), shadowCoord.z);
+        shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy + filterOffset * rotated.xy, textureSlice), shadowCoord.z);
+        shadowSum += shadowMap.SampleCmpLevelZero(shadowComparisonGSampler, float3(shadowCoord.xy + filterOffset * rotated.zw, textureSlice), shadowCoord.z);
     }
     return shadowSum * 0.0625f;
 }
@@ -288,7 +332,7 @@ bool FindShadowMapCascade(ShaderCSMData csm, float3 worldPosition, uint firstCas
     outCascadeIndex = 0;
     outShadowCoord = 0.0f;
 
-    [unroll(ShaderCSMCascadeCount)]
+    [unroll(ShaderCSMCascadeMaxCount)]
     for (uint candidateIndex = 0; candidateIndex < csm.cascadeCount; candidateIndex++) {
         if (candidateIndex < firstCascadeIndex) {
             continue;
@@ -313,9 +357,9 @@ typedef float3 ShadowLighting;
 typedef float ShadowLighting;
 #endif
 
-ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, uint2 pixelCoord, float3 worldPosition) {
+ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
 #if DEBUG_CASCADED_SHADOW_MAP == 2
-    static const float3 cascadeDebugColors[ShaderCSMCascadeCount] = {
+    static const float3 cascadeDebugColors[ShaderCSMCascadeMaxCount] = {
         float3(0.02f, 0.35f, 1.00f),
         float3(0.02f, 1.00f, 0.08f),
         float3(1.00f, 0.80f, 0.02f),
@@ -332,7 +376,7 @@ ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, uint2 pixelCoord, floa
     Texture2DArray<float> shadowMapArray = GetTexture2DArrayFloat(csm.textureIndex);
 
 #if SHADOW_MAP_QUALITY == 3
-    const float4 rotMat = GetShadowRotationMatrix(pixelCoord);
+    const float4 rotMat = GetShadowRotationMatrix(shadowSampling);
     const float shadowFactor = SampleShadowMapArray(shadowMapArray, shadowCoord, cascadeIndex, csm.texelSize, csm.cascadeFilterRadii[cascadeIndex], rotMat);
 #else
     const float shadowFactor = SampleShadowMapArray(shadowMapArray, shadowCoord, cascadeIndex, csm.texelSize);
@@ -371,7 +415,7 @@ ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, uint2 pixelCoord, floa
     return shadowLighting;
 }
 
-ShadowLighting EvaluateDirectionalShadowLighting(uint2 pixelCoord, float3 worldPosition) {
+ShadowLighting EvaluateDirectionalShadowLighting(inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
     const ShaderCSMData csm = cameraConstants.csm;
     if (csm.enabled == 0) {
         return 1.0f;
@@ -383,8 +427,13 @@ ShadowLighting EvaluateDirectionalShadowLighting(uint2 pixelCoord, float3 worldP
         return 1.0f;
     }
 
-    const ShadowLighting shadowLighting = SampleCascadedShadowMap(csm, pixelCoord, worldPosition);
+    const ShadowLighting shadowLighting = SampleCascadedShadowMap(csm, shadowSampling, worldPosition);
     return lerp(shadowLighting, 1.0f, farFade);
+}
+
+ShadowLighting EvaluateDirectionalShadowLighting(uint2 pixelCoord, float3 worldPosition) {
+    ShadowSamplingContext shadowSampling = InitShadowSamplingContext(pixelCoord);
+    return EvaluateDirectionalShadowLighting(shadowSampling, worldPosition);
 }
 
 #endif // __SHADOW_LIBRARY_HLSLI__
