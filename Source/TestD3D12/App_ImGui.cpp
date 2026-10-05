@@ -1009,10 +1009,10 @@ void App::BuildImGuiOverlay() {
 
                 ImGui::BeginDisabled(shadowQuality != 3);
                 bool shadowRotationUseTexture = r_shadowMapRotationUseTexture.GetBool();
-                if (ImGui::Checkbox("Use rotation texture##Shadows", &shadowRotationUseTexture)) {
+                if (ImGui::Checkbox("Use STBN rotation##Shadows", &shadowRotationUseTexture)) {
                     r_shadowMapRotationUseTexture.SetBool(shadowRotationUseTexture);
                 }
-                ImGui::SetItemTooltip("Q3 Poisson rotation for CSM, point and spot shadows.\nChecked: 64x64 rotation texture. Unchecked: fixed-seed hash.\nSwitching recompiles shaders.");
+                ImGui::SetItemTooltip("Q3 Poisson rotation for CSM, point and spot shadows.\nChecked: STBN rotation. Unchecked: fixed-seed hash.\nSTBN changes each frame with TAA; otherwise the pattern stays fixed.\nSwitching recompiles shaders.");
                 ImGui::EndDisabled();
 
                 if (ImGui::BeginTabBar("ShadowTabs")) {

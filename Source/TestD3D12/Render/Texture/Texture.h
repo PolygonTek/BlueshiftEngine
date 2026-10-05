@@ -195,7 +195,6 @@ private:
     void                            CreateDefaultTexture(int size, Texture::Flag flags = Texture::Flag::None);
     void                            CreateColorTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);
     void                            CreateFlatNormalTexture(int size, Texture::Flag flags = Texture::Flag::None);
-    void                            CreateRandomRotMatTexture(int size, Texture::Flag flags = Texture::Flag::None);
 
     BE1::Str                        hashName;
     BE1::Str                        name;

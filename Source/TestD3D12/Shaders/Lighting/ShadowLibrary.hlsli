@@ -7,7 +7,7 @@
 #define SHADOW_MAP_QUALITY 2
 #endif
 
-// r_shadowMapRotationUseTexture 의 global define. 0 = 고정 seed 해시, 1 = 기존 64x64 회전 텍스처.
+// r_shadowMapRotationUseTexture 의 global define. 0 = 고정 seed 해시, 1 = STBN 방향 텍스처.
 #ifndef USE_SHADOW_ROTATION_TEXTURE
 #define USE_SHADOW_ROTATION_TEXTURE 0
 #endif
@@ -33,8 +33,9 @@ ShadowSamplingContext InitShadowSamplingContext(uint2 pixelCoord) {
 }
 
 #if SHADOW_MAP_QUALITY == 3
-#if !USE_SHADOW_ROTATION_TEXTURE
 #include "../Random.hlsli"
+#if USE_SHADOW_ROTATION_TEXTURE
+#include "../STBN.hlsli"
 #endif
 
 static const float4 poissonDisk16[8] = {
@@ -50,18 +51,20 @@ static const float4 poissonDisk16[8] = {
 
 float4 GetShadowRotationMatrix(uint2 pixelCoord) {
 #if USE_SHADOW_ROTATION_TEXTURE
-    const float2 rotationTexCoord = (float2(pixelCoord) + 0.5f) * (1.0f / 64.0f);
-    const float2 encodedRotation = GetTexture2D(frameConstants.randomRotMatTextureIndex).SampleLevel(pointWrapSampler, rotationTexCoord, 0.0f).rg;
-    const float2 cs = normalize(encodedRotation * 2.0f - 1.0f);
-    return float4(cs.x, -cs.y, cs.y, cs.x); // column-major rotation matrix
-#else
-    // 전체 픽셀 좌표와 고정 seed 로 64x64 반복 및 프레임마다 바뀌는 노이즈를 피한다.
+    [branch]
+    if (frameConstants.stbnUnitVec2TextureIndex != 0u) {
+        // TAA 로 누적할 때만 시간 슬라이스를 바꾼다. TAA 를 사용하지 않는 카메라는 패턴을 고정한다.
+        const uint noiseFrameIndex = (cameraConstants.flags & ShaderCameraFlagUseTAA) != 0u ? frameConstants.frameCount : 0u;
+        const float2 cs = ReadSTBNUnitVec2(GetTexture2DArray(frameConstants.stbnUnitVec2TextureIndex), pixelCoord, noiseFrameIndex);
+        return float4(cs.x, -cs.y, cs.y, cs.x); // column-major rotation matrix
+    }
+#endif
+    // STBN 미사용/로드 실패 시 전체 픽셀 좌표와 고정 seed 로 타일 반복 및 프레임마다 바뀌는 노이즈를 피한다.
     const uint h = Hash(pixelCoord.x ^ Hash(pixelCoord.y ^ 23119u));
     const float angle = TWO_PI * UintToUniform01(h);
     float s, c;
     sincos(angle, s, c);
     return float4(c, -s, s, c); // column-major rotation matrix
-#endif
 }
 
 float4 GetShadowRotationMatrix(inout ShadowSamplingContext context) {

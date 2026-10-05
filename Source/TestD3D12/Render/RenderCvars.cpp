@@ -47,7 +47,7 @@ CVAR(r_meshLODPixelError2, "2.0", BE1::CVar::Flag::Float, "estimated mesh LOD pi
 CVAR(r_shadows2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable shadows");
 CVAR_MINMAX(r_shadowDebug, "0", BE1::CVar::Flag::Integer, "shadow debug view (0 = off, 1 = visibility, 2 = coverage)", 0, 2);
 CVAR_MINMAX(r_shadowMapQuality2, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "shadow map filter quality (0 = 1, 1 = 5, 2 = 9, 3 = 16 rotated Poisson comparisons)", 0, 3);
-CVAR(r_shadowMapRotationUseTexture, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use a 64x64 rotation texture instead of a fixed-seed hash for Q3 Poisson shadows (rebuilds shader pipelines)");
+CVAR(r_shadowMapRotationUseTexture, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use STBN rotation instead of a fixed-seed hash for Q3 Poisson shadows; animate with TAA (rebuilds shader pipelines)");
 
 // Local Shadows
 CVAR_MINMAX(r_shadowAtlasSize, "8192", BE1::CVar::Flag::Integer, "local shadow atlas side length in texels; rounded down to a power of two when captured", 1024, 8192);
@@ -56,7 +56,7 @@ CVAR_MINMAX(r_shadowAtlasMaxViews, "180", BE1::CVar::Flag::Integer, "maximum loc
 CVAR(r_shadowAtlasLoadBalancing, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "double the local shadow update interval for each halving of projected size below r_shadowUpdateMinProjectedSize");
 CVAR_MINMAX(r_shadowProjectedSizeScale, "0.5", BE1::CVar::Flag::Float, "projected light size multiplier for spot/point shadow resolution selection (does not affect the minimum projected size cutoff)", 0.125f, 4.0f);
 CVAR_MINMAX(r_shadowUpdateMinProjectedSize, "512", BE1::CVar::Flag::Integer, "minimum projected light size for every-frame local shadow updates (unscaled long edge in internal render pixels)", RenderFrameSettings::LocalShadowMinProjectedSize, 16384);
-CVAR_MINMAX(r_shadowMapLocalFilterHalfAngle, "0.4", BE1::CVar::Flag::Float, "Point/Spot Q3 Poisson maximum sample half-angle in degrees around the projection axis (Q0/Q1/Q2 use fixed kernels)", 0.0f, 2.0f);
+CVAR_MINMAX(r_shadowMapLocalFilterHalfAngle, "0.25", BE1::CVar::Flag::Float, "Point/Spot Q3 Poisson maximum sample half-angle in degrees around the projection axis (Q0/Q1/Q2 use fixed kernels)", 0.0f, 2.0f);
 
 // CSM
 CVAR_MINMAX(r_csmResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "cascade shadow map resolution", 128, 8192);

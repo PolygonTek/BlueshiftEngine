@@ -222,8 +222,8 @@ bool RenderBackend::UploadFrameConstants() {
 
     const RHI::Texture *dfgSumGGXTexture = renderSystem->dfgSumGGXTexture ? renderSystem->dfgSumGGXTexture->GetReadyRHITexture() : nullptr;
     constants->dfgSumGGXTextureIndex = dfgSumGGXTexture ? dfgSumGGXTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    const RHI::Texture *randomRotMatTexture = textureManager.randomRotMatTexture->GetRHITexture();
-    constants->randomRotMatTextureIndex = randomRotMatTexture->GetBindlessIndex(RHI::ViewType::SRV);
+    const RHI::Texture *stbnUnitVec2Texture = renderSystem->GetSTBNUnitVec2Texture() ? renderSystem->GetSTBNUnitVec2Texture()->GetReadyRHITexture() : nullptr;
+    constants->stbnUnitVec2TextureIndex = stbnUnitVec2Texture ? stbnUnitVec2Texture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->padding0 = 0;
     constants->padding1 = 0;
     constants->padding2 = 0;
@@ -287,6 +287,9 @@ bool RenderBackend::UploadCameraConstants() {
     }
     if (currentFrameCamera->applyAO) {
         flags |= ShaderCameraFlagUseAO;
+    }
+    if (currentFrameCamera->taaResolve && frameTAAResolvePSO) {
+        flags |= ShaderCameraFlagUseTAA;
     }
 
     ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentFrameCamera->viewProjMatrix;

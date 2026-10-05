@@ -150,10 +150,6 @@ void TextureManager::CreateEngineTextures() {
     // Create flatNormal texture.
     flatNormalTexture = AllocTexture("_flatNormalTexture");
     flatNormalTexture->CreateFlatNormalTexture(16);
-
-    // Create random rotation matrix texture.
-    randomRotMatTexture = AllocTexture("_randomRotMatTexture");
-    randomRotMatTexture->CreateRandomRotMatTexture(64);
 }
 
 void TextureManager::DestroyEngineTextures() {
@@ -168,9 +164,6 @@ void TextureManager::DestroyEngineTextures() {
     }
     if (flatNormalTexture) {
         flatNormalTexture.reset();
-    }
-    if (randomRotMatTexture) {
-        randomRotMatTexture.reset();
     }
 }
 

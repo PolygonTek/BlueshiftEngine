@@ -173,6 +173,7 @@ static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
 static const uint ShaderCameraFlagUseDirectionalLight = 1u << 2;
 static const uint ShaderCameraFlagUseSpecularAA = 1u << 3;
 static const uint ShaderCameraFlagUseAO = 1u << 4;
+static const uint ShaderCameraFlagUseTAA = 1u << 5;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
@@ -730,7 +731,7 @@ struct FrameConstants {
     uint shaderLightTileWordTableIndex;
     uint feedbackBufferIndex;
     uint dfgSumGGXTextureIndex;
-    uint randomRotMatTextureIndex;
+    uint stbnUnitVec2TextureIndex;
     uint padding0;
     uint padding1;
     uint padding2;
