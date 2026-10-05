@@ -427,6 +427,8 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
         textureType = RHI::TextureType::Texture3D;
     } else if (image->IsCubeMap()) {
         textureType = RHI::TextureType::TextureCube;
+    } else if (image->GetArraySize() > 1) {
+        textureType = RHI::TextureType::Texture2DArray;
     } else {
         textureType = RHI::TextureType::Texture2D;
     }

@@ -96,6 +96,34 @@ public:
     const SharedPtr<Texture> &      GetColorGradingLUTTexture() const { return colorGradingLUTTexture; }
     void                            RequestColorGradingLUTUpdate() { colorGradingLUTDirty = true; }
 
+                                    // NVIDIA STBN: https://github.com/NVIDIA-RTX/STBN (Assets/STBN.zip, License.txt).
+                                    // 128x128, 64 slices, mip 1. 픽셀 좌표 & 127, frameIndex & 63 으로 Load/Point sampling 한다.
+                                    // R8: void-and-cluster 스칼라 난수. 디더링, 확률적 알파 테스트, 스칼라 지터.
+    const SharedPtr<Texture> &      GetSTBNScalarTexture() const { return stbnScalarTexture; }
+
+                                    // R8: simulated annealing 으로 생성한 1차원 난수. Scalar 와 다른 시퀀스.
+    const SharedPtr<Texture> &      GetSTBNVec1Texture() const { return stbnVec1Texture; }
+
+                                    // RG8: [0, 1]^2 샘플. GTAO 의 각도/거리 지터, 2차원 샘플링 입력.
+    const SharedPtr<Texture> &      GetSTBNVec2Texture() const { return stbnVec2Texture; }
+
+                                    // RGBA8: RGB 는 [0, 1]^3 샘플이며 A 는 미사용.
+    const SharedPtr<Texture> &      GetSTBNVec3Texture() const { return stbnVec3Texture; }
+
+                                    // R8: r * 2 - 1 로 -1/+1 부호 선택.
+    const SharedPtr<Texture> &      GetSTBNUnitVec1Texture() const { return stbnUnitVec1Texture; }
+
+                                    // RG8: 원 둘레 방향. normalize(rg * 2 - 1) 로 복원.
+    const SharedPtr<Texture> &      GetSTBNUnitVec2Texture() const { return stbnUnitVec2Texture; }
+
+                                    // RGBA8: 구면 방향. normalize(rgb * 2 - 1) 로 복원하며 A 는 미사용. normalize 는 8비트 양자화의 길이 오차를 보정한다.
+    const SharedPtr<Texture> &      GetSTBNUnitVec3Texture() const { return stbnUnitVec3Texture; }
+
+                                    // RGBA8: +Z 반구의 cosine-weighted 방향. Diffuse/AO/GI 용이며 normalize(rgb * 2 - 1) 을 TBN 으로 변환한다.
+                                    // A 는 (pdf - pdfMin) / (pdfMax - pdfMin) 의 인코딩 값이고 범위 정보는 DDS 에 없다.
+                                    // 입체각 PDF 는 복원한 로컬 방향의 max(z, 0) / PI 로 계산한다.
+    const SharedPtr<Texture> &      GetSTBNUnitVec3CosineTexture() const { return stbnUnitVec3CosineTexture; }
+
     ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() { return convolutionBloomKernelGenerator; }
     const ConvolutionBloomKernelGenerator &GetConvolutionBloomKernelGenerator() const { return convolutionBloomKernelGenerator; }
     uint64_t                        RequestConvolutionBloomKernelGeneration(const SharedPtr<Texture> &apertureTexture, float apertureScale, float dispersionAmount);
@@ -138,6 +166,7 @@ public:
 private:
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
+    void                            InitSTBNTextures();
     void                            InitComputePipelines();
     void                            EnsureComputePipelines();
     void                            ReleaseComputePipelines();
@@ -204,6 +233,14 @@ private:
     bool                            colorGradingLUTDirty = false;
 
     SharedPtr<Texture>              dfgSumGGXTexture;
+    SharedPtr<Texture>              stbnScalarTexture;
+    SharedPtr<Texture>              stbnVec1Texture;
+    SharedPtr<Texture>              stbnVec2Texture;
+    SharedPtr<Texture>              stbnVec3Texture;
+    SharedPtr<Texture>              stbnUnitVec1Texture;
+    SharedPtr<Texture>              stbnUnitVec2Texture;
+    SharedPtr<Texture>              stbnUnitVec3Texture;
+    SharedPtr<Texture>              stbnUnitVec3CosineTexture;
 
     GpuFFT                          gpuFFT;
     GpuOcean                        gpuOcean;

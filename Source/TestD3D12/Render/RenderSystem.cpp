@@ -56,6 +56,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
         dfgSumGGXTexture.reset();
     }
 
+    InitSTBNTextures();
+
     CreateColorGradingLUT();
 
     shaderTemplateManager.Init();
@@ -182,6 +184,14 @@ void RenderSystem::Shutdown() {
     DestroyColorGradingLUT();
 
     dfgSumGGXTexture.reset();
+    stbnScalarTexture.reset();
+    stbnVec1Texture.reset();
+    stbnVec2Texture.reset();
+    stbnVec3Texture.reset();
+    stbnUnitVec1Texture.reset();
+    stbnUnitVec2Texture.reset();
+    stbnUnitVec3Texture.reset();
+    stbnUnitVec3CosineTexture.reset();
 
     textureManager.Shutdown();
 
@@ -401,6 +411,34 @@ void RenderSystem::PrepareProbeBakes(RenderContext *renderContext) {
     }
 
     probeBakeSystem.Prepare(renderContext);
+}
+
+static SharedPtr<Texture> LoadSTBNTexture(const char *filename, BE1::Image::Format format) {
+    constexpr Texture::Flag flags = Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace;
+    SharedPtr<Texture> texture = textureManager.GetTexture(filename, flags, false);
+    if (texture == textureManager.defaultTexture) {
+        BE_WARNLOG("RenderSystem::InitSTBNTextures: failed to load '%s'\n", filename);
+        return nullptr;
+    }
+
+    if (texture->GetType() != RHI::TextureType::Texture2DArray ||
+        texture->GetWidth() != 128 || texture->GetHeight() != 128 || texture->GetArraySize() != 64 ||
+        texture->GetMipLevelCount() != 1 || texture->GetFormat() != format) {
+        BE_WARNLOG("RenderSystem::InitSTBNTextures: unexpected texture format or dimensions in '%s'\n", filename);
+        return nullptr;
+    }
+    return texture;
+}
+
+void RenderSystem::InitSTBNTextures() {
+    stbnScalarTexture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNScalar.dds", BE1::Image::Format::R8);
+    stbnVec1Texture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNVec1.dds", BE1::Image::Format::R8);
+    stbnVec2Texture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNVec2.dds", BE1::Image::Format::R8G8);
+    stbnVec3Texture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNVec3.dds", BE1::Image::Format::R8G8B8A8);
+    stbnUnitVec1Texture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNUnitVec1.dds", BE1::Image::Format::R8);
+    stbnUnitVec2Texture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNUnitVec2.dds", BE1::Image::Format::R8G8);
+    stbnUnitVec3Texture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNUnitVec3.dds", BE1::Image::Format::R8G8B8A8);
+    stbnUnitVec3CosineTexture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNUnitVec3Cosine.dds", BE1::Image::Format::R8G8B8A8);
 }
 
 void RenderSystem::InitComputePipelines() {
