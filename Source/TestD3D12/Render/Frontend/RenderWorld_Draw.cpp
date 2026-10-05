@@ -769,8 +769,8 @@ void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamer
     }
 
     const uint32_t shadowMapResolution = renderContext->GetCSMResolution();
-    constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::CSMFilterReferenceResolution - 2 * RenderFrameSettings::CSMFilterReferenceBorderTexels);
-    constexpr float filterRadiusScale = RenderFrameSettings::CSMFilterReferenceMaxRadius / referenceUsableResolution;
+    constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapReferenceResolution - 2 * RenderFrameSettings::ShadowMapReferenceBorderTexels);
+    constexpr float filterRadiusScale = RenderFrameSettings::ShadowMapReferenceMaxRadius / referenceUsableResolution;
     const uint32_t shadowMapBorderTexels = frameSettings.shadowMapQuality < 3 ? 2 : CalcShadowMapBorderTexels(shadowMapResolution, filterRadiusScale);
 
     FrameCascadedShadow *frameCascadedShadow = new (frame->MemAlloc(sizeof(FrameCascadedShadow))) FrameCascadedShadow();
@@ -807,7 +807,6 @@ void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamer
     const float shadowMapUsableResolution = static_cast<float>(shadowMapResolution - 2 * shadowMapBorderTexels);
     const float filterResolutionScale = shadowMapUsableResolution / referenceUsableResolution;
 
-    const float minFilterRadius = RenderFrameSettings::CSMFilterReferenceMinRadius * filterResolutionScale;
     const float maxFilterRadius = frameSettings.csmFilterRadius * filterResolutionScale;
     const float cascade0FilterRadiusInWorld = maxFilterRadius * frameCascadedShadow->cascades[0].worldUnitsPerTexel;
 
@@ -816,7 +815,7 @@ void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamer
 
     for (uint32_t cascadeIndex = 0; cascadeIndex < frameCascadedShadow->cascadeCount; cascadeIndex++) {
         const float worldUnitsPerTexel = frameCascadedShadow->cascades[cascadeIndex].worldUnitsPerTexel;
-        cascadeFilterRadii[cascadeIndex] = BE1::Max(cascade0FilterRadiusInWorld / worldUnitsPerTexel, minFilterRadius);
+        cascadeFilterRadii[cascadeIndex] = cascade0FilterRadiusInWorld / worldUnitsPerTexel;
     }
 
     // RenderObject 를 한 번 순회하여 caster 와 cascade mask 를 수집한다.
@@ -1908,7 +1907,7 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera
             if (localShadowsEnabled && BE1::HasFlag(frameLight->flags, RenderLight::Flag::CastShadows)) {
                 // 투영 영역의 긴 변이 최소 크기 미만이면 shadow light 후보에서 제외한다.
                 if (projectedSize >= RenderFrameSettings::LocalShadowMinProjectedSize && (frameLight->type == RenderLight::Type::Spot || frameLight->type == RenderLight::Type::Point)) {
-                    const float scaledProjectedSize = projectedSize * frameSettings.shadowProjectedSizeScale;
+                    const float scaledProjectedSize = projectedSize * frameSettings.shadowMapProjectedSizeScale;
 
                     if (useShadowResolutionHistory) {
                         // 광원 영향 영역에 해상도 배율을 적용해 요청 해상도를 근사하고, 카메라별 history 로 경계 부근의 반복 변경을 막는다.
@@ -2050,7 +2049,7 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
             uint32_t updateInterval = 1;
             uint32_t projectedSize = shadowLight->projectedSize;
 
-            while (projectedSize < frameSettings.shadowUpdateMinProjectedSize && updateInterval < RenderFrameSettings::ShadowAtlasMaxUpdateInterval) {
+            while (projectedSize < frameSettings.shadowMapUpdateMinProjectedSize && updateInterval < RenderFrameSettings::ShadowAtlasMaxUpdateInterval) {
                 projectedSize <<= 1;
                 updateInterval <<= 1;
             }
@@ -2062,16 +2061,13 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
 
         // 갱신할 때만 실제 해상도와 현재 품질에 맞는 PCF/bilinear footprint 용 border 를 적용한다.
         if (frameShadow->updateDepth) {
-            // filterRadiusScale = 필터 반경 / 전체 너비
-            // filterRadiusScale = dist * tan(filterHalfAngle) / (dist * tan(projectionHalfAngle) * 2)
-            // filterRadiusScale = tan(filterHalfAngle) * 0.5 / tan(projectionHalfAngle)
-            entry->filterProjectionScale = shadowLight->type == RenderLight::Type::Point ? 0.5f : 0.5f / shadowLight->spotTanOuterCone;
-            const float filterRadiusScale = frameSettings.shadowMapLocalFilterTanHalfAngle * entry->filterProjectionScale;
+            // Q3 최대 반경 기준으로 border 를 확보하여 필터 반경 조절 시 projection 을 유지한다.
+            constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapReferenceResolution - 2 * RenderFrameSettings::ShadowMapReferenceBorderTexels);
+            constexpr float filterRadiusScale = RenderFrameSettings::ShadowMapReferenceMaxRadius / referenceUsableResolution;
 
             entry->borderTexels = shadowMapQuality < 3 ? 2 : CalcShadowMapBorderTexels(frameShadow->resolution, filterRadiusScale);
             frameShadow->hasValidDepth = false; // 갱신 결과는 백엔드에서 depth 기록 후 확정한다.
         }
-        frameShadow->filterProjectionScale = entry->filterProjectionScale;
 
         FrameLocalShadowView *shadowViews = &frameShadowAtlas->shadowViews[frameShadow->firstShadowView];
         for (uint32_t viewIndex = 0; viewIndex < shadowViewCount; ++viewIndex) {

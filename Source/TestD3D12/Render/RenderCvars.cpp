@@ -51,16 +51,16 @@ CVAR(r_shadowMapRotationUseTexture, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag
 
 // Local Shadows
 CVAR_MINMAX(r_shadowAtlasSize, "8192", BE1::CVar::Flag::Integer, "local shadow atlas side length in texels; rounded down to a power of two when captured", 1024, 8192);
-CVAR_MINMAX(r_shadowAtlasMaxTileResolution, "1024", BE1::CVar::Flag::Integer, "maximum local shadow tile resolution including border (per face for point lights); rounded down to a power of two when captured", RenderFrameSettings::ShadowAtlasMinTileResolution, 2048);
+CVAR_MINMAX(r_shadowAtlasMaxTileResolution, "2048", BE1::CVar::Flag::Integer, "maximum local shadow tile resolution including border (per face for point lights); rounded down to a power of two when captured", RenderFrameSettings::ShadowAtlasMinTileResolution, 2048);
 CVAR_MINMAX(r_shadowAtlasMaxViews, "180", BE1::CVar::Flag::Integer, "maximum local shadow views per camera (spot = 1, point = 6, 0 = disabled)", 0, 1024);
-CVAR(r_shadowAtlasLoadBalancing, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "double the local shadow update interval for each halving of projected size below r_shadowUpdateMinProjectedSize");
-CVAR_MINMAX(r_shadowProjectedSizeScale, "0.5", BE1::CVar::Flag::Float, "projected light size multiplier for spot/point shadow resolution selection (does not affect the minimum projected size cutoff)", 0.125f, 4.0f);
-CVAR_MINMAX(r_shadowUpdateMinProjectedSize, "512", BE1::CVar::Flag::Integer, "minimum projected light size for every-frame local shadow updates (unscaled long edge in internal render pixels)", RenderFrameSettings::LocalShadowMinProjectedSize, 16384);
-CVAR_MINMAX(r_shadowMapLocalFilterHalfAngle, "0.25", BE1::CVar::Flag::Float, "Point/Spot Q3 Poisson maximum sample half-angle in degrees around the projection axis (Q0/Q1/Q2 use fixed kernels)", 0.0f, 2.0f);
+CVAR(r_shadowAtlasLoadBalancing, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "double the local shadow update interval for each halving of projected size below r_shadowMapUpdateMinProjectedSize");
+CVAR_MINMAX(r_shadowMapProjectedSizeScale, "0.62", BE1::CVar::Flag::Float, "projected light size multiplier for spot/point shadow resolution selection (does not affect the minimum projected size cutoff)", 0.125f, 4.0f);
+CVAR_MINMAX(r_shadowMapUpdateMinProjectedSize, "512", BE1::CVar::Flag::Integer, "minimum projected light size for every-frame Point/Spot shadow updates (unscaled long edge in internal render pixels)", RenderFrameSettings::LocalShadowMinProjectedSize, 16384);
+CVAR_MINMAX(r_shadowMapFilterRadius, "2.25", BE1::CVar::Flag::Float, "Point/Spot Q3 Poisson maximum sample radius in texels at 1024 resolution; adjusted for tile resolution (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::ShadowMapReferenceMinRadius, RenderFrameSettings::ShadowMapReferenceMaxRadius);
 
 // CSM
 CVAR_MINMAX(r_csmResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "cascade shadow map resolution", 128, 8192);
-CVAR_MINMAX(r_csmFilterRadius, "1.75", BE1::CVar::Flag::Float, "CSM Q3 Poisson maximum sample radius in texels at 1024 resolution; adjusted for resolution and cascade scale (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::CSMFilterReferenceMinRadius, RenderFrameSettings::CSMFilterReferenceMaxRadius);
+CVAR_MINMAX(r_csmFilterRadius, "1.75", BE1::CVar::Flag::Float, "CSM Q3 Poisson maximum sample radius in texels at 1024 resolution; adjusted for resolution and cascade scale (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::ShadowMapReferenceMinRadius, RenderFrameSettings::ShadowMapReferenceMaxRadius);
 CVAR_MINMAX(r_csmCount, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "active CSM cascade count", 1, RenderFrameSettings::CSMCascadeMaxCount);
 CVAR_MINMAX(r_csmSplitLambda, "0.9", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "CSM split distribution (0 = uniform, 1 = logarithmic; orthographic cameras use uniform)", 0.0f, 1.0f);
 CVAR_MINMAX(r_csmMaxDistance, "150", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "maximum CSM distance in world units (0 = disabled)", 0.0f, 10000.0f);
@@ -213,9 +213,9 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.shadowAtlasMaxTileResolution = BE1::Math::RoundDownPowerOfTwo(static_cast<uint32_t>(BE1::Clamp(r_shadowAtlasMaxTileResolution.GetInteger(), static_cast<int>(RenderFrameSettings::ShadowAtlasMinTileResolution), maxTileResolution)));
     settings.shadowAtlasMaxViews = static_cast<uint32_t>(BE1::Clamp(r_shadowAtlasMaxViews.GetInteger(), 0, 1024));
     settings.shadowAtlasLoadBalancing = r_shadowAtlasLoadBalancing.GetBool();
-    settings.shadowProjectedSizeScale = r_shadowProjectedSizeScale.GetFloat();
-    settings.shadowUpdateMinProjectedSize = static_cast<uint32_t>(BE1::Clamp(r_shadowUpdateMinProjectedSize.GetInteger(), static_cast<int>(RenderFrameSettings::LocalShadowMinProjectedSize), 16384));
-    settings.shadowMapLocalFilterTanHalfAngle = settings.shadowMapQuality == 3 ? BE1::Math::Tan(DEG2RAD(r_shadowMapLocalFilterHalfAngle.GetFloat())) : 0.0f;
+    settings.shadowMapProjectedSizeScale = r_shadowMapProjectedSizeScale.GetFloat();
+    settings.shadowMapUpdateMinProjectedSize = static_cast<uint32_t>(BE1::Clamp(r_shadowMapUpdateMinProjectedSize.GetInteger(), static_cast<int>(RenderFrameSettings::LocalShadowMinProjectedSize), 16384));
+    settings.shadowMapFilterRadius = r_shadowMapFilterRadius.GetFloat();
 
     settings.csmResolution = static_cast<uint32_t>(r_csmResolution.GetInteger());
     settings.csmFilterRadius = r_csmFilterRadius.GetFloat();

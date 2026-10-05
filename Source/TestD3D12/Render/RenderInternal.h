@@ -137,7 +137,6 @@ struct FrameLocalShadow {
     BE1::Vec3                       pointOrigin = BE1::Vec3::zero;   // Point depth 기록 당시의 위치. 현재 조명 위치와 별도로 유지한다.
     BE1::Vec2                       pointDepthScaleBias = BE1::Vec2::zero; // Point depth = X + Y / 면의 전방 거리.
     float                           squaredRadius = 0.0f;           // 포인트 라이트의 반경 제곱
-    float                           filterProjectionScale = 0.5f;   // Depth 기록 당시의 0.5 / tan(투영 반각). 필터 각도를 유효 타일 UV 반경으로 환산한다.
     float                           viewPlaneToOriginDistances[6];  // 각 view volume 평면에서 광원까지 거리
     uint32_t                        firstShadowView = 0;            // FrameShadowAtlas::shadowViews 의 첫번째 index
     uint32_t                        numShadowViews = 0;             // shadow view 개수 (Spot: 1, Point: 6)

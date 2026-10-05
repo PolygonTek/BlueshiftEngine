@@ -1156,12 +1156,12 @@ void App::BuildImGuiOverlay() {
                     if (ImGui::BeginTabItem("Shadow Atlas")) {
                         ImGui::BeginDisabled(shadowQuality != 3);
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        float localFilterHalfAngle = r_shadowMapLocalFilterHalfAngle.GetFloat();
-                        if (ImGui::SliderFloat("Local Poisson half-angle", &localFilterHalfAngle,
-                            r_shadowMapLocalFilterHalfAngle.GetMinValue(), r_shadowMapLocalFilterHalfAngle.GetMaxValue(), "%.3f deg", ImGuiSliderFlags_AlwaysClamp)) {
-                            r_shadowMapLocalFilterHalfAngle.SetFloat(localFilterHalfAngle);
+                        float localFilterRadius = r_shadowMapFilterRadius.GetFloat();
+                        if (ImGui::SliderFloat("Local Poisson filter radius", &localFilterRadius,
+                            r_shadowMapFilterRadius.GetMinValue(), r_shadowMapFilterRadius.GetMaxValue(), "%.3f texels", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowMapFilterRadius.SetFloat(localFilterRadius);
                         }
-                        ImGui::SetItemTooltip("Point/Spot Q3 filter half-angle around the projection axis. Compensates for tile resolution and spot cone angle.\nCached shadows limit the filter radius to their stored border until the next depth update.");
+                        ImGui::SetItemTooltip("r_shadowMapFilterRadius\nPoint/Spot Q3 maximum sample radius in texels at 1024 resolution. Scales with usable tile resolution.\nA wider spot cone produces a wider world-space filter at the same depth.");
                         ImGui::EndDisabled();
 
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
@@ -1206,13 +1206,13 @@ void App::BuildImGuiOverlay() {
                         }
                         ImGui::SetItemTooltip("r_shadowAtlasMaxViews\nMaximum shadow views per camera. Spot uses 1 view, Point uses 6. 0 disables local shadows. Ctrl+click to enter a value.");
 
-                        float projectedSizeScale = r_shadowProjectedSizeScale.GetFloat();
+                        float projectedSizeScale = r_shadowMapProjectedSizeScale.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
                         if (ImGui::SliderFloat("Projected size scale##ShadowAtlas", &projectedSizeScale,
-                            r_shadowProjectedSizeScale.GetMinValue(), r_shadowProjectedSizeScale.GetMaxValue(), "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
-                            r_shadowProjectedSizeScale.SetFloat(projectedSizeScale);
+                            r_shadowMapProjectedSizeScale.GetMinValue(), r_shadowMapProjectedSizeScale.GetMaxValue(), "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowMapProjectedSizeScale.SetFloat(projectedSizeScale);
                         }
-                        ImGui::SetItemTooltip("r_shadowProjectedSizeScale\nScales projected light size when selecting Spot/Point shadow resolution. Higher values request higher resolutions.");
+                        ImGui::SetItemTooltip("r_shadowMapProjectedSizeScale\nScales projected light size when selecting Spot/Point shadow resolution. Higher values request higher resolutions.");
 
                         bool shadowLoadBalancing = r_shadowAtlasLoadBalancing.GetBool();
                         if (ImGui::Checkbox("Load balancing##ShadowAtlas", &shadowLoadBalancing)) {
@@ -1221,13 +1221,13 @@ void App::BuildImGuiOverlay() {
                         ImGui::SetItemTooltip("r_shadowAtlasLoadBalancing\nEach halving of projected size below the every-frame threshold doubles the update interval, up to %u frames. Previous depth is reused in between. Shadows without valid depth always update. Point light faces update together.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
 
                         ImGui::BeginDisabled(!shadowLoadBalancing);
-                        int updateMinProjectedSize = r_shadowUpdateMinProjectedSize.GetInteger();
+                        int updateMinProjectedSize = r_shadowMapUpdateMinProjectedSize.GetInteger();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
                         if (ImGui::SliderInt("Every-frame size##ShadowAtlas", &updateMinProjectedSize,
-                            static_cast<int>(r_shadowUpdateMinProjectedSize.GetMinValue()), static_cast<int>(r_shadowUpdateMinProjectedSize.GetMaxValue()), "%d px", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
-                            r_shadowUpdateMinProjectedSize.SetInteger(updateMinProjectedSize);
+                            static_cast<int>(r_shadowMapUpdateMinProjectedSize.GetMinValue()), static_cast<int>(r_shadowMapUpdateMinProjectedSize.GetMaxValue()), "%d px", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowMapUpdateMinProjectedSize.SetInteger(updateMinProjectedSize);
                         }
-                        ImGui::SetItemTooltip("r_shadowUpdateMinProjectedSize\nLights at or above this projected size update their shadows every frame. Each halving of size doubles the update interval, up to %u frames.\nUses the longer edge in render-resolution pixels, before projected size scaling. Ctrl+click to enter a value.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
+                        ImGui::SetItemTooltip("r_shadowMapUpdateMinProjectedSize\nPoint/Spot lights at or above this projected size update their shadows every frame. Each halving of size doubles the update interval, up to %u frames.\nUses the longer edge in render-resolution pixels, before projected size scaling. Ctrl+click to enter a value.", RenderFrameSettings::ShadowAtlasMaxUpdateInterval);
                         ImGui::EndDisabled();
 
                         BuildImGuiShadowAtlasPreview();

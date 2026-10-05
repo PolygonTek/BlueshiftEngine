@@ -31,10 +31,10 @@ enum class RenderAOMode : uint32_t {
 // 모든 멤버는 사용 전에 CaptureRenderFrameSettings() 에서 설정한다.
 struct RenderFrameSettings {
     static constexpr uint32_t   CSMCascadeMaxCount = 4;
-    static constexpr uint32_t   CSMFilterReferenceResolution = 1024;        ///< CSM filter radius 와 border 의 기준 해상도.
-    static constexpr float      CSMFilterReferenceMinRadius = 1.0f;
-    static constexpr float      CSMFilterReferenceMaxRadius = 5.0f;
-    static constexpr uint32_t   CSMFilterReferenceBorderTexels = 6;         ///< 최대 샘플 반경 5 texel + bilinear 여유 1 texel.
+    static constexpr uint32_t   ShadowMapReferenceResolution = 1024;       ///< CSM/Point/Spot filter radius 와 border 의 공통 기준 해상도.
+    static constexpr float      ShadowMapReferenceMinRadius = 0.0f;
+    static constexpr float      ShadowMapReferenceMaxRadius = 5.0f;
+    static constexpr uint32_t   ShadowMapReferenceBorderTexels = 6;        ///< 최대 샘플 반경 5 texel + bilinear 여유 1 texel.
 
     static constexpr uint32_t   LocalShadowMinProjectedSize = 32;           ///< Local shadow 후보의 최소 투영 크기 (긴 변). 내부 렌더 해상도 기준 픽셀.
     static constexpr uint32_t   ShadowAtlasMinTileResolution = 64;          ///< Border 를 포함한 local shadow atlas 타일의 최소 해상도.
@@ -44,14 +44,14 @@ struct RenderFrameSettings {
 
     uint32_t                    shadowDebugMode;
     uint32_t                    shadowMapQuality;
-    float                       shadowMapLocalFilterTanHalfAngle;           ///< Point/Spot Q3 필터 반각의 tangent.
+    float                       shadowMapFilterRadius;                      ///< 기준 해상도에서의 Point/Spot Q3 최대 샘플 반경 (texel).
 
     uint32_t                    shadowAtlasSize;
     uint32_t                    shadowAtlasMaxTileResolution;               ///< Spot 또는 Point 한 면의 최대 타일 해상도. Border 포함.
     uint32_t                    shadowAtlasMaxViews;                        ///< 카메라별 shadow view 예산. Spot 은 1, Point 는 6 을 사용하며 0 이면 비활성화.
     bool                        shadowAtlasLoadBalancing;                   ///< 광원의 화면 투영 크기가 작을수록 shadow 의 갱신 프레임 간격을 늘린다.
-    float                       shadowProjectedSizeScale;                   ///< Spot/Point 라이트의 요청 해상도 계산 시 광원의 화면 투영 크기에 곱하는 배율.
-    uint32_t                    shadowUpdateMinProjectedSize;               ///< 매 프레임 갱신할 광원 투영 영역의 최소 긴 변. 배율 적용 전 내부 렌더 픽셀 기준.
+    float                       shadowMapProjectedSizeScale;                ///< Spot/Point 라이트의 요청 해상도 계산 시 광원의 화면 투영 크기에 곱하는 배율.
+    uint32_t                    shadowMapUpdateMinProjectedSize;            ///< 매 프레임 갱신할 광원 투영 영역의 최소 긴 변. 배율 적용 전 내부 렌더 픽셀 기준.
 
     uint32_t                    csmResolution;
     float                       csmFilterRadius;                             ///< 기준 해상도에서의 Q3 최대 샘플 반경 (texel).

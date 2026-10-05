@@ -28,11 +28,13 @@ static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLo
 
     float filterRadius = settings.shadowMapQuality == 0 ? 0.0f : 1.0f;
     if (settings.shadowMapQuality == 3) {
+        constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapReferenceResolution - 2 * RenderFrameSettings::ShadowMapReferenceBorderTexels);
         const float usableResolution = static_cast<float>(shadow.resolution - 2 * firstView.borderTexels);
-        const float filterRadiusScale = settings.shadowMapLocalFilterTanHalfAngle * shadow.filterProjectionScale;
-        filterRadius = filterRadiusScale * usableResolution;
+        const float filterResolutionScale = usableResolution / referenceUsableResolution;
+        filterRadius = settings.shadowMapFilterRadius * filterResolutionScale;
     }
 
+    // 품질 전환 후 아직 depth 를 갱신하지 않은 타일도 저장된 border 안에서 샘플링한다.
     const float maxFilterRadius = BE1::Max(0.0f, static_cast<float>(firstView.borderTexels) - 1.0f);
     outShadow.filterRadius = BE1::Clamp(filterRadius, 0.0f, maxFilterRadius);
 }

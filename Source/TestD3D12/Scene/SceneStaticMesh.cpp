@@ -81,7 +81,7 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     pointLight.origin.Set(0.217f, -0.181f, 0.017f);
     pointLight.range = 3.0f;
     pointLight.shadowOffsetUnits = 500.0f;
-    pointLight.shadowOffsetFactor = 6.0f;
+    pointLight.shadowOffsetFactor = 5.0f;
     pointLight.linearColor = BE1::Color3(1.0f, 0.8f, 0.19f);
     pointLight.intensity = 1.0f;
     pointLightEnabled = pointLight.SetEnabled(renderWorld, true);
@@ -95,8 +95,9 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     spotLight.range = 5.0f;
     spotLight.innerConeAngle = 10.0f;
     spotLight.outerConeAngle = 20.0f;
+    spotLight.zNear = 1.0f;
     spotLight.shadowOffsetUnits = 500.0f;
-    spotLight.shadowOffsetFactor = 6.0f;
+    spotLight.shadowOffsetFactor = 3.0f;
     spotLight.linearColor = BE1::Color3(0.2f, 0.45f, 1.0f);
     spotLight.intensity = 30.0f;
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
@@ -166,7 +167,6 @@ static void BuildLightControls(RenderWorld *renderWorld, GameLight &light, bool 
         if (ImGui::SliderFloat("Inner Cone Angle", &light.innerConeAngle, 0.0f, light.outerConeAngle - RenderLight::MinSpotConeAngleGap, "%.1f deg", ImGuiSliderFlags_AlwaysClamp)) {
             shapeChanged = true;
         }
-        ImGui::TextDisabled("Cone angles are measured from the forward axis.");
     }
 
     ImGui::SetNextItemWidth(itemWidth);
