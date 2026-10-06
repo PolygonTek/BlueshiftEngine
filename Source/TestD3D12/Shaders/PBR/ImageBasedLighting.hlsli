@@ -77,7 +77,11 @@ float3 EvaluateStandardImageBasedLighting(in ShadingParams shading, in ImageBase
     specular *= shading.energyCompensation;
 #endif
 
+#if USE_MULTI_BOUNCE_AO
+    diffuse *= GetMultiBounceAmbientOcclusion(shading.ambientOcclusion, shading.diffuseColor);
+#else
     diffuse *= shading.ambientOcclusion;
+#endif
     specular *= GetSpecularOcclusionFromAmbientOcclusion(shading.normalDotView, shading.ambientOcclusion, shading.roughness);
 
 #if _CLEARCOAT != 0

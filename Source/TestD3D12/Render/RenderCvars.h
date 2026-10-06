@@ -94,6 +94,7 @@ extern BE1::CVar    r_ao;
 extern BE1::CVar    r_aoRadius;
 extern BE1::CVar    r_aoHalfResolution;
 extern BE1::CVar    r_aoTemporalNoise;
+extern BE1::CVar    r_aoMultiBounce;
 
 extern BE1::CVar    r_gtaoQuality;
 extern BE1::CVar    r_gtaoDenoisePasses;

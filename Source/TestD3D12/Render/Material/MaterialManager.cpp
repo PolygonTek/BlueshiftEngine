@@ -322,18 +322,19 @@ void MaterialManager::CreateEngineMaterials() {
 
         properties {
             baseColorMap "_defaultTexture"
+            metallicFactor "0.0"
         }
     }
     );
 
     static constexpr const char *defaultUnlitMaterialText = ENGINE_MATERIAL(
-        {
-            shaderTemplate "Source/TestD3D12/Shaders/Unlit"
+    {
+        shaderTemplate "Source/TestD3D12/Shaders/Unlit"
 
-            properties {
-                baseColorMap "_defaultTexture"
-            }
+        properties {
+            baseColorMap "_defaultTexture"
         }
+    }
     );
 
     static constexpr const char *whiteLitMaterialText = ENGINE_MATERIAL(
@@ -342,6 +343,7 @@ void MaterialManager::CreateEngineMaterials() {
 
         properties {
             baseColorMap "_whiteTexture"
+            metallicFactor "0.0"
         }
     }
     );
@@ -369,15 +371,16 @@ void MaterialManager::CreateEngineMaterials() {
     );
 
     static constexpr const char *blendLitMaterialText = ENGINE_MATERIAL(
-        {
-            shaderTemplate "Source/TestD3D12/Shaders/Lit"
-            renderingMode "Blend"
-            blendType "AlphaBlend"
+    {
+        shaderTemplate "Source/TestD3D12/Shaders/Lit"
+        renderingMode "Blend"
+        blendType "AlphaBlend"
 
-            properties {
-                baseColorMap "_whiteTexture"
-            }
+        properties {
+            baseColorMap "_whiteTexture"
+            metallicFactor "0.0"
         }
+    }
     );
 
     static constexpr const char *defaultSkyboxMaterialText = ENGINE_MATERIAL(

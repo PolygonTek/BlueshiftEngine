@@ -100,6 +100,7 @@ CVAR_MINMAX(r_ao, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "amb
 CVAR_MINMAX(r_aoRadius, "0.5", BE1::CVar::Flag::Float, "ambient occlusion radius in world units", 0.01f, 10.0f);
 CVAR(r_aoHalfResolution, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "compute ambient occlusion at half resolution");
 CVAR(r_aoTemporalNoise, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "vary the ambient occlusion sampling pattern each frame independently of TAA; AO debug keeps a fixed pattern");
+CVAR(r_aoMultiBounce, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "approximate diffuse multi-bounce lighting for material and screen-space AO (recompiles shaders)");
 
 // GTAO
 CVAR_MINMAX(r_gtaoQuality, "2", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "GTAO quality: 0 = low, 1 = medium, 2 = high, 3 = ultra", 0, 3);

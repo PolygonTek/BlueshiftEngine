@@ -198,6 +198,20 @@ float3 GetSpecularDominantDir(float3 N, float3 S, float linearRoughness) {
     return lerp(N, S, linearSmoothness * (sqrt(linearSmoothness) + linearRoughness));
 }
 
+// Approximates diffuse interreflection assuming nearby surfaces have similar linear albedo.
+// Visibility is in [0, 1], with 1 fully unoccluded. Clamp reflectance to the fit's domain.
+// Jimenez et al., Practical Realtime Strategies for Accurate Indirect Occlusion (SIGGRAPH 2016).
+// https://blog.selfshadow.com/publications/s2016-shading-course/activision/s2016_pbs_activision_occlusion.pdf#page=78
+float3 GetMultiBounceAmbientOcclusion(float visibility, float3 diffuseAlbedo) {
+    const float3 albedo = saturate(diffuseAlbedo);
+    const float3 a = 2.0404f * albedo - 0.3324f;
+    const float3 b = -4.7951f * albedo + 0.6417f;
+    const float3 c = 2.7552f * albedo + 0.6903f;
+
+    // The fitted coefficients can slightly exceed 1; keep unoccluded lighting unchanged.
+    return saturate(max(visibility, ((visibility * a + b) * visibility + c) * visibility));
+}
+
 // Computes specular occlusion from ambient occlusion and view-dependent surface properties.
 float GetSpecularOcclusionFromAmbientOcclusion(float NdotV, float ambientOcclusion, float roughness) {
     return saturate(pow(NdotV + ambientOcclusion, exp2(-16.0f * roughness - 1.0f)) - 1.0f + ambientOcclusion);

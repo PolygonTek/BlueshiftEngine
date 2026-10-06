@@ -917,6 +917,12 @@ void App::BuildImGuiOverlay() {
                     r_ao.SetInteger(aoMode);
                 }
 
+                bool aoMultiBounce = r_aoMultiBounce.GetBool();
+                if (ImGui::Checkbox("Multi-bounce AO##AO", &aoMultiBounce)) {
+                    r_aoMultiBounce.SetBool(aoMultiBounce);
+                }
+                ImGui::SetItemTooltip("Approximates diffuse interreflection using material color. Applies to material AO even when GTAO is off. Changing this recompiles shaders.");
+
                 const bool aoEnabled = aoMode != static_cast<int>(RenderAOMode::Off);
                 const bool useGTAO = aoMode == static_cast<int>(RenderAOMode::GTAO);
                 ImGui::BeginDisabled(!aoEnabled);
