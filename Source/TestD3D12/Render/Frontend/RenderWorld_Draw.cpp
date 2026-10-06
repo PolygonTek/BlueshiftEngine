@@ -1907,7 +1907,9 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera
             if (localShadowsEnabled && BE1::HasFlag(frameLight->flags, RenderLight::Flag::CastShadows)) {
                 // 투영 영역의 긴 변이 최소 크기 미만이면 shadow light 후보에서 제외한다.
                 if (projectedSize >= RenderFrameSettings::LocalShadowMinProjectedSize && (frameLight->type == RenderLight::Type::Spot || frameLight->type == RenderLight::Type::Point)) {
-                    const float scaledProjectedSize = projectedSize * frameSettings.shadowMapProjectedSizeScale;
+                    const float projectedSizeScale = frameLight->type == RenderLight::Type::Spot
+                        ? frameSettings.shadowMapProjectedSizeScaleSpot : frameSettings.shadowMapProjectedSizeScalePoint;
+                    const float scaledProjectedSize = projectedSize * projectedSizeScale;
 
                     if (useShadowResolutionHistory) {
                         // 광원 영향 영역에 해상도 배율을 적용해 요청 해상도를 근사하고, 카메라별 history 로 경계 부근의 반복 변경을 막는다.

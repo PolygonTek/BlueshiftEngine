@@ -50,11 +50,12 @@ static constexpr uint32_t       TextureArrayPipelineStateKeyBit = 0x40000000u;
 static constexpr uint32_t       AlphaBlendDisabledPipelineStateKeyBit = 0x20000000u;
 
 // ImTextureID 의 하위 32 bit 에 bindless index, bit 63 에 Texture2DArray 여부, bit 62 에 alpha blend 비활성화 여부를 저장한다.
-// Texture2DArray 의 상대 slice index 는 bit 32..61 로 전달한다.
+// Bit 32..61: Texture2DArray 는 상대 slice index, Texture2D 는 depthLinearizeK 의 float 비트.
+// 0 <= k <= 1 인 양수 float 는 상위 2 bit 가 0 이므로 flag 와 겹치지 않는다.
 static constexpr uint64_t       ImGuiTextureArrayFlag = 1ull << 63;
 static constexpr uint64_t       ImGuiTextureAlphaBlendDisabledFlag = 1ull << 62;
 static constexpr uint64_t       ImGuiTextureBindlessIndexMask = 0xffffffffull;
-static constexpr uint64_t       ImGuiTextureArraySliceMask = 0x3fffffffull;
+static constexpr uint64_t       ImGuiTextureParamMask = 0x3fffffffull;
 
 static bool RequiresLinearOutput(DXGI_FORMAT rtvFormat) {
     return rtvFormat == DXGI_FORMAT_R16G16B16A16_FLOAT || D3D12Renderer::IsSRGBFormat(rtvFormat) || D3D12Renderer::IsHDRSwapChainFormat(rtvFormat);
@@ -74,10 +75,11 @@ static uint32_t MakePipelineStateKey(DXGI_FORMAT rtvFormat, bool linearOutput, b
     return key;
 }
 
-static uint64_t MakeImGuiTextureID(uint32_t bindlessIndex, uint32_t arraySlice, bool textureArray, bool alphaBlend) {
-    uint64_t textureID = bindlessIndex;
+static uint64_t MakeImGuiTextureID(uint32_t bindlessIndex, uint32_t textureParam, bool textureArray, bool alphaBlend) {
+    assert((static_cast<uint64_t>(textureParam) & ~ImGuiTextureParamMask) == 0);
+    uint64_t textureID = bindlessIndex | (static_cast<uint64_t>(textureParam) << 32);
     if (textureArray) {
-        textureID |= ImGuiTextureArrayFlag | (static_cast<uint64_t>(arraySlice) << 32);
+        textureID |= ImGuiTextureArrayFlag;
     }
     if (!alphaBlend) {
         textureID |= ImGuiTextureAlphaBlendDisabledFlag;
@@ -97,8 +99,8 @@ static uint32_t GetImGuiTextureBindlessIndex(uint64_t textureID) {
     return static_cast<uint32_t>(textureID & ImGuiTextureBindlessIndexMask);
 }
 
-static uint32_t GetImGuiTextureArraySlice(uint64_t textureID) {
-    return static_cast<uint32_t>((textureID >> 32) & ImGuiTextureArraySliceMask);
+static uint32_t GetImGuiTextureParam(uint64_t textureID) {
+    return static_cast<uint32_t>((textureID >> 32) & ImGuiTextureParamMask);
 }
 
 static D3D12ImGuiOverlay *GetImGuiOverlay(ImGui_ImplDX12_InitInfo *initInfo) {
@@ -377,10 +379,21 @@ bool D3D12ImGuiRenderer::CreatePipelineState(DXGI_FORMAT rtvFormat, bool linearO
         "  float4 col : COLOR0;"
         "  float2 uv  : TEXCOORD0;"
         "};"
+        "cbuffer textureParams : register(b1) { float depthLinearizeK; };"
         "SamplerState sampler0 : register(s0);"
         "Texture2D texture0 : register(t0);"
         "float4 main(PS_INPUT input) : SV_Target"
         "{"
+        "  if (depthLinearizeK > 0.0)"
+        "  {"
+        "    uint width, height;"
+        "    texture0.GetDimensions(width, height);"
+        "    int2 size = int2(width, height);"
+        "    int2 coord = min(int2(saturate(input.uv) * float2(size)), size - 1);"
+        "    float depth = texture0.Load(int3(coord, 0)).r;"
+        "    float gray = saturate(depthLinearizeK * (1.0 - depth) / (depth + depthLinearizeK));"
+        "    return input.col * float4(gray.xxx, 1.0);"
+        "  }"
         "  return input.col * texture0.Sample(sampler0, input.uv);"
         "}";
 
@@ -391,6 +404,7 @@ bool D3D12ImGuiRenderer::CreatePipelineState(DXGI_FORMAT rtvFormat, bool linearO
         "  float4 col : COLOR0;"
         "  float2 uv  : TEXCOORD0;"
         "};"
+        "cbuffer textureParams : register(b1) { float depthLinearizeK; };"
         "SamplerState sampler0 : register(s0);"
         "Texture2D texture0 : register(t0);"
         "float3 SRGBToLinear(float3 color)"
@@ -399,7 +413,21 @@ bool D3D12ImGuiRenderer::CreatePipelineState(DXGI_FORMAT rtvFormat, bool linearO
         "}"
         "float4 main(PS_INPUT input) : SV_Target"
         "{"
-        "  float4 color = input.col * texture0.Sample(sampler0, input.uv);"
+        "  float4 color;"
+        "  if (depthLinearizeK > 0.0)"
+        "  {"
+        "    uint width, height;"
+        "    texture0.GetDimensions(width, height);"
+        "    int2 size = int2(width, height);"
+        "    int2 coord = min(int2(saturate(input.uv) * float2(size)), size - 1);"
+        "    float depth = texture0.Load(int3(coord, 0)).r;"
+        "    float gray = saturate(depthLinearizeK * (1.0 - depth) / (depth + depthLinearizeK));"
+        "    color = input.col * float4(gray.xxx, 1.0);"
+        "  }"
+        "  else"
+        "  {"
+        "    color = input.col * texture0.Sample(sampler0, input.uv);"
+        "  }"
         "  color.rgb = SRGBToLinear(color.rgb);"
         "  return color;"
         "}";
@@ -878,6 +906,7 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
 
     SetupRenderState(_commandList, rootSignature, texture2DPipelineState, drawData, vertexBuffer, indexBuffer);
     ID3D12PipelineState *currentPipelineState = texture2DPipelineState;
+    uint32_t currentTextureParam = ~0u;
 
     int globalVtxOffset = 0;
     int globalIdxOffset = 0;
@@ -894,6 +923,7 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
                     drawCmd->UserCallback == ImDrawCallback_ResetRenderState) {
                     SetupRenderState(_commandList, rootSignature, texture2DPipelineState, drawData, vertexBuffer, indexBuffer);
                     currentPipelineState = texture2DPipelineState;
+                    currentTextureParam = ~0u;
                 } else {
                     drawCmd->UserCallback(drawList, drawCmd);
                 }
@@ -930,8 +960,10 @@ void D3D12ImGuiRenderer::RenderDrawData(RHI::FrameThreadData *frameThreadData, R
                 currentPipelineState = desiredPipelineState;
             }
 
-            if (textureArray) {
-                graphicsCommandList->SetGraphicsRoot32BitConstant(2, GetImGuiTextureArraySlice(textureID), 0);
+            const uint32_t textureParam = GetImGuiTextureParam(textureID);
+            if (currentTextureParam != textureParam) {
+                graphicsCommandList->SetGraphicsRoot32BitConstant(2, textureParam, 0);
+                currentTextureParam = textureParam;
             }
 
             D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = renderer->GetBindlessResourceGPUDescriptorHandle(bindlessIndex);
@@ -956,8 +988,11 @@ void D3D12ImGuiRenderer::FreeDrawData(RHI::ImGuiOverlay *overlay, void *userData
     static_cast<D3D12ImGuiOverlay *>(overlay)->FreeCapturedDrawData(userData);
 }
 
-uint64_t D3D12Renderer::GetImGuiTextureID(const RHI::Texture *texture, RHI::ViewID viewID, uint32_t arraySlice, bool alphaBlend) const {
+uint64_t D3D12Renderer::GetImGuiTextureID(const RHI::Texture *texture, RHI::ViewID viewID, uint32_t arraySlice, bool alphaBlend, float depthLinearizeK) const {
     if (!texture || !texture->HasValidView(RHI::ViewType::SRV, viewID)) {
+        return 0;
+    }
+    if (!(depthLinearizeK >= 0.0f && depthLinearizeK <= 1.0f)) {
         return 0;
     }
 
@@ -967,7 +1002,14 @@ uint64_t D3D12Renderer::GetImGuiTextureID(const RHI::Texture *texture, RHI::View
     }
 
     if (texture->type != RHI::TextureType::Texture2DArray) {
-        return MakeImGuiTextureID(bindlessIndex, 0, false, alphaBlend);
+        uint32_t textureParam = 0;
+        if (depthLinearizeK > 0.0f) {
+            memcpy(&textureParam, &depthLinearizeK, sizeof(textureParam));
+        }
+        return MakeImGuiTextureID(bindlessIndex, textureParam, false, alphaBlend);
+    }
+    if (depthLinearizeK != 0.0f) {
+        return 0;
     }
 
     RHI::TextureViewInfo viewInfo;

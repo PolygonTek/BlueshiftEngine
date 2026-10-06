@@ -50,7 +50,8 @@ struct RenderFrameSettings {
     uint32_t                    shadowAtlasMaxTileResolution;               ///< Spot 또는 Point 한 면의 최대 타일 해상도. Border 포함.
     uint32_t                    shadowAtlasMaxViews;                        ///< 카메라별 shadow view 예산. Spot 은 1, Point 는 6 을 사용하며 0 이면 비활성화.
     bool                        shadowAtlasLoadBalancing;                   ///< 광원의 화면 투영 크기가 작을수록 shadow 의 갱신 프레임 간격을 늘린다.
-    float                       shadowMapProjectedSizeScale;                ///< Spot/Point 라이트의 요청 해상도 계산 시 광원의 화면 투영 크기에 곱하는 배율.
+    float                       shadowMapProjectedSizeScaleSpot;            ///< Spot 라이트의 요청 해상도 계산 시 광원의 화면 투영 크기에 곱하는 배율.
+    float                       shadowMapProjectedSizeScalePoint;           ///< Point 라이트의 요청 해상도 계산 시 광원의 화면 투영 크기에 곱하는 배율.
     uint32_t                    shadowMapUpdateMinProjectedSize;            ///< 매 프레임 갱신할 광원 투영 영역의 최소 긴 변. 배율 적용 전 내부 렌더 픽셀 기준.
 
     uint32_t                    csmResolution;

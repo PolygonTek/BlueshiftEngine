@@ -1145,7 +1145,8 @@ namespace RHI {
 
         virtual ImGuiOverlay *          CreateImGuiOverlay(void *windowHandle, Format renderTargetFormat) = 0;
         virtual void                    DestroyImGuiOverlay(ImGuiOverlay *overlay) = 0;
-        virtual uint64_t                GetImGuiTextureID(const Texture *texture, ViewID viewID = ViewID::PrimaryID, uint32_t arraySlice = 0, bool alphaBlend = true) const = 0;
+                                        // depthLinearizeK: Texture2D 전용. 0 = 일반 이미지, (0, 1] = near / (far - near).
+        virtual uint64_t                GetImGuiTextureID(const Texture *texture, ViewID viewID = ViewID::PrimaryID, uint32_t arraySlice = 0, bool alphaBlend = true, float depthLinearizeK = 0.0f) const = 0;
         virtual void                    RenderImGuiDrawData(FrameThreadData *frameThreadData, CommandList *commandList, ImGuiOverlay *overlay, void *userData) = 0;
         virtual void                    FreeImGuiDrawData(ImGuiOverlay *overlay, void *userData) = 0;
 

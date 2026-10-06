@@ -397,16 +397,22 @@ void App::BuildImGuiShadowAtlasPreview() {
     const float occupancy = 100.0f * static_cast<float>(usedArea) / (static_cast<uint64_t>(shadowAtlas->size) * shadowAtlas->size);
     ImGui::Text("Atlas: %u x %u | Used: %.1f%%", shadowAtlas->size, shadowAtlas->size, occupancy);
     ImGui::Text("Camera %u | Lights: %u | Views: %u / %u", camera->index, shadowAtlas->numShadows, shadowAtlas->numShadowViews, shadowAtlas->maxShadowViews);
-    ImGui::TextDisabled("Cyan = Spot, orange = Point.");
 
     static bool showTileBounds = true;
     ImGui::Checkbox("Show tile bounds##ShadowAtlas", &showTileBounds);
 
     const float previewSize = BE1::Min(ImGui::GetFontSize() * 24.0f, ImGui::GetContentRegionAvail().x);
-    if (!DrawImGuiTexturePreview(shadowAtlas->shadowTexture, shadowAtlas->shadowSRV, previewSize, true)) {
+    if (previewSize <= 0.0f ||
+        RHI::renderer->GetImGuiTextureID(shadowAtlas->shadowTexture, shadowAtlas->shadowSRV, 0, false) == 0) {
         ImGui::TextDisabled("Atlas depth preview is unavailable.");
         return;
     }
+
+    const float availableWidth = ImGui::GetContentRegionAvail().x;
+    if (availableWidth > previewSize) {
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (availableWidth - previewSize) * 0.5f);
+    }
+    ImGui::Dummy(ImVec2(previewSize, previewSize));
     frame->SetShadowAtlasDebugPreview(shadowAtlas);
 
     const ImVec2 imageMin = ImGui::GetItemRectMin();
@@ -414,35 +420,54 @@ void App::BuildImGuiShadowAtlasPreview() {
     const bool imageHovered = ImGui::IsItemHovered();
     const ImVec2 mouse = ImGui::GetIO().MousePos;
     const float scale = previewSize / shadowAtlas->size;
+    const float invAtlasSize = 1.0f / shadowAtlas->size;
     ImDrawList *drawList = ImGui::GetWindowDrawList();
+    drawList->AddRectFilled(imageMin, imageMax, IM_COL32(0, 0, 0, 255));
+
+    for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas->numShadows; ++shadowIndex) {
+        const FrameLocalShadow &shadow = shadowAtlas->shadows[shadowIndex];
+        const FrameLocalShadowView *views = &shadowAtlas->shadowViews[shadow.firstShadowView];
+
+        // 현재 라이트 설정 대신 depth 기록 당시의 투영 계수를 사용한다.
+        float depthLinearizeK;
+        if (shadow.numShadowViews == 6) {
+            depthLinearizeK = -shadow.pointDepthScaleBias.x;
+        } else {
+            // Row 2.xyz = forward * depthScale, row 3.xyz = unit forward.
+            const BE1::Mat4 &matrix = views[0].viewProjMatrix;
+            depthLinearizeK = -matrix[2].ToVec3().Dot(matrix[3].ToVec3());
+        }
+        if (!(depthLinearizeK > 0.0f)) {
+            continue;
+        }
+        // Near <= far / 2 이므로 k <= 1. 행렬 내적의 반올림 오차만 제한한다.
+        depthLinearizeK = BE1::Min(depthLinearizeK, 1.0f);
+
+        const uint64_t textureID = RHI::renderer->GetImGuiTextureID(
+            shadowAtlas->shadowTexture, shadowAtlas->shadowSRV, 0, false, depthLinearizeK);
+        if (textureID == 0) {
+            continue;
+        }
+
+        for (uint32_t viewIndex = 0; viewIndex < shadow.numShadowViews; ++viewIndex) {
+            const BE1::Rect &rect = views[viewIndex].tileRect;
+            if (rect.w <= 0 || rect.h <= 0) {
+                continue;
+            }
+
+            const ImVec2 tileMin(imageMin.x + rect.x * scale, imageMin.y + rect.y * scale);
+            const ImVec2 tileMax(tileMin.x + rect.w * scale, tileMin.y + rect.h * scale);
+            const ImVec2 uvMin(rect.x * invAtlasSize, rect.y * invAtlasSize);
+            const ImVec2 uvMax((rect.x + rect.w) * invAtlasSize, (rect.y + rect.h) * invAtlasSize);
+            drawList->AddImage((ImTextureID)(UINT64)textureID, tileMin, tileMax, uvMin, uvMax);
+        }
+    }
+
     drawList->AddRect(imageMin, imageMax, IM_COL32(160, 160, 160, 255));
 
     if (showTileBounds && shadowAtlas->numShadowViews > 0) {
         static const char *faceNames[] = {"+X", "-X", "+Y", "-Y", "+Z", "-Z", "Spot"};
         constexpr uint32_t spotFaceIndex = COUNT_OF(faceNames) - 1;
-        ImFont *labelFont = ImGui::GetFont();
-        constexpr float labelFontSize = 12.0f;
-        constexpr float labelPadding = 2.0f;
-        ImFontBaked *labelFontBaked = labelFont->GetFontBaked(labelFontSize);
-        const float glyphScale = labelFontSize / labelFontBaked->Size;
-        struct FaceLabelMetrics {
-            float width = 0.0f;
-            float bottom = 0.0f;
-        };
-        FaceLabelMetrics faceLabelMetrics[COUNT_OF(faceNames)];
-        // 줄 높이 대신 실제 glyph 하단으로 정렬하며, face 별 측정값은 모든 타일에서 재사용한다.
-        for (uint32_t faceIndex = 0; faceIndex < COUNT_OF(faceNames); ++faceIndex) {
-            FaceLabelMetrics &metrics = faceLabelMetrics[faceIndex];
-            for (const char *ch = faceNames[faceIndex]; *ch; ++ch) {
-                const ImFontGlyph *glyph = labelFontBaked->FindGlyph(static_cast<ImWchar>(*ch));
-                if (glyph) {
-                    metrics.width += glyph->AdvanceX * glyphScale;
-                    if (glyph->Visible) {
-                        metrics.bottom = BE1::Max(metrics.bottom, glyph->Y1 * glyphScale);
-                    }
-                }
-            }
-        }
         for (uint32_t shadowViewIndex = 0; shadowViewIndex < shadowAtlas->numShadowViews; ++shadowViewIndex) {
             const FrameLocalShadowView &shadowView = shadowAtlas->shadowViews[shadowViewIndex];
             if (shadowView.tileRect.w <= 0 || shadowView.tileRect.h <= 0 || shadowView.shadowIndex >= shadowAtlas->numShadows) {
@@ -450,8 +475,6 @@ void App::BuildImGuiShadowAtlasPreview() {
             }
             const FrameLocalShadow &shadow = shadowAtlas->shadows[shadowView.shadowIndex];
             const bool point = shadow.light->type == RenderLight::Type::Point;
-            const uint32_t faceIndex = point && shadowView.faceIndex < spotFaceIndex ? shadowView.faceIndex : spotFaceIndex;
-            const char *faceName = faceNames[faceIndex];
             const ImU32 color = point ? IM_COL32(255, 176, 64, 255) : IM_COL32(64, 224, 255, 255);
             const ImVec2 tileMin(imageMin.x + shadowView.tileRect.x * scale, imageMin.y + shadowView.tileRect.y * scale);
             const ImVec2 tileMax(tileMin.x + shadowView.tileRect.w * scale, tileMin.y + shadowView.tileRect.h * scale);
@@ -462,26 +485,9 @@ void App::BuildImGuiShadowAtlasPreview() {
                 drawList->AddRect(ImVec2(tileMin.x + border, tileMin.y + border), ImVec2(tileMax.x - border, tileMax.y - border), IM_COL32(255, 255, 255, 100));
             }
 
-            const ImVec2 labelMin(tileMin.x + labelPadding, tileMin.y + labelPadding);
-            const ImVec2 labelMax(tileMax.x - labelPadding, tileMax.y - labelPadding);
-            char indexLabel[16];
-            BE1::Str::snPrintf(indexLabel, sizeof(indexLabel), "%u", shadow.light->index);
-            const ImVec2 indexSize = labelFont->CalcTextSizeA(labelFontSize, FLT_MAX, 0.0f, indexLabel);
-            const bool showIndex = labelMin.x + indexSize.x <= labelMax.x && labelMin.y + indexSize.y <= labelMax.y;
-            if (showIndex) {
-                drawList->AddText(labelFont, labelFontSize, labelMin, color, indexLabel);
-            }
-
-            const FaceLabelMetrics &faceMetrics = faceLabelMetrics[faceIndex];
-            const ImVec2 facePos(labelMax.x - faceMetrics.width, labelMax.y - faceMetrics.bottom);
-            const bool faceFits = facePos.x >= labelMin.x && facePos.y >= labelMin.y;
-            // 두 라벨이 겹치는 작은 타일에서는 index 를 우선 표시한다.
-            const bool labelsOverlap = showIndex && facePos.x < labelMin.x + indexSize.x && facePos.y < labelMin.y + indexSize.y;
-            if (faceFits && !labelsOverlap) {
-                drawList->AddText(labelFont, labelFontSize, facePos, color, faceName);
-            }
-
             if (imageHovered && mouse.x >= tileMin.x && mouse.x < tileMax.x && mouse.y >= tileMin.y && mouse.y < tileMax.y) {
+                const uint32_t faceIndex = point && shadowView.faceIndex < spotFaceIndex ? shadowView.faceIndex : spotFaceIndex;
+                const char *faceName = faceNames[faceIndex];
                 ImGui::BeginTooltip();
                 ImGui::Text("Light %u | %s | View %u", shadow.light->index, faceName, shadowViewIndex);
                 ImGui::Text("Tile: (%d, %d), %d x %d | Border: %u", shadowView.tileRect.x, shadowView.tileRect.y, shadowView.tileRect.w, shadowView.tileRect.h, shadowView.borderTexels);
@@ -1206,13 +1212,21 @@ void App::BuildImGuiOverlay() {
                         }
                         ImGui::SetItemTooltip("r_shadowAtlasMaxViews\nMaximum shadow views per camera. Spot uses 1 view, Point uses 6. 0 disables local shadows. Ctrl+click to enter a value.");
 
-                        float projectedSizeScale = r_shadowMapProjectedSizeScale.GetFloat();
+                        float projectedSizeScaleSpot = r_shadowMapProjectedSizeScaleSpot.GetFloat();
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        if (ImGui::SliderFloat("Projected size scale##ShadowAtlas", &projectedSizeScale,
-                            r_shadowMapProjectedSizeScale.GetMinValue(), r_shadowMapProjectedSizeScale.GetMaxValue(), "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
-                            r_shadowMapProjectedSizeScale.SetFloat(projectedSizeScale);
+                        if (ImGui::SliderFloat("Spot projected size scale##ShadowAtlas", &projectedSizeScaleSpot,
+                            r_shadowMapProjectedSizeScaleSpot.GetMinValue(), r_shadowMapProjectedSizeScaleSpot.GetMaxValue(), "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowMapProjectedSizeScaleSpot.SetFloat(projectedSizeScaleSpot);
                         }
-                        ImGui::SetItemTooltip("r_shadowMapProjectedSizeScale\nScales projected light size when selecting Spot/Point shadow resolution. Higher values request higher resolutions.");
+                        ImGui::SetItemTooltip("r_shadowMapProjectedSizeScaleSpot\nScales projected light size when selecting Spot shadow resolution. Higher values request higher resolutions.");
+
+                        float projectedSizeScalePoint = r_shadowMapProjectedSizeScalePoint.GetFloat();
+                        ImGui::SetNextItemWidth(fontSize * 12.0f);
+                        if (ImGui::SliderFloat("Point projected size scale##ShadowAtlas", &projectedSizeScalePoint,
+                            r_shadowMapProjectedSizeScalePoint.GetMinValue(), r_shadowMapProjectedSizeScalePoint.GetMaxValue(), "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                            r_shadowMapProjectedSizeScalePoint.SetFloat(projectedSizeScalePoint);
+                        }
+                        ImGui::SetItemTooltip("r_shadowMapProjectedSizeScalePoint\nScales projected light size when selecting Point shadow resolution. Higher values request higher resolutions.");
 
                         bool shadowLoadBalancing = r_shadowAtlasLoadBalancing.GetBool();
                         if (ImGui::Checkbox("Load balancing##ShadowAtlas", &shadowLoadBalancing)) {

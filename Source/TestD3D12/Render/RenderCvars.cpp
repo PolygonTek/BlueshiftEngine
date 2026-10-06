@@ -54,7 +54,8 @@ CVAR_MINMAX(r_shadowAtlasSize, "8192", BE1::CVar::Flag::Integer, "local shadow a
 CVAR_MINMAX(r_shadowAtlasMaxTileResolution, "2048", BE1::CVar::Flag::Integer, "maximum local shadow tile resolution including border (per face for point lights); rounded down to a power of two when captured", RenderFrameSettings::ShadowAtlasMinTileResolution, 2048);
 CVAR_MINMAX(r_shadowAtlasMaxViews, "180", BE1::CVar::Flag::Integer, "maximum local shadow views per camera (spot = 1, point = 6, 0 = disabled)", 0, 1024);
 CVAR(r_shadowAtlasLoadBalancing, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "double the local shadow update interval for each halving of projected size below r_shadowMapUpdateMinProjectedSize");
-CVAR_MINMAX(r_shadowMapProjectedSizeScale, "0.62", BE1::CVar::Flag::Float, "projected light size multiplier for spot/point shadow resolution selection (does not affect the minimum projected size cutoff)", 0.125f, 4.0f);
+CVAR_MINMAX(r_shadowMapProjectedSizeScaleSpot, "0.65", BE1::CVar::Flag::Float, "projected light size multiplier for spot shadow resolution selection (does not affect the minimum projected size cutoff)", 0.125f, 4.0f);
+CVAR_MINMAX(r_shadowMapProjectedSizeScalePoint, "0.5", BE1::CVar::Flag::Float, "projected light size multiplier for point shadow resolution selection (does not affect the minimum projected size cutoff)", 0.125f, 4.0f);
 CVAR_MINMAX(r_shadowMapUpdateMinProjectedSize, "512", BE1::CVar::Flag::Integer, "minimum projected light size for every-frame Point/Spot shadow updates (unscaled long edge in internal render pixels)", RenderFrameSettings::LocalShadowMinProjectedSize, 16384);
 CVAR_MINMAX(r_shadowMapFilterRadius, "2.25", BE1::CVar::Flag::Float, "Point/Spot Q3 Poisson maximum sample radius in texels at 1024 resolution; adjusted for tile resolution (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::ShadowMapReferenceMinRadius, RenderFrameSettings::ShadowMapReferenceMaxRadius);
 
@@ -213,7 +214,8 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.shadowAtlasMaxTileResolution = BE1::Math::RoundDownPowerOfTwo(static_cast<uint32_t>(BE1::Clamp(r_shadowAtlasMaxTileResolution.GetInteger(), static_cast<int>(RenderFrameSettings::ShadowAtlasMinTileResolution), maxTileResolution)));
     settings.shadowAtlasMaxViews = static_cast<uint32_t>(BE1::Clamp(r_shadowAtlasMaxViews.GetInteger(), 0, 1024));
     settings.shadowAtlasLoadBalancing = r_shadowAtlasLoadBalancing.GetBool();
-    settings.shadowMapProjectedSizeScale = r_shadowMapProjectedSizeScale.GetFloat();
+    settings.shadowMapProjectedSizeScaleSpot = r_shadowMapProjectedSizeScaleSpot.GetFloat();
+    settings.shadowMapProjectedSizeScalePoint = r_shadowMapProjectedSizeScalePoint.GetFloat();
     settings.shadowMapUpdateMinProjectedSize = static_cast<uint32_t>(BE1::Clamp(r_shadowMapUpdateMinProjectedSize.GetInteger(), static_cast<int>(RenderFrameSettings::LocalShadowMinProjectedSize), 16384));
     settings.shadowMapFilterRadius = r_shadowMapFilterRadius.GetFloat();
 

@@ -53,7 +53,8 @@ extern BE1::CVar    r_shadowAtlasSize;
 extern BE1::CVar    r_shadowAtlasMaxTileResolution;
 extern BE1::CVar    r_shadowAtlasMaxViews;
 extern BE1::CVar    r_shadowAtlasLoadBalancing;
-extern BE1::CVar    r_shadowMapProjectedSizeScale;
+extern BE1::CVar    r_shadowMapProjectedSizeScaleSpot;
+extern BE1::CVar    r_shadowMapProjectedSizeScalePoint;
 extern BE1::CVar    r_shadowMapUpdateMinProjectedSize;
 extern BE1::CVar    r_shadowMapFilterRadius;
 

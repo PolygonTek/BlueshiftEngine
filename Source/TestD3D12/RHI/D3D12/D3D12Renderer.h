@@ -80,7 +80,7 @@ public:
 
     virtual RHI::ImGuiOverlay *         CreateImGuiOverlay(void *windowHandle, RHI::Format renderTargetFormat) override;
     virtual void                        DestroyImGuiOverlay(RHI::ImGuiOverlay *overlay) override;
-    virtual uint64_t                    GetImGuiTextureID(const RHI::Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID, uint32_t arraySlice = 0, bool alphaBlend = true) const override;
+    virtual uint64_t                    GetImGuiTextureID(const RHI::Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID, uint32_t arraySlice = 0, bool alphaBlend = true, float depthLinearizeK = 0.0f) const override;
     virtual void                        RenderImGuiDrawData(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::ImGuiOverlay *overlay, void *userData) override;
     virtual void                        FreeImGuiDrawData(RHI::ImGuiOverlay *overlay, void *userData) override;
 
