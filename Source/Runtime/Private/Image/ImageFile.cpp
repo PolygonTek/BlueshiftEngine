@@ -363,7 +363,7 @@ bool Image::Load(const char *filename) {
         loaded = LoadPVRFromMemory(name, data, size);
     } else if (name.CheckExtension(".tga")) {
         loaded = LoadTGAFromMemory(name, data, size);
-    } else if (name.CheckExtension(".jpg")) {
+    } else if (name.CheckExtension(".jpg") || name.CheckExtension(".jpeg")) {
         loaded = LoadJPGFromMemory(name, data, size);
     } else if (name.CheckExtension(".png")) {
         loaded = LoadPNGFromMemory(name, data, size);
@@ -399,7 +399,7 @@ bool Image::Write(const char *filename) const {
         ret = WritePVR(filename);
     } else if (!extension.Icmp("tga")) {
         ret = WriteTGA(filename);
-    } else if (!extension.Icmp("jpg")) {
+    } else if (!extension.Icmp("jpg") || !extension.Icmp("jpeg")) {
         ret = WriteJPG(filename, 100);
     } else if (!extension.Icmp("png")) {
         ret = WritePNG(filename);
