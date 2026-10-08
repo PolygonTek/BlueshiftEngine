@@ -453,6 +453,7 @@ set(COMMON_ENGINE_FILES
     Private/Asset/Resource.cpp
     Private/Asset/FolderResource.cpp
     Private/Asset/FbxResource.cpp
+    Private/Asset/GltfResource.cpp
     Private/Asset/TextureResource.cpp
     Private/Asset/Texture2DResource.cpp
     Private/Asset/TextureCubeMapResource.cpp

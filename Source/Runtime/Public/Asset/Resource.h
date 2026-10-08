@@ -252,6 +252,22 @@ public:
     virtual bool                Save() override;
 };
 
+class GltfResource : public Resource {
+public:
+    OBJECT_PROTOTYPE(GltfResource);
+
+    GltfResource();
+    ~GltfResource();
+
+    virtual bool                IsRedundant() const override { return true; }
+
+    virtual void                Rename(const Str &newName) override;
+
+    virtual bool                Reload() override;
+
+    virtual bool                Save() override;
+};
+
 class JointMaskResource : public Resource {
 public:
     OBJECT_PROTOTYPE(JointMaskResource);
