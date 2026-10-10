@@ -36,7 +36,8 @@ public:
     enum class Flag : uint8_t {
         None                        = 0,
         Static                      = BIT(0),
-        CastShadows                 = BIT(1)
+        CastShadows                 = BIT(1),
+        StaticShadows               = BIT(2)  ///< Point/Spot: cache shadows from static casters, independently of camera visibility
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
@@ -131,15 +132,16 @@ private:
     BE1::AABB                       worldAABB = BE1::AABB::empty;       ///< World-space AABB enclosing the light volume; empty for directional lights
 
     BE1::Vec2                       spotCosCone = BE1::Vec2::zero;      ///< X = cos(inner), Y = cos(outer); updated only when shape changes
-    float                           spotInvCosConeDifference = 0.0f;
-    float                           spotTanOuterCone = 0.0f;
+    float                           spotInvCosConeDifference = 0.0f;    ///< 1 / (cos(inner) - cos(outer))
+    float                           spotTanOuterCone = 0.0f;            ///< tan(outer)
 
     BE1::Mat4                       viewMatrix = BE1::Mat4::identity;
     BE1::Mat4                       projMatrix = BE1::Mat4::identity;
     BE1::Mat4                       viewProjScaleBiasMatrix = BE1::Mat4::identity;
 
     uint64_t                        visibleFrameIndex = 0;
-    uint64_t                        lightId = 0;                        ///< 광원 생성 시 부여되는 고유 ID.
+    uint64_t                        lightId = 0;                        ///< light 생성 시 부여되는 고유 ID.
+    uint64_t                        shadowRevision = 0;                 ///< shadow 에 영향을 주는 설정 변경 시 증가. 카메라별 atlas 캐시 무효화에 사용한다.
     int                             index = -1;                         ///< RenderWorld::renderLights 의 인덱스
     uint64_t                        viewCount = uint64_t(-1);           ///< 마지막으로 FrameLight 로 등록된 뷰의 카운터 값. 같은 뷰에서 중복 등록 방지.
 };

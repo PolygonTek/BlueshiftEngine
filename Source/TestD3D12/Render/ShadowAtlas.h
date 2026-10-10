@@ -50,6 +50,8 @@ public:
     // 광원 그림자의 타일 할당 정보와 갱신 상태
     struct Entry {
         uint64_t                    lightId = 0;
+        uint64_t                    shadowRevision = 0;         // 마지막으로 갱신을 요청한 라이트의 그림자 설정 변경 번호.
+        uint32_t                    casterLayerMask = 0;        // 마지막으로 갱신을 요청한 caster 레이어 마스크.
         uint32_t                    borderTexels = 0;           // 마지막으로 갱신을 요청한 border. 스킵 프레임에도 같은 값을 사용한다.
         BE1::Mat4                   spotViewProjMatrix = BE1::Mat4::identity; // 마지막으로 갱신을 요청한 spot 라이트의 view-projection 행렬. 스킵 프레임에도 같은 값을 사용한다.
         BE1::Vec3                   pointOrigin = BE1::Vec3::zero;  // 마지막으로 갱신을 요청한 point 라이트의 origin. 스킵 프레임에도 같은 값을 사용한다.

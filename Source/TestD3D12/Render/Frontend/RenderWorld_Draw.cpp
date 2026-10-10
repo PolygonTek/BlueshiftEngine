@@ -996,6 +996,12 @@ void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera 
             }
 
             const FrameLight &light = *shadow.light;
+            const bool staticShadows = BE1::HasFlag(light.flags, RenderLight::Flag::StaticShadows);
+            if (staticShadows && !BE1::HasFlag(renderObject->desc.flags, RenderObject::Flag::Static)) {
+                // static shadows 는 static 오브젝트만 caster 로 삼는다.
+                continue;
+            }
+            const float *viewPlaneToOriginDistances = staticShadows ? nullptr : shadow.viewPlaneToOriginDistances;
 
             // Point 라이트의 영향 범위는 광원당 한 번 검사하고, 통과한 경우에만 6면에 접근한다.
             if (light.type == RenderLight::Type::Point && casterCuller.CullPointLight(light.origin, shadow.squaredRadius)) {
@@ -1008,8 +1014,9 @@ void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera 
                 FrameLocalShadowView &shadowView = frameShadowAtlas->shadowViews[shadowViewIndex];
 
                 // shadow frustum 과 카메라 view volume 기준으로 shadow caster 를 컬링한다.
+                // static shadows 일 경우 카메라 view volume 과 무관하게 shadow frustum 전체의 caster 를 수집한다.
                 float minDepth;
-                if (casterCuller.Cull(shadowView, shadow.viewPlaneToOriginDistances, minDepth)) {
+                if (casterCuller.Cull(shadowView, viewPlaneToOriginDistances, minDepth)) {
                     continue;
                 }
 
@@ -1149,6 +1156,7 @@ FrameLight *RenderWorld::RegisterFrameLight(RenderFrame *frame, RenderLight *ren
 
     renderLight->viewCount = viewCount;
     frameLight->lightId = renderLight->lightId;
+    frameLight->shadowRevision = renderLight->shadowRevision;
 
     if (renderLight->desc.type == RenderLight::Type::Point) {
         frameLight->viewProjScaleBiasMatrix[0] = renderLight->viewProjScaleBiasMatrix[0];
@@ -1656,7 +1664,8 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
                     }
 
                     float minDepth;
-                    if (outsidePointShadow || surfaceCuller.Cull(shadowView, shadow.viewPlaneToOriginDistances, minDepth)) {
+                    const float *viewPlaneToOriginDistances = BE1::HasFlag(shadow.light->flags, RenderLight::Flag::StaticShadows) ? nullptr : shadow.viewPlaneToOriginDistances;
+                    if (outsidePointShadow || surfaceCuller.Cull(shadowView, viewPlaneToOriginDistances, minDepth)) {
                         continue;
                     }
                 }
@@ -1955,6 +1964,11 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
     const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
     const uint32_t shadowMapQuality = frameSettings.shadowMapQuality;
     const uint32_t frameCount = frame->GetFrameCount();
+    const uint32_t casterLayerMask = renderCamera->GetDesc().layerMask;
+
+    // Q3 최대 filter radius 를 기준으로 border 를 확보하여 radius 조절 시 projection 을 유지한다.
+    constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapReferenceResolution - 2 * RenderFrameSettings::ShadowMapReferenceBorderTexels);
+    constexpr float filterRadiusScale = RenderFrameSettings::ShadowMapReferenceMaxRadius / referenceUsableResolution;
 
     // 그림자 라이트 후보들을 shadow 요청 해상도가 크고, 카메라에 가까운 순으로 정렬한다.
     if (localShadowLightCandidates.Count() > 1) {
@@ -2041,12 +2055,16 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
         }
         assert(frameShadow->numShadowViews == shadowViewCount);
 
-        // 백엔드의 최근 depth 기록 결과를 확인한다. 신규/재할당 타일과 이전 기록 실패는 유효한 결과가 없다.
-        frameShadow->hasValidDepth = entry->renderState->HasValidDepth();
+        const bool staticShadows = BE1::HasFlag(shadowLight->flags, RenderLight::Flag::StaticShadows);
+        const uint32_t borderTexels = shadowMapQuality < 3 ? 2 : CalcShadowMapBorderTexels(frameShadow->resolution, filterRadiusScale);
 
-        // 유효한 depth 가 없거나 load balancing 이 꺼져 있으면 주기 계산 없이 갱신한다.
-        frameShadow->updateDepth = true;
-        if (frameSettings.shadowAtlasLoadBalancing && frameShadow->hasValidDepth) {
+        // 라이트 설정/플래그, caster 레이어 또는 투영 border 가 바뀌면 이전 depth 를 재사용할 수 없다.
+        // 신규/재할당 타일과 이전 기록 실패도 백엔드의 유효성 확인을 통과하지 못한다.
+        frameShadow->hasValidDepth = entry->shadowRevision == shadowLight->shadowRevision && entry->casterLayerMask == casterLayerMask && entry->borderTexels == borderTexels && entry->renderState->HasValidDepth();
+
+        // static shadows 는 유효한 depth 를 계속 유지한다. 무효화된 그림자는 load balancing 과 무관하게 즉시 갱신한다.
+        frameShadow->updateDepth = !staticShadows || !frameShadow->hasValidDepth;
+        if (!staticShadows && frameSettings.shadowAtlasLoadBalancing && frameShadow->hasValidDepth) {
             // 투영 크기가 기준 크기의 절반이 될 때마다 갱신 간격을 2배로 늘린다.
             uint32_t updateInterval = 1;
             uint32_t projectedSize = shadowLight->projectedSize;
@@ -2063,11 +2081,9 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
 
         // 갱신할 때만 실제 해상도와 현재 품질에 맞는 PCF/bilinear footprint 용 border 를 적용한다.
         if (frameShadow->updateDepth) {
-            // Q3 최대 반경 기준으로 border 를 확보하여 필터 반경 조절 시 projection 을 유지한다.
-            constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapReferenceResolution - 2 * RenderFrameSettings::ShadowMapReferenceBorderTexels);
-            constexpr float filterRadiusScale = RenderFrameSettings::ShadowMapReferenceMaxRadius / referenceUsableResolution;
-
-            entry->borderTexels = shadowMapQuality < 3 ? 2 : CalcShadowMapBorderTexels(frameShadow->resolution, filterRadiusScale);
+            entry->shadowRevision = shadowLight->shadowRevision;
+            entry->casterLayerMask = casterLayerMask;
+            entry->borderTexels = borderTexels;
             frameShadow->hasValidDepth = false; // 갱신 결과는 백엔드에서 depth 기록 후 확정한다.
         }
 
@@ -2092,8 +2108,10 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
                 entry->spotViewProjMatrix = shadowViews[0].viewProjMatrix;
             }
 
-            for (int planeIndex = 0; planeIndex < 6; ++planeIndex) {
-                frameShadow->viewPlaneToOriginDistances[planeIndex] = viewPlanes[planeIndex].Distance(shadowLight->origin);
+            if (!staticShadows) {
+                for (int planeIndex = 0; planeIndex < 6; ++planeIndex) {
+                    frameShadow->viewPlaneToOriginDistances[planeIndex] = viewPlanes[planeIndex].Distance(shadowLight->origin);
+                }
             }
         }
 

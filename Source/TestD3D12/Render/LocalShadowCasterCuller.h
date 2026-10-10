@@ -36,6 +36,7 @@ public:
     bool                    CullPointLight(const BE1::Vec3 &lightOrigin, float squaredRadius) const;
 
                             // shadow caster bounds 를 라이트의 shadow frustum 과 view volume 으로 컬링한다.
+                            // viewPlaneToOriginDistances 가 nullptr 이면 카메라 기반 컬링과 그 준비 계산을 생략한다.
                             // false 를 리턴하면 lightForward 방향 최소 깊이를 outMinDepth 에 기록한다.
     bool                    Cull(const FrameLocalShadowView &shadowView, const float viewPlaneToOriginDistances[6], float &outMinDepth);
 

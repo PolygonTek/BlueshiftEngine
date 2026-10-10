@@ -1169,7 +1169,7 @@ void App::BuildImGuiOverlay() {
                         ImGui::BeginDisabled(shadowQuality != 3);
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
                         float localFilterRadius = r_shadowMapFilterRadius.GetFloat();
-                        if (ImGui::SliderFloat("Local Poisson filter radius", &localFilterRadius,
+                        if (ImGui::SliderFloat("Poisson filter radius", &localFilterRadius,
                             r_shadowMapFilterRadius.GetMinValue(), r_shadowMapFilterRadius.GetMaxValue(), "%.3f texels", ImGuiSliderFlags_AlwaysClamp)) {
                             r_shadowMapFilterRadius.SetFloat(localFilterRadius);
                         }

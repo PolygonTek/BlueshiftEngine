@@ -77,7 +77,7 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     renderWorld->AddRenderObject(meshDesc);
 
     pointLight.type = RenderLight::Type::Point;
-    pointLight.flags = RenderLight::Flag::CastShadows;
+    pointLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::StaticShadows;
     pointLight.origin.Set(0.217f, -0.181f, 0.017f);
     pointLight.range = 3.0f;
     pointLight.shadowOffsetUnits = 500.0f;
@@ -89,7 +89,7 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     spotPitch = 45.0f;
     spotYaw = -20.0f;
     spotLight.type = RenderLight::Type::Spot;
-    spotLight.flags = RenderLight::Flag::CastShadows;
+    spotLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::StaticShadows;
     spotLight.origin.Set(-3.5f, 2.0f, 1.5f);
     spotLight.axis = BE1::Angles(0.0f, spotPitch, spotYaw).ToMat3();
     spotLight.range = 5.0f;

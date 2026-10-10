@@ -19,11 +19,11 @@
 
 void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFlags) {
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Flags)) {
-        desc.flags = src.flags;
+        UpdateFlags(src.flags);
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Layer)) {
-        desc.layer = src.layer;
+        UpdateLayer(src.layer);
     }
 
     bool updateProjectionAndBounds = false;
@@ -33,11 +33,13 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Shadow)) {
-        desc.shadowOffsetUnits = src.shadowOffsetUnits;
-        desc.shadowOffsetFactor = src.shadowOffsetFactor;
+        UpdateShadow(src.shadowOffsetUnits, src.shadowOffsetFactor);
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Transform)) {
+        if (desc.origin != src.origin || desc.axis != src.axis) {
+            ++shadowRevision;
+        }
         desc.origin = src.origin;
         desc.axis = src.axis;
 
@@ -54,14 +56,23 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
 }
 
 void RenderLight::UpdateFlags(Flag flags) {
+    if (desc.flags != flags) {
+        ++shadowRevision;
+    }
     desc.flags = flags;
 }
 
 void RenderLight::UpdateLayer(uint8_t layer) {
+    if (desc.layer != layer) {
+        ++shadowRevision;
+    }
     desc.layer = layer;
 }
 
 void RenderLight::UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis) {
+    if (desc.origin != origin || desc.axis != axis) {
+        ++shadowRevision;
+    }
     desc.origin = origin;
     desc.axis = axis;
 
@@ -70,11 +81,19 @@ void RenderLight::UpdateTransform(const BE1::Vec3 &origin, const BE1::Mat3 &axis
 }
 
 void RenderLight::UpdateShape(Type type, float range, float zNear, float innerConeAngle, float outerConeAngle) {
+    range = BE1::Max(range, MinLightSize);
+    outerConeAngle = BE1::Clamp(outerConeAngle, MinSpotOuterConeAngle, MaxSpotOuterConeAngle);
+    innerConeAngle = BE1::Clamp(innerConeAngle, 0.0f, outerConeAngle - MinSpotConeAngleGap);
+
+    if (desc.type != type || desc.range != range || desc.zNear != zNear || desc.innerConeAngle != innerConeAngle || desc.outerConeAngle != outerConeAngle) {
+        ++shadowRevision;
+    }
+
     desc.type = type;
-    desc.range = BE1::Max(range, MinLightSize);
+    desc.range = range;
     desc.zNear = zNear;
-    desc.outerConeAngle = BE1::Clamp(outerConeAngle, MinSpotOuterConeAngle, MaxSpotOuterConeAngle);
-    desc.innerConeAngle = BE1::Clamp(innerConeAngle, 0.0f, desc.outerConeAngle - MinSpotConeAngleGap);
+    desc.outerConeAngle = outerConeAngle;
+    desc.innerConeAngle = innerConeAngle;
 
     if (type == Type::Spot) {
         // 각도 감쇠와 shadow 투영 계수는 모양이 바뀔 때만 계산한다.
@@ -109,6 +128,9 @@ void RenderLight::UpdateLighting(const BE1::Color3 &linearColor, float intensity
 }
 
 void RenderLight::UpdateShadow(float shadowOffsetUnits, float shadowOffsetFactor) {
+    if (desc.shadowOffsetUnits != shadowOffsetUnits || desc.shadowOffsetFactor != shadowOffsetFactor) {
+        ++shadowRevision;
+    }
     desc.shadowOffsetUnits = shadowOffsetUnits;
     desc.shadowOffsetFactor = shadowOffsetFactor;
 }

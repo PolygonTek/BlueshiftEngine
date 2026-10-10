@@ -105,6 +105,11 @@ bool LocalShadowCasterCuller::Cull(const FrameLocalShadowView &shadowView, const
         return true;
     }
 
+    // static shadows 는 카메라 이동 후에도 재사용하므로 shadow frustum 안의 caster 를 모두 유지한다.
+    if (!viewPlaneToOriginDistances) {
+        return false;
+    }
+
     if (outMinDepth <= 0.0f) {
         // 최소 깊이가 0 이하이면 bounds 전체를 far 까지 확대할 수 없으므로 shadow volume 컬링을 생략한다.
         return false;

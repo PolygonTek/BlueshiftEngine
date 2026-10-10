@@ -497,6 +497,7 @@ struct FrameLight {
     ALIGN_AS32 BE1::Mat4            viewProjScaleBiasMatrix;
 
     uint64_t                        lightId = 0;                    ///< 원본 RenderLight 의 고유 ID
+    uint64_t                        shadowRevision = 0;             ///< 원본 RenderLight 의 그림자 설정 변경 번호
     uint16_t                        index;                          ///< FrameLight index
     uint16_t                        typeIndex;                      ///< FrameLight index for same light type
     uint16_t                        packedTileMin;                  ///< Packed minimum light-culling tile coordinate: low 8 bits X, high 8 bits Y
@@ -506,7 +507,7 @@ struct FrameLight {
     BE1::Vec3                       origin;
     float                           range;                          ///< Point/Spot radial attenuation range in meters
     BE1::Vec2                       spotCosCone;                    ///< X = cos(inner), Y = cos(outer)
-    float                           spotInvCosConeDifference;
+    float                           spotInvCosConeDifference;       ///< 1 / (cos(inner) - cos(outer)); outer~inner 구간의 cone fade 를 0~1 로 정규화하며 픽셀당 나눗셈을 생략한다.
     float                           spotTanOuterCone;
     float                           zNear;
 
