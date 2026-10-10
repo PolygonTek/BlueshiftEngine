@@ -768,11 +768,6 @@ set(WINDOWS_ENGINE_FILES
     Private/Platform/PlatformWin.h
     Private/Platform/PlatformWin.cpp
 
-    Public/Network/Socket.h
-    Public/Network/Packet.h
-    Private/Network/Socket.cpp
-    Private/Network/Packet.cpp
-
     Private/Sound/SoundSystemAL.cpp
     Private/Sound/SoundBufferAL.cpp
     Private/Sound/SoundSourceAL.cpp
@@ -877,12 +872,7 @@ set(MACOS_ENGINE_FILES
     Private/Platform/MacOS/PlatformMacOSProcess.mm
     Private/Platform/MacOS/PlatformMacOSSystem.mm
     Private/Platform/PlatformMacOS.h
-    Private/Platform/PlatformMacOS.mm
-
-    Public/Network/Socket.h
-    Public/Network/Packet.h
-    Private/Network/Socket.cpp
-    Private/Network/Packet.cpp)
+    Private/Platform/PlatformMacOS.mm)
 
 set(WINDOWS_RENDERER_FILES
     Private/GraphicsOpenGL/OpenGL/OpenGL3.h
@@ -1070,8 +1060,7 @@ target_include_directories(${PROJECT_NAME}
         "${CMAKE_CURRENT_SOURCE_DIR}"
     PUBLIC
         "${ENGINE_INCLUDE_DIR}/Runtime/Public"
-        "${ENGINE_INCLUDE_DIR}/ThirdParty"
-        "${ENGINE_INCLUDE_DIR}/ThirdParty/asio/include")
+        "${ENGINE_INCLUDE_DIR}/ThirdParty")
 
 target_link_libraries(${PROJECT_NAME}
     zlib

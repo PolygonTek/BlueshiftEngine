@@ -1,6 +1,0 @@
-*.so
-*.recipe
-Debug
-Release
-CMakeFiles
-*.cmake
