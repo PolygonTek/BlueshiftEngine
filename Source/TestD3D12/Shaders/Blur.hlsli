@@ -35,8 +35,8 @@ struct BlurBilateralParams {
     uint2 inputSize;
     float depthSigmaRcp;
     float farPlaneDeviceDepth;
-    float2 ndcDepthScaleBias;
-    float2 projectionZ;
+    float2 deviceDepthToNdcZScaleBias;
+    float2 projectionScaleBiasZ;
     bool orthogonal;
 };
 
@@ -48,7 +48,7 @@ float BilateralBlur(Texture2D<float> inputTexture, Texture2D<float> inputDepthTe
         return inputTexture.Load(int3(pixelCoord, 0));
     }
 
-    const float centerLinearDepth = ToLinearDepth(centerDepth, params.ndcDepthScaleBias, params.projectionZ, params.orthogonal);
+    const float centerLinearDepth = ToLinearDepth(centerDepth, params.deviceDepthToNdcZScaleBias, params.projectionScaleBiasZ, params.orthogonal);
     bool valid[gaussianNeighborCount];
     float sampleLinearDepths[gaussianNeighborCount];
 
@@ -61,7 +61,7 @@ float BilateralBlur(Texture2D<float> inputTexture, Texture2D<float> inputDepthTe
         valid[i] = inBounds && sampleDepth != params.farPlaneDeviceDepth;
 
         // infinite far plane 의 clear 값을 포함한 배경 depth 는 선형화하지 않는다.
-        sampleLinearDepths[i] = valid[i] ? ToLinearDepth(sampleDepth, params.ndcDepthScaleBias, params.projectionZ, params.orthogonal) : 0.0f;
+        sampleLinearDepths[i] = valid[i] ? ToLinearDepth(sampleDepth, params.deviceDepthToNdcZScaleBias, params.projectionScaleBiasZ, params.orthogonal) : 0.0f;
     }
 
     // depth 가 한 방향으로 증가하거나 감소하는 표면에서는 국소 depth 기울기를 제거한다.

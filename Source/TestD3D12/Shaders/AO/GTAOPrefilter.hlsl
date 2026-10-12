@@ -69,7 +69,7 @@ float GTAOLoadProcessingDepth(uint2 outputCoord, out float selectedDepth) {
     float linearDepth = 0.0f;
     if (foundSurface) {
         const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
-        linearDepth = ToLinearDepth(selectedDepth, cameraConstants.ndcDepthScaleBias, cameraConstants.projectionZ, orthogonal);
+        linearDepth = ToLinearDepth(selectedDepth, cameraConstants.deviceDepthToNdcZScaleBias, cameraConstants.projectionScaleBiasZ, orthogonal);
     }
     return linearDepth;
 }

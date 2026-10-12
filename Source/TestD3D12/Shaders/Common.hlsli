@@ -126,84 +126,105 @@ inline float ComputeTextureLod(in uint2 textureSize, in float2 dFdx_uv, in float
     return log2(lengthMinor);
 }
 
-// 좌상단 원점의 UV [0, 1] 과 양의 선형 깊이로 뷰 위치를 복원한다.
-// 오른손 뷰 공간의 카메라 전방은 음의 Z 축이므로 선형 깊이는 -view.z 이다.
-// uvToView 는 깊이 생성에 사용한 투영과 일치해야 하며, 투영 지터를 포함한다.
-inline float3 ViewPositionFromLinearDepth(float2 uv, float linearDepth, float4 uvToView, bool orthogonal) {
-    const float2 viewXY = uv * uvToView.xy + uvToView.zw;
-    return float3(viewXY * (orthogonal ? 1.0f : linearDepth), -linearDepth);
+inline float3 ReconstructPerspectiveViewPosition(float2 uv, float linearDepth, float4 uvToViewScaleBiasXY) {
+    const float2 viewXY = uv * uvToViewScaleBiasXY.xy + uvToViewScaleBiasXY.zw;
+    return float3(viewXY * linearDepth, -linearDepth);
 }
 
-// 뷰 위치를 원근 나눗셈 전의 클립 위치로 변환한다.
-// projectionXY 는 XY 투영 배율과 오프셋이다.
-// clip.z = view.z * projectionZ.x + projectionZ.y
-inline float4 ProjectViewPosition(float3 position, float4 projectionXY, float2 projectionZ, bool orthogonal) {
-    const float clipW = orthogonal ? 1.0f : -position.z;
-    return float4(position.xy * projectionXY.xy + clipW * projectionXY.zw, projectionZ.x * position.z + projectionZ.y, clipW);
+inline float3 ReconstructOrthogonalViewPosition(float2 uv, float linearDepth, float4 uvToViewScaleBiasXY) {
+    const float2 viewXY = uv * uvToViewScaleBiasXY.xy + uvToViewScaleBiasXY.zw;
+    return float3(viewXY, -linearDepth);
 }
 
-// clip space position 을 좌상단 원점의 UV [0, 1] 와 device depth 로 변환한다.
-inline float3 ClipPositionToScreenPosition(float4 clipPosition, float2 ndcDepthScaleBias) {
-    const float3 ndcPosition = clipPosition.xyz / clipPosition.w;
-    const float2 uv = ndcPosition.xy * float2(0.5f, -0.5f) + 0.5f;
-    const float deviceDepth = (ndcPosition.z - ndcDepthScaleBias.y) / ndcDepthScaleBias.x;
+// 좌상단 원점의 UV [0, 1] 과 linear depth 로 view-space position 을 복원한다.
+// 뷰 공간에서 카메라 앞쪽의 z 값은 음수이므로, 양의 선형 깊이는 -view.z 로 표현한다.
+inline float3 ReconstructViewPosition(float2 uv, float linearDepth, float4 uvToViewScaleBiasXY, bool orthogonal) {
+    if (orthogonal) {
+        return ReconstructOrthogonalViewPosition(uv, linearDepth, uvToViewScaleBiasXY);
+    }
+    return ReconstructPerspectiveViewPosition(uv, linearDepth, uvToViewScaleBiasXY);
+}
+
+inline float4 ProjectPerspectiveViewPosition(float3 viewPos, float4 projectionScaleBiasXY, float2 projectionScaleBiasZ) {
+    const float clipW = -viewPos.z;
+    return float4(viewPos.xy * projectionScaleBiasXY.xy + clipW * projectionScaleBiasXY.zw, projectionScaleBiasZ.x * viewPos.z + projectionScaleBiasZ.y, clipW);
+}
+
+inline float4 ProjectOrthogonalViewPosition(float3 viewPos, float4 projectionScaleBiasXY, float2 projectionScaleBiasZ) {
+    return float4(viewPos.xy * projectionScaleBiasXY.xy + projectionScaleBiasXY.zw, projectionScaleBiasZ.x * viewPos.z + projectionScaleBiasZ.y, 1.0f);
+}
+
+// view-space position 을 perspective divide 전의 clip-space position 으로 변환한다.
+// clip.z = view.z * projectionScaleBiasZ.x + projectionScaleBiasZ.y
+inline float4 ProjectViewPosition(float3 viewPos, float4 projectionScaleBiasXY, float2 projectionScaleBiasZ, bool orthogonal) {
+    if (orthogonal) {
+        return ProjectOrthogonalViewPosition(viewPos, projectionScaleBiasXY, projectionScaleBiasZ);
+    }
+    return ProjectPerspectiveViewPosition(viewPos, projectionScaleBiasXY, projectionScaleBiasZ);
+}
+
+// clip-space position 을 좌상단 원점의 UV [0, 1] 와 device depth 로 변환한다.
+inline float3 ClipPositionToScreenPosition(float4 clipPos, float2 deviceDepthToNdcZScaleBias) {
+    const float3 ndcPos = clipPos.xyz / clipPos.w;
+    const float2 uv = ndcPos.xy * float2(0.5f, -0.5f) + 0.5f;
+    const float deviceDepth = (ndcPos.z - deviceDepthToNdcZScaleBias.y) / deviceDepthToNdcZScaleBias.x;
     return float3(uv, deviceDepth);
 }
 
 // Reconstructs world-space position from depth buffer
 // uv    : screen space coordinate in [0, 1] range, origin at upper-left corner of the screen
-// depth : depth value in NDC Z range [0, 1]
+// ndcZ  : depth value in NDC Z range [0, 1]
 // invVP : Inverse view-projection matrix that was used to generate the depth value
-inline float3 ReconstructPosition(in float2 uv, in float depth, in float4x4 invVP) {
+inline float3 ReconstructWorldPosition(float2 uv, float ndcZ, float4x4 invVP) {
     float ndcX = uv.x * 2.0f - 1.0f;
     float ndcY = (1.0f - uv.y) * 2.0f - 1.0f;
-    float4 ndcPosition = float4(ndcX, ndcY, depth, 1.0f);
-    float4 worldPosition = mul(invVP, ndcPosition);
-    return worldPosition.xyz / worldPosition.w;
+    float4 ndcPos = float4(ndcX, ndcY, ndcZ, 1.0f);
+    float4 worldPos = mul(invVP, ndcPos);
+    return worldPos.xyz / worldPos.w;
 }
 
 // 현재 픽셀의 표면을 이전 프레임 카메라로 reprojection 했을 때의 depth 를 구한다.
-inline float ComputeReprojectedPreviousDepth(in float2 uv, in float currentDepth, in float4x4 invViewProjMatrix, in float4x4 prevViewProjMatrix) {
+inline float ComputeReprojectedPreviousDepth(float2 uv, float currentDepth, float4x4 invViewProjMatrix, float4x4 prevViewProjMatrix) {
     const float2 ndcXY = uv * float2(2.0, -2.0) + float2(-1.0, 1.0);
     const float4 currentClipPosition = float4(ndcXY, currentDepth, 1.0);
-    float4 worldPosition = mul(invViewProjMatrix, currentClipPosition);
-    worldPosition /= worldPosition.w;
+    float4 worldPos = mul(invViewProjMatrix, currentClipPosition);
+    worldPos /= worldPos.w;
 
-    const float4 previousClipPosition = mul(prevViewProjMatrix, worldPosition);
-    return previousClipPosition.z / previousClipPosition.w;
+    const float4 previousClipPos = mul(prevViewProjMatrix, worldPos);
+    return previousClipPos.z / previousClipPos.w;
 }
 
-// NDC Z 를 선형 Depth 로 변환한다.
+// NDC Z 를 linear depth 로 변환한다.
 // projDepthA: projection matrix [2][2]
 // projDepthB: projection matrix [2][3]
-inline float LinearizePerspectiveDepth(float ndcDepth, float projDepthA, float projDepthB) {
+inline float LinearizePerspectiveDepth(float ndcZ, float projDepthA, float projDepthB) {
     // ndcZ = (A * viewZ + B) / (-viewZ)
     // viewZ = -B / (ndcZ + A)
     // 오른손 뷰 공간에서 카메라 전방은 음의 Z 축이므로, -viewZ 를 양의 선형 깊이로 사용한다.
     // viewDistance = -viewZ = B / (ndcZ + A)
-    return projDepthB / (ndcDepth + projDepthA);
+    return projDepthB / (ndcZ + projDepthA);
 }
 
 // NDC Z 를 선형 Depth 로 변환한다.
 // projDepthA: projection matrix [2][2]
 // projDepthB: projection matrix [2][3]
-inline float LinearizeOrthogonalDepth(float ndcDepth, float projDepthA, float projDepthB) {
+inline float LinearizeOrthogonalDepth(float ndcZ, float projDepthA, float projDepthB) {
     // ndcZ = (A * viewZ + B) / 1
     // viewZ = (ndcZ - B) / A
     // 오른손 뷰 공간에서 카메라 전방은 음의 Z 축이므로, -viewZ 를 양의 선형 깊이로 사용한다.
     // viewDistance = -viewZ = (B - ndcZ) / A
-    return (projDepthB - ndcDepth) / projDepthA;
+    return (projDepthB - ndcZ) / projDepthA;
 }
 
 // device depth 를 카메라 전방 축을 따르는 양의 linear view depth 로 변환한다.
 // 작은 분모도 유효한 원거리 표면을 나타낼 수 있으므로 분모의 최솟값을 제한하지 않는다.
 // 무한 원거리 투영의 배경은 무한 깊이가 될 수 있다. 호출부는 배경을 제외하거나,
 // 위치 복원과 깊이 차이 계산 전에 무한 깊이를 별도로 처리해야 한다.
-inline float ToLinearDepth(float deviceDepth, float2 ndcDepthScaleBias, float2 projectionZ, bool orthogonal) {
-    const float ndcDepth = deviceDepth * ndcDepthScaleBias.x + ndcDepthScaleBias.y;
+inline float ToLinearDepth(float deviceDepth, float2 deviceDepthToNdcZScaleBias, float2 projectionScaleBiasZ, bool orthogonal) {
+    const float ndcZ = deviceDepth * deviceDepthToNdcZScaleBias.x + deviceDepthToNdcZScaleBias.y;
     return orthogonal ?
-        LinearizeOrthogonalDepth(ndcDepth, projectionZ.x, projectionZ.y) :
-        LinearizePerspectiveDepth(ndcDepth, projectionZ.x, projectionZ.y);
+        LinearizeOrthogonalDepth(ndcZ, projectionScaleBiasZ.x, projectionScaleBiasZ.y) :
+        LinearizePerspectiveDepth(ndcZ, projectionScaleBiasZ.x, projectionScaleBiasZ.y);
 }
 
 // Returns a uniformly sampled direction on the unit sphere.

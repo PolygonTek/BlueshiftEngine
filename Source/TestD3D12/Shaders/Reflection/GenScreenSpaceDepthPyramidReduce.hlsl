@@ -14,16 +14,15 @@ Texture2D<float2> inputDepthPyramidTexture : register(t0);
 // R: max depth, G: min depth
 RWTexture2D<float2> outputDepthPyramidTexture : register(u0);
 
-// 이전 pyramid mip 의 2x2 영역을 하나의 max/min depth 범위로 축소하여 다음 mip 값을 만든다.
+// 이전 pyramid mip 의 2x2 영역을 하나의 max/min depth 범위로 합친다.
 float2 ReduceInputDepth(uint2 outputCoord) {
-    const uint2 inputSize = depthPyramidParams.inputSize;
-    const uint2 srcMin = outputCoord * 2;
-    const uint2 srcMax = min(srcMin + 1, inputSize - 1);
+    const uint2 inputMin = outputCoord * 2;
+    const uint2 inputMax = min(inputMin + 1, depthPyramidParams.inputSize - 1);
 
-    float2 extrema = inputDepthPyramidTexture.Load(int3(srcMin, 0));
-    extrema = MergeDepthExtrema(extrema, inputDepthPyramidTexture.Load(int3(uint2(srcMax.x, srcMin.y), 0)));
-    extrema = MergeDepthExtrema(extrema, inputDepthPyramidTexture.Load(int3(uint2(srcMin.x, srcMax.y), 0)));
-    extrema = MergeDepthExtrema(extrema, inputDepthPyramidTexture.Load(int3(srcMax, 0)));
+    float2 extrema = inputDepthPyramidTexture.Load(int3(inputMin, 0));
+    extrema = MergeDepthExtrema(extrema, inputDepthPyramidTexture.Load(int3(uint2(inputMax.x, inputMin.y), 0)));
+    extrema = MergeDepthExtrema(extrema, inputDepthPyramidTexture.Load(int3(uint2(inputMin.x, inputMax.y), 0)));
+    extrema = MergeDepthExtrema(extrema, inputDepthPyramidTexture.Load(int3(inputMax, 0)));
     return extrema;
 }
 

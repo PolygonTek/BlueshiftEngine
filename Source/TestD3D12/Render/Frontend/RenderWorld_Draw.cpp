@@ -435,24 +435,24 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     frameCamera->clearColorMode = cameraDesc.clearColorMode;
     frameCamera->clearColor = cameraDesc.clearColor;
     frameCamera->projectionPolicy = cameraDesc.projectionPolicy;
-    frameCamera->projectionZ = BE1::Vec2(renderCamera->projMatrix[2][2], renderCamera->projMatrix[2][3]);
+    frameCamera->projectionScaleBiasZ = BE1::Vec2(renderCamera->projMatrix[2][2], renderCamera->projMatrix[2][3]);
     frameCamera->projectionOrthogonal = cameraDesc.orthogonal;
     frameCamera->projectionInfiniteZFar = cameraDesc.infiniteZFar;
 
     if (frameCamera->projectionOrthogonal) {
-        frameCamera->projectionXY = BE1::Vec4(renderCamera->projMatrix[0][0], renderCamera->projMatrix[1][1], renderCamera->projMatrix[0][3], renderCamera->projMatrix[1][3]);
+        frameCamera->projectionScaleBiasXY = BE1::Vec4(renderCamera->projMatrix[0][0], renderCamera->projMatrix[1][1], renderCamera->projMatrix[0][3], renderCamera->projMatrix[1][3]);
         frameCamera->viewBox = renderCamera->GetBox();
     } else {
-        frameCamera->projectionXY = BE1::Vec4(renderCamera->projMatrix[0][0], renderCamera->projMatrix[1][1], -renderCamera->projMatrix[0][2], -renderCamera->projMatrix[1][2]);
+        frameCamera->projectionScaleBiasXY = BE1::Vec4(renderCamera->projMatrix[0][0], renderCamera->projMatrix[1][1], -renderCamera->projMatrix[0][2], -renderCamera->projMatrix[1][2]);
         frameCamera->viewFrustum = renderCamera->GetFrustum();
     }
 
     if (frameCamera->projectionPolicy.IsZNegativeOneToOne()) {
-        frameCamera->ndcDepthScale = 2.0f;
-        frameCamera->ndcDepthBias = -1.0f;
+        frameCamera->deviceDepthToNdcZScale = 2.0f;
+        frameCamera->deviceDepthToNdcZBias = -1.0f;
     } else {
-        frameCamera->ndcDepthScale = 1.0f;
-        frameCamera->ndcDepthBias = 0.0f;
+        frameCamera->deviceDepthToNdcZScale = 1.0f;
+        frameCamera->deviceDepthToNdcZBias = 0.0f;
     }
 
     frameCamera->flags = cameraDesc.flags;
@@ -2465,17 +2465,17 @@ void RenderWorld::DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32
     frameCamera->viewMatrix = BE1::Mat4::identity;
     frameCamera->viewProjMatrix.SetOrthoRH(0, screenWidth, screenHeight, 0, -1.0, 1.0, true); // Y 를 뒤집는다.
     frameCamera->invViewProjMatrix = frameCamera->viewProjMatrix.Inverse();
-    frameCamera->projectionXY = BE1::Vec4(frameCamera->viewProjMatrix[0][0], frameCamera->viewProjMatrix[1][1], frameCamera->viewProjMatrix[0][3], frameCamera->viewProjMatrix[1][3]);
-    frameCamera->projectionZ = BE1::Vec2(frameCamera->viewProjMatrix[2][2], frameCamera->viewProjMatrix[2][3]);
+    frameCamera->projectionScaleBiasXY = BE1::Vec4(frameCamera->viewProjMatrix[0][0], frameCamera->viewProjMatrix[1][1], frameCamera->viewProjMatrix[0][3], frameCamera->viewProjMatrix[1][3]);
+    frameCamera->projectionScaleBiasZ = BE1::Vec2(frameCamera->viewProjMatrix[2][2], frameCamera->viewProjMatrix[2][3]);
     frameCamera->projectionOrthogonal = true;
     frameCamera->projectionInfiniteZFar = false;
 
     if (frameCamera->projectionPolicy.IsZNegativeOneToOne()) {
-        frameCamera->ndcDepthScale = 2.0f;
-        frameCamera->ndcDepthBias = -1.0f;
+        frameCamera->deviceDepthToNdcZScale = 2.0f;
+        frameCamera->deviceDepthToNdcZBias = -1.0f;
     } else {
-        frameCamera->ndcDepthScale = 1.0f;
-        frameCamera->ndcDepthBias = 0.0f;
+        frameCamera->deviceDepthToNdcZScale = 1.0f;
+        frameCamera->deviceDepthToNdcZBias = 0.0f;
     }
 
     frameCamera->prevViewProjMatrix = frameCamera->viewProjMatrix;

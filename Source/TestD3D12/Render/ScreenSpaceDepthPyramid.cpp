@@ -27,9 +27,9 @@ void ScreenSpaceDepthPyramid::Init() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
 
-    firstMipShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidFirst.hlsl", baseDir);
-    firstMipMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstMSAAShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidFirstMSAA.hlsl", baseDir);
-    reduceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidReduceShader", computeShaderModel, "Reflection/GenerateScreenSpaceDepthPyramidReduce.hlsl", baseDir);
+    firstMipShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstShader", computeShaderModel, "Reflection/GenScreenSpaceDepthPyramidFirst.hlsl", baseDir);
+    firstMipMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidFirstMSAAShader", computeShaderModel, "Reflection/GenScreenSpaceDepthPyramidFirstMSAA.hlsl", baseDir);
+    reduceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_screenSpaceDepthPyramidReduceShader", computeShaderModel, "Reflection/GenScreenSpaceDepthPyramidReduce.hlsl", baseDir);
 
     firstMipPipeline = shaderPipelineCache.GetComputePipeline(firstMipShaderTemplate, ShaderPermutationKey(), true);
     firstMipMSAAPipeline = shaderPipelineCache.GetComputePipeline(firstMipMSAAShaderTemplate, ShaderPermutationKey(), true);

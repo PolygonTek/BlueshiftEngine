@@ -147,11 +147,11 @@ float GTAOEvaluateVisibility(uint2 pixelCoord, float3 viewNormal, GTAOMainParams
     centerZ *= 0.99999f;
     const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
     const float2 uv = (float2(pixelCoord) + 0.5f) * params.outputSizeRcp;
-    const float3 centerPosition = ViewPositionFromLinearDepth(uv, centerZ, cameraConstants.uvToView, orthogonal);
+    const float3 centerPosition = ReconstructViewPosition(uv, centerZ, cameraConstants.uvToViewScaleBiasXY, orthogonal);
     const float3 viewVector = orthogonal ? float3(0.0f, 0.0f, 1.0f) : normalize(-centerPosition);
     viewNormal = normalize(viewNormal);
 
-    const float3 rightPosition = ViewPositionFromLinearDepth(uv + float2(params.outputSizeRcp.x, 0.0f), centerZ, cameraConstants.uvToView, orthogonal);
+    const float3 rightPosition = ReconstructViewPosition(uv + float2(params.outputSizeRcp.x, 0.0f), centerZ, cameraConstants.uvToViewScaleBiasXY, orthogonal);
     const float pixelViewSize = max(length(rightPosition - centerPosition), 1.0e-6f);
     const float effectRadius = params.radius * params.radiusMultiplier;
     const float screenSpaceRadius = effectRadius / pixelViewSize;
@@ -209,7 +209,7 @@ float GTAOEvaluateVisibility(uint2 pixelCoord, float3 viewNormal, GTAOMainParams
 
             if (valid0) {
                 const float sampleZ = prefilteredDepthTexture.SampleLevel(pointClampSampler, sampleUV0, mipLevel);
-                const float3 delta = sampleZ > 0.0f ? ViewPositionFromLinearDepth(sampleUV0, sampleZ, cameraConstants.uvToView, orthogonal) - centerPosition : 0.0f;
+                const float3 delta = sampleZ > 0.0f ? ReconstructViewPosition(sampleUV0, sampleZ, cameraConstants.uvToViewScaleBiasXY, orthogonal) - centerPosition : 0.0f;
                 const float distance = length(delta);
                 if (distance > 1.0e-6f) {
                     const float falloffDistance = length(float3(delta.xy, delta.z * (1.0f + params.thinOccluderCompensation)));
@@ -221,7 +221,7 @@ float GTAOEvaluateVisibility(uint2 pixelCoord, float3 viewNormal, GTAOMainParams
 
             if (valid1) {
                 const float sampleZ = prefilteredDepthTexture.SampleLevel(pointClampSampler, sampleUV1, mipLevel);
-                const float3 delta = sampleZ > 0.0f ? ViewPositionFromLinearDepth(sampleUV1, sampleZ, cameraConstants.uvToView, orthogonal) - centerPosition : 0.0f;
+                const float3 delta = sampleZ > 0.0f ? ReconstructViewPosition(sampleUV1, sampleZ, cameraConstants.uvToViewScaleBiasXY, orthogonal) - centerPosition : 0.0f;
                 const float distance = length(delta);
                 if (distance > 1.0e-6f) {
                     const float falloffDistance = length(float3(delta.xy, delta.z * (1.0f + params.thinOccluderCompensation)));

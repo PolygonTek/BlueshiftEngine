@@ -165,7 +165,7 @@ CameraPassPSOutput PSMain(PSInput input) {
     result.color = baseColor;
 #ifdef OUTPUT_NORMAL
     // Lighting stays in world space; the shared AO/SSR buffer stores view-space normals.
-    result.normal = EncodeOctahedralNormal(mul((float3x3)cameraConstants.viewRotation, shading.normal));
+    result.normal = EncodeUnitVectorOctahedral(mul((float3x3)cameraConstants.viewRotation, shading.normal));
 #endif
 
 #if DEBUG_CASCADED_SHADOW_MAP == 1

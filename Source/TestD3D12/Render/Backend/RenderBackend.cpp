@@ -291,6 +291,7 @@ bool RenderBackend::UploadCameraConstants() {
     if (currentFrameCamera->taaResolve && frameTAAResolvePSO) {
         flags |= ShaderCameraFlagUseTAA;
     }
+    cameraShaderFlags = flags;
 
     ALIGN_AS32 BE1::Mat4 unjitteredViewProjMatrix = currentFrameCamera->viewProjMatrix;
     ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentFrameCamera->prevViewProjMatrix;
@@ -319,17 +320,32 @@ bool RenderBackend::UploadCameraConstants() {
     constants->ndcFarZ = currentFrameCamera->projectionPolicy.GetNDCFarZ();
     constants->cameraForward = float3(currentFrameCamera->axis[0].x, currentFrameCamera->axis[0].y, currentFrameCamera->axis[0].z);
     constants->flags = flags;
+    constants->deviceDepthToNdcZScaleBias = float2(currentFrameCamera->deviceDepthToNdcZScale, currentFrameCamera->deviceDepthToNdcZBias);
+    constants->projectionScaleBiasZ = float2(currentFrameCamera->projectionScaleBiasZ.x, currentFrameCamera->projectionScaleBiasZ.y);
 
-    constants->ndcDepthScaleBias = float2(currentFrameCamera->ndcDepthScale, currentFrameCamera->ndcDepthBias);
-    constants->projectionZ = float2(currentFrameCamera->projectionZ.x, currentFrameCamera->projectionZ.y);
+    // depth prepass 와 동일한 jitter 를 사용해 뷰 공간에서 직접 복원한다.
+    BE1::Vec4 projectionScaleBiasXY = currentFrameCamera->projectionScaleBiasXY;
+    projectionScaleBiasXY.z += currentFrameCamera->jitterNDC.x;
+    projectionScaleBiasXY.w += currentFrameCamera->jitterNDC.y;
 
-    // Reconstruct directly in view space using the same jitter as the depth prepass.
-    const BE1::Vec4 &projectionXY = currentFrameCamera->projectionXY;
-    constants->projectionXY = float4(projectionXY.x, projectionXY.y, projectionXY.z + currentFrameCamera->jitterNDC.x, projectionXY.w + currentFrameCamera->jitterNDC.y);
-    const float inverseProjectionScaleX = 1.0f / projectionXY.x;
-    const float inverseProjectionScaleY = 1.0f / projectionXY.y;
-    // Keep reconstruction in UV coordinates so passes can use their own resolution.
-    constants->uvToView = float4(2.0f * inverseProjectionScaleX, -2.0f * inverseProjectionScaleY, (-1.0f - constants->projectionXY.z) * inverseProjectionScaleX, (1.0f - constants->projectionXY.w) * inverseProjectionScaleY);
+    // clip.xy = view.xy * projectionScaleBiasXY.xy + projectionScaleBiasXY.zw * clip.w
+    // clip.w = -view.z (원근 투영), 1 (직교 투영)
+    // ndc.xy = view.xy * projectionScaleBiasXY.xy / clip.w + projectionScaleBiasXY.zw
+    constants->projectionScaleBiasXY = float4(projectionScaleBiasXY.x, projectionScaleBiasXY.y, projectionScaleBiasXY.z, projectionScaleBiasXY.w);
+
+    const float invProjectionScaleX = 1.0f / projectionScaleBiasXY.x;
+    const float invProjectionScaleY = 1.0f / projectionScaleBiasXY.y;
+
+    // ndc.xy = uv * float2(2, -2) + float2(-1, 1)
+    // view.xy = (ndc.xy - projectionScaleBiasXY.zw) / projectionScaleBiasXY.xy * clip.w
+    // view.xy = (uv * float2(2, -2) + float2(-1, 1) - projectionScaleBiasXY.zw) / projectionScaleBiasXY.xy * clip.w
+    // view.xy = (uv * (float2(2, -2) / projectionScaleBiasXY.xy)) * clip.w + ((float2(-1, 1) - projectionScaleBiasXY.zw) / projectionScaleBiasXY.xy) * clip.w
+    // view.xy = (uv * uvToViewScaleBiasXY.xy + uvToViewScaleBiasXY.zw) * clip.w
+    constants->uvToViewScaleBiasXY = float4(
+        (+2.0f * invProjectionScaleX),
+        (-2.0f * invProjectionScaleY),
+        (-1.0f - projectionScaleBiasXY.z) * invProjectionScaleX,
+        (+1.0f - projectionScaleBiasXY.w) * invProjectionScaleY);
 
     constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
     constants->numLocalLights = currentFrameCamera->numFrameLocalLights;
@@ -704,7 +720,8 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
     // The camera command list has not been submitted yet.
     if (currentFrameCamera->applyAO && !aoReady) {
         CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
-        constants->flags &= ~ShaderCameraFlagUseAO;
+        cameraShaderFlags &= ~ShaderCameraFlagUseAO;
+        constants->flags = cameraShaderFlags;
     }
 
     // Opaque 와 Skybox 를 렌더링한다.

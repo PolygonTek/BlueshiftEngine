@@ -20,12 +20,6 @@ static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLo
     assert(shadow.resolution > 2 * firstView.borderTexels);
     assert(shadow.numShadowViews == 1 || shadow.numShadowViews == 6);
 
-    outShadow.firstShadowView = shadow.firstShadowView;
-    outShadow.numShadowViews = shadow.numShadowViews;
-    outShadow.normalizedBorder = static_cast<float>(firstView.borderTexels) / shadow.resolution;
-    outShadow.pointOrigin = float3(shadow.pointOrigin.x, shadow.pointOrigin.y, shadow.pointOrigin.z);
-    outShadow.pointDepthScaleBias = float2(shadow.pointDepthScaleBias.x, shadow.pointDepthScaleBias.y);
-
     float filterRadius = settings.shadowMapQuality == 0 ? 0.0f : 1.0f;
     if (settings.shadowMapQuality == 3) {
         constexpr float referenceUsableResolution = static_cast<float>(RenderFrameSettings::ShadowMapReferenceResolution - 2 * RenderFrameSettings::ShadowMapReferenceBorderTexels);
@@ -36,7 +30,13 @@ static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLo
 
     // 품질 전환 후 아직 depth 를 갱신하지 않은 타일도 저장된 border 안에서 샘플링한다.
     const float maxFilterRadius = BE1::Max(0.0f, static_cast<float>(firstView.borderTexels) - 1.0f);
+
+    outShadow.firstShadowView = shadow.firstShadowView;
+    outShadow.numShadowViews = shadow.numShadowViews;
     outShadow.filterRadius = BE1::Clamp(filterRadius, 0.0f, maxFilterRadius);
+    outShadow.normalizedBorder = static_cast<float>(firstView.borderTexels) / shadow.resolution;
+    outShadow.pointOrigin = float3(shadow.pointOrigin.x, shadow.pointOrigin.y, shadow.pointOrigin.z);
+    outShadow.pointDepthScaleBias = float2(shadow.pointDepthScaleBias.x, shadow.pointDepthScaleBias.y);
 }
 
 static void BuildShaderLocalShadowView(const FrameLocalShadowView &view, bool point, float invAtlasSize, ShaderLocalShadowView &outView) {
@@ -46,10 +46,18 @@ static void BuildShaderLocalShadowView(const FrameLocalShadowView &view, bool po
     } else {
         // XY 만 clip [-W, W] 에서 타일 UV [0, W] 로 변환한다. Z/W 와 perspective divide 용 W 는 보존한다.
         const BE1::Mat4 &matrix = view.viewProjMatrix;
+
+        // 업로드 버퍼의 row-major 메모리 배치에 맞춰 각 행을 연속으로 기록한다.
         for (uint32_t column = 0; column < 4; ++column) {
             outView.worldToShadowCoordMatrix.m[0][column] = (matrix[3][column] + matrix[0][column]) * 0.5f;
+        }
+        for (uint32_t column = 0; column < 4; ++column) {
             outView.worldToShadowCoordMatrix.m[1][column] = (matrix[3][column] - matrix[1][column]) * 0.5f;
+        }
+        for (uint32_t column = 0; column < 4; ++column) {
             outView.worldToShadowCoordMatrix.m[2][column] = matrix[2][column];
+        }
+        for (uint32_t column = 0; column < 4; ++column) {
             outView.worldToShadowCoordMatrix.m[3][column] = matrix[3][column];
         }
     }

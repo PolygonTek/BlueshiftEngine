@@ -18,11 +18,11 @@ struct ShaderLightIterator {
     uint lightMask;
 };
 
-float LinearizeLightCullingDepth(float ndcDepth) {
+float LinearizeLightCullingDepth(float ndcZ) {
     if ((cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0) {
-        return LinearizeOrthogonalDepth(ndcDepth, cameraConstants.projectionZ.x, cameraConstants.projectionZ.y);
+        return LinearizeOrthogonalDepth(ndcZ, cameraConstants.projectionScaleBiasZ.x, cameraConstants.projectionScaleBiasZ.y);
     }
-    return LinearizePerspectiveDepth(ndcDepth, cameraConstants.projectionZ.x, cameraConstants.projectionZ.y);
+    return LinearizePerspectiveDepth(ndcZ, cameraConstants.projectionScaleBiasZ.x, cameraConstants.projectionScaleBiasZ.y);
 }
 
 uint LoadLightZBin(uint address, bool waveCoherent) {
@@ -53,7 +53,7 @@ uint LoadLightTileWord(uint address, bool waveCoherent) {
     return GetBufferUInt(frameConstants.shaderLightTileWordTableIndex)[address];
 }
 
-ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float ndcDepth, bool useZBin, bool waveCoherent) {
+ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float ndcZ, bool useZBin, bool waveCoherent) {
     ShaderLightIterator iterator;
     iterator.tileWordBaseIndex = ShaderLightInvalidOffset;
     iterator.nextWordIndex = 0;
@@ -71,7 +71,7 @@ ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float ndcDepth, 
 
     // Z-bin 을 사용할 수 있다면, minLightIndex 와 maxLightIndex 를 현재 픽셀의 linear view Z 와 겹치는 라이트 범위로 제한한다.
     if (useZBin && cameraConstants.lightCullingZBinTableOffset != ShaderLightInvalidOffset) {
-        const float viewZ = LinearizeLightCullingDepth(ndcDepth);
+        const float viewZ = LinearizeLightCullingDepth(ndcZ);
         const float zBin = viewZ * cameraConstants.lightCullingZBinScale + cameraConstants.lightCullingZBinBias;
         const uint zBinIndex = (uint)clamp(zBin, 0.0f, (float)(ShaderLightZBinCount - 1));
         const uint zBinAddress = cameraConstants.lightCullingZBinTableOffset + zBinIndex;

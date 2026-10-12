@@ -35,7 +35,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
-    const float linearDepth = ToLinearDepth(depth, cameraConstants.ndcDepthScaleBias, cameraConstants.projectionZ, orthogonal);
+    const float linearDepth = ToLinearDepth(depth, cameraConstants.deviceDepthToNdcZScaleBias, cameraConstants.projectionScaleBiasZ, orthogonal);
 
     // 2x2 블록 중심 기준으로 보간한다. 홀수 해상도에서도 정확히 2:1 좌표 대응을 유지한다.
     const float2 halfCoord = (float2(pixelCoord) + 0.5f) * 0.5f - 0.5f;
@@ -52,7 +52,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             const float sampleDepth = inputHalfDepthTexture.Load(int3(sampleCoord, 0));
 
             if (sampleDepth != aoUpsampleParams.farPlaneDeviceDepth) {
-                const float sampleLinearDepth = ToLinearDepth(sampleDepth, cameraConstants.ndcDepthScaleBias, cameraConstants.projectionZ, orthogonal);
+                const float sampleLinearDepth = ToLinearDepth(sampleDepth, cameraConstants.deviceDepthToNdcZScaleBias, cameraConstants.projectionScaleBiasZ, orthogonal);
                 const float depthError = (sampleLinearDepth - linearDepth) * aoUpsampleParams.depthSigmaRcp;
                 const float spatialWeight = (x == 0 ? 1.0f - blend.x : blend.x) * (y == 0 ? 1.0f - blend.y : blend.y);
                 const float weight = spatialWeight * exp2(-0.721347520f * depthError * depthError);

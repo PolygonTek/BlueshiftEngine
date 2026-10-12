@@ -221,7 +221,7 @@ void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out fl
 
 float LinearizeDepth(float deviceDepth) {
     const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
-    return ToLinearDepth(deviceDepth, cameraConstants.ndcDepthScaleBias, cameraConstants.projectionZ, orthogonal);
+    return ToLinearDepth(deviceDepth, cameraConstants.deviceDepthToNdcZScaleBias, cameraConstants.projectionScaleBiasZ, orthogonal);
 }
 
 float LoadCurrentDepth(int2 pixelCoord, int2 maxPixelCoord) {

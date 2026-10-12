@@ -274,6 +274,19 @@ inline float3 P3D65toREC709(float3 RGBP3D65) {
     return mul(conversionMatrix, RGBP3D65);
 }
 
+// Rec.709 transfer functions from MiniEngine.
+// The OETF recommended for content shown on HDTVs.  This "gamma ramp" may increase contrast as
+// appropriate for viewing in a dark environment.  Always use this curve with Limited RGB as it is
+// used in conjunction with HDTVs.
+// These functions only apply/remove the transfer curve; limited-range scaling is handled separately.
+inline float3 ApplyREC709Curve(float3 x) {
+    return select(x < 0.0181, 4.5 * x, 1.0993 * pow(x, 0.45) - 0.0993);
+}
+
+inline float3 RemoveREC709Curve(float3 x) {
+    return select(x < 0.08145, x / 4.5, pow((x + 0.0993) / 1.0993, 1.0 / 0.45));
+}
+
 inline float3 ApplyREC2084Curve(float3 L) {
     const float m1 = 2610.0 / 4096.0 / 4.0;
     const float m2 = 2523.0 / 4096.0 * 128.0;

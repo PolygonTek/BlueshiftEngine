@@ -1,7 +1,7 @@
 #ifndef __CAMERA_PASS_OUTPUT_COMMON_HLSLI__
 #define __CAMERA_PASS_OUTPUT_COMMON_HLSLI__
 
-#include "NormalEncoding.hlsli"
+#include "Octahedral.hlsli"
 
 float2 CalcVelocity(float4 currentClipPosition, float4 prevClipPosition) {
     const float2 currentNDC = currentClipPosition.xy / currentClipPosition.w;

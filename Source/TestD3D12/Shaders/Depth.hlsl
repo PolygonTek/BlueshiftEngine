@@ -41,7 +41,7 @@ DepthPSOutput PSMain(DepthPSInput input, bool isFrontFace : SV_IsFrontFace) {
     const float3 viewNormal = input.viewNormal * (isFrontFace ? 1.0f : -1.0f);
 
     // Octahedral 인코딩은 방향만 저장하므로, 정규화는 값을 읽어 디코딩할 때만 수행한다.
-    result.normal = dot(viewNormal, viewNormal) > FLT_MIN ? EncodeOctahedralNormal(viewNormal) : float2(0.0f, 0.0f);
+    result.normal = dot(viewNormal, viewNormal) > FLT_MIN ? EncodeUnitVectorOctahedral(viewNormal) : float2(0.0f, 0.0f);
 #endif
     return result;
 }

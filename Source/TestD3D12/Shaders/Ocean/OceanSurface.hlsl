@@ -146,7 +146,7 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
     float refractionDepthFactor = 1.0f;
     const float baseDepth = LoadSceneDepth(baseUV, snapshotSize);
     if (!IsSceneFarDepth(baseDepth)) {
-        const float3 baseWorldPosition = ReconstructPosition(baseUV, baseDepth, cameraConstants.invViewProjMatrix);
+        const float3 baseWorldPosition = ReconstructWorldPosition(baseUV, baseDepth, cameraConstants.invViewProjMatrix);
         const float baseViewDistance = length(baseWorldPosition - cameraConstants.cameraOrigin);
         const float baseWaterThickness = max(baseViewDistance - viewDistance, 0.0f);
         refractionDepthFactor = saturate(baseWaterThickness / max(refractionTraceDistance, 0.0001f));
@@ -173,7 +173,7 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
     float refractionValidity = 1.0f;
     const float candidateDepth = LoadSceneDepth(candidateUV, snapshotSize);
     if (!IsSceneFarDepth(candidateDepth)) {
-        const float3 candidateWorldPosition = ReconstructPosition(candidateUV, candidateDepth, cameraConstants.invViewProjMatrix);
+        const float3 candidateWorldPosition = ReconstructWorldPosition(candidateUV, candidateDepth, cameraConstants.invViewProjMatrix);
         const float candidateViewDistance = length(candidateWorldPosition - cameraConstants.cameraOrigin);
         const float depthFadeDistance = max(2.0f * fwidth(viewDistance), 0.02f);
         refractionValidity = smoothstep(0.0f, depthFadeDistance, candidateViewDistance - viewDistance);
@@ -185,7 +185,7 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
     float waterThickness = deepWaterThickness;
     const float sampleDepth = LoadSceneDepth(sampleUV, snapshotSize);
     if (!IsSceneFarDepth(sampleDepth)) {
-        const float3 sampleWorldPosition = ReconstructPosition(sampleUV, sampleDepth, cameraConstants.invViewProjMatrix);
+        const float3 sampleWorldPosition = ReconstructWorldPosition(sampleUV, sampleDepth, cameraConstants.invViewProjMatrix);
         const float sampleViewDistance = length(sampleWorldPosition - cameraConstants.cameraOrigin);
         waterThickness = max(sampleViewDistance - viewDistance, 0.0f);
     }
@@ -351,7 +351,7 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     result.color = float4(max(color, 0.0f), 1.0f);
 
 #ifdef OUTPUT_NORMAL
-    result.normal = EncodeOctahedralNormal(mul((float3x3)cameraConstants.viewRotation, normal));
+    result.normal = EncodeUnitVectorOctahedral(mul((float3x3)cameraConstants.viewRotation, normal));
 #endif
 #ifdef OUTPUT_VELOCITY
     // 이전 ocean field 와 굴절 UV 가 없으므로 굴절 픽셀은 화면 밖으로 reprojection 하여 TAA history 를 사용하지 않는다.

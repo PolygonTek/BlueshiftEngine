@@ -84,7 +84,7 @@ CameraPassPSOutput PSMain(PSInput input) {
     result.color = textureColor * shaderMaterial.GetBaseColorFactor() * input.color;
 #ifdef OUTPUT_NORMAL
     // Octahedral encoding removes the interpolated length, as in the depth prepass.
-    result.normal = dot(input.viewNormal, input.viewNormal) > FLT_MIN ? EncodeOctahedralNormal(input.viewNormal) : float2(0.0f, 0.0f);
+    result.normal = dot(input.viewNormal, input.viewNormal) > FLT_MIN ? EncodeUnitVectorOctahedral(input.viewNormal) : float2(0.0f, 0.0f);
 #endif
     return result;
 }

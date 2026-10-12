@@ -837,10 +837,10 @@ struct CameraConstants {
     float3 cameraForward;
     uint flags;
 
-    float2 ndcDepthScaleBias;
-    float2 projectionZ;     // clip.z = view.z * projectionZ.x + projectionZ.y
-    float4 projectionXY;    // clip.xy = view.xy * projectionXY.xy + clip.w * projectionXY.zw (including jitter).
-    float4 uvToView;        // view.xy = (uv * uvToView.xy + uvToView.zw) * clip.w (top-left UV in [0, 1], independent of pass resolution).
+    float2 deviceDepthToNdcZScaleBias;
+    float2 projectionScaleBiasZ;  // clip.z = view.z * projectionScaleBiasZ.x + projectionScaleBiasZ.y
+    float4 projectionScaleBiasXY; // clip.xy = view.xy * projectionScaleBiasXY.xy + clip.w * projectionScaleBiasXY.zw (including jitter).
+    float4 uvToViewScaleBiasXY;   // view.xy = (uv * uvToViewScaleBiasXY.xy + uvToViewScaleBiasXY.zw) * clip.w (top-left UV in [0, 1], independent of pass resolution).
 
     uint surfaceTableIndex;
     uint numLocalLights;

@@ -186,6 +186,7 @@ private:
     const FrameCamera *             currentFrameCamera = nullptr;
     RHI::Texture *                  currentPostProcessInputTexture = nullptr;
 
+    uint32_t                        cameraShaderFlags = 0; // 업로드 메모리를 읽지 않고 갱신하기 위한 CPU 측 카메라 flags
     uint32_t                        drawGroupId = -1;
     BE1::Array<DrawSurfsTaskDesc>   drawSurfsTaskDescs;
     BE1::Array<SurfaceInstanceBatch> hiZCullDrawBatches;

@@ -192,8 +192,8 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shad
     const BE1::Vec3 &direction = frameLight.axis[EngineAxis::Forward];
     shaderLight.direction = float3(direction.x, direction.y, direction.z);
     shaderLight.cosOuterCone = frameLight.spotCosCone.y;
-    shaderLight.invCosConeDifference = frameLight.spotInvCosConeDifference;
     shaderLight.intensityRGB = float3(frameLight.intensityRGB.r, frameLight.intensityRGB.g, frameLight.intensityRGB.b);
+    shaderLight.invCosConeDifference = frameLight.spotInvCosConeDifference;
     // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
     shaderLight.shadowIndex = frameLight.localShadowIndex;
 }

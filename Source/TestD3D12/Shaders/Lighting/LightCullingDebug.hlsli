@@ -3,8 +3,8 @@
 
 #include "LightCullingCommon.hlsli"
 
-uint CountShaderLights(uint2 pixelCoord, float ndcDepth, bool useZBin) {
-    ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, ndcDepth, useZBin, false);
+uint CountShaderLights(uint2 pixelCoord, float ndcZ, bool useZBin) {
+    ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, ndcZ, useZBin, false);
     uint lightCount = 0;
 
     while (LoadNextShaderLightMask(lightIterator)) {
@@ -25,9 +25,9 @@ float3 LightCountToHeatMap(uint lightCount) {
     return saturate(1.5f - abs(4.0f * normalizedCount - float3(3.0f, 2.0f, 1.0f)));
 }
 
-float3 VisualizeLightCulling(uint2 pixelCoord, float ndcDepth, uint debugMode) {
+float3 VisualizeLightCulling(uint2 pixelCoord, float ndcZ, uint debugMode) {
     const bool useZBin = debugMode == ShaderLightCullingDebugModeTileMaskAndZBin;
-    return LightCountToHeatMap(CountShaderLights(pixelCoord, ndcDepth, useZBin));
+    return LightCountToHeatMap(CountShaderLights(pixelCoord, ndcZ, useZBin));
 }
 
 #endif // __LIGHT_CULLING_DEBUG_HLSLI__

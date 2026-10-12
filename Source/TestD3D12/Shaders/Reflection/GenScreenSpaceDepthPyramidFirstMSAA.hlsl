@@ -18,8 +18,6 @@ RWTexture2D<float> outputResolvedDepthTexture : register(u1);
 RWTexture2D<float2> outputResolvedNormalTexture : register(u2);
 
 float2 LoadDepthExtrema(uint2 coord) {
-    coord = min(coord, depthPyramidParams.inputSize - 1);
-
     uint width;
     uint height;
     uint sampleCount;
@@ -50,14 +48,15 @@ float2 LoadDepthExtrema(uint2 coord) {
     return extrema;
 }
 
-// 원본 MSAA depth 의 2x2 영역을 하나의 max/min depth 범위로 축소하여 pyramid mip 0 값을 만든다.
+// 원본 MSAA depth 의 2x2 영역을 하나의 max/min depth 범위로 합친다.
 float2 ReduceInputDepth(uint2 outputCoord) {
-    const uint2 srcMin = outputCoord * 2;
+    const uint2 inputMin = outputCoord * 2;
+    const uint2 inputMax = min(inputMin + 1, depthPyramidParams.inputSize - 1);
 
-    float2 extrema = LoadDepthExtrema(srcMin);
-    extrema = MergeDepthExtrema(extrema, LoadDepthExtrema(srcMin + uint2(1, 0)));
-    extrema = MergeDepthExtrema(extrema, LoadDepthExtrema(srcMin + uint2(0, 1)));
-    extrema = MergeDepthExtrema(extrema, LoadDepthExtrema(srcMin + uint2(1, 1)));
+    float2 extrema = LoadDepthExtrema(inputMin);
+    extrema = MergeDepthExtrema(extrema, LoadDepthExtrema(uint2(inputMax.x, inputMin.y)));
+    extrema = MergeDepthExtrema(extrema, LoadDepthExtrema(uint2(inputMin.x, inputMax.y)));
+    extrema = MergeDepthExtrema(extrema, LoadDepthExtrema(inputMax));
     return extrema;
 }
 

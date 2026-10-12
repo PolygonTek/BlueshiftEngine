@@ -33,13 +33,13 @@ void GpuOcean::Init() {
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
     constexpr bool asyncPipelineBuild = true;
 
-    generatePhillipsInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generatePhillipsInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=0");
-    generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAPositiveCosineSquaredInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=0");
-    generateTMAHasselmannInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAHasselmannInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=1");
-    generateTMADonelanBannerInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMADonelanBannerInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=2");
-    generateTMAMitsuyasuInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAMitsuyasuInitialOceanSpectrumShader", shaderModel, "Water/GenerateInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=3");
-    generateTimeSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateOceanTimeSpectrumShader", shaderModel, "Water/GenerateTimeSpectrum.hlsl", baseDir, "CSMain");
-    resolveOceanFieldsShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_resolveOceanFieldsShader", shaderModel, "Water/ResolveOceanFields.hlsl", baseDir, "CSMain");
+    generatePhillipsInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generatePhillipsInitialOceanSpectrumShader", shaderModel, "Ocean/GenInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=0");
+    generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAPositiveCosineSquaredInitialOceanSpectrumShader", shaderModel, "Ocean/GenInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=0");
+    generateTMAHasselmannInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAHasselmannInitialOceanSpectrumShader", shaderModel, "Ocean/GenInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=1");
+    generateTMADonelanBannerInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMADonelanBannerInitialOceanSpectrumShader", shaderModel, "Ocean/GenInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=2");
+    generateTMAMitsuyasuInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAMitsuyasuInitialOceanSpectrumShader", shaderModel, "Ocean/GenInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=3");
+    generateTimeSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateOceanTimeSpectrumShader", shaderModel, "Ocean/GenTimeSpectrum.hlsl", baseDir, "CSMain");
+    resolveOceanFieldsShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_resolveOceanFieldsShader", shaderModel, "Ocean/ResolveOceanFields.hlsl", baseDir, "CSMain");
 
     generatePhillipsInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generatePhillipsInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
     generateTMAPositiveCosineSquaredInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);

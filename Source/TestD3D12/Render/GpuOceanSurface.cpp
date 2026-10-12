@@ -41,10 +41,10 @@ void GpuOceanSurface::Init(GpuOcean *gpuOcean) {
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
     constexpr bool asyncPipelineBuild = true;
 
-    queryShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_sampleOceanSurfaceShader", shaderModel, "Water/SampleOceanSurface.hlsl", baseDir, "CSMain");
+    queryShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_sampleOceanSurfaceShader", shaderModel, "Ocean/SampleOceanSurface.hlsl", baseDir, "CSMain");
     queryPipeline = shaderPipelineCache.GetComputePipeline(queryShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
 
-    shaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Water/OceanSurface");
+    shaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Ocean/OceanSurface");
     if (!shaderTemplate) {
         BE_WARNLOG("GpuOceanSurface::Init: failed to load ocean surface shader template\n");
     }

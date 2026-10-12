@@ -1,6 +1,6 @@
 #include "../ShaderInterop.h"
 #include "../Common.hlsli"
-#include "../NormalEncoding.hlsli"
+#include "../Octahedral.hlsli"
 #include "GTAOCommon.hlsli"
 
 #define GTAO_MAIN_ROOT_SIGNATURE \
@@ -43,7 +43,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     const uint2 inputCoord = GTAOSelectInputCoord(pixelCoord, gtaoMainParams.resolutionScale, gtaoMainParams.inputSize, gtaoMainParams.farPlaneDeviceDepth, inputDepthTexture);
-    const float3 viewNormal = DecodeOctahedralNormal(inputNormalTexture.Load(int3(inputCoord, 0)));
+    const float3 viewNormal = DecodeUnitVectorOctahedral(inputNormalTexture.Load(int3(inputCoord, 0)));
     float packedEdges;
     const float visibility = GTAOEvaluateVisibility(pixelCoord, viewNormal, gtaoMainParams, GTAO_SLICE_COUNT, GTAO_STEPS_PER_SLICE, cameraConstants, prefilteredDepthTexture, pointClampSampler, packedEdges);
     outputAOTexture[pixelCoord] = visibility;

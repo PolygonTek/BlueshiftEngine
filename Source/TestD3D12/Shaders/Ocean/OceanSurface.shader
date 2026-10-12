@@ -1,4 +1,4 @@
-shader "Water/OceanSurface" {
+shader "Ocean/OceanSurface" {
     stages {
         vertex SM_6_6 "OceanSurface.hlsl" "VSMain"
         fragment SM_6_6 "OceanSurface.hlsl" "PSMain"

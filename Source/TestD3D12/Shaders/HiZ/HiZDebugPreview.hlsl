@@ -19,7 +19,7 @@ RWTexture2D<float4> outputPreviewTexture : register(u0);
 
 float LinearizeDepth(float deviceDepth) {
     const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
-    return ToLinearDepth(deviceDepth, cameraConstants.ndcDepthScaleBias, cameraConstants.projectionZ, orthogonal);
+    return ToLinearDepth(deviceDepth, cameraConstants.deviceDepthToNdcZScaleBias, cameraConstants.projectionScaleBiasZ, orthogonal);
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]

@@ -371,12 +371,12 @@ struct FrameCamera {
     RenderCamera::ClearColorMode    clearColorMode;
     BE1::Color4                     clearColor;
     RHI::ProjectionPolicy           projectionPolicy;
-    BE1::Vec4                       projectionXY = BE1::Vec4::zero; // XY scale and NDC offset before jitter
-    BE1::Vec2                       projectionZ = BE1::Vec2::zero;
+    BE1::Vec4                       projectionScaleBiasXY = BE1::Vec4::zero; // View-space XY projection scale and NDC bias before jitter.
+    BE1::Vec2                       projectionScaleBiasZ = BE1::Vec2::zero; // View-space Z to clip-space Z scale and bias.
     bool                            projectionOrthogonal = false;
     bool                            projectionInfiniteZFar = false;
-    float                           ndcDepthScale = 1.0f;
-    float                           ndcDepthBias = 0.0f;
+    float                           deviceDepthToNdcZScale = 1.0f;
+    float                           deviceDepthToNdcZBias = 0.0f;
     RenderCamera::Flag              flags = RenderCamera::Flag::None;
     bool                            directionalLightVisible = false;
     bool                            needNormalOutput = false;
