@@ -146,6 +146,7 @@ private:
 
     bool                            DispatchGenSSRHiZ();
     bool                            DispatchUpdateSSRSceneColorHistory();
+    bool                            DispatchSSR(bool transparent, bool accumulate, bool upsample);
     bool                            DispatchSSRTrace(bool transparent);
     bool                            DispatchSSRRadianceResolve();
     bool                            DispatchSSRTemporal(bool transparent);
@@ -178,7 +179,6 @@ private:
     RenderFrame *                   frame = nullptr; // 현재 백엔드가 처리할 프레임 데이터
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
-    uint32_t                        frameCount = 0;
     bool                            useGpuTiming = false;
     bool                            useTextureStreamingFeedback = false;
     bool                            useSwapChainOutput = false;

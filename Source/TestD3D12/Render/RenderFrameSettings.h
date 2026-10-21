@@ -171,6 +171,7 @@ struct RenderFrameSettings {
 
     bool                        ssr;
     bool                        ssrTransparent;
+    bool                        ssrTemporal;
     uint32_t                    ssrDebugMode;
     bool                        ssrDebugTransparent;
 

@@ -331,7 +331,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool debugAO = useAO && frameSettings.gtaoDebug != 0;
     const bool temporalHistoryEnabled = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
     const bool useSSR = temporalHistoryEnabled && frameSettings.ssr;
-    const bool needsSSRTemporalAccumulation = frameSettings.ssrTemporalHistoryWeight > 0.0f && (frameSettings.ssrDebugMode == SSRDebugModeOff || frameSettings.ssrDebugMode == SSRDebugModeUpsampledReflection);
+    const bool needsSSRTemporalAccumulation = frameSettings.ssrTemporal && frameSettings.ssrTemporalHistoryWeight > 0.0f && (frameSettings.ssrDebugMode == SSRDebugModeOff || frameSettings.ssrDebugMode == SSRDebugModeUpsampledReflection);
     const bool debugSSR = frameSettings.ssrDebugMode != SSRDebugModeOff;
     const bool debugTransparentSSR = debugSSR && frameSettings.ssrTransparent && frameSettings.ssrDebugTransparent;
     const bool useTransparentSSR = useSSR && frameSettings.ssrTransparent && (!debugSSR || debugTransparentSSR);

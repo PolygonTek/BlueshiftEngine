@@ -132,6 +132,7 @@ CVAR_MINMAX(r_ssrRayRoughnessScale, "0.5", BE1::CVar::Flag::Float, "SSR GGX line
 CVAR_MINMAX(r_ssrScreenEdgeFade, "0.025", BE1::CVar::Flag::Float, "SSR screen-edge fade width relative to viewport height", 0.0f, 0.5f);
 CVAR_MINMAX(r_ssrRoughnessFadeStart, "0.6", BE1::CVar::Flag::Float, "SSR roughness where reflection confidence starts fading", 0.0f, 1.0f);
 CVAR_MINMAX(r_ssrRoughnessFadeEnd, "0.8", BE1::CVar::Flag::Float, "SSR roughness where reflection confidence reaches zero and tracing stops", 0.0f, 1.0f);
+CVAR(r_ssrTemporal, "1", BE1::CVar::Flag::Bool, "enable SSR temporal accumulation");
 CVAR_MINMAX(r_ssrTemporalHistoryWeight, "0.95", BE1::CVar::Flag::Float, "SSR temporal history weight", 0.0f, 0.99f);
 
 // Texture
@@ -340,6 +341,7 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.ssr = r_ssr.GetBool();
     settings.ssrResolutionMode = static_cast<uint32_t>(r_ssrResolutionMode.GetInteger());
     settings.ssrTransparent = r_ssrTransparent.GetBool();
+    settings.ssrTemporal = r_ssrTemporal.GetBool();
     settings.ssrDebugMode = static_cast<uint32_t>(r_ssrDebug.GetInteger());
     settings.ssrDebugTransparent = r_ssrDebugTransparent.GetBool();
     settings.ssrTraceMaxIterations = r_ssrTraceMaxIterations.GetInteger();

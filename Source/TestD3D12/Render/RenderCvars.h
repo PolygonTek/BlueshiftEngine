@@ -123,6 +123,7 @@ extern BE1::CVar    r_ssrRayRoughnessScale;
 extern BE1::CVar    r_ssrScreenEdgeFade;
 extern BE1::CVar    r_ssrRoughnessFadeStart;
 extern BE1::CVar    r_ssrRoughnessFadeEnd;
+extern BE1::CVar    r_ssrTemporal;
 extern BE1::CVar    r_ssrTemporalHistoryWeight;
 
 extern BE1::CVar    r_textureFilter;

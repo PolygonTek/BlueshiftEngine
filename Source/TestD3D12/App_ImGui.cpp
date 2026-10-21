@@ -1361,11 +1361,18 @@ void App::BuildImGuiOverlay() {
                     }
                 }
 
+                bool ssrTemporal = r_ssrTemporal.GetBool();
+                if (ImGui::Checkbox("Temporal accumulation##SSR", &ssrTemporal)) {
+                    r_ssrTemporal.SetBool(ssrTemporal);
+                }
+
+                ImGui::BeginDisabled(!ssrTemporal);
                 float ssrTemporalHistoryWeight = r_ssrTemporalHistoryWeight.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
                 if (ImGui::SliderFloat("Temporal history weight", &ssrTemporalHistoryWeight, r_ssrTemporalHistoryWeight.GetMinValue(), r_ssrTemporalHistoryWeight.GetMaxValue(), "%.2f")) {
                     r_ssrTemporalHistoryWeight.SetFloat(ssrTemporalHistoryWeight);
                 }
+                ImGui::EndDisabled();
 
                 ImGui::EndDisabled();
             }

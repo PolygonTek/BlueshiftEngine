@@ -689,6 +689,26 @@ bool RenderBackend::DispatchUpdateSSRSceneColorHistory() {
     return renderSystem->GetSSRSceneColorHistory().Dispatch(*this);
 }
 
+bool RenderBackend::DispatchSSR(bool transparent, bool accumulate, bool upsample) {
+    if (!DispatchSSRTrace(transparent)) {
+        return false;
+    }
+
+    if (!DispatchSSRRadianceResolve()) {
+        return false;
+    }
+
+    if (accumulate && !DispatchSSRTemporal(transparent)) {
+        return false;
+    }
+
+    if (upsample && !DispatchSSRUpsample(transparent)) {
+        return false;
+    }
+
+    return true;
+}
+
 bool RenderBackend::DispatchScreenSpaceAO(bool depthNormalResolved) {
     const FrameScreenSpaceAO &ao = currentFrameCamera->ao;
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
@@ -741,8 +761,8 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
 
     // Screen Space AO 를 기록하지 못했으면 렌더링 시 Screen Space AO 를 비활성화한다.
     if (currentFrameCamera->applyAO && !aoReady) {
-        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
         cameraShaderFlags &= ~ShaderCameraFlagUseScreenSpaceAO;
+        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
         constants->flags = cameraShaderFlags;
     }
 
@@ -755,19 +775,7 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
     bool ssrReady = false;
 
     if (ssrHiZReady && sceneColorHistoryReady && currentFrameCamera->traceSSR) {
-        ssrReady = DispatchSSRTrace(false);
-
-        if (ssrReady) {
-            ssrReady = DispatchSSRRadianceResolve();
-        }
-
-        if (ssrReady && currentFrameCamera->accumulateSSR) {
-            ssrReady = DispatchSSRTemporal(false);
-        }
-
-        if (ssrReady && needsSSRUpsample) {
-            ssrReady = DispatchSSRUpsample(false);
-        }
+        ssrReady = DispatchSSR(false, currentFrameCamera->accumulateSSR, needsSSRUpsample);
 
         if (ssrReady && currentFrameCamera->accumulateSSR) {
             // 불투명 서피스에 대한 SSR 기록이 성공하면 serial 을 갱신한다.
@@ -778,8 +786,8 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
     // Opaque material 은 resolve 가 실제로 끝난 프레임에만 bindless SSR buffer 를 참조한다.
     // 기록에 실패한 경우에만 초기 활성화 플래그를 제거한다.
     if (!ssrReady && (cameraShaderFlags & ShaderCameraFlagUseSSR) != 0) {
-        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
         cameraShaderFlags &= ~ShaderCameraFlagUseSSR;
+        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
         constants->flags = cameraShaderFlags;
     }
 
@@ -796,19 +804,7 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
     bool transparentSSRReady = false;
     if (ssrHiZReady && sceneColorHistoryReady && currentFrameCamera->traceTransparentSSR) {
         if (DrawTransparentSSRPrepass()) {
-            transparentSSRReady = DispatchSSRTrace(true);
-
-            if (transparentSSRReady) {
-                transparentSSRReady = DispatchSSRRadianceResolve();
-            }
-
-            if (transparentSSRReady && currentFrameCamera->accumulateTransparentSSR) {
-                transparentSSRReady = DispatchSSRTemporal(true);
-            }
-
-            if (transparentSSRReady && needsSSRUpsample) {
-                transparentSSRReady = DispatchSSRUpsample(true);
-            }
+            transparentSSRReady = DispatchSSR(true, currentFrameCamera->accumulateTransparentSSR, needsSSRUpsample);
 
             if (transparentSSRReady && currentFrameCamera->accumulateTransparentSSR) {
                 // 투명 서피스에 대한 SSR 기록이 성공하면 serial 을 갱신한다.
@@ -1787,8 +1783,6 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     currentContext->GetSwapChain()->SwapBuffers(frame->GetRenderFrameSettings().vsync);
 
     PROFILER_FRAME_MARK();
-
-    frameCount++;
 
     return (const void *)(cmd + 1);
 }
