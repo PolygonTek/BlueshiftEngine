@@ -17,6 +17,8 @@
 #include "RHI/RHI.h"
 #include "Render/Frontend/RenderCamera.h"
 
+CVAR(r_renderThread, "1", BE1::CVar::Flag::Bool, "enable the render thread (requires restart)");
+
 CVAR(r_skipViewCulling, "0", BE1::CVar::Flag::Bool, "skip camera view culling for render lights, objects and mesh surfaces");
 CVAR(r_skipDrawCamera2D, "0", BE1::CVar::Flag::Bool, "skip 2D draw camera render commands");
 CVAR(r_skipDrawCamera3D, "0", BE1::CVar::Flag::Bool, "skip 3D draw camera render commands");

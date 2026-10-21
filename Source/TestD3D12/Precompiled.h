@@ -31,9 +31,6 @@
 #define USE_RENDER_TASK
 #endif
 
-// 렌더 스레드 사용 여부
-#define USE_RENDER_THREAD
-
 // 프레임 버퍼링 사용 여부
 #define USE_RENDER_FRAME_BUFFERING
 

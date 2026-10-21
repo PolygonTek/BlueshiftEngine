@@ -120,9 +120,9 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     shaderPipelineBootstrap.EndCollection();
 
-#ifdef USE_RENDER_THREAD
-    InitRenderThread();
-#endif
+    if (r_renderThread.GetBool()) {
+        InitRenderThread();
+    }
 }
 
 void RenderSystem::Shutdown() {
@@ -132,9 +132,9 @@ void RenderSystem::Shutdown() {
     renderWorkQueue.CompleteAllAttachedWorks();
     renderWorkQueue.CancelPendingWorks();
 
-#ifdef USE_RENDER_THREAD
-    ShutdownRenderThread();
-#endif
+    if (IsUsingRenderThread()) {
+        ShutdownRenderThread();
+    }
 
     BE1::cmdSystem.RemoveCommand("screenshot");
 
