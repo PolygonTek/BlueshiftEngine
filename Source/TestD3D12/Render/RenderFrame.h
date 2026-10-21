@@ -76,9 +76,9 @@ struct BeginContextRenderCommand {
     RenderContext *                 renderContext;
     RHI::PipelineState *            imagePSO;
     RHI::PipelineState *            hdrOutputPSO;
-    bool                            gpuTiming;
-    bool                            textureStreamingFeedback;
-    bool                            swapChainOutput;
+    bool                            useGpuTiming;
+    bool                            useTextureStreamingFeedback;
+    bool                            useSwapChainOutput;
 };
 
 struct DrawCameraRenderCommand {
@@ -234,9 +234,9 @@ public:
                                     // 렌더 커맨드 버퍼 리턴
     RenderCommandBuffer *           GetCommands() { return &commands; }
 
-                                    // 렌더 커맨드들..
+                                    // 렌더 커맨드들
     bool                            CmdRenderWork(RenderWork *renderWork);
-    void                            CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput);
+    void                            CmdBeginContext(RenderContext *context, bool useGpuTiming, bool useTextureStreamingFeedback, bool useSwapChainOutput);
     void                            CmdDrawCamera(const FrameCamera *camera);
     void                            CmdFinalizeFrame(bool renderImGuiOverlay);
     void                            CmdSwapBuffers();

@@ -26,6 +26,8 @@ class ShaderPipeline;
 struct RenderFrameSettings;
 struct FrameCamera;
 struct FrameShadowAtlas;
+struct ShaderCSMData;
+struct ShaderShadowAtlasData;
 struct RenderPass;
 struct FrameSurf;
 struct RenderPassDrawSurf;
@@ -101,14 +103,16 @@ private:
 
     void                            DrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor);
     void                            DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor);
-    void                            DrawCSMPass();
-    void                            DrawShadowAtlasPass();
+    const ShaderCSMData *           DrawCSMPass();
+    void                            DrawShadowAtlasPass(ShaderShadowAtlasData &outData);
     void                            ClearShadowAtlasTiles(const FrameShadowAtlas &shadowAtlas);
     bool                            DrawShadowAtlasViews(FrameShadowAtlas &shadowAtlas, RHI::FrameThreadData *frameThreadData);
     void                            DrawDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            DrawScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            CaptureSceneSnapshot();
-    void                            DrawPostOpaquePass();
+    bool                            DrawTransparentSSRPrepass();
+                                    // 메인 depth 또는 velocity 를 쓰는 draw 를 기록했는지 반환한다.
+    bool                            DrawPostOpaquePass();
 
     void                            PostProcessAndBlitToOutput(bool velocityReady, const RHI::Texture *outputOverrideTexture);
     void                            BlitTextureToRenderTarget(const RHI::Texture *texture, const RHI::Texture *renderTargetTexture, RHI::ViewID renderTargetViewID, RHI::GPUResourceState renderTargetBeforeState, RHI::GPUResourceState renderTargetAfterState, const BE1::Rect &destinationRect, RHI::PipelineState *imagePSO);
@@ -117,7 +121,9 @@ private:
     void                            DrawGenericPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer);
     bool                            DrawLocalShadowPass(const RenderPass *renderPass, const RHI::ConstantBuffer *viewConstantBuffer);
     void                            DrawSkyPass(const RenderPass *renderPass);
-    void                            DrawGpuOcean();
+    bool                            PrepareGpuOcean();
+                                    // 실제 draw 명령을 기록했는지 반환한다.
+    bool                            DrawGpuOcean(const RHI::PipelineState *pipelineState, bool countInstanceUpload);
     void                            DrawGuiPass(const RenderPass *renderPass);
     void                            DrawDebugLights();
     void                            DrawDebugPrimitives();
@@ -137,11 +143,18 @@ private:
     void                            FinishHiZCulling();
     bool                            DispatchGenHiZ();
     bool                            DispatchHiZDebugPreview();
-    bool                            DispatchGenScreenSpaceDepthPyramid();
-    bool                            DispatchSSRTrace();
-    bool                            DispatchScreenSpaceAO();
-    bool                            PrepareAOInputs();
-    bool                            DispatchMSAAResolveDepth(RHI::Texture *outputDepthTexture, RHI::GPUResourceState inputState, RHI::Texture *outputNormalTexture = nullptr);
+
+    bool                            DispatchGenSSRHiZ();
+    bool                            DispatchUpdateSSRSceneColorHistory();
+    bool                            DispatchSSRTrace(bool transparent);
+    bool                            DispatchSSRRadianceResolve();
+    bool                            DispatchSSRTemporal(bool transparent);
+    bool                            DispatchSSRUpsample(bool transparent);
+
+    bool                            DispatchScreenSpaceAO(bool depthNormalResolved = false);
+
+    bool                            DispatchMSAAResolveDepth(RHI::Texture *outputDepthTexture);
+    bool                            DispatchMSAAResolveDepthNormal(RHI::Texture *outputDepthTexture, RHI::Texture *outputNormalRoughnessTexture);
     bool                            DispatchMSAAResolveVelocity();
     bool                            DispatchMSAAResolveDepthHistory();
 
@@ -160,20 +173,23 @@ private:
     void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
     void                            UpdateFrameStats();
     bool                            UploadFrameConstants();
-    bool                            UploadCameraConstants();
+    void                            UploadCameraConstants(const ShaderCSMData *csmData, const ShaderShadowAtlasData &shadowAtlasData);
 
     RenderFrame *                   frame = nullptr; // 현재 백엔드가 처리할 프레임 데이터
     RenderContext *                 currentContext = nullptr;
     RHI::CommandList *              mainCommandList = nullptr;
     uint32_t                        frameCount = 0;
-    bool                            gpuTimingEnabled = false;
-    bool                            textureStreamingFeedbackEnabled = false;
-    bool                            swapChainOutputEnabled = false;
+    bool                            useGpuTiming = false;
+    bool                            useTextureStreamingFeedback = false;
+    bool                            useSwapChainOutput = false;
 
     RHI::PipelineState *            frameImagePSO = nullptr;
     RHI::PipelineState *            frameHDROutputPSO = nullptr;
     RHI::PipelineState *            frameLightCullingPSO = nullptr;
     RHI::PipelineState *            frameSSRTracePSO = nullptr;
+    RHI::PipelineState *            frameSSRRadianceResolvePSO = nullptr;
+    RHI::PipelineState *            frameSSRTemporalPSO = nullptr;
+    RHI::PipelineState *            frameSSRUpsamplePSO = nullptr;
     RHI::PipelineState *            frameMSAAResolveDepthPSO = nullptr;
     RHI::PipelineState *            frameMSAAResolveDepthNormalPSO = nullptr;
     RHI::PipelineState *            frameMSAAResolveVelocityPSO = nullptr;
@@ -194,6 +210,7 @@ private:
     BE1::Array<HiZCullPassRange>    hiZCullPassRanges;
 
     GpuOceanSurface::QueryReadbackFrame *oceanSurfaceQueryReadbackFrame = nullptr;
+    GpuOceanSurface::PreparedDraw   currentOceanSurfaceDraw;
 
     uint64_t                        statRenderElapsedUsec = 0;
     int                             statRenderFrameCount = 0;

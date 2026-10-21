@@ -51,20 +51,18 @@ static const float4 poissonDisk16[8] = {
 
 float4 GetShadowRotationMatrix(uint2 pixelCoord) {
 #if USE_SHADOW_ROTATION_TEXTURE
-    [branch]
-    if (frameConstants.stbnUnitVec2TextureIndex != 0u) {
-        // TAA 로 누적할 때만 시간 슬라이스를 바꾼다. TAA 를 사용하지 않는 카메라는 패턴을 고정한다.
-        const uint noiseFrameIndex = (cameraConstants.flags & ShaderCameraFlagUseTAA) != 0u ? frameConstants.frameCount : 0u;
-        const float2 cs = ReadSTBNUnitVec2(GetTexture2DArray(frameConstants.stbnUnitVec2TextureIndex), pixelCoord, noiseFrameIndex);
-        return float4(cs.x, -cs.y, cs.y, cs.x); // column-major rotation matrix
-    }
-#endif
-    // STBN 미사용/로드 실패 시 전체 픽셀 좌표와 고정 seed 로 타일 반복 및 프레임마다 바뀌는 노이즈를 피한다.
+    // TAA 로 누적할 때만 시간 슬라이스를 바꾼다. TAA 를 사용하지 않는 카메라는 패턴을 고정한다.
+    const uint noiseFrameIndex = (cameraConstants.flags & ShaderCameraFlagUseTAA) != 0u ? frameConstants.frameCount : 0u;
+    const float2 cs = ReadSTBNUnitVec2(GetTexture2DArray(frameConstants.stbnUnitVec2TextureIndex), pixelCoord, noiseFrameIndex);
+    return float4(cs.x, -cs.y, cs.y, cs.x); // column-major rotation matrix
+#else
+    // STBN 회전 옵션을 끈 경우 전체 픽셀 좌표와 고정 seed 로 타일 반복 및 프레임마다 바뀌는 노이즈를 피한다.
     const uint h = Hash(pixelCoord.x ^ Hash(pixelCoord.y ^ 23119u));
     const float angle = TWO_PI * UintToUniform01(h);
     float s, c;
     sincos(angle, s, c);
     return float4(c, -s, s, c); // column-major rotation matrix
+#endif
 }
 
 float4 GetShadowRotationMatrix(inout ShadowSamplingContext context) {

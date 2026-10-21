@@ -177,9 +177,9 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &sha
     BE1::simdProcessor->Memcpy(&shaderLight.worldToProjectionU, &frameLight.viewProjScaleBiasMatrix[0], sizeof(shaderLight.worldToProjectionU) * 2);
 
     const float invRadius = 1.0f / frameLight.range;
-    shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
+    shaderLight.origin = float3(frameLight.origin);
     shaderLight.invRadiusSquared = invRadius * invRadius;
-    shaderLight.intensityRGB = float3(frameLight.intensityRGB.r, frameLight.intensityRGB.g, frameLight.intensityRGB.b);
+    shaderLight.intensityRGB = float3(frameLight.intensityRGB);
     // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
     shaderLight.shadowIndex = frameLight.localShadowIndex;
 }
@@ -187,12 +187,12 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &sha
 void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shaderLight) const {
     // 방사형 거리 감쇠와 원형 콘의 각도 감쇠를 각각 전달한다.
     const float invRadius = 1.0f / frameLight.range;
-    shaderLight.origin = float3(frameLight.origin.x, frameLight.origin.y, frameLight.origin.z);
+    shaderLight.origin = float3(frameLight.origin);
     shaderLight.invRadiusSquared = invRadius * invRadius;
     const BE1::Vec3 &direction = frameLight.axis[EngineAxis::Forward];
-    shaderLight.direction = float3(direction.x, direction.y, direction.z);
+    shaderLight.direction = float3(direction);
     shaderLight.cosOuterCone = frameLight.spotCosCone.y;
-    shaderLight.intensityRGB = float3(frameLight.intensityRGB.r, frameLight.intensityRGB.g, frameLight.intensityRGB.b);
+    shaderLight.intensityRGB = float3(frameLight.intensityRGB);
     shaderLight.invCosConeDifference = frameLight.spotInvCosConeDifference;
     // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
     shaderLight.shadowIndex = frameLight.localShadowIndex;

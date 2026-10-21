@@ -26,6 +26,7 @@
 
 #else
 
+#include "Common.hlsli"
 #include "ShaderPacking.hlsli"
 
 #endif // __cplusplus
@@ -94,11 +95,19 @@ static const uint HiZDebugPreviewBlockSizeY = 16;
 static const uint AOUpsampleBlockSizeX = 8;
 static const uint AOUpsampleBlockSizeY = 8;
 
-static const uint ScreenSpaceDepthPyramidBlockSizeX = 8;
-static const uint ScreenSpaceDepthPyramidBlockSizeY = 8;
+static const uint SSRHiZBlockSizeX = 8;
+static const uint SSRHiZBlockSizeY = 8;
 
 static const uint SSRTraceBlockSizeX = 8;
 static const uint SSRTraceBlockSizeY = 8;
+static const uint SSRRadianceResolveBlockSizeX = 8;
+static const uint SSRRadianceResolveBlockSizeY = 8;
+static const uint SSRTemporalBlockSizeX = 8;
+static const uint SSRTemporalBlockSizeY = 8;
+static const uint SSRUpsampleBlockSizeX = 8;
+static const uint SSRUpsampleBlockSizeY = 8;
+static const uint SSRSceneColorHistoryBlockSizeX = 8;
+static const uint SSRSceneColorHistoryBlockSizeY = 8;
 
 static const uint GTAODepthMipLevelCount = 5;
 static const uint GTAOPrefilterBlockSizeX = 8;
@@ -122,6 +131,23 @@ static const uint ScreenSpaceRayTraceStatusMiss = 0;
 static const uint ScreenSpaceRayTraceStatusHit = 1;
 static const uint ScreenSpaceRayTraceStatusMaxIterations = 2;
 
+// Positive values are valid trace confidence. Negative values retain invalid-result diagnostics.
+static const float SSRTraceValidityMiss = 0.0f;
+static const float SSRTraceValidityHit = 1.0f;
+static const float SSRTraceValidityConfidenceRejected = -0.25f; // Hit with zero final confidence; retains the traced-surface temporal behavior.
+static const float SSRTraceValidityHistoryRejected = -0.5f; // A traced surface; temporal history may still fill the miss.
+static const float SSRTraceValidityMaxIterations = -1.0f;
+static const float SSRTraceValidityNoSurface = -2.0f;
+static const float SSRTraceValidityRoughnessRejected = -3.0f;
+
+static const uint SSRDebugModeOff = 0;
+static const uint SSRDebugModeRawReflection = 1;
+static const uint SSRDebugModeUpsampledReflection = 2;
+static const uint SSRDebugModeTraceStatus = 3;
+static const uint SSRDebugModeHitUV = 4;
+static const uint SSRDebugModeConfidence = 5;
+static const uint SSRDebugModeIterations = 6;
+
 static const uint HiZCullThreadCount = 64;
 static const uint HiZCullIndirectArgInstanceCountOffset = 4;
 static const uint HiZCullIndirectArgSize = 20;
@@ -131,6 +157,7 @@ static const uint ShaderSkinningJointOffsetInvalid = 0xFFFFFFFF;
 
 // Independent material properties shared by CPU and GPU code.
 static const uint ShaderMaterialFlagTransparent = 1u << 0;
+static const uint ShaderMaterialFlagTexCoordTransform = 1u << 1;
 
 static const uint ShaderLightTypeBitCount = 2;
 static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
@@ -172,8 +199,10 @@ static const uint ShaderCameraFlagProjectionOrthogonal = 1u << 0;
 static const uint ShaderCameraFlagUseLightZBin = 1u << 1;
 static const uint ShaderCameraFlagUseDirectionalLight = 1u << 2;
 static const uint ShaderCameraFlagUseSpecularAA = 1u << 3;
-static const uint ShaderCameraFlagUseAO = 1u << 4;
+static const uint ShaderCameraFlagUseScreenSpaceAO = 1u << 4;
 static const uint ShaderCameraFlagUseTAA = 1u << 5;
+static const uint ShaderCameraFlagUseSSR = 1u << 6;
+static const uint ShaderCameraFlagUseTransparentSSR = 1u << 7;
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
@@ -293,7 +322,7 @@ struct TAAResolveParams {
     float2 outputTexelSize;
     float historyWeight;
     uint historyValid;
-    uint useMinDepth;
+    uint reverseZ;
     float depthFallbackThreshold;
     float maxSubpixelCurrentWeight;
     float luminanceWeight;
@@ -307,13 +336,13 @@ static_assert(sizeof(TAAResolveParams) == 48, "TAAResolveParams must match the H
 
 struct MSAAResolveDepthParams {
     uint2 outputSize;
-    uint useMinDepth;
+    uint reverseZ;
     uint padding0;
 };
 
 struct MSAAResolveVelocityParams {
     uint2 outputSize;
-    uint useMinDepth;
+    uint reverseZ;
     uint padding0;
 };
 
@@ -377,20 +406,20 @@ struct HiZMipGenParams {
     float2 inputSizeRcp;
     uint2 outputSize;
     uint outputMipCount;
-    uint useMinDepth;
+    uint reverseZ;
 };
 
 struct GTAOPrefilterParams {
     uint2 inputSize;
     uint2 outputSize;
     uint resolutionScale;
-    uint useMaxDepth;
+    uint reverseZ;
     uint depthMipCount;
     uint padding0;
     float radius;
     float falloffRange;
     float radiusMultiplier;
-    float farPlaneDeviceDepth;
+    float clearDepth;
 };
 
 #ifdef __cplusplus
@@ -411,7 +440,7 @@ struct GTAOMainParams {
     float thinOccluderCompensation;
     float depthMipSamplingOffset;
     float power;
-    float farPlaneDeviceDepth;
+    float clearDepth;
     float padding0;
 };
 
@@ -448,7 +477,7 @@ struct AOUpsampleParams {
     uint2 inputSize;
     uint2 outputSize;
     float depthSigmaRcp;
-    float farPlaneDeviceDepth;
+    float clearDepth;
     float2 padding0;
 };
 
@@ -456,34 +485,80 @@ struct AOUpsampleParams {
 static_assert(sizeof(AOUpsampleParams) == 32, "AOUpsampleParams must match the HLSL root constants");
 #endif
 
-struct ScreenSpaceDepthPyramidParams {
+struct SSRHiZMipParams {
     uint2 inputSize;
     uint2 outputSize;
     uint2 validOutputSize;
-    float farPlaneDeviceDepth;
-    uint useMinDepth;
+    float clearDepth;
+    uint reverseZ;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ScreenSpaceDepthPyramidParams) == 32, "ScreenSpaceDepthPyramidParams must match the HLSL root constants");
+static_assert(sizeof(SSRHiZMipParams) == 32, "SSRHiZMipParams must match the HLSL root constants");
+#endif
+
+struct SSRSceneColorHistoryMipParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    float2 inputTexelSize;
+    float2 outputTexelSize;
+    uint compressInput;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(SSRSceneColorHistoryMipParams) == 36, "SSRSceneColorHistoryMipParams must match the HLSL root constants");
 #endif
 
 struct SSRTraceParams {
     uint2 inputSize;
     uint2 outputSize;
-
-    uint depthPyramidMipCount;
+    uint reverseZ;
+    uint debugMode;
+    float2 uvJitterDelta; // currUVJitter - prevUVJitter
+    uint ssrHiZMipCount;
     uint maxIterations;
-    uint binaryRefinementSteps;
-    uint useMinDepth;
-
-    float maxDistance;
     float thickness;
-    float normalBias;
+    float rayRoughnessScale;
+    float screenEdgeFade;
+    float roughnessFadeStart;
+    float roughnessFadeEnd;
+    uint noiseIndex;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(SSRTraceParams) == 44, "SSRTraceParams must match the HLSL root constants");
+static_assert(sizeof(SSRTraceParams) == 64, "SSRTraceParams must match the HLSL root constants");
+#endif
+
+struct SSRRadianceResolveParams {
+    uint2 outputSize;
+    uint debugMode;
+    float coneRoughnessScale;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(SSRRadianceResolveParams) == 16, "SSRRadianceResolveParams must match the HLSL root constants");
+#endif
+
+struct SSRTemporalParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    float2 uvJitterDelta; // currUVJitter - prevUVJitter
+    float historyWeight;
+    uint historyValid;
+    uint transparentReceiver;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(SSRTemporalParams) == 36, "SSRTemporalParams must match the HLSL root constants");
+#endif
+
+struct SSRUpsampleParams {
+    uint2 outputSize;
+    uint debugMode;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(SSRUpsampleParams) == 12, "SSRUpsampleParams must match the HLSL root constants");
 #endif
 
 struct HiZDebugPreviewParams {
@@ -503,7 +578,7 @@ struct HiZCullInstancesParams {
     uint hiZWidth;
     uint hiZHeight;
     uint hiZMipCount;
-    uint useMinDepth;
+    uint reverseZ;
     uint instanceBaseOffset;
     uint indirectArgOffset;
 };
@@ -732,14 +807,15 @@ struct FrameConstants {
     uint feedbackBufferIndex;
     uint dfgSumGGXTextureIndex;
     uint stbnUnitVec2TextureIndex;
-    uint padding0;
-    uint padding1;
-    uint padding2;
+    uint stbnVec2TextureIndex;
+    float specularAAVariance;
+    float specularAALimit; // Maximum additive squared perceptual roughness.
     ShaderDirectionalLight directionalLight;
 };
 
 #ifdef __cplusplus
 static_assert(sizeof(FrameConstants) == 96, "FrameConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(FrameConstants, specularAAVariance) == 56 && offsetof(FrameConstants, specularAALimit) == 60, "Specular AA parameters must match the HLSL constant-buffer layout");
 static_assert(offsetof(FrameConstants, directionalLight) == 64, "Directional light must start at a constant-buffer register boundary");
 #endif
 
@@ -832,28 +908,32 @@ struct CameraConstants {
     row_major float3x4 viewRotation; // World-to-view directions; fourth column is zero (16-byte row alignment).
 
     float3 cameraOrigin;
-    float ndcFarZ;
+    float depthClearValue;
 
     float3 cameraForward;
     uint flags;
 
-    float2 deviceDepthToNdcZScaleBias;
-    float2 projectionScaleBiasZ;  // clip.z = view.z * projectionScaleBiasZ.x + projectionScaleBiasZ.y
     float4 projectionScaleBiasXY; // clip.xy = view.xy * projectionScaleBiasXY.xy + clip.w * projectionScaleBiasXY.zw (including jitter).
     float4 uvToViewScaleBiasXY;   // view.xy = (uv * uvToViewScaleBiasXY.xy + uvToViewScaleBiasXY.zw) * clip.w (top-left UV in [0, 1], independent of pass resolution).
+
+    // Pack depth coefficients into one 16-byte constant-buffer register.
+    float2 projectionScaleBiasZ;  // clip.z = view.z * projectionScaleBiasZ.x + projectionScaleBiasZ.y
+    float lightCullingZBinScale;
+    float lightCullingZBinBias;
 
     uint surfaceTableIndex;
     uint numLocalLights;
     uint lightCullingLightRefTableOffset;
     uint lightCullingZBinTableOffset;
     uint lightCullingTileWordTableOffset;
-    float lightCullingZBinScale;
-    float lightCullingZBinBias;
     uint lightCullingTileCountX;
     uint lightCullingTileCountY;
     uint lightCullingWordsPerTile;
     uint lightCullingDebugMode;
-    uint padding0;
+
+    uint ssrUpsampledReflectionTextureIndex;
+    uint transparentSSRUpsampledReflectionTextureIndex;
+    uint transparentSSRDepthTextureIndex;
 
     row_major float3x4 envLightAxis;
     float3 envLightColor;
@@ -866,9 +946,32 @@ struct CameraConstants {
 
     ShaderCSMData csm;
     ShaderShadowAtlasData shadowAtlas;
+
+#ifndef __cplusplus
+    inline bool IsOrthogonal() {
+        return (flags & ShaderCameraFlagProjectionOrthogonal) != 0u;
+    }
+
+    inline float GetLinearDepth(float depth) {
+        return ToLinearDepth(depth, projectionScaleBiasZ, IsOrthogonal());
+    }
+
+    inline float3 GetViewPosition(float2 uv, float linearDepth) {
+        return ReconstructViewPosition(uv, linearDepth, uvToViewScaleBiasXY, IsOrthogonal());
+    }
+
+    inline float4 GetClipPosition(float3 viewPosition) {
+        return ProjectViewPosition(viewPosition, projectionScaleBiasXY, projectionScaleBiasZ, IsOrthogonal());
+    }
+
+    inline float3 GetScreenPosition(float4 clipPosition) {
+        return ClipPositionToScreenPosition(clipPosition);
+    }
+#endif
 };
 
 #ifdef __cplusplus
+static_assert(offsetof(CameraConstants, projectionScaleBiasZ) == 560 && offsetof(CameraConstants, envLightAxis) == 624, "Camera depth coefficients and matrices must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, csm) == 704 && offsetof(CameraConstants, shadowAtlas) == 960, "Shadow atlas data must follow the existing camera constants");
 static_assert(sizeof(CameraConstants) == 992, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
@@ -918,6 +1021,7 @@ struct ShaderMaterial {
     float aoStrength;
     uint packedClearCoatFactors;
     float heightScale;
+    uint2 packedTexCoordTransform;
     uint flags; // ShaderMaterialFlag* bitmask.
 
 #ifndef __cplusplus
@@ -925,11 +1029,19 @@ struct ShaderMaterial {
     inline float4 GetEmissionColorFactor() { return UnpackRGBA16FToFloat4(packedEmissionColorFactor); }
     inline float2 GetMetallicRoughnessFactors() { return UnpackRG16UNormToFloat2(packedMetallicRoughnessFactors); }
     inline float2 GetClearCoatFactors() { return UnpackRG16UNormToFloat2(packedClearCoatFactors); }
+    inline float2 TransformTexCoord(float2 texCoord) {
+        if ((flags & ShaderMaterialFlagTexCoordTransform) == 0u) {
+            return texCoord;
+        }
+
+        const float4 texCoordTransform = UnpackRGBA16FToFloat4(packedTexCoordTransform);
+        return texCoord * texCoordTransform.xy + texCoordTransform.zw;
+    }
 #endif
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderMaterial) == 84, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
+static_assert(sizeof(ShaderMaterial) == 92, "ShaderMaterial must remain a tightly packed StructuredBuffer element");
 #endif
 
 struct ShaderLightRef {

@@ -284,9 +284,7 @@ void RenderContext::CreateFrameCompositionTexture() {
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, 1, imageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr);
-
-    const RHI::ClearValue clearValue = RHI::ClearValue::Color(baseClearColor[0], baseClearColor[1], baseClearColor[2], baseClearColor[3]);
-    frameCompositionTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, clearValue, 1, RHI::GPUResourceState::ShaderResource);
+    frameCompositionTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, RHI::ClearValue::Color(baseClearColor), 1, RHI::GPUResourceState::ShaderResource);
     assert(frameCompositionTexture);
 
     RHI::renderer->SetName(frameCompositionTexture, "RenderContext::frameCompositionTexture");
@@ -366,16 +364,17 @@ void RenderContext::DestroyCSMDepthTexture() {
     }
 }
 
-void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const {
+void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputRoughness, bool outputVelocity) const {
     renderDest = RHI::RenderDest();
     renderDest.renderTargetCount = 1;
     renderDest.depthStencilFormat = GetMainRTDepthFormat();
     renderDest.renderTargetFormats[0] = GetMainRTColorFormat();
-    if (outputNormal) {
-        renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R16G16_FLOAT;
+    if (outputNormal || outputRoughness) {
+        renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R10G10B10A2_UNORM;
     }
     if (outputVelocity) {
         renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R16G16_FLOAT;
+        renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R8_UNORM;
     }
     renderDest.sampleCount = GetMainRTSampleCount();
 }
@@ -637,7 +636,7 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
     const RenderFrameSettings renderFrameSettings = CaptureRenderFrameSettings();
     UpdateDisplayOutput(renderFrameSettings);
 
-    if (options.swapChainOutput) {
+    if (options.useSwapChainOutput) {
         // RenderCapture 는 활성 프레임 안에서 실행할 수 없으므로 필요한 radiance 캡처를 먼저 처리한다.
         renderSystem->PrepareProbeBakes(this);
         assert(!RenderContext::activeContext);
@@ -664,14 +663,14 @@ bool RenderContext::BeginFrame(const FrameOptions &options) {
         BE_WARNLOG("RenderContext::BeginFrame: failed to create CSM depth texture\n");
     }
 
-    if (options.swapChainOutput && this == renderSystem->mainRenderContext) {
+    if (options.useSwapChainOutput && this == renderSystem->mainRenderContext) {
         // 대기 중인 render work 들을 렌더 커맨드에 (CmdBeginContext 전에) 밀어 넣는다.
         renderSystem->AttachPendingRenderWorks(frame);
     }
 
     frame->SetFrameTiming(options.frameTime, options.elapsedTime, options.elapsedPrevTime, frameCount);
-    frame->SetStatEnabled(options.statEnabled);
-    frame->CmdBeginContext(this, options.gpuTiming, options.textureStreamingFeedback, options.swapChainOutput);
+    frame->SetStatEnabled(options.useStats);
+    frame->CmdBeginContext(this, options.useGpuTiming, options.useTextureStreamingFeedback, options.useSwapChainOutput);
 
     activeFrameOptions = options;
 
@@ -690,21 +689,21 @@ void RenderContext::EndFrame() {
     }
 
     RenderFrame *frame = GetCurrentFrontendFrame();
-    if (activeFrameOptions.swapChainOutput) {
+    if (activeFrameOptions.useSwapChainOutput) {
         assert(guiClipRectStack.Count() == 1);
     } else {
         frame->ClearPendingImGuiOverlay();
     }
 
 #ifdef USE_MIPMAP_STREAMING
-    if (activeFrameOptions.textureStreamingFeedback) {
+    if (activeFrameOptions.useTextureStreamingFeedback) {
         EnsureTextureStreamingFeedbackCapacity(materialManager.GetStreamingMaterialCount());
     }
 #endif
 
-    frame->CmdFinalizeFrame(activeFrameOptions.swapChainOutput);
+    frame->CmdFinalizeFrame(activeFrameOptions.useSwapChainOutput);
 
-    if (activeFrameOptions.swapChainOutput) {
+    if (activeFrameOptions.useSwapChainOutput) {
         FlushPendingScreenshots(frame);
 
         frame->CmdSwapBuffers();

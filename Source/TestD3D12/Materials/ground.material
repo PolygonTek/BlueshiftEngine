@@ -1,0 +1,19 @@
+material ground {
+    textureAddressMode repeat
+    shaderTemplate "Source/TestD3D12/Shaders/Lit"
+
+    properties {
+        baseColorMap "Data/EngineTextures/Ground/ground_basecolor.dds"
+        _BASECOLOR "1"
+        baseColorFactor "1 1 1 1"
+        metallicFactor "0"
+        roughnessMap "Data/EngineTextures/Ground/ground_roughness.dds"
+        _ROUGHNESS "1"
+        roughnessFactor "1"
+        normalMap "Data/EngineTextures/Ground/ground_normal.dds"
+        _NORMAL "1"
+        aoMap "Data/EngineTextures/Ground/ground_ao.dds"
+        _AO "1"
+        aoStrength "1"
+    }
+}

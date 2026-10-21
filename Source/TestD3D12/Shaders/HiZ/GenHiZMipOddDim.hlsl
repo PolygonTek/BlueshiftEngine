@@ -13,7 +13,7 @@ Texture2D<float> inputTexture : register(t0);
 RWTexture2D<float> outputMip : register(u0);
 
 float ReduceDepth(float a, float b) {
-    if (hiZMipGenParams.useMinDepth != 0) {
+    if (hiZMipGenParams.reverseZ != 0) {
         return min(a, b);
     }
     return max(a, b);

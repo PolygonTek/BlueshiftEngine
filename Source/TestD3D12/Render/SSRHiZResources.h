@@ -16,16 +16,16 @@
 
 #include "RHI/RHI.h"
 
-static constexpr int RenderScreenSpaceDepthPyramidMaxLevelCount = 16;
+static constexpr int RenderSSRHiZMaxLevelCount = 16;
 
-class ScreenSpaceDepthPyramidResources {
+class SSRHiZResources {
 public:
-    ScreenSpaceDepthPyramidResources() = default;
-    ~ScreenSpaceDepthPyramidResources();
-    ScreenSpaceDepthPyramidResources(const ScreenSpaceDepthPyramidResources &) = delete;
-    ScreenSpaceDepthPyramidResources &operator=(const ScreenSpaceDepthPyramidResources &) = delete;
+    SSRHiZResources() = default;
+    ~SSRHiZResources();
+    SSRHiZResources(const SSRHiZResources &) = delete;
+    SSRHiZResources &operator=(const SSRHiZResources &) = delete;
 
-    void                        Ensure(uint32_t renderWidth, uint32_t renderHeight, bool needed);
+    bool                        Ensure(uint32_t renderWidth, uint32_t renderHeight, bool needed);
     void                        Destroy();
 
     RHI::Texture *              GetTexture() const { return texture; }
@@ -41,10 +41,10 @@ private:
     bool                        CreateTexture(uint32_t width, uint32_t height);
 
     RHI::Texture *              texture = nullptr;
-    RHI::ViewID                 mipSRVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    RHI::ViewID                 mipUAVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                    mipWidths[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                    mipHeights[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    RHI::ViewID                 mipSRVs[RenderSSRHiZMaxLevelCount] = {};
+    RHI::ViewID                 mipUAVs[RenderSSRHiZMaxLevelCount] = {};
+    uint32_t                    mipWidths[RenderSSRHiZMaxLevelCount] = {};
+    uint32_t                    mipHeights[RenderSSRHiZMaxLevelCount] = {};
     uint32_t                    mipCount = 0;
     uint32_t                    validWidth = 0;
     uint32_t                    validHeight = 0;

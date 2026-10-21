@@ -49,8 +49,10 @@ private:
     void                            SortRenderPassDrawSurfs(RenderFrame *frame, RenderPass *renderPass);
     void                            RadixSortDrawSurfs(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RenderPassDrawSurf **tempDrawSurfs);
 
-    RenderPassDepthPSOResolver      depthPSOResolver;
+    RenderPassDepthPSOResolver      depthPrepassPSOResolver;
     RenderPassDepthPSOResolver      shadowPSOResolver;
+    RenderPassPSOResolver           surfacePrepassPSOResolver;
+    RenderPassPSOResolver           transparentSSRPrepassPSOResolver;
     RenderPassPSOResolver           opaquePSOResolver;
     RenderPassPSOResolver           blendPSOResolver;
     RenderPassPSOResolver           skyboxPSOResolver;

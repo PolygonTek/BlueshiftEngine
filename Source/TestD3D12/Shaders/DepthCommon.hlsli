@@ -31,8 +31,8 @@ struct DepthPSInput {
     float3 viewNormal : TEXCOORD4;
 #endif
 #ifdef OUTPUT_VELOCITY
-    float4 currentVelocityPosition : TEXCOORD2;
-    float4 prevVelocityPosition : TEXCOORD3;
+    float4 currUnjitteredClipPos : TEXCOORD2;
+    float4 prevUnjitteredClipPos : TEXCOORD3;
 #endif
 #ifdef PERFORATED
     float2 texCoord : TEXCOORD0;
@@ -70,14 +70,13 @@ DepthPSInput BuildDepthVertex(DepthVSInput input, ViewConstants viewConstants) {
 #endif
 
 #ifdef OUTPUT_VELOCITY
-    result.currentVelocityPosition = mul(viewConstants.unjitteredViewProjMatrix, positionWS);
+    result.currUnjitteredClipPos = mul(viewConstants.unjitteredViewProjMatrix, positionWS);
     float4 prevLocalPosition = localPosition;
 
     #if GPU_SKINNING
-        // History resets alias the current pose and need no additional joint reads.
         prevLocalPosition = GetPreviousSkinnedPosition(input.skinning, input.position, localPosition, shaderSurface.skinningJointOffset, shaderSurface.prevSkinningJointOffset);
     #endif
-    result.prevVelocityPosition = CalcClipPosition(prevLocalPosition, shaderSurface.prevWorldMatrix, viewConstants.prevUnjitteredViewProjMatrix);
+    result.prevUnjitteredClipPos = CalcClipPosition(prevLocalPosition, shaderSurface.prevWorldMatrix, viewConstants.prevUnjitteredViewProjMatrix);
 #endif
 
 #ifdef PERFORATED
@@ -93,7 +92,8 @@ void ApplyDepthAlphaCutoff(DepthPSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
 
-    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, input.texCoord);
+    const float2 texCoord = shaderMaterial.TransformTexCoord(input.texCoord);
+    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, texCoord);
     const float baseColorAlpha = shaderMaterial.GetBaseColorFactor().a;
     clip(textureColor.a * baseColorAlpha * input.color.a - shaderMaterial.alphaCutoff);
 }

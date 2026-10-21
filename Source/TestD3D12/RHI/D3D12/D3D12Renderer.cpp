@@ -33,12 +33,11 @@ static CVAR(d3d12_debugLayer, "1", BE1::CVar::Flag::Bool, "enable D3D12 debug la
 #else
 static CVAR(d3d12_debugLayer, "0", BE1::CVar::Flag::Bool, "enable D3D12 debug layer at renderer startup");
 #endif
-static CVAR(d3d12_gpuValidation, "1", BE1::CVar::Flag::Bool, "enable D3D12 GPU validation when debug layer is enabled at renderer startup");
+static CVAR(d3d12_gpuValidation, "0", BE1::CVar::Flag::Bool, "enable D3D12 GPU validation when debug layer is enabled at renderer startup");
 
 void D3D12Renderer::Init(const void *mainWindowHandle) {
     RHI::Renderer::Init(mainWindowHandle);
 
-    projectionPolicy.clipDepthRange = RHI::ClipDepthRange::ZeroToOne;
     projectionPolicy.reverseZ = true;
 
 #if defined(_DEBUG) || defined(_DEVELOPMENT)
@@ -843,7 +842,7 @@ void D3D12Renderer::FreeRetiredResources(bool waitPendings) {
     }
 }
 
-RHI::CommandList *D3D12Renderer::BeginUtilityCommandList(RHI::CommandQueueType queueType) {
+RHI::CommandList *D3D12Renderer::BeginUtilityCommandList(RHI::CommandQueueType queueType, D3D12RootBindingData *rootBindingData) {
     D3D12CommandListPool *commandListPool = nullptr;
     D3D12CommandList *commandList = nullptr;
     BE1::Mutex *mutex = nullptr;
@@ -863,6 +862,8 @@ RHI::CommandList *D3D12Renderer::BeginUtilityCommandList(RHI::CommandQueueType q
         mutex->Unlock();
         return nullptr;
     }
+
+    commandListPool->SetRootBindingData(rootBindingData);
 
     // command allocator 를 재사용하도록 리셋하고, command list 를 command allocator 를 이용하여 초기 상태로 리셋
     commandList->Reset();
@@ -884,7 +885,10 @@ void D3D12Renderer::EndUtilityCommandList(RHI::CommandList *commandList) {
         return;
     }
 
-    commandListPool->Free(static_cast<D3D12CommandList *>(commandList));
+    // 풀을 반환하기 전에 호출자의 임시 바인딩 데이터와 디스크립터 풀 참조를 해제한다.
+    commandListPool->SetRootBindingData(nullptr);
+    _commandList->SetDescriptorTablePools(nullptr, nullptr);
+    commandListPool->Free(_commandList);
 
     mutex->Unlock();
 }

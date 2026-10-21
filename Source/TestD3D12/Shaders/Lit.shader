@@ -5,6 +5,8 @@ shader "Lit" {
     }
 
     properties {
+        tcScale("Texture Coordinate Scale") : vec2 = "1 1"
+        tcTranslation("Texture Coordinate Translation") : vec2 = "0 0"
         _BASECOLOR("Base Color") : enum "Color;Texture" = "1" [shaderDefine]
         baseColorMap("Base Color Map") : texture "2D" = "_whiteTexture" (condition _BASECOLOR 1)
         baseColorFactor("Base Color Factor") : color4 = "1 1 1 1"
@@ -46,12 +48,32 @@ shader "Lit" {
             INDIRECT_LIGHTING=1
         }
 
+        applySSR {
+            APPLY_SSR=1
+        }
+
         perforated {
             PERFORATED=1
         }
 
         outputNormal {
             OUTPUT_NORMAL=1
+        }
+
+        outputRoughness {
+            OUTPUT_ROUGHNESS=1
+        }
+
+        outputVelocity {
+            OUTPUT_VELOCITY=1
+        }
+
+        surfacePrepass {
+            SURFACE_PREPASS=1
+        }
+
+        transparentSSRPrepass {
+            TRANSPARENT_SSR_PREPASS=1
         }
 
         gpuSkinningWeight1 {

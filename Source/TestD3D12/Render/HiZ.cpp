@@ -104,7 +104,7 @@ static uint32_t CountFastHiZReductions(const FrameHiZ &data, uint32_t inputMipLe
 }
 
 // (연속된) input mip dimension 이 짝수인 경우 inputMipLevel 부터 시작해서 outputMipCount 만큼의 mip level 을 fast reduce 한다.
-static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t useMinDepth, uint32_t inputMipLevel, uint32_t outputMipCount) {
+static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t reverseZ, uint32_t inputMipLevel, uint32_t outputMipCount) {
     const uint32_t startOutputMipLevel = inputMipLevel + 1;
     const RHI::ViewID inputViewID = data.mipSRVs[inputMipLevel];
 
@@ -118,7 +118,7 @@ static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData,
     hiZMipGenParams.inputSizeRcp = float2(1.0f / inputWidth, 1.0f / inputHeight);
     hiZMipGenParams.outputSize = uint2(outputWidth, outputHeight);
     hiZMipGenParams.outputMipCount = outputMipCount;
-    hiZMipGenParams.useMinDepth = useMinDepth;
+    hiZMipGenParams.reverseZ = reverseZ;
 
     RHI::ConstantBuffer *hiZMipGenConstantBuffer = frameThreadData->AllocConstant(sizeof(HiZMipGenParams), &hiZMipGenParams);
     if (!hiZMipGenConstantBuffer) {
@@ -161,7 +161,7 @@ static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData,
 }
 
 // input mip dimension 이 홀수인 경우, 2x3/3x2/3x3 까지 커버 가능하도록 inputMipLevel 을 reduce 한다.
-static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t useMinDepth, uint32_t inputMipLevel) {
+static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t reverseZ, uint32_t inputMipLevel) {
     const uint32_t outputMipLevel = inputMipLevel + 1;
     const RHI::ViewID inputViewID = data.mipSRVs[inputMipLevel];
 
@@ -175,7 +175,7 @@ static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RH
     hiZMipGenParams.inputSizeRcp = float2(1.0f / inputWidth, 1.0f / inputHeight);
     hiZMipGenParams.outputSize = uint2(outputWidth, outputHeight);
     hiZMipGenParams.outputMipCount = 1;
-    hiZMipGenParams.useMinDepth = useMinDepth;
+    hiZMipGenParams.reverseZ = reverseZ;
 
     RHI::ConstantBuffer *hiZMipGenConstantBuffer = frameThreadData->AllocConstant(sizeof(HiZMipGenParams), &hiZMipGenParams);
     if (!hiZMipGenConstantBuffer) {
@@ -216,7 +216,7 @@ bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *
         return false;
     }
 
-    const uint32_t useMinDepth = projectionPolicy.reverseZ ? 1 : 0;
+    const uint32_t reverseZ = projectionPolicy.reverseZ ? 1 : 0;
     const uint32_t depthWidth = depthTexture->GetWidth();
     const uint32_t depthHeight = depthTexture->GetHeight();
     const uint32_t firstBatchMipCount = 1 + CountFastHiZReductions(data, 0, BE1::Min(hiZMipCount - 1, 3u));
@@ -230,7 +230,7 @@ bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *
     hiZMipGenParams.inputSizeRcp = float2(1.0f / depthWidth, 1.0f / depthHeight);
     hiZMipGenParams.outputSize = uint2(data.mipWidths[0], data.mipHeights[0]);
     hiZMipGenParams.outputMipCount = firstBatchMipCount;
-    hiZMipGenParams.useMinDepth = useMinDepth;
+    hiZMipGenParams.reverseZ = reverseZ;
 
     RHI::ConstantBuffer *hiZMipGenConstantBuffer = frameThreadData->AllocConstant(sizeof(HiZMipGenParams), &hiZMipGenParams);
     if (!hiZMipGenConstantBuffer) {
@@ -275,13 +275,13 @@ bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *
     while (generatedMipLevel + 1 < hiZMipCount) {
         const uint32_t fastReductionCount = CountFastHiZReductions(data, generatedMipLevel, BE1::Min(hiZMipCount - generatedMipLevel - 1, 4u));
         if (fastReductionCount > 0) {
-            if (!DispatchFastHiZReductionBatch(frameThreadData, commandList, data, hiZTexture, frameMipBatchPSO, useMinDepth, generatedMipLevel, fastReductionCount)) {
+            if (!DispatchFastHiZReductionBatch(frameThreadData, commandList, data, hiZTexture, frameMipBatchPSO, reverseZ, generatedMipLevel, fastReductionCount)) {
                 return false;
             }
 
             generatedMipLevel += fastReductionCount;
         } else {
-            if (!DispatchOddDimHiZReduction(frameThreadData, commandList, data, hiZTexture, frameOddDimPSO, useMinDepth, generatedMipLevel)) {
+            if (!DispatchOddDimHiZReduction(frameThreadData, commandList, data, hiZTexture, frameOddDimPSO, reverseZ, generatedMipLevel)) {
                 return false;
             }
 
@@ -358,7 +358,7 @@ bool HiZ::DispatchCullInstances(RHI::CommandList *commandList, RHI::FrameThreadD
     hiZCullParams.hiZWidth = data.mipWidths[0];
     hiZCullParams.hiZHeight = data.mipHeights[0];
     hiZCullParams.hiZMipCount = data.mipCount;
-    hiZCullParams.useMinDepth = projectionPolicy.reverseZ ? 1 : 0;
+    hiZCullParams.reverseZ = projectionPolicy.reverseZ ? 1 : 0;
     hiZCullParams.instanceBaseOffset = instanceBaseOffset;
     hiZCullParams.indirectArgOffset = indirectArgsOffset;
 

@@ -63,7 +63,7 @@ void App::Init(void *mainWindowHandle) {
     renderCamera = new RenderCamera;
 
     SharedPtr<Texture> bloomDirtMaskTexture = textureManager.GetTexture("Data/EngineTextures/LensDirt/LensDirt02.png", Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::NoMipmaps | Texture::Flag::Compute, false);
-    if (bloomDirtMaskTexture && bloomDirtMaskTexture != textureManager.defaultTexture) {
+    if (bloomDirtMaskTexture && bloomDirtMaskTexture != textureManager.missingTexture) {
         renderCamera->GetBloomResources().SetBloomDirtMaskTexture(bloomDirtMaskTexture);
     }
 
@@ -306,10 +306,10 @@ void App::RenderRunningFrame(uint64_t frameUsec) {
     frameOptions.frameTime = frameTime;
     frameOptions.elapsedTime = elapsedTime;
     frameOptions.elapsedPrevTime = elapsedPrevTime;
-    frameOptions.statEnabled = statEnabled;
-    frameOptions.gpuTiming = statEnabled;
-    frameOptions.textureStreamingFeedback = true;
-    frameOptions.swapChainOutput = true;
+    frameOptions.useStats = statEnabled;
+    frameOptions.useGpuTiming = statEnabled;
+    frameOptions.useTextureStreamingFeedback = true;
+    frameOptions.useSwapChainOutput = true;
 
     mainRenderContext->BeginFrame(frameOptions);
 
@@ -357,10 +357,10 @@ void App::RenderBootstrapFrame(uint64_t frameUsec) {
     frameOptions.frameTime = (float)MICRO2SEC((double)frameUsec);
     frameOptions.elapsedTime = 0.0f;
     frameOptions.elapsedPrevTime = 0.0f;
-    frameOptions.statEnabled = false;
-    frameOptions.gpuTiming = false;
-    frameOptions.textureStreamingFeedback = false;
-    frameOptions.swapChainOutput = true;
+    frameOptions.useStats = false;
+    frameOptions.useGpuTiming = false;
+    frameOptions.useTextureStreamingFeedback = false;
+    frameOptions.useSwapChainOutput = true;
 
     mainRenderContext->BeginFrame(frameOptions);
 

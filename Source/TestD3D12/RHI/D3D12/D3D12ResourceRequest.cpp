@@ -16,6 +16,8 @@
 #include "D3D12Renderer.h"
 #include "D3D12ResourceRequest.h"
 #include "D3D12FrameThreadData.h"
+#include "D3D12CommandList.h"
+#include "D3D12RootBindingData.h"
 #include "D3D12Texture.h"
 
 D3D12CommandList *D3D12ResourceCommandContext::GetGraphicsCommandList() {
@@ -58,8 +60,68 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
 
     D3D12ResourceCommandContext commandContext;
     commandContext.frameThreadData = (D3D12FrameThreadData *)frameThreadData;
+    ExecuteResourceRequests(localRequests, frameThreadData ? &commandContext : nullptr);
 
-    for (D3D12ResourceRequest &request : localRequests) {
+    if (commandContext.graphicsCommandList) {
+        commandContext.graphicsCommandList->CloseAndExecute();
+    }
+    if (commandContext.computeCommandList) {
+        commandContext.computeCommandList->CloseAndExecute();
+    }
+}
+
+void D3D12Renderer::FlushResourceRequests() {
+    BE1::Array<D3D12ResourceRequest> localRequests;
+    {
+        BE1::ScopedLock lock(resourceRequestMutex);
+        localRequests.Swap(resourceRequests);
+    }
+
+    if (localRequests.IsEmpty()) {
+        return;
+    }
+
+    // 초기화 중에는 프레임이 사용하지 않는 기존 shader-visible 힙의 transient 영역을 빌린다.
+    D3D12RootBindingData rootBindingData = {};
+    D3D12DescriptorRangePool resourceDescriptorRangePool({ &resourceShaderVisibleDescriptorHeap, MaxPersistentResourceDescriptors, MaxTransientResourceDescriptors });
+    D3D12DescriptorRangePool samplerDescriptorRangePool({ &samplerShaderVisibleDescriptorHeap, MaxPersistentSamplerDescriptors, MaxTransientSamplerDescriptors });
+    D3D12CommandList *commandList = static_cast<D3D12CommandList *>(BeginUtilityCommandList(RHI::CommandQueueType::Graphics, &rootBindingData));
+
+    commandList->SetDescriptorTablePools(&resourceDescriptorRangePool, &samplerDescriptorRangePool);
+
+    ID3D12DescriptorHeap *descriptorHeaps[] = {
+        resourceShaderVisibleDescriptorHeap.GetDescriptorHeap(),
+        samplerShaderVisibleDescriptorHeap.GetDescriptorHeap()
+    };
+    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+
+    // 복사와 GPU 밉맵 생성을 하나의 Direct command list 에 순서대로 기록한다.
+    D3D12ResourceCommandContext commandContext;
+    commandContext.graphicsCommandList = commandList;
+    commandContext.computeCommandList = commandList;
+
+    do {
+        ExecuteResourceRequests(localRequests, &commandContext);
+        localRequests.Clear();
+
+        // 밉맵 생성 중 등록된 임시 텍스처 해제 요청도 같은 flush 에서 처리한다.
+        BE1::ScopedLock lock(resourceRequestMutex);
+        localRequests.Swap(resourceRequests);
+    } while (!localRequests.IsEmpty());
+
+    commandList->CloseAndExecute();
+    DrainReleaseRequestsToRetireList();
+
+    // transient 디스크립터와 command allocator 를 GPU 완료 전에 재사용하지 않도록 기다린다.
+    Finish(RHI::CommandQueueType::Graphics);
+
+    EndUtilityCommandList(commandList);
+    FreeRetiredResources(true);
+}
+
+void D3D12Renderer::ExecuteResourceRequests(BE1::Array<D3D12ResourceRequest> &requests, D3D12ResourceCommandContext *commandContext) {
+    // 종료 경로의 nullptr context 는 업로드를 생략하고 해제 요청만 처리한다.
+    for (D3D12ResourceRequest &request : requests) {
         switch (request.type) {
         case D3D12ResourceRequest::Type::DeleteGPUObject:
         {
@@ -68,8 +130,8 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
         }
         break;
         case D3D12ResourceRequest::Type::UploadBuffer:
-            if (frameThreadData) {
-                if (ExecuteUploadBuffer(commandContext, static_cast<D3D12Buffer *>(request.object), request.uploadBufferRequest)) {
+            if (commandContext) {
+                if (ExecuteUploadBuffer(*commandContext, static_cast<D3D12Buffer *>(request.object), request.uploadBufferRequest)) {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Ready);
                 } else {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Failed);
@@ -79,8 +141,8 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
             }
             break;
         case D3D12ResourceRequest::Type::UploadTexture:
-            if (frameThreadData) {
-                if (ExecuteUploadTexture(commandContext, static_cast<D3D12Texture *>(request.object), request.uploadTextureRequest)) {
+            if (commandContext) {
+                if (ExecuteUploadTexture(*commandContext, static_cast<D3D12Texture *>(request.object), request.uploadTextureRequest)) {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Ready);
                 } else {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Failed);
@@ -88,22 +150,22 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
             }
             break;
         case D3D12ResourceRequest::Type::UploadBufferSubData:
-            if (frameThreadData) {
-                ExecuteUploadBufferSubData(commandContext, static_cast<D3D12Buffer *>(request.object), request.uploadBufferSubDataRequest);
+            if (commandContext) {
+                ExecuteUploadBufferSubData(*commandContext, static_cast<D3D12Buffer *>(request.object), request.uploadBufferSubDataRequest);
             } else {
                 RequestRelease(request.uploadBufferSubDataRequest.uploadBuffer);
             }
             break;
         case D3D12ResourceRequest::Type::UploadTextureSubImage:
-            if (frameThreadData) {
-                ExecuteUploadTextureSubImage(commandContext, static_cast<D3D12Texture *>(request.object), request.uploadTextureSubImageRequest);
+            if (commandContext) {
+                ExecuteUploadTextureSubImage(*commandContext, static_cast<D3D12Texture *>(request.object), request.uploadTextureSubImageRequest);
             } else {
                 RequestRelease(request.uploadTextureSubImageRequest.uploadBuffer);
             }
             break;
         case D3D12ResourceRequest::Type::BuildMipChain:
-            if (frameThreadData) {
-                if (ExecuteBuildMipChain(commandContext, static_cast<D3D12Texture *>(request.object), request.buildMipChainRequest)) {
+            if (commandContext) {
+                if (ExecuteBuildMipChain(*commandContext, static_cast<D3D12Texture *>(request.object), request.buildMipChainRequest)) {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Ready);
                 } else {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Failed);
@@ -111,12 +173,5 @@ void D3D12Renderer::ProcessResourceRequests(RHI::FrameThreadData *frameThreadDat
             }
             break;
         }
-    }
-
-    if (commandContext.graphicsCommandList) {
-        commandContext.graphicsCommandList->CloseAndExecute();
-    }
-    if (commandContext.computeCommandList) {
-        commandContext.computeCommandList->CloseAndExecute();
     }
 }

@@ -64,6 +64,30 @@ ImageBasedLightingSample SampleEnvironmentLight(in ShadingParams shading) {
     return sample;
 }
 
+// Base layer 의 prefiltered specular radiance 에 곱할 최종 응답을 계산한다.
+// SSR 은 동일한 응답을 사용해 environment specular 만 screen-space radiance 로 교체한다.
+float3 GetStandardBaseLayerSpecularResponse(in ShadingParams shading, in ImageBasedLightingDFG dfg, out float baseLayerAttenuationSquared) {
+    float3 response = GetSpecularEnvSecondSum(dfg.baseLayer, shading.specularF0);
+
+#if USE_MULTIPLE_SCATTERING_COMPENSATION
+    response *= shading.energyCompensation;
+#endif
+
+    response *= GetSpecularOcclusionFromAmbientOcclusion(shading.normalDotView, shading.ambientOcclusion, shading.roughness);
+
+#if _CLEARCOAT != 0
+    const float clearCoatNormalDotView = saturate(dot(shading.clearCoatNormal, shading.viewDir));
+    const float clearCoatFresnelSecondFactor = F_SecondFactorSchlickSG(clearCoatNormalDotView);
+    const float clearCoatFresnel = (0.04f + (1.0f - 0.04f) * clearCoatFresnelSecondFactor) * shading.clearCoat;
+    const float baseLayerAttenuation = 1.0f - clearCoatFresnel;
+    baseLayerAttenuationSquared = baseLayerAttenuation * baseLayerAttenuation;
+#else
+    baseLayerAttenuationSquared = 1.0f;
+#endif
+
+    return response * baseLayerAttenuationSquared;
+}
+
 // 광원 소스에서 샘플링한 간접광에 standard material 의 BRDF 응답을 적용한다.
 float3 EvaluateStandardImageBasedLighting(in ShadingParams shading, in ImageBasedLightingSample sample, in ImageBasedLightingDFG dfg) {
     const float fresnelSecondFactor = F_SecondFactorSchlickSG(shading.normalDotView);
@@ -71,25 +95,19 @@ float3 EvaluateStandardImageBasedLighting(in ShadingParams shading, in ImageBase
     const float3 fresnel = shading.specularF0 + (max(float3(oneMinusRoughness, oneMinusRoughness, oneMinusRoughness), shading.specularF0) - shading.specularF0) * fresnelSecondFactor;
 
     float3 diffuse = sample.diffuseIrradiance * shading.diffuseColor * (1.0f - fresnel);
-    float3 specular = sample.specularRadiance * GetSpecularEnvSecondSum(dfg.baseLayer, shading.specularF0);
-
-#if USE_MULTIPLE_SCATTERING_COMPENSATION
-    specular *= shading.energyCompensation;
-#endif
 
 #if USE_MULTI_BOUNCE_AO
     diffuse *= GetMultiBounceAmbientOcclusion(shading.ambientOcclusion, shading.diffuseColor);
 #else
     diffuse *= shading.ambientOcclusion;
 #endif
-    specular *= GetSpecularOcclusionFromAmbientOcclusion(shading.normalDotView, shading.ambientOcclusion, shading.roughness);
+
+    float baseLayerAttenuationSquared;
+    const float3 baseSpecularResponse = GetStandardBaseLayerSpecularResponse(shading, dfg, baseLayerAttenuationSquared);
+    const float3 specular = sample.specularRadiance * baseSpecularResponse;
 
 #if _CLEARCOAT != 0
     const float clearCoatNormalDotView = saturate(dot(shading.clearCoatNormal, shading.viewDir));
-    const float clearCoatFresnelSecondFactor = F_SecondFactorSchlickSG(clearCoatNormalDotView);
-    const float clearCoatFresnel = (0.04f + (1.0f - 0.04f) * clearCoatFresnelSecondFactor) * shading.clearCoat;
-    const float baseLayerAttenuation = 1.0f - clearCoatFresnel;
-
     float3 clearCoatSpecular = sample.clearCoatSpecularRadiance * GetSpecularEnvSecondSum(dfg.clearCoat, float3(0.04f, 0.04f, 0.04f)) * shading.clearCoat;
 
 #if USE_MULTIPLE_SCATTERING_COMPENSATION
@@ -98,7 +116,7 @@ float3 EvaluateStandardImageBasedLighting(in ShadingParams shading, in ImageBase
 
     clearCoatSpecular *= GetSpecularOcclusionFromAmbientOcclusion(clearCoatNormalDotView, shading.ambientOcclusion, shading.clearCoatRoughness);
 
-    return (diffuse + specular) * baseLayerAttenuation * baseLayerAttenuation + clearCoatSpecular;
+    return diffuse * baseLayerAttenuationSquared + specular + clearCoatSpecular;
 #else
     return diffuse + specular;
 #endif

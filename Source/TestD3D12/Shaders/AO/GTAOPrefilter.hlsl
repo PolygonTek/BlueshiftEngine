@@ -32,13 +32,13 @@ RWTexture2D<float> outputSelectedDepthTexture : register(u5);
 
 groupshared float gtaoSharedDepths[8][8];
 
-bool GTAOIsCloserDeviceDepth(float lhs, float rhs) {
-    return gtaoPrefilterParams.useMaxDepth != 0u ? lhs > rhs : lhs < rhs;
+bool GTAOIsCloserDepth(float lhs, float rhs) {
+    return gtaoPrefilterParams.reverseZ != 0u ? lhs > rhs : lhs < rhs;
 }
 
 float GTAOLoadProcessingDepth(uint2 outputCoord, out float selectedDepth) {
     const uint2 blockOrigin = outputCoord * gtaoPrefilterParams.resolutionScale;
-    selectedDepth = gtaoPrefilterParams.farPlaneDeviceDepth;
+    selectedDepth = gtaoPrefilterParams.clearDepth;
     bool foundSurface = false;
 
     [unroll]
@@ -55,11 +55,11 @@ float GTAOLoadProcessingDepth(uint2 outputCoord, out float selectedDepth) {
             }
 
             const float depth = inputDepthTexture.Load(int3(inputCoord, 0));
-            if (depth == gtaoPrefilterParams.farPlaneDeviceDepth) {
+            if (depth == gtaoPrefilterParams.clearDepth) {
                 continue;
             }
 
-            if (!foundSurface || GTAOIsCloserDeviceDepth(depth, selectedDepth)) {
+            if (!foundSurface || GTAOIsCloserDepth(depth, selectedDepth)) {
                 selectedDepth = depth;
                 foundSurface = true;
             }
@@ -68,8 +68,7 @@ float GTAOLoadProcessingDepth(uint2 outputCoord, out float selectedDepth) {
 
     float linearDepth = 0.0f;
     if (foundSurface) {
-        const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
-        linearDepth = ToLinearDepth(selectedDepth, cameraConstants.deviceDepthToNdcZScaleBias, cameraConstants.projectionScaleBiasZ, orthogonal);
+        linearDepth = cameraConstants.GetLinearDepth(selectedDepth);
     }
     return linearDepth;
 }

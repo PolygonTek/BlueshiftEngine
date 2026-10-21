@@ -31,7 +31,8 @@
 #include "RenderUtils.h"
 #include "ShadowAtlas.h"
 #include "ScreenSpaceAOResources.h"
-#include "ScreenSpaceDepthPyramidResources.h"
+#include "SSRHiZResources.h"
+#include "SSRSceneColorHistoryResources.h"
 #include "HiZResources.h"
 #include "BloomResources.h"
 #include "GpuOcean.h"
@@ -86,6 +87,7 @@ enum class RenderPassType : uint8_t {
     Shadow,
     Opaque,
     Skybox,
+    TransparentSSRPrepass,
     Transparent,
     Gui
 };
@@ -233,15 +235,34 @@ struct FrameHiZ {
     float                           debugLinearDepthScale = 1.0f;
 };
 
-struct FrameScreenSpaceDepthPyramid {
+struct FrameSSRHiZ {
     RHI::Texture *                  texture = nullptr;
-    RHI::ViewID                     mipSRVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    RHI::ViewID                     mipUAVs[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                        mipWidths[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
-    uint32_t                        mipHeights[RenderScreenSpaceDepthPyramidMaxLevelCount] = {};
+    RHI::ViewID                     mipSRVs[RenderSSRHiZMaxLevelCount] = {};
+    RHI::ViewID                     mipUAVs[RenderSSRHiZMaxLevelCount] = {};
+    uint32_t                        mipWidths[RenderSSRHiZMaxLevelCount] = {};
+    uint32_t                        mipHeights[RenderSSRHiZMaxLevelCount] = {};
     uint32_t                        mipCount = 0;
     uint32_t                        validWidth = 0;
     uint32_t                        validHeight = 0;
+};
+
+struct SSRHistoryRenderState {
+    uint64_t                        sceneColorHistorySerial = 0;
+    uint64_t                        opaqueTemporalReflectionSerial = 0;
+    uint64_t                        transparentTemporalReflectionSerial = 0;
+};
+
+struct FrameSSRSceneColorHistory {
+    RHI::Texture *                  radianceTexture = nullptr; // Previous-frame full-resolution pre-tonemap HDR radiance; logical mip 0.
+    RHI::Texture *                  radiancePyramidTexture = nullptr; // Physical mip 0 starts at logical scene-color mip 1.
+    RHI::Texture *                  depthExtremaTexture = nullptr; // Previous-frame half-resolution max/min device depth.
+    RHI::Texture *                  fullResolutionDepthTexture = nullptr; // Optional per-pixel opaque depth for full-resolution SSR temporal validation.
+    RHI::ViewID                     mipSRVs[RenderSSRSceneColorHistoryMaxLevelCount] = {};
+    RHI::ViewID                     mipUAVs[RenderSSRSceneColorHistoryMaxLevelCount] = {};
+    uint32_t                        mipWidths[RenderSSRSceneColorHistoryMaxLevelCount] = {};
+    uint32_t                        mipHeights[RenderSSRSceneColorHistoryMaxLevelCount] = {};
+    uint32_t                        mipCount = 0;
+    bool                            valid = false;
 };
 
 struct FrameBloom {
@@ -288,7 +309,7 @@ struct FrameBloom {
 struct FrameScreenSpaceAO {
     RenderAOMode                    mode = RenderAOMode::Off;
     RHI::Texture *                  depthTexture = nullptr;
-    RHI::Texture *                  normalTexture = nullptr;
+    RHI::Texture *                  normalRoughnessTexture = nullptr;
     ScreenSpaceAOTextureSet         textureSet;
     RHI::ProjectionPolicy           projectionPolicy;
     bool                            temporalNoise = false;
@@ -298,7 +319,7 @@ struct FrameScreenSpaceAO {
 // 매 프레임 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
 struct FrameCamera {
     static constexpr int            MaxFrameSurfs = 0x20000;
-    static constexpr int            MaxRenderPasses = 8;
+    static constexpr int            MaxRenderPasses = 9;
 
     ALIGN_AS32 BE1::Mat4            viewMatrix;
     ALIGN_AS32 BE1::Mat4            viewProjMatrix;                 // jittered
@@ -313,8 +334,8 @@ struct FrameCamera {
     BE1::Frustum                    viewFrustum;                    // Perspective view culling volume
     BE1::OBB                        viewBox;                        // Orthographic view culling volume
 
-    BE1::Vec2                       jitterNDC = BE1::Vec2::zero;
-    BE1::Vec2                       prevJitterNDC = BE1::Vec2::zero;
+    BE1::Vec2                       ndcJitter = BE1::Vec2::zero;
+    BE1::Vec2                       prevNdcJitter = BE1::Vec2::zero;
 
     uint32_t                        index = ~0;
 
@@ -346,6 +367,7 @@ struct FrameCamera {
     RHI::PipelineState *            debugDrawPSOs[DebugDrawData::MaxBatches] = {};
     bool                            showDebugLights = false;
     RHI::PipelineState *            oceanSurfacePSO = nullptr;
+    RHI::PipelineState *            oceanSurfaceSSRPrepassPSO = nullptr;
     RHI::PipelineState *            sceneSnapshotDownsamplePSO = nullptr;
     RHI::Texture *                  snapshotColorTexture = nullptr;
     RHI::Texture *                  snapshotDepthTexture = nullptr;
@@ -365,33 +387,36 @@ struct FrameCamera {
     RHI::GPUResourceState           outputBeforeState = RHI::GPUResourceState::ShaderResource;
     RHI::GPUResourceState           outputAfterState = RHI::GPUResourceState::ShaderResource;
     RHI::PipelineState *            outputBlitPSO = nullptr;
+
     uint32_t                        renderWidth = 0;
     uint32_t                        renderHeight = 0;
     RenderCamera::ClearMethod       clearMethod;
     RenderCamera::ClearColorMode    clearColorMode;
     BE1::Color4                     clearColor;
+
     RHI::ProjectionPolicy           projectionPolicy;
     BE1::Vec4                       projectionScaleBiasXY = BE1::Vec4::zero; // View-space XY projection scale and NDC bias before jitter.
     BE1::Vec2                       projectionScaleBiasZ = BE1::Vec2::zero; // View-space Z to clip-space Z scale and bias.
     bool                            projectionOrthogonal = false;
     bool                            projectionInfiniteZFar = false;
-    float                           deviceDepthToNdcZScale = 1.0f;
-    float                           deviceDepthToNdcZBias = 0.0f;
     RenderCamera::Flag              flags = RenderCamera::Flag::None;
     bool                            directionalLightVisible = false;
-    bool                            needNormalOutput = false;
-    bool                            needDepthNormalOutput = false;  // Smooth view normals for AO, before opaque overwrites the normal buffer.
+
+    bool                            needNormalOutput = false; // View-space shading normals consumed by AO and SSR before opaque shading.
     bool                            needVelocityOutput = false;
+    bool                            needRoughnessOutput = false;
 
     RHI::Texture *                  colorTexture = nullptr;
     RHI::Texture *                  depthTexture = nullptr;
-    RHI::Texture *                  normalTexture = nullptr;        // Octahedral view normals: prepass smooth normals for AO, then shading normals for SSR.
+    RHI::Texture *                  normalRoughnessTexture = nullptr; // RG: UNORM octahedral view-space shading normal, B: perceptual roughness.
     RHI::Texture *                  velocityTexture = nullptr;
+    RHI::Texture *                  taaReactiveMaskTexture = nullptr;
 
     RHI::Texture *                  resolvedColorTexture = nullptr;
     RHI::Texture *                  resolvedDepthTexture = nullptr; // Prepass depth for AO, then opaque depth for SSR.
-    RHI::Texture *                  resolvedNormalTexture = nullptr;
+    RHI::Texture *                  resolvedNormalRoughnessTexture = nullptr;
     RHI::Texture *                  resolvedVelocityTexture = nullptr;
+    RHI::Texture *                  resolvedTAAReactiveMaskTexture = nullptr;
 
     RHI::Texture *                  postProcessColorTexture = nullptr;
     RHI::Texture *                  colorHistoryTextures[2] = {};
@@ -407,11 +432,35 @@ struct FrameCamera {
     bool                            applyAO = false;
     FrameScreenSpaceAO              ao;
 
-    bool                            generateScreenSpaceDepthPyramid = false;
-    FrameScreenSpaceDepthPyramid    screenSpaceDepthPyramid;
+    bool                            useSSR = false; // SSR 사용 설정. 현재 프레임의 trace 준비 여부와는 별개다.
+    bool                            generateSSRHiZ = false;
+    FrameSSRHiZ                     ssrHiZ;
+
+    bool                            updateSSRSceneColorHistory = false;
+    FrameSSRSceneColorHistory       ssrSceneColorHistory;
 
     bool                            traceSSR = false;
-    RHI::Texture *                  ssrTraceTexture = nullptr;
+    SharedPtr<SSRHistoryRenderState> ssrHistoryRenderState;
+    uint64_t                        ssrHistorySerial = 0;
+    RHI::Texture *                  ssrTraceTexture = nullptr;              // Trace-resolution history UV, debug iteration count, and trace validity.
+    RHI::Texture *                  ssrReceiverSurfaceTexture = nullptr;    // Trace-resolution packed FP16 screen-space ray length, normalized block pixel index, and perceptual roughness.
+    RHI::Texture *                  ssrResolveReflectionTexture = nullptr;  // Trace-resolution resolve output.
+    bool                            accumulateSSR = false;
+    bool                            ssrTemporalHistoryValid = false;
+    RHI::Texture *                  ssrPreviousTemporalReflectionTexture = nullptr;
+    RHI::Texture *                  ssrCurrentTemporalReflectionTexture = nullptr;
+    RHI::Texture *                  ssrUpsampledReflectionTexture = nullptr; // Full-resolution bilateral result consumed once by Lit.
+
+    bool                            traceTransparentSSR = false;
+    RHI::Texture *                  transparentSSRDepthTexture = nullptr; // Nearest transparent receiver depth for this frame.
+    RHI::Texture *                  transparentSSRPreviousDepthTexture = nullptr;
+    RHI::Texture *                  transparentSSRNormalRoughnessTexture = nullptr; // RG: UNORM octahedral view-space normal, B: perceptual roughness.
+    RHI::Texture *                  transparentSSRVelocityTexture = nullptr; // Unjittered receiver velocity for SSR reprojection.
+    bool                            accumulateTransparentSSR = false;
+    bool                            transparentSSRTemporalHistoryValid = false;
+    RHI::Texture *                  transparentSSRPreviousTemporalReflectionTexture = nullptr;
+    RHI::Texture *                  transparentSSRCurrentTemporalReflectionTexture = nullptr;
+    RHI::Texture *                  transparentSSRUpsampledReflectionTexture = nullptr;
 
     bool                            taaResolve = false;
     RHI::Buffer *                   luminanceBuffer = nullptr;
@@ -429,7 +478,8 @@ struct FrameObject {
     enum class Flag : uint8_t {
         None                        = 0,
         CameraVisible               = BIT(0),
-        LocalShadowCaster           = BIT(1)
+        LocalShadowCaster           = BIT(1),
+        NonUniformScale             = BIT(2)
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }

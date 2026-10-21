@@ -22,6 +22,7 @@
 #include "Scene/GameLight.h"
 
 class Anim;
+class Material;
 class Mesh;
 class MeshInstance;
 class Skeleton;
@@ -42,6 +43,7 @@ private:
     static constexpr int            AnimCount = 3;
     static constexpr int            MaxObjectCountPerAxis = 50;
     static constexpr float          ObjectSpacing = 2.5f;
+    static constexpr float          GroundTextureTileSize = BE1::MeterToUnit(10.0f);
 
     struct SkinnedMeshObject {
         GameObject                  gameObject;
@@ -81,12 +83,14 @@ private:
     int                             objectCountX = 1;
     int                             objectCountY = 1;
 
+    SharedPtr<Material>             characterMaterial;
+    SharedPtr<Material>             groundMaterial;
     SharedPtr<MeshInstance>         groundMeshInstance;
     float                           groundHeight = 0.0f;
 
     GameLight                       directionalLight;
-    float                           directionalLightAzimuth = 145.0f;
-    float                           directionalLightElevation = 55.0f;
+    float                           directionalLightAzimuth = 190.0f;
+    float                           directionalLightElevation = 48.0f;
     bool                            directionalLightEnabled = false;
 
     BE1::Array<int>                 jointIndexes;

@@ -110,7 +110,7 @@ uint LoadWaveShaderLightRef(uint lightIndex) {
 }
 #endif
 
-float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcZ, float3 worldPosition, in ShadingParams shading) {
+float3 EvaluateDirectLighting(uint2 pixelCoord, float depth, float3 worldPosition, in ShadingParams shading) {
 #if SHADER_LIGHT_USE_WAVE_OPS
     // Helper lane 은 wave 연산에 참여하지 않으므로 wave 결과에 의존하는 반복문에서 제외한다.
     if (IsHelperLane()) {
@@ -127,7 +127,7 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcZ, float3 worldPosition
 
 #if SHADER_LIGHT_USE_WAVE_OPS
     const bool useZBin = (cameraConstants.flags & ShaderCameraFlagUseLightZBin) != 0;
-    ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, ndcZ, useZBin, true);
+    ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, depth, useZBin, true);
 
     const bool hasLights = lightIterator.nextWordIndex < lightIterator.endWordIndex;
 
@@ -162,7 +162,7 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float ndcZ, float3 worldPosition
     return directLighting;
 #else
     const bool useZBin = (cameraConstants.flags & ShaderCameraFlagUseLightZBin) != 0;
-    ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, ndcZ, useZBin, false);
+    ShaderLightIterator lightIterator = BeginShaderLightIteration(pixelCoord, depth, useZBin, false);
     ShaderLightRef shaderLightRef;
 
     [loop]

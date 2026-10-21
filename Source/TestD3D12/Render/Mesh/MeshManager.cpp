@@ -23,11 +23,11 @@ void MeshManager::Init() {
 
     expiredMeshHashMapCursor = 0;
 
-    CreateEngineMeshes();
+    CreateDefaultMeshes();
 }
 
 void MeshManager::Shutdown() {
-    DestroyEngineMeshes();
+    DestroyDefaultMeshes();
 
     meshHashMap.Clear();
 }
@@ -36,10 +36,10 @@ void MeshManager::UpdateFrame() {
     CleanExpiredMeshes();
 }
 
-void MeshManager::CreateEngineMeshes() {
-    // Create default (box shape) mesh
-    defaultMesh = AllocMesh("_defaultMesh");
-    defaultMesh->CreateDefaultBox();
+void MeshManager::CreateDefaultMeshes() {
+    // Create missing (six-pointed star shape) mesh
+    missingMesh = AllocMesh("_missingMesh");
+    missingMesh->CreateMissingMesh();
 
     // Create default quad mesh
     defaultQuadMesh = AllocMesh("_defaultQuadMesh");
@@ -70,9 +70,9 @@ void MeshManager::CreateEngineMeshes() {
     defaultCapsuleMesh->CreateCapsule(BE1::Vec3::origin, BE1::Mat3::identity, BE1::MeterToUnit(0.5f), BE1::MeterToUnit(1.0f), 32);
 }
 
-void MeshManager::DestroyEngineMeshes() {
-    if (defaultMesh) {
-        defaultMesh.reset();
+void MeshManager::DestroyDefaultMeshes() {
+    if (missingMesh) {
+        missingMesh.reset();
     }
     if (defaultQuadMesh) {
         defaultQuadMesh.reset();
@@ -140,7 +140,7 @@ SharedPtr<Mesh> MeshManager::FindMesh(const char *hashName) const {
 
 SharedPtr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
     if (!hashName || !hashName[0]) {
-        return defaultMesh;
+        return missingMesh;
     }
 
     const bool useAsyncLoading = async && LoadingSystem::IsAsyncAllowed();
@@ -148,7 +148,7 @@ SharedPtr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
     SharedPtr<Mesh> mesh = FindMesh(hashName);
     if (mesh) {
         if (!useAsyncLoading && !mesh->WaitReady()) {
-            return defaultMesh;
+            return missingMesh;
         }
         return mesh;
     }
@@ -159,7 +159,7 @@ SharedPtr<Mesh> MeshManager::GetMesh(const char *hashName, bool async) {
         BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
 
         meshHashMap.RemoveFast(mesh->hashName);
-        return defaultMesh;
+        return missingMesh;
     }
     return mesh;
 }

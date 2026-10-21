@@ -250,7 +250,7 @@ bool GpuSphericalHarmonics::ReconstructCubemapSH(RHI::CommandList *commandList, 
     }
 
     ReconstructCubemapSHParams params = {};
-    params.bandFactors = float3(bandFactors.x, bandFactors.y, bandFactors.z);
+    params.bandFactors = float3(bandFactors);
 
     RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetBuffer(commandList, 0, false, inputCoefficients, inputSRV);

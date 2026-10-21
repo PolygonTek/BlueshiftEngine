@@ -65,7 +65,7 @@
 #endif
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
-    "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), UAV(u0)), " \
+    "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), UAV(u0)), " \
     "CBV(b0), " \
     "CBV(b1), " \
     "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)"
@@ -82,16 +82,17 @@ cbuffer CameraCB : register(b1) {
 
 static const float TAAResolveDepthFallbackVelocityThreshold = 0.01;
 
-Texture2D<float4> currentColorTexture : register(t0);
+Texture2D<float4> colorTexture : register(t0);
 Texture2D<float2> velocityTexture : register(t1);
 Texture2D<float> depthTexture : register(t2);
-Texture2D<float4> previousColorHistoryTexture : register(t3);
-Texture2D<float> previousDepthTexture : register(t4);
+Texture2D<float4> colorHistoryTexture : register(t3);
+Texture2D<float> prevDepthTexture : register(t4);
+Texture2D<float> reactiveMaskTexture : register(t5);
 RWTexture2D<float4> outputColorHistoryTexture : register(u0);
 
 #if TAA_HISTORY_FILTER_MODE == TAA_HISTORY_FILTER_MODE_CATMULL_ROM
 // 4x4 Catmull-Rom filter 를 bilinear 9 tap 으로 축약하여 history 를 재구성한다.
-float3 SamplePreviousColorHistoryCatmullRom(float2 uv) {
+float3 SampleColorHistoryCatmullRom(float2 uv) {
     const float2 textureSize = float2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y);
     const float2 samplePos = uv * textureSize;
     const float2 centerTexelPos = floor(samplePos - 0.5) + 0.5;
@@ -109,24 +110,24 @@ float3 SamplePreviousColorHistoryCatmullRom(float2 uv) {
     const float2 uv12 = (centerTexelPos + weight2 / weight12) * taaResolveParams.outputTexelSize;
     const float2 uv3 = (centerTexelPos + 2.0) * taaResolveParams.outputTexelSize;
 
-    float3 historyColor = previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv0.y), 0).rgb * (weight0.x * weight0.y);
-    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv12.y), 0).rgb * (weight0.x * weight12.y);
-    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv3.y), 0).rgb * (weight0.x * weight3.y);
-    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv0.y), 0).rgb * (weight12.x * weight0.y);
-    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv12.y), 0).rgb * (weight12.x * weight12.y);
-    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv3.y), 0).rgb * (weight12.x * weight3.y);
-    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv0.y), 0).rgb * (weight3.x * weight0.y);
-    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv12.y), 0).rgb * (weight3.x * weight12.y);
-    historyColor += previousColorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv3.y), 0).rgb * (weight3.x * weight3.y);
+    float3 historyColor = colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv0.y), 0).rgb * (weight0.x * weight0.y);
+    historyColor += colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv12.y), 0).rgb * (weight0.x * weight12.y);
+    historyColor += colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv0.x, uv3.y), 0).rgb * (weight0.x * weight3.y);
+    historyColor += colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv0.y), 0).rgb * (weight12.x * weight0.y);
+    historyColor += colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv12.y), 0).rgb * (weight12.x * weight12.y);
+    historyColor += colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv12.x, uv3.y), 0).rgb * (weight12.x * weight3.y);
+    historyColor += colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv0.y), 0).rgb * (weight3.x * weight0.y);
+    historyColor += colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv12.y), 0).rgb * (weight3.x * weight12.y);
+    historyColor += colorHistoryTexture.SampleLevel(linearClampSampler, float2(uv3.x, uv3.y), 0).rgb * (weight3.x * weight3.y);
     return historyColor;
 }
 #endif
 
-float3 SamplePreviousColorHistory(float2 uv) {
+float3 SampleColorHistory(float2 uv) {
 #if TAA_HISTORY_FILTER_MODE == TAA_HISTORY_FILTER_MODE_BILINEAR
-    return previousColorHistoryTexture.SampleLevel(linearClampSampler, uv, 0).rgb;
+    return colorHistoryTexture.SampleLevel(linearClampSampler, uv, 0).rgb;
 #elif TAA_HISTORY_FILTER_MODE == TAA_HISTORY_FILTER_MODE_CATMULL_ROM
-    return SamplePreviousColorHistoryCatmullRom(uv);
+    return SampleColorHistoryCatmullRom(uv);
 #endif
 }
 
@@ -137,7 +138,7 @@ static const float TAAResolveColorToleranceMaxMotionPixels = 1.0;
 
 float3 LoadNeighborhoodColor(int2 sampleCoord, int2 maxPixelCoord) {
     const int2 clampedCoord = clamp(sampleCoord, int2(0, 0), maxPixelCoord);
-    float3 sampleColor = currentColorTexture.Load(int3(clampedCoord, 0)).rgb;
+    float3 sampleColor = colorTexture.Load(int3(clampedCoord, 0)).rgb;
 #if USE_YCOCG_CLAMP
     sampleColor = RGBToYCoCg(sampleColor);
 #endif
@@ -219,20 +220,15 @@ void ComputeNeighborhoodColorBounds(uint2 pixelCoord, float3 centerColor, out fl
 }
 #endif
 
-float LinearizeDepth(float deviceDepth) {
-    const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
-    return ToLinearDepth(deviceDepth, cameraConstants.deviceDepthToNdcZScaleBias, cameraConstants.projectionScaleBiasZ, orthogonal);
-}
-
-float LoadCurrentDepth(int2 pixelCoord, int2 maxPixelCoord) {
+float LoadDepth(int2 pixelCoord, int2 maxPixelCoord) {
     return depthTexture.Load(int3(clamp(pixelCoord, int2(0, 0), maxPixelCoord), 0));
 }
 
-float LoadPreviousDepth(float2 previousUV) {
+float LoadPrevDepth(float2 prevUV) {
     const int2 maxPixelCoord = int2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y) - 1;
-    const float2 previousPixelCoord = previousUV * float2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y);
-    const int2 pixelCoord = clamp(int2(previousPixelCoord.x, previousPixelCoord.y), int2(0, 0), maxPixelCoord);
-    return previousDepthTexture.Load(int3(pixelCoord, 0));
+    const float2 prevPixelCoord = prevUV * float2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y);
+    const int2 pixelCoord = clamp(int2(prevPixelCoord.x, prevPixelCoord.y), int2(0, 0), maxPixelCoord);
+    return prevDepthTexture.Load(int3(pixelCoord, 0));
 }
 
 #if USE_NEAREST_DEPTH_VELOCITY
@@ -242,7 +238,7 @@ int2 FindClosestDepthPixelCoord(uint2 pixelCoord, out float centerDepth) {
     const int2 maxPixelCoord = int2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y) - 1;
     const int2 centerCoord = clamp(baseCoord, int2(0, 0), maxPixelCoord);
 
-    centerDepth = LoadCurrentDepth(centerCoord, maxPixelCoord);
+    centerDepth = LoadDepth(centerCoord, maxPixelCoord);
     float closestDepth = centerDepth;
     int2 closestCoord = centerCoord;
 
@@ -252,9 +248,9 @@ int2 FindClosestDepthPixelCoord(uint2 pixelCoord, out float centerDepth) {
         for (int sampleX = -1; sampleX <= 1; ++sampleX) {
             if (sampleX != 0 || sampleY != 0) {
                 const int2 sampleCoord = clamp(baseCoord + int2(sampleX, sampleY), int2(0, 0), maxPixelCoord);
-                const float sampleDepth = LoadCurrentDepth(sampleCoord, maxPixelCoord);
+                const float sampleDepth = LoadDepth(sampleCoord, maxPixelCoord);
 
-                if (taaResolveParams.useMinDepth != 0 ? sampleDepth < closestDepth : sampleDepth > closestDepth) {
+                if (taaResolveParams.reverseZ != 0 ? sampleDepth > closestDepth : sampleDepth < closestDepth) {
                     closestDepth = sampleDepth;
                     closestCoord = sampleCoord;
                 }
@@ -274,52 +270,65 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         return;
     }
 
-    const float4 currentColor = currentColorTexture.Load(int3(pixelCoord, 0));
-    float4 resolvedColor = currentColor;
+    const float4 currColor = colorTexture.Load(int3(pixelCoord, 0));
+    float4 resolvedColor = currColor;
 
 #if USE_NEAREST_DEPTH_VELOCITY
-    float currentDepth;
-    const int2 velocityCoord = FindClosestDepthPixelCoord(pixelCoord, currentDepth);
+    float currDepth;
+    const int2 velocityCoord = FindClosestDepthPixelCoord(pixelCoord, currDepth);
 #else
     const int2 maxPixelCoord = int2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y) - 1;
-    const float currentDepth = LoadCurrentDepth(int2(pixelCoord), maxPixelCoord);
+    const float currDepth = LoadDepth(int2(pixelCoord), maxPixelCoord);
     const int2 velocityCoord = int2(pixelCoord);
 #endif
 
-    if (taaResolveParams.historyValid != 0 && currentDepth >= 0.0 && currentDepth <= 1.0) {
+    if (taaResolveParams.historyValid != 0 && currDepth >= 0.0 && currDepth <= 1.0) {
         const float2 uv = (float2(pixelCoord) + 0.5) * taaResolveParams.outputTexelSize;
         const float2 velocity = velocityTexture.Load(int3(velocityCoord, 0));
-        const float2 previousUV = uv - velocity;
+        const float2 prevUV = uv - velocity;
 
-        if (all(previousUV >= 0.0) && all(previousUV <= 1.0)) {
+        if (all(prevUV >= 0.0) && all(prevUV <= 1.0)) {
 #if USE_DEPTH_DISOCCLUSION_FALLBACK
             if (length(velocity) > TAAResolveDepthFallbackVelocityThreshold) {
-                const float previousDepth = LoadPreviousDepth(previousUV);
-                const float farPlaneDeviceDepth = taaResolveParams.useMinDepth != 0 ? 1.0f : 0.0f;
+                const float prevDepth = LoadPrevDepth(prevUV);
+                const float clearDepth = taaResolveParams.reverseZ != 0 ? 0.0f : 1.0f;
                 // 현재/이전 깊이는 보간 없이 읽으므로 clear 값만 배경으로 취급한다.
-                const bool currentBackground = currentDepth == farPlaneDeviceDepth;
-                const bool previousBackground = previousDepth == farPlaneDeviceDepth;
+                const bool currBackground = currDepth == clearDepth;
+                const bool prevBackground = prevDepth == clearDepth;
 
                 // 배경과 표면 사이의 전환에서는 이전 프레임 결과를 사용하지 않는다.
                 // 양쪽 모두 배경이면 깊이 비교를 생략해 무한대끼리 빼는 것을 피한다.
-                bool rejectHistory = currentBackground != previousBackground;
-                if (!currentBackground && !previousBackground) {
+                bool rejectHistory = currBackground != prevBackground;
+                if (!currBackground && !prevBackground) {
                     // 현재/이전 표면의 깊이 차이가 임계값을 넘으면 이전 프레임 결과를 제외한다.
-                    const float currentLinearDepth = max(LinearizeDepth(currentDepth), 0.0f);
-                    const float previousLinearDepth = max(LinearizeDepth(previousDepth), 0.0f);
-                    rejectHistory = abs(currentLinearDepth - previousLinearDepth) > taaResolveParams.depthFallbackThreshold;
+                    const float currLinearDepth = max(cameraConstants.GetLinearDepth(currDepth), 0.0f);
+                    const float prevLinearDepth = max(cameraConstants.GetLinearDepth(prevDepth), 0.0f);
+                    rejectHistory = abs(currLinearDepth - prevLinearDepth) > taaResolveParams.depthFallbackThreshold;
                 }
 
                 if (rejectHistory) {
-                    outputColorHistoryTexture[pixelCoord] = currentColor;
+                    outputColorHistoryTexture[pixelCoord] = currColor;
                     return;
                 }
             }
 #endif
 
-            float3 historyColor = SamplePreviousColorHistory(previousUV);
+            float3 historyColor = SampleColorHistory(prevUV);
 
             float historyWeight = saturate(taaResolveParams.historyWeight);
+
+            // 표면 velocity 로 추적할 수 없는 굴절 변화는 현재/이전 색 차이로 추정한다.
+            // 정지한 굴절과 반사/거품 위주의 픽셀은 기존 누적을 유지하고, 변화가 커도
+            // 이 제한만으로 history 를 완전히 버리지 않아 jitter 가 그대로 노출되지 않게 한다.
+            const float reactiveMask = reactiveMaskTexture.Load(int3(pixelCoord, 0));
+            if (reactiveMask > 0.0f) {
+                const float3 colorDifference = abs(currColor.rgb - historyColor);
+                const float3 colorMagnitude = max(abs(currColor.rgb), abs(historyColor));
+                const float relativeColorDifference = max(colorDifference.r, max(colorDifference.g, colorDifference.b)) / max(max(colorMagnitude.r, max(colorMagnitude.g, colorMagnitude.b)), 0.01f);
+                const float temporalChange = smoothstep(0.1f, 0.5f, relativeColorDifference);
+                const float reactiveHistoryWeight = 0.5f;
+                historyWeight = min(historyWeight, lerp(1.0f, reactiveHistoryWeight, reactiveMask * temporalChange));
+            }
 
 #if USE_SUBPIXEL_CORRECTION
             // subpixel 이동이 클수록 current color 비중을 높여 history 재구성 sampling 으로 생기는 blur 를 줄인다.
@@ -332,7 +341,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
 #if USE_LUMINANCE_WEIGHTING
             // history 와 current 의 luminance 차이가 클수록 history 비중을 낮춘다.
-            const float currentLuma = GetLuma(max(currentColor.rgb, float3(0.0, 0.0, 0.0)));
+            const float currentLuma = GetLuma(max(currColor.rgb, float3(0.0, 0.0, 0.0)));
             const float historyLuma = GetLuma(max(historyColor.rgb, float3(0.0, 0.0, 0.0)));
             const float luminanceMismatch = saturate(abs(historyLuma - currentLuma) / max(max(currentLuma, historyLuma), 1.0e-5));
             historyWeight *= lerp(1.0, 1.0 - luminanceMismatch, saturate(taaResolveParams.luminanceWeight));
@@ -340,10 +349,10 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
 #if USE_NEIGHBORHOOD_COLOR_BOUNDS
 #if USE_YCOCG_CLAMP
-            float3 centerColor = RGBToYCoCg(currentColor.rgb);
+            float3 centerColor = RGBToYCoCg(currColor.rgb);
             historyColor = RGBToYCoCg(historyColor);
 #else
-            float3 centerColor = currentColor.rgb;
+            float3 centerColor = currColor.rgb;
 #endif
             float3 colorMin;
             float3 colorMax;
@@ -378,7 +387,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
             historyColor = max(YCoCgToRGB(historyColor), float3(0.0, 0.0, 0.0));
 #endif
 #endif // USE_NEIGHBORHOOD_COLOR_BOUNDS
-            resolvedColor.rgb = lerp(currentColor.rgb, historyColor, historyWeight);
+            resolvedColor.rgb = lerp(currColor.rgb, historyColor, historyWeight);
         }
     }
 

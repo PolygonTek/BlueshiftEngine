@@ -20,65 +20,67 @@
 //#define PAR_OCTASPHERE_IMPLEMENTATION
 #include "par_octasphere.h"
 
-void Mesh::CreateDefaultBox() {
+void Mesh::CreateMissingMesh() {
     Purge();
 
-    Surface *surf = AllocSurface(24, 36);
+    // 전체 크기는 20cm, 피벗은 바닥 중심이며 Z 범위는 [0, 20cm] 이다.
+    constexpr float extent = BE1::MeterToUnit(0.1f);
+    constexpr float coreExtent = extent * 0.35f;
+
+    static constexpr BE1::Vec3 positions[] = {
+        // 중앙 큐브의 아래쪽과 위쪽 모서리.
+        BE1::Vec3(-coreExtent, -coreExtent, extent - coreExtent),
+        BE1::Vec3(+coreExtent, -coreExtent, extent - coreExtent),
+        BE1::Vec3(+coreExtent, +coreExtent, extent - coreExtent),
+        BE1::Vec3(-coreExtent, +coreExtent, extent - coreExtent),
+        BE1::Vec3(-coreExtent, -coreExtent, extent + coreExtent),
+        BE1::Vec3(+coreExtent, -coreExtent, extent + coreExtent),
+        BE1::Vec3(+coreExtent, +coreExtent, extent + coreExtent),
+        BE1::Vec3(-coreExtent, +coreExtent, extent + coreExtent),
+        // +X, -X, +Y, -Y, +Z, -Z 방향의 끝점.
+        BE1::Vec3(+extent, 0.0f, extent),
+        BE1::Vec3(-extent, 0.0f, extent),
+        BE1::Vec3(0.0f, +extent, extent),
+        BE1::Vec3(0.0f, -extent, extent),
+        BE1::Vec3(0.0f, 0.0f, extent * 2.0f),
+        BE1::Vec3(0.0f, 0.0f, 0.0f)
+    };
+
+    // 각 행은 바깥에서 보았을 때 반시계 방향의 밑면 모서리 4개와 끝점이다.
+    static constexpr BE1::VertIndex spikeFaces[][5] = {
+        { 1, 2, 6, 5, 8 },  // +X
+        { 3, 0, 4, 7, 9 },  // -X
+        { 2, 3, 7, 6, 10 }, // +Y
+        { 0, 1, 5, 4, 11 }, // -Y
+        { 4, 5, 6, 7, 12 }, // +Z
+        { 3, 2, 1, 0, 13 }  // -Z
+    };
+
+    // 중앙 큐브의 각 면에 사각뿔을 붙여 24개 삼각형으로 닫힌 별 모양을 만든다.
+    // 면마다 정점을 분리해서 뾰족한 모서리의 노멀과 탄젠트가 섞이지 않게 한다.
+    constexpr int numVerts = COUNT_OF(spikeFaces) * 4 * 3;
+    Surface *surf = AllocSurface(numVerts, numVerts);
     surf->materialIndex = 0;
     internalData.surfaces.Append(surf);
 
-    constexpr float extent = BE1::MeterToUnit(0.1f);
-
     BE1::VertexGenericLit *v = surf->subMesh->verts;
-    // bottom face
-    v[0].SetPosition(-extent, -extent, 0.0f); v[0].SetTexCoord(0.0f, 1.0f); v[0].SetColor(0xffffffff);
-    v[1].SetPosition(-extent, +extent, 0.0f); v[1].SetTexCoord(1.0f, 1.0f); v[1].SetColor(0xffffffff);
-    v[2].SetPosition(+extent, +extent, 0.0f); v[2].SetTexCoord(1.0f, 0.0f); v[2].SetColor(0xffffffff);
-    v[3].SetPosition(+extent, -extent, 0.0f); v[3].SetTexCoord(0.0f, 0.0f); v[3].SetColor(0xffffffff);
-
-    // top face
-    v[4].SetPosition(+extent, -extent, extent * 2); v[4].SetTexCoord(0.0f, 1.0f); v[4].SetColor(0xffffffff);
-    v[5].SetPosition(+extent, +extent, extent * 2); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetColor(0xffffffff);
-    v[6].SetPosition(-extent, +extent, extent * 2); v[6].SetTexCoord(1.0f, 0.0f); v[6].SetColor(0xffffffff);
-    v[7].SetPosition(-extent, -extent, extent * 2); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetColor(0xffffffff);
-
-    // front face
-    v[8].SetPosition(+extent, -extent, 0.0f); v[8].SetTexCoord(0.0f, 1.0f); v[8].SetColor(0xffffffff);
-    v[9].SetPosition(+extent, +extent, 0.0f); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetColor(0xffffffff);
-    v[10].SetPosition(+extent, +extent, extent * 2); v[10].SetTexCoord(1.0f, 0.0f); v[10].SetColor(0xffffffff);
-    v[11].SetPosition(+extent, -extent, extent * 2); v[11].SetTexCoord(0.0f, 0.0f); v[11].SetColor(0xffffffff);
-
-    // right face
-    v[12].SetPosition(+extent, +extent, 0.0f); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetColor(0xffffffff);
-    v[13].SetPosition(-extent, +extent, 0.0f); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetColor(0xffffffff);
-    v[14].SetPosition(-extent, +extent, extent * 2); v[14].SetTexCoord(1.0f, 0.0f); v[14].SetColor(0xffffffff);
-    v[15].SetPosition(+extent, +extent, extent * 2); v[15].SetTexCoord(0.0f, 0.0f); v[15].SetColor(0xffffffff);
-
-    // back face
-    v[16].SetPosition(-extent, +extent, 0.0f); v[16].SetTexCoord(0.0f, 1.0f); v[16].SetColor(0xffffffff);
-    v[17].SetPosition(-extent, -extent, 0.0f); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetColor(0xffffffff);
-    v[18].SetPosition(-extent, -extent, extent * 2); v[18].SetTexCoord(1.0f, 0.0f); v[18].SetColor(0xffffffff);
-    v[19].SetPosition(-extent, +extent, extent * 2); v[19].SetTexCoord(0.0f, 0.0f); v[19].SetColor(0xffffffff);
-
-    // left face
-    v[20].SetPosition(-extent, -extent, 0.0f); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetColor(0xffffffff);
-    v[21].SetPosition(+extent, -extent, 0.0f); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetColor(0xffffffff);
-    v[22].SetPosition(+extent, -extent, extent * 2); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetColor(0xffffffff);
-    v[23].SetPosition(-extent, -extent, extent * 2); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetColor(0xffffffff);
-
     BE1::VertIndex *idx = surf->subMesh->indexes;
-    idx[0] = 0;     idx[1] = 1;     idx[2] = 2;
-    idx[3] = 2;     idx[4] = 3;     idx[5] = 0;
-    idx[6] = 4;     idx[7] = 5;     idx[8] = 6;
-    idx[9] = 6;     idx[10] = 7;    idx[11] = 4;
-    idx[12] = 8;    idx[13] = 9;    idx[14] = 10;
-    idx[15] = 10;   idx[16] = 11;   idx[17] = 8;
-    idx[18] = 12;   idx[19] = 13;   idx[20] = 14;
-    idx[21] = 14;   idx[22] = 15;   idx[23] = 12;
-    idx[24] = 16;   idx[25] = 17;   idx[26] = 18;
-    idx[27] = 18;   idx[28] = 19;   idx[29] = 16;
-    idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
-    idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
+    int vertexIndex = 0;
+
+    for (const auto &face : spikeFaces) {
+        for (int edge = 0; edge < 4; ++edge) {
+            v[0].SetPosition(positions[face[edge]]); v[0].SetTexCoord(0.0f, 1.0f); v[0].SetColor(0xffffffff);
+            v[1].SetPosition(positions[face[(edge + 1) % 4]]); v[1].SetTexCoord(1.0f, 1.0f); v[1].SetColor(0xffffffff);
+            v[2].SetPosition(positions[face[4]]); v[2].SetTexCoord(0.5f, 0.0f); v[2].SetColor(0xffffffff);
+
+            idx[0] = vertexIndex;
+            idx[1] = vertexIndex + 1;
+            idx[2] = vertexIndex + 2;
+            v += 3;
+            idx += 3;
+            vertexIndex += 3;
+        }
+    }
 
     internalData.FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeNormals | FinishFlag::ComputeTangents | Mesh::FinishFlag::ComputeEdges | FinishFlag::UseUnsmoothedTangents);
 

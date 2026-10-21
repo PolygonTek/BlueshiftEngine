@@ -25,7 +25,7 @@ uint2 GetOutputMipSize(uint mipLevel) {
 
 // hiZ mipmap generation 에서 depth 를 reduce 할 때는 더 멀리 있는 depth 를 선택한다.
 float ReduceDepth(float a, float b, float c, float d) {
-    if (hiZMipGenParams.useMinDepth != 0) {
+    if (hiZMipGenParams.reverseZ != 0) {
         return min(min(a, b), min(c, d));
     }
     return max(max(a, b), max(c, d));

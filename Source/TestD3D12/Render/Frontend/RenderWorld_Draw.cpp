@@ -56,7 +56,7 @@ static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubM
     return featureSet;
 }
 
-const FrameSurf *RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameLight *frameLight, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel) {
+const FrameSurf *RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel) {
     if (frameCamera->numFrameSurfs + 1 > frameCamera->maxFrameSurfs) {
         BE_WARNLOG("RenderWorld::AddFrameSurf: not enough available visible surfaces\n");
         return nullptr;
@@ -330,9 +330,14 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool useAO = frameSettings.aoMode != RenderAOMode::Off;
     const bool debugAO = useAO && frameSettings.gtaoDebug != 0;
     const bool temporalHistoryEnabled = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
-    const bool useTAA = temporalHistoryEnabled && frameSettings.taa && !skipPostProcess && !debugAO && frameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility;
-    const bool needNormalTexture = useAO || frameSettings.ssr;
-    const bool needVelocityTexture = useTAA;
+    const bool useSSR = temporalHistoryEnabled && frameSettings.ssr;
+    const bool needsSSRTemporalAccumulation = frameSettings.ssrTemporalHistoryWeight > 0.0f && (frameSettings.ssrDebugMode == SSRDebugModeOff || frameSettings.ssrDebugMode == SSRDebugModeUpsampledReflection);
+    const bool debugSSR = frameSettings.ssrDebugMode != SSRDebugModeOff;
+    const bool debugTransparentSSR = debugSSR && frameSettings.ssrTransparent && frameSettings.ssrDebugTransparent;
+    const bool useTransparentSSR = useSSR && frameSettings.ssrTransparent && (!debugSSR || debugTransparentSSR);
+    const bool useTAA = temporalHistoryEnabled && frameSettings.taa && !skipPostProcess && !debugAO && frameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility && frameSettings.ssrDebugMode == SSRDebugModeOff;
+    const bool needNormalRoughnessTexture = useAO || useSSR;
+    const bool needVelocityTexture = useTAA || useSSR;
     const bool needColorHistory = useTAA;
     const bool needDepthHistory = useTAA;
     const bool needHiZCullResources = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableHiZCulling) && frameSettings.hiZOcclusionCulling;
@@ -341,8 +346,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     const RenderBloomMode bloomMode = frameSettings.bloomMode;
 
-    // 장면 렌더링에 필요한 컬러, 깊이, 노멀, velocity 텍스처를 준비한다.
-    if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, needNormalTexture, needVelocityTexture, renderContext->GetBaseClearColor())) {
+    // 장면 렌더링에 필요한 컬러, 깊이, 노멀, roughness, velocity 텍스처를 준비한다.
+    if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, needNormalRoughnessTexture, needVelocityTexture, renderContext->GetBaseClearColor())) {
         return;
     }
 
@@ -352,15 +357,22 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         return;
     }
 
-    // SSR 에 사용할 화면 공간 깊이 피라미드 리소스를 준비한다.
-    ScreenSpaceDepthPyramidResources &depthPyramidResources = renderCamera->GetScreenSpaceDepthPyramidResources();
-    depthPyramidResources.Ensure(renderWidth, renderHeight, frameSettings.ssr);
+    // SSR 에 사용할 SSRHiZ 리소스를 준비한다.
+    SSRHiZResources &ssrHiZResources = renderCamera->GetSSRHiZResources();
+    const bool ssrHiZResourcesReady = ssrHiZResources.Ensure(renderWidth, renderHeight, useSSR);
 
-    // SSR 추적 결과를 저장할 반해상도 텍스처를 준비한다.
-    renderCamera->EnsureSSRTraceResources(renderWidth, renderHeight, frameSettings.ssr);
+    // SSR 은 이전 프레임의 full-resolution HDR radiance 와 논리적 mip 1 부터 시작하는 압축 pyramid 를 사용한다.
+    SSRSceneColorHistoryResources &ssrSceneColorHistoryResources = renderCamera->GetSSRSceneColorHistoryResources();
+    const bool ssrSceneColorHistoryResourcesReady = ssrSceneColorHistoryResources.Ensure(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), frameSettings.ssrResolutionMode == 0 && needsSSRTemporalAccumulation && !debugTransparentSSR, useSSR);
+
+    // SSR 추적/resolve 용 선택 해상도 텍스처와 Lit 이 한 번만 읽을 full-resolution radiance 를 준비한다.
+    const bool ssrResourcesReady = renderCamera->EnsureSSRResources(renderWidth, renderHeight, frameSettings.ssrResolutionMode, useSSR);
+    if (!useTransparentSSR) {
+        renderCamera->EnsureTransparentSSRResources(renderWidth, renderHeight, renderContext->GetMainRTDepthFormat(), frameSettings.ssrResolutionMode, false);
+    }
 
     // MSAA 깊이를 resolve 할 AO/SSR 공용 텍스처를 준비한다.
-    renderCamera->EnsureResolvedDepthTexture(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), useAO || frameSettings.ssr);
+    const bool resolvedDepthReady = renderCamera->EnsureResolvedDepthTexture(renderWidth, renderHeight, renderContext->GetMainRTSampleCount(), useAO || useSSR);
 
     // AO 계산과 필터링에 필요한 텍스처를 설정에 맞게 준비한다.
     renderCamera->screenSpaceAOResources.Ensure(renderWidth, renderHeight, frameSettings);
@@ -385,14 +397,18 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const uint32_t temporalJitterSampleCount = frameSettings.taaJitterSampleCount;
     renderCamera->UpdateTemporalJitter(temporalJitterEnabled, temporalJitterSampleCount);
 
-    const bool canUseHiZ = renderCamera->GetDepthTexture() && hiZResources.GetTexture();
+    const bool canUseHiZ = hiZResources.GetTexture() != nullptr;
     const bool requestHiZOcclusionCulling = canUseHiZ && needHiZCullResources && hiZResources.GetVisibleInstanceBuffer() && hiZResources.GetIndirectArgsBuffer();
     const bool requestHiZDebugPreview = canUseHiZ && needHiZDebugPreview && hiZResources.GetDebugPreviewTexture();
     const bool requestHiZGeneration = requestHiZOcclusionCulling;
-
-    const bool hasSSRInputs = renderCamera->GetNormalTexture() && (!useMSAA || (renderCamera->GetResolvedDepthTexture() && renderCamera->GetResolvedNormalTexture()));
-    const bool requestScreenSpaceDepthPyramidGeneration = frameSettings.ssr && hasSSRInputs && renderCamera->GetDepthTexture() && depthPyramidResources.GetTexture();
-    const bool requestSSRTrace = requestScreenSpaceDepthPyramidGeneration && renderCamera->GetSSRTraceTexture();
+    const bool hasSSRInputs = !useMSAA || resolvedDepthReady;
+    const bool requestSSRHiZGeneration = useSSR && hasSSRInputs && ssrHiZResourcesReady;
+    const bool canTraceSSR = requestSSRHiZGeneration && ssrResourcesReady && ssrSceneColorHistoryResourcesReady && ssrSceneColorHistoryResources.IsValid();
+    const bool requestSSRTrace = !debugTransparentSSR && canTraceSSR;
+    const bool requestSSRTemporalAccumulation = requestSSRTrace && needsSSRTemporalAccumulation;
+    const bool requestSSRSceneColorHistoryUpdate = useSSR && ssrSceneColorHistoryResourcesReady;
+    const bool requestTransparentSSRTrace = useTransparentSSR && canTraceSSR;
+    const bool requestTransparentSSRTemporalAccumulation = requestTransparentSSRTrace && needsSSRTemporalAccumulation;
 
     frameCamera->maxFrameSurfs = FrameCamera::MaxFrameSurfs;
     frameCamera->frameSurfs = (const FrameSurf **)frame->MemAlloc(frameCamera->maxFrameSurfs * sizeof(FrameSurf *));
@@ -447,27 +463,22 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         frameCamera->viewFrustum = renderCamera->GetFrustum();
     }
 
-    if (frameCamera->projectionPolicy.IsZNegativeOneToOne()) {
-        frameCamera->deviceDepthToNdcZScale = 2.0f;
-        frameCamera->deviceDepthToNdcZBias = -1.0f;
-    } else {
-        frameCamera->deviceDepthToNdcZScale = 1.0f;
-        frameCamera->deviceDepthToNdcZBias = 0.0f;
-    }
-
     frameCamera->flags = cameraDesc.flags;
-    frameCamera->needNormalOutput = frameSettings.ssr;
-    frameCamera->needVelocityOutput = useTAA;
+    frameCamera->useSSR = useSSR;
+    frameCamera->needRoughnessOutput = useSSR;
+    frameCamera->needVelocityOutput = needVelocityTexture;
 
     frameCamera->colorTexture = renderCamera->GetColorTexture();
     frameCamera->depthTexture = renderCamera->GetDepthTexture();
-    frameCamera->normalTexture = renderCamera->GetNormalTexture();
+    frameCamera->normalRoughnessTexture = renderCamera->GetNormalRoughnessTexture();
     frameCamera->velocityTexture = renderCamera->GetVelocityTexture();
+    frameCamera->taaReactiveMaskTexture = renderCamera->GetTAAReactiveMaskTexture();
 
     frameCamera->resolvedColorTexture = renderCamera->GetResolvedColorTexture();
     frameCamera->resolvedDepthTexture = renderCamera->GetResolvedDepthTexture();
-    frameCamera->resolvedNormalTexture = renderCamera->GetResolvedNormalTexture();
+    frameCamera->resolvedNormalRoughnessTexture = renderCamera->GetResolvedNormalRoughnessTexture();
     frameCamera->resolvedVelocityTexture = renderCamera->GetResolvedVelocityTexture();
+    frameCamera->resolvedTAAReactiveMaskTexture = renderCamera->GetResolvedTAAReactiveMaskTexture();
 
     frameCamera->sceneSnapshotDownsamplePSO = useHalfResSnapshot ? sceneSnapshotDownsamplePSO : nullptr;
     frameCamera->snapshotColorTexture = renderCamera->GetSnapshotColorTexture();
@@ -476,33 +487,63 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     FrameScreenSpaceAO &screenSpaceAO = frameCamera->ao;
     screenSpaceAO.textureSet = renderCamera->screenSpaceAOResources.GetTextureSet();
     screenSpaceAO.depthTexture = useMSAA ? frameCamera->resolvedDepthTexture : frameCamera->depthTexture;
-    screenSpaceAO.normalTexture = useMSAA ? frameCamera->resolvedNormalTexture : frameCamera->normalTexture;
+    screenSpaceAO.normalRoughnessTexture = useMSAA ? frameCamera->resolvedNormalRoughnessTexture : frameCamera->normalRoughnessTexture;
     screenSpaceAO.projectionPolicy = frameCamera->projectionPolicy;
     screenSpaceAO.mode = frameSettings.aoMode;
     screenSpaceAO.temporalNoise = frameSettings.aoTemporalNoise && !debugAO;
 
-    frameCamera->applyAO = useAO && ScreenSpaceAO::HasRequiredResources(screenSpaceAO) && (!useMSAA || frameCamera->normalTexture);
-    frameCamera->needDepthNormalOutput = frameCamera->applyAO;
+    frameCamera->applyAO = useAO && ScreenSpaceAO::HasRequiredResources(screenSpaceAO, frameSettings);
+    frameCamera->needNormalOutput = frameCamera->applyAO || useSSR;
 
-    frameCamera->generateScreenSpaceDepthPyramid = requestScreenSpaceDepthPyramidGeneration;
+    frameCamera->generateSSRHiZ = requestSSRHiZGeneration;
 
-    if (frameCamera->generateScreenSpaceDepthPyramid) {
-        FrameScreenSpaceDepthPyramid &depthPyramid = frameCamera->screenSpaceDepthPyramid;
-        depthPyramid.texture = depthPyramidResources.GetTexture();
-        depthPyramid.mipCount = depthPyramidResources.GetMipCount();
-        depthPyramid.validWidth = depthPyramidResources.GetValidWidth();
-        depthPyramid.validHeight = depthPyramidResources.GetValidHeight();
+    if (frameCamera->generateSSRHiZ) {
+        FrameSSRHiZ &ssrHiZ = frameCamera->ssrHiZ;
+        ssrHiZ.texture = ssrHiZResources.GetTexture();
+        ssrHiZ.mipCount = ssrHiZResources.GetMipCount();
+        ssrHiZ.validWidth = ssrHiZResources.GetValidWidth();
+        ssrHiZ.validHeight = ssrHiZResources.GetValidHeight();
 
-        for (uint32_t mipLevel = 0; mipLevel < RenderScreenSpaceDepthPyramidMaxLevelCount; ++mipLevel) {
-            depthPyramid.mipSRVs[mipLevel] = depthPyramidResources.GetMipSRVs()[mipLevel];
-            depthPyramid.mipUAVs[mipLevel] = depthPyramidResources.GetMipUAVs()[mipLevel];
-            depthPyramid.mipWidths[mipLevel] = depthPyramidResources.GetMipWidths()[mipLevel];
-            depthPyramid.mipHeights[mipLevel] = depthPyramidResources.GetMipHeights()[mipLevel];
+        for (uint32_t mipLevel = 0; mipLevel < RenderSSRHiZMaxLevelCount; ++mipLevel) {
+            ssrHiZ.mipSRVs[mipLevel] = ssrHiZResources.GetMipSRVs()[mipLevel];
+            ssrHiZ.mipUAVs[mipLevel] = ssrHiZResources.GetMipUAVs()[mipLevel];
+            ssrHiZ.mipWidths[mipLevel] = ssrHiZResources.GetMipWidths()[mipLevel];
+            ssrHiZ.mipHeights[mipLevel] = ssrHiZResources.GetMipHeights()[mipLevel];
+        }
+    }
+
+    frameCamera->updateSSRSceneColorHistory = requestSSRSceneColorHistoryUpdate;
+    if (requestSSRSceneColorHistoryUpdate) {
+        FrameSSRSceneColorHistory &history = frameCamera->ssrSceneColorHistory;
+        history.radianceTexture = ssrSceneColorHistoryResources.GetRadianceTexture();
+        history.radiancePyramidTexture = ssrSceneColorHistoryResources.GetRadiancePyramidTexture();
+        history.depthExtremaTexture = ssrSceneColorHistoryResources.GetDepthExtremaTexture();
+        history.fullResolutionDepthTexture = ssrSceneColorHistoryResources.GetFullResolutionDepthTexture();
+        history.mipCount = ssrSceneColorHistoryResources.GetMipCount();
+        history.valid = ssrSceneColorHistoryResources.IsValid();
+
+        for (uint32_t mipLevel = 0; mipLevel < RenderSSRSceneColorHistoryMaxLevelCount; ++mipLevel) {
+            history.mipSRVs[mipLevel] = ssrSceneColorHistoryResources.GetMipSRVs()[mipLevel];
+            history.mipUAVs[mipLevel] = ssrSceneColorHistoryResources.GetMipUAVs()[mipLevel];
+            history.mipWidths[mipLevel] = ssrSceneColorHistoryResources.GetMipWidths()[mipLevel];
+            history.mipHeights[mipLevel] = ssrSceneColorHistoryResources.GetMipHeights()[mipLevel];
         }
     }
 
     frameCamera->traceSSR = requestSSRTrace;
+    frameCamera->ssrHistoryRenderState = renderCamera->ssrHistoryRenderState; // SSR 히스토리의 유효성을 추적하기 위해 프레임 카메라와 렌더 카메라 간에 SSR 히스토리 렌더 상태를 공유한다.
+    frameCamera->ssrHistorySerial = ++renderCamera->ssrHistorySerial; // 카메라 별로 증가시키는 시리얼 번호를 사용하여 SSR 히스토리의 유효성을 추적한다.
     frameCamera->ssrTraceTexture = renderCamera->GetSSRTraceTexture();
+    frameCamera->ssrReceiverSurfaceTexture = renderCamera->GetSSRReceiverSurfaceTexture();
+    frameCamera->ssrResolveReflectionTexture = renderCamera->GetSSRResolveReflectionTexture();
+    frameCamera->accumulateSSR = requestSSRTemporalAccumulation;
+    frameCamera->ssrTemporalHistoryValid = renderCamera->IsSSRTemporalHistoryValid();
+    frameCamera->ssrPreviousTemporalReflectionTexture = renderCamera->GetPreviousSSRTemporalReflectionTexture();
+    frameCamera->ssrCurrentTemporalReflectionTexture = renderCamera->GetCurrentSSRTemporalReflectionTexture();
+    frameCamera->ssrUpsampledReflectionTexture = renderCamera->GetSSRUpsampledReflectionTexture();
+
+    frameCamera->traceTransparentSSR = requestTransparentSSRTrace;
+    frameCamera->accumulateTransparentSSR = requestTransparentSSRTemporalAccumulation;
 
     frameCamera->generateHiZ = requestHiZGeneration;
     if (frameCamera->generateHiZ) {
@@ -542,9 +583,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     frameCamera->bloom.renderHeight = renderHeight;
 
     if (!skipPostProcess) {
-        // 초기 LUT upload request 는 backend frame 실행 전에 처리되므로 Pending 상태의 RHI 포인터도 프레임에 전달할 수 있다.
+        // LUT 의 최초 업로드는 엔진 초기화에서 완료된다.
         Texture *colorGradingLUTTexture = frame->RetainTexture(renderSystem->GetColorGradingLUTTexture());
-        frameCamera->colorGradingLUTTexture = colorGradingLUTTexture ? colorGradingLUTTexture->GetRHITexture() : nullptr;
+        frameCamera->colorGradingLUTTexture = colorGradingLUTTexture->GetRHITexture();
 
         Texture *bloomDirtMaskTexture = frame->RetainTexture(renderCamera->GetBloomResources().GetBloomDirtMaskTexture());
         frameCamera->bloom.bloomDirtMaskTexture = bloomDirtMaskTexture ? bloomDirtMaskTexture->GetRHITexture() : nullptr;
@@ -565,18 +606,18 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     // Rasterization 은 jittered 행렬을 사용하고, velocity 계산용 unjittered 행렬은 backend 에서 jitter 를 제거해 복원한다.
     frameCamera->viewProjMatrix = renderCamera->jitteredViewProjMatrix;
     frameCamera->invViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
-    frameCamera->jitterNDC = renderCamera->currentJitter * jitterToNDCScale;
+    frameCamera->ndcJitter = renderCamera->currJitter * jitterToNDCScale;
 
-    const bool usePreviousMatrix = temporalHistoryEnabled && renderCamera->previousMatrixValid && !renderCamera->temporalHistoryInvalidated;
+    const bool usePreviousMatrix = temporalHistoryEnabled && renderCamera->prevMatrixValid && !renderCamera->temporalHistoryInvalidated;
 
     if (usePreviousMatrix) {
-        frameCamera->prevViewProjMatrix = renderCamera->previousJitteredViewProjMatrix;
-        frameCamera->prevInvViewProjMatrix = renderCamera->previousJitteredInvViewProjMatrix;
-        frameCamera->prevJitterNDC = renderCamera->previousJitter * jitterToNDCScale;
+        frameCamera->prevViewProjMatrix = renderCamera->prevJitteredViewProjMatrix;
+        frameCamera->prevInvViewProjMatrix = renderCamera->prevJitteredInvViewProjMatrix;
+        frameCamera->prevNdcJitter = renderCamera->prevJitter * jitterToNDCScale;
     } else {
         frameCamera->prevViewProjMatrix = renderCamera->jitteredViewProjMatrix;
         frameCamera->prevInvViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
-        frameCamera->prevJitterNDC = frameCamera->jitterNDC;
+        frameCamera->prevNdcJitter = frameCamera->ndcJitter;
     }
 
     frameCamera->taaResolve = useTAA;
@@ -589,12 +630,18 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     DrawCamera(frame, renderCamera, frameCamera);
 
+    // Reserve the next history slots here; the backend additionally validates the producing
+    // view serial before reading them. A requested but skipped pass never becomes valid there.
+    ssrSceneColorHistoryResources.SetValid(frameCamera->updateSSRSceneColorHistory);
+    renderCamera->CommitSSRTemporalHistory(frameCamera->accumulateSSR);
+    renderCamera->CommitTransparentSSRTemporalHistory(frameCamera->accumulateTransparentSSR);
+
     if (temporalHistoryEnabled) {
-        renderCamera->previousViewProjMatrix = renderCamera->viewProjMatrix;
-        renderCamera->previousInvViewProjMatrix = renderCamera->invViewProjMatrix;
-        renderCamera->previousJitteredViewProjMatrix = renderCamera->jitteredViewProjMatrix;
-        renderCamera->previousJitteredInvViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
-        renderCamera->previousMatrixValid = true;
+        renderCamera->prevViewProjMatrix = renderCamera->viewProjMatrix;
+        renderCamera->prevInvViewProjMatrix = renderCamera->invViewProjMatrix;
+        renderCamera->prevJitteredViewProjMatrix = renderCamera->jitteredViewProjMatrix;
+        renderCamera->prevJitteredInvViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
+        renderCamera->prevMatrixValid = true;
         renderCamera->temporalHistoryInvalidated = false;
 
         if (frameCamera->taaResolve) {
@@ -641,6 +688,42 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
     // Add drawing surface of skybox.
     AddSkyBoxMeshes(frame, renderCamera, frameCamera);
 
+    if (frameCamera->traceTransparentSSR) {
+        bool hasReceiver = hasOceanSurface && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::StaticOnly);
+
+        for (uint32_t i = 0; !hasReceiver && i < frameCamera->numFrameSurfs; ++i) {
+            const FrameSurf *surf = frameCamera->frameSurfs[i];
+            if (!BE1::HasFlag(surf->flags, FrameSurf::Flag::CameraVisible) ||
+                surf->material->GetRenderingMode() != Material::RenderingMode::Blend) {
+                continue;
+            }
+
+            const SharedPtr<ShaderTemplate> &shader = surf->material->GetShaderTemplate();
+            hasReceiver = shader && shader->SupportsFeature(ShaderFeature::ApplySSR) &&
+                shader->SupportsFeature(ShaderFeature::SurfacePrepass) &&
+                shader->SupportsFeature(ShaderFeature::TransparentSSRPrepass) &&
+                shader->SupportsFeature(ShaderFeature::OutputNormal) &&
+                shader->SupportsFeature(ShaderFeature::OutputVelocity) &&
+                shader->SupportsFeature(ShaderFeature::OutputRoughness);
+        }
+
+        bool transparentSSRResourcesReady = false;
+        if (hasReceiver) {
+            transparentSSRResourcesReady = renderCamera->EnsureTransparentSSRResources(frameCamera->renderWidth, frameCamera->renderHeight, RenderContext::activeContext->GetMainRTDepthFormat(), frame->GetRenderFrameSettings().ssrResolutionMode, true);
+
+            frameCamera->transparentSSRDepthTexture = renderCamera->GetCurrentTransparentSSRDepthTexture();
+            frameCamera->transparentSSRPreviousDepthTexture = renderCamera->GetPreviousTransparentSSRDepthTexture();
+            frameCamera->transparentSSRNormalRoughnessTexture = renderCamera->GetTransparentSSRNormalRoughnessTexture();
+            frameCamera->transparentSSRVelocityTexture = renderCamera->GetTransparentSSRVelocityTexture();
+            frameCamera->transparentSSRPreviousTemporalReflectionTexture = renderCamera->GetPreviousTransparentSSRTemporalReflectionTexture();
+            frameCamera->transparentSSRCurrentTemporalReflectionTexture = renderCamera->GetCurrentTransparentSSRTemporalReflectionTexture();
+            frameCamera->transparentSSRUpsampledReflectionTexture = renderCamera->GetTransparentSSRUpsampledReflectionTexture();
+            frameCamera->transparentSSRTemporalHistoryValid = renderCamera->IsTransparentSSRTemporalHistoryValid();
+        }
+        frameCamera->traceTransparentSSR &= transparentSSRResourcesReady;
+        frameCamera->accumulateTransparentSSR &= transparentSSRResourcesReady;
+    }
+
     // Ocean surface 와 query 정보를 프레임 데이터에 등록한다.
     RegisterFrameOceanSurface(frame);
 
@@ -670,7 +753,7 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
     // 메인 렌더 패스를 구성한다.
     renderPassBuilder.BuildMain(frame, frameCamera);
 
-    // Post-Opaque 단계에서 그릴 ocean surface pipeline 을 준비한다.
+    // Post-Opaque 본 패스와 transparent SSR receiver prepass 에 사용할 ocean pipeline 을 준비한다.
     PrepareOceanSurfacePipeline(frameCamera);
 
     // 카메라의 debug draw 데이터를 구성한다.
@@ -826,8 +909,7 @@ void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamer
     frameCascadedShadow->shaderData.textureIndex = depthTexture->GetBindlessIndex(RHI::ViewType::SRV, renderContext->GetCSMDepthSRV());
     frameCascadedShadow->shaderData.cascadeCount = frameCascadedShadow->cascadeCount;
     frameCascadedShadow->shaderData.maxDistance = csmMaxDistance;
-
-    frameCascadedShadow->shaderData.cascadeFilterRadii = float4(cascadeFilterRadii[0], cascadeFilterRadii[1], cascadeFilterRadii[2], cascadeFilterRadii[3]);
+    frameCascadedShadow->shaderData.cascadeFilterRadii = float4(cascadeFilterRadii);
 
     const float texelSize = 1.0f / shadowMapResolution;
     frameCascadedShadow->shaderData.texelSize = float2(texelSize, texelSize);
@@ -1122,11 +1204,11 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
     }
 
     ShaderFeatureSet featureSet;
-    if (frameCamera->needNormalOutput) {
-        featureSet.EnableFeature(ShaderFeature::OutputNormal);
-    }
-    if (frameCamera->needVelocityOutput) {
+    if (frameCamera->taaResolve) {
         featureSet.EnableFeature(ShaderFeature::OutputVelocity);
+    }
+    if (frameCamera->traceTransparentSSR) {
+        featureSet.EnableFeature(ShaderFeature::ApplySSR);
     }
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = nullptr;
@@ -1134,12 +1216,38 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
     graphicsPipelineDesc.depthStencilStateType = frameCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::LEqualWrite;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, frameCamera->needNormalOutput, frameCamera->needVelocityOutput);
+    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, false, false, frameCamera->taaResolve);
 
     const ShaderPermutationKey permutationKey = shaderTemplate->RegisterPermutation({}, featureSet);
     const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
     const SharedPtr<ShaderPipeline> shaderPipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplate, permutationKey, graphicsPipelineDesc, allowAsyncPSOBuild);
     frameCamera->oceanSurfacePSO = ShaderPipeline::GetReadyPSO(shaderPipeline);
+
+    if (frameCamera->traceTransparentSSR) {
+        ShaderFeatureSet prepassFeatureSet;
+        prepassFeatureSet.EnableFeature(ShaderFeature::SurfacePrepass);
+        prepassFeatureSet.EnableFeature(ShaderFeature::TransparentSSRPrepass);
+        prepassFeatureSet.EnableFeature(ShaderFeature::OutputNormal);
+        prepassFeatureSet.EnableFeature(ShaderFeature::OutputVelocity);
+        prepassFeatureSet.EnableFeature(ShaderFeature::OutputRoughness);
+
+        GraphicsPipelineDesc prepassPipelineDesc;
+        prepassPipelineDesc.inputLayout = nullptr;
+        prepassPipelineDesc.rasterizerStateType = surfaceSettings.wireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidTwoSided;
+        prepassPipelineDesc.depthStencilStateType = frameCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::LEqualWrite;
+        prepassPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
+        prepassPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+        prepassPipelineDesc.renderDest.renderTargetCount = 2;
+        prepassPipelineDesc.renderDest.renderTargetFormats[0] = frameCamera->transparentSSRNormalRoughnessTexture->GetFormat();
+        prepassPipelineDesc.renderDest.renderTargetFormats[1] = frameCamera->transparentSSRVelocityTexture->GetFormat();
+        prepassPipelineDesc.renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
+        prepassPipelineDesc.renderDest.sampleCount = 1;
+
+        const ShaderPermutationKey prepassPermutationKey = shaderTemplate->RegisterPermutation({}, prepassFeatureSet);
+        const SharedPtr<ShaderPipeline> prepassPipeline = shaderPipelineCache.GetGraphicsPipeline(
+            shaderTemplate, prepassPermutationKey, prepassPipelineDesc, allowAsyncPSOBuild);
+        frameCamera->oceanSurfaceSSRPrepassPSO = ShaderPipeline::GetReadyPSO(prepassPipeline);
+    }
 }
 
 FrameLight *RenderWorld::RegisterFrameLight(RenderFrame *frame, RenderLight *renderLight) {
@@ -1196,6 +1304,9 @@ FrameObject *RenderWorld::RegisterFrameObject(RenderFrame *frame, RenderObject *
     renderObject->viewCount = viewCount;
     renderObject->frameObject = frameObject;
     frameObject->meshLOD = frame->GetRenderFrameSettings().meshLOD ? renderObject->GetMeshLOD() : 0;
+    if (renderObject->nonUniformScale) {
+        frameObject->flags |= FrameObject::Flag::NonUniformScale;
+    }
 
     if (renderObject->desc.meshInstance) {
         frameObject->meshInstance = frame->RetainMeshInstance(renderObject->desc.meshInstance);
@@ -1693,7 +1804,7 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
             // camera 또는 CSM 기준 LOD 에 local shadow 의 texel 오차 제한을 함께 적용한다.
             // 한 surface 가 여러 shadow view 에 투영되어도 같은 LOD 를 공유하여 cascade blend 영역과 Point 면 경계에서 caster silhouette 를 일치시킨다.
             const int lodLevel = SelectMeshLOD(meshSurf->subMesh, frameObject.meshLOD, frameObject.squaredLODErrorLimit);
-            const FrameSurf *frameSurf = AddFrameSurf(frame, frameCamera, nullptr, &frameObject, material, meshSurf->subMesh, surfaceflags, surfaceShadowCascadeMask, lodLevel);
+            const FrameSurf *frameSurf = AddFrameSurf(frame, frameCamera, &frameObject, material, meshSurf->subMesh, surfaceflags, surfaceShadowCascadeMask, lodLevel);
             if (!frameSurf) {
                 // 공통 surface 생성 실패 시 어느 shadow view 에도 미완성 참조를 남기지 않는다.
                 localShadowSurfRefs.SetCount(firstSurfaceRef, false);
@@ -1783,7 +1894,7 @@ void RenderWorld::AddTextMeshes(RenderFrame *frame, const RenderCamera *renderCa
             subMesh->vertexBuffer = guiSurf->vertexBuffer;
             subMesh->indexBuffer = guiSurf->indexBuffer;
 
-            AddFrameSurf(frame, frameCamera, nullptr, frameObject, guiSurf->material, subMesh, FrameSurf::Flag::CameraVisible, 0);
+            AddFrameSurf(frame, frameCamera, frameObject, guiSurf->material, subMesh, FrameSurf::Flag::CameraVisible, 0);
         }
     }
 }
@@ -1814,7 +1925,7 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *render
     frameObject->flags |= FrameObject::Flag::CameraVisible;
     Material *material = frame->RetainMaterial(skyboxMaterial);
 
-    AddFrameSurf(frame, frameCamera, nullptr, frameObject, material, meshSurf->subMesh, FrameSurf::Flag::CameraVisible | FrameSurf::Flag::SkipSelection | FrameSurf::Flag::Skybox, 0);
+    AddFrameSurf(frame, frameCamera, frameObject, material, meshSurf->subMesh, FrameSurf::Flag::CameraVisible | FrameSurf::Flag::SkipSelection | FrameSurf::Flag::Skybox, 0);
 }
 
 void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {
@@ -2395,7 +2506,7 @@ void RenderWorld::PrepareDebugDrawPipelines(FrameCamera *frameCamera) {
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(VertexInputLayoutId::XyzColor);
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
-    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, frameCamera->needNormalOutput, frameCamera->needVelocityOutput);
+    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, false, false, frameCamera->taaResolve);
 
     // 필요한 graphics pipeline 들을 준비한다.
     for (uint32_t pipelineIndex = 0; pipelineIndex < DebugDrawData::MaxBatches; ++pipelineIndex) {
@@ -2463,25 +2574,17 @@ void RenderWorld::DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32
     //frameCamera->zNear = 0.0f;
     //frameCamera->zFar = 1.0f;
     frameCamera->viewMatrix = BE1::Mat4::identity;
-    frameCamera->viewProjMatrix.SetOrthoRH(0, screenWidth, screenHeight, 0, -1.0, 1.0, true); // Y 를 뒤집는다.
+    frameCamera->viewProjMatrix.SetOrthoRH(0, screenWidth, screenHeight, 0, -1.0, 1.0, false, frameCamera->projectionPolicy.reverseZ); // Y 를 뒤집고 NDC Z 는 [0, 1] 을 사용한다.
     frameCamera->invViewProjMatrix = frameCamera->viewProjMatrix.Inverse();
     frameCamera->projectionScaleBiasXY = BE1::Vec4(frameCamera->viewProjMatrix[0][0], frameCamera->viewProjMatrix[1][1], frameCamera->viewProjMatrix[0][3], frameCamera->viewProjMatrix[1][3]);
     frameCamera->projectionScaleBiasZ = BE1::Vec2(frameCamera->viewProjMatrix[2][2], frameCamera->viewProjMatrix[2][3]);
     frameCamera->projectionOrthogonal = true;
     frameCamera->projectionInfiniteZFar = false;
 
-    if (frameCamera->projectionPolicy.IsZNegativeOneToOne()) {
-        frameCamera->deviceDepthToNdcZScale = 2.0f;
-        frameCamera->deviceDepthToNdcZBias = -1.0f;
-    } else {
-        frameCamera->deviceDepthToNdcZScale = 1.0f;
-        frameCamera->deviceDepthToNdcZBias = 0.0f;
-    }
-
     frameCamera->prevViewProjMatrix = frameCamera->viewProjMatrix;
     frameCamera->prevInvViewProjMatrix = frameCamera->invViewProjMatrix;
-    frameCamera->jitterNDC = BE1::Vec2::zero;
-    frameCamera->prevJitterNDC = BE1::Vec2::zero;
+    frameCamera->ndcJitter = BE1::Vec2::zero;
+    frameCamera->prevNdcJitter = BE1::Vec2::zero;
     frameCamera->hiZCullViewProjMatrix = frameCamera->viewProjMatrix;
     frameCamera->worldAABB.Clear();
     frameCamera->is2D = true;
@@ -2511,7 +2614,7 @@ void RenderWorld::DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32
         subMesh->vertexBuffer = guiSurf->vertexBuffer;
         subMesh->indexBuffer = guiSurf->indexBuffer;
 
-        AddFrameSurf(frame, frameCamera, nullptr, frameObject, guiSurf->material, subMesh, FrameSurf::Flag::None, 0);
+        AddFrameSurf(frame, frameCamera, frameObject, guiSurf->material, subMesh, FrameSurf::Flag::None, 0);
     }
 
     guiMesh.Clear();

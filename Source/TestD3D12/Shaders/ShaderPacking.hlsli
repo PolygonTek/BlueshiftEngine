@@ -45,6 +45,18 @@ inline float4 UnpackRGB10A2UNormToFloat4(uint value) {
     return float4(value & 0x3FFu, (value >> 10u) & 0x3FFu, (value >> 20u) & 0x3FFu, value >> 30u) / float4(1023.0, 1023.0, 1023.0, 3.0);
 }
 
+// float 를 FP16 으로 변환하고 하위/상위 바이트를 RG8 UNORM 의 R/G 에 패킹한다.
+inline float2 PackFP16ToRG8UNorm(float value) {
+    const uint bits = f32tof16(value);
+    return float2(bits & 0xFFu, bits >> 8u) * (1.0f / 255.0f);
+}
+
+// 필터링 없이 읽은 RG8 UNORM 에서 하위/상위 바이트를 반올림해 복원하고 FP16 을 float 로 변환한다.
+inline float UnpackRG8UNormToFP16(float2 packedValue) {
+    const uint2 bytes = uint2(packedValue * 255.0f + 0.5f);
+    return f16tof32(bytes.x | (bytes.y << 8u));
+}
+
 // float2 를 IEEE 754 half precision 두 개로 변환해 RG16F 로 패킹한다.
 inline uint PackFloat2ToRG16F(float2 value) {
     return f32tof16(value.x) | (f32tof16(value.y) << 16u);

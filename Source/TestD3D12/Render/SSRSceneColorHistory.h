@@ -21,7 +21,7 @@ class ShaderTemplate;
 class ShaderPipeline;
 class ShaderPipelineBootstrap;
 
-class ScreenSpaceDepthPyramid {
+class SSRSceneColorHistory {
 public:
     void                            Init();
     void                            Shutdown();
@@ -33,15 +33,12 @@ public:
     bool                            Dispatch(RenderBackend &backend) const;
 
 private:
-    SharedPtr<ShaderTemplate>       firstMipShaderTemplate;
-    SharedPtr<ShaderTemplate>       firstMipMSAAShaderTemplate;
-    SharedPtr<ShaderTemplate>       reduceShaderTemplate;
+    SharedPtr<ShaderTemplate>       genMipShaderTemplate;
+    SharedPtr<ShaderTemplate>       genMipDepthShaderTemplate;
 
-    SharedPtr<ShaderPipeline>       firstMipPipeline;
-    SharedPtr<ShaderPipeline>       firstMipMSAAPipeline;
-    SharedPtr<ShaderPipeline>       reducePipeline;
+    SharedPtr<ShaderPipeline>       genMipPipeline;
+    SharedPtr<ShaderPipeline>       genMipDepthPipeline;
 
-    RHI::PipelineState *            frameFirstMipPSO = nullptr;
-    RHI::PipelineState *            frameFirstMipMSAAPSO = nullptr;
-    RHI::PipelineState *            frameReducePSO = nullptr;
+    RHI::PipelineState *            frameGenMipPSO = nullptr;
+    RHI::PipelineState *            frameGenMipDepthPSO = nullptr;
 };

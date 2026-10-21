@@ -263,7 +263,7 @@ private:
     void                        DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
-    const FrameSurf *           AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameLight *frameLight, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel = 0);
+    const FrameSurf *           AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel = 0);
 
     BE1::Array<RenderObject *>  renderObjects;      /// The array of pointers to all render objects managed by the world.
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.

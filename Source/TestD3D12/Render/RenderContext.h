@@ -98,10 +98,10 @@ public:
         float                       frameTime = 0.0f;
         float                       elapsedTime = 0.0f;
         float                       elapsedPrevTime = 0.0f;
-        bool                        statEnabled = false;
-        bool                        gpuTiming = false;
-        bool                        textureStreamingFeedback = false;
-        bool                        swapChainOutput = false;            // false 면 offscreen 출력
+        bool                        useStats = false;
+        bool                        useGpuTiming = false;
+        bool                        useTextureStreamingFeedback = false;
+        bool                        useSwapChainOutput = false; // false 면 offscreen 출력
     };
 
     RenderContext() = default;
@@ -128,7 +128,7 @@ public:
     RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
     RHI::Format                     GetPostProcessColorFormat() const;
     uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
-    void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputVelocity) const;
+    void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputRoughness, bool outputVelocity) const;
     void                            GetSwapChainRenderDest(RHI::RenderDest &renderDest) const;
 
     RHI::Texture *                  GetCSMDepthTexture() const { return csmDepthTexture; }

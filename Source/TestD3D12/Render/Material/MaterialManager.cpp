@@ -29,11 +29,11 @@ void MaterialManager::Init() {
 
     nextMaterialIndex = 0;
 
-    CreateEngineMaterials();
+    CreateDefaultMaterials();
 }
 
 void MaterialManager::Shutdown() {
-    DestroyEngineMaterials();
+    DestroyDefaultMaterials();
 
     if (shaderTemplateReloadedHandle.IsValid()) {
         ShaderTemplate::reloaded.Remove(shaderTemplateReloadedHandle);
@@ -313,31 +313,31 @@ void MaterialManager::UnregisterStreamingMaterial(Material *material) {
     material->streamingListIndex = TextureStreamingInvalidIndex;
 }
 
-void MaterialManager::CreateEngineMaterials() {
-#define ENGINE_MATERIAL(...) #__VA_ARGS__
+void MaterialManager::CreateDefaultMaterials() {
+#define DEFAULT_MATERIAL(...) #__VA_ARGS__
 
-    static constexpr const char *defaultLitMaterialText = ENGINE_MATERIAL(
+    static constexpr const char *defaultLitMaterialText = DEFAULT_MATERIAL(
     {
         shaderTemplate "Source/TestD3D12/Shaders/Lit"
 
         properties {
-            baseColorMap "_defaultTexture"
+            baseColorMap "_missingTexture"
             metallicFactor "0.0"
         }
     }
     );
 
-    static constexpr const char *defaultUnlitMaterialText = ENGINE_MATERIAL(
+    static constexpr const char *defaultUnlitMaterialText = DEFAULT_MATERIAL(
     {
         shaderTemplate "Source/TestD3D12/Shaders/Unlit"
 
         properties {
-            baseColorMap "_defaultTexture"
+            baseColorMap "_missingTexture"
         }
     }
     );
 
-    static constexpr const char *whiteLitMaterialText = ENGINE_MATERIAL(
+    static constexpr const char *whiteLitMaterialText = DEFAULT_MATERIAL(
     {
         shaderTemplate "Source/TestD3D12/Shaders/Lit"
 
@@ -348,7 +348,7 @@ void MaterialManager::CreateEngineMaterials() {
     }
     );
 
-    static constexpr const char *whiteUnlitMaterialText = ENGINE_MATERIAL(
+    static constexpr const char *whiteUnlitMaterialText = DEFAULT_MATERIAL(
     {
         shaderTemplate "Source/TestD3D12/Shaders/Unlit"
 
@@ -358,7 +358,7 @@ void MaterialManager::CreateEngineMaterials() {
     }
     );
 
-    static constexpr const char *blendUnlitMaterialText = ENGINE_MATERIAL(
+    static constexpr const char *blendUnlitMaterialText = DEFAULT_MATERIAL(
     {
         shaderTemplate "Source/TestD3D12/Shaders/Unlit"
         renderingMode "Blend"
@@ -370,7 +370,7 @@ void MaterialManager::CreateEngineMaterials() {
     }
     );
 
-    static constexpr const char *blendLitMaterialText = ENGINE_MATERIAL(
+    static constexpr const char *blendLitMaterialText = DEFAULT_MATERIAL(
     {
         shaderTemplate "Source/TestD3D12/Shaders/Lit"
         renderingMode "Blend"
@@ -383,7 +383,7 @@ void MaterialManager::CreateEngineMaterials() {
     }
     );
 
-    static constexpr const char *defaultSkyboxMaterialText = ENGINE_MATERIAL(
+    static constexpr const char *defaultSkyboxMaterialText = DEFAULT_MATERIAL(
     {
         cull twoSided
         shaderTemplate "Source/TestD3D12/Shaders/Skybox/SkyboxCubemap"
@@ -394,45 +394,45 @@ void MaterialManager::CreateEngineMaterials() {
     }
     );
 
-#undef ENGINE_MATERIAL
+#undef DEFAULT_MATERIAL
 
     defaultUnlitMaterial = AllocMaterial("_defaultUnlitMaterial");
     if (!defaultUnlitMaterial->Create(defaultUnlitMaterialText, nullptr)) {
-        BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create defaultUnlit material");
+        BE_FATALERROR("MaterialManager::CreateDefaultMaterials: failed to create defaultUnlit material");
     }
 
     defaultLitMaterial = AllocMaterial("_defaultLitMaterial");
     if (!defaultLitMaterial->Create(defaultLitMaterialText, nullptr)) {
-        BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create defaultLit material");
+        BE_FATALERROR("MaterialManager::CreateDefaultMaterials: failed to create defaultLit material");
     }
 
     whiteUnlitMaterial = AllocMaterial("_whiteUnlitMaterial");
     if (!whiteUnlitMaterial->Create(whiteUnlitMaterialText, nullptr)) {
-        BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create whiteUnlit material");
+        BE_FATALERROR("MaterialManager::CreateDefaultMaterials: failed to create whiteUnlit material");
     }
 
     whiteLitMaterial = AllocMaterial("_whiteLitMaterial");
     if (!whiteLitMaterial->Create(whiteLitMaterialText, nullptr)) {
-        BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create whiteLit material");
+        BE_FATALERROR("MaterialManager::CreateDefaultMaterials: failed to create whiteLit material");
     }
 
     blendUnlitMaterial = AllocMaterial("_blendUnlitMaterial");
     if (!blendUnlitMaterial->Create(blendUnlitMaterialText, nullptr)) {
-        BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create blendUnlit material");
+        BE_FATALERROR("MaterialManager::CreateDefaultMaterials: failed to create blendUnlit material");
     }
 
     blendLitMaterial = AllocMaterial("_blendLitMaterial");
     if (!blendLitMaterial->Create(blendLitMaterialText, nullptr)) {
-        BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create blendLit material");
+        BE_FATALERROR("MaterialManager::CreateDefaultMaterials: failed to create blendLit material");
     }
 
     defaultSkyboxMaterial = AllocMaterial("_defaultSkyboxMaterial");
     if (!defaultSkyboxMaterial->Create(defaultSkyboxMaterialText, nullptr)) {
-        BE_FATALERROR("MaterialManager::CreateEngineMaterials: failed to create defaultSkybox material");
+        BE_FATALERROR("MaterialManager::CreateDefaultMaterials: failed to create defaultSkybox material");
     }
 }
 
-void MaterialManager::DestroyEngineMaterials() {
+void MaterialManager::DestroyDefaultMaterials() {
     defaultUnlitMaterial.reset();
     defaultLitMaterial.reset();
     whiteUnlitMaterial.reset();

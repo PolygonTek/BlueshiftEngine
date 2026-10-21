@@ -175,6 +175,7 @@ private:
     BE1::Mat3x4                     prevWorldMatrix = BE1::Mat3x4::identity;
     uint64_t                        prevWorldMatrixFrameIndex = UINT64_MAX;
     uint64_t                        visibleFrameIndex = 0;
+    bool                            nonUniformScale = false;       ///< worldMatrix 의 축별 스케일이 서로 다른지 여부.
 
     int                             index = -1;                     // RenderWorld::renderObjects 의 인덱스
     uint64_t                        viewCount = uint64_t(-1);       // 마지막으로 FrameObject 에 등록된 DrawCamera or DrawGUICamera 함수의 실행 카운터

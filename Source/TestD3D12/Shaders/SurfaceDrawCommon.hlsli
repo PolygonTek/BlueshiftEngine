@@ -4,7 +4,7 @@
 #include "Common.hlsli"
 #include "CommonBindless.hlsli"
 #include "Skinning.hlsli"
-#include "CameraPassOutputCommon.hlsli"
+#include "SurfacePassOutput.hlsli"
 #include "PackedTangentFrame.hlsli"
 
 // b1 은 각 패스가 선언하는 CameraCB 또는 ShadowViewCB 에 사용한다.

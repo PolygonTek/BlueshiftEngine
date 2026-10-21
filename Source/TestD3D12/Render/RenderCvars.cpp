@@ -37,7 +37,11 @@ CVAR_MINMAX(r_hdrPeakNits, "0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archiv
 CVAR(r_depthPrepass, "0", BE1::CVar::Flag::Bool, "enable depth prepass");
 CVAR(r_snapshotColorHalfRes, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "capture non-MSAA scene snapshot color and depth at half resolution");
 CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
+
+// Specular AA
 CVAR(r_specularAA, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space specular anti-aliasing");
+CVAR_MINMAX(r_specularAAVariance, "0.25", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "screen-space normal variance scale for specular anti-aliasing", 0.0f, 1.0f);
+CVAR_MINMAX(r_specularAALimit, "0.2", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "maximum additive squared perceptual roughness for specular anti-aliasing", 0.0f, 1.0f);
 
 // Mesh LOD
 CVAR(r_meshLOD, "1", BE1::CVar::Flag::Bool, "enable mesh LOD selection (0 = force LOD0, including explicit LOD requests)");
@@ -115,13 +119,18 @@ CVAR_MINMAX(r_gtaoThinOccluderCompensation, "0.0", BE1::CVar::Flag::Float, "GTAO
 CVAR_MINMAX(r_gtaoDepthMipSamplingOffset, "3.3", BE1::CVar::Flag::Float, "GTAO depth mip sampling offset", 0.0f, 5.0f);
 
 // SSR
-CVAR(r_ssr, "0", BE1::CVar::Flag::Bool, "enable screen-space reflections");
-CVAR(r_ssrDebug, "0", BE1::CVar::Flag::Bool, "show screen-space reflection trace debug output");
-CVAR_MINMAX(r_ssrMaxDistance, "48.0", BE1::CVar::Flag::Float, "screen-space reflection maximum trace distance", 0.1f, 1000.0f);
-CVAR_MINMAX(r_ssrThickness, "1.0", BE1::CVar::Flag::Float, "screen-space reflection hit thickness", 0.0f, 10.0f);
-CVAR_MINMAX(r_ssrMaxIterations, "64", BE1::CVar::Flag::Integer, "screen-space reflection maximum Hi-Z traversal iterations", 1, 128);
-CVAR_MINMAX(r_ssrBinaryRefinementSteps, "3", BE1::CVar::Flag::Integer, "screen-space reflection binary refinement steps", 0, 8);
-CVAR_MINMAX(r_ssrNormalBias, "0.02", BE1::CVar::Flag::Float, "screen-space reflection normal bias in world units", 0.0f, 1.0f);
+CVAR(r_ssr, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space reflections");
+CVAR_MINMAX(r_ssrResolutionMode, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "SSR resolution mode: 0 = full, 1 = half, 2 = quarter (per axis)", 0, 2);
+CVAR(r_ssrTransparent, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable screen-space reflections on transparent surfaces");
+CVAR_MINMAX(r_ssrDebug, "0", BE1::CVar::Flag::Integer, "SSR debug source: 0 = off, 1 = raw reflection, 2 = upsampled reflection, 3 = trace status, 4 = history UV, 5 = confidence, 6 = iterations", 0, 6);
+CVAR(r_ssrDebugTransparent, "0", BE1::CVar::Flag::Bool, "debug transparent SSR instead of opaque SSR");
+CVAR_MINMAX(r_ssrTraceMaxIterations, "64", BE1::CVar::Flag::Integer, "screen-space reflection maximum Hi-Z traversal iterations", 1, 128);
+CVAR_MINMAX(r_ssrTraceThickness, "0.5", BE1::CVar::Flag::Float, "screen-space reflection hit thickness", 0.0f, 10.0f);
+CVAR_MINMAX(r_ssrRayRoughnessScale, "0.5", BE1::CVar::Flag::Float, "SSR GGX linear roughness scale for stochastic ray directions, balanced with cone filtering", 0.0f, 1.0f);
+CVAR_MINMAX(r_ssrScreenEdgeFade, "0.025", BE1::CVar::Flag::Float, "SSR screen-edge fade width relative to viewport height", 0.0f, 0.5f);
+CVAR_MINMAX(r_ssrRoughnessFadeStart, "0.6", BE1::CVar::Flag::Float, "SSR roughness where reflection confidence starts fading", 0.0f, 1.0f);
+CVAR_MINMAX(r_ssrRoughnessFadeEnd, "0.8", BE1::CVar::Flag::Float, "SSR roughness where reflection confidence reaches zero and tracing stops", 0.0f, 1.0f);
+CVAR_MINMAX(r_ssrTemporalHistoryWeight, "0.95", BE1::CVar::Flag::Float, "SSR temporal history weight", 0.0f, 0.99f);
 
 // Texture
 CVAR_MINMAX(r_textureFilter, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "texture filtering mode for material samplers", 0, static_cast<int>(RHI::TextureFilter::Count) - 1);
@@ -296,6 +305,8 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.lightCullingZBin = r_lightCullingZBin.GetBool();
     settings.depthPrepass = r_depthPrepass.GetBool();
     settings.specularAA = r_specularAA.GetBool();
+    settings.specularAAVariance = r_specularAAVariance.GetFloat();
+    settings.specularAALimit = r_specularAALimit.GetFloat();
 
     settings.vsync = r_vsync.GetBool();
     settings.hdrOutput = r_hdrOutput.GetBool();
@@ -325,12 +336,17 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.gtaoDepthMipSamplingOffset = r_gtaoDepthMipSamplingOffset.GetFloat();
 
     settings.ssr = r_ssr.GetBool();
-    settings.ssrDebug = r_ssrDebug.GetBool();
-    settings.ssrMaxDistance = r_ssrMaxDistance.GetFloat();
-    settings.ssrThickness = r_ssrThickness.GetFloat();
-    settings.ssrMaxIterations = r_ssrMaxIterations.GetInteger();
-    settings.ssrBinaryRefinementSteps = r_ssrBinaryRefinementSteps.GetInteger();
-    settings.ssrNormalBias = r_ssrNormalBias.GetFloat();
+    settings.ssrResolutionMode = static_cast<uint32_t>(r_ssrResolutionMode.GetInteger());
+    settings.ssrTransparent = r_ssrTransparent.GetBool();
+    settings.ssrDebugMode = static_cast<uint32_t>(r_ssrDebug.GetInteger());
+    settings.ssrDebugTransparent = r_ssrDebugTransparent.GetBool();
+    settings.ssrTraceMaxIterations = r_ssrTraceMaxIterations.GetInteger();
+    settings.ssrTraceThickness = r_ssrTraceThickness.GetFloat();
+    settings.ssrRayRoughnessScale = r_ssrRayRoughnessScale.GetFloat();
+    settings.ssrScreenEdgeFade = r_ssrScreenEdgeFade.GetFloat();
+    settings.ssrRoughnessFadeEnd = r_ssrRoughnessFadeEnd.GetFloat();
+    settings.ssrRoughnessFadeStart = BE1::Min(r_ssrRoughnessFadeStart.GetFloat(), settings.ssrRoughnessFadeEnd);
+    settings.ssrTemporalHistoryWeight = r_ssrTemporalHistoryWeight.GetFloat();
 
     settings.toneMapping = r_toneMapping.GetBool();
     settings.colorGrading = r_colorGrading.GetBool();

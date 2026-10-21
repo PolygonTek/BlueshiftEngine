@@ -77,7 +77,7 @@ public:
         BE1::Color3                 scatterColor = BE1::Color3(0.0f, 0.26f, 0.29f); ///< 파도 마루에서 waterColor 를 기준으로 밝힐 sRGB 산란색
         float                       scatterHeight = 8.0f;           ///< 산란색이 최대 강도에 도달하는 기준 수면 위 높이 (m)
         BE1::Color3                 foamColor = BE1::Color3(0.955f, 0.978f, 1.0f); ///< sRGB foam color
-        float                       foamDetailMapSize = 16.0f;      ///< foam detail map 이 world-space 에서 한 번 반복되는 크기 (m)
+        float                       foamDetailMapSize = 40.0f;      ///< foam detail map 이 world-space 에서 한 번 반복되는 크기 (m)
         float                       foamDetailStrength = 1.0f;      ///< foam history mask 에 foam detail map 을 적용하는 강도 [0, 1]
         float                       cascadeFadeScale = 20.0f;       ///< cascade patch size 에 곱해 거리 기반 fade 구간을 정하는 배율
 
@@ -100,6 +100,21 @@ public:
         uint32_t                    instanceBufferUploadBytes = 0;
     };
 
+    // 한 카메라에서 transparent SSR prepass 와 본 패스가 공유하는 clipmap draw 데이터다.
+    // frame thread allocator 에서 받은 buffer/constant 는 해당 프레임 동안 유효하다.
+    struct PreparedDraw {
+        GeometryClipmap::Batch      patchBatch {};
+        RHI::Buffer *               patchInstanceBuffer = nullptr;
+        RHI::ConstantBuffer *       surfaceConstantBuffer = nullptr;
+        const RHI::Texture *        fieldTextureArray = nullptr;
+        const RHI::Texture *        foamHistoryTextureArray = nullptr;
+        const RHI::Texture *        foamDetailMap = nullptr;
+        const RHI::Texture *        sceneColorTexture = nullptr;
+        const RHI::Texture *        sceneDepthTexture = nullptr;
+        uint32_t                    instanceBufferUploadBytes = 0;
+        bool                        valid = false;
+    };
+
     void                            Init(GpuOcean *gpuOcean);
     void                            Shutdown();
 
@@ -119,6 +134,11 @@ public:
     bool                            Draw(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const RHI::PipelineState *pipelineState,
                                         const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const Settings &settings, const View &view,
                                         const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture, DrawStats *drawStats = nullptr) const;
+    bool                            PrepareDraw(RHI::FrameThreadData *frameThreadData, const Settings &settings, const View &view,
+                                        const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture, PreparedDraw &preparedDraw) const;
+    bool                            DrawPrepared(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState,
+                                        const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer,
+                                        const PreparedDraw &preparedDraw, bool countInstanceUpload, DrawStats *drawStats = nullptr) const;
 
 private:
     bool                            EnsureQueryResources();

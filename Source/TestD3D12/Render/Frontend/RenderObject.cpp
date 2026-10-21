@@ -26,6 +26,15 @@ static const BE1::AABB &GetEffectiveLocalAABB(const RenderObject::Desc &desc) {
     return desc.aabb;
 }
 
+static bool HasNonUniformScale(const BE1::Mat3x4 &worldMatrix) {
+    const float scaleXSqr = worldMatrix[0][0] * worldMatrix[0][0] + worldMatrix[1][0] * worldMatrix[1][0] + worldMatrix[2][0] * worldMatrix[2][0];
+    const float scaleYSqr = worldMatrix[0][1] * worldMatrix[0][1] + worldMatrix[1][1] * worldMatrix[1][1] + worldMatrix[2][1] * worldMatrix[2][1];
+    const float scaleZSqr = worldMatrix[0][2] * worldMatrix[0][2] + worldMatrix[1][2] * worldMatrix[1][2] + worldMatrix[2][2] * worldMatrix[2][2];
+    const float minScaleSqr = BE1::Min3(scaleXSqr, scaleYSqr, scaleZSqr);
+    const float maxScaleSqr = BE1::Max3(scaleXSqr, scaleYSqr, scaleZSqr);
+    return maxScaleSqr - minScaleSqr > maxScaleSqr * MATRIX_EPSILON;
+}
+
 void RenderObject::UpdateFlags(Flag flags) {
     desc.flags = flags;
 }
@@ -36,6 +45,7 @@ void RenderObject::UpdateLayer(uint8_t layer) {
 
 void RenderObject::UpdateTransform(const BE1::Mat3x4 &worldMatrix) {
     desc.worldMatrix = worldMatrix;
+    nonUniformScale = HasNonUniformScale(worldMatrix);
     UpdateWorldAABB();
 }
 
@@ -104,6 +114,7 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Transform)) {
         desc.worldMatrix = src.worldMatrix;
+        nonUniformScale = HasNonUniformScale(src.worldMatrix);
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Bounds)) {

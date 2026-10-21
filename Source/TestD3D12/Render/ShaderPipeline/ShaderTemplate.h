@@ -124,6 +124,8 @@ public:
         SkyLeftMap,
         SkyTopMap,
         SkyDownMap,
+        TcScale,
+        TcTranslation,
         Count
     };
 

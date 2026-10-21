@@ -39,7 +39,7 @@ bool ProjectSphereToScreenRect(float3 worldCenter, float worldRadius, out float4
     float2 rectMin = float2(1.0, 1.0);
     float2 rectMax = float2(0.0, 0.0);
 
-    nearestDepth = hiZCullParams.useMinDepth != 0 ? 0.0 : 1.0;
+    nearestDepth = hiZCullParams.reverseZ != 0 ? 0.0 : 1.0;
 
     // sphere 를 감싸는 world-space AABB 의 8 corner 를 clip space 로 변환하여 screen rect 와 nearest depth 를 계산한다.
     [unroll]
@@ -58,8 +58,9 @@ bool ProjectSphereToScreenRect(float3 worldCenter, float worldRadius, out float4
         }
 
         const float3 ndc = clipPosition.xyz / clipPosition.w;
-        if (ndc.z < 0.0 || ndc.z > 1.0) {
-            // corner 가 하나라도 depth clip range [0, 1] 밖이면 false 리턴
+        const float depth = ndc.z;
+        if (depth < 0.0 || depth > 1.0) {
+            // corner 가 하나라도 device depth range [0, 1] 밖이면 false 리턴
             screenRect = float4(0.0, 0.0, 1.0, 1.0);
             return false;
         }
@@ -68,8 +69,8 @@ bool ProjectSphereToScreenRect(float3 worldCenter, float worldRadius, out float4
         rectMin = min(rectMin, screenUV);
         rectMax = max(rectMax, screenUV);
 
-        // nearest depth 는 hi-Z depth 비교를 위해 sphere 의 8 corner 중 가장 가까운 depth 를 선택한다.
-        nearestDepth = hiZCullParams.useMinDepth != 0 ? max(nearestDepth, ndc.z) : min(nearestDepth, ndc.z);
+        // nearest depth 는 hi-Z depth 비교를 위해 sphere 의 8 corner 중 가장 가까운 device depth 를 선택한다.
+        nearestDepth = hiZCullParams.reverseZ != 0 ? max(nearestDepth, depth) : min(nearestDepth, depth);
     }
 
     screenRect = float4(saturate(rectMin), saturate(rectMax));
@@ -98,9 +99,9 @@ bool IsOccluded(float4 screenRect, float nearestDepth) {
     const float d3 = hiZTexture.Load(uint3(rect.zw, mipLevel));
 
     // nearest depth 와 hi-Z depth 를 비교하여 occlusion 여부를 결정한다.
-    const float hiZDepth = hiZCullParams.useMinDepth != 0 ? min(min(d0, d1), min(d2, d3)) : max(max(d0, d1), max(d2, d3));
+    const float hiZDepth = hiZCullParams.reverseZ != 0 ? min(min(d0, d1), min(d2, d3)) : max(max(d0, d1), max(d2, d3));
     const float depthBias = 1.0e-5;
-    return hiZCullParams.useMinDepth != 0 ? nearestDepth < hiZDepth - depthBias : nearestDepth > hiZDepth + depthBias;
+    return hiZCullParams.reverseZ != 0 ? nearestDepth < hiZDepth - depthBias : nearestDepth > hiZDepth + depthBias;
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]

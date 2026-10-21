@@ -29,10 +29,18 @@ bool ShaderFeatureSet::HasFeature(ShaderFeature feature) const {
         return !!(flags & OutputNormal);
     case ShaderFeature::OutputVelocity:
         return !!(flags & OutputVelocity);
+    case ShaderFeature::OutputRoughness:
+        return !!(flags & OutputRoughness);
+    case ShaderFeature::SurfacePrepass:
+        return !!(flags & SurfacePrepass);
+    case ShaderFeature::TransparentSSRPrepass:
+        return !!(flags & TransparentSSRPrepass);
     case ShaderFeature::DirectLighting:
         return !!(flags & DirectLighting);
     case ShaderFeature::IndirectLighting:
         return !!(flags & IndirectLighting);
+    case ShaderFeature::ApplySSR:
+        return !!(flags & ApplySSR);
     default:
         return false;
     }
@@ -58,11 +66,23 @@ void ShaderFeatureSet::EnableFeature(ShaderFeature feature) {
     case ShaderFeature::OutputVelocity:
         flags |= OutputVelocity;
         break;
+    case ShaderFeature::OutputRoughness:
+        flags |= OutputRoughness;
+        break;
+    case ShaderFeature::SurfacePrepass:
+        flags |= SurfacePrepass;
+        break;
+    case ShaderFeature::TransparentSSRPrepass:
+        flags |= TransparentSSRPrepass;
+        break;
     case ShaderFeature::DirectLighting:
         flags |= DirectLighting;
         break;
     case ShaderFeature::IndirectLighting:
         flags |= IndirectLighting;
+        break;
+    case ShaderFeature::ApplySSR:
+        flags |= ApplySSR;
         break;
     default:
         break;

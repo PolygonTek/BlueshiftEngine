@@ -102,6 +102,7 @@ bool ShaderMaterialTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Com
         if (!allowResize) {
             return false;
         }
+
         if (!EnsureBufferCapacity(numMaterials)) {
             return false;
         }
@@ -140,34 +141,19 @@ void ShaderMaterialTable::DestroyBuffer() {
     tableBuffer.bindlessIndex = 0;
 }
 
-static const Texture *GetDefaultMaterialTexture() {
-    if (textureManager.whiteTexture) {
-        return textureManager.whiteTexture.get();
-    }
-    if (textureManager.defaultTexture) {
-        return textureManager.defaultTexture.get();
-    }
-    return nullptr;
-}
-
-static const Texture *ResolveMaterialTexture(const Material *material, ShaderTemplate::StandardProperty standardProperty, const Texture *fallbackTexture) {
+static uint32_t GetMaterialTextureIndex(const Material *material, ShaderTemplate::StandardProperty standardProperty, const Texture *fallbackTexture) {
     if (material) {
         const SharedPtr<Texture> *textureProperty = material->GetPropertyTexture(standardProperty);
         if (textureProperty && *textureProperty) {
-            return textureProperty->get();
+            const RHI::Texture *rhiTexture = (*textureProperty)->GetReadyRHITexture();
+            if (!rhiTexture) {
+                // 준비되지 않은 재질 텍스처는 white 로 대체한다.
+                rhiTexture = textureManager.whiteTexture->GetRHITexture();
+            }
+            return rhiTexture->GetBindlessIndex(RHI::ViewType::SRV);
         }
     }
-    return fallbackTexture;
-}
-
-static uint32_t GetMaterialTextureIndex(const Material *material, ShaderTemplate::StandardProperty standardProperty, const Texture *fallbackTexture) {
-    const Texture *texture = ResolveMaterialTexture(material, standardProperty, fallbackTexture);
-    const RHI::Texture *rhiTexture = texture ? texture->GetReadyRHITexture() : nullptr;
-    if (!rhiTexture) {
-        texture = GetDefaultMaterialTexture();
-        rhiTexture = texture ? texture->GetReadyRHITexture() : nullptr;
-    }
-    return rhiTexture ? rhiTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    return fallbackTexture->GetRHITexture()->GetBindlessIndex(RHI::ViewType::SRV);
 }
 
 static float GetMaterialFactor(const Material *material, ShaderTemplate::StandardProperty standardProperty) {
@@ -187,7 +173,7 @@ static float4 GetMaterialBaseColorFactor(const Material *material) {
         const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::BaseColorFactor);
         if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Color4) {
             const BE1::Color4 color = propertyValue->As<BE1::Color4>();
-            return float4(color.r, color.g, color.b, color.a);
+            return float4(color);
         }
     }
     return float4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -198,7 +184,7 @@ static float3 GetMaterialEmissionColor(const Material *material) {
         const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::EmissionColor);
         if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Color3) {
             const BE1::Color3 color = propertyValue->As<BE1::Color3>();
-            return float3(color.r, color.g, color.b);
+            return float3(color);
         }
     }
     return float3(1.0f, 1.0f, 1.0f);
@@ -240,8 +226,18 @@ static float GetMaterialHeightScale(const Material *material) {
     return DefaultHeightScale;
 }
 
+static BE1::Vec2 GetMaterialTexCoordProperty(const Material *material, ShaderTemplate::StandardProperty standardProperty, const BE1::Vec2 &defaultValue) {
+    if (material) {
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(standardProperty);
+        if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Vec2) {
+            return propertyValue->As<BE1::Vec2>();
+        }
+    }
+    return defaultValue;
+}
+
 void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outShaderMaterial) const {
-    outShaderMaterial.baseColorTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::BaseColorMap, textureManager.defaultTexture.get());
+    outShaderMaterial.baseColorTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::BaseColorMap, textureManager.missingTexture.get());
     outShaderMaterial.normalTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::NormalMap, textureManager.flatNormalTexture.get());
     outShaderMaterial.emissiveTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::EmissiveMap, textureManager.blackTexture.get());
     outShaderMaterial.metallicTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::MetallicMap, textureManager.whiteTexture.get());
@@ -276,9 +272,16 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
         GetMaterialFactor(material, ShaderTemplate::StandardProperty::ClearCoatRoughnessFactor)));
     outShaderMaterial.heightScale = GetMaterialHeightScale(material);
 
+    const BE1::Vec2 tcScale = GetMaterialTexCoordProperty(material, ShaderTemplate::StandardProperty::TcScale, BE1::Vec2(1.0f, 1.0f));
+    const BE1::Vec2 tcTranslation = GetMaterialTexCoordProperty(material, ShaderTemplate::StandardProperty::TcTranslation, BE1::Vec2::zero);
+    outShaderMaterial.packedTexCoordTransform = ShaderPacking::PackFloat4ToRGBA16F(float4(tcScale.x, tcScale.y, tcTranslation.x, tcTranslation.y));
+
     uint32_t flags = 0;
     if (material && material->GetRenderingMode() == Material::RenderingMode::Blend) {
         flags |= ShaderMaterialFlagTransparent;
+    }
+    if (tcScale.x != 1.0f || tcScale.y != 1.0f || tcTranslation.x != 0.0f || tcTranslation.y != 0.0f) {
+        flags |= ShaderMaterialFlagTexCoordTransform;
     }
     outShaderMaterial.flags = flags;
 }

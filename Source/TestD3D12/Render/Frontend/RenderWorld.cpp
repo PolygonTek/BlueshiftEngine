@@ -567,7 +567,7 @@ bool RenderWorld::SubmitQueries(const BE1::PhysBuoyancySurfaceQuery *queries, ui
     for (uint32_t queryIndex = 0; queryIndex < queryCount; ++queryIndex) {
         const BE1::PhysBuoyancySurfaceQuery &sourceQuery = queries[queryIndex];
         OceanSurfaceQueryInput &destinationQuery = oceanSurface.queries[queryIndex];
-        destinationQuery.worldPositionXY = float2(sourceQuery.worldPosition.x, sourceQuery.worldPosition.y);
+        destinationQuery.worldPositionXY = float2(sourceQuery.worldPosition);
         destinationQuery.sampleDiameter = sourceQuery.sampleDiameter;
         destinationQuery.queryId = sourceQuery.queryId;
     }

@@ -257,11 +257,7 @@ bool Bloom::DispatchConvolutionBloomScreenPrepare(RenderBackend &backend) const 
     bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     bloomParams.params0.z = screenMipLevel;
-    bloomParams.params1 = float4(
-        data.fftBloomMappedContentRect.x,
-        data.fftBloomMappedContentRect.y,
-        data.fftBloomMappedContentRect.w,
-        data.fftBloomMappedContentRect.h);
+    bloomParams.params1 = float4(data.fftBloomMappedContentRect);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {
@@ -357,11 +353,7 @@ bool Bloom::DispatchConvolutionBloomResolve(RenderBackend &backend) const {
     bloomParams.inputSize = uint2(fftSize, fftSize);
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params1 = float4(
-        data.fftBloomMappedContentRect.x,
-        data.fftBloomMappedContentRect.y,
-        data.fftBloomMappedContentRect.w,
-        data.fftBloomMappedContentRect.h);
+    bloomParams.params1 = float4(data.fftBloomMappedContentRect);
 
     RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
     if (!bloomConstantBuffer) {

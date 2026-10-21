@@ -3,9 +3,10 @@
 #include "OceanFieldCommon.hlsli"
 #include "../GeometryClipmap.hlsli"
 #include "../CommonBindless.hlsli"
-#include "../CameraPassOutputCommon.hlsli"
+#include "../SurfacePassOutput.hlsli"
 #include "../PBR/BRDFLibrary.hlsli"
 #include "../PBR/SpecularAA.hlsli"
+#include "../SSR/SSRComposite.hlsli"
 
 #define OCEAN_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
@@ -44,15 +45,14 @@ Texture2D<float> sceneDepthTexture : register(t5);
 #include "../Lighting/ShadowLibrary.hlsli"
 
 static const float OceanCascadeLodThreshold = 0.05f;
-static const float2 OceanRefractionHistoryRejectVelocity = float2(2.0f, 2.0f);
 
 struct PSInput {
     float4 position : SV_POSITION;
     float3 worldPosition : TEXCOORD0;
     float2 samplePositionXY : TEXCOORD1;
 #ifdef OUTPUT_VELOCITY
-    float4 currentVelocityPosition : TEXCOORD2;
-    float4 prevVelocityPosition : TEXCOORD3;
+    float4 currUnjitteredClipPos : TEXCOORD2;
+    float4 prevUnjitteredClipPos : TEXCOORD3;
 #endif
 };
 
@@ -106,10 +106,10 @@ float3 SampleOceanReflection(float3 reflectionDir, float roughness) {
     return lerp(float3(0.055f, 0.085f, 0.12f), float3(0.28f, 0.48f, 0.78f), skyGradient);
 }
 
-float2 ProjectOceanWorldPositionToUV(float3 worldPosition) {
-    const float4 clipPosition = mul(cameraConstants.viewProjMatrix, float4(worldPosition, 1.0f));
-    const float2 ndcPosition = clipPosition.xy / max(clipPosition.w, FLT_MIN);
-    return ndcPosition * float2(0.5f, -0.5f) + 0.5f;
+float2 ProjectOceanWorldPositionToUV(float3 worldPos) {
+    const float4 clipPos = mul(cameraConstants.viewProjMatrix, float4(worldPos, 1.0f));
+    const float2 ndc = clipPos.xy / max(clipPos.w, FLT_MIN);
+    return ndc * float2(0.5f, -0.5f) + 0.5f;
 }
 
 uint2 GetScenePixelCoord(float2 uv, uint2 textureSize) {
@@ -121,10 +121,11 @@ float LoadSceneDepth(float2 uv, uint2 textureSize) {
 }
 
 bool IsSceneFarDepth(float depth) {
-    return abs(depth - cameraConstants.ndcFarZ) <= 1.0e-6f;
+    return abs(depth - cameraConstants.depthClearValue) <= 1.0e-6f;
 }
 
-float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float viewDistance, float3 incidentVector, float3 normal, float eta, float3 waterBodyColor, out bool totalInternalReflection) {
+float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float viewDistance, float3 incidentVector, float3 normal, float eta, float3 waterBodyColor, out bool totalInternalReflection, out float refractionContribution) {
+    refractionContribution = 0.0f;
     const uint2 snapshotSize = uint2(oceanSurfaceParams.sceneSnapshotSize);
 
     // 수면 위치를 scene texture 의 texel 중심에 맞춘다.
@@ -194,6 +195,7 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
     const float3 sceneColor = sceneColorTexture.SampleLevel(pointClampSampler, sampleUV, 0.0f).rgb;
     const float absorptionScale = min(waterThickness / oceanSurfaceParams.absorptionDistance, 8.0f);
     const float3 transmittance = pow(oceanSurfaceParams.waterColor, absorptionScale);
+    refractionContribution = saturate(max(transmittance.r, max(transmittance.g, transmittance.b)));
     return sceneColor * transmittance + waterBodyColor * (1.0f - transmittance);
 }
 
@@ -228,14 +230,18 @@ PSInput VSMain(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) {
 
 #ifdef OUTPUT_VELOCITY
     // 이전 displacement texture 는 보존하지 않으므로 우선 카메라 이동에 의한 velocity 만 기록한다.
-    result.currentVelocityPosition = mul(cameraConstants.unjitteredViewProjMatrix, worldPosition4);
-    result.prevVelocityPosition = mul(cameraConstants.prevUnjitteredViewProjMatrix, worldPosition4);
+    result.currUnjitteredClipPos = mul(cameraConstants.unjitteredViewProjMatrix, worldPosition4);
+    result.prevUnjitteredClipPos = mul(cameraConstants.prevUnjitteredViewProjMatrix, worldPosition4);
 #endif
     return result;
 }
 
 [RootSignature(OCEAN_ROOT_SIGNATURE)]
-CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
+#ifdef SURFACE_PREPASS
+SurfacePrepassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
+#else
+SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
+#endif
     const bool foamEnabled = (oceanSurfaceParams.surfaceOptions & OceanSurfaceOptionBitFoamEnabled) != 0u;
     const float3 viewVector = cameraConstants.cameraOrigin - input.worldPosition;
     const float viewDistance = length(viewVector);
@@ -279,21 +285,44 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
 
     float specularRoughness = clamp(oceanSurfaceParams.roughness, MinRoughness, 1.0f);
     if ((cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0u) {
-        specularRoughness = ApplySpecularAA(specularRoughness, ComputeSpecularAAKernelRoughness(normal));
+        specularRoughness = ApplySpecularAA(specularRoughness, ComputeSpecularAAKernelRoughness(geometricNormal, frameConstants.specularAAVariance, frameConstants.specularAALimit));
     }
 
-    // Fresnel 계수로 환경 반사와 선택적인 scene refraction 을 합성한다.
+#ifdef SURFACE_PREPASS
+    SurfacePrepassPSOutput result;
+#if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
+    result.normalRoughness = float4(0.5f, 0.5f, 1.0f, 0.0f);
+#endif
+    #ifdef OUTPUT_NORMAL
+        result.normalRoughness.xy = EncodeUnitVectorOctahedralUNorm(mul((float3x3)cameraConstants.viewRotation, normal));
+    #endif
+    #ifdef OUTPUT_VELOCITY
+        result.velocity = CalcVelocity(input.currUnjitteredClipPos, input.prevUnjitteredClipPos);
+    #endif
+    #ifdef OUTPUT_ROUGHNESS
+        result.normalRoughness.z = specularRoughness;
+    #endif
+    return result;
+#else
+
+    // 공용 SSR radiance 를 환경 반사 fallback 과 합성한 뒤 Fresnel 로 선택적인 scene refraction 과 섞는다.
     const float3 reflectionDir = reflect(-V, normal);
-    const float3 reflection = SampleOceanReflection(reflectionDir, specularRoughness);
+    float3 reflection = SampleOceanReflection(reflectionDir, specularRoughness);
+#ifdef APPLY_SSR
+    if ((cameraConstants.flags & ShaderCameraFlagUseTransparentSSR) != 0u) {
+        reflection = CompositeTransparentSSRRadiance(
+            (uint2)input.position.xy, input.position.z, reflection,
+            cameraConstants.transparentSSRUpsampledReflectionTextureIndex, cameraConstants.transparentSSRDepthTextureIndex);
+    }
+#endif
     const float waterBodyFactor = lerp(0.35f, 1.0f, NdotV);
     const float3 waterBodyColor = oceanSurfaceParams.waterColor * waterBodyFactor;
     float3 transmission = waterBodyColor;
-    bool refractionApplied = false;
+    float refractionContribution = 0.0f;
     if ((oceanSurfaceParams.surfaceOptions & OceanSurfaceOptionBitRefractionEnabled) != 0u) {
         const float eta = isFrontFace ? oceanSurfaceParams.airToWaterEta : oceanSurfaceParams.waterToAirEta;
         bool totalInternalReflection;
-        transmission = SampleOceanRefraction(input.position.xy, input.worldPosition, viewDistance, -V, normal, eta, waterBodyColor, totalInternalReflection);
-        refractionApplied = !totalInternalReflection;
+        transmission = SampleOceanRefraction(input.position.xy, input.worldPosition, viewDistance, -V, normal, eta, waterBodyColor, totalInternalReflection, refractionContribution);
         if (totalInternalReflection) {
             fresnel = 1.0f;
         }
@@ -347,15 +376,24 @@ CameraPassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
 
     color = lerp(color, oceanSurfaceParams.foamColor, foam);
 
-    CameraPassPSOutput result;
+    SurfacePassPSOutput result;
+#if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
+    result.normalRoughness = float4(0.5f, 0.5f, 1.0f, 0.0f);
+#endif
     result.color = float4(max(color, 0.0f), 1.0f);
 
 #ifdef OUTPUT_NORMAL
-    result.normal = EncodeUnitVectorOctahedral(mul((float3x3)cameraConstants.viewRotation, normal));
+    result.normalRoughness.xy = EncodeUnitVectorOctahedralUNorm(mul((float3x3)cameraConstants.viewRotation, normal));
+#endif
+#ifdef OUTPUT_ROUGHNESS
+    result.normalRoughness.z = specularRoughness;
 #endif
 #ifdef OUTPUT_VELOCITY
-    // 이전 ocean field 와 굴절 UV 가 없으므로 굴절 픽셀은 화면 밖으로 reprojection 하여 TAA history 를 사용하지 않는다.
-    result.velocity = refractionApplied ? OceanRefractionHistoryRejectVelocity : CalcVelocity(input.currentVelocityPosition, input.prevVelocityPosition);
+    // 굴절에도 표면 velocity 를 유지해 jitter 를 누적한다. 이전 굴절 UV 는 없으므로
+    // scene refraction 기여도만 별도로 기록하고 TAA 에서 색 변화에 따라 history 비중을 제한한다.
+    result.velocity = CalcVelocity(input.currUnjitteredClipPos, input.prevUnjitteredClipPos);
+    result.taaReactiveMask = saturate(refractionContribution * (1.0f - fresnel) * (1.0f - foam));
 #endif
     return result;
+#endif
 }

@@ -55,8 +55,8 @@ public:
 private:
     void                            OnShaderTemplateReloaded(const ShaderTemplate *shaderTemplate, const BE1::Array<ShaderPropertyInfo> &oldProperties);
     void                            CleanExpiredMaterials();
-    void                            CreateEngineMaterials();
-    void                            DestroyEngineMaterials();
+    void                            CreateDefaultMaterials();
+    void                            DestroyDefaultMaterials();
     void                            RefreshStreamingMaterial(const SharedPtr<Material> &material);
     void                            RegisterStreamingMaterial(const SharedPtr<Material> &material);
     void                            UnregisterStreamingMaterial(Material *material);

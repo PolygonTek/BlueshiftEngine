@@ -1,0 +1,10 @@
+material character {
+    shaderTemplate "Source/TestD3D12/Shaders/Lit"
+
+    properties {
+        _BASECOLOR "0"
+        baseColorFactor "0.32 0.38 0.5 1"
+        metallicFactor "0.3"
+        roughnessFactor "0.2"
+    }
+}

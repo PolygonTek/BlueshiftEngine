@@ -13,32 +13,30 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "ScreenSpaceDepthPyramidResources.h"
+#include "SSRHiZResources.h"
 
-ScreenSpaceDepthPyramidResources::~ScreenSpaceDepthPyramidResources() {
+SSRHiZResources::~SSRHiZResources() {
     Destroy();
 }
 
-void ScreenSpaceDepthPyramidResources::Ensure(uint32_t renderWidth, uint32_t renderHeight, bool needed) {
+bool SSRHiZResources::Ensure(uint32_t renderWidth, uint32_t renderHeight, bool needed) {
     if (!needed || renderWidth == 0 || renderHeight == 0) {
         Destroy();
-        return;
+        return false;
     }
 
-    // newValidWidth, newValidHeight 는 원본 depth 를 2x2 축소한 mip 0 의 실제 데이터 영역이다.
+    // newValidWidth, newValidHeight 는 원본 depth 를 절반으로 축소한 hi-z mip 0 의 실제 데이터 영역이다.
     const uint32_t newValidWidth = BE1::Max((renderWidth + 1) >> 1, 1u);
     const uint32_t newValidHeight = BE1::Max((renderHeight + 1) >> 1, 1u);
 
-    // pyramidWidth, pyramidHeight 는 valid 영역을 좌상단에 포함하도록 power-of-two 로 올린 텍스처 할당 크기다.
-    const uint32_t pyramidWidth = BE1::Math::RoundUpPowerOfTwo(newValidWidth);
-    const uint32_t pyramidHeight = BE1::Math::RoundUpPowerOfTwo(newValidHeight);
+    // ssrHiZWidth, ssrHiZHeight 는 valid 영역을 좌상단에 포함하도록 power-of-two 로 올린 텍스처 할당 크기다.
+    const uint32_t ssrHiZWidth = BE1::Math::RoundUpPowerOfTwo(newValidWidth);
+    const uint32_t ssrHiZHeight = BE1::Math::RoundUpPowerOfTwo(newValidHeight);
 
-    if (texture &&
-        texture->GetWidth() == pyramidWidth &&
-        texture->GetHeight() == pyramidHeight) {
+    if (texture && texture->GetWidth() == ssrHiZWidth && texture->GetHeight() == ssrHiZHeight) {
         validWidth = newValidWidth;
         validHeight = newValidHeight;
-        return;
+        return true;
     }
 
     Destroy();
@@ -46,15 +44,15 @@ void ScreenSpaceDepthPyramidResources::Ensure(uint32_t renderWidth, uint32_t ren
     validWidth = newValidWidth;
     validHeight = newValidHeight;
 
-    CreateTexture(pyramidWidth, pyramidHeight);
+    return CreateTexture(ssrHiZWidth, ssrHiZHeight);
 }
 
-bool ScreenSpaceDepthPyramidResources::CreateTexture(uint32_t width, uint32_t height) {
+bool SSRHiZResources::CreateTexture(uint32_t width, uint32_t height) {
     uint32_t levelCount = 0;
     uint32_t mipWidth = width;
     uint32_t mipHeight = height;
 
-    while (levelCount < RenderScreenSpaceDepthPyramidMaxLevelCount) {
+    while (levelCount < RenderSSRHiZMaxLevelCount) {
         mipWidths[levelCount] = mipWidth;
         mipHeights[levelCount] = mipHeight;
         levelCount++;
@@ -73,24 +71,24 @@ bool ScreenSpaceDepthPyramidResources::CreateTexture(uint32_t width, uint32_t he
 
     texture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!texture) {
-        BE_WARNLOG("ScreenSpaceDepthPyramidResources::CreateTexture: failed to create depth pyramid texture\n");
+        BE_WARNLOG("SSRHiZResources::CreateTexture: failed to create SSRHiZ texture\n");
         Destroy();
         return false;
     }
 
-    RHI::renderer->SetName(texture, "ScreenSpaceDepthPyramidResources::texture");
+    RHI::renderer->SetName(texture, "SSRHiZResources::texture");
 
     for (uint32_t mipLevel = 0; mipLevel < levelCount; ++mipLevel) {
         mipSRVs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
         if (!mipSRVs[mipLevel].IsValid()) {
-            BE_WARNLOG("ScreenSpaceDepthPyramidResources::CreateTexture: failed to create mip %i SRV\n", mipLevel);
+            BE_WARNLOG("SSRHiZResources::CreateTexture: failed to create mip %i SRV\n", mipLevel);
             Destroy();
             return false;
         }
 
         mipUAVs[mipLevel] = RHI::renderer->CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
         if (!mipUAVs[mipLevel].IsValid()) {
-            BE_WARNLOG("ScreenSpaceDepthPyramidResources::CreateTexture: failed to create mip %i UAV\n", mipLevel);
+            BE_WARNLOG("SSRHiZResources::CreateTexture: failed to create mip %i UAV\n", mipLevel);
             Destroy();
             return false;
         }
@@ -100,13 +98,13 @@ bool ScreenSpaceDepthPyramidResources::CreateTexture(uint32_t width, uint32_t he
     return true;
 }
 
-void ScreenSpaceDepthPyramidResources::Destroy() {
+void SSRHiZResources::Destroy() {
     if (texture) {
         RHI::renderer->DestroyTexture(texture);
         texture = nullptr;
     }
 
-    for (uint32_t mipLevel = 0; mipLevel < RenderScreenSpaceDepthPyramidMaxLevelCount; ++mipLevel) {
+    for (uint32_t mipLevel = 0; mipLevel < RenderSSRHiZMaxLevelCount; ++mipLevel) {
         mipSRVs[mipLevel] = RHI::ViewID::InvalidID;
         mipUAVs[mipLevel] = RHI::ViewID::InvalidID;
         mipWidths[mipLevel] = 0;

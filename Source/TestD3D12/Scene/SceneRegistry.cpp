@@ -17,8 +17,9 @@
 #include "Scene/SceneMatrix.h"
 #include "Scene/SceneDebugDraw.h"
 #include "Scene/SceneOcean.h"
+#include "Scene/SceneReflection.h"
 #include "Scene/SceneSkinnedMesh.h"
-#include "Scene/SceneStaticMesh.h"
+#include "Scene/SceneShadows.h"
 #include "Scene/SceneRegistry.h"
 
 using SceneFactory = Scene *(*)();
@@ -32,16 +33,20 @@ static Scene *CreateSceneMatrix() {
     return new SceneMatrix;
 }
 
-static Scene *CreateSceneStaticMesh() {
-    return new SceneStaticMesh;
+static Scene *CreateSceneShadows() {
+    return new SceneShadows;
 }
 
-static Scene *CreateSceneSkinnedMesh() {
-    return new SceneSkinnedMesh;
+static Scene *CreateSceneReflection() {
+    return new SceneReflection;
 }
 
 static Scene *CreateSceneMaterialBall() {
     return new SceneMaterialBall;
+}
+
+static Scene *CreateSceneSkinnedMesh() {
+    return new SceneSkinnedMesh;
 }
 
 static Scene *CreateSceneOcean() {
@@ -54,9 +59,10 @@ static Scene *CreateSceneDebugDraw() {
 
 static constexpr SceneEntry SceneEntries[] = {
     { "Matrix", CreateSceneMatrix },
-    { "Static Mesh", CreateSceneStaticMesh },
-    { "Skinned Mesh", CreateSceneSkinnedMesh },
+    { "Shadows", CreateSceneShadows },
+    { "Reflection", CreateSceneReflection },
     { "Material Ball", CreateSceneMaterialBall },
+    { "Skinned Mesh", CreateSceneSkinnedMesh },
     { "Ocean", CreateSceneOcean },
     { "Debug Draw", CreateSceneDebugDraw },
 };

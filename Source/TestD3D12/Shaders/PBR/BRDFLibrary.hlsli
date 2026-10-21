@@ -94,10 +94,18 @@ float D_Beckmann(float NdotH, float linearRoughness) {
 }
 
 // Trowbridge-Reitz aka GGX
+// NdotH 는 [0, 1], linearRoughness 는 MinLinearRoughness 이상이어야 한다.
 float D_GGX(float NdotH, float linearRoughness) {
+#if 0
     const float a2 = linearRoughness * linearRoughness;
     const float denom = NdotH * NdotH * (a2 - 1.0f) + 1.0f;
     return a2 * INV_PI / (denom * denom + 1e-7f);
+#else
+    const float a = NdotH * linearRoughness;
+    const float denom = (1.0f - NdotH * NdotH) + a * a;
+    const float k = linearRoughness / denom;
+    return k * k * INV_PI;
+#endif
 }
 
 // Anisotropic GGX

@@ -671,7 +671,10 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
 
         // 이미지 데이터를 업로드 버퍼에 write
         UINT8 *mappedPtr = nullptr;
-        uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
+        if (FAILED(uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr)))) {
+            uploadBuffer->Release();
+            return false;
+        }
 
         for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
             for (int srcMipLevel = 0; srcMipLevel < request.mipCount; ++srcMipLevel) {

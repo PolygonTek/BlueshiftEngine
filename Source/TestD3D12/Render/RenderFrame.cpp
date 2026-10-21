@@ -757,7 +757,7 @@ bool RenderFrame::CmdRenderWork(RenderWork *renderWork) {
     return true;
 }
 
-void RenderFrame::CmdBeginContext(RenderContext *context, bool gpuTiming, bool textureStreamingFeedback, bool swapChainOutput) {
+void RenderFrame::CmdBeginContext(RenderContext *context, bool useGpuTiming, bool useTextureStreamingFeedback, bool useSwapChainOutput) {
     BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)GetCommandBuffer(sizeof(BeginContextRenderCommand));
     if (!cmd) {
         return;
@@ -767,9 +767,9 @@ void RenderFrame::CmdBeginContext(RenderContext *context, bool gpuTiming, bool t
     cmd->renderContext = context;
     cmd->imagePSO = ShaderPipeline::GetReadyPSO(context->imagePipeline);
     cmd->hdrOutputPSO = ShaderPipeline::GetReadyPSO(context->hdrOutputPipeline);
-    cmd->gpuTiming = gpuTiming;
-    cmd->textureStreamingFeedback = textureStreamingFeedback;
-    cmd->swapChainOutput = swapChainOutput;
+    cmd->useGpuTiming = useGpuTiming;
+    cmd->useTextureStreamingFeedback = useTextureStreamingFeedback;
+    cmd->useSwapChainOutput = useSwapChainOutput;
 }
 
 void RenderFrame::CmdDrawCamera(const FrameCamera *camera) {

@@ -48,7 +48,7 @@ public:
 
     void                            RenameMesh(Mesh *mesh, const BE1::Str &newName);
 
-    SharedPtr<Mesh>                 defaultMesh;
+    SharedPtr<Mesh>                 missingMesh;
     SharedPtr<Mesh>                 defaultQuadMesh;
     SharedPtr<Mesh>                 defaultPlaneMesh;
     SharedPtr<Mesh>                 defaultBoxMesh;
@@ -59,8 +59,8 @@ public:
 
 private:
     void                            CleanExpiredMeshes();
-    void                            CreateEngineMeshes();
-    void                            DestroyEngineMeshes();
+    void                            CreateDefaultMeshes();
+    void                            DestroyDefaultMeshes();
 
     BE1::StrIHashMap<WeakPtr<Mesh>> meshHashMap;
     int                             expiredMeshHashMapCursor = 0;

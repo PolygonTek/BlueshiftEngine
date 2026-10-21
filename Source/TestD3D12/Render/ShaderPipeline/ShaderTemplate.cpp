@@ -50,7 +50,9 @@ static constexpr const char *StandardPropertyNames[] = {
     "skyRightMap",
     "skyLeftMap",
     "skyTopMap",
-    "skyDownMap"
+    "skyDownMap",
+    "tcScale",
+    "tcTranslation"
 };
 static_assert(COUNT_OF(StandardPropertyNames) == static_cast<int>(ShaderTemplate::StandardProperty::Count));
 
@@ -610,9 +612,13 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
         { "gpuSkinningWeight4", ShaderFeature::GpuSkinningWeight4 },
         { "gpuSkinningWeight8", ShaderFeature::GpuSkinningWeight8 },
         { "outputNormal",       ShaderFeature::OutputNormal },
+        { "outputRoughness",    ShaderFeature::OutputRoughness },
         { "outputVelocity",     ShaderFeature::OutputVelocity },
+        { "surfacePrepass",     ShaderFeature::SurfacePrepass },
+        { "transparentSSRPrepass", ShaderFeature::TransparentSSRPrepass },
         { "directLighting",     ShaderFeature::DirectLighting },
-        { "indirectLighting",   ShaderFeature::IndirectLighting }
+        { "indirectLighting",   ShaderFeature::IndirectLighting },
+        { "applySSR",           ShaderFeature::ApplySSR }
     };
 
     for (const FeatureName &featureName : FeatureNames) {

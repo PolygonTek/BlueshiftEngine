@@ -322,45 +322,35 @@ void RHI::Renderer::InitDefaultStates() {
     bs->renderTargets[0].srcFactorColor = RHI::Blend::SrcAlpha;
     bs->renderTargets[0].destFactorColor = RHI::Blend::InvSrcAlpha;
     bs->renderTargets[0].blendOpColor = RHI::BlendOp::Add;
-    bs->renderTargets[0].srcFactorAlpha = RHI::Blend::One;
-    bs->renderTargets[0].destFactorAlpha = RHI::Blend::Zero;
-    bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
+    bs->renderTargets[0].colorWriteMask = RHI::ColorWriteMask::Red | RHI::ColorWriteMask::Green | RHI::ColorWriteMask::Blue;
 
     bs = &blendStates[to_int(RHI::BlendStateType::AddBlend)];
     bs->renderTargets[0].blendEnabled = true;
     bs->renderTargets[0].srcFactorColor = RHI::Blend::SrcAlpha;
     bs->renderTargets[0].destFactorColor = RHI::Blend::One;
     bs->renderTargets[0].blendOpColor = RHI::BlendOp::Add;
-    bs->renderTargets[0].srcFactorAlpha = RHI::Blend::One;
-    bs->renderTargets[0].destFactorAlpha = RHI::Blend::Zero;
-    bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
+    bs->renderTargets[0].colorWriteMask = RHI::ColorWriteMask::Red | RHI::ColorWriteMask::Green | RHI::ColorWriteMask::Blue;
 
     bs = &blendStates[to_int(RHI::BlendStateType::Add)];
     bs->renderTargets[0].blendEnabled = true;
     bs->renderTargets[0].srcFactorColor = RHI::Blend::One;
     bs->renderTargets[0].destFactorColor = RHI::Blend::One;
     bs->renderTargets[0].blendOpColor = RHI::BlendOp::Add;
-    bs->renderTargets[0].srcFactorAlpha = RHI::Blend::One;
-    bs->renderTargets[0].destFactorAlpha = RHI::Blend::Zero;
-    bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
+    bs->renderTargets[0].colorWriteMask = RHI::ColorWriteMask::Red | RHI::ColorWriteMask::Green | RHI::ColorWriteMask::Blue;
 
     bs = &blendStates[to_int(RHI::BlendStateType::Modulate)];
     bs->renderTargets[0].blendEnabled = true;
     bs->renderTargets[0].srcFactorColor = RHI::Blend::DestColor;
     bs->renderTargets[0].destFactorColor = RHI::Blend::Zero;
     bs->renderTargets[0].blendOpColor = RHI::BlendOp::Add;
-    bs->renderTargets[0].srcFactorAlpha = RHI::Blend::One;
-    bs->renderTargets[0].destFactorAlpha = RHI::Blend::Zero;
-    bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
+    bs->renderTargets[0].colorWriteMask = RHI::ColorWriteMask::Red | RHI::ColorWriteMask::Green | RHI::ColorWriteMask::Blue;
 
     bs = &blendStates[to_int(RHI::BlendStateType::Modulate2X)];
     bs->renderTargets[0].blendEnabled = true;
     bs->renderTargets[0].srcFactorColor = RHI::Blend::DestColor;
     bs->renderTargets[0].destFactorColor = RHI::Blend::SrcColor;
     bs->renderTargets[0].blendOpColor = RHI::BlendOp::Add;
-    bs->renderTargets[0].srcFactorAlpha = RHI::Blend::One;
-    bs->renderTargets[0].destFactorAlpha = RHI::Blend::Zero;
-    bs->renderTargets[0].blendOpAlpha = RHI::BlendOp::Add;
+    bs->renderTargets[0].colorWriteMask = RHI::ColorWriteMask::Red | RHI::ColorWriteMask::Green | RHI::ColorWriteMask::Blue;
 }
 
 void RHI::Renderer::FreeDefaultStates() {

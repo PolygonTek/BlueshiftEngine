@@ -36,11 +36,11 @@ void ShaderTemplateManager::Init() {
     globalDefineModCount = 0;
     lastInvalidatedGlobalDefineModCount = 0;
 
-    CreateEngineShaderTemplates();
+    CreateDefaultShaderTemplates();
 }
 
 void ShaderTemplateManager::Shutdown() {
-    DestroyEngineShaderTemplates();
+    DestroyDefaultShaderTemplates();
 
     shaderTemplateHashMap.Clear();
     ShaderTemplate::reloaded.Clear();
@@ -353,59 +353,59 @@ void ShaderTemplateManager::CleanExpiredShaderTemplates() {
     }
 }
 
-void ShaderTemplateManager::CreateEngineShaderTemplates() {
+void ShaderTemplateManager::CreateDefaultShaderTemplates() {
     fullscreenImageShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/FullscreenImage");
     if (!fullscreenImageShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load fullscreen image shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load fullscreen image shader template");
     }
 
     fullscreenImageLinearShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/FullscreenImageLinear");
     if (!fullscreenImageLinearShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load fullscreen linear image shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load fullscreen linear image shader template");
     }
 
     sceneSnapshotDownsampleShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/SceneSnapshotDownsample");
     if (!sceneSnapshotDownsampleShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load scene snapshot downsample shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load scene snapshot downsample shader template");
     }
 
     hdr10OutputShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/HDROutput/HDR10Output");
     if (!hdr10OutputShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load HDR10 output shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load HDR10 output shader template");
     }
 
     displayP3EDROutputShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/HDROutput/DisplayP3EDROutput");
     if (!displayP3EDROutputShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load Display P3 EDR output shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load Display P3 EDR output shader template");
     }
 
     debugDrawShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DebugDraw");
     if (!debugDrawShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load debug draw shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load debug draw shader template");
     }
 
-    depthShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Depth");
-    if (!depthShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load depth shader template");
+    depthPrepassShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DepthPrepass");
+    if (!depthPrepassShaderTemplate) {
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load depth prepass shader template");
     }
 
     shadowDepthShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/ShadowDepth");
     if (!shadowDepthShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load shadow depth shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load shadow depth shader template");
     }
 
     unlitShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Unlit");
     if (!unlitShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load unlit shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load unlit shader template");
     }
 
     litShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Lit");
     if (!litShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateEngineShaderTemplates: failed to load lit shader template");
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load lit shader template");
     }
 }
 
-void ShaderTemplateManager::DestroyEngineShaderTemplates() {
+void ShaderTemplateManager::DestroyDefaultShaderTemplates() {
     if (fullscreenImageShaderTemplate) {
         fullscreenImageShaderTemplate.reset();
     }
@@ -424,8 +424,8 @@ void ShaderTemplateManager::DestroyEngineShaderTemplates() {
     if (debugDrawShaderTemplate) {
         debugDrawShaderTemplate.reset();
     }
-    if (depthShaderTemplate) {
-        depthShaderTemplate.reset();
+    if (depthPrepassShaderTemplate) {
+        depthPrepassShaderTemplate.reset();
     }
     if (shadowDepthShaderTemplate) {
         shadowDepthShaderTemplate.reset();

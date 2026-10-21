@@ -19,7 +19,7 @@
 
 class Mesh;
 
-class SceneStaticMesh : public Scene {
+class SceneShadows : public Scene {
 public:
     void                        Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) override;
     void                        Shutdown() override;

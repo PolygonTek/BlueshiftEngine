@@ -31,7 +31,8 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     this->renderWorld = renderWorld;
     this->physicsWorld = physicsWorld;
 
-    renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+    //renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+    renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
 
     app.SetCameraPitchYaw(30.0f, 0.0f);
     app.SetCameraDistance(104.0f);
@@ -79,6 +80,18 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
         return;
     }
 
+    characterMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/character.material");
+    if (!characterMaterial || characterMaterial == materialManager.defaultUnlitMaterial) {
+        BE_WARNLOG("SceneSkinnedMesh::Init: failed to load the character material");
+        characterMaterial = materialManager.whiteLitMaterial;
+    }
+
+    groundMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/ground.material");
+    if (!groundMaterial || groundMaterial == materialManager.defaultUnlitMaterial) {
+        BE_WARNLOG("SceneSkinnedMesh::Init: failed to load the ground material");
+        groundMaterial = materialManager.whiteLitMaterial;
+    }
+
     if (!InitGameObjects(32, 32)) {
         return;
     }
@@ -98,7 +111,9 @@ void SceneSkinnedMesh::Shutdown() {
     directionalLight.renderLightHandle = -1;
     envLightAdded = false;
     gameObjects.Clear();
+    characterMaterial.reset();
     groundMeshInstance.reset();
+    groundMaterial.reset();
 
     for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
         meshes[meshIndex].reset();
@@ -158,7 +173,7 @@ bool SceneSkinnedMesh::LoadCharacter() {
     }
 
     for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
-        if (!meshes[meshIndex] || !meshes[meshIndex]->IsReady() || meshes[meshIndex] == meshManager.defaultMesh ||
+        if (!meshes[meshIndex] || !meshes[meshIndex]->IsReady() || meshes[meshIndex] == meshManager.missingMesh ||
             !meshes[meshIndex]->IsCompatibleSkeleton(skeleton.get())) {
             BE_WARNLOG("SceneSkinnedMesh::LoadCharacter: YBot mesh, skeleton, and animation hierarchies do not match");
             return false;
@@ -218,7 +233,7 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
     desc.flags = RenderObject::Flag::CastShadows;
     desc.skeleton = skeleton;
     desc.materials.SetCount(1);
-    desc.materials[0] = materialManager.whiteLitMaterial;
+    desc.materials[0] = characterMaterial;
 
     bool evaluatedAnims[AnimCount] = {};
     for (int y = 0; y < objectCountY; ++y) {
@@ -265,21 +280,24 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
 }
 
 void SceneSkinnedMesh::InitGround() {
-    // Extend one object spacing beyond the outermost character centers on each side.
     const float sizeX = ObjectSpacing * (objectCountX + 1);
     const float sizeY = ObjectSpacing * (objectCountY + 1);
     const BE1::AABB &quadAABB = groundMeshInstance->GetAABB();
     const BE1::Vec3 quadSize = quadAABB[1] - quadAABB[0];
 
+    // Keep the ground texture density fixed when the character grid changes the plane dimensions.
+    if (groundMaterial != materialManager.whiteLitMaterial &&
+        !groundMaterial->SetPropertyValue("tcScale", BE1::Vec2(sizeY / GroundTextureTileSize, sizeX / GroundTextureTileSize))) {
+        BE_WARNLOG("SceneSkinnedMesh::InitGround: failed to update the ground texture coordinate scale");
+    }
+
     RenderObject::Desc desc;
     desc.flags = RenderObject::Flag::ReceiveShadows;
-    // The engine quad lies in YZ; rotate it back onto XY with its normal pointing up.
-    desc.worldMatrix.SetTRS(BE1::Vec3(characterOffset.x, characterOffset.y, groundHeight),
-        BE1::Angles(0.0f, -90.0f, 0.0f).ToMat3(), BE1::Vec3(1.0f, sizeY / quadSize.y, sizeX / quadSize.z));
+    desc.worldMatrix.SetTRS(BE1::Vec3(characterOffset.x, characterOffset.y, groundHeight), BE1::Angles(0.0f, -90.0f, 0.0f).ToMat3(), BE1::Vec3(1.0f, sizeY / quadSize.y, sizeX / quadSize.z));
     desc.meshInstance = groundMeshInstance;
     desc.aabb = quadAABB;
     desc.materials.SetCount(1);
-    desc.materials[0] = materialManager.whiteLitMaterial;
+    desc.materials[0] = groundMaterial;
     renderWorld->AddRenderObject(desc);
 }
 

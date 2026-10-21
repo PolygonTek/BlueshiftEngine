@@ -1,4 +1,4 @@
-#include "ShaderInterop.h"
+#include "../ShaderInterop.h"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), UAV(u0), UAV(u1)), " \
@@ -8,23 +8,24 @@ cbuffer MSAAResolveDepthNormalCB : register(b0) {
     MSAAResolveDepthParams msaaResolveDepthParams;
 }
 
-Texture2DMS<float> inputDepthTexture : register(t0);
-Texture2DMS<float2> inputNormalTexture : register(t1);
-RWTexture2D<float> outputDepthTexture : register(u0);
-RWTexture2D<float2> outputNormalTexture : register(u1);
+Texture2DMS<float> msDepthTexture : register(t0);
+Texture2DMS<float4> msNormalRoughnessTexture : register(t1);
+RWTexture2D<float> resolvedDepthTexture : register(u0);
+RWTexture2D<float4> resolvedNormalRoughnessTexture : register(u1);
 
+// 서브 샘플 중 가장 가까운 깊이 값과 그 서브 샘플 인덱스를 가져온다.
 float LoadResolvedDepth(uint2 pixelCoord, out uint closestSampleIndex) {
     uint width;
     uint height;
     uint sampleCount;
-    inputDepthTexture.GetDimensions(width, height, sampleCount);
+    msDepthTexture.GetDimensions(width, height, sampleCount);
 
     closestSampleIndex = 0;
-    float closestDepth = inputDepthTexture.Load(int2(pixelCoord), 0);
+    float closestDepth = msDepthTexture.Load(int2(pixelCoord), 0);
 
     for (uint sampleIndex = 1; sampleIndex < sampleCount; ++sampleIndex) {
-        const float sampleDepth = inputDepthTexture.Load(int2(pixelCoord), sampleIndex);
-        const bool isCloser = msaaResolveDepthParams.useMinDepth != 0 ? sampleDepth < closestDepth : sampleDepth > closestDepth;
+        const float sampleDepth = msDepthTexture.Load(int2(pixelCoord), sampleIndex);
+        const bool isCloser = msaaResolveDepthParams.reverseZ != 0 ? sampleDepth > closestDepth : sampleDepth < closestDepth;
         if (isCloser) {
             closestDepth = sampleDepth;
             closestSampleIndex = sampleIndex;
@@ -42,6 +43,6 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     uint closestSampleIndex;
-    outputDepthTexture[pixelCoord] = LoadResolvedDepth(pixelCoord, closestSampleIndex);
-    outputNormalTexture[pixelCoord] = inputNormalTexture.Load(int2(pixelCoord), closestSampleIndex);
+    resolvedDepthTexture[pixelCoord] = LoadResolvedDepth(pixelCoord, closestSampleIndex);
+    resolvedNormalRoughnessTexture[pixelCoord] = msNormalRoughnessTexture.Load(int2(pixelCoord), closestSampleIndex);
 }

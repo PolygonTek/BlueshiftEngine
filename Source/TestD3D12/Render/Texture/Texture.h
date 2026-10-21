@@ -192,7 +192,7 @@ private:
 
     static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState);
 
-    void                            CreateDefaultTexture(int size, Texture::Flag flags = Texture::Flag::None);
+    void                            CreateMissingTexture(int size, Texture::Flag flags = Texture::Flag::None);
     void                            CreateColorTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);
     void                            CreateFlatNormalTexture(int size, Texture::Flag flags = Texture::Flag::None);
 

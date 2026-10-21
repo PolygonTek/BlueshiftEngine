@@ -40,9 +40,9 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     directionalLight.flags = RenderLight::Flag::CastShadows;
     directionalLight.linearColor = BE1::Color3::white;
     directionalLight.intensity = 5.0f;
-    directionalLightElevation = 60;
     directionalLightEnabled = true;
-    directionalLightAzimuth = 185;
+    directionalLightElevation = 48;
+    directionalLightAzimuth = 190;
     UpdateDirectionalLightDirection();
     directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
 

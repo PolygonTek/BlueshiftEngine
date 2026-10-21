@@ -39,7 +39,10 @@ extern BE1::CVar    r_hdrPeakNits;
 extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_snapshotColorHalfRes;
 extern BE1::CVar    r_specularEnergyCompensation2;
+
 extern BE1::CVar    r_specularAA;
+extern BE1::CVar    r_specularAAVariance;
+extern BE1::CVar    r_specularAALimit;
 
 extern BE1::CVar    r_meshLOD;
 extern BE1::CVar    r_meshLODPixelError2;
@@ -108,12 +111,17 @@ extern BE1::CVar    r_gtaoThinOccluderCompensation;
 extern BE1::CVar    r_gtaoDepthMipSamplingOffset;
 
 extern BE1::CVar    r_ssr;
+extern BE1::CVar    r_ssrResolutionMode;
+extern BE1::CVar    r_ssrTransparent;
 extern BE1::CVar    r_ssrDebug;
-extern BE1::CVar    r_ssrMaxDistance;
-extern BE1::CVar    r_ssrThickness;
-extern BE1::CVar    r_ssrMaxIterations;
-extern BE1::CVar    r_ssrBinaryRefinementSteps;
-extern BE1::CVar    r_ssrNormalBias;
+extern BE1::CVar    r_ssrDebugTransparent;
+extern BE1::CVar    r_ssrTraceMaxIterations;
+extern BE1::CVar    r_ssrTraceThickness;
+extern BE1::CVar    r_ssrRayRoughnessScale;
+extern BE1::CVar    r_ssrScreenEdgeFade;
+extern BE1::CVar    r_ssrRoughnessFadeStart;
+extern BE1::CVar    r_ssrRoughnessFadeEnd;
+extern BE1::CVar    r_ssrTemporalHistoryWeight;
 
 extern BE1::CVar    r_textureFilter;
 extern BE1::CVar    r_textureMaxAnisotropy;

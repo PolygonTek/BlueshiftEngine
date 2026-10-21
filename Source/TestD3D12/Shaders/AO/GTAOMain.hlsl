@@ -21,7 +21,7 @@ cbuffer CameraCB : register(b1) {
 }
 
 Texture2D<float> inputDepthTexture : register(t0);
-Texture2D<float2> inputNormalTexture : register(t1);
+Texture2D<float4> inputNormalRoughnessTexture : register(t1);
 Texture2D<float> prefilteredDepthTexture : register(t2);
 RWTexture2D<float> outputAOTexture : register(u0);
 RWTexture2D<float> outputPackedEdgesTexture : register(u1);
@@ -42,8 +42,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         return;
     }
 
-    const uint2 inputCoord = GTAOSelectInputCoord(pixelCoord, gtaoMainParams.resolutionScale, gtaoMainParams.inputSize, gtaoMainParams.farPlaneDeviceDepth, inputDepthTexture);
-    const float3 viewNormal = DecodeUnitVectorOctahedral(inputNormalTexture.Load(int3(inputCoord, 0)));
+    const uint2 inputCoord = GTAOSelectInputCoord(pixelCoord, gtaoMainParams.resolutionScale, gtaoMainParams.inputSize, gtaoMainParams.clearDepth, inputDepthTexture);
+    const float3 viewNormal = DecodeUnitVectorOctahedralUNorm(inputNormalRoughnessTexture.Load(int3(inputCoord, 0)).xy);
     float packedEdges;
     const float visibility = GTAOEvaluateVisibility(pixelCoord, viewNormal, gtaoMainParams, GTAO_SLICE_COUNT, GTAO_STEPS_PER_SLICE, cameraConstants, prefilteredDepthTexture, pointClampSampler, packedEdges);
     outputAOTexture[pixelCoord] = visibility;

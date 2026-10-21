@@ -30,11 +30,7 @@ static RHI::Texture *GetReadyMaterialRHITexture(const Material *material, Shader
 static bool BindTextureProperty(RHI::CommandList *commandList, uint32_t shaderRegister, const Material *material, ShaderTemplate::StandardProperty standardProperty) {
     RHI::Texture *texture = GetReadyMaterialRHITexture(material, standardProperty);
     if (!texture) {
-        texture = textureManager.defaultTexture ? textureManager.defaultTexture->GetReadyRHITexture() : nullptr;
-    }
-
-    if (!texture) {
-        return false;
+        texture = textureManager.missingTexture->GetRHITexture();
     }
 
     if (texture->type != RHI::TextureType::Texture2D) {

@@ -140,7 +140,7 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
         case SpectrumModel::Phillips: {
             OceanPhillipsInitialSpectrumParams params = {};
             params.spectrumScale = simulationSettings.phillips.spectrumScale;
-            params.windDirection = float2(simulationSettings.windDirection.x, simulationSettings.windDirection.y);
+            params.windDirection = float2(simulationSettings.windDirection);
             params.windSpeed = simulationSettings.windSpeed;
             params.gravity = simulationSettings.gravity;
             params.smallWaveDamping = simulationSettings.smallWaveDamping;
@@ -153,7 +153,7 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
         case SpectrumModel::TMA: {
             OceanTMAInitialSpectrumParams params = {};
             params.spectrumScale = simulationSettings.tma.spectrumScale;
-            params.windDirection = float2(simulationSettings.windDirection.x, simulationSettings.windDirection.y);
+            params.windDirection = float2(simulationSettings.windDirection);
             params.windSpeed = simulationSettings.windSpeed;
             params.gravity = simulationSettings.gravity;
             params.smallWaveDamping = simulationSettings.smallWaveDamping;

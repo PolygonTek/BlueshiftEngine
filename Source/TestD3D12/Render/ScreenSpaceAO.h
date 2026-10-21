@@ -36,13 +36,13 @@ public:
     void                            TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const;
 
     void                            UpdateFramePSOs(const RenderFrameSettings &settings);
-    static bool                     HasRequiredResources(const FrameScreenSpaceAO &data);
+    static bool                     HasRequiredResources(const FrameScreenSpaceAO &data, const RenderFrameSettings &settings);
 
-                                    // Requires successful HasRequiredResources() and resources prepared for these settings.
-    bool                            PrepareDispatch(const FrameScreenSpaceAO &data, const RenderFrameSettings &settings, DispatchParams &params) const;
+                                    // 필요한 PSO 가 준비됐는지 확인하고 설정에 맞는 실행 파라미터를 구성한다.
+    bool                            PrepareDispatchParams(const RenderFrameSettings &settings, DispatchParams &params) const;
 
-                                    // Requires successful PrepareDispatch() and ready single-sample inputs.
-                                    // Inputs and scratch resources enter and leave in ShaderResource state.
+                                    // 동일한 설정으로 HasRequiredResources() 와 PrepareDispatchParams() 가 성공하고, 단일 샘플 입력이 준비되어 있어야 한다.
+                                    // 입력 및 임시 리소스는 호출 전후에 ShaderResource 상태여야 한다.
     void                            Dispatch(RenderBackend &backend, const DispatchParams &params) const;
     bool                            DispatchDebugPreview(RenderBackend &backend) const;
 

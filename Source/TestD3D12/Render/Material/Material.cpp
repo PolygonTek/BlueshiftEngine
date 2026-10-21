@@ -236,10 +236,10 @@ static Texture::Flag GetTextureFlags(const ShaderPropertyInfo &propertyInfo) {
 
 static SharedPtr<Texture> GetFallbackTexture(const ShaderPropertyInfo &propertyInfo) {
     if (propertyInfo.IsNormal()) {
-        return textureManager.flatNormalTexture ? textureManager.flatNormalTexture : textureManager.defaultTexture;
+        return textureManager.flatNormalTexture;
     }
 
-    return textureManager.whiteTexture ? textureManager.whiteTexture : textureManager.defaultTexture;
+    return textureManager.whiteTexture;
 }
 
 void Material::UpdateSampler() {
@@ -408,7 +408,9 @@ ShaderPipeline *Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet
 
     GraphicsPipelineDesc graphicsPipelineDesc = baseGraphicsPipelineDesc;
     graphicsPipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseGraphicsPipelineDesc.rasterizerStateType, internalData.cullMode);
-    graphicsPipelineDesc.blendStateType = internalData.renderingMode == RenderingMode::Blend ? internalData.blendType : RHI::BlendStateType::Disabled;
+    // Surface prepass records the nearest receiver's attributes without material blending.
+    const bool useMaterialBlending = internalData.renderingMode == RenderingMode::Blend && !featureSet.HasFeature(ShaderFeature::SurfacePrepass);
+    graphicsPipelineDesc.blendStateType = useMaterialBlending ? internalData.blendType : RHI::BlendStateType::Disabled;
 
     return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, async).get();
 }

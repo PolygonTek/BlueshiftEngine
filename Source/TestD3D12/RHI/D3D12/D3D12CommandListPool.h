@@ -47,6 +47,7 @@ public:
     void                            Shutdown();
 
     D3D12RootBindingData *          GetRootBindingData() const { return rootBindingData; }
+    void                            SetRootBindingData(D3D12RootBindingData *data) { rootBindingData = data; }
 
     D3D12_COMMAND_LIST_TYPE         GetCommandListType() const { return commandListType; }
 

@@ -39,11 +39,59 @@ struct ShadingParams {
 #endif
 };
 
+struct SurfacePrepassParams {
+    float3 normal;
+    float roughness;
+};
+
 // 저장된 두 성분으로 tangent space normal 을 디코딩하고 양의 Z 성분을 복원한다.
 float3 DecodeTangentSpaceNormal(float2 encodedNormal) {
     const float2 normalXY = encodedNormal * 2.0f - 1.0f;
     const float normalZ = sqrt(saturate(1.0f - dot(normalXY, normalXY)));
     return float3(normalXY, normalZ);
+}
+
+// SSR trace 전에 필요한 shading normal 과 perceptual roughness 만 계산한다.
+// Lighting 전용 metallic/AO/emission/clear-coat texture 는 이 경로에서 읽지 않는다.
+SurfacePrepassParams PrepareSurfacePrepassParams(ShaderMaterial shaderMaterial, float2 texCoord, float3 normal,
+#if _NORMAL != 0
+    float3x3 tangentToWorld,
+#endif
+    bool useSpecularAA, SamplerState materialSampler) {
+    SurfacePrepassParams surface;
+    surface.normal = normalize(normal);
+
+#if _NORMAL != 0
+    const float2 encodedNormal = GetTexture2D(shaderMaterial.normalTextureIndex).Sample(materialSampler, texCoord).xy;
+    const float3 normalTS = DecodeTangentSpaceNormal(encodedNormal);
+    surface.normal = normalize(mul(normalTS, tangentToWorld));
+#endif
+
+    const float roughnessFactor = shaderMaterial.GetMetallicRoughnessFactors().y;
+#if _ROUGHNESS == 0
+    surface.roughness = roughnessFactor;
+#elif _ROUGHNESS == 1
+    surface.roughness = GetTexture2D(shaderMaterial.roughnessTextureIndex).Sample(materialSampler, texCoord).r * roughnessFactor;
+#elif _ROUGHNESS == 2
+    surface.roughness = (1.0f - GetTexture2D(shaderMaterial.roughnessTextureIndex).Sample(materialSampler, texCoord).r) * roughnessFactor;
+#elif _ROUGHNESS >= 3
+    const float4 metallicSample = GetTexture2D(shaderMaterial.metallicTextureIndex).Sample(materialSampler, texCoord);
+    #if _ROUGHNESS == 3
+        surface.roughness = metallicSample.r * roughnessFactor;
+    #elif _ROUGHNESS == 4
+        surface.roughness = metallicSample.g * roughnessFactor;
+    #elif _ROUGHNESS == 5
+        surface.roughness = metallicSample.b * roughnessFactor;
+    #elif _ROUGHNESS == 6
+        surface.roughness = metallicSample.a * roughnessFactor;
+    #endif
+#endif
+
+    surface.roughness = clamp(surface.roughness, MinRoughness, 1.0f);
+    if (useSpecularAA) {
+        surface.roughness = ApplySpecularAA(surface.roughness, ComputeSpecularAAKernelRoughness(surface.normal, frameConstants.specularAAVariance, frameConstants.specularAALimit));
+    }
+    return surface;
 }
 
 // material texture 를 샘플링하여 direct lighting 과 indirect lighting 에서 공유할 입력값을 준비한다.
@@ -66,7 +114,7 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 
     float specularAAKernelRoughness = 0.0;
     if (useSpecularAA) {
-        specularAAKernelRoughness = ComputeSpecularAAKernelRoughness(shading.normal);
+        specularAAKernelRoughness = ComputeSpecularAAKernelRoughness(shading.normal, frameConstants.specularAAVariance, frameConstants.specularAALimit);
     }
 
     shading.normalDotView = max(dot(shading.normal, shading.viewDir), 1e-4f);
@@ -163,7 +211,7 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
     if (useSpecularAA) {
         float clearCoatSpecularAAKernelRoughness = specularAAKernelRoughness;
 #if _CLEARCOAT_NORMAL != 0
-        clearCoatSpecularAAKernelRoughness = ComputeSpecularAAKernelRoughness(shading.clearCoatNormal);
+        clearCoatSpecularAAKernelRoughness = ComputeSpecularAAKernelRoughness(shading.clearCoatNormal, frameConstants.specularAAVariance, frameConstants.specularAALimit);
 #endif
         shading.clearCoatRoughness = ApplySpecularAA(shading.clearCoatRoughness, clearCoatSpecularAAKernelRoughness);
     }

@@ -35,8 +35,8 @@ static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLo
     outShadow.numShadowViews = shadow.numShadowViews;
     outShadow.filterRadius = BE1::Clamp(filterRadius, 0.0f, maxFilterRadius);
     outShadow.normalizedBorder = static_cast<float>(firstView.borderTexels) / shadow.resolution;
-    outShadow.pointOrigin = float3(shadow.pointOrigin.x, shadow.pointOrigin.y, shadow.pointOrigin.z);
-    outShadow.pointDepthScaleBias = float2(shadow.pointDepthScaleBias.x, shadow.pointDepthScaleBias.y);
+    outShadow.pointOrigin = float3(shadow.pointOrigin);
+    outShadow.pointDepthScaleBias = float2(shadow.pointDepthScaleBias);
 }
 
 static void BuildShaderLocalShadowView(const FrameLocalShadowView &view, bool point, float invAtlasSize, ShaderLocalShadowView &outView) {

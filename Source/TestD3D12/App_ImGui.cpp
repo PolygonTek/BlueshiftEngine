@@ -508,7 +508,7 @@ void App::BuildImGuiTextureViewer() {
     static int selectedViewIndex = 0;
     static int selectedSlice = 0;
 
-    constexpr int MaxTextureViewerEntries = 16;
+    constexpr int MaxTextureViewerEntries = 32;
     ImGuiTextureViewerEntry entries[MaxTextureViewerEntries];
     int entryCount = 0;
 
@@ -518,9 +518,9 @@ void App::BuildImGuiTextureViewer() {
             colorTexture = renderCamera->GetColorTexture();
         }
         const RHI::Texture *depthTexture = renderCamera->GetDepthTexture();
-        const RHI::Texture *normalTexture = renderCamera->GetResolvedNormalTexture();
-        if (!normalTexture) {
-            normalTexture = renderCamera->GetNormalTexture();
+        const RHI::Texture *normalRoughnessTexture = renderCamera->GetResolvedNormalRoughnessTexture();
+        if (!normalRoughnessTexture) {
+            normalRoughnessTexture = renderCamera->GetNormalRoughnessTexture();
         }
         const RHI::Texture *velocityTexture = renderCamera->GetResolvedVelocityTexture();
         if (!velocityTexture) {
@@ -529,11 +529,23 @@ void App::BuildImGuiTextureViewer() {
 
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Color", colorTexture);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Depth", depthTexture);
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Depth Pyramid", renderCamera->GetScreenSpaceDepthPyramidResources().GetTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Hi-Z", renderCamera->GetSSRHiZResources().GetTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Scene Color History", renderCamera->GetSSRSceneColorHistoryResources().GetRadianceTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Radiance Pyramid", renderCamera->GetSSRSceneColorHistoryResources().GetRadiancePyramidTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR History Depth Extrema", renderCamera->GetSSRSceneColorHistoryResources().GetDepthExtremaTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Trace", renderCamera->GetSSRTraceTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Receiver Surface", renderCamera->GetSSRReceiverSurfaceTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Resolve Reflection", renderCamera->GetSSRResolveReflectionTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Temporal Reflection", renderCamera->GetLastSSRTemporalReflectionTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "SSR Upsampled Reflection", renderCamera->GetSSRUpsampledReflectionTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Transparent SSR Depth", renderCamera->GetCurrentTransparentSSRDepthTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Transparent SSR Normal / Roughness", renderCamera->GetTransparentSSRNormalRoughnessTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Transparent SSR Velocity", renderCamera->GetTransparentSSRVelocityTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Transparent SSR Temporal Reflection", renderCamera->GetPreviousTransparentSSRTemporalReflectionTexture());
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Transparent SSR Upsampled Reflection", renderCamera->GetTransparentSSRUpsampledReflectionTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "AO Final", renderCamera->GetAOTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Velocity", velocityTexture);
-        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal", normalTexture);
+        AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Normal / Roughness", normalRoughnessTexture);
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Post Process Color", renderCamera->GetPostProcessColorTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Down", renderCamera->GetBloomResources().GetBloomDownTexture());
         AddImGuiTextureViewerEntry(entries, MaxTextureViewerEntries, entryCount, "Bloom Up", renderCamera->GetBloomResources().GetBloomUpTexture());
@@ -735,6 +747,22 @@ void App::BuildImGuiOverlay() {
             if (ImGui::Checkbox("Specular AA", &specularAA)) {
                 r_specularAA.SetBool(specularAA);
             }
+
+            ImGui::BeginDisabled(!specularAA);
+            float specularAAVariance = r_specularAAVariance.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Specular AA Variance", &specularAAVariance, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                r_specularAAVariance.SetFloat(specularAAVariance);
+            }
+            ImGui::SetItemTooltip("Normal variation scale. Higher values reduce specular aliasing more strongly.");
+
+            float specularAALimit = r_specularAALimit.GetFloat();
+            ImGui::SetNextItemWidth(fontSize * 12.0f);
+            if (ImGui::SliderFloat("Specular AA Limit", &specularAALimit, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                r_specularAALimit.SetFloat(specularAALimit);
+            }
+            ImGui::SetItemTooltip("Maximum roughness correction. 0 disables the correction.");
+            ImGui::EndDisabled();
 
             static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
             int msaaSampleCount = r_msaa.GetInteger();
@@ -1266,55 +1294,79 @@ void App::BuildImGuiOverlay() {
                 }
 
                 ImGui::BeginDisabled(!ssr);
-                ImGui::Indent();
 
-                bool ssrDebug = r_ssrDebug.GetBool();
-                if (ImGui::Checkbox("Trace debug output", &ssrDebug)) {
-                    r_ssrDebug.SetBool(ssrDebug);
-                }
-                ImGui::SameLine();
-                ImGui::TextDisabled("(?)");
-                if (ImGui::IsItemHovered()) {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted(
-                        "Green: Hit\n"
-                        "Red: Miss\n"
-                        "Blue: Maximum iterations reached\n"
-                        "Black: No surface");
-                    ImGui::EndTooltip();
-                }
-
-                float ssrMaxDistance = r_ssrMaxDistance.GetFloat();
+                int ssrResolutionMode = r_ssrResolutionMode.GetInteger();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Trace distance", &ssrMaxDistance, r_ssrMaxDistance.GetMinValue(), r_ssrMaxDistance.GetMaxValue(), "%.1f m")) {
-                    r_ssrMaxDistance.SetFloat(ssrMaxDistance);
+                if (ImGui::Combo("Resolution##SSR", &ssrResolutionMode, "Full\0Half (1/2)\0Quarter (1/4)\0")) {
+                    r_ssrResolutionMode.SetInteger(ssrResolutionMode);
+                }
+                ImGui::SetItemTooltip("Resolution scale per axis, shared by opaque and transparent reflections.");
+
+                bool ssrTransparent = r_ssrTransparent.GetBool();
+                if (ImGui::Checkbox("Transparent surfaces", &ssrTransparent)) {
+                    r_ssrTransparent.SetBool(ssrTransparent);
                 }
 
-                float ssrThickness = r_ssrThickness.GetFloat();
+                int ssrDebug = r_ssrDebug.GetInteger();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Thickness", &ssrThickness, r_ssrThickness.GetMinValue(), r_ssrThickness.GetMaxValue(), "%.2f m")) {
-                    r_ssrThickness.SetFloat(ssrThickness);
+                if (ImGui::Combo("Debug output##SSR", &ssrDebug, "Off\0Raw reflection\0Upsampled reflection\0Trace status\0History UV\0Confidence\0Iterations\0")) {
+                    r_ssrDebug.SetInteger(ssrDebug);
                 }
 
-                int ssrMaxIterations = r_ssrMaxIterations.GetInteger();
+                ImGui::BeginDisabled(ssrDebug == SSRDebugModeOff || !ssrTransparent);
+                bool ssrDebugTransparent = r_ssrDebugTransparent.GetBool();
+                if (ImGui::Checkbox("Debug transparent SSR", &ssrDebugTransparent)) {
+                    r_ssrDebugTransparent.SetBool(ssrDebugTransparent);
+                }
+                ImGui::EndDisabled();
+
+                int ssrTraceMaxIterations = r_ssrTraceMaxIterations.GetInteger();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderInt("Max iterations", &ssrMaxIterations, static_cast<int>(r_ssrMaxIterations.GetMinValue()), static_cast<int>(r_ssrMaxIterations.GetMaxValue()))) {
-                    r_ssrMaxIterations.SetInteger(ssrMaxIterations);
+                if (ImGui::SliderInt("Trace max iterations", &ssrTraceMaxIterations, static_cast<int>(r_ssrTraceMaxIterations.GetMinValue()), static_cast<int>(r_ssrTraceMaxIterations.GetMaxValue()))) {
+                    r_ssrTraceMaxIterations.SetInteger(ssrTraceMaxIterations);
                 }
 
-                int ssrBinaryRefinementSteps = r_ssrBinaryRefinementSteps.GetInteger();
+                float ssrTraceThickness = r_ssrTraceThickness.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderInt("Binary refinement", &ssrBinaryRefinementSteps, static_cast<int>(r_ssrBinaryRefinementSteps.GetMinValue()), static_cast<int>(r_ssrBinaryRefinementSteps.GetMaxValue()))) {
-                    r_ssrBinaryRefinementSteps.SetInteger(ssrBinaryRefinementSteps);
+                if (ImGui::SliderFloat("Trace thickness", &ssrTraceThickness, r_ssrTraceThickness.GetMinValue(), r_ssrTraceThickness.GetMaxValue(), "%.2f m")) {
+                    r_ssrTraceThickness.SetFloat(ssrTraceThickness);
                 }
 
-                float ssrNormalBias = r_ssrNormalBias.GetFloat();
+                float ssrRayRoughnessScale = r_ssrRayRoughnessScale.GetFloat();
                 ImGui::SetNextItemWidth(fontSize * 12.0f);
-                if (ImGui::SliderFloat("Normal bias", &ssrNormalBias, r_ssrNormalBias.GetMinValue(), r_ssrNormalBias.GetMaxValue(), "%.3f m")) {
-                    r_ssrNormalBias.SetFloat(ssrNormalBias);
+                if (ImGui::SliderFloat("Ray roughness scale", &ssrRayRoughnessScale,
+                    r_ssrRayRoughnessScale.GetMinValue(), r_ssrRayRoughnessScale.GetMaxValue(), "%.2f")) {
+                    r_ssrRayRoughnessScale.SetFloat(ssrRayRoughnessScale);
+                }
+                ImGui::SetItemTooltip("Distributes GGX roughness between stochastic ray directions and cone filtering. 0 uses mirror rays; 0.71 is an even split.");
+
+                float ssrScreenEdgeFade = r_ssrScreenEdgeFade.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Screen-edge fade", &ssrScreenEdgeFade, r_ssrScreenEdgeFade.GetMinValue(), r_ssrScreenEdgeFade.GetMaxValue(), "%.3f")) {
+                    r_ssrScreenEdgeFade.SetFloat(ssrScreenEdgeFade);
                 }
 
-                ImGui::Unindent();
+                float ssrRoughnessFadeStart = r_ssrRoughnessFadeStart.GetFloat();
+                float ssrRoughnessFadeEnd = r_ssrRoughnessFadeEnd.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Roughness fade start", &ssrRoughnessFadeStart, r_ssrRoughnessFadeStart.GetMinValue(), ssrRoughnessFadeEnd, "%.2f")) {
+                    r_ssrRoughnessFadeStart.SetFloat(ssrRoughnessFadeStart);
+                }
+
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Roughness fade end", &ssrRoughnessFadeEnd, r_ssrRoughnessFadeEnd.GetMinValue(), r_ssrRoughnessFadeEnd.GetMaxValue(), "%.2f")) {
+                    r_ssrRoughnessFadeEnd.SetFloat(ssrRoughnessFadeEnd);
+                    if (r_ssrRoughnessFadeStart.GetFloat() > ssrRoughnessFadeEnd) {
+                        r_ssrRoughnessFadeStart.SetFloat(ssrRoughnessFadeEnd);
+                    }
+                }
+
+                float ssrTemporalHistoryWeight = r_ssrTemporalHistoryWeight.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Temporal history weight", &ssrTemporalHistoryWeight, r_ssrTemporalHistoryWeight.GetMinValue(), r_ssrTemporalHistoryWeight.GetMaxValue(), "%.2f")) {
+                    r_ssrTemporalHistoryWeight.SetFloat(ssrTemporalHistoryWeight);
+                }
+
                 ImGui::EndDisabled();
             }
 

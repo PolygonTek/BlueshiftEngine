@@ -49,8 +49,8 @@ void GpuOceanSurface::Init(GpuOcean *gpuOcean) {
         BE_WARNLOG("GpuOceanSurface::Init: failed to load ocean surface shader template\n");
     }
 
-    foamDetailTexture = textureManager.GetTexture("Data/EngineTextures/water_form.PNG", Texture::Flag::LinearColorSpace);
-    if (foamDetailTexture == textureManager.defaultTexture) {
+    foamDetailTexture = textureManager.GetTexture("Data/EngineTextures/water_foam.png", Texture::Flag::LinearColorSpace);
+    if (foamDetailTexture == textureManager.missingTexture) {
         BE_WARNLOG("GpuOceanSurface::Init: failed to load ocean foam detail texture\n");
         foamDetailTexture.reset();
     }
@@ -259,17 +259,25 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
     const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture, DrawStats *drawStats) const {
     PROFILER_CPU_SCOPED_EVENT("GpuOceanSurface::Draw");
 
+    PreparedDraw preparedDraw;
+    if (!PrepareDraw(frameThreadData, settings, view, sceneColorTexture, sceneDepthTexture, preparedDraw)) {
+        return false;
+    }
+    return DrawPrepared(commandList, pipelineState, frameConstantBuffer, cameraConstantBuffer, preparedDraw, true, drawStats);
+}
+
+bool GpuOceanSurface::PrepareDraw(RHI::FrameThreadData *frameThreadData, const Settings &settings, const View &view,
+    const RHI::Texture *sceneColorTexture, const RHI::Texture *sceneDepthTexture, PreparedDraw &preparedDraw) const {
+    PROFILER_CPU_SCOPED_EVENT("GpuOceanSurface::PrepareDraw");
+
+    preparedDraw = {};
     assert(settings.IsValid());
-    if (!settings.IsValid()) {
+    if (!settings.IsValid() || !frameThreadData) {
         return false;
     }
     assert(view.renderWidth > 0u && view.renderHeight > 0u);
 
-    if (drawStats) {
-        *drawStats = {};
-    }
-
-    if (!gpuOcean || !pipelineState || !frameConstantBuffer || !cameraConstantBuffer || !clipmap.IsReady() || !gpuOcean->AreCascadeOutputsReady()) {
+    if (!gpuOcean || !clipmap.IsReady() || !gpuOcean->AreCascadeOutputsReady()) {
         return false;
     }
 
@@ -280,10 +288,7 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
         return false;
     }
 
-    RHI::Texture *fallbackTexture = textureManager.whiteTexture ? textureManager.whiteTexture->GetReadyRHITexture() : nullptr;
-    if (!fallbackTexture) {
-        return false;
-    }
+    RHI::Texture *fallbackTexture = textureManager.whiteTexture->GetRHITexture();
 
     RHI::Texture *foamDetailMap = foamDetailTexture ? foamDetailTexture->GetReadyRHITexture() : nullptr;
     if (!foamDetailMap) {
@@ -306,16 +311,17 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
     clipmapView.minHeight = settings.height - settings.maxDisplacement;
     clipmapView.maxHeight = settings.height + settings.maxDisplacement;
     clipmapView.maxHorizontalDisplacement = settings.maxDisplacement;
-    GeometryClipmap::Batch patchBatch;
-    if (!clipmap.BuildBatch(settings.clipmap, clipmapView, patchBatch)) {
+    if (!clipmap.BuildBatch(settings.clipmap, clipmapView, preparedDraw.patchBatch)) {
         return false;
     }
-    if (patchBatch.instanceCount == 0u) {
+    if (preparedDraw.patchBatch.instanceCount == 0u) {
+        preparedDraw.valid = true;
         return true;
     }
 
-    RHI::Buffer *patchInstanceBuffer = frameThreadData->AllocStructuredBuffer(sizeof(GeometryClipmapPatch), patchBatch.instanceCount, patchBatch.instances);
-    if (!patchInstanceBuffer) {
+    preparedDraw.patchInstanceBuffer = frameThreadData->AllocStructuredBuffer(
+        sizeof(GeometryClipmapPatch), preparedDraw.patchBatch.instanceCount, preparedDraw.patchBatch.instances);
+    if (!preparedDraw.patchInstanceBuffer) {
         return false;
     }
 
@@ -335,13 +341,13 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
     params.surfaceHeight = settings.height;
     params.roughness = settings.roughness;
     const BE1::Color3 linearWaterColor = settings.waterColor.SRGBToLinear();
-    params.waterColor = float3(linearWaterColor.r, linearWaterColor.g, linearWaterColor.b);
+    params.waterColor = float3(linearWaterColor);
     params.fresnelF0 = settings.fresnelF0;
     const BE1::Color3 linearScatterColor = settings.scatterColor.SRGBToLinear();
-    params.scatterColor = float3(linearScatterColor.r, linearScatterColor.g, linearScatterColor.b);
+    params.scatterColor = float3(linearScatterColor);
     params.scatterHeight = BE1::Max(settings.scatterHeight, MinOceanSurfaceShaderDivisor);
     const BE1::Color3 linearFoamColor = settings.foamColor.SRGBToLinear();
-    params.foamColor = float3(linearFoamColor.r, linearFoamColor.g, linearFoamColor.b);
+    params.foamColor = float3(linearFoamColor);
     params.foamDetailMapSize = BE1::Max(settings.foamDetailMapSize, MinOceanSurfaceShaderDivisor);
     params.foamDetailStrength = settings.foamDetailStrength;
     params.refractionDistance = BE1::Max(settings.refractionDistance, 0.0f);
@@ -361,8 +367,37 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
         params.surfaceOptions |= OceanSurfaceOptionBitRefractionEnabled;
     }
 
-    RHI::ConstantBuffer *surfaceConstantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
-    if (!surfaceConstantBuffer) {
+    preparedDraw.surfaceConstantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
+    if (!preparedDraw.surfaceConstantBuffer) {
+        return false;
+    }
+
+    preparedDraw.fieldTextureArray = fieldTextureArray;
+    preparedDraw.foamHistoryTextureArray = foamHistoryTextureArray;
+    preparedDraw.foamDetailMap = foamDetailMap;
+    preparedDraw.sceneColorTexture = boundSceneColorTexture;
+    preparedDraw.sceneDepthTexture = boundSceneDepthTexture;
+    preparedDraw.instanceBufferUploadBytes = sizeof(GeometryClipmapPatch) * preparedDraw.patchBatch.instanceCount;
+    preparedDraw.valid = true;
+    return true;
+}
+
+bool GpuOceanSurface::DrawPrepared(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState,
+    const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer,
+    const PreparedDraw &preparedDraw, bool countInstanceUpload, DrawStats *drawStats) const {
+    PROFILER_CPU_SCOPED_EVENT("GpuOceanSurface::DrawPrepared");
+
+    if (drawStats) {
+        *drawStats = {};
+    }
+    if (!preparedDraw.valid || !pipelineState || !frameConstantBuffer || !cameraConstantBuffer) {
+        return false;
+    }
+    if (preparedDraw.patchBatch.instanceCount == 0u) {
+        return true;
+    }
+    if (!preparedDraw.patchInstanceBuffer || !preparedDraw.surfaceConstantBuffer || !preparedDraw.fieldTextureArray ||
+        !preparedDraw.foamHistoryTextureArray || !preparedDraw.foamDetailMap || !preparedDraw.sceneColorTexture || !preparedDraw.sceneDepthTexture) {
         return false;
     }
 
@@ -370,22 +405,22 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
     RHI::renderer->SetIndexBuffer(commandList, clipmap.GetIndexBuffer());
     RHI::renderer->SetConstantBuffer(commandList, 0, frameConstantBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 2, surfaceConstantBuffer);
+    RHI::renderer->SetConstantBuffer(commandList, 2, preparedDraw.surfaceConstantBuffer);
 
-    RHI::renderer->SetBuffer(commandList, 0, false, patchInstanceBuffer);
-    RHI::renderer->SetTexture(commandList, 1, false, fieldTextureArray);
-    RHI::renderer->SetTexture(commandList, 2, false, foamHistoryTextureArray);
-    RHI::renderer->SetTexture(commandList, 3, false, foamDetailMap);
+    RHI::renderer->SetBuffer(commandList, 0, false, preparedDraw.patchInstanceBuffer);
+    RHI::renderer->SetTexture(commandList, 1, false, preparedDraw.fieldTextureArray);
+    RHI::renderer->SetTexture(commandList, 2, false, preparedDraw.foamHistoryTextureArray);
+    RHI::renderer->SetTexture(commandList, 3, false, preparedDraw.foamDetailMap);
 
-    RHI::renderer->SetTexture(commandList, 4, false, boundSceneColorTexture);
-    RHI::renderer->SetTexture(commandList, 5, false, boundSceneDepthTexture);
+    RHI::renderer->SetTexture(commandList, 4, false, preparedDraw.sceneColorTexture);
+    RHI::renderer->SetTexture(commandList, 5, false, preparedDraw.sceneDepthTexture);
 
-    if (drawStats) {
+    if (drawStats && countInstanceUpload) {
         drawStats->instanceBufferAllocCount = 1;
-        drawStats->instanceBufferUploadBytes = sizeof(GeometryClipmapPatch) * patchBatch.instanceCount;
+        drawStats->instanceBufferUploadBytes = preparedDraw.instanceBufferUploadBytes;
     }
 
-    for (const GeometryClipmap::DrawRange &draw : patchBatch.draws) {
+    for (const GeometryClipmap::DrawRange &draw : preparedDraw.patchBatch.draws) {
         if (draw.instanceCount == 0) {
             continue;
         }
@@ -396,7 +431,7 @@ bool GpuOceanSurface::Draw(RHI::CommandList *commandList, RHI::FrameThreadData *
         }
     }
     if (drawStats) {
-        drawStats->triangleCount = patchBatch.triangleCount;
+        drawStats->triangleCount = preparedDraw.patchBatch.triangleCount;
     }
     return true;
 }

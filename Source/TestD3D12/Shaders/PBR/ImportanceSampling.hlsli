@@ -75,4 +75,31 @@ float3 ImportanceSampleGGX(float2 xi, float linearRoughness) {
     return float3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
 }
 
+// Returns an importance-sampled halfway direction for isotropic GGX specular VNDF with respect to N (local +Z).
+// xi must be in the [0, 1) range. linearRoughness is clamped to at least 1.0e-4.
+// tangentView points from the surface toward the viewer and must lie in the local +Z hemisphere.
+float3 ImportanceSampleGGXVNDF(float2 xi, float3 tangentView, float linearRoughness) {
+    const float alpha = max(linearRoughness, 1.0e-4f);
+    const float3 stretchedView = normalize(float3(alpha * tangentView.xy, tangentView.z));
+
+    const float projectedLengthSquared = dot(stretchedView.xy, stretchedView.xy);
+    const float3 tangentX = projectedLengthSquared > 0.0f ? float3(-stretchedView.y, stretchedView.x, 0.0f) * rsqrt(projectedLengthSquared) : float3(1.0f, 0.0f, 0.0f);
+    const float3 tangentY = cross(stretchedView, tangentX);
+
+    const float radius = sqrt(xi.x);
+    const float phi = TWO_PI * xi.y;
+    float sinPhi;
+    float cosPhi;
+    sincos(phi, sinPhi, cosPhi);
+
+    const float diskX = radius * cosPhi;
+    float diskY = radius * sinPhi;
+    const float viewBlend = 0.5f * (1.0f + stretchedView.z);
+    diskY = lerp(sqrt(saturate(1.0f - diskX * diskX)), diskY, viewBlend);
+
+    const float normalZ = sqrt(saturate(1.0f - diskX * diskX - diskY * diskY));
+    const float3 stretchedNormal = diskX * tangentX + diskY * tangentY + normalZ * stretchedView;
+    return normalize(float3(alpha * stretchedNormal.xy, max(stretchedNormal.z, 0.0f)));
+}
+
 #endif // __IMPORTANCE_SAMPLING_HLSLI__

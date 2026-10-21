@@ -51,6 +51,10 @@ namespace RHI {
             return clearValue;
         }
 
+        static ClearValue Color(const BE1::Color4 &color) {
+            return Color(color[0], color[1], color[2], color[3]);
+        }
+
         static ClearValue DepthStencil(float depth, uint32_t stencil) {
             ClearValue clearValue;
             clearValue.depthStencil.depth = depth;
@@ -552,24 +556,15 @@ namespace RHI {
         uint64_t                        sharedSystemMemoryBytes = 0;
     };
 
-    enum class ClipDepthRange : uint8_t {
-        ZeroToOne,
-        NegativeOneToOne
-    };
-
+    // All backends use NDC Z in [0, 1] and a viewport depth range of [0, 1].
+    // Reverse Z is implemented by the projection matrix.
     struct ProjectionPolicy {
-        ClipDepthRange                  clipDepthRange = ClipDepthRange::ZeroToOne;
         bool                            reverseZ = false;
 
-        bool                            operator==(const ProjectionPolicy &rhs) const { return clipDepthRange == rhs.clipDepthRange && reverseZ == rhs.reverseZ; }
-        bool                            operator!=(const ProjectionPolicy &rhs) const { return clipDepthRange != rhs.clipDepthRange || reverseZ != rhs.reverseZ; }
+        bool                            operator==(const ProjectionPolicy &rhs) const { return reverseZ == rhs.reverseZ; }
+        bool                            operator!=(const ProjectionPolicy &rhs) const { return reverseZ != rhs.reverseZ; }
 
-        bool                            IsZNegativeOneToOne() const { return clipDepthRange == ClipDepthRange::NegativeOneToOne; }
-        float                           GetNDCFarZ() const { return reverseZ ? (IsZNegativeOneToOne() ? -1.0f : 0.0f) : 1.0f; }
         float                           GetDepthClearValue() const { return reverseZ ? 0.0f : 1.0f; }
-
-        float                           NDCZToDeviceDepth(float ndcZ) const { return IsZNegativeOneToOne() ? ndcZ * 0.5f + 0.5f : ndcZ; }
-        float                           DeviceDepthToNDCZ(float depth) const { return IsZNegativeOneToOne() ? depth * 2.0f - 1.0f : depth; }
     };
 
     enum class QueryType : uint8_t {
@@ -1156,6 +1151,9 @@ namespace RHI {
         virtual void                    DrainReleaseRequestsToRetireList() = 0;
         virtual void                    FreeRetiredResources(bool waitPendings = false) = 0;
         virtual void                    ProcessResourceRequests(FrameThreadData *frameThreadData) = 0;
+                                        // 초기화 중 프레임 렌더링이나 다른 리소스 요청 처리와 겹치지 않게 호출한다.
+                                        // 대기 중인 요청과 처리 중 파생된 요청을 실행하고 GPU 완료 및 임시 리소스 해제까지 기다린다.
+        virtual void                    FlushResourceRequests() = 0;
 
         const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
         const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }

@@ -32,6 +32,7 @@ class D3D12CommandListPool;
 class D3D12DescriptorPool;
 class D3D12ImGuiRenderer;
 class D3D12ImGuiOverlay;
+struct D3D12RootBindingData;
 template <typename T> struct ImVector;
 struct ImTextureData;
 
@@ -97,9 +98,11 @@ public:
 
     void                                EnqueueResourceRequest(D3D12ResourceRequest&& request);
     virtual void                        ProcessResourceRequests(RHI::FrameThreadData *frameThreadData) override;
+    virtual void                        FlushResourceRequests() override;
 
     void                                DeleteGPUObject(RHI::GPUObject *object);
 
+    void                                ExecuteResourceRequests(BE1::Array<D3D12ResourceRequest> &requests, D3D12ResourceCommandContext *commandContext);
     bool                                ExecuteUploadBuffer(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferRequest &request);
     bool                                ExecuteUploadBufferSubData(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferSubDataRequest &request);
     bool                                ExecuteUploadTexture(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureRequest &request);
@@ -168,9 +171,9 @@ public:
     virtual RHI::QueryHeap *            CreateQueryHeap(const RHI::QueryHeapDesc *desc) override;
     virtual void                        DestroyQueryHeap(RHI::QueryHeap *queryHeap, bool immediate = false) override;
 
-                                        // NOTE: 전역 유틸리티 커맨드 리스트는 RootBindingData 가 없다.
-                                        // 수명을 유지해야 하는 디스크립터 힙을 사용하지 않는다.
-    RHI::CommandList *                  BeginUtilityCommandList(RHI::CommandQueueType queueType);
+                                        // 필요한 경우 호출자의 RootBindingData 를 EndUtilityCommandList 까지 임시로 연결한다.
+                                        // 호출자는 사용한 디스크립터 힙의 수명을 보장하고, GPU 완료 후 EndUtilityCommandList 로 반환한다.
+    RHI::CommandList *                  BeginUtilityCommandList(RHI::CommandQueueType queueType, D3D12RootBindingData *rootBindingData = nullptr);
     void                                EndUtilityCommandList(RHI::CommandList *commandList);
 
     virtual void                        SetVertexBuffer(RHI::CommandList *commandList, int slot, const RHI::VertexBuffer *vertexBuffer) override;

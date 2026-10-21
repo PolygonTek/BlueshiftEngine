@@ -32,8 +32,8 @@ void ScreenSpaceAO::Init() {
     aoUpsampleShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_aoUpsampleShader", computeShaderModel, "AO/AOUpsample.hlsl", baseDir);
 
     gtaoPrefilterShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoPrefilterShader", computeShaderModel, "AO/GTAOPrefilter.hlsl", baseDir);
-    gtaoMainLowShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainLowShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=1, GTAO_STEPS_PER_SLICE=2");
-    gtaoMainMediumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainMediumShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=2, GTAO_STEPS_PER_SLICE=2");
+    gtaoMainLowShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainLowShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=1, GTAO_STEPS_PER_SLICE=3");
+    gtaoMainMediumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainMediumShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=2, GTAO_STEPS_PER_SLICE=3");
     gtaoMainHighShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainHighShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=3, GTAO_STEPS_PER_SLICE=3");
     gtaoMainUltraShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoMainUltraShader", computeShaderModel, "AO/GTAOMain.hlsl", baseDir, "CSMain", "GTAO_SLICE_COUNT=9, GTAO_STEPS_PER_SLICE=3");
     gtaoDenoiseShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoDenoiseShader", computeShaderModel, "AO/GTAODenoise.hlsl", baseDir);
@@ -112,9 +112,18 @@ void ScreenSpaceAO::UpdateFramePSOs(const RenderFrameSettings &settings) {
     frameGTAODebugPSO = ShaderPipeline::GetReadyPSO(gtaoDebugPipeline);
 }
 
-bool ScreenSpaceAO::HasRequiredResources(const FrameScreenSpaceAO &data) {
+bool ScreenSpaceAO::HasRequiredResources(const FrameScreenSpaceAO &data, const RenderFrameSettings &settings) {
     const ScreenSpaceAOTextureSet &textureSet = data.textureSet;
-    if (data.mode != RenderAOMode::GTAO || !data.depthTexture || !data.normalTexture || !textureSet.outputTexture) {
+    if (data.mode != RenderAOMode::GTAO || !data.depthTexture || !data.normalRoughnessTexture || !textureSet.outputTexture) {
+        return false;
+    }
+
+    if (settings.aoHalfResolution && !textureSet.halfDepthTexture) {
+        return false;
+    }
+
+    const bool needTempTexture = settings.aoHalfResolution || (settings.gtaoDebug != 2 && settings.gtaoDenoisePasses > 1);
+    if (needTempTexture && !textureSet.tempTexture) {
         return false;
     }
 
@@ -122,27 +131,22 @@ bool ScreenSpaceAO::HasRequiredResources(const FrameScreenSpaceAO &data) {
     return textureSet.rawTexture && textureSet.gtaoPrefilterDepthTexture && textureSet.gtaoPackedEdgesTexture;
 }
 
-bool ScreenSpaceAO::PrepareDispatch(const FrameScreenSpaceAO &data, const RenderFrameSettings &settings, DispatchParams &params) const {
-    assert(HasRequiredResources(data));
+bool ScreenSpaceAO::PrepareDispatchParams(const RenderFrameSettings &settings, DispatchParams &params) const {
     params = {};
-
-    const ScreenSpaceAOTextureSet &textureSet = data.textureSet;
 
     if (!frameGTAOPrefilterPSO || !frameGTAOMainPSO || !frameGTAODenoisePSO) {
         return false;
     }
 
-    // GTAO resources use the requested resolution; there is no full-resolution fallback.
     params.useHalfResolution = settings.aoHalfResolution;
-    if (params.useHalfResolution && (!frameAOUpsamplePSO || !textureSet.halfDepthTexture)) {
+    if (params.useHalfResolution && !frameAOUpsamplePSO) {
         return false;
     }
 
-    // Preserve raw visibility for the debug preview; ping-pong denoise can otherwise overwrite it.
+    // 디버그 표시용 원본 가시도를 보존한다. 노이즈 제거 시 두 텍스처에 번갈아 쓰면서 원본을 덮어쓸 수 있다.
     params.denoisePassCount = settings.gtaoDebug == 2 ? 1u : BE1::Max(settings.gtaoDenoisePasses, 1u);
 
-    const bool needTempTexture = params.useHalfResolution || params.denoisePassCount > 1;
-    return !needTempTexture || textureSet.tempTexture;
+    return true;
 }
 
 void ScreenSpaceAO::Dispatch(RenderBackend &backend, const DispatchParams &params) const {
@@ -155,7 +159,7 @@ void ScreenSpaceAO::Dispatch(RenderBackend &backend, const DispatchParams &param
     assert(data.mode == RenderAOMode::GTAO);
 
     RHI::Texture *depthTexture = data.depthTexture;
-    RHI::Texture *normalTexture = data.normalTexture;
+    RHI::Texture *normalRoughnessTexture = data.normalRoughnessTexture;
     RHI::Texture *aoTexture = data.textureSet.outputTexture;
     RHI::Texture *rawAOTexture = data.textureSet.rawTexture;
     RHI::Texture *tempAOTexture = data.textureSet.tempTexture;
@@ -188,7 +192,7 @@ void ScreenSpaceAO::Dispatch(RenderBackend &backend, const DispatchParams &param
     RHI::GPUBarrier finalBarriers[RenderGTAODepthMipMaxLevelCount + 7];
     uint32_t finalBarrierCount = 0;
     finalBarriers[finalBarrierCount++] = RHI::Renderer::MakeTextureBarrier(depthTexture, RHI::GPUResourceState::ShaderResourceCompute, depthInputState);
-    finalBarriers[finalBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource);
+    finalBarriers[finalBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalRoughnessTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource);
     finalBarriers[finalBarrierCount++] = RHI::Renderer::MakeTextureBarrier(packedEdgesTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource);
     finalBarriers[finalBarrierCount++] = RHI::Renderer::MakeTextureBarrier(aoTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource);
     if (rawState != RHI::GPUResourceState::ShaderResource) {
@@ -225,12 +229,12 @@ void ScreenSpaceAO::DispatchGTAOPrefilterDepth(RenderBackend &backend, RHI::GPUR
     prefilterParams.inputSize = uint2(width, height);
     prefilterParams.outputSize = uint2(processWidth, processHeight);
     prefilterParams.resolutionScale = useHalfResolution ? 2u : 1u;
-    prefilterParams.useMaxDepth = data.projectionPolicy.reverseZ ? 1u : 0u;
+    prefilterParams.reverseZ = data.projectionPolicy.reverseZ ? 1u : 0u;
     prefilterParams.depthMipCount = mipCount;
     prefilterParams.radius = settings.aoRadius;
     prefilterParams.falloffRange = settings.gtaoFalloffRange;
     prefilterParams.radiusMultiplier = settings.gtaoRadiusMultiplier;
-    prefilterParams.farPlaneDeviceDepth = data.projectionPolicy.GetDepthClearValue();
+    prefilterParams.clearDepth = data.projectionPolicy.GetDepthClearValue();
 
     RHI::Texture *selectedDepthOutputTexture = useHalfResolution ? halfDepthTexture : rawAOTexture;
     GpuTiming::ScopedTimer gpuScope(gpuTiming, commandList, GpuTiming::Tag::GTAOPrefilter);
@@ -275,7 +279,7 @@ void ScreenSpaceAO::DispatchGTAOMain(RenderBackend &backend, bool useHalfResolut
     const RenderFrameSettings &settings = backend.GetFrameSettings();
 
     RHI::Texture *depthTexture = data.depthTexture;
-    RHI::Texture *normalTexture = data.normalTexture;
+    RHI::Texture *normalRoughnessTexture = data.normalRoughnessTexture;
     RHI::Texture *aoTexture = data.textureSet.outputTexture;
     RHI::Texture *rawAOTexture = data.textureSet.rawTexture;
     RHI::Texture *prefilterDepthTexture = data.textureSet.gtaoPrefilterDepthTexture;
@@ -300,13 +304,13 @@ void ScreenSpaceAO::DispatchGTAOMain(RenderBackend &backend, bool useHalfResolut
     mainParams.thinOccluderCompensation = settings.gtaoThinOccluderCompensation;
     mainParams.depthMipSamplingOffset = settings.gtaoDepthMipSamplingOffset;
     mainParams.power = settings.gtaoPower;
-    mainParams.farPlaneDeviceDepth = data.projectionPolicy.GetDepthClearValue();
+    mainParams.clearDepth = data.projectionPolicy.GetDepthClearValue();
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, commandList, GpuTiming::Tag::GTAOMain);
 
     RHI::GPUBarrier mainStartBarriers[3];
     uint32_t mainStartBarrierCount = 0;
-    mainStartBarriers[mainStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute);
+    mainStartBarriers[mainStartBarrierCount++] = RHI::Renderer::MakeTextureBarrier(normalRoughnessTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute);
     // Full-resolution raw AO is already a UAV because it served as the unused selected-depth binding.
     // Half-resolution raw AO has not participated in the prefilter and still needs its first transition.
     if (useHalfResolution) {
@@ -317,7 +321,7 @@ void ScreenSpaceAO::DispatchGTAOMain(RenderBackend &backend, bool useHalfResolut
 
     RHI::renderer->SetPSO(commandList, frameGTAOMainPSO);
     RHI::renderer->SetTexture(commandList, 0, false, depthTexture);
-    RHI::renderer->SetTexture(commandList, 1, false, normalTexture);
+    RHI::renderer->SetTexture(commandList, 1, false, normalRoughnessTexture);
     RHI::renderer->SetTexture(commandList, 2, false, prefilterDepthTexture);
     RHI::renderer->SetTexture(commandList, 0, true, rawAOTexture);
     RHI::renderer->SetTexture(commandList, 1, true, packedEdgesTexture);
@@ -482,7 +486,7 @@ void ScreenSpaceAO::DispatchAOUpsample(RenderBackend &backend, RHI::Texture *dep
     upsampleParams.inputSize = uint2(inputHalfAOTexture->GetWidth(), inputHalfAOTexture->GetHeight());
     upsampleParams.outputSize = uint2(outputAOTexture->GetWidth(), outputAOTexture->GetHeight());
     upsampleParams.depthSigmaRcp = 1.0f / BE1::Max(radius * 0.1f, 1.0e-5f);
-    upsampleParams.farPlaneDeviceDepth = data.projectionPolicy.GetDepthClearValue();
+    upsampleParams.clearDepth = data.projectionPolicy.GetDepthClearValue();
 
     RHI::renderer->SetPSO(commandList, frameAOUpsamplePSO);
     RHI::renderer->SetTexture(commandList, 0, false, inputHalfAOTexture);

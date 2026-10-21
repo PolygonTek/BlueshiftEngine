@@ -47,7 +47,7 @@ PSInput VSMain(VSInput input) {
 
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, input.position), 1.0);
     result.position = mul(cameraConstants.viewProjMatrix, positionWS);
-    result.position.z = cameraConstants.ndcFarZ * result.position.w;
+    result.position.z = cameraConstants.depthClearValue * result.position.w;
     result.color = input.color;
 
     return result;

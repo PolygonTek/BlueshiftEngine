@@ -193,7 +193,7 @@ private:
 
     CameraControlMode               cameraControlMode = CameraControlMode::Orbit;
     uint32_t                        cameraMoveFlags = 0;
-    float                           cameraFlySpeed = 30.0f;
+    float                           cameraFlySpeed = 10.0f;
 
 #ifdef ENABLE_IMGUI
     static constexpr int            ImGuiStatsPlotSeriesCount = 5;

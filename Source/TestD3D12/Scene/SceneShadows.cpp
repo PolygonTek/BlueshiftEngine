@@ -19,7 +19,7 @@
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshInstance.h"
 #include "Render/Mesh/MeshManager.h"
-#include "Scene/SceneStaticMesh.h"
+#include "Scene/SceneShadows.h"
 
 #ifdef ENABLE_IMGUI
 #include "imgui/imgui.h"
@@ -27,7 +27,7 @@
 
 static constexpr const char *meshPath = "Data/Test/House/House_scene_01.bmesh ";
 
-void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
+void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
 
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
@@ -42,8 +42,8 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     }
 
     testMesh = meshManager.GetMesh(meshPath, false);
-    if (!testMesh || !testMesh->IsReady() || testMesh == meshManager.defaultMesh) {
-        BE_WARNLOG("SceneStaticMesh::Init: failed to load '%s'", meshPath);
+    if (!testMesh || !testMesh->IsReady() || testMesh == meshManager.missingMesh) {
+        BE_WARNLOG("SceneShadows::Init: failed to load '%s'", meshPath);
         testMesh.reset();
         return;
     }
@@ -51,7 +51,7 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     RenderObject::Desc meshDesc;
     meshDesc.meshInstance = testMesh->GetStaticInstance();
     if (!meshDesc.meshInstance) {
-        BE_WARNLOG("SceneStaticMesh::Init: failed to instantiate '%s'", meshPath);
+        BE_WARNLOG("SceneShadows::Init: failed to instantiate '%s'", meshPath);
         testMesh.reset();
         return;
     }
@@ -103,7 +103,7 @@ void SceneStaticMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
 }
 
-void SceneStaticMesh::Shutdown() {
+void SceneShadows::Shutdown() {
     if (renderWorld) {
         renderWorld->ClearScene();
     }
@@ -115,7 +115,7 @@ void SceneStaticMesh::Shutdown() {
     renderWorld = nullptr;
 }
 
-void SceneStaticMesh::Update(uint64_t elapsedUsec) {
+void SceneShadows::Update(uint64_t elapsedUsec) {
     (void)elapsedUsec;
 }
 
@@ -208,7 +208,7 @@ static void BuildLightControls(RenderWorld *renderWorld, GameLight &light, bool 
     ImGui::EndDisabled();
 }
 
-void SceneStaticMesh::BuildImGui() {
+void SceneShadows::BuildImGui() {
     ImGui::TextWrapped("Mesh: %s", meshPath);
     if (!testMesh) {
         ImGui::TextDisabled("Mesh is unavailable.");

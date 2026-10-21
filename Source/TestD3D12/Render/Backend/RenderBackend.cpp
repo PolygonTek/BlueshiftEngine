@@ -212,29 +212,30 @@ bool RenderBackend::UploadFrameConstants() {
     constants->elapsedTime = frame->GetElapsedTime();
     constants->elapsedPrevTime = frame->GetElapsedPrevTime();
     constants->frameCount = frame->GetFrameCount();
+
     constants->shaderMaterialTableIndex = frame->GetShaderMaterialTableBindlessIndex();
     constants->shaderPointLightTableIndex = frame->GetShaderPointLightTableBindlessIndex();
     constants->shaderSpotLightTableIndex = frame->GetShaderSpotLightTableBindlessIndex();
     constants->shaderLightRefTableIndex = frame->GetShaderLightRefTableBindlessIndex();
     constants->shaderLightZBinTableIndex = frame->GetShaderLightZBinTableBindlessIndex();
     constants->shaderLightTileWordTableIndex = frame->GetShaderLightTileWordTableBindlessIndex();
-    constants->feedbackBufferIndex = textureStreamingFeedbackEnabled ? currentContext->textureStreamingFeedback.GetBindlessIndex() : 0;
 
-    const RHI::Texture *dfgSumGGXTexture = renderSystem->dfgSumGGXTexture ? renderSystem->dfgSumGGXTexture->GetReadyRHITexture() : nullptr;
-    constants->dfgSumGGXTextureIndex = dfgSumGGXTexture ? dfgSumGGXTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    const RHI::Texture *stbnUnitVec2Texture = renderSystem->GetSTBNUnitVec2Texture() ? renderSystem->GetSTBNUnitVec2Texture()->GetReadyRHITexture() : nullptr;
-    constants->stbnUnitVec2TextureIndex = stbnUnitVec2Texture ? stbnUnitVec2Texture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    constants->padding0 = 0;
-    constants->padding1 = 0;
-    constants->padding2 = 0;
+    constants->feedbackBufferIndex = useTextureStreamingFeedback ? currentContext->textureStreamingFeedback.GetBindlessIndex() : 0;
+
+    constants->dfgSumGGXTextureIndex = renderSystem->dfgSumGGXTexture->GetRHITexture()->GetBindlessIndex(RHI::ViewType::SRV);
+    constants->stbnUnitVec2TextureIndex = renderSystem->GetSTBNUnitVec2Texture()->GetRHITexture()->GetBindlessIndex(RHI::ViewType::SRV);
+    constants->stbnVec2TextureIndex = renderSystem->GetSTBNVec2Texture()->GetRHITexture()->GetBindlessIndex(RHI::ViewType::SRV);
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
+    constants->specularAAVariance = frameSettings.specularAAVariance;
+    constants->specularAALimit = frameSettings.specularAALimit;
 
     ShaderDirectionalLight &shaderDirectionalLight = constants->directionalLight;
     const FrameLight *primaryDirectionalLight = frame->GetPrimaryDirectionalLight();
     if (primaryDirectionalLight) {
         const BE1::Vec3 &direction = primaryDirectionalLight->axis[0];
-        shaderDirectionalLight.direction = float3(direction.x, direction.y, direction.z);
+        shaderDirectionalLight.direction = float3(direction);
         shaderDirectionalLight.flags = static_cast<uint32_t>(primaryDirectionalLight->flags);
-        shaderDirectionalLight.intensityRGB = float3(primaryDirectionalLight->intensityRGB.r, primaryDirectionalLight->intensityRGB.g, primaryDirectionalLight->intensityRGB.b);
+        shaderDirectionalLight.intensityRGB = float3(primaryDirectionalLight->intensityRGB);
     } else {
         shaderDirectionalLight.direction = float3(0.0f, 0.0f, 0.0f);
         shaderDirectionalLight.flags = 0;
@@ -245,30 +246,19 @@ bool RenderBackend::UploadFrameConstants() {
     return true;
 }
 
-static void RemoveProjectionJitter(BE1::Mat4 &unjitteredViewProjMatrix, const BE1::Vec2 &jitterNDC) {
-    if (jitterNDC.x == 0.0f && jitterNDC.y == 0.0f) {
+static void RemoveProjectionJitter(BE1::Mat4 &viewProjMatrix, const BE1::Vec2 &ndcJitter) {
+    if (ndcJitter.x == 0.0f && ndcJitter.y == 0.0f) {
         return;
     }
 
-    for (int i = 0; i < 4; ++i) {
-        unjitteredViewProjMatrix[0][i] -= unjitteredViewProjMatrix[3][i] * jitterNDC.x;
-        unjitteredViewProjMatrix[1][i] -= unjitteredViewProjMatrix[3][i] * jitterNDC.y;
-    }
+    viewProjMatrix[0] -= viewProjMatrix[3] * ndcJitter.x;
+    viewProjMatrix[1] -= viewProjMatrix[3] * ndcJitter.y;
 }
 
-bool RenderBackend::UploadCameraConstants() {
+void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const ShaderShadowAtlasData &shadowAtlasData) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::UploadCameraConstants");
 
-    if (!currentFrameCamera) {
-        return false;
-    }
-
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
-
-    cameraConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(CameraConstants));
-    if (!cameraConstantBuffer) {
-        return false;
-    }
 
     CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
 
@@ -276,20 +266,35 @@ bool RenderBackend::UploadCameraConstants() {
     if (currentFrameCamera->projectionOrthogonal) {
         flags |= ShaderCameraFlagProjectionOrthogonal;
     }
+
     if (frameSettings.lightCullingZBin) {
         flags |= ShaderCameraFlagUseLightZBin;
     }
+
     if (currentFrameCamera->directionalLightVisible) {
         flags |= ShaderCameraFlagUseDirectionalLight;
     }
+
     if (frameSettings.specularAA) {
         flags |= ShaderCameraFlagUseSpecularAA;
     }
+
     if (currentFrameCamera->applyAO) {
-        flags |= ShaderCameraFlagUseAO;
+        flags |= ShaderCameraFlagUseScreenSpaceAO;
     }
+
     if (currentFrameCamera->taaResolve && frameTAAResolvePSO) {
         flags |= ShaderCameraFlagUseTAA;
+    }
+
+    if (frameSettings.ssrDebugMode == SSRDebugModeOff) {
+        if (currentFrameCamera->traceSSR) {
+            flags |= ShaderCameraFlagUseSSR;
+        }
+
+        if (currentFrameCamera->traceTransparentSSR) {
+            flags |= ShaderCameraFlagUseTransparentSSR;
+        }
     }
     cameraShaderFlags = flags;
 
@@ -297,8 +302,8 @@ bool RenderBackend::UploadCameraConstants() {
     ALIGN_AS32 BE1::Mat4 prevUnjitteredViewProjMatrix = currentFrameCamera->prevViewProjMatrix;
 
     // jittered view projection matrix 에서 jittering 제거
-    RemoveProjectionJitter(unjitteredViewProjMatrix, currentFrameCamera->jitterNDC);
-    RemoveProjectionJitter(prevUnjitteredViewProjMatrix, currentFrameCamera->prevJitterNDC);
+    RemoveProjectionJitter(unjitteredViewProjMatrix, currentFrameCamera->ndcJitter);
+    RemoveProjectionJitter(prevUnjitteredViewProjMatrix, currentFrameCamera->prevNdcJitter);
 
     BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &currentFrameCamera->viewProjMatrix, sizeof(constants->viewProjMatrix));
     BE1::simdProcessor->Memcpy(&constants->invViewProjMatrix, &currentFrameCamera->invViewProjMatrix, sizeof(constants->invViewProjMatrix));
@@ -316,22 +321,21 @@ bool RenderBackend::UploadCameraConstants() {
         constants->viewRotation.m[row][3] = 0.0f;
     }
 
-    constants->cameraOrigin = float3(currentFrameCamera->origin.x, currentFrameCamera->origin.y, currentFrameCamera->origin.z);
-    constants->ndcFarZ = currentFrameCamera->projectionPolicy.GetNDCFarZ();
-    constants->cameraForward = float3(currentFrameCamera->axis[0].x, currentFrameCamera->axis[0].y, currentFrameCamera->axis[0].z);
+    constants->cameraOrigin = float3(currentFrameCamera->origin);
+    constants->depthClearValue = currentFrameCamera->projectionPolicy.GetDepthClearValue();
+    constants->cameraForward = float3(currentFrameCamera->axis[0]);
     constants->flags = flags;
-    constants->deviceDepthToNdcZScaleBias = float2(currentFrameCamera->deviceDepthToNdcZScale, currentFrameCamera->deviceDepthToNdcZBias);
-    constants->projectionScaleBiasZ = float2(currentFrameCamera->projectionScaleBiasZ.x, currentFrameCamera->projectionScaleBiasZ.y);
+    constants->projectionScaleBiasZ = float2(currentFrameCamera->projectionScaleBiasZ);
 
     // depth prepass 와 동일한 jitter 를 사용해 뷰 공간에서 직접 복원한다.
     BE1::Vec4 projectionScaleBiasXY = currentFrameCamera->projectionScaleBiasXY;
-    projectionScaleBiasXY.z += currentFrameCamera->jitterNDC.x;
-    projectionScaleBiasXY.w += currentFrameCamera->jitterNDC.y;
+    projectionScaleBiasXY.z += currentFrameCamera->ndcJitter.x;
+    projectionScaleBiasXY.w += currentFrameCamera->ndcJitter.y;
 
     // clip.xy = view.xy * projectionScaleBiasXY.xy + projectionScaleBiasXY.zw * clip.w
     // clip.w = -view.z (원근 투영), 1 (직교 투영)
     // ndc.xy = view.xy * projectionScaleBiasXY.xy / clip.w + projectionScaleBiasXY.zw
-    constants->projectionScaleBiasXY = float4(projectionScaleBiasXY.x, projectionScaleBiasXY.y, projectionScaleBiasXY.z, projectionScaleBiasXY.w);
+    constants->projectionScaleBiasXY = float4(projectionScaleBiasXY);
 
     const float invProjectionScaleX = 1.0f / projectionScaleBiasXY.x;
     const float invProjectionScaleY = 1.0f / projectionScaleBiasXY.y;
@@ -358,32 +362,41 @@ bool RenderBackend::UploadCameraConstants() {
     constants->lightCullingTileCountY = currentFrameCamera->lightCulling.tileCountY;
     constants->lightCullingWordsPerTile = currentFrameCamera->lightCulling.wordsPerTile;
     constants->lightCullingDebugMode = frameSettings.lightCullingDebugMode;
-    constants->padding0 = 0;
 
     const BE1::Mat3 &envLightAxis = currentFrameCamera->envLightAxis;
     constants->envLightAxis = float3x4(
         envLightAxis[0].x, envLightAxis[0].y, envLightAxis[0].z, 0.0f,
         envLightAxis[1].x, envLightAxis[1].y, envLightAxis[1].z, 0.0f,
         envLightAxis[2].x, envLightAxis[2].y, envLightAxis[2].z, 0.0f);
-    constants->envLightColor = float3(currentFrameCamera->envLightColor.r, currentFrameCamera->envLightColor.g, currentFrameCamera->envLightColor.b);
+    constants->envLightColor = float3(currentFrameCamera->envLightColor);
     constants->envLightIntensity = currentFrameCamera->envLightIntensity;
 
     constants->envLightDiffuseIrradianceCubeMapIndex = currentFrameCamera->envLightDiffuseIrradianceCubeMap ? currentFrameCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularCubeMapIndex = currentFrameCamera->envLightSpecularCubeMap ? currentFrameCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularMipCount = currentFrameCamera->envLightSpecularMipCount;
     constants->aoTextureIndex = currentFrameCamera->applyAO ? currentFrameCamera->ao.textureSet.outputTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->ssrUpsampledReflectionTextureIndex = currentFrameCamera->ssrUpsampledReflectionTexture ? currentFrameCamera->ssrUpsampledReflectionTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->transparentSSRUpsampledReflectionTextureIndex = currentFrameCamera->transparentSSRUpsampledReflectionTexture ? currentFrameCamera->transparentSSRUpsampledReflectionTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->transparentSSRDepthTextureIndex = currentFrameCamera->transparentSSRDepthTexture ? currentFrameCamera->transparentSSRDepthTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
 
-    // Shadow depth 기록을 마친 뒤 해당 카메라의 샘플링 데이터를 활성화한다.
-    constants->csm = {};
-    constants->shadowAtlas = {};
-
-    return true;
+    // Shadow depth 기록 결과가 확정된 뒤 최종 샘플링 데이터를 upload 메모리에 한 번만 쓴다.
+    if (csmData) {
+        constants->csm = *csmData;
+    } else {
+        constants->csm = {};
+    }
+    constants->shadowAtlas = shadowAtlasData;
 }
 
 void RenderBackend::UpdateFramePSOs() {
     renderSystem->GetHiZ().UpdateFramePSOs();
-    renderSystem->GetScreenSpaceDepthPyramid().UpdateFramePSOs();
-    frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipeline);
+    renderSystem->GetSSRHiZ().UpdateFramePSOs();
+    renderSystem->GetSSRSceneColorHistory().UpdateFramePSOs();
+    const uint32_t ssrResolutionMode = frame->GetRenderFrameSettings().ssrResolutionMode;
+    frameSSRTracePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTracePipelines[ssrResolutionMode]);
+    frameSSRRadianceResolvePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrRadianceResolvePipeline);
+    frameSSRTemporalPSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTemporalPipelines[ssrResolutionMode]);
+    frameSSRUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrUpsamplePipelines[ssrResolutionMode]);
     renderSystem->GetScreenSpaceAO().UpdateFramePSOs(frame->GetRenderFrameSettings());
     renderSystem->GetBloom().UpdateFramePSOs();
     renderSystem->GetPostLuminance().UpdateFramePSOs();
@@ -428,11 +441,15 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     currentContext = cmd->renderContext;
     frameImagePSO = cmd->imagePSO;
     frameHDROutputPSO = cmd->hdrOutputPSO;
-    gpuTimingEnabled = cmd->gpuTiming;
-    textureStreamingFeedbackEnabled = cmd->textureStreamingFeedback;
-    swapChainOutputEnabled = cmd->swapChainOutput;
+    useGpuTiming = cmd->useGpuTiming;
+    useTextureStreamingFeedback = cmd->useTextureStreamingFeedback;
+    useSwapChainOutput = cmd->useSwapChainOutput;
+
+    // 컨텍스트 준비에 실패하면 이전 컨텍스트의 프레임 상수를 재사용하지 않는다.
+    frameConstantBuffer = nullptr;
     oceanSurfaceQueryReadbackFrame = nullptr;
 
+    // 통계 변수를 초기화한다.
     statDrawCount = 0;
     statDrawTriangleCount = 0;
     statInstanceTableAllocCount = 0;
@@ -441,41 +458,37 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
 
     mainCommandList = frame->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
-    if (gpuTimingEnabled) {
+    if (useGpuTiming) {
         gpuTiming.BeginFrame(mainCommandList, frame, currentContext);
     }
 
     const FrameOceanSurface *frameOceanSurface = frame->GetFrameOceanSurface();
-    if (frameOceanSurface && swapChainOutputEnabled && currentContext == renderSystem->mainRenderContext) {
+    if (frameOceanSurface && useSwapChainOutput && currentContext == renderSystem->mainRenderContext) {
         renderSystem->gpuOcean.ApplySimulationSettings(frameOceanSurface->simulationSettings, frameOceanSurface->settingsRevision);
 
-        // 메인 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
+        // main render context 의 swap-chain 프레임마다 ocean simulation 을 한 프레임 진행한다.
         if (renderSystem->gpuOcean.Update(mainCommandList, frame->GetThreadData(0), frame->GetFrameTime())) {
             if (frameOceanSurface->surfaceQueryCount > 0) {
+                // ocean surface query 결과를 GPU 에서 readback 한다.
                 oceanSurfaceQueryReadbackFrame = renderSystem->gpuOceanSurface.DispatchQueries(mainCommandList, frame->GetThreadData(0), frameOceanSurface->surfaceQueries, frameOceanSurface->surfaceQueryCount, frameOceanSurface->surfaceSettings.height);
             }
         }
     }
 
-    if (swapChainOutputEnabled) {
+    if (useSwapChainOutput) {
         if (currentContext->frameCompositionTextureNeedsClear) {
-            // 새로 생성되었거나 다시 활성화된 frameCompositionTexture 는 실제로 처음 사용할 때 한 번만 초기화한다.
-            const BE1::Color4 &clearColor = currentContext->GetBaseClearColor();
+            // 새로 생성된 frameCompositionTexture 는 실제로 처음 사용할 때 한 번만 초기화한다.
             RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(
-                currentContext->frameCompositionTexture, RHI::ViewID::PrimaryID,
-                RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource)
-                .WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
+                currentContext->frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+                RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(currentContext->GetBaseClearColor()));
             RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
             RHI::renderer->EndRenderPass(mainCommandList);
             currentContext->frameCompositionTextureNeedsClear = false;
         }
-    } else {
-        // 스왑 체인 출력이 비활성화된 동안 합성 텍스처는 갱신되지 않는다.
-        currentContext->frameCompositionTextureNeedsClear = true;
     }
 
 #ifdef USE_MIPMAP_STREAMING
-    if (textureStreamingFeedbackEnabled) {
+    if (useTextureStreamingFeedback) {
         currentContext->textureStreamingFeedback.ClearBuffer(mainCommandList);
     }
 #endif
@@ -515,18 +528,20 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         return (const void *)(cmd + 1);
     }
 
-    // 이번 프레임에 사용할 상수 데이터들을 준비한다.
-    UploadFrameConstants();
+    // 이번 프레임에 사용할 상수 데이터를 GPU 에 업로드한다.
+    if (!UploadFrameConstants()) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload frame constants\n");
+    }
 
     mainCommandList->CloseAndExecute();
 
     return (const void *)(cmd + 1);
 }
 
-static const RenderPass *FindRenderPass(const FrameCamera *frameCamera, RenderPassType passType) {
+static const RenderPass *FindRenderPass(const FrameCamera *frameCamera, RenderPassType renderPassType) {
     for (uint32_t passIndex = 0; passIndex < frameCamera->numRenderPasses; ++passIndex) {
         const RenderPass *renderPass = &frameCamera->renderPasses[passIndex];
-        if (renderPass->type == passType) {
+        if (renderPass->type == renderPassType) {
             return renderPass;
         }
     }
@@ -556,7 +571,9 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
     currentFrameCamera = cmd->frameCamera;
 
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
-    if ((currentFrameCamera->is2D && frameSettings.skipDrawCamera2D) || (!currentFrameCamera->is2D && frameSettings.skipDrawCamera3D)) {
+    if (!frameConstantBuffer ||
+        (currentFrameCamera->is2D && frameSettings.skipDrawCamera2D) ||
+        (!currentFrameCamera->is2D && frameSettings.skipDrawCamera3D)) {
         InvalidateShadowAtlasUpdates(currentFrameCamera);
         return (const void *)(cmd + 1);
     }
@@ -572,21 +589,29 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
         return (const void *)(cmd + 1);
     }
 
-    // 현재 카메라의 상수 데이터들을 준비한다.
-    if (!UploadCameraConstants()) {
-        BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to upload camera constants\n");
+    // Shadow 패스 전에 카메라 CB 할당 성공을 확인하고, 데이터는 shadow 준비 후에 기록한다.
+    cameraConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(CameraConstants));
+    if (!cameraConstantBuffer) {
+        BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to allocate camera constants\n");
         InvalidateShadowAtlasUpdates(currentFrameCamera);
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
 
+    const ShaderCSMData *csmData = nullptr;
+    ShaderShadowAtlasData shadowAtlasData;
     if (!currentFrameCamera->is2D) {
         // Directional light 의 CSM depth 를 렌더링한다.
-        DrawCSMPass();
+        csmData = DrawCSMPass();
 
         // Spot/Point light 의 shadow depth 를 shadow atlas 에 렌더링한다.
-        DrawShadowAtlasPass();
+        DrawShadowAtlasPass(shadowAtlasData);
+    } else {
+        shadowAtlasData = {};
     }
+
+    // 메인 카메라 CB 를 사용하는 GPU 명령을 기록하기 전에 최종 상수 데이터를 업로드한다.
+    UploadCameraConstants(csmData, shadowAtlasData);
 
     BE1::Rect viewportRect = currentFrameCamera->outputRect;
     if (!currentFrameCamera->is2D) {
@@ -626,17 +651,16 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 void RenderBackend::DrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera2D");
 
-    if (!swapChainOutputEnabled) {
+    if (!useSwapChainOutput) {
         BE_WARNLOG("RenderBackend::DrawCamera2D: swap chain output is disabled\n");
         return;
     }
 
     // 백버퍼에 바로 그리지 않고, frameCompositionTexture 에 그린다.
-    RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
     const RHI::RenderPassImage::LoadAction loadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Color) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
     RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(
-        frameCompositionTexture, RHI::ViewID::PrimaryID, loadAction, RHI::RenderPassImage::StoreAction::Store, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource)
-        .WithClearValue(RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]));
+        currentContext->GetFrameCompositionTexture(), RHI::ViewID::PrimaryID, loadAction, RHI::RenderPassImage::StoreAction::Store,
+        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(clearColor));
     RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
 
     for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
@@ -649,18 +673,6 @@ void RenderBackend::DrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
     RHI::renderer->EndRenderPass(mainCommandList);
 }
 
-// AO 에서 사용할 non-MSAA depth/normal 텍스쳐를 준비한다.
-bool RenderBackend::PrepareAOInputs() {
-    RHI::Texture *depthTexture = currentFrameCamera->depthTexture;
-    assert(depthTexture);
-
-    if (depthTexture->GetSampleCount() == 1) {
-        return true;
-    }
-
-    return DispatchMSAAResolveDepth(currentFrameCamera->ao.depthTexture, RHI::GPUResourceState::ShaderResource, currentFrameCamera->ao.normalTexture);
-}
-
 bool RenderBackend::DispatchGenHiZ() {
     return renderSystem->GetHiZ().DispatchGenerate(mainCommandList, frame->GetThreadData(0), gpuTiming, currentFrameCamera->depthTexture, currentFrameCamera->projectionPolicy, currentFrameCamera->hiZ);
 }
@@ -669,85 +681,164 @@ bool RenderBackend::DispatchHiZDebugPreview() {
     return renderSystem->GetHiZ().DispatchDebugPreview(mainCommandList, frame->GetThreadData(0), cameraConstantBuffer, gpuTiming, frame->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentFrameCamera->hiZ);
 }
 
-bool RenderBackend::DispatchGenScreenSpaceDepthPyramid() {
-    return renderSystem->GetScreenSpaceDepthPyramid().Dispatch(*this);
+bool RenderBackend::DispatchGenSSRHiZ() {
+    return renderSystem->GetSSRHiZ().Dispatch(*this);
 }
 
-bool RenderBackend::DispatchScreenSpaceAO() {
-    if (!currentFrameCamera->applyAO || !currentFrameCamera->needDepthNormalOutput) {
-        return false;
-    }
+bool RenderBackend::DispatchUpdateSSRSceneColorHistory() {
+    return renderSystem->GetSSRSceneColorHistory().Dispatch(*this);
+}
 
-    ScreenSpaceAO &screenSpaceAO = renderSystem->GetScreenSpaceAO();
+bool RenderBackend::DispatchScreenSpaceAO(bool depthNormalResolved) {
     const FrameScreenSpaceAO &ao = currentFrameCamera->ao;
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     ScreenSpaceAO::DispatchParams params;
-    if (!screenSpaceAO.PrepareDispatch(ao, frameSettings, params)) {
+    if (!renderSystem->GetScreenSpaceAO().PrepareDispatchParams(frameSettings, params)) {
         return false;
     }
 
-    if (!PrepareAOInputs()) {
-        return false;
+    // MSAA 가 켜져있다면, AO 에서 사용할 resolved depth/normal 텍스쳐를 준비한다.
+    if (!depthNormalResolved && currentFrameCamera->depthTexture->GetSampleCount() > 1) {
+        if (!DispatchMSAAResolveDepthNormal(ao.depthTexture, ao.normalRoughnessTexture)) {
+            return false;
+        }
     }
 
-    screenSpaceAO.Dispatch(*this, params);
+    renderSystem->GetScreenSpaceAO().Dispatch(*this, params);
     return true;
 }
 
 void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCamera3D");
 
+    currentOceanSurfaceDraw = {};
+
     bool hiZCullingPrepared = false;
     if (currentFrameCamera->hiZOcclusionCulling) {
         hiZCullingPrepared = PrepareHiZCulling();
     }
 
-    const RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
-    // 불투명 surface 가 없는 프레임도 velocity 와 prepass normal 을 clear 해야 이전 프레임 값이 남지 않는다.
-    const bool hasDepthPrepass = currentFrameCamera->needVelocityOutput || currentFrameCamera->needDepthNormalOutput || FindRenderPass(currentFrameCamera, RenderPassType::DepthPrepass) != nullptr;
+    const bool needDepthPrepass = currentFrameCamera->needNormalOutput || currentFrameCamera->needVelocityOutput || FindRenderPass(currentFrameCamera, RenderPassType::DepthPrepass) != nullptr;
 
-    const bool useMSAA = currentFrameCamera->colorTexture->GetSampleCount() > 1;
+    const RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
+
+    bool ssrHiZReady = false;
     bool aoReady = false;
 
-    // depth prepass
-    if (hasDepthPrepass) {
+    if (needDepthPrepass) {
         DrawDepthPrepass(depthLoadAction);
 
-        aoReady = DispatchScreenSpaceAO();
+        if (currentFrameCamera->generateSSRHiZ) {
+            // MSAA 가 켜져있다면 SSR hi-Z generation 은 depth/normal/roughness/velocity 텍스쳐를 resolve 까지 한다.
+            ssrHiZReady = DispatchGenSSRHiZ();
+        }
+
+        if (currentFrameCamera->applyAO) {
+            // AO 는 resolved depth/normal 을 사용한다.
+            aoReady = DispatchScreenSpaceAO(ssrHiZReady);
+        }
     }
 
-    // Disable AO if its commands were not recorded before opaque shading.
-    // The camera command list has not been submitted yet.
+    // Screen Space AO 를 기록하지 못했으면 렌더링 시 Screen Space AO 를 비활성화한다.
     if (currentFrameCamera->applyAO && !aoReady) {
         CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
-        cameraShaderFlags &= ~ShaderCameraFlagUseAO;
+        cameraShaderFlags &= ~ShaderCameraFlagUseScreenSpaceAO;
         constants->flags = cameraShaderFlags;
     }
 
-    // Opaque 와 Skybox 를 렌더링한다.
-    const RHI::RenderPassImage::LoadAction sceneDepthLoadAction = hasDepthPrepass ? RHI::RenderPassImage::LoadAction::Load : depthLoadAction;
+    const uint32_t ssrDebugMode = frame->GetRenderFrameSettings().ssrDebugMode;
+    const bool needsSSRUpsample = ssrDebugMode == SSRDebugModeOff || ssrDebugMode == SSRDebugModeUpsampledReflection;
+
+    SSRHistoryRenderState *ssrHistoryState = currentFrameCamera->ssrHistoryRenderState.get();
+    const uint64_t ssrHistorySerial = currentFrameCamera->ssrHistorySerial;
+    const bool sceneColorHistoryReady = ssrHistoryState && ssrHistorySerial > 1 && ssrHistoryState->sceneColorHistorySerial == ssrHistorySerial - 1;
+    bool ssrReady = false;
+
+    if (ssrHiZReady && sceneColorHistoryReady && currentFrameCamera->traceSSR) {
+        ssrReady = DispatchSSRTrace(false);
+
+        if (ssrReady) {
+            ssrReady = DispatchSSRRadianceResolve();
+        }
+
+        if (ssrReady && currentFrameCamera->accumulateSSR) {
+            ssrReady = DispatchSSRTemporal(false);
+        }
+
+        if (ssrReady && needsSSRUpsample) {
+            ssrReady = DispatchSSRUpsample(false);
+        }
+
+        if (ssrReady && currentFrameCamera->accumulateSSR) {
+            // 불투명 서피스에 대한 SSR 기록이 성공하면 serial 을 갱신한다.
+            ssrHistoryState->opaqueTemporalReflectionSerial = ssrHistorySerial;
+        }
+    }
+
+    // Opaque material 은 resolve 가 실제로 끝난 프레임에만 bindless SSR buffer 를 참조한다.
+    // 기록에 실패한 경우에만 초기 활성화 플래그를 제거한다.
+    if (!ssrReady && (cameraShaderFlags & ShaderCameraFlagUseSSR) != 0) {
+        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
+        cameraShaderFlags &= ~ShaderCameraFlagUseSSR;
+        constants->flags = cameraShaderFlags;
+    }
+
+    // Opaque surface 와 Skybox 를 렌더링한다.
+    const RHI::RenderPassImage::LoadAction sceneDepthLoadAction = needDepthPrepass ? RHI::RenderPassImage::LoadAction::Load : depthLoadAction;
     DrawScenePass(clearFlags, clearColor, useExplicitClearColor, sceneDepthLoadAction);
 
-    // SSR trace 를 위한 screen-space depth pyramid 를 생성한다.
-    bool ssrTraceReady = false;
-    if (currentFrameCamera->generateScreenSpaceDepthPyramid) {
-        if (DispatchGenScreenSpaceDepthPyramid()) {
-            // SSR trace 를 수행한다.
-            if (currentFrameCamera->traceSSR) {
-                ssrTraceReady = DispatchSSRTrace();
+    // refraction 을 사용할 수 있도록 현재의 scene color/depth 를 보존한다.
+    CaptureSceneSnapshot();
+
+    PrepareGpuOcean();
+
+    // Opaque SSRHiZ 를 hit geometry 로 유지하고, 별도 receiver prepass 의 출발점으로 transparent SSR 을 추적한다.
+    bool transparentSSRReady = false;
+    if (ssrHiZReady && sceneColorHistoryReady && currentFrameCamera->traceTransparentSSR) {
+        if (DrawTransparentSSRPrepass()) {
+            transparentSSRReady = DispatchSSRTrace(true);
+
+            if (transparentSSRReady) {
+                transparentSSRReady = DispatchSSRRadianceResolve();
+            }
+
+            if (transparentSSRReady && currentFrameCamera->accumulateTransparentSSR) {
+                transparentSSRReady = DispatchSSRTemporal(true);
+            }
+
+            if (transparentSSRReady && needsSSRUpsample) {
+                transparentSSRReady = DispatchSSRUpsample(true);
+            }
+
+            if (transparentSSRReady && currentFrameCamera->accumulateTransparentSSR) {
+                // 투명 서피스에 대한 SSR 기록이 성공하면 serial 을 갱신한다.
+                ssrHistoryState->transparentTemporalReflectionSerial = ssrHistorySerial;
             }
         }
     }
 
-    // Ocean 이 현재 렌더 타겟을 읽는 feedback loop 없이 굴절할 수 있도록 Opaque scene color/depth 를 보존한다.
-    CaptureSceneSnapshot();
+    // Transparent SSR 기록에 실패한 경우에만 초기 활성화 플래그를 제거한다.
+    if (!transparentSSRReady && (cameraShaderFlags & ShaderCameraFlagUseTransparentSSR) != 0) {
+        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
+        cameraShaderFlags &= ~ShaderCameraFlagUseTransparentSSR;
+        constants->flags = cameraShaderFlags;
+    }
+
+    if (ssrHiZReady && ssrHistoryState && currentFrameCamera->updateSSRSceneColorHistory) {
+        if (DispatchUpdateSSRSceneColorHistory()) {
+            ssrHistoryState->sceneColorHistorySerial = ssrHistorySerial;
+        }
+    }
 
     // Ocean, Transparent, Debug primitive 를 렌더링한다.
-    DrawPostOpaquePass();
+    const bool depthOrVelocityWritten = DrawPostOpaquePass();
 
-    // Velocity 는 shading 이 끝난 뒤 TAA 전에 resolve 한다.
+    const bool useMSAA = currentFrameCamera->colorTexture->GetSampleCount() > 1;
+
+    // SSRHiZ 가 resolve 한 뒤 메인 depth/velocity 에 쓰기가 없으면 TAA 에서 같은 결과를 재사용한다.
+    // SSRHiZ 를 생성하지 못했거나 후속 쓰기가 있으면 shading 이 끝난 뒤 TAA 전에 다시 resolve 한다.
     bool velocityReady = true;
-    if (useMSAA && currentFrameCamera->needVelocityOutput) {
+    if (useMSAA && currentFrameCamera->taaResolve && (!ssrHiZReady || depthOrVelocityWritten)) {
         velocityReady = DispatchMSAAResolveVelocity();
     }
 
@@ -768,26 +859,39 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
 
     const bool debugGTAO = currentFrameCamera->ao.mode == RenderAOMode::GTAO && frameSettings.gtaoDebug != 0;
 
-    if (debugGTAO && aoReady) {
-        if (frameSettings.gtaoDebug > 1) {
-            renderSystem->GetScreenSpaceAO().DispatchDebugPreview(*this);
+    // Offscreen capture 결과가 전역 화면 디버그 출력으로 대체되면 probe radiance 에 디버그 이미지가 구워진다.
+    if (!BE1::HasFlag(currentFrameCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
+        if (debugGTAO && aoReady) {
+            if (frameSettings.gtaoDebug > 1) {
+                renderSystem->GetScreenSpaceAO().DispatchDebugPreview(*this);
+            }
+            outputOverrideTexture = currentFrameCamera->ao.textureSet.outputTexture;
+        } else if (frameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
+            outputOverrideTexture = useMSAA ? currentFrameCamera->resolvedColorTexture : currentFrameCamera->colorTexture;
+        } else if (frameSettings.ssrDebugMode != SSRDebugModeOff) {
+            const bool debugTransparentSSR = frameSettings.ssrTransparent && frameSettings.ssrDebugTransparent;
+            const bool debugSSRReady = debugTransparentSSR ? transparentSSRReady : ssrReady;
+            if (debugSSRReady) {
+                if (frameSettings.ssrDebugMode != SSRDebugModeUpsampledReflection) {
+                    outputOverrideTexture = currentFrameCamera->ssrResolveReflectionTexture;
+                } else if (debugTransparentSSR) {
+                    outputOverrideTexture = currentFrameCamera->transparentSSRUpsampledReflectionTexture;
+                } else {
+                    outputOverrideTexture = currentFrameCamera->ssrUpsampledReflectionTexture;
+                }
+            }
         }
-        outputOverrideTexture = currentFrameCamera->ao.textureSet.outputTexture;
-    } else if (frameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
-        outputOverrideTexture = useMSAA ? currentFrameCamera->resolvedColorTexture : currentFrameCamera->colorTexture;
-    } else if (frameSettings.ssrDebug && ssrTraceReady) {
-        outputOverrideTexture = currentFrameCamera->ssrTraceTexture;
     }
 
     PostProcessAndBlitToOutput(velocityReady, outputOverrideTexture);
 }
 
-void RenderBackend::DrawCSMPass() {
+const ShaderCSMData *RenderBackend::DrawCSMPass() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawCSMPass");
 
-    const FrameCascadedShadow *cascadedShadow = currentFrameCamera->frameCascadedShadow;
+    FrameCascadedShadow *cascadedShadow = currentFrameCamera->frameCascadedShadow;
     if (!cascadedShadow) {
-        return;
+        return nullptr;
     }
     assert(cascadedShadow->depthTexture);
 
@@ -803,7 +907,7 @@ void RenderBackend::DrawCSMPass() {
         RHI::ConstantBuffer *shadowViewConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(ShadowViewConstants));
         if (!shadowViewConstantBuffer) {
             BE_WARNLOG("RenderBackend::DrawCSMPass: failed to allocate cascade constants\n");
-            return;
+            return nullptr;
         }
 
         // 모든 상수를 resource transition 전에 준비하여 cascade 중간 실패를 방지한다.
@@ -839,21 +943,22 @@ void RenderBackend::DrawCSMPass() {
 
     RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(cascadedShadow->depthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource));
 
-    // 메인 카메라 CB 를 사용하는 GPU 명령은 아직 기록하지 않았다. Depth 기록 후에만 활성화한다.
-    CameraConstants *cameraConstants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
-    cameraConstants->csm = cascadedShadow->shaderData;
-    cameraConstants->csm.enabled = 1;
+    // Depth 기록 후 CPU 측 데이터를 활성화하고, 카메라 CB 업로드에서 한 번만 복사한다.
+    cascadedShadow->shaderData.enabled = 1;
+    return &cascadedShadow->shaderData;
 }
 
-void RenderBackend::DrawShadowAtlasPass() {
+void RenderBackend::DrawShadowAtlasPass(ShaderShadowAtlasData &outData) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawShadowAtlasPass");
 
     FrameShadowAtlas *shadowAtlas = currentFrameCamera->frameShadowAtlas;
     if (!shadowAtlas) {
+        outData = {};
         return;
     }
 
     if (shadowAtlas->numShadowViews == 0) {
+        outData = {};
         return;
     }
 
@@ -904,10 +1009,11 @@ void RenderBackend::DrawShadowAtlasPass() {
 
     if (allShadowsValid) {
         // 갱신이 없는 프레임도 유지 중인 그림자를 조명에서 사용하도록 전체 shadow 테이블을 연결한다.
-        CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
-        if (!frame->UploadShaderShadowTable(frameThreadData, mainCommandList, *shadowAtlas, constants->shadowAtlas)) {
+        if (!frame->UploadShaderShadowTable(frameThreadData, mainCommandList, *shadowAtlas, outData)) {
             BE_WARNLOG("RenderBackend::DrawShadowAtlasPass: failed to upload shadow tables\n");
         }
+    } else {
+        outData = {};
     }
 
     // 이번에 갱신한 shadow 의 depth 기록 결과만 공유 저장소에 반영한다.
@@ -1042,25 +1148,22 @@ void RenderBackend::DrawDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadA
     RHI::RenderPassImage renderPassImages[3];
     uint32_t renderPassImageCount = 0;
 
+    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(
+        currentFrameCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
+        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::DepthStencil(currentFrameCamera->projectionPolicy.GetDepthClearValue(), 0));
+
+    if (currentFrameCamera->needNormalOutput || currentFrameCamera->needRoughnessOutput) {
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
+            currentFrameCamera->normalRoughnessTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.5f, 0.5f, 1.0f, 0.0f));
+    }
+
     if (currentFrameCamera->needVelocityOutput) {
         renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
             currentFrameCamera->velocityTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
-    if (currentFrameCamera->needDepthNormalOutput) {
-        const RHI::Texture *normalTexture = currentFrameCamera->normalTexture;
-        assert(normalTexture->GetSampleCount() == currentFrameCamera->depthTexture->GetSampleCount());
-
-        // AO consumes view normals before opaque writes SSR's shading normals to this attachment.
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
-            normalTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
-            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
-    }
-
-    renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(currentFrameCamera->depthTexture, RHI::ViewID::PrimaryID, depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
-        RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource)
-        .WithClearValue(RHI::ClearValue::DepthStencil(currentFrameCamera->projectionPolicy.GetDepthClearValue(), 0));
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
     for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
@@ -1075,65 +1178,65 @@ void RenderBackend::DrawDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadA
 
 struct RenderPassImagesDesc {
     RHI::RenderPassImage::LoadAction        colorLoadAction;
-    RHI::RenderPassImage::LoadAction        surfaceOutputLoadAction;
     RHI::RenderPassImage::LoadAction        depthLoadAction;
     RHI::GPUResourceState                   renderTargetBeforeState;
     RHI::GPUResourceState                   renderTargetAfterState;
     RHI::GPUResourceState                   depthBeforeState;
     RHI::GPUResourceState                   depthAfterState;
-    const RHI::Texture *colorResolveTexture;
-    const RHI::Texture *depthResolveTexture;
+    const RHI::Texture *                    colorResolveTexture;
+    const RHI::Texture *                    depthResolveTexture;
     RHI::RenderPassImage::DepthResolveMode  depthResolveMode;
     bool                                    outputVelocity;
 };
 
-// Camera3D render pass 에서 사용할 color, surface output, depth attachment 를 구성한다.
+// Camera3D render pass 에서 사용할 color, velocity, TAA reactive mask, depth attachment 를 구성한다.
 // 각 attachment 의 종료 상태를 다음 pass 의 시작 상태와 연결해 불필요한 resource transition 을 피하고,
-// 지정된 resolve texture 로 MSAA color/depth 를 resolve 한다.
-static uint32_t BuildCamera3DRenderPassImages(const FrameCamera *frameCamera, const RenderPassImagesDesc &desc, const RHI::ClearValue *clearColorValue, RHI::RenderPassImage renderPassImages[6]) {
+// 지정된 resolve texture 로 MSAA color/depth/mask 를 resolve 한다.
+static uint32_t BuildCamera3DRenderPassImages(const FrameCamera *frameCamera, const RenderPassImagesDesc &desc, const RHI::ClearValue *clearColorValue, RHI::RenderPassImage renderPassImages[7]) {
     uint32_t renderPassImageCount = 0;
 
     const bool useMSAA = frameCamera->colorTexture->GetSampleCount() > 1;
 
     // color
     RHI::RenderPassImage colorImage = RHI::RenderPassImage::Color(
-        frameCamera->colorTexture, RHI::ViewID::PrimaryID, desc.colorLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
+        frameCamera->colorTexture, RHI::ViewID::PrimaryID, desc.colorLoadAction, RHI::RenderPassImage::StoreAction::Store,
+        desc.renderTargetBeforeState, desc.renderTargetAfterState);
     if (clearColorValue && desc.colorLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
         colorImage = colorImage.WithClearValue(*clearColorValue);
     }
     renderPassImages[renderPassImageCount++] = colorImage;
 
-    // normal
-    if (frameCamera->needNormalOutput) {
-        RHI::RenderPassImage normalImage = RHI::RenderPassImage::Color(
-            frameCamera->normalTexture, RHI::ViewID::PrimaryID, desc.surfaceOutputLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.renderTargetBeforeState, desc.renderTargetAfterState);
-        if (desc.surfaceOutputLoadAction == RHI::RenderPassImage::LoadAction::Clear) {
-            normalImage = normalImage.WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
-        }
-        renderPassImages[renderPassImageCount++] = normalImage;
-    }
-
     // velocity
     if (desc.outputVelocity) {
         // Prepass 의 velocity 를 보존하고 Ocean 등 후속 패스의 출력만 덧쓴다.
-        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(frameCamera->velocityTexture, RHI::ViewID::PrimaryID,
-            RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store,
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
+            frameCamera->velocityTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store,
             RHI::GPUResourceState::ShaderResource, desc.renderTargetAfterState);
+
+        // Ocean 이 없는 프레임에도 0 으로 초기화하여 이전 굴절 mask 가 남지 않게 한다.
+        renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::Color(
+            frameCamera->taaReactiveMaskTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, desc.renderTargetAfterState).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
     // depth
     // A reused texture can retain the optimized clear value of a different projection policy.
     renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::DepthStencil(
-        frameCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store, desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState)
-        .WithClearValue(RHI::ClearValue::DepthStencil(frameCamera->projectionPolicy.GetDepthClearValue(), 0));
+        frameCamera->depthTexture, RHI::ViewID::PrimaryID, desc.depthLoadAction, RHI::RenderPassImage::StoreAction::Store,
+        desc.depthBeforeState, RHI::GPUResourceState::DepthWrite, desc.depthAfterState).WithClearValue(RHI::ClearValue::DepthStencil(frameCamera->projectionPolicy.GetDepthClearValue(), 0));
 
     // MSAA resolve
     if (useMSAA) {
         if (desc.colorResolveTexture) {
             renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveColor(desc.colorResolveTexture, RHI::ViewID::PrimaryID, 0);
         }
+
         if (desc.depthResolveTexture) {
             renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveDepth(desc.depthResolveTexture, RHI::ViewID::PrimaryID, desc.depthResolveMode);
+        }
+
+        if (desc.outputVelocity) {
+            renderPassImages[renderPassImageCount++] = RHI::RenderPassImage::ResolveColor(frameCamera->resolvedTAAReactiveMaskTexture, RHI::ViewID::PrimaryID, 2);
         }
     }
 
@@ -1149,21 +1252,21 @@ void RenderBackend::DrawScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &
     }
 
     const bool captureSceneSnapshot = currentFrameCamera->oceanSurfacePSO && currentFrameCamera->snapshotColorTexture && currentFrameCamera->snapshotDepthTexture;
-    const RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+    const RHI::Texture *opaqueColorResolveTexture = captureSceneSnapshot ? currentFrameCamera->snapshotColorTexture : (currentFrameCamera->updateSSRSceneColorHistory ? currentFrameCamera->resolvedColorTexture : nullptr);
+    const RHI::ClearValue clearColorValue = RHI::ClearValue::Color(clearColor);
     const RenderPassImagesDesc passDesc = {
         colorLoadAction,
-        RHI::RenderPassImage::LoadAction::Clear,
         depthLoadAction,
         RHI::GPUResourceState::ShaderResource,
         RHI::GPUResourceState::RenderTarget,
         RHI::GPUResourceState::ShaderResource,
         RHI::GPUResourceState::DepthWrite,
-        captureSceneSnapshot ? currentFrameCamera->snapshotColorTexture : nullptr,
+        opaqueColorResolveTexture,
         captureSceneSnapshot ? currentFrameCamera->snapshotDepthTexture : nullptr,
         currentFrameCamera->projectionPolicy.reverseZ ? RHI::RenderPassImage::DepthResolveMode::Max : RHI::RenderPassImage::DepthResolveMode::Min,
         false
     };
-    RHI::RenderPassImage renderPassImages[6];
+    RHI::RenderPassImage renderPassImages[7];
     const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentFrameCamera, passDesc, useExplicitClearColor ? &clearColorValue : nullptr, renderPassImages);
 
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
@@ -1259,11 +1362,54 @@ void RenderBackend::CaptureSceneSnapshot() {
     RHI::renderer->Barrier(mainCommandList, finishBarriers, finishBarrierCount);
 }
 
-void RenderBackend::DrawPostOpaquePass() {
+bool RenderBackend::DrawTransparentSSRPrepass() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawTransparentSSRPrepass");
+
+    const RenderPass *transparentSSRPrepass = FindRenderPass(currentFrameCamera, RenderPassType::TransparentSSRPrepass);
+    const bool hasSurfaceReceivers = transparentSSRPrepass && transparentSSRPrepass->numDrawSurfs > 0;
+    const bool hasOceanReceiver = currentFrameCamera->oceanSurfaceSSRPrepassPSO && currentOceanSurfaceDraw.valid &&
+        currentOceanSurfaceDraw.patchBatch.instanceCount > 0;
+    if (!hasSurfaceReceivers && !hasOceanReceiver) {
+        return false;
+    }
+
+    RHI::Texture *depthTexture = currentFrameCamera->transparentSSRDepthTexture;
+    RHI::Texture *normalRoughnessTexture = currentFrameCamera->transparentSSRNormalRoughnessTexture;
+    RHI::Texture *velocityTexture = currentFrameCamera->transparentSSRVelocityTexture;
+    if (!depthTexture || !normalRoughnessTexture || !velocityTexture) {
+        return false;
+    }
+
+    assert(depthTexture->GetSampleCount() == 1 && normalRoughnessTexture->GetSampleCount() == 1 && velocityTexture->GetSampleCount() == 1);
+    assert(depthTexture->GetWidth() == normalRoughnessTexture->GetWidth() && depthTexture->GetHeight() == normalRoughnessTexture->GetHeight());
+    assert(depthTexture->GetWidth() == velocityTexture->GetWidth() && depthTexture->GetHeight() == velocityTexture->GetHeight());
+
+    RHI::RenderPassImage renderPassImages[] = {
+        RHI::RenderPassImage::Color(normalRoughnessTexture, RHI::ViewID::PrimaryID,
+            RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.5f, 0.5f, 1.0f, 0.0f)),
+        RHI::RenderPassImage::Color(velocityTexture, RHI::ViewID::PrimaryID,
+            RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f)),
+        RHI::RenderPassImage::DepthStencil(depthTexture, RHI::ViewID::PrimaryID,
+            RHI::RenderPassImage::LoadAction::Clear, RHI::RenderPassImage::StoreAction::Store,
+            RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource).WithClearValue(RHI::ClearValue::DepthStencil(currentFrameCamera->projectionPolicy.GetDepthClearValue(), 0))
+    };
+    RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, COUNT_OF(renderPassImages));
+
+    if (transparentSSRPrepass) {
+        DrawGenericPass(transparentSSRPrepass, cameraConstantBuffer);
+    }
+    DrawGpuOcean(currentFrameCamera->oceanSurfaceSSRPrepassPSO, false);
+
+    RHI::renderer->EndRenderPass(mainCommandList);
+    return true;
+}
+
+bool RenderBackend::DrawPostOpaquePass() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawPostOpaquePass");
 
     const RenderPassImagesDesc passDesc = {
-        RHI::RenderPassImage::LoadAction::Load,
         RHI::RenderPassImage::LoadAction::Load,
         RHI::RenderPassImage::LoadAction::Load,
         RHI::GPUResourceState::RenderTarget,
@@ -1273,16 +1419,17 @@ void RenderBackend::DrawPostOpaquePass() {
         currentFrameCamera->resolvedColorTexture,
         nullptr,
         RHI::RenderPassImage::DepthResolveMode::None,
-        currentFrameCamera->needVelocityOutput
+        currentFrameCamera->taaResolve
     };
-    RHI::RenderPassImage renderPassImages[6];
+    RHI::RenderPassImage renderPassImages[7];
     const uint32_t renderPassImageCount = BuildCamera3DRenderPassImages(currentFrameCamera, passDesc, nullptr, renderPassImages);
 
     RHI::renderer->BeginRenderPass(mainCommandList, renderPassImages, renderPassImageCount);
 
     // GpuOcean surface 는 Transparent surface 보다 먼저 렌더링한다.
-    DrawGpuOcean();
+    const bool depthOrVelocityWritten = DrawGpuOcean(currentFrameCamera->oceanSurfacePSO, true);
 
+    // 현재 Transparent/Debug 패스는 메인 depth/velocity 를 쓰지 않는다. 쓰기 경로를 추가하면 반환값에도 반영한다.
     if (const RenderPass *transparentPass = FindRenderPass(currentFrameCamera, RenderPassType::Transparent)) {
         DrawGenericPass(transparentPass, cameraConstantBuffer);
     }
@@ -1290,6 +1437,7 @@ void RenderBackend::DrawPostOpaquePass() {
     DrawDebugPrimitives();
 
     RHI::renderer->EndRenderPass(mainCommandList);
+    return depthOrVelocityWritten;
 }
 
 void RenderBackend::PostProcessAndBlitToOutput(bool velocityReady, const RHI::Texture *outputOverrideTexture) {
@@ -1322,7 +1470,7 @@ void RenderBackend::PostProcessAndBlitToOutput(bool velocityReady, const RHI::Te
         if (finalColorTexture != currentFrameCamera->outputTexture) {
             BlitTextureToRenderTarget(finalColorTexture, currentFrameCamera->outputTexture, currentFrameCamera->outputViewID, currentFrameCamera->outputBeforeState, currentFrameCamera->outputAfterState, currentFrameCamera->outputRect, currentFrameCamera->outputBlitPSO);
         }
-    } else if (swapChainOutputEnabled) {
+    } else if (useSwapChainOutput) {
         // 백버퍼에 바로 blit 하지 않고, frameCompositionTexture 에 먼저 blit 한다.
         RHI::Texture *frameCompositionTexture = currentContext->GetFrameCompositionTexture();
         BlitTextureToRenderTarget(finalColorTexture, frameCompositionTexture, RHI::ViewID::PrimaryID, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResource, currentFrameCamera->outputRect, frameImagePSO);
@@ -1555,12 +1703,12 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
 
     const FinalizeFrameRenderCommand *cmd = reinterpret_cast<const FinalizeFrameRenderCommand *>(data);
     const bool renderImGuiOverlay = cmd->renderImGuiOverlay && frame->HasPendingImGuiOverlay();
-    const bool finishGpuTiming = gpuTimingEnabled && gpuTiming.IsFrameActive();
-    RHI::Texture *frameCompositionTexture = swapChainOutputEnabled ? currentContext->GetFrameCompositionTexture() : nullptr;
+    const bool finishGpuTiming = useGpuTiming && gpuTiming.IsFrameActive();
+    RHI::Texture *frameCompositionTexture = useSwapChainOutput ? currentContext->GetFrameCompositionTexture() : nullptr;
 
     bool needsCommandList = renderImGuiOverlay || finishGpuTiming || frameCompositionTexture;
 #ifdef USE_MIPMAP_STREAMING
-    needsCommandList |= textureStreamingFeedbackEnabled;
+    needsCommandList |= useTextureStreamingFeedback;
     TextureStreamingFeedback::ReadbackFrame *textureStreamingReadbackFrame = nullptr;
 #endif
 
@@ -1568,7 +1716,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
         mainCommandList = frame->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
 
 #ifdef USE_MIPMAP_STREAMING
-        if (textureStreamingFeedbackEnabled) {
+        if (useTextureStreamingFeedback) {
             textureStreamingReadbackFrame = currentContext->textureStreamingFeedback.Resolve(mainCommandList);
         }
 #endif
@@ -1592,7 +1740,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
             RHI::renderer->EndRenderPass(mainCommandList);
         }
 
-        if (swapChainOutputEnabled) {
+        if (useSwapChainOutput) {
             BE1::Rect outputRect(0, 0, currentContext->GetWidth(), currentContext->GetHeight());
             BlitTextureToSwapChain(frameCompositionTexture, outputRect);
         }
@@ -1608,7 +1756,7 @@ const void *RenderBackend::ExecuteFinalizeFrame(const void *data) {
     uint64_t fenceValue = RHI::renderer->SignalFence(RHI::CommandQueueType::Graphics);
     frame->SetFrameFenceValue(fenceValue);
 
-    if (gpuTimingEnabled) {
+    if (useGpuTiming) {
         gpuTiming.SetFrameFence(fenceValue);
     }
 
@@ -1668,6 +1816,8 @@ static GpuTiming::Tag GpuTagForRenderPass(RenderPassType passType) {
         return GpuTiming::Tag::OpaquePass;
     case RenderPassType::Skybox:
         return GpuTiming::Tag::SkyPass;
+    case RenderPassType::TransparentSSRPrepass:
+        return GpuTiming::Tag::TransparentPass;
     case RenderPassType::Transparent:
         return GpuTiming::Tag::TransparentPass;
     case RenderPassType::Gui:
@@ -1719,21 +1869,21 @@ void RenderBackend::DrawSkyPass(const RenderPass *renderPass) {
     DrawSkySurfaces(renderPass->drawSurfs, numDrawSurfs);
 }
 
-void RenderBackend::DrawGpuOcean() {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGpuOcean");
+bool RenderBackend::PrepareGpuOcean() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::PrepareGpuOcean");
 
     const FrameOceanSurface *frameOceanSurface = frame->GetFrameOceanSurface();
-    if (!frameOceanSurface || BE1::HasFlag(currentFrameCamera->flags, RenderCamera::Flag::StaticOnly) || !currentFrameCamera->oceanSurfacePSO) {
-        return;
+    if (!frameOceanSurface || BE1::HasFlag(currentFrameCamera->flags, RenderCamera::Flag::StaticOnly) ||
+        (!currentFrameCamera->oceanSurfacePSO && !currentFrameCamera->oceanSurfaceSSRPrepassPSO)) {
+        return false;
     }
 
     GpuOcean &gpuOcean = renderSystem->GetGpuOcean();
     GpuOceanSurface &gpuOceanSurface = renderSystem->GetGpuOceanSurface();
     if (!gpuOcean.AreCascadeOutputsReady() || !gpuOceanSurface.IsGridReady()) {
-        return;
+        return false;
     }
 
-    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::OceanPass);
     GpuOceanSurface::View surfaceView;
     surfaceView.origin = currentFrameCamera->origin;
     surfaceView.renderWidth = currentFrameCamera->renderWidth;
@@ -1745,11 +1895,26 @@ void RenderBackend::DrawGpuOcean() {
         surfaceView.frustum = &currentFrameCamera->viewFrustum;
     }
 
+    return gpuOceanSurface.PrepareDraw(frame->GetThreadData(0), frameOceanSurface->surfaceSettings, surfaceView,
+        currentFrameCamera->snapshotColorTexture, currentFrameCamera->snapshotDepthTexture, currentOceanSurfaceDraw);
+}
+
+bool RenderBackend::DrawGpuOcean(const RHI::PipelineState *pipelineState, bool countInstanceUpload) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGpuOcean");
+
+    if (!pipelineState || !currentOceanSurfaceDraw.valid) {
+        return false;
+    }
+
+    GpuOceanSurface &gpuOceanSurface = renderSystem->GetGpuOceanSurface();
+    GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::OceanPass);
+
     GpuOceanSurface::DrawStats drawStats;
-    if (gpuOceanSurface.Draw(mainCommandList, frame->GetThreadData(0), currentFrameCamera->oceanSurfacePSO, frameConstantBuffer, cameraConstantBuffer, frameOceanSurface->surfaceSettings, surfaceView,
-        currentFrameCamera->snapshotColorTexture, currentFrameCamera->snapshotDepthTexture, &drawStats)) {
+    if (gpuOceanSurface.DrawPrepared(mainCommandList, pipelineState, frameConstantBuffer, cameraConstantBuffer,
+        currentOceanSurfaceDraw, countInstanceUpload, &drawStats)) {
         RecordDrawStats(drawStats.drawCount, drawStats.triangleCount, drawStats.instanceBufferAllocCount, drawStats.instanceBufferUploadBytes);
     }
+    return drawStats.drawCount > 0;
 }
 
 void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {

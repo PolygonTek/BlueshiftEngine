@@ -82,10 +82,10 @@ float4 GTAOUnpackEdges(float packedValue) {
 }
 
 // Match the nearest surface selected by the GTAO depth prefilter at half resolution.
-uint2 GTAOSelectInputCoord(uint2 outputCoord, uint resolutionScale, uint2 inputSize, float farPlaneDeviceDepth, Texture2D<float> depthTexture) {
+uint2 GTAOSelectInputCoord(uint2 outputCoord, uint resolutionScale, uint2 inputSize, float clearDepth, Texture2D<float> depthTexture) {
     const uint2 blockOrigin = outputCoord * resolutionScale;
     uint2 selectedCoord = min(blockOrigin, inputSize - 1u);
-    float selectedDepth = farPlaneDeviceDepth;
+    float selectedDepth = clearDepth;
     bool foundSurface = false;
 
     [unroll]
@@ -102,7 +102,7 @@ uint2 GTAOSelectInputCoord(uint2 outputCoord, uint resolutionScale, uint2 inputS
             }
 
             const float depth = depthTexture.Load(int3(inputCoord, 0));
-            if (depth != farPlaneDeviceDepth && (!foundSurface || (farPlaneDeviceDepth == 0.0f ? depth > selectedDepth : depth < selectedDepth))) {
+            if (depth != clearDepth && (!foundSurface || (clearDepth == 0.0f ? depth > selectedDepth : depth < selectedDepth))) {
                 selectedCoord = inputCoord;
                 selectedDepth = depth;
                 foundSurface = true;
@@ -145,13 +145,13 @@ float GTAOEvaluateVisibility(uint2 pixelCoord, float3 viewNormal, GTAOMainParams
 
     // Pull the receiver slightly toward the camera to suppress depth quantization self-occlusion.
     centerZ *= 0.99999f;
-    const bool orthogonal = (cameraConstants.flags & ShaderCameraFlagProjectionOrthogonal) != 0;
+    const bool orthogonal = cameraConstants.IsOrthogonal();
     const float2 uv = (float2(pixelCoord) + 0.5f) * params.outputSizeRcp;
-    const float3 centerPosition = ReconstructViewPosition(uv, centerZ, cameraConstants.uvToViewScaleBiasXY, orthogonal);
+    const float3 centerPosition = cameraConstants.GetViewPosition(uv, centerZ);
     const float3 viewVector = orthogonal ? float3(0.0f, 0.0f, 1.0f) : normalize(-centerPosition);
     viewNormal = normalize(viewNormal);
 
-    const float3 rightPosition = ReconstructViewPosition(uv + float2(params.outputSizeRcp.x, 0.0f), centerZ, cameraConstants.uvToViewScaleBiasXY, orthogonal);
+    const float3 rightPosition = cameraConstants.GetViewPosition(uv + float2(params.outputSizeRcp.x, 0.0f), centerZ);
     const float pixelViewSize = max(length(rightPosition - centerPosition), 1.0e-6f);
     const float effectRadius = params.radius * params.radiusMultiplier;
     const float screenSpaceRadius = effectRadius / pixelViewSize;
@@ -209,7 +209,7 @@ float GTAOEvaluateVisibility(uint2 pixelCoord, float3 viewNormal, GTAOMainParams
 
             if (valid0) {
                 const float sampleZ = prefilteredDepthTexture.SampleLevel(pointClampSampler, sampleUV0, mipLevel);
-                const float3 delta = sampleZ > 0.0f ? ReconstructViewPosition(sampleUV0, sampleZ, cameraConstants.uvToViewScaleBiasXY, orthogonal) - centerPosition : 0.0f;
+                const float3 delta = sampleZ > 0.0f ? cameraConstants.GetViewPosition(sampleUV0, sampleZ) - centerPosition : 0.0f;
                 const float distance = length(delta);
                 if (distance > 1.0e-6f) {
                     const float falloffDistance = length(float3(delta.xy, delta.z * (1.0f + params.thinOccluderCompensation)));
@@ -221,7 +221,7 @@ float GTAOEvaluateVisibility(uint2 pixelCoord, float3 viewNormal, GTAOMainParams
 
             if (valid1) {
                 const float sampleZ = prefilteredDepthTexture.SampleLevel(pointClampSampler, sampleUV1, mipLevel);
-                const float3 delta = sampleZ > 0.0f ? ReconstructViewPosition(sampleUV1, sampleZ, cameraConstants.uvToViewScaleBiasXY, orthogonal) - centerPosition : 0.0f;
+                const float3 delta = sampleZ > 0.0f ? cameraConstants.GetViewPosition(sampleUV1, sampleZ) - centerPosition : 0.0f;
                 const float distance = length(delta);
                 if (distance > 1.0e-6f) {
                     const float falloffDistance = length(float3(delta.xy, delta.z * (1.0f + params.thinOccluderCompensation)));

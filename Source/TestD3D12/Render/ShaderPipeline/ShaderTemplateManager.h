@@ -53,7 +53,7 @@ public:
     SharedPtr<ShaderTemplate>       hdr10OutputShaderTemplate;
     SharedPtr<ShaderTemplate>       displayP3EDROutputShaderTemplate;
     SharedPtr<ShaderTemplate>       debugDrawShaderTemplate;
-    SharedPtr<ShaderTemplate>       depthShaderTemplate;
+    SharedPtr<ShaderTemplate>       depthPrepassShaderTemplate;
     SharedPtr<ShaderTemplate>       shadowDepthShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
@@ -61,8 +61,8 @@ public:
 private:
     void                            InitGlobalDefines();
     void                            CleanExpiredShaderTemplates();
-    void                            CreateEngineShaderTemplates();
-    void                            DestroyEngineShaderTemplates();
+    void                            CreateDefaultShaderTemplates();
+    void                            DestroyDefaultShaderTemplates();
 
     BE1::StrIHashMap<WeakPtr<ShaderTemplate>> shaderTemplateHashMap;
     int                             expiredShaderTemplateHashMapCursor = 0;

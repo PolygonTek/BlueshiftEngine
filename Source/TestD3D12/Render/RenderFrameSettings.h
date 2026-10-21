@@ -30,6 +30,7 @@ enum class RenderAOMode : uint32_t {
 // 메인 스레드에서 프레임 시작 시 생성되고, 해당 프레임 동안 변경되지 않는 렌더 설정이다.
 // 모든 멤버는 사용 전에 CaptureRenderFrameSettings() 에서 설정한다.
 struct RenderFrameSettings {
+    static constexpr uint32_t   SSRResolutionModeCount = 3;
     static constexpr uint32_t   CSMCascadeMaxCount = 4;
     static constexpr uint32_t   ShadowMapReferenceResolution = 1024;       ///< CSM/Point/Spot filter radius 와 border 의 공통 기준 해상도.
     static constexpr float      ShadowMapReferenceMinRadius = 0.0f;
@@ -70,6 +71,9 @@ struct RenderFrameSettings {
     float                       hdrPeakNits;
     float                       meshLODPixelError;
 
+    float                       specularAAVariance;
+    float                       specularAALimit;
+
     uint32_t                    taaJitterSampleCount;
     float                       taaHistoryWeight;
     float                       taaColorBoxSigma;
@@ -92,11 +96,14 @@ struct RenderFrameSettings {
     float                       gtaoThinOccluderCompensation;
     float                       gtaoDepthMipSamplingOffset;
 
-    uint32_t                    ssrMaxIterations;
-    uint32_t                    ssrBinaryRefinementSteps;
-    float                       ssrMaxDistance;
-    float                       ssrThickness;
-    float                       ssrNormalBias;
+    uint32_t                    ssrResolutionMode; // 0: full, 1: half, 2: quarter per axis.
+    uint32_t                    ssrTraceMaxIterations;
+    float                       ssrTraceThickness;
+    float                       ssrRayRoughnessScale;
+    float                       ssrScreenEdgeFade;
+    float                       ssrRoughnessFadeStart;
+    float                       ssrRoughnessFadeEnd;
+    float                       ssrTemporalHistoryWeight;
 
     uint32_t                    toneMappingOperator;
     float                       toneMapLuminanceLogMin;
@@ -163,7 +170,9 @@ struct RenderFrameSettings {
     bool                        aoTemporalNoise;
 
     bool                        ssr;
-    bool                        ssrDebug;
+    bool                        ssrTransparent;
+    uint32_t                    ssrDebugMode;
+    bool                        ssrDebugTransparent;
 
     bool                        toneMapping;
     bool                        colorGrading;

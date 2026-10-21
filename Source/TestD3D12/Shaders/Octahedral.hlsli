@@ -21,4 +21,13 @@ inline float3 DecodeUnitVectorOctahedral(float2 encoded) {
     return normalize(unitVector);
 }
 
+// UNORM render target 에 저장할 수 있도록 octahedral 좌표를 [0, 1] 로 변환한다.
+inline float2 EncodeUnitVectorOctahedralUNorm(float3 unitVector) {
+    return EncodeUnitVectorOctahedral(unitVector) * 0.5f + 0.5f;
+}
+
+inline float3 DecodeUnitVectorOctahedralUNorm(float2 encoded) {
+    return DecodeUnitVectorOctahedral(encoded * 2.0f - 1.0f);
+}
+
 #endif // __OCTAHEDRAL_HLSLI__

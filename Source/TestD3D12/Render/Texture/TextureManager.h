@@ -49,15 +49,15 @@ public:
     uint32_t                        GetStreamingTextureMinResidentMaxDimension() const;
     void                            SetStreamingTextureMemoryBudgetBytes(uint64_t budget) { streamingTextureMemoryBudgetBytes = budget; }
 
-    SharedPtr<Texture>              defaultTexture;
+    SharedPtr<Texture>              missingTexture;
     SharedPtr<Texture>              blackTexture;
     SharedPtr<Texture>              whiteTexture;
     SharedPtr<Texture>              flatNormalTexture;
 
 private:
     void                            CleanExpiredTextures();
-    void                            CreateEngineTextures();
-    void                            DestroyEngineTextures();
+    void                            CreateDefaultTextures();
+    void                            DestroyDefaultTextures();
     void                            UpdateStreamingTextures();
     void                            ComputeStreamingTextureMemoryUsage();
 

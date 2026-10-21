@@ -200,7 +200,7 @@ private:
     bool                            Load(const char *filename);
     bool                            LoadAsync(const char *filename);
 
-    void                            CreateDefaultBox();
+    void                            CreateMissingMesh();
     void                            CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float size, int numSegments);
     void                            CreateBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::Vec3 &extents);
     void                            CreateSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, int numSegments);

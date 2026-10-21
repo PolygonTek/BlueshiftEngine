@@ -26,11 +26,11 @@ void TextureManager::Init() {
 
     nextTextureIndex = 0;
 
-    CreateEngineTextures();
+    CreateDefaultTextures();
 }
 
 void TextureManager::Shutdown() {
-    DestroyEngineTextures();
+    DestroyDefaultTextures();
 
     textureHashMap.Clear();
 
@@ -83,7 +83,7 @@ SharedPtr<Texture> TextureManager::FindTexture(const char *hashName) const {
 
 SharedPtr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Flag flags, bool async) {
     if (!hashName || !hashName[0]) {
-        return defaultTexture;
+        return missingTexture;
     }
 
     const bool useAsyncLoading = async && LoadingSystem::IsAsyncAllowed();
@@ -95,7 +95,7 @@ SharedPtr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Fla
         }
 
         if (!useAsyncLoading && !texture->WaitReady()) {
-            return defaultTexture;
+            return missingTexture;
         }
         return texture;
     }
@@ -107,7 +107,7 @@ SharedPtr<Texture> TextureManager::GetTexture(const char *hashName, Texture::Fla
     bool loaded = useAsyncLoading ? texture->LoadAsync(hashName, flags) : texture->Load(hashName, flags);
     if (!loaded) {
         textureHashMap.RemoveFast(texture->hashName);
-        return defaultTexture;
+        return missingTexture;
     }
 
     return texture;
@@ -134,10 +134,10 @@ void TextureManager::CleanExpiredTextures() {
     }
 }
 
-void TextureManager::CreateEngineTextures() {
-    // Create default texture.
-    defaultTexture = AllocTexture("_defaultTexture");
-    defaultTexture->CreateDefaultTexture(16);
+void TextureManager::CreateDefaultTextures() {
+    // Create missing texture.
+    missingTexture = AllocTexture("_missingTexture");
+    missingTexture->CreateMissingTexture(16);
 
     // Create black texture.
     blackTexture = AllocTexture("_blackTexture");
@@ -147,24 +147,16 @@ void TextureManager::CreateEngineTextures() {
     whiteTexture = AllocTexture("_whiteTexture");
     whiteTexture->CreateColorTexture(8, BE1::Color4::white);
 
-    // Create flatNormal texture.
+    // Create flat normal texture.
     flatNormalTexture = AllocTexture("_flatNormalTexture");
-    flatNormalTexture->CreateFlatNormalTexture(16);
+    flatNormalTexture->CreateFlatNormalTexture(4);
 }
 
-void TextureManager::DestroyEngineTextures() {
-    if (defaultTexture) {
-        defaultTexture.reset();
-    }
-    if (blackTexture) {
-        blackTexture.reset();
-    }
-    if (whiteTexture) {
-        whiteTexture.reset();
-    }
-    if (flatNormalTexture) {
-        flatNormalTexture.reset();
-    }
+void TextureManager::DestroyDefaultTextures() {
+    missingTexture.reset();
+    blackTexture.reset();
+    whiteTexture.reset();
+    flatNormalTexture.reset();
 }
 
 bool TextureManager::IsRegisteredStreamingTexture(const Texture *texture) const {

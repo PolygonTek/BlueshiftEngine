@@ -132,19 +132,8 @@ void ShaderSurfaceTable::Build(const FrameSurf *frameSurf, ShaderSurface &outSha
         outShaderSurface.localBoundingSphere = float4(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
-    // TODO: 외부에서 non-uniform scale 여부를 직접 전달할 수 있게 되면 ShaderSurface flags 에 반영한다.
-    // 현재는 모든 surface 를 uniform scale 로 가정하여 매 프레임 행렬을 검사하는 비용을 피한다.
-    /*
-    const float scaleXSqr = worldMatrix[0][0] * worldMatrix[0][0] + worldMatrix[1][0] * worldMatrix[1][0] + worldMatrix[2][0] * worldMatrix[2][0];
-    const float scaleYSqr = worldMatrix[0][1] * worldMatrix[0][1] + worldMatrix[1][1] * worldMatrix[1][1] + worldMatrix[2][1] * worldMatrix[2][1];
-    const float scaleZSqr = worldMatrix[0][2] * worldMatrix[0][2] + worldMatrix[1][2] * worldMatrix[1][2] + worldMatrix[2][2] * worldMatrix[2][2];
-    const float minScaleSqr = BE1::Min3(scaleXSqr, scaleYSqr, scaleZSqr);
-    const float maxScaleSqr = BE1::Max3(scaleXSqr, scaleYSqr, scaleZSqr);
-    const bool nonUniformScale = maxScaleSqr - minScaleSqr > maxScaleSqr * MATRIX_EPSILON;
-    */
-
     outShaderSurface.shaderMaterialIndex = frameSurf->shaderMaterialIndex;
-    outShaderSurface.flags = 0;
+    outShaderSurface.flags = BE1::HasFlag(frameSurf->space->flags, FrameObject::Flag::NonUniformScale) ? ShaderSurfaceFlagNonUniformScale : 0;
 
     const FrameSkinnedMesh *frameSkinnedMesh = frameSurf->space->skinnedMesh;
     if (frameSkinnedMesh) {

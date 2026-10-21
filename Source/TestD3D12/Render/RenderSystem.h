@@ -16,13 +16,15 @@
 
 #include "Containers/RingBuffer.h"
 #include "RHI/RHI.h"
+#include "RenderFrameSettings.h"
 #include "GpuFFT.h"
 #include "GpuOcean.h"
 #include "GpuOceanSurface.h"
 #include "GpuSphericalHarmonics.h"
 #include "HiZ.h"
 #include "ScreenSpaceAO.h"
-#include "ScreenSpaceDepthPyramid.h"
+#include "SSRHiZ.h"
+#include "SSRSceneColorHistory.h"
 #include "Bloom.h"
 #include "PostLuminance.h"
 #include "ConvolutionBloomKernelGenerator.h"
@@ -104,7 +106,7 @@ public:
                                     // R8: simulated annealing 으로 생성한 1차원 난수. Scalar 와 다른 시퀀스.
     const SharedPtr<Texture> &      GetSTBNVec1Texture() const { return stbnVec1Texture; }
 
-                                    // RG8: [0, 1]^2 샘플. GTAO 의 각도/거리 지터, 2차원 샘플링 입력.
+                                    // RG8: [0, 1]^2 샘플. SSR 의 GGX VNDF 반사 방향 샘플링 입력.
     const SharedPtr<Texture> &      GetSTBNVec2Texture() const { return stbnVec2Texture; }
 
                                     // RGBA8: RGB 는 [0, 1]^3 샘플이며 A 는 미사용.
@@ -154,8 +156,11 @@ public:
     ScreenSpaceAO &                 GetScreenSpaceAO() { return screenSpaceAO; }
     const ScreenSpaceAO &           GetScreenSpaceAO() const { return screenSpaceAO; }
 
-    ScreenSpaceDepthPyramid &       GetScreenSpaceDepthPyramid() { return screenSpaceDepthPyramid; }
-    const ScreenSpaceDepthPyramid & GetScreenSpaceDepthPyramid() const { return screenSpaceDepthPyramid; }
+    SSRHiZ &                        GetSSRHiZ() { return ssrHiZ; }
+    const SSRHiZ &                  GetSSRHiZ() const { return ssrHiZ; }
+
+    SSRSceneColorHistory &          GetSSRSceneColorHistory() { return ssrSceneColorHistory; }
+    const SSRSceneColorHistory &    GetSSRSceneColorHistory() const { return ssrSceneColorHistory; }
 
     IBLBaker &                      GetIBLBaker() { return iblBaker; }
     const IBLBaker &                GetIBLBaker() const { return iblBaker; }
@@ -167,10 +172,11 @@ private:
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
     void                            InitSTBNTextures();
+    void                            UploadEngineTextures();
     void                            InitComputePipelines();
     void                            EnsureComputePipelines();
     void                            ReleaseComputePipelines();
-    bool                            CreateColorGradingLUT();
+    void                            CreateColorGradingLUT();
     void                            UpdateColorGradingLUT();
     void                            DestroyColorGradingLUT();
 
@@ -211,7 +217,10 @@ private:
     SharedPtr<ShaderTemplate>       msaaResolveDepthNormalShaderTemplate;
     SharedPtr<ShaderTemplate>       msaaResolveVelocityShaderTemplate;
     SharedPtr<ShaderTemplate>       lightCullingShaderTemplate;
-    SharedPtr<ShaderTemplate>       ssrTraceShaderTemplate;
+    SharedPtr<ShaderTemplate>       ssrTraceShaderTemplates[RenderFrameSettings::SSRResolutionModeCount];
+    SharedPtr<ShaderTemplate>       ssrRadianceResolveShaderTemplate;
+    SharedPtr<ShaderTemplate>       ssrTemporalShaderTemplates[RenderFrameSettings::SSRResolutionModeCount];
+    SharedPtr<ShaderTemplate>       ssrUpsampleShaderTemplates[RenderFrameSettings::SSRResolutionModeCount];
     SharedPtr<ShaderTemplate>       taaResolveShaderTemplate;
     SharedPtr<ShaderTemplate>       finalPostProcessShaderTemplate;
 
@@ -219,7 +228,10 @@ private:
     SharedPtr<ShaderPipeline>       msaaResolveDepthNormalPipeline;
     SharedPtr<ShaderPipeline>       msaaResolveVelocityPipeline;
     SharedPtr<ShaderPipeline>       lightCullingPipeline;
-    SharedPtr<ShaderPipeline>       ssrTracePipeline;
+    SharedPtr<ShaderPipeline>       ssrTracePipelines[RenderFrameSettings::SSRResolutionModeCount];
+    SharedPtr<ShaderPipeline>       ssrRadianceResolvePipeline;
+    SharedPtr<ShaderPipeline>       ssrTemporalPipelines[RenderFrameSettings::SSRResolutionModeCount];
+    SharedPtr<ShaderPipeline>       ssrUpsamplePipelines[RenderFrameSettings::SSRResolutionModeCount];
     SharedPtr<ShaderPipeline>       taaResolvePipeline;
     SharedPtr<ShaderPipeline>       finalPostProcessPipeline;
 
@@ -248,7 +260,8 @@ private:
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     HiZ                             hiZ;
     ScreenSpaceAO                   screenSpaceAO;
-    ScreenSpaceDepthPyramid         screenSpaceDepthPyramid;
+    SSRHiZ                          ssrHiZ;
+    SSRSceneColorHistory            ssrSceneColorHistory;
     Bloom                           bloom;
     PostLuminance                   postLuminance;
     IBLBaker                        iblBaker;

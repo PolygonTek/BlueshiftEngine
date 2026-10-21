@@ -31,7 +31,7 @@ uint2 GetMipSize(uint mipLevel) {
 
 // hiZ mipmap generation 에서 depth 를 reduce 할 때는 더 멀리 있는 depth 를 선택한다.
 float ReduceDepth(float a, float b, float c, float d) {
-    if (hiZMipGenParams.useMinDepth != 0) {
+    if (hiZMipGenParams.reverseZ != 0) {
         return min(min(a, b), min(c, d));
     }
     return max(max(a, b), max(c, d));
@@ -53,7 +53,7 @@ float LoadInputDepth(uint2 coord) {
     float depth = inputDepthTexture.Load(int2(coord), 0);
     for (uint sampleIndex = 1; sampleIndex < sampleCount; ++sampleIndex) {
         const float sampleDepth = inputDepthTexture.Load(int2(coord), sampleIndex);
-        depth = hiZMipGenParams.useMinDepth != 0 ? min(depth, sampleDepth) : max(depth, sampleDepth);
+        depth = hiZMipGenParams.reverseZ != 0 ? min(depth, sampleDepth) : max(depth, sampleDepth);
     }
     return depth;
 #else

@@ -22,10 +22,12 @@ set(SRC_FILES
     Scene/SceneMatrix.cpp
     Scene/SceneMaterialBall.h
     Scene/SceneMaterialBall.cpp
+    Scene/SceneReflection.h
+    Scene/SceneReflection.cpp
     Scene/SceneSkinnedMesh.h
     Scene/SceneSkinnedMesh.cpp
-    Scene/SceneStaticMesh.h
-    Scene/SceneStaticMesh.cpp
+    Scene/SceneShadows.h
+    Scene/SceneShadows.cpp
     Scene/SceneDebugDraw.h
     Scene/SceneDebugDraw.cpp
     Scene/SceneOcean.h
@@ -186,10 +188,14 @@ set(SRC_FILES
     Render/ScreenSpaceAO.cpp
     Render/ScreenSpaceAOResources.h
     Render/ScreenSpaceAOResources.cpp
-    Render/ScreenSpaceDepthPyramid.h
-    Render/ScreenSpaceDepthPyramid.cpp
-    Render/ScreenSpaceDepthPyramidResources.h
-    Render/ScreenSpaceDepthPyramidResources.cpp
+    Render/SSRHiZ.h
+    Render/SSRHiZ.cpp
+    Render/SSRHiZResources.h
+    Render/SSRHiZResources.cpp
+    Render/SSRSceneColorHistory.h
+    Render/SSRSceneColorHistory.cpp
+    Render/SSRSceneColorHistoryResources.h
+    Render/SSRSceneColorHistoryResources.cpp
     Render/HiZ.h
     Render/HiZ.cpp
     Render/HiZResources.h

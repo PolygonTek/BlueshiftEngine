@@ -137,7 +137,7 @@ bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> s
     return true;
 }
 
-void Texture::CreateDefaultTexture(int size, Texture::Flag flags) {
+void Texture::CreateMissingTexture(int size, Texture::Flag flags) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr);
     byte *dstPtr = image->GetPixels();

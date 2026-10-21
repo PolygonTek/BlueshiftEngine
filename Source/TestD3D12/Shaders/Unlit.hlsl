@@ -35,6 +35,10 @@ struct PSInput {
 #ifdef OUTPUT_NORMAL
     float3 viewNormal : TEXCOORD4;
 #endif
+#ifdef OUTPUT_VELOCITY
+    float4 currUnjitteredClipPos : TEXCOORD2;
+    float4 prevUnjitteredClipPos : TEXCOORD3;
+#endif
 };
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
@@ -67,24 +71,68 @@ PSInput VSMain(VSInput input) {
     result.viewNormal = mul((float3x3)cameraConstants.viewRotation, worldNormal);
 #endif
 
+#ifdef OUTPUT_VELOCITY
+    result.currUnjitteredClipPos = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
+    float4 prevLocalPosition = localPosition;
+    #if GPU_SKINNING
+        prevLocalPosition = GetPreviousSkinnedPosition(input.skinning, input.position, localPosition, shaderSurface.skinningJointOffset, shaderSurface.prevSkinningJointOffset);
+    #endif
+    result.prevUnjitteredClipPos = CalcClipPosition(prevLocalPosition, shaderSurface.prevWorldMatrix, cameraConstants.prevUnjitteredViewProjMatrix);
+#endif
+
     return result;
 }
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-CameraPassPSOutput PSMain(PSInput input) {
+#ifdef SURFACE_PREPASS
+SurfacePrepassPSOutput PSMain(PSInput input) {
+#else
+SurfacePassPSOutput PSMain(PSInput input) {
+#endif
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
+    const float2 texCoord = shaderMaterial.TransformTexCoord(input.texCoord);
+
+#ifdef SURFACE_PREPASS
+    SurfacePrepassPSOutput result;
+#if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
+    result.normalRoughness = float4(0.5f, 0.5f, 1.0f, 0.0f);
+#endif
+    #ifdef OUTPUT_NORMAL
+        result.normalRoughness.xy = dot(input.viewNormal, input.viewNormal) > FLT_MIN ? EncodeUnitVectorOctahedralUNorm(input.viewNormal) : float2(0.5f, 0.5f);
+    #endif
+    #ifdef OUTPUT_VELOCITY
+        result.velocity = CalcVelocity(input.currUnjitteredClipPos, input.prevUnjitteredClipPos);
+    #endif
+    #ifdef OUTPUT_ROUGHNESS
+        // Unlit surface 는 표준 specular 모델에 참여하지 않는다.
+        result.normalRoughness.z = 1.0f;
+    #endif
+    return result;
+#else
 
     if (frameConstants.feedbackBufferIndex != 0 && shaderMaterial.streamingMaterialIndex != TextureStreamingInvalidIndex) {
-        WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, ddx_coarse(input.texCoord.xy), ddy_coarse(input.texCoord.xy));
+        WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, ddx_coarse(texCoord), ddy_coarse(texCoord));
     }
 
-    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, input.texCoord);
-    CameraPassPSOutput result;
+    float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, texCoord);
+    SurfacePassPSOutput result;
+#if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
+    result.normalRoughness = float4(0.5f, 0.5f, 1.0f, 0.0f);
+#endif
     result.color = textureColor * shaderMaterial.GetBaseColorFactor() * input.color;
+#ifdef OUTPUT_VELOCITY
+    result.velocity = CalcVelocity(input.currUnjitteredClipPos, input.prevUnjitteredClipPos);
+    result.taaReactiveMask = 0.0f;
+#endif
 #ifdef OUTPUT_NORMAL
     // Octahedral encoding removes the interpolated length, as in the depth prepass.
-    result.normal = dot(input.viewNormal, input.viewNormal) > FLT_MIN ? EncodeUnitVectorOctahedral(input.viewNormal) : float2(0.0f, 0.0f);
+    result.normalRoughness.xy = dot(input.viewNormal, input.viewNormal) > FLT_MIN ? EncodeUnitVectorOctahedralUNorm(input.viewNormal) : float2(0.5f, 0.5f);
+#endif
+#ifdef OUTPUT_ROUGHNESS
+    // Unlit surfaces do not participate in the standard specular reflection model.
+    result.normalRoughness.z = 1.0f;
 #endif
     return result;
+#endif
 }

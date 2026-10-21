@@ -34,8 +34,7 @@ float GaussianBlur(Texture2D<float> inputTexture, uint2 pixelCoord, int2 axis, u
 struct BlurBilateralParams {
     uint2 inputSize;
     float depthSigmaRcp;
-    float farPlaneDeviceDepth;
-    float2 deviceDepthToNdcZScaleBias;
+    float clearDepth;
     float2 projectionScaleBiasZ;
     bool orthogonal;
 };
@@ -44,11 +43,11 @@ struct BlurBilateralParams {
 // Bilateral 의 입력값과 depth 는 같은 texel 격자를 사용한다.
 float BilateralBlur(Texture2D<float> inputTexture, Texture2D<float> inputDepthTexture, uint2 pixelCoord, int2 axis, BlurBilateralParams params) {
     const float centerDepth = inputDepthTexture.Load(int3(pixelCoord, 0));
-    if (centerDepth == params.farPlaneDeviceDepth) {
+    if (centerDepth == params.clearDepth) {
         return inputTexture.Load(int3(pixelCoord, 0));
     }
 
-    const float centerLinearDepth = ToLinearDepth(centerDepth, params.deviceDepthToNdcZScaleBias, params.projectionScaleBiasZ, params.orthogonal);
+    const float centerLinearDepth = ToLinearDepth(centerDepth, params.projectionScaleBiasZ, params.orthogonal);
     bool valid[gaussianNeighborCount];
     float sampleLinearDepths[gaussianNeighborCount];
 
@@ -57,11 +56,11 @@ float BilateralBlur(Texture2D<float> inputTexture, Texture2D<float> inputDepthTe
         const int2 sampleCoord = int2(pixelCoord) + gaussianOffsets[i] * axis;
 
         const bool inBounds = all(sampleCoord >= 0) && all(sampleCoord < int2(params.inputSize));
-        const float sampleDepth = inBounds ? inputDepthTexture.Load(int3(sampleCoord, 0)) : params.farPlaneDeviceDepth;
-        valid[i] = inBounds && sampleDepth != params.farPlaneDeviceDepth;
+        const float sampleDepth = inBounds ? inputDepthTexture.Load(int3(sampleCoord, 0)) : params.clearDepth;
+        valid[i] = inBounds && sampleDepth != params.clearDepth;
 
         // infinite far plane 의 clear 값을 포함한 배경 depth 는 선형화하지 않는다.
-        sampleLinearDepths[i] = valid[i] ? ToLinearDepth(sampleDepth, params.deviceDepthToNdcZScaleBias, params.projectionScaleBiasZ, params.orthogonal) : 0.0f;
+        sampleLinearDepths[i] = valid[i] ? ToLinearDepth(sampleDepth, params.projectionScaleBiasZ, params.orthogonal) : 0.0f;
     }
 
     // depth 가 한 방향으로 증가하거나 감소하는 표면에서는 국소 depth 기울기를 제거한다.

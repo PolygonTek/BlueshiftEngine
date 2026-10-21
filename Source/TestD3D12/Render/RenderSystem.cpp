@@ -51,14 +51,15 @@ void RenderSystem::Init(void *mainWindowHandle) {
     textureManager.Init();
 
     dfgSumGGXTexture = textureManager.GetTexture("Data/EngineTextures/DFGSumGGX.dds", Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace, false);
-    if (dfgSumGGXTexture == textureManager.defaultTexture) {
-        BE_WARNLOG("RenderSystem::Init: failed to load the GGX DFG LUT texture\n");
-        dfgSumGGXTexture.reset();
+    if (dfgSumGGXTexture == textureManager.missingTexture) {
+        BE_FATALERROR("RenderSystem::Init: failed to load 'Data/EngineTextures/DFGSumGGX.dds'\n");
     }
 
     InitSTBNTextures();
 
     CreateColorGradingLUT();
+
+    UploadEngineTextures();
 
     shaderTemplateManager.Init();
 
@@ -82,8 +83,11 @@ void RenderSystem::Init(void *mainWindowHandle) {
     screenSpaceAO.Init();
     screenSpaceAO.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
-    screenSpaceDepthPyramid.Init();
-    screenSpaceDepthPyramid.TrackBootstrapPipelines(shaderPipelineBootstrap);
+    ssrHiZ.Init();
+    ssrHiZ.TrackBootstrapPipelines(shaderPipelineBootstrap);
+
+    ssrSceneColorHistory.Init();
+    ssrSceneColorHistory.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
     bloom.Init();
     bloom.TrackBootstrapPipelines(shaderPipelineBootstrap);
@@ -161,7 +165,9 @@ void RenderSystem::Shutdown() {
 
     bloom.Shutdown();
 
-    screenSpaceDepthPyramid.Shutdown();
+    ssrSceneColorHistory.Shutdown();
+
+    ssrHiZ.Shutdown();
 
     screenSpaceAO.Shutdown();
 
@@ -414,18 +420,15 @@ void RenderSystem::PrepareProbeBakes(RenderContext *renderContext) {
 }
 
 static SharedPtr<Texture> LoadSTBNTexture(const char *filename, BE1::Image::Format format) {
-    constexpr Texture::Flag flags = Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace;
-    SharedPtr<Texture> texture = textureManager.GetTexture(filename, flags, false);
-    if (texture == textureManager.defaultTexture) {
-        BE_WARNLOG("RenderSystem::InitSTBNTextures: failed to load '%s'\n", filename);
-        return nullptr;
+    SharedPtr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace, false);
+    if (texture == textureManager.missingTexture) {
+        BE_FATALERROR("RenderSystem::InitSTBNTextures: failed to load '%s'\n", filename);
     }
 
     if (texture->GetType() != RHI::TextureType::Texture2DArray ||
         texture->GetWidth() != 128 || texture->GetHeight() != 128 || texture->GetArraySize() != 64 ||
         texture->GetMipLevelCount() != 1 || texture->GetFormat() != format) {
-        BE_WARNLOG("RenderSystem::InitSTBNTextures: unexpected texture format or dimensions in '%s'\n", filename);
-        return nullptr;
+        BE_FATALERROR("RenderSystem::InitSTBNTextures: unexpected texture format or dimensions in '%s'\n", filename);
     }
     return texture;
 }
@@ -441,15 +444,50 @@ void RenderSystem::InitSTBNTextures() {
     stbnUnitVec3CosineTexture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNUnitVec3Cosine.dds", BE1::Image::Format::R8G8B8A8);
 }
 
+void RenderSystem::UploadEngineTextures() {
+    // 렌더 컨텍스트와 비동기 에셋 로딩을 시작하기 전에 필수 엔진 텍스처를 일괄 업로드한다.
+    RHI::renderer->FlushResourceRequests();
+
+    const Texture *engineTextures[] = {
+        textureManager.missingTexture.get(),
+        textureManager.blackTexture.get(),
+        textureManager.whiteTexture.get(),
+        textureManager.flatNormalTexture.get(),
+        dfgSumGGXTexture.get(),
+        colorGradingLUTTexture.get(),
+        stbnScalarTexture.get(),
+        stbnVec1Texture.get(),
+        stbnVec2Texture.get(),
+        stbnVec3Texture.get(),
+        stbnUnitVec1Texture.get(),
+        stbnUnitVec2Texture.get(),
+        stbnUnitVec3Texture.get(),
+        stbnUnitVec3CosineTexture.get()
+    };
+
+    for (const Texture *engineTexture : engineTextures) {
+        const RHI::Texture *rhiTexture = engineTexture->GetRHITexture();
+        if (!rhiTexture || rhiTexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
+            BE_FATALERROR("RenderSystem::UploadEngineTextures: failed to create or upload '%s'\n", engineTexture->GetHashName());
+        }
+    }
+}
+
 void RenderSystem::InitComputePipelines() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
 
-    msaaResolveDepthShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveDepthShader", computeShaderModel, "MSAAResolveDepth.hlsl", baseDir);
-    msaaResolveDepthNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveDepthNormalShader", computeShaderModel, "MSAAResolveDepthNormal.hlsl", baseDir);
-    msaaResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveVelocityShader", computeShaderModel, "MSAAResolveVelocity.hlsl", baseDir);
+    msaaResolveDepthShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveDepthShader", computeShaderModel, "MSAA/MSAAResolveDepth.hlsl", baseDir);
+    msaaResolveDepthNormalShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveDepthNormalShader", computeShaderModel, "MSAA/MSAAResolveDepthNormal.hlsl", baseDir);
+    msaaResolveVelocityShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_msaaResolveVelocityShader", computeShaderModel, "MSAA/MSAAResolveVelocity.hlsl", baseDir);
     lightCullingShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_lightCullingShader", computeShaderModel, "Lighting/LightCulling.hlsl", baseDir);
-    ssrTraceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrTraceShader", computeShaderModel, "Reflection/SSRTrace.hlsl", baseDir);
+    for (uint32_t resolutionMode = 0; resolutionMode < RenderFrameSettings::SSRResolutionModeCount; ++resolutionMode) {
+        const BE1::Str defines = BE1::va("SSR_RESOLUTION_DIVISOR=%u", 1u << resolutionMode);
+        ssrTraceShaderTemplates[resolutionMode] = shaderTemplateManager.CreateComputeShaderTemplate(BE1::va("_ssrTraceShader%u", resolutionMode), computeShaderModel, "SSR/SSRTrace.hlsl", baseDir, "CSMain", defines.c_str());
+        ssrTemporalShaderTemplates[resolutionMode] = shaderTemplateManager.CreateComputeShaderTemplate(BE1::va("_ssrTemporalShader%u", resolutionMode), computeShaderModel, "SSR/SSRTemporal.hlsl", baseDir, "CSMain", defines.c_str());
+        ssrUpsampleShaderTemplates[resolutionMode] = shaderTemplateManager.CreateComputeShaderTemplate(BE1::va("_ssrUpsampleShader%u", resolutionMode), computeShaderModel, "SSR/SSRUpsample.hlsl", baseDir, "CSMain", defines.c_str());
+    }
+    ssrRadianceResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrRadianceResolveShader", computeShaderModel, "SSR/SSRRadianceResolve.hlsl", baseDir);
     taaResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAAResolve.hlsl", baseDir);
     finalPostProcessShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_finalPostProcessShader", computeShaderModel, "FinalPostProcess.hlsl", baseDir);
 
@@ -470,7 +508,12 @@ void RenderSystem::EnsureComputePipelines() {
     EnsureComputePipeline(msaaResolveDepthNormalShaderTemplate, msaaResolveDepthNormalPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(msaaResolveVelocityShaderTemplate, msaaResolveVelocityPipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(lightCullingShaderTemplate, lightCullingPipeline, shaderPipelineBootstrap);
-    EnsureComputePipeline(ssrTraceShaderTemplate, ssrTracePipeline, shaderPipelineBootstrap);
+    for (uint32_t resolutionMode = 0; resolutionMode < RenderFrameSettings::SSRResolutionModeCount; ++resolutionMode) {
+        EnsureComputePipeline(ssrTraceShaderTemplates[resolutionMode], ssrTracePipelines[resolutionMode], shaderPipelineBootstrap);
+        EnsureComputePipeline(ssrTemporalShaderTemplates[resolutionMode], ssrTemporalPipelines[resolutionMode], shaderPipelineBootstrap);
+        EnsureComputePipeline(ssrUpsampleShaderTemplates[resolutionMode], ssrUpsamplePipelines[resolutionMode], shaderPipelineBootstrap);
+    }
+    EnsureComputePipeline(ssrRadianceResolveShaderTemplate, ssrRadianceResolvePipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(taaResolveShaderTemplate, taaResolvePipeline, shaderPipelineBootstrap);
     EnsureComputePipeline(finalPostProcessShaderTemplate, finalPostProcessPipeline, shaderPipelineBootstrap);
 }
@@ -480,7 +523,15 @@ void RenderSystem::ReleaseComputePipelines() {
     msaaResolveDepthNormalPipeline.reset();
     msaaResolveVelocityPipeline.reset();
     lightCullingPipeline.reset();
-    ssrTracePipeline.reset();
+    for (uint32_t resolutionMode = 0; resolutionMode < RenderFrameSettings::SSRResolutionModeCount; ++resolutionMode) {
+        ssrTracePipelines[resolutionMode].reset();
+        ssrTraceShaderTemplates[resolutionMode].reset();
+        ssrTemporalPipelines[resolutionMode].reset();
+        ssrTemporalShaderTemplates[resolutionMode].reset();
+        ssrUpsamplePipelines[resolutionMode].reset();
+        ssrUpsampleShaderTemplates[resolutionMode].reset();
+    }
+    ssrRadianceResolvePipeline.reset();
     taaResolvePipeline.reset();
     finalPostProcessPipeline.reset();
 
@@ -488,7 +539,7 @@ void RenderSystem::ReleaseComputePipelines() {
     msaaResolveDepthNormalShaderTemplate.reset();
     msaaResolveVelocityShaderTemplate.reset();
     lightCullingShaderTemplate.reset();
-    ssrTraceShaderTemplate.reset();
+    ssrRadianceResolveShaderTemplate.reset();
     taaResolveShaderTemplate.reset();
     finalPostProcessShaderTemplate.reset();
 }
@@ -503,32 +554,24 @@ static ColorGradingLUTGenerator::Settings MakeColorGradingLUTSettingsFromCVars()
     return settings;
 }
 
-bool RenderSystem::CreateColorGradingLUT() {
+void RenderSystem::CreateColorGradingLUT() {
     // cvars 로 settings 를 채우고, color grading 3D LUT image 를 생성한다.
     const ColorGradingLUTGenerator::Settings settings = MakeColorGradingLUTSettingsFromCVars();
     ColorGradingLUTGenerator::Generate(settings, colorGradingLUTImage);
 
-    // CreateTexture 의 초기 업로드가 렌더 스레드에서 처리될 수 있으므로, 이후 갱신에 재사용할 CPU image 와 분리한다.
+    // 초기화 시 일괄 처리할 업로드 요청이 소유할 image 를 이후 갱신에 재사용할 CPU image 와 분리한다.
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>(colorGradingLUTImage);
 
     // color grading 3D LUT texture 생성
     colorGradingLUTTexture = textureManager.AllocTexture("_Generated/ColorGradingLUT");
     if (!colorGradingLUTTexture->Create3D(textureImage, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::Compute)) {
-        BE_WARNLOG("RenderSystem::CreateColorGradingLUT: failed to create LUT texture\n");
-        colorGradingLUTTexture.reset();
-        colorGradingLUTImage.Clear();
-        return false;
+        BE_FATALERROR("RenderSystem::CreateColorGradingLUT: failed to create LUT texture\n");
     }
 
     colorGradingLUTDirty = false;
-    return true;
 }
 
 void RenderSystem::UpdateColorGradingLUT() {
-    if (!colorGradingLUTTexture || !colorGradingLUTTexture->IsReadyForRendering()) {
-        return;
-    }
-
     const ColorGradingLUTGenerator::Settings settings = MakeColorGradingLUTSettingsFromCVars();
     ColorGradingLUTGenerator::Generate(settings, colorGradingLUTImage);
 
