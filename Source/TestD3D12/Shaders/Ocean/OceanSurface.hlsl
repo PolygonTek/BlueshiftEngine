@@ -106,6 +106,17 @@ float3 SampleOceanReflection(float3 reflectionDir, float roughness) {
     return lerp(float3(0.055f, 0.085f, 0.12f), float3(0.28f, 0.48f, 0.78f), skyGradient);
 }
 
+// Diffuse irradiance cubemap 에는 Lambert BRDF 의 1 / PI 가 이미 포함되어 있다.
+float3 SampleOceanDiffuseLighting(float3 normal) {
+    if (cameraConstants.envLightDiffuseIrradianceCubeMapIndex != 0u) {
+        const TextureCube<float4> diffuseIrradianceCubeMap = GetTextureCube(cameraConstants.envLightDiffuseIrradianceCubeMapIndex);
+        const float3 cubeMapDirection = mul(cameraConstants.envLightAxis, float4(normal, 0.0f));
+        return diffuseIrradianceCubeMap.SampleLevel(linearClampSampler, cubeMapDirection, 0.0f).rgb * cameraConstants.envLightColor * cameraConstants.envLightIntensity;
+    }
+
+    return 0.0f;
+}
+
 float2 ProjectOceanWorldPositionToUV(float3 worldPos) {
     const float4 clipPos = mul(cameraConstants.viewProjMatrix, float4(worldPos, 1.0f));
     const float2 ndc = clipPos.xy / max(clipPos.w, FLT_MIN);
@@ -315,8 +326,23 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
             cameraConstants.transparentSSRUpsampledReflectionTextureIndex, cameraConstants.transparentSSRDepthTextureIndex);
     }
 #endif
+    // 직접광의 shadow 는 한 번만 평가하고 물 내부색, 파도 마루 산란, 정반사와 거품에 공유한다.
+    const bool directionalLightEnabled = (cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0u;
+    float3 L = 0.0f;
+    float NdotL = 0.0f;
+    float3 lightIntensityRGB = 0.0f;
+    if (directionalLightEnabled) {
+        L = -frameConstants.directionalLight.direction;
+        NdotL = saturate(dot(normal, L));
+        const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition);
+        lightIntensityRGB = frameConstants.directionalLight.intensityRGB * shadowLighting;
+    }
+    const float3 diffuseLightIntensityRGB = lightIntensityRGB * Fd_Lambert();
+
+    // 물 내부색은 평균 수면으로 들어오는 빛으로 조명하며 굴절의 흡수 종착색에도 같은 값을 사용한다.
+    const float3 waterBodyLighting = SampleOceanDiffuseLighting(float3(0.0f, 0.0f, 1.0f)) + diffuseLightIntensityRGB * saturate(L.z);
     const float waterBodyFactor = lerp(0.35f, 1.0f, NdotV);
-    const float3 waterBodyColor = oceanSurfaceParams.waterColor * waterBodyFactor;
+    const float3 waterBodyColor = oceanSurfaceParams.waterColor * waterBodyFactor * waterBodyLighting;
     float3 transmission = waterBodyColor;
     float refractionContribution = 0.0f;
     if ((oceanSurfaceParams.surfaceOptions & OceanSurfaceOptionBitRefractionEnabled) != 0u) {
@@ -329,13 +355,7 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     }
     float3 color = lerp(transmission, reflection, fresnel);
 
-    if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0u) {
-        const float3 L = -frameConstants.directionalLight.direction;
-        const float NdotL = saturate(dot(normal, L));
-
-        const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition);
-        const float3 lightIntensityRGB = frameConstants.directionalLight.intensityRGB * shadowLighting;
-
+    if (directionalLightEnabled) {
         // 얇은 파도 마루를 통과한 직접광은 광원이 시선 반대편에 있을수록 강하게 보인다.
         const float normalizedCrestHeight = saturate((input.worldPosition.z - oceanSurfaceParams.surfaceHeight) / oceanSurfaceParams.scatterHeight);
         const float crestScatter = normalizedCrestHeight * normalizedCrestHeight;
@@ -346,8 +366,6 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
         color += lightIntensityRGB * relativeScatter * scatterAmount;
         
         if (NdotL > 0.0f) {
-            color += lightIntensityRGB * oceanSurfaceParams.waterColor * (0.02f * NdotL);
-
             const float3 halfVectorUnnormalized = L + V;
             const float halfVectorLengthSquared = dot(halfVectorUnnormalized, halfVectorUnnormalized);
             if (halfVectorLengthSquared > FLT_MIN) {
@@ -374,7 +392,13 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
         foam *= lerp(1.0f, foamDetail, oceanSurfaceParams.foamDetailStrength);
     }
 
-    color = lerp(color, oceanSurfaceParams.foamColor, foam);
+    // 거품은 수면 normal 을 따르는 diffuse 재질로 조명한다. 거품이 없으면 환경광 샘플링을 생략한다.
+    [branch]
+    if (foam > 0.0f) {
+        const float3 foamLighting = SampleOceanDiffuseLighting(normal) + diffuseLightIntensityRGB * NdotL;
+        const float3 foamColor = oceanSurfaceParams.foamColor * foamLighting;
+        color = lerp(color, foamColor, foam);
+    }
 
     SurfacePassPSOutput result;
 #if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
