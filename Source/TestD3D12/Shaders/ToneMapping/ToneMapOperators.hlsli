@@ -3,6 +3,7 @@
 
 #include "../ShaderInterop.h"
 #include "../Colors.hlsli"
+#include "AgX.hlsli"
 
 static const float ToneMapWhiteLevel = 5.0;
 static const float ToneMapLuminanceSaturation = 1.0;
@@ -192,6 +193,10 @@ float3 ToneMap(float3 color, uint toneMappingOperator) {
         return ToneMapFilmicGT(color, 1.0);
     case ToneMappingOperatorPBRNeutral:
         return ToneMapPBRNeutral(color);
+    case ToneMappingOperatorAgX:
+        return ToneMapAgX(color, AgXLookNone);
+    case ToneMappingOperatorAgXPunch:
+        return ToneMapAgX(color, AgXLookPunchy);
     case ToneMappingOperatorFilmicACES:
     default:
         return ToneMapFilmicACES(color);

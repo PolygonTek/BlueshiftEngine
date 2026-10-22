@@ -1650,7 +1650,7 @@ void App::BuildImGuiOverlay() {
 
                         const bool hdrOutput = mainRenderContext && RHI::SwapChain::IsHDRColorSpace(mainRenderContext->GetSwapChain()->GetColorSpace());
                         int toneMapOp = hdrOutput ? static_cast<int>(ToneMappingOperatorFilmicGT) :
-                            BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorPBRNeutral));
+                            BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorAgXPunch));
                         ImGui::SetNextItemWidth(fontSize * 12.0f);
                         ImGui::BeginDisabled(hdrOutput);
                         if (ImGui::Combo("Tone map operator", &toneMapOp,
@@ -1665,7 +1665,9 @@ void App::BuildImGuiOverlay() {
                             "Filmic Unreal3\0"
                             "Filmic Uncharted 2\0"
                             "Filmic GT\0"
-                            "PBR Neutral\0\0")) {
+                            "PBR Neutral\0"
+                            "AgX\0"
+                            "AgXPunch\0\0")) {
                             r_toneMapOp.SetInteger(toneMapOp);
                         }
                         ImGui::EndDisabled();
