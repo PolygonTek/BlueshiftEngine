@@ -358,7 +358,8 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
     // 2. Opaque RenderPass 를 할당한다.
     RenderPass *opaquePass = AllocRenderPass(frameCamera, RenderPassType::Opaque, opaquePassFeatureSet, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
     if (opaquePass) {
-        opaquePass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(frameCamera->projectionPolicy, !useDepthPrepass);
+        // Prepass 에서 확정한 depth/coverage 를 재사용한다. Equal 비교는 reverse-Z 여부와 무관하다.
+        opaquePass->graphicsPipelineDesc.depthStencilStateType = depthPrepass ? RHI::DepthStencilStateType::EqualNoWrite : GetDepthState(frameCamera->projectionPolicy, true);
         RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest, false, false, false);
 
         opaquePSOResolver.Begin(opaquePass, BE1::Min(numOpaqueDrawSurfs, 1024));
@@ -431,19 +432,34 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
                 AddRenderPassDrawSurf(blendPass, frameSurf, BuildTransparentSortKey(frameSurf), rr.inputLayoutId, rr.pso);
             }
         } else {
+            RHI::PipelineState *depthPSO = nullptr;
+            VertexInputLayoutId depthInputLayoutId = depthInputLayout;
             if (depthPrepass) {
                 if (useSurfacePrepass) {
                     const ShaderFeatureSet featureSet = frameSurf->baseFeatureSet | depthPrepass->featureSet;
                     const RenderPassPSOResolver::ResolveResult rr = surfacePrepassPSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
-                    AddRenderPassDrawSurf(depthPrepass, frameSurf, BuildDepthSortKey(frameSurf), rr.inputLayoutId, rr.pso);
+                    depthPSO = rr.pso;
+                    depthInputLayoutId = rr.inputLayoutId;
                 } else {
                     const RenderPassDepthPSOResolver::ResolveResult rr = depthPrepassPSOResolver.Resolve(frameSurf, allowAsyncPSOBuild);
-                    AddRenderPassDrawSurf(depthPrepass, frameSurf, BuildDepthSortKey(frameSurf), rr.inputLayoutId, rr.pso);
+                    depthPSO = rr.pso;
+                    depthInputLayoutId = rr.inputLayoutId;
                 }
             }
             if (opaquePass) {
-                const ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(frameSurf, opaquePass, directLighting, indirectLighting);
+                ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(frameSurf, opaquePass, directLighting, indirectLighting);
+                if (depthPrepass) {
+                    // Alpha test 는 prepass 에서만 수행하고 color 는 일반 opaque permutation 을 재사용한다.
+                    featureSet.flags &= ~ShaderFeatureSet::Perforated;
+                }
                 const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
+                if (depthPrepass) {
+                    // 두 PSO 를 모두 요청한 뒤 함께 등록하여 비동기 컴파일 중 depth 또는 color 만 그려지는 것을 막는다.
+                    if (!depthPSO || !rr.pso) {
+                        continue;
+                    }
+                    AddRenderPassDrawSurf(depthPrepass, frameSurf, BuildDepthSortKey(frameSurf), depthInputLayoutId, depthPSO);
+                }
                 AddRenderPassDrawSurf(opaquePass, frameSurf, BuildOpaqueSortKey(frameSurf, rr.pso), rr.inputLayoutId, rr.pso);
             }
         }

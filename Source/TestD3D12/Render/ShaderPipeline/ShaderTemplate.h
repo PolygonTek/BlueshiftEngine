@@ -67,6 +67,7 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
     TextureType                     textureType = TextureType::None;
     BE1::Array<Condition>           conditions;
 };
+
 /*
 ---------------------------------------------------------------------------------------------------
 
