@@ -6,7 +6,9 @@
 #include "../SurfacePassOutput.hlsli"
 #include "../PBR/BRDFLibrary.hlsli"
 #include "../PBR/SpecularAA.hlsli"
-#include "../SSR/SSRComposite.hlsli"
+#if USE_SSR && !defined(SURFACE_PREPASS)
+    #include "../SSR/SSRComposite.hlsli"
+#endif
 
 #define OCEAN_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
@@ -319,7 +321,8 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     // 공용 SSR radiance 를 환경 반사 fallback 과 합성한 뒤 Fresnel 로 선택적인 scene refraction 과 섞는다.
     const float3 reflectionDir = reflect(-V, normal);
     float3 reflection = SampleOceanReflection(reflectionDir, specularRoughness);
-#ifdef APPLY_SSR
+#if USE_SSR
+    [branch]
     if ((cameraConstants.flags & ShaderCameraFlagUseTransparentSSR) != 0u) {
         reflection = CompositeTransparentSSRRadiance(
             (uint2)input.position.xy, input.position.z, reflection,

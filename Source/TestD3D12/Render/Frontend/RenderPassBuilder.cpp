@@ -87,8 +87,8 @@ static ShaderFeatureSet BuildSurfaceFeatureSet(const FrameSurf *frameSurf, const
 
 static bool IsTransparentSSRReceiver(const FrameSurf *frameSurf) {
     const SharedPtr<ShaderTemplate> &shaderTemplate = frameSurf->material->GetShaderTemplate();
+    // TransparentSSRPrepass declares support for receiving transparent SSR.
     return shaderTemplate &&
-        shaderTemplate->SupportsFeature(ShaderFeature::ApplySSR) &&
         shaderTemplate->SupportsFeature(ShaderFeature::SurfacePrepass) &&
         shaderTemplate->SupportsFeature(ShaderFeature::TransparentSSRPrepass) &&
         shaderTemplate->SupportsFeature(ShaderFeature::OutputNormal) &&
@@ -350,13 +350,8 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
         }
     }
 
-    ShaderFeatureSet opaquePassFeatureSet;
-    if (frameCamera->useSSR) {
-        opaquePassFeatureSet.EnableFeature(ShaderFeature::ApplySSR);
-    }
-
     // 2. Opaque RenderPass 를 할당한다.
-    RenderPass *opaquePass = AllocRenderPass(frameCamera, RenderPassType::Opaque, opaquePassFeatureSet, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
+    RenderPass *opaquePass = AllocRenderPass(frameCamera, RenderPassType::Opaque, {}, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
     if (opaquePass) {
         // Prepass 에서 확정한 depth/coverage 를 재사용한다. Equal 비교는 reverse-Z 여부와 무관하다.
         opaquePass->graphicsPipelineDesc.depthStencilStateType = depthPrepass ? RHI::DepthStencilStateType::EqualNoWrite : GetDepthState(frameCamera->projectionPolicy, true);
@@ -394,11 +389,7 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
     }
 
     // 5. Blend RenderPass 를 할당한다.
-    ShaderFeatureSet blendPassFeatureSet;
-    if (frameCamera->traceTransparentSSR) {
-        blendPassFeatureSet.EnableFeature(ShaderFeature::ApplySSR);
-    }
-    RenderPass *blendPass = AllocRenderPass(frameCamera, RenderPassType::Transparent, blendPassFeatureSet, VertexInputLayoutId::XyzStColorNormalTangent, numBlendDrawSurfs);
+    RenderPass *blendPass = AllocRenderPass(frameCamera, RenderPassType::Transparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, numBlendDrawSurfs);
     if (blendPass) {
         blendPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(frameCamera->projectionPolicy, false);
         RenderContext::activeContext->GetMainRenderDest(blendPass->graphicsPipelineDesc.renderDest, false, false, frameCamera->taaResolve);

@@ -699,7 +699,7 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
             }
 
             const SharedPtr<ShaderTemplate> &shader = surf->material->GetShaderTemplate();
-            hasReceiver = shader && shader->SupportsFeature(ShaderFeature::ApplySSR) &&
+            hasReceiver = shader &&
                 shader->SupportsFeature(ShaderFeature::SurfacePrepass) &&
                 shader->SupportsFeature(ShaderFeature::TransparentSSRPrepass) &&
                 shader->SupportsFeature(ShaderFeature::OutputNormal) &&
@@ -1206,9 +1206,6 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
     ShaderFeatureSet featureSet;
     if (frameCamera->taaResolve) {
         featureSet.EnableFeature(ShaderFeature::OutputVelocity);
-    }
-    if (frameCamera->traceTransparentSSR) {
-        featureSet.EnableFeature(ShaderFeature::ApplySSR);
     }
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = nullptr;

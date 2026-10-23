@@ -26,7 +26,6 @@ struct ShadingParams {
     float3 reflectionDir;
 
     float ambientOcclusion;
-    float3 emission;
 
 #if _CLEARCOAT != 0
     float clearCoat;
@@ -94,6 +93,21 @@ SurfacePrepassParams PrepareSurfacePrepassParams(ShaderMaterial shaderMaterial, 
     return surface;
 }
 
+// Emission is independent of lighting inputs and remains visible when all lighting is disabled.
+float3 EvaluateMaterialEmission(ShaderMaterial shaderMaterial, float2 texCoord, SamplerState materialSampler) {
+#if _EMISSION == 0
+    return 0.0f;
+#else
+    const float4 emissionColorFactor = shaderMaterial.GetEmissionColorFactor();
+    float3 emission = emissionColorFactor.rgb * emissionColorFactor.a;
+
+    #if _EMISSION == 2
+        emission *= GetTexture2D(shaderMaterial.emissiveTextureIndex).Sample(materialSampler, texCoord).rgb;
+    #endif
+    return emission;
+#endif
+}
+
 // material texture 를 샘플링하여 direct lighting 과 indirect lighting 에서 공유할 입력값을 준비한다.
 ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseColor, float2 texCoord, float3 viewDir, float3 normal,
 #if _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
@@ -122,7 +136,8 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 
     const float2 metallicRoughnessFactors = shaderMaterial.GetMetallicRoughnessFactors();
 
-#if _METALLIC != 0 || _ROUGHNESS >= 3 || _AO >= 2 || _CLEARCOAT >= 3 || (_CLEARCOAT != 0 && _CLEARCOAT_ROUGHNESS >= 2)
+#if _METALLIC != 0 || _ROUGHNESS >= 3 || _CLEARCOAT >= 3 || (_CLEARCOAT != 0 && _CLEARCOAT_ROUGHNESS >= 2) || (defined(INDIRECT_LIGHTING) && _AO >= 2)
+    // Share one packed-map sample between material inputs and indirect-light AO.
     const float4 metallicSample = GetTexture2D(shaderMaterial.metallicTextureIndex).Sample(materialSampler, texCoord);
 #endif
 
@@ -221,33 +236,21 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
     shading.specularF0 = lerp(shading.specularF0, F0ForAirInterfaceToF0ForClearCoat15(shading.specularF0), shading.clearCoat);
 #endif
 
-#if _AO == 0
     shading.ambientOcclusion = 1.0f;
-#elif _AO == 1
+#if defined(INDIRECT_LIGHTING) && _AO != 0
+    // Material AO only affects indirect lighting, including SSR.
+    #if _AO == 1
     shading.ambientOcclusion = GetTexture2D(shaderMaterial.aoTextureIndex).Sample(materialSampler, texCoord).r;
-#elif _AO == 2
+    #elif _AO == 2
     shading.ambientOcclusion = metallicSample.r;
-#elif _AO == 3
+    #elif _AO == 3
     shading.ambientOcclusion = metallicSample.g;
-#elif _AO == 4
+    #elif _AO == 4
     shading.ambientOcclusion = metallicSample.b;
-#elif _AO == 5
+    #elif _AO == 5
     shading.ambientOcclusion = metallicSample.a;
-#endif
-
-#if _AO != 0
-    shading.ambientOcclusion = lerp(1.0f, shading.ambientOcclusion, shaderMaterial.aoStrength);
-#endif
-
-#if _EMISSION == 0
-    shading.emission = 0.0f;
-#else
-    const float4 emissionColorFactor = shaderMaterial.GetEmissionColorFactor();
-    shading.emission = emissionColorFactor.rgb * emissionColorFactor.a;
-
-    #if _EMISSION == 2
-        shading.emission *= GetTexture2D(shaderMaterial.emissiveTextureIndex).Sample(materialSampler, texCoord).rgb;
     #endif
+    shading.ambientOcclusion = lerp(1.0f, shading.ambientOcclusion, shaderMaterial.aoStrength);
 #endif
 
     return shading;

@@ -39,8 +39,6 @@ bool ShaderFeatureSet::HasFeature(ShaderFeature feature) const {
         return !!(flags & DirectLighting);
     case ShaderFeature::IndirectLighting:
         return !!(flags & IndirectLighting);
-    case ShaderFeature::ApplySSR:
-        return !!(flags & ApplySSR);
     default:
         return false;
     }
@@ -80,9 +78,6 @@ void ShaderFeatureSet::EnableFeature(ShaderFeature feature) {
         break;
     case ShaderFeature::IndirectLighting:
         flags |= IndirectLighting;
-        break;
-    case ShaderFeature::ApplySSR:
-        flags |= ApplySSR;
         break;
     default:
         break;

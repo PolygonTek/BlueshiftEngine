@@ -27,7 +27,6 @@ enum class ShaderFeature : uint8_t {
     SurfacePrepass,
     DirectLighting,
     IndirectLighting,
-    ApplySSR,
     TransparentSSRPrepass,
     Count
 };
@@ -44,7 +43,6 @@ struct ShaderFeatureSet {
         SurfacePrepass              = 1u << 7,
         DirectLighting              = 1u << 8,
         IndirectLighting            = 1u << 9,
-        ApplySSR                    = 1u << 10,
         TransparentSSRPrepass       = 1u << 11,
         GpuSkinningWeightMask       = GpuSkinningWeight1 | GpuSkinningWeight4 | GpuSkinningWeight8
     };

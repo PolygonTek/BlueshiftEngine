@@ -5,10 +5,6 @@ shader "Ocean/OceanSurface" {
     }
 
     features {
-        applySSR {
-            APPLY_SSR=1
-        }
-
         outputNormal {
             OUTPUT_NORMAL=1
         }

@@ -11,10 +11,6 @@ shader "LitIndirect" {
     }
 
     features {
-        applySSR {
-            APPLY_SSR=1
-        }
-
         perforated {
             PERFORATED=1
         }

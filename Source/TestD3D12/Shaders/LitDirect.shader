@@ -11,10 +11,6 @@ shader "LitDirect" {
     }
 
     features {
-        applySSR {
-            APPLY_SSR=1
-        }
-
         perforated {
             PERFORATED=1
         }
@@ -33,10 +29,6 @@ shader "LitDirect" {
 
         surfacePrepass {
             SURFACE_PREPASS=1
-        }
-
-        transparentSSRPrepass {
-            TRANSPARENT_SSR_PREPASS=1
         }
 
         gpuSkinningWeight1 {

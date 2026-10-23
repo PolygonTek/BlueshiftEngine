@@ -48,10 +48,6 @@ shader "Lit" {
             INDIRECT_LIGHTING=1
         }
 
-        applySSR {
-            APPLY_SSR=1
-        }
-
         perforated {
             PERFORATED=1
         }

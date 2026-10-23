@@ -22,6 +22,7 @@ ShaderTemplateManager       shaderTemplateManager;
 
 static constexpr char       SpecularEnergyCompensationDefine[] = "USE_MULTIPLE_SCATTERING_COMPENSATION=1";
 static constexpr char       MultiBounceAODefine[] = "USE_MULTI_BOUNCE_AO=1";
+static constexpr char       SSRDefine[] = "USE_SSR=1";
 static constexpr char       ShadowRotationTextureDefine[] = "USE_SHADOW_ROTATION_TEXTURE=1";
 
 void ShaderTemplateManager::Init() {
@@ -84,6 +85,19 @@ void ShaderTemplateManager::ProcessPendingGlobalDefineChanges() {
             }
         } else if (defineExists) {
             RemoveGlobalDefine(MultiBounceAODefine);
+        }
+    }
+
+    if (r_ssr.IsModified()) {
+        r_ssr.ClearModified();
+
+        const bool defineExists = FindGlobalDefine(SSRDefine);
+        if (r_ssr.GetBool()) {
+            if (!defineExists) {
+                AddGlobalDefine(SSRDefine);
+            }
+        } else if (defineExists) {
+            RemoveGlobalDefine(SSRDefine);
         }
     }
 
@@ -244,6 +258,10 @@ void ShaderTemplateManager::InitGlobalDefines() {
 
     if (r_aoMultiBounce.GetBool()) {
         AddGlobalDefine(MultiBounceAODefine);
+    }
+
+    if (r_ssr.GetBool()) {
+        AddGlobalDefine(SSRDefine);
     }
 
     shadowDebugMode = r_shadowDebug.GetInteger();

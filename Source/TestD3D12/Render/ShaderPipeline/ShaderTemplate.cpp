@@ -617,8 +617,7 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
         { "surfacePrepass",     ShaderFeature::SurfacePrepass },
         { "transparentSSRPrepass", ShaderFeature::TransparentSSRPrepass },
         { "directLighting",     ShaderFeature::DirectLighting },
-        { "indirectLighting",   ShaderFeature::IndirectLighting },
-        { "applySSR",           ShaderFeature::ApplySSR }
+        { "indirectLighting",   ShaderFeature::IndirectLighting }
     };
 
     for (const FeatureName &featureName : FeatureNames) {
