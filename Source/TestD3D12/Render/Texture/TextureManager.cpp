@@ -135,21 +135,28 @@ void TextureManager::CleanExpiredTextures() {
 }
 
 void TextureManager::CreateDefaultTextures() {
-    // Create missing texture.
+    // Create 16x16 missing texture.
     missingTexture = AllocTexture("_missingTexture");
     missingTexture->CreateMissingTexture(16);
 
-    // Create black texture.
+    // Create 8x8 black texture.
     blackTexture = AllocTexture("_blackTexture");
     blackTexture->CreateColorTexture(8, BE1::Color4::black);
 
-    // Create white texture.
+    // Create 8x8 white texture.
     whiteTexture = AllocTexture("_whiteTexture");
     whiteTexture->CreateColorTexture(8, BE1::Color4::white);
 
-    // Create flat normal texture.
+    // Create 4x4 flat normal texture.
     flatNormalTexture = AllocTexture("_flatNormalTexture");
     flatNormalTexture->CreateFlatNormalTexture(4);
+
+    // Create 1x1x1 white 3D texture.
+    constexpr byte whitePixel[] = { 255, 255, 255, 255 };
+    SharedPtr<BE1::Image> whiteImage3D = MakeShared<BE1::Image>();
+    whiteImage3D->Create3D(1, 1, 1, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::Linear, whitePixel);
+    whiteTexture3D = AllocTexture("_whiteTexture3D");
+    whiteTexture3D->Create3D(whiteImage3D, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::LinearColorSpace);
 }
 
 void TextureManager::DestroyDefaultTextures() {
@@ -157,6 +164,7 @@ void TextureManager::DestroyDefaultTextures() {
     blackTexture.reset();
     whiteTexture.reset();
     flatNormalTexture.reset();
+    whiteTexture3D.reset();
 }
 
 bool TextureManager::IsRegisteredStreamingTexture(const Texture *texture) const {

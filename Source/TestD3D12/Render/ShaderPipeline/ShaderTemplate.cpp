@@ -891,6 +891,8 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
             textureType = TextureType::Texture2D;
         } else if (!textureTypeStr.Icmp("CUBE")) {
             textureType = TextureType::TextureCube;
+        } else if (!textureTypeStr.Icmp("3D")) {
+            textureType = TextureType::Texture3D;
         } else {
             BE_WARNLOG("unknown texture type '%s' in shader property '%s'\n", textureTypeStr.c_str(), name.c_str());
             return false;

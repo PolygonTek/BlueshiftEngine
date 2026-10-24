@@ -72,6 +72,14 @@ static BE1::Str ResolveTextureName(const ShaderTemplate::PropertyValue &property
     return "";
 }
 
+static const SharedPtr<Texture> &GetFallbackTexture(const ShaderPropertyInfo &propertyInfo) {
+    if (propertyInfo.textureType == ShaderPropertyInfo::TextureType::Texture3D) {
+        return textureManager.whiteTexture3D;
+    }
+
+    return propertyInfo.IsNormal() ? textureManager.flatNormalTexture : textureManager.whiteTexture;
+}
+
 int Material::FindPropertyIndex(const char *propertyName) const {
     if (!propertyName || !propertyName[0] || !internalData.shaderTemplate) {
         return -1;
@@ -142,7 +150,6 @@ const SharedPtr<Texture> *Material::GetPropertyTexture(int propertyIndex) const 
             return &textureProperty.texture;
         }
     }
-
     return nullptr;
 }
 
@@ -232,14 +239,6 @@ static Texture::Flag GetTextureFlags(const ShaderPropertyInfo &propertyInfo) {
     }
 
     return flags;
-}
-
-static SharedPtr<Texture> GetFallbackTexture(const ShaderPropertyInfo &propertyInfo) {
-    if (propertyInfo.IsNormal()) {
-        return textureManager.flatNormalTexture;
-    }
-
-    return textureManager.whiteTexture;
 }
 
 void Material::UpdateSampler() {
@@ -707,7 +706,7 @@ void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo
                 break;
             }
 
-            if (newProperty.GetType() != oldProperty.GetType()) {
+            if (newProperty.GetType() != oldProperty.GetType() || newProperty.textureType != oldProperty.textureType) {
                 BE_WARNLOG("Material::RemapShaderTemplateProperties: property '%s' type changed in material '%s'\n", newProperty.GetName(), hashName.c_str());
                 break;
             }

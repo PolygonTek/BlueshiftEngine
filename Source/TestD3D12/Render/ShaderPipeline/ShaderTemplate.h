@@ -39,7 +39,8 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
     enum class TextureType : uint8_t {
         None,
         Texture2D,
-        TextureCube
+        TextureCube,
+        Texture3D
     };
 
     struct Condition {
