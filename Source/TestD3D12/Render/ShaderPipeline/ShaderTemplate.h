@@ -23,6 +23,14 @@
 class ShaderTemplateManager;
 class LoadingSystem;
 
+/*
+---------------------------------------------------------------------------------------------------
+
+    Shader Property Descriptor
+
+---------------------------------------------------------------------------------------------------
+*/
+
 struct ShaderPropertyDesc : public BE1::PropertyDesc {
     enum class ShaderFlag : uint8_t {
         None                        = 0,
@@ -157,15 +165,15 @@ public:
                                     // 지원하는 feature 인지 검사
     bool                            SupportsFeature(ShaderFeature feature) const;
 
-                                    // 지원하지 않는 features 는 거른다.
-    ShaderFeatureSet                MaskSupportedFeatures(const ShaderFeatureSet &featureSet) const;
+                                    // requestedFeatureSet 에서 이 템플릿이 지원하는 feature 만 포함한 featureSet 을 리턴한다.
+    ShaderFeatureSet                MaskSupportedFeatures(const ShaderFeatureSet &requestedFeatureSet) const;
 
     bool                            Create(const char *text, const char *baseDir);
 
                                     // 리로드 완료 후 리소스를 사용할 수 있으면 true 를 반환한다. 새 데이터 로딩 성공 여부와는 무관하다.
     bool                            Reload();
 
-                                    // defines (shader define properties) + featureSet flags 으로 permutation 을 등록하고 그 key 를 리턴한다.
+                                    // defines (shader define properties) + featureSet flags 으로 permutation 을 등록하고 그 hash key 를 리턴한다.
     ShaderPermutationKey            RegisterPermutation();
     ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues);
     ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet);
@@ -191,12 +199,12 @@ private:
         bool                        CopyPropertiesFrom(const InternalData &rhs, const char **duplicatedPropertyName = nullptr);
         void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
         void                        ResetStandardPropertyIndices();
-        void                        RefreshStandardPropertyIndices();
 
         ShaderStageSource           stageSources[to_int(RHI::ShaderStage::Count)] = {};
         BE1::Str                    inheritedShaderTemplateName;
         BE1::StrArray               baseDefines;
         BE1::StrArray               featureDefines[to_int(ShaderFeature::Count)] = {};
+        uint32_t                    supportedFeatureMask = 0;
         BE1::Array<ShaderPropertyDesc> properties;
         BE1::HashIndex              propertyHash { 64, 64 };
         int                         standardPropertyIndices[NumStandardProperties];
@@ -204,7 +212,6 @@ private:
     };
 
     struct ShaderPermutation {
-        ShaderPermutationKey        key;
         BE1::StrArray               propertyDefines;
         ShaderFeatureSet            featureSet;
     };
@@ -223,15 +230,18 @@ private:
     static bool                     ParseStages(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData);
     static bool                     ParseProperties(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData);
 
-    ShaderPermutation *             FindPermutation(ShaderPermutationKey permutationKey) const;
+    const ShaderPermutation *       FindPermutation(ShaderPermutationKey permutationKey) const;
     void                            ClearPermutations();
 
-    bool                            HasFeatureSetDefine(const ShaderFeatureSet &featureSet, const char *define) const;
-    bool                            AppendFeatureSetDefines(BE1::StrArray &outDefines, const ShaderFeatureSet &featureSet) const;
+                                    // featureSetToCheck 에 포함된 feature 의 define 중 같은 이름이 있는지 확인한다. 값은 비교하지 않는다.
+    bool                            HasFeatureDefine(const ShaderFeatureSet &featureSetToCheck, const char *defineName) const;
+
+                                    // featureSet 에 포함된 feature 의 define 을 수집해 outDefines 의 기존 항목 뒤에 추가한다.
+    bool                            CollectFeatureDefines(const ShaderFeatureSet &featureSet, BE1::StrArray &outDefines) const;
 
     BE1::Str                        hashName;
     BE1::Str                        name;
     InternalData                    internalData;
 
-    mutable BE1::HashMap<uint64_t, ShaderPermutation *> permutationMap;
+    BE1::HashMap<uint64_t, ShaderPermutation *> permutationMap;
 };

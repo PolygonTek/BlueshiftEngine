@@ -340,7 +340,7 @@ ShaderPermutationKey Material::EnsurePermutation(const ShaderFeatureSet &feature
 
     ShaderFeatureSet supportedFeatureSet = featureSet;
     if (!featureSet.IsEmpty()) {
-        // shader template 에서 지원하지 않는 features 는 거른다.
+        // 템플릿에서 지원하지 않는 features 는 거른다.
         supportedFeatureSet = internalData.shaderTemplate->MaskSupportedFeatures(featureSet);
     }
 

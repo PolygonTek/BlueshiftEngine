@@ -70,6 +70,7 @@ void ShaderTemplate::InternalData::Purge() {
     for (BE1::StrArray &defines : featureDefines) {
         defines.Clear();
     }
+    supportedFeatureMask = 0;
     properties.Clear();
     propertyHash.Clear(64, 64);
     ResetStandardPropertyIndices();
@@ -85,6 +86,7 @@ void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
     for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
         featureDefines[i].Swap(rhs.featureDefines[i]);
     }
+    BE1::Swap(supportedFeatureMask, rhs.supportedFeatureMask);
     properties.Swap(rhs.properties);
     propertyHash.Swap(rhs.propertyHash);
     for (int i = 0; i < NumStandardProperties; ++i) {
@@ -129,14 +131,6 @@ void ShaderTemplate::InternalData::ResetStandardPropertyIndices() {
     }
 }
 
-void ShaderTemplate::InternalData::RefreshStandardPropertyIndices() {
-    ResetStandardPropertyIndices();
-
-    for (int i = 0; i < NumStandardProperties; ++i) {
-        standardPropertyIndices[i] = FindPropertyIndex(StandardPropertyNames[i]);
-    }
-}
-
 bool ShaderTemplate::AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *description, int flags, ShaderPropertyDesc::ShaderFlag shaderFlags) {
     ShaderPropertyDesc propertyDesc(name, label, type, defaultValue, description, flags, shaderFlags);
     if (!internalData.AddProperty(propertyDesc)) {
@@ -165,7 +159,13 @@ bool ShaderTemplate::InternalData::AddProperty(const ShaderPropertyDesc &propert
     int propertyIndex = properties.Append(propertyDesc);
     int hash = propertyHash.GenerateHash(propertyDesc.GetName(), true);
     propertyHash.Add(hash, propertyIndex);
-    RefreshStandardPropertyIndices();
+
+    for (int i = 0; i < NumStandardProperties; ++i) {
+        if (!BE1::Str::Cmp(propertyDesc.GetName(), StandardPropertyNames[i])) {
+            standardPropertyIndices[i] = propertyIndex;
+            break;
+        }
+    }
     return true;
 }
 
@@ -222,17 +222,9 @@ bool ShaderTemplate::SupportsFeature(ShaderFeature feature) const {
     return internalData.featureDefines[to_int(feature)].Count() > 0;
 }
 
-ShaderFeatureSet ShaderTemplate::MaskSupportedFeatures(const ShaderFeatureSet &featureSet) const {
-    ShaderFeatureSet supportedFeatureSet;
-
-    for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
-        ShaderFeature feature = static_cast<ShaderFeature>(featureIndex);
-
-        if (featureSet.HasFeature(feature) && SupportsFeature(feature)) {
-            supportedFeatureSet.EnableFeature(feature);
-        }
-    }
-
+ShaderFeatureSet ShaderTemplate::MaskSupportedFeatures(const ShaderFeatureSet &requestedFeatureSet) const {
+    ShaderFeatureSet supportedFeatureSet = {};
+    supportedFeatureSet.flags = requestedFeatureSet.flags & internalData.supportedFeatureMask;
     return supportedFeatureSet;
 }
 
@@ -259,7 +251,36 @@ static bool HasDefine(const BE1::StrArray &defines, const char *keyDefine) {
     return false;
 }
 
-static void AddDefine(BE1::StrArray &defines, const char *newDefineName, int value) {
+static bool TryAddDefine(BE1::StrArray &targetDefines, const char *newDefine) {
+    if (!newDefine || !newDefine[0]) {
+        return false;
+    }
+
+    if (HasDefine(targetDefines, newDefine)) {
+        return false;
+    }
+
+    targetDefines.Append(newDefine);
+    return true;
+}
+
+// sourceDefines 를 targetDefines 에 추가한다. 빈 항목이나 이름이 충돌하는 항목은 건너뛴다.
+// 하나라도 추가하지 못하면 false 를 반환하며, 이미 추가한 항목은 유지한다.
+static bool AddDefines(BE1::StrArray &targetDefines, const BE1::StrArray &sourceDefines) {
+    bool addedAllDefines = true;
+
+    for (const BE1::Str &define : sourceDefines) {
+        if (!TryAddDefine(targetDefines, define.c_str())) {
+            addedAllDefines = false;
+            continue;
+        }
+    }
+
+    return addedAllDefines;
+}
+
+// 호출부에서 define 이름의 충돌 검사를 마쳤다는 전제로 이름과 값을 조합해 추가한다.
+static void AddDefineWithValue(BE1::StrArray &targetDefines, const char *newDefineName, int value) {
     if (!newDefineName || !newDefineName[0]) {
         return;
     }
@@ -267,33 +288,7 @@ static void AddDefine(BE1::StrArray &defines, const char *newDefineName, int val
     BE1::Str newDefine = newDefineName;
     newDefine.Append("=");
     newDefine.Append(BE1::Str(value));
-    defines.Append(newDefine);
-}
-
-static bool AddDefine(BE1::StrArray &defines, const char *newDefine) {
-    if (!newDefine || !newDefine[0]) {
-        return false;
-    }
-
-    if (HasDefine(defines, newDefine)) {
-        return false;
-    }
-
-    defines.Append(newDefine);
-    return true;
-}
-
-static bool AppendDefines(BE1::StrArray &defines, const BE1::StrArray &appendDefines) {
-    bool addedAllDefines = true;
-
-    for (const BE1::Str &define : appendDefines) {
-        if (!AddDefine(defines, define.c_str())) {
-            addedAllDefines = false;
-            continue;
-        }
-    }
-
-    return addedAllDefines;
+    targetDefines.Append(newDefine);
 }
 
 ShaderPermutationKey ShaderTemplate::RegisterPermutation() {
@@ -316,7 +311,7 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
         }
 
         const char *propertyDefineName = propertyDesc.GetName();
-        if (HasDefine(internalData.baseDefines, propertyDefineName) || HasFeatureSetDefine(featureSet, propertyDefineName) || HasDefine(propertyDefines, propertyDefineName)) {
+        if (HasDefine(internalData.baseDefines, propertyDefineName) || HasFeatureDefine(featureSet, propertyDefineName) || HasDefine(propertyDefines, propertyDefineName)) {
             // permutation 의 define name 과 프로퍼티의 define name 은 중복되면 안된다.
             BE_ERRLOG("ShaderTemplate::RegisterPermutation: permutation define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
             continue;
@@ -327,10 +322,10 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
 
         switch (propertyDesc.GetType()) {
         case BE1::Variant::Type::Bool:
-            AddDefine(propertyDefines, propertyDefineName, value.As<bool>() ? 1 : 0);
+            AddDefineWithValue(propertyDefines, propertyDefineName, value.As<bool>() ? 1 : 0);
             break;
         case BE1::Variant::Type::Int:
-            AddDefine(propertyDefines, propertyDefineName, value.As<int>());
+            AddDefineWithValue(propertyDefines, propertyDefineName, value.As<int>());
             break;
         default:
             BE_WARNLOG("ShaderTemplate::RegisterPermutation: shader define property '%s' has unsupported type\n", propertyDefineName);
@@ -341,15 +336,13 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
     ShaderPermutationKey::NormalizeDefines(propertyDefines);
 
     ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(propertyDefines, featureSet);
-    ShaderPermutation *permutation = FindPermutation(permutationKey);
-    if (permutation) {
+    if (FindPermutation(permutationKey)) {
         return permutationKey;
     }
 
-    permutation = new ShaderPermutation;
-    permutation->key = permutationKey;
+    ShaderPermutation *permutation = new ShaderPermutation;
     permutation->featureSet = featureSet;
-    permutation->propertyDefines = propertyDefines;
+    permutation->propertyDefines.Swap(propertyDefines);
     permutationMap.Set(permutationKey.hash, permutation);
     return permutationKey;
 }
@@ -440,6 +433,14 @@ bool ShaderTemplate::Parse(const char *text, const char *baseDir, const char *sh
     if (!hasShaderStage) {
         BE_WARNLOG("ShaderTemplate::Parse: shader template '%s' has no shader stages\n", shaderTemplateName);
         return false;
+    }
+
+    for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
+        if (!outInternalData.featureDefines[featureIndex].IsEmpty()) {
+            ShaderFeatureSet featureSet = {};
+            featureSet.EnableFeature(static_cast<ShaderFeature>(featureIndex));
+            outInternalData.supportedFeatureMask |= featureSet.flags;
+        }
     }
 
     return true;
@@ -550,6 +551,29 @@ bool ShaderTemplate::ParseInheritProperties(BE1::Lexer &lexer, const char *baseD
     return true;
 }
 
+// 이름 토큰은 이미 읽힌 상태이며, 같은 줄의 선택적인 '=값'을 이어서 파싱한다.
+static bool ParseDefine(BE1::Lexer &lexer, const BE1::Str &nameToken, BE1::Str &outDefine) {
+    outDefine = nameToken;
+
+    BE1::Str token;
+    if (!lexer.ReadToken(&token, false)) {
+        return true;
+    }
+
+    if (token != "=") {
+        lexer.UnreadToken(&token);
+        return true;
+    }
+
+    if (!lexer.ReadToken(&token, false)) {
+        return false;
+    }
+
+    outDefine.Append("=");
+    outDefine.Append(token);
+    return true;
+}
+
 bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData) {
     BE1::Str token;
     bool closed = false;
@@ -568,20 +592,10 @@ bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTempl
             continue;
         }
 
-        BE1::Str define = token;
-        BE1::Str nextToken;
-        if (lexer.ReadToken(&nextToken, false)) {
-            if (nextToken == "=") {
-                BE1::Str valueToken;
-                if (!lexer.ReadToken(&valueToken, false)) {
-                    BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing value for base define '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
-                    return false;
-                }
-                define.Append("=");
-                define.Append(valueToken);
-            } else {
-                lexer.UnreadToken(&nextToken);
-            }
+        BE1::Str define;
+        if (!ParseDefine(lexer, token, define)) {
+            BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing value for base define '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
+            return false;
         }
 
         if (HasDefine(outInternalData.baseDefines, define.c_str())) {
@@ -676,20 +690,10 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplate
                 continue;
             }
 
-            BE1::Str define = defineToken;
-            BE1::Str nextToken;
-            if (lexer.ReadToken(&nextToken, false)) {
-                if (nextToken == "=") {
-                    BE1::Str valueToken;
-                    if (!lexer.ReadToken(&valueToken, false)) {
-                        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing value for feature define '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
-                        return false;
-                    }
-                    define.Append("=");
-                    define.Append(valueToken);
-                } else {
-                    lexer.UnreadToken(&nextToken);
-                }
+            BE1::Str define;
+            if (!ParseDefine(lexer, defineToken, define)) {
+                BE_WARNLOG("ShaderTemplate::ParseFeatures: missing value for feature define '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
+                return false;
             }
 
             if (HasDefine(featureDefines, define.c_str())) {
@@ -1102,7 +1106,7 @@ void ShaderTemplate::ClearPermutations() {
     permutationMap.DeleteContents(true);
 }
 
-ShaderTemplate::ShaderPermutation *ShaderTemplate::FindPermutation(ShaderPermutationKey permutationKey) const {
+const ShaderTemplate::ShaderPermutation *ShaderTemplate::FindPermutation(ShaderPermutationKey permutationKey) const {
     const auto *entry = permutationMap.Get(permutationKey.hash);
     if (entry) {
         return entry->second;
@@ -1110,15 +1114,14 @@ ShaderTemplate::ShaderPermutation *ShaderTemplate::FindPermutation(ShaderPermuta
     return nullptr;
 }
 
-// featureSet 에 해당하는 featureDefines 에 define 이 있는지 확인한다.
-bool ShaderTemplate::HasFeatureSetDefine(const ShaderFeatureSet &featureSet, const char *define) const {
+bool ShaderTemplate::HasFeatureDefine(const ShaderFeatureSet &featureSetToCheck, const char *defineName) const {
     for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
         ShaderFeature feature = static_cast<ShaderFeature>(featureIndex);
-        if (!featureSet.HasFeature(feature)) {
+        if (!featureSetToCheck.HasFeature(feature)) {
             continue;
         }
 
-        if (HasDefine(internalData.featureDefines[featureIndex], define)) {
+        if (HasDefine(internalData.featureDefines[featureIndex], defineName)) {
             return true;
         }
     }
@@ -1126,7 +1129,7 @@ bool ShaderTemplate::HasFeatureSetDefine(const ShaderFeatureSet &featureSet, con
     return false;
 }
 
-bool ShaderTemplate::AppendFeatureSetDefines(BE1::StrArray &outDefines, const ShaderFeatureSet &featureSet) const {
+bool ShaderTemplate::CollectFeatureDefines(const ShaderFeatureSet &featureSet, BE1::StrArray &outDefines) const {
     bool addedAllDefines = true;
 
     for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
@@ -1136,8 +1139,8 @@ bool ShaderTemplate::AppendFeatureSetDefines(BE1::StrArray &outDefines, const Sh
         }
 
         for (const BE1::Str &define : internalData.featureDefines[featureIndex]) {
-            if (!AddDefine(outDefines, define.c_str())) {
-                BE_ERRLOG("ShaderTemplate::AppendFeatureSetDefines: feature define name '%s' conflicts with an existing define in shader template '%s'\n", define.c_str(), hashName.c_str());
+            if (!TryAddDefine(outDefines, define.c_str())) {
+                BE_ERRLOG("ShaderTemplate::CollectFeatureDefines: feature define name '%s' conflicts with an existing define in shader template '%s'\n", define.c_str(), hashName.c_str());
                 addedAllDefines = false;
                 continue;
             }
@@ -1151,7 +1154,7 @@ bool ShaderTemplate::PrepareShaderCompileData(ShaderPermutationKey permutationKe
     outCompileData.Clear();
 
     // 원본 permutation 을 얻는다.
-    ShaderPermutation *srcPermutation = FindPermutation(permutationKey);
+    const ShaderPermutation *srcPermutation = FindPermutation(permutationKey);
     if (!srcPermutation) {
         BE_WARNLOG("ShaderTemplate::PrepareShaderCompileData: shader template '%s' has no permutation 0x%llx\n", GetHashName(), permutationKey.hash);
         return false;
@@ -1159,9 +1162,17 @@ bool ShaderTemplate::PrepareShaderCompileData(ShaderPermutationKey permutationKe
 
     // global defines + base defines + property defines + feature defines 순으로 합쳐서 컴파일 define 을 만든다.
     shaderTemplateManager.CopyGlobalDefines(outCompileData.compileDefines);
-    AppendDefines(outCompileData.compileDefines, internalData.baseDefines);
-    AppendDefines(outCompileData.compileDefines, srcPermutation->propertyDefines);
-    if (!AppendFeatureSetDefines(outCompileData.compileDefines, srcPermutation->featureSet)) {
+    if (!AddDefines(outCompileData.compileDefines, internalData.baseDefines)) {
+        BE_ERRLOG("ShaderTemplate::PrepareShaderCompileData: failed to append base defines in shader template '%s'\n", GetHashName());
+        return false;
+    }
+
+    if (!AddDefines(outCompileData.compileDefines, srcPermutation->propertyDefines)) {
+        BE_ERRLOG("ShaderTemplate::PrepareShaderCompileData: failed to append property defines in shader template '%s'\n", GetHashName());
+        return false;
+    }
+
+    if (!CollectFeatureDefines(srcPermutation->featureSet, outCompileData.compileDefines)) {
         return false;
     }
 
