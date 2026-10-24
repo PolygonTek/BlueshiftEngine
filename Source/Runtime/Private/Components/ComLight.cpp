@@ -29,33 +29,33 @@ END_EVENTS
 
 void ComLight::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("lightType", "Light Type", RenderLight::Type::Enum, GetLightType, SetLightType, RenderLight::Type::Point,
-        "", PropertyInfo::Flag::Editor).SetEnumString("Point;Spot;Directional");
+        "", PropertyDesc::Flag::Editor).SetEnumString("Point;Spot;Directional");
     REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("material", "Material", Guid, GetMaterialGuid, SetMaterialGuid, GuidMapper::zeroClampLightMaterialGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("intensity", "Intensity", float, GetIntensity, SetIntensity, 2.f,
-        "", PropertyInfo::Flag::Editor).SetRange(0, 100, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 100, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("fallOffExponent", "Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, 1.25f,
-        "", PropertyInfo::Flag::Editor).SetRange(0.01f, 100, 0.1f);
+        "", PropertyDesc::Flag::Editor).SetRange(0.01f, 100, 0.1f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("lightSize", "Light Size", Vec3, GetLightSize, SetLightSize, Vec3(MeterToUnit(3.0f)),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("lightZNear", "Near Distance", float, GetLightZNear, SetLightZNear, MeterToUnit(0.1f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(MeterToUnit(0.01f), 100, 0.01f);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor).SetRange(MeterToUnit(0.01f), 100, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Shadows/Cast Shadows", bool, IsCastShadows, SetCastShadows, false,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("shadowOffsetFactor", "Shadows/Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, 3.f,
-        "", PropertyInfo::Flag::Editor).SetRange(0, 16, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 16, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("shadowOffsetUnits", "Shadows/Offset Units", float, GetShadowOffsetUnits, SetShadowOffsetUnits, 200.f,
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1000, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1000, 1);
     REGISTER_ACCESSOR_PROPERTY("timerOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 1000.f, 
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
 }
 
 ComLight::ComLight() {

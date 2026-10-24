@@ -47,15 +47,15 @@ void Batch::DrawPrimitives() const {
 }
 
 void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
-    const auto &propertyInfoHashMap = shader->GetPropertyInfoHashMap();
+    const auto &propertyDescHashMap = shader->GetPropertyDescHashMap();
 
     // Iterate over all shader property specs.
-    for (const auto &entry : propertyInfoHashMap) {
+    for (const auto &entry : propertyDescHashMap) {
         const auto &key = entry.first;
-        const auto &propInfo = entry.second;
+        const auto &propDesc = entry.second;
 
         // Skip if it is a shader define.
-        if (propInfo.GetFlags() & Shader::ShaderPropertyInfo::Flag::ShaderDefine) {
+        if (propDesc.GetFlags() & Shader::ShaderPropertyDesc::Flag::ShaderDefine) {
             continue;
         }
 
@@ -67,7 +67,7 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
 
         const Shader::Property &prop = propEntry->second;
 
-        switch (propInfo.GetType()) {
+        switch (propDesc.GetType()) {
         case Variant::Type::Int:
             shader->SetConstant1i(key, prop.data.As<int>());
             break;
@@ -118,13 +118,13 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
 }
 
 const Texture *Batch::TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const {
-    const auto *entry = mtrlPass->shader->GetPropertyInfoHashMap().Get(textureName);
+    const auto *entry = mtrlPass->shader->GetPropertyDescHashMap().Get(textureName);
     if (!entry) {
         return nullptr;
     }
 
-    const auto &propInfo = entry->second;
-    if ((propInfo.GetFlags() & Shader::ShaderPropertyInfo::Flag::ShaderDefine) || (propInfo.GetType() != Variant::Type::Guid)) {
+    const auto &propDesc = entry->second;
+    if ((propDesc.GetFlags() & Shader::ShaderPropertyDesc::Flag::ShaderDefine) || (propDesc.GetType() != Variant::Type::Guid)) {
         return nullptr;
     }
 

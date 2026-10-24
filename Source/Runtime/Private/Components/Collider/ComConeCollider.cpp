@@ -27,13 +27,13 @@ END_EVENTS
 
 void ComConeCollider::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, MeterToUnit(0.5f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, MeterToUnit(1.0f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("direction", "Direction", Direction::Enum, direction, Direction::Enum::ZAxis,
-        "", PropertyInfo::Flag::Editor).SetEnumString("X-Axis;Y-Axis;Z-Axis");
+        "", PropertyDesc::Flag::Editor).SetEnumString("X-Axis;Y-Axis;Z-Axis");
 }
 
 ComConeCollider::ComConeCollider() {

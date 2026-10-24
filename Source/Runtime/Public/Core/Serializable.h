@@ -23,17 +23,17 @@ namespace Json {
 
 BE_NAMESPACE_BEGIN
 
-class PropertyInfo;
+class PropertyDesc;
 
 /// Interface for objects with automatic serialization through properties.
 class BE_API Serializable : public SignalObject {
 public:
-                            /// Gets property info by name. Returns false if not found.
-    bool                    GetPropertyInfo(const char *name, PropertyInfo &outPropertyInfo) const;
-                            /// Gets property info by index. Returns false if not found.
-    bool                    GetPropertyInfo(int index, PropertyInfo &outPropertyInfo) const;
-                            /// Gets property info array.
-    virtual void            GetPropertyInfoList(Array<PropertyInfo> &outPropertyInfoList) const = 0;
+                            /// Gets property descriptor by name. Returns false if not found.
+    bool                    GetPropertyDesc(const char *name, PropertyDesc &outPropertyDesc) const;
+                            /// Gets property descriptor by index. Returns false if not found.
+    bool                    GetPropertyDesc(int index, PropertyDesc &outPropertyDesc) const;
+                            /// Gets property descriptor array.
+    virtual void            GetPropertyDescList(Array<PropertyDesc> &outPropertyDescList) const = 0;
 
                             /// Serialize to JSON value.
     virtual void            Serialize(Json::Value &out, bool forCopying = false) const;
@@ -49,15 +49,15 @@ public:
     Variant                 GetProperty(const char *name) const;
                             /// Gets a property value by index. Returns empty variant if not found.
     Variant                 GetProperty(int index) const;
-                            /// Gets a property value by property info.
-    void                    GetProperty(const PropertyInfo &propertyInfo, Variant &out) const;
+                            /// Gets a property value by property descriptor.
+    void                    GetProperty(const PropertyDesc &propertyDesc, Variant &out) const;
 
                             /// Sets a property value by name. Returns true if successfully set.
     bool                    SetProperty(const char *name, const Variant &value, bool forceWrite = false);
                             /// Sets a property value by index. Returns true if successfully set.
     bool                    SetProperty(int index, const Variant &value, bool forceWrite = false);
-                            /// Sets a property value by property info. Returns true if successfully set.
-    bool                    SetProperty(const PropertyInfo &propertyInfo, const Variant &value, bool forceWrite = false);
+                            /// Sets a property value by property descriptor. Returns true if successfully set.
+    bool                    SetProperty(const PropertyDesc &propertyDesc, const Variant &value, bool forceWrite = false);
 
                             /// Sets a property value to default by name. Returns true if successfully set.
     bool                    SetPropertyDefault(const char *name, bool forceWrite = false);
@@ -68,33 +68,33 @@ public:
     Variant                 GetArrayProperty(const char *name, int elementIndex) const;
                             /// Gets a indexed property value by index. Returns empty variant if not found.
     Variant                 GetArrayProperty(int index, int elementIndex) const;
-                            /// Gets a indexed property value by property info.
-    void                    GetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, Variant &out) const;
+                            /// Gets a indexed property value by property descriptor.
+    void                    GetArrayProperty(const PropertyDesc &propertyDesc, int elementIndex, Variant &out) const;
 
                             /// Sets a indexed property value by name. Returns true if successfully set.
     bool                    SetArrayProperty(const char *name, int elementIndex, const Variant &value, bool forceWrite = false);
                             /// Sets a indexed property value by index. Returns true if successfully set.
     bool                    SetArrayProperty(int index, int elementIndex, const Variant &value, bool forceWrite = false);
-                            /// Sets a indexed property value by property info.
-    bool                    SetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, const Variant &value, bool forceWrite = false);
+                            /// Sets a indexed property value by property descriptor.
+    bool                    SetArrayProperty(const PropertyDesc &propertyDesc, int elementIndex, const Variant &value, bool forceWrite = false);
 
                             /// Returns property array count by name. This function is valid only if property is an array.
     int                     GetPropertyArrayCount(const char *name) const;
                             /// Returns property array count by index. This function is valid only if property is an array.
     int                     GetPropertyArrayCount(int index) const;
-                            /// Returns property array count by property info. This function is valid only if property is an array.
-    int                     GetPropertyArrayCount(const PropertyInfo &propertyInfo) const;
+                            /// Returns property array count by property descriptor. This function is valid only if property is an array.
+    int                     GetPropertyArrayCount(const PropertyDesc &propertyDesc) const;
 
                             /// Sets property array count by name. This function is valid only if property is an array.
     void                    SetPropertyArrayCount(const char *name, int numElements);
                             /// Sets property array count by index. This function is valid only if property is an array.
     void                    SetPropertyArrayCount(int index, int numElements);
-                            /// Sets property array count by property info. This function is valid only if property is an array.
-    void                    SetPropertyArrayCount(const PropertyInfo &propertyInfo, int numElements);
+                            /// Sets property array count by property descriptor. This function is valid only if property is an array.
+    void                    SetPropertyArrayCount(const PropertyDesc &propertyDesc, int numElements);
 
     static const SignalDef  SIG_PropertyChanged;            ///< A signal emitted when a property value changed.
     static const SignalDef  SIG_PropertyArrayCountChanged;  ///< A signal emitted when a property array count changed.
-    static const SignalDef  SIG_PropertyInfoUpdated;        ///< A signal emitted when property info list updated.
+    static const SignalDef  SIG_PropertyDescUpdated;        ///< A signal emitted when property descriptor list updated.
 };
 
 BE_NAMESPACE_END

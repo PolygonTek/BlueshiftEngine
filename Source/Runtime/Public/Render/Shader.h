@@ -159,7 +159,7 @@ public:
         Array<int>              valueList;
     };
 
-    struct ShaderPropertyInfo : public PropertyInfo {
+    struct ShaderPropertyDesc : public PropertyDesc {
         /// Shader property flags
         struct Flag {
             enum Enum {
@@ -336,7 +336,7 @@ public:
     bool                        Load(const char *filename);
     bool                        Reload();
 
-    const StrHashMap<ShaderPropertyInfo> &GetPropertyInfoHashMap() const;
+    const StrHashMap<ShaderPropertyDesc> &GetPropertyDescHashMap() const;
 
 private:
     bool                        ParseProperties(Lexer &lexer);
@@ -382,7 +382,7 @@ private:
     Shader *                    gpuSkinningVersion[3] = { nullptr, };
     Shader *                    gpuInstancingVersion = nullptr;
 
-    StrHashMap<ShaderPropertyInfo> propertyInfoHashMap;
+    StrHashMap<ShaderPropertyDesc> propertyDescHashMap;
 };
 
 BE_INLINE Shader::Shader() {

@@ -23,8 +23,8 @@ BEGIN_EVENTS(TagLayerSettings)
 END_EVENTS
 
 void TagLayerSettings::RegisterProperties() {
-    REGISTER_ARRAY_PROPERTY("tag", "Tag", Str, tags, "Untagged", "", PropertyInfo::Flag::Editor);
-    REGISTER_ARRAY_PROPERTY("layer", "Layer", Str, layers, "Default", "", PropertyInfo::Flag::Editor);
+    REGISTER_ARRAY_PROPERTY("tag", "Tag", Str, tags, "Untagged", "", PropertyDesc::Flag::Editor);
+    REGISTER_ARRAY_PROPERTY("layer", "Layer", Str, layers, "Default", "", PropertyDesc::Flag::Editor);
 }
 
 TagLayerSettings::TagLayerSettings() {

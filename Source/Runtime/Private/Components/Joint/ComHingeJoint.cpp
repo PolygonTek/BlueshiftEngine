@@ -27,19 +27,19 @@ END_EVENTS
 
 void ComHingeJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, 
-        "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "Joint position in local space", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Angles::zero, 
-        "Joint angles in local space", PropertyInfo::Flag::Editor);
+        "Joint angles in local space", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useLimits", "Limits/Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, 
-        "Activate joint limits", PropertyInfo::Flag::Editor);
+        "Activate joint limits", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minAngle", "Limits/Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, 
-        "Minimum value of joint angle", PropertyInfo::Flag::Editor).SetRange(-180, 0, 1);
+        "Minimum value of joint angle", PropertyDesc::Flag::Editor).SetRange(-180, 0, 1);
     REGISTER_ACCESSOR_PROPERTY("maxAngle", "Limits/Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, 
-        "Maximum value of joint angle", PropertyInfo::Flag::Editor).SetRange(0, 180, 1);
+        "Maximum value of joint angle", PropertyDesc::Flag::Editor).SetRange(0, 180, 1);
     REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor/Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f, 
-        "Target angular velocity (degree/s) of motor", PropertyInfo::Flag::Editor);
+        "Target angular velocity (degree/s) of motor", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Motor/Maximum Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f, 
-        "Maximum motor impulse", PropertyInfo::Flag::Editor);
+        "Maximum motor impulse", PropertyDesc::Flag::Editor);
 }
 
 ComHingeJoint::ComHingeJoint() {

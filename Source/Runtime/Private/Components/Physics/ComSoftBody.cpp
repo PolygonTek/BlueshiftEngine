@@ -27,25 +27,25 @@ END_EVENTS
 
 void ComSoftBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 20.f,
-        "Mass (kg)", PropertyInfo::Flag::Editor).SetRange(0, 200, 0.01f);
+        "Mass (kg)", PropertyDesc::Flag::Editor).SetRange(0, 200, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 0.8f,
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("bendingConstraintDistance", "Bending Constraint Distance", int, GetBendingConstraintDistance, SetBendingConstraintDistance, 2,
-        "", PropertyInfo::Flag::Editor).SetRange(1, 10, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(1, 10, 1);
     REGISTER_ACCESSOR_PROPERTY("thickness", "Thickness", float, GetThickness, SetThickness, CmToUnit(1.0f),
-        "", PropertyInfo::Flag::Editor).SetRange(CmToUnit(0.1f), CmToUnit(100.0f), CmToUnit(0.1f));
+        "", PropertyDesc::Flag::Editor).SetRange(CmToUnit(0.1f), CmToUnit(100.0f), CmToUnit(0.1f));
     REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 0.025f,
-        "", PropertyInfo::Flag::Editor).SetRange(0.001f, 1, 0.001f);
+        "", PropertyDesc::Flag::Editor).SetRange(0.001f, 1, 0.001f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("windVelocity", "Wind Velocity", Vec3, GetWindVelocity, SetWindVelocity, Vec3::zero,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("solverIterationCount", "Solver Iteration Count", int, GetSolverIterationCount, SetSolverIterationCount, 5,
-        "", PropertyInfo::Flag::Editor).SetRange(1, 30, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(1, 30, 1);
     REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCDEnabled, SetCCDEnabled, true,
-        "Continuous collision detection", PropertyInfo::Flag::Editor);
+        "Continuous collision detection", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("selfCollision", "Self Collision", bool, IsSelfCollisionEnabled, SetSelfCollisionEnabled, false,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_ARRAY_PROPERTY("pointWeights", "Point Weights", float, GetPointWeight, SetPointWeight, GetPointWeightCount, SetPointWeightCount, 1.0f,
-        "", PropertyInfo::Flag::Empty);
+        "", PropertyDesc::Flag::Empty);
 }
 
 ComSoftBody::ComSoftBody() {

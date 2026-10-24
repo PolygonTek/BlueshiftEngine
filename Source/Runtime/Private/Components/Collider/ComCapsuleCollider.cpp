@@ -27,13 +27,13 @@ END_EVENTS
 
 void ComCapsuleCollider::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
-        "The position of the Collider in the object's local space.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "The position of the Collider in the object's local space.", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, MeterToUnit(0.5f),
-        "The radius of the Collider's local width.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "The radius of the Collider's local width.", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, MeterToUnit(1.0f),
-        "The height of the Collider excluding 2x radius.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "The height of the Collider excluding 2x radius.", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("direction", "Direction", Direction::Enum, direction, Direction::Enum::ZAxis,
-        "", PropertyInfo::Flag::Editor).SetEnumString("X-Axis;Y-Axis;Z-Axis");
+        "", PropertyDesc::Flag::Editor).SetEnumString("X-Axis;Y-Axis;Z-Axis");
 }
 
 ComCapsuleCollider::ComCapsuleCollider() {

@@ -35,8 +35,8 @@ public:
                             /// Returns true if the same component is allowed.
     virtual bool            AllowSameComponent() const override { return true; }
 
-                            /// Gets full list of property info including script properties.
-    virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const override;
+                            /// Gets full list of property descriptor including script properties.
+    virtual void            GetPropertyDescList(Array<PropertyDesc> &propertyDescList) const override;
 
                             /// Deserialize from JSON value.
     virtual void            Deserialize(const Json::Value &in) override;
@@ -129,7 +129,7 @@ protected:
     bool                    hasError = false;
     bool                    deserializing = false;
 
-    Array<PropertyInfo>     fieldInfos;                 ///< Script variable infos
+    Array<PropertyDesc>     fieldInfos;                 ///< Script variable infos
     HashMap<Str, Variant>   fieldGuids;                 ///< Script variable GUIDs
     Array<Asset*>           assets;
 

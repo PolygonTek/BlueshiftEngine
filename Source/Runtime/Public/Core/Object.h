@@ -34,7 +34,7 @@
 BE_NAMESPACE_BEGIN
 
 class CmdArgs;
-class PropertyInfo;
+class PropertyDesc;
 #if defined(_MSC_VER)
 class __single_inheritance Object;
 #else
@@ -153,14 +153,14 @@ public:
                                 /// Tests if corresponding event def is registered.
     bool                        IsRespondsTo(const EventDef &evdef) const;
 
-                                /// Finds property info including parent meta object.
-    bool                        GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const;
+                                /// Finds property descriptor including parent meta object.
+    bool                        GetPropertyDesc(const char *name, PropertyDesc &propertyDesc) const;
 
-                                /// Returns property info list including parent meta object.
-    void                        GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const;
+                                /// Returns property descriptor list including parent meta object.
+    void                        GetPropertyDescList(Array<PropertyDesc> &propertyDescList) const;
 
                                 /// Register property.
-    PropertyInfo &              RegisterProperty(const PropertyInfo &propertyInfo);
+    PropertyDesc &              RegisterProperty(const PropertyDesc &propertyDesc);
 
                                 /// Unregister property with the given name.
     bool                        UnregisterProperty(const char *name);
@@ -180,8 +180,8 @@ private:
     MetaObject *                super;
     MetaObject *                next;
 
-    Array<PropertyInfo>         propertyInfoList;
-    HashIndex                   propertyInfoHash;
+    Array<PropertyDesc>         propertyDescList;
+    HashIndex                   propertyDescHash;
 
     EventInfo<Object> *         eventMap;
     EventCallback *             eventCallbacks;
@@ -246,8 +246,8 @@ public:
                                 /// Cancels a event in event queue.
     void                        CancelEvents(const EventDef *evdef);
 
-                                /// Gets full list of property info.
-    virtual void                GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const { GetMetaObject()->GetPropertyInfoList(propertyInfoList); }
+                                /// Gets full list of property descriptor.
+    virtual void                GetPropertyDescList(Array<PropertyDesc> &propertyDescList) const { GetMetaObject()->GetPropertyDescList(propertyDescList); }
     
     static void                 Init();
     static void                 Shutdown();

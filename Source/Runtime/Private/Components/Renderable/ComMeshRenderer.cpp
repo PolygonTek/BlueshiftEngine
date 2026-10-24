@@ -30,15 +30,15 @@ END_EVENTS
 
 void ComMeshRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshResource::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&MeshResource::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("materials", "Materials", Guid, GetMaterialGuid, SetMaterialGuid, GetMaterialCount, SetMaterialCount, GuidMapper::defaultMaterialGuid, 
-        "List of materials to use when rendering.", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
+        "List of materials to use when rendering.", PropertyDesc::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
     REGISTER_ACCESSOR_PROPERTY("useEnvironmentProveLighting", "Use Env Probe Lighting", bool, IsUseEnvProbeLighting, SetUseEnvProbeLighting, true, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Cast Shadows", bool, IsCastShadows, SetCastShadows, true, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("receiveShadows", "Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
 }
 
 ComMeshRenderer::ComMeshRenderer() {

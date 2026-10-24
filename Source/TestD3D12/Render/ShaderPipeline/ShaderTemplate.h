@@ -23,7 +23,7 @@
 class ShaderTemplateManager;
 class LoadingSystem;
 
-struct ShaderPropertyInfo : public BE1::PropertyInfo {
+struct ShaderPropertyDesc : public BE1::PropertyDesc {
     enum class ShaderFlag : uint8_t {
         None                        = 0,
         ShaderDefine                = BIT(0),
@@ -51,9 +51,9 @@ struct ShaderPropertyInfo : public BE1::PropertyInfo {
         BE1::Array<int>             valueList;
     };
 
-    ShaderPropertyInfo() = default;
-    ShaderPropertyInfo(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc, int flags, ShaderFlag shaderFlags = ShaderFlag::None)
-        : BE1::PropertyInfo(name, label, type, intptr_t(0), defaultValue, desc, flags), shaderFlags(shaderFlags) {}
+    ShaderPropertyDesc() = default;
+    ShaderPropertyDesc(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *description, int flags, ShaderFlag shaderFlags = ShaderFlag::None)
+        : BE1::PropertyDesc(name, label, type, intptr_t(0), defaultValue, description, flags), shaderFlags(shaderFlags) {}
 
     bool                            IsShaderDefine() const { return BE1::HasFlag(shaderFlags, ShaderFlag::ShaderDefine); }
     bool                            IsHidden() const { return BE1::HasFlag(shaderFlags, ShaderFlag::Hidden); }
@@ -86,7 +86,7 @@ class ShaderTemplate : public std::enable_shared_from_this<ShaderTemplate> {
     friend class LoadingSystem;
 
 public:
-    using ReloadedDelegate = BE1::MulticastDelegate<void(const ShaderTemplate *, const BE1::Array<ShaderPropertyInfo> &)>;
+    using ReloadedDelegate = BE1::MulticastDelegate<void(const ShaderTemplate *, const BE1::Array<ShaderPropertyDesc> &)>;
 
     enum class Flag : uint8_t {
         None                        = 0,
@@ -141,17 +141,17 @@ public:
     const char *                    GetName() const { return name.c_str(); }
     const char *                    GetHashName() const { return hashName.c_str(); }
 
-    const BE1::Array<ShaderPropertyInfo> &GetProperties() const { return internalData.properties; }
+    const BE1::Array<ShaderPropertyDesc> &GetProperties() const { return internalData.properties; }
     bool                            IsSkySurface() const { return BE1::HasFlag(internalData.flags, Flag::SkySurface); }
 
-    const ShaderPropertyInfo *      FindProperty(const char *name) const { return internalData.FindProperty(name); }
+    const ShaderPropertyDesc *      FindProperty(const char *name) const { return internalData.FindProperty(name); }
     int                             FindPropertyIndex(const char *name) const { return internalData.FindPropertyIndex(name); }
     int                             GetStandardPropertyIndex(StandardProperty standardProperty) const { return internalData.GetStandardPropertyIndex(standardProperty); }
-    bool                            AddProperty(const ShaderPropertyInfo &propertyInfo);
-    bool                            AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc = "", int flags = BE1::PropertyInfo::Flag::Editor, ShaderPropertyInfo::ShaderFlag shaderFlags = ShaderPropertyInfo::ShaderFlag::None);
+    bool                            AddProperty(const ShaderPropertyDesc &propertyDesc);
+    bool                            AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *description = "", int flags = BE1::PropertyDesc::Flag::Editor, ShaderPropertyDesc::ShaderFlag shaderFlags = ShaderPropertyDesc::ShaderFlag::None);
     bool                            CopyPropertiesFrom(const ShaderTemplate &shaderTemplate);
 
-                                    // 초기값 배열을 만들어 준다.
+                                    // 프로퍼티 초기값 배열을 만들어 준다.
     void                            InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const;
 
                                     // 지원하는 feature 인지 검사
@@ -184,10 +184,10 @@ private:
         void                        Purge();
         void                        Swap(InternalData &rhs);
 
-        const ShaderPropertyInfo *  FindProperty(const char *name) const;
+        const ShaderPropertyDesc *  FindProperty(const char *name) const;
         int                         FindPropertyIndex(const char *name) const;
         int                         GetStandardPropertyIndex(StandardProperty standardProperty) const;
-        bool                        AddProperty(const ShaderPropertyInfo &propertyInfo);
+        bool                        AddProperty(const ShaderPropertyDesc &propertyDesc);
         bool                        CopyPropertiesFrom(const InternalData &rhs, const char **duplicatedPropertyName = nullptr);
         void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
         void                        ResetStandardPropertyIndices();
@@ -197,7 +197,7 @@ private:
         BE1::Str                    inheritedShaderTemplateName;
         BE1::StrArray               baseDefines;
         BE1::StrArray               featureDefines[to_int(ShaderFeature::Count)] = {};
-        BE1::Array<ShaderPropertyInfo> properties;
+        BE1::Array<ShaderPropertyDesc> properties;
         BE1::HashIndex              propertyHash { 64, 64 };
         int                         standardPropertyIndices[NumStandardProperties];
         Flag                        flags = Flag::None;

@@ -31,17 +31,17 @@ END_EVENTS
 
 void ComCharacterController::RegisterProperties() {
     REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 100, 0.1f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 100, 0.1f);
     REGISTER_PROPERTY("enablePenetrationRecovery", "Enable Penetration Recovery", bool, enablePenetrationRecovery, true,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, MeterToUnit(0.4f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, MeterToUnit(1.0f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, CmToUnit(40.0f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0, CmToUnit(50.0f), CmToUnit(1.0f));
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor).SetRange(0, CmToUnit(50.0f), CmToUnit(1.0f));
     REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 90, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 90, 1);
 }
 
 ComCharacterController::ComCharacterController() {

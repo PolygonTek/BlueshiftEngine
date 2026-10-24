@@ -28,27 +28,27 @@ END_EVENTS
 
 void ComText::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("text", "Text", Str, GetText, SetText, "Hello World", 
-        "The text that will be rendered.", PropertyInfo::Flag::Editor | PropertyInfo::Flag::MultiLines);
+        "The text that will be rendered.", PropertyDesc::Flag::Editor | PropertyDesc::Flag::MultiLines);
     REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid,
-        "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontResource::metaObject);
+        "The TrueType Font to use when rendering the text.", PropertyDesc::Flag::Editor).SetMetaObject(&FontResource::metaObject);
     REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14,
-        "The size of the font.", PropertyInfo::Flag::Editor);
+        "The size of the font.", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("drawMode", "Draw Mode", RenderObject::TextDrawMode::Enum, GetDrawMode, SetDrawMode, RenderObject::TextDrawMode::Normal,
-        "The font drawing mode.", PropertyInfo::Flag::Editor).SetEnumString("Normal;Drop Shadows;Add Outlines");
+        "The font drawing mode.", PropertyDesc::Flag::Editor).SetEnumString("Normal;Drop Shadows;Add Outlines");
     REGISTER_MIXED_ACCESSOR_PROPERTY("textSecondaryColor", "Secondary Color", Color3, GetSecondaryColor, SetSecondaryColor, Color3::black,
-        "The color for drawing shadows or outlines.", PropertyInfo::Flag::Editor);
+        "The color for drawing shadows or outlines.", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("textSecondaryAlpha", "Secondary Alpha", float, GetSecondaryAlpha, SetSecondaryAlpha, 1.f,
-        "The alpha for drawing shadows or outlines.", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+        "The alpha for drawing shadows or outlines.", PropertyDesc::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f,
-        "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
+        "How much space will be in-between lines of text.", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("horzAlignment", "Horizontal Alignment", RenderObject::TextHorzAlignment::Enum, GetHorzAlignment, SetHorzAlignment, RenderObject::TextHorzAlignment::Center,
-        "How lines of text are aligned (Left, Center, Right).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
+        "How lines of text are aligned (Left, Center, Right).", PropertyDesc::Flag::Editor).SetEnumString("Left;Center;Right");
     REGISTER_ACCESSOR_PROPERTY("vertAlignment", "Vertical Alignment", RenderObject::TextVertAlignment::Enum, GetVertAlignment, SetVertAlignment, RenderObject::TextVertAlignment::Middle,
-        "(Top, Middle, Bottom)", PropertyInfo::Flag::Editor).SetEnumString("Top;Middle;Bottom");
+        "(Top, Middle, Bottom)", PropertyDesc::Flag::Editor).SetEnumString("Top;Middle;Bottom");
     REGISTER_ACCESSOR_PROPERTY("horzOverflow", "Horizontal Overflow", RenderObject::TextHorzOverflow::Enum, GetHorzOverflow, SetHorzOverflow, RenderObject::TextHorzOverflow::Wrap,
-        "How lines of text are aligned (Left, Center, Right).", PropertyInfo::Flag::Editor).SetEnumString("Wrap;Overflow");
+        "How lines of text are aligned (Left, Center, Right).", PropertyDesc::Flag::Editor).SetEnumString("Wrap;Overflow");
     REGISTER_ACCESSOR_PROPERTY("vertOverflow", "Vertical Overflow", RenderObject::TextVertOverflow::Enum, GetVertOverflow, SetVertOverflow, RenderObject::TextVertOverflow::Truncate,
-        "(Top, Middle, Bottom)", PropertyInfo::Flag::Editor).SetEnumString("Truncate;Overflow");
+        "(Top, Middle, Bottom)", PropertyDesc::Flag::Editor).SetEnumString("Truncate;Overflow");
 }
 
 ComText::ComText() {

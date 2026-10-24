@@ -27,9 +27,9 @@ END_EVENTS
 
 void ComBoxCollider::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero,
-        "The position of the Collider in the object's local space.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "The position of the Collider in the object's local space.", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("extents", "Extents", Vec3, GetExtents, SetExtents, Vec3(MeterToUnit(0.5f)),
-        "The size of the Collider in the X, Y, Z directions.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "The size of the Collider in the X, Y, Z directions.", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
 }
 
 ComBoxCollider::ComBoxCollider() {

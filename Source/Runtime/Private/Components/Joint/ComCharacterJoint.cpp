@@ -27,31 +27,31 @@ END_EVENTS
 
 void ComCharacterJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, 
-        "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "Joint position in local space", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("baseAngles", "Base Angles", Angles, baseAngles, Angles::zero,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing1Axis", "Swing 1/Axis", Vec3, GetSwing1Axis, SetSwing1Axis, Vec3::unitX,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing1Limit", "Swing 1/Limit", float, GetSwing1Limit, SetSwing1Limit, 0, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 179, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 179, 1);
     REGISTER_ACCESSOR_PROPERTY("swing1Stiffness", "Swing 1/Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, 0.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing1Damping", "Swing 1/Damping", float, GetSwing1Damping, SetSwing1Damping, 0.2f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("swing2Axis", "Swing 2/Axis", Vec3, GetSwing2Axis, SetSwing2Axis, Vec3::unitY,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing2Limit", "Swing 2/Limit", float, GetSwing2Limit, SetSwing2Limit, 0, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 179, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 179, 1);
     REGISTER_ACCESSOR_PROPERTY("swing2Stiffness", "Swing 2/Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, 0.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing2Damping", "Swing 2/Damping", float, GetSwing2Damping, SetSwing2Damping, 0.2f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("twistLimit", "Twist/Limit", float, GetTwistLimit, SetTwistLimit, 0, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 89, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 89, 1);
     REGISTER_ACCESSOR_PROPERTY("twistStiffness", "Twist/Stiffness", float, GetTwistStiffness, SetTwistStiffness, 0.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("twistDamping", "Twist/Damping", float, GetTwistDamping, SetTwistDamping, 0.2f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1, 0.01f);
 }
 
 ComCharacterJoint::ComCharacterJoint() {

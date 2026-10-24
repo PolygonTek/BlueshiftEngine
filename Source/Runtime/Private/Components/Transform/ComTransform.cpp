@@ -32,17 +32,17 @@ END_EVENTS
 
 void ComTransform::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("origin", "Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero,
-        "xyz position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "xyz position in local space", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
 #if WITH_EDITOR
     REGISTER_PROPERTY("localEulerAnglesHint", "LocalEulerAnglesHint", Angles, localEulerAnglesHint, Angles::zero,
-        "", PropertyInfo::Flag::Empty);
+        "", PropertyDesc::Flag::Empty);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero,
-        "roll, pitch, yaw in degree in local space", PropertyInfo::Flag::Editor | PropertyInfo::Flag::SkipSerialization);
+        "roll, pitch, yaw in degree in local space", PropertyDesc::Flag::Editor | PropertyDesc::Flag::SkipSerialization);
 #endif
     REGISTER_MIXED_ACCESSOR_PROPERTY("rotation", "Rotation", Quat, GetLocalRotation, SetLocalRotation, Quat::identity,
-        "Rotation in local space", PropertyInfo::Flag::Empty);
+        "Rotation in local space", PropertyDesc::Flag::Empty);
     REGISTER_MIXED_ACCESSOR_PROPERTY("scale", "Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one,
-        "xyz scale in local space", PropertyInfo::Flag::Editor);
+        "xyz scale in local space", PropertyDesc::Flag::Editor);
 }
 
 ComTransform::ComTransform() {

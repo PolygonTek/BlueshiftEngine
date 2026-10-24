@@ -30,9 +30,9 @@ END_EVENTS
 
 void ComParticleSystem::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("particleSystem", "Particle System", Guid, GetParticleSystemGuid, SetParticleSystemGuid, GuidMapper::defaultParticleSystemGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&ParticleSystemResource::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&ParticleSystemResource::metaObject);
     REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, true, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
 }
 
 ComParticleSystem::ComParticleSystem() {

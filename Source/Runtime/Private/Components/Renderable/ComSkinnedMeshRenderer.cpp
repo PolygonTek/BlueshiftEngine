@@ -33,7 +33,7 @@ END_EVENTS
 
 void ComSkinnedMeshRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("root", "Root", Guid, GetRootGuid, SetRootGuid, Guid::zero,
-        "Root Entity", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
+        "Root Entity", PropertyDesc::Flag::Editor).SetMetaObject(&Entity::metaObject);
 }
 
 ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {

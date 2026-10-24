@@ -34,9 +34,9 @@ END_EVENTS
 
 void ComAnimator::RegisterProperties() {
     REGISTER_PROPERTY("rootBoneTransform", "Root Bone Transform", Guid, rootBoneTransformGuid, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&ComTransform::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&ComTransform::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("animController", "Anim Controller", Guid, GetAnimControllerGuid, SetAnimControllerGuid, GuidMapper::defaultAnimControllerGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimControllerResource::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&AnimControllerResource::metaObject);
 }
 
 ComAnimator::ComAnimator() {

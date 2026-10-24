@@ -27,27 +27,27 @@ END_EVENTS
 
 void ComVehicleWheel::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("center", "Center", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::origin,
-        "Wheel position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "Wheel position in local space", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero,
-        "Wheel angles in local space", PropertyInfo::Flag::Editor);
+        "Wheel angles in local space", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, MeterToUnit(0.5f),
-        "Wheel radius", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "Wheel radius", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susDistance", "Suspension/Distance", float, GetSuspensionDistance, SetSuspensionDistance, MeterToUnit(0.0f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susMaxDistance", "Suspension/Max Distance", float, GetSuspensionMaxDistance, SetSuspensionMaxDistance, MeterToUnit(0.3f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susMaxForce", "Suspension/Max Force", float, GetSuspensionMaxForce, SetSuspensionMaxForce, MeterToUnit(100.0f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension/Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 60.f,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susDampingRelaxation", "Suspension/Damping Relaxation", float, GetSuspensionDampingRelaxation, SetSuspensionDampingRelaxation, 2.3f,
-        "The damping coefficient for when the suspension is expanding", PropertyInfo::Flag::Editor);
+        "The damping coefficient for when the suspension is expanding", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susDampingCompression", "Suspension/Damping Compression", float, GetSuspensionDampingCompression, SetSuspensionDampingCompression, 4.4f,
-        "The damping coefficient for when the suspension is compressed", PropertyInfo::Flag::Editor);
+        "The damping coefficient for when the suspension is compressed", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("rollingFriction", "Rolling/Friction", float, GetRollingFriction, SetRollingFriction, 2.0f,
-        "The coefficient of friction between the tyre and the ground", PropertyInfo::Flag::Editor);
+        "The coefficient of friction between the tyre and the ground", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("rollingInfluence", "Rolling/Influence", float, GetRollingInfluence, SetRollingInfluence, 0.1f,
-        "Rolling torque applied from the wheels that cause the vehicle to roll over", PropertyInfo::Flag::Editor);
+        "Rolling torque applied from the wheels that cause the vehicle to roll over", PropertyDesc::Flag::Editor);
 }
 
 ComVehicleWheel::ComVehicleWheel() {

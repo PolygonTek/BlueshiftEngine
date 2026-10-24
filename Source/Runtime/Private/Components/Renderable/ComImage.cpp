@@ -29,9 +29,9 @@ END_EVENTS
 
 void ComImage::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("imageMaterial", "Image Material", Guid, GetMaterialGuid, SetMaterialGuid, GuidMapper::defaultMaterialGuid,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
     REGISTER_ACCESSOR_PROPERTY("imageType", "Image Type", ImageType::Enum, GetImageType, SetImageType, ImageType::Simple,
-        "", PropertyInfo::Flag::Editor).SetEnumString("Simple;Sliced");
+        "", PropertyDesc::Flag::Editor).SetEnumString("Simple;Sliced");
 }
 
 ComImage::ComImage() {

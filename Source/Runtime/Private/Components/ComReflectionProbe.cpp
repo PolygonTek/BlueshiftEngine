@@ -30,39 +30,39 @@ END_EVENTS
 
 void ComEnvironmentProbe::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("type", "Type", EnvProbe::Type, GetType, SetType, EnvProbe::Baked,
-        "", PropertyInfo::EditorFlag).SetEnumString("Baked;Realtime");
+        "", PropertyDesc::EditorFlag).SetEnumString("Baked;Realtime");
     REGISTER_ACCESSOR_PROPERTY("refreshMode", "Refresh Mode", EnvProbe::RefreshMode, GetRefreshMode, SetRefreshMode, EnvProbe::OnAwake,
-        "", PropertyInfo::EditorFlag).SetEnumString("OnAwake;EveryFrame");
+        "", PropertyDesc::EditorFlag).SetEnumString("OnAwake;EveryFrame");
     REGISTER_ACCESSOR_PROPERTY("timeSlicing", "Time Slicing", bool, IsTimeSlicing, SetTimeSlicing, true,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyDesc::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("importance", "Importance", int, GetImportance, SetImportance, 1,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyDesc::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("resolution", "Resolution", EnvProbe::Resolution, GetResolution, SetResolution, EnvProbe::Resolution128,
-        "", PropertyInfo::EditorFlag).SetEnumString("16;32;64;128;256;1024;2048");
+        "", PropertyDesc::EditorFlag).SetEnumString("16;32;64;128;256;1024;2048");
     REGISTER_ACCESSOR_PROPERTY("hdr", "HDR", bool, IsHDR, SetHDR, true,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyDesc::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("cullingMask", "Culling Mask", int, GetLayerMask, SetLayerMask, -1,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyDesc::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("clear", "Clear", EnvProbe::ClearMethod, GetClearMethod, SetClearMethod, 1,
-        "", PropertyInfo::EditorFlag).SetEnumString("Color;Skybox");
+        "", PropertyDesc::EditorFlag).SetEnumString("Color;Skybox");
     REGISTER_MIXED_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3(0, 0, 0),
-        "", PropertyInfo::EditorFlag);
+        "", PropertyDesc::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.0f,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyDesc::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetClippingNear, SetClippingNear, 0.1,
-        "Near clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
+        "Near clipping plane distance", PropertyDesc::EditorFlag).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetClippingFar, SetClippingFar, 500,
-        "Far clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
+        "Far clipping plane distance", PropertyDesc::EditorFlag).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("boxProjection", "Box Projection", bool, IsBoxProjection, SetBoxProjection, false,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyDesc::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxSize", "Box Size", Vec3, GetBoxSize, SetBoxSize, Vec3(10, 10, 10),
-        "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag).SetRange(0, 1e8, 0.05);
+        "The size of the box in which the reflections will be applied to objects", PropertyDesc::EditorFlag).SetRange(0, 1e8, 0.05);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
-        "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
+        "The center of the box in which the reflections will be applied to objects", PropertyDesc::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe Texture", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, GuidMapper::defaultCubeTextureGuid,
-        "", PropertyInfo::EditorFlag).SetMetaObject(&TextureAsset::metaObject);
+        "", PropertyDesc::EditorFlag).SetMetaObject(&TextureAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe Texture", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, GuidMapper::defaultCubeTextureGuid,
-        "", PropertyInfo::EditorFlag).SetMetaObject(&TextureAsset::metaObject);
+        "", PropertyDesc::EditorFlag).SetMetaObject(&TextureAsset::metaObject);
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {

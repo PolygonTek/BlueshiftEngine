@@ -30,35 +30,35 @@ END_EVENTS
 
 void ComCamera::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, 
-        "", PropertyInfo::Flag::Editor).SetEnumString("Perspective;Orthographic");
+        "", PropertyDesc::Flag::Editor).SetEnumString("Perspective;Orthographic");
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
-        "Field of view for perspective projection mode", PropertyInfo::Flag::Editor).SetRange(1, 179, 1);
+        "Field of view for perspective projection mode", PropertyDesc::Flag::Editor).SetRange(1, 179, 1);
     REGISTER_PROPERTY("size", "Size", float, size, 5.f,
-        "Horizontal size of orthographic projection mode", PropertyInfo::Flag::Editor);
+        "Horizontal size of orthographic projection mode", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.3,
-        "Near plane distance", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.01, 9999.99, 0.01);
+        "Near plane distance", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor).SetRange(0.01, 9999.99, 0.01);
     REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 1000,
-        "Far plane distance", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.02, 10000.0, 0.01);
+        "Far plane distance", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor).SetRange(0.02, 10000.0, 0.01);
     REGISTER_PROPERTY("x", "Viewport Rect/X", float, nx, 0.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("y", "Viewport Rect/Y", float, ny, 0.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("w", "Viewport Rect/W", float, nw, 1.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("h", "Viewport Rect/H", float, nh, 1.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("clear", "Clear/Clear Method", RenderCamera::ClearMethod::Enum, GetClearMethod, SetClearMethod, 1, 
-        "", PropertyInfo::Flag::Editor).SetEnumString("No Clear;Depth Only;Color;Skybox");
+        "", PropertyDesc::Flag::Editor).SetEnumString("No Clear;Depth Only;Color;Skybox");
     REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear/Color", Color3, GetClearColor, SetClearColor, Color3::black, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear/Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::BuiltInLayer::Default) | BIT(TagLayerSettings::BuiltInLayer::UI)),
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("order", "Order", int, order, 0,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("applyPostProcessing", "Apply Post Processing", bool, applyPostProcessing, true,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
 }
 
 ComCamera::ComCamera() {

@@ -35,17 +35,17 @@ END_EVENTS
 
 void ComAnimation::RegisterProperties() {
     REGISTER_PROPERTY("rootBoneTransform", "Root Bone Transform", Guid, rootBoneTransformGuid, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&ComTransform::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&ComTransform::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero,
-        "", PropertyInfo::Flag::Empty).SetMetaObject(&SkeletonResource::metaObject);
+        "", PropertyDesc::Flag::Empty).SetMetaObject(&SkeletonResource::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("anims", "Animations", Guid, GetAnimGuid, SetAnimGuid, GetAnimCount, SetAnimCount, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimResource::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&AnimResource::metaObject);
     REGISTER_PROPERTY("animIndex", "Animation Index", int, currentAnimIndex, 0,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
 }
 
 ComAnimation::ComAnimation() {

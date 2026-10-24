@@ -22,27 +22,28 @@ BE_NAMESPACE_BEGIN
 
 const SignalDef Serializable::SIG_PropertyChanged("Serializable::PropertyChanged", "si");
 const SignalDef Serializable::SIG_PropertyArrayCountChanged("Serializable::PropertyArrayCountChanged", "s");
-const SignalDef Serializable::SIG_PropertyInfoUpdated("Serializable::PropertyInfoUpdated", "i");
+// Preserve the existing name used by string-based signal lookup.
+const SignalDef Serializable::SIG_PropertyDescUpdated("Serializable::PropertyInfoUpdated", "i");
 
-bool Serializable::GetPropertyInfo(int index, PropertyInfo &outPropertyInfo) const {
-    Array<PropertyInfo> propertyInfoList(64);
-    GetPropertyInfoList(propertyInfoList);
+bool Serializable::GetPropertyDesc(int index, PropertyDesc &outPropertyDesc) const {
+    Array<PropertyDesc> propertyDescList(64);
+    GetPropertyDescList(propertyDescList);
 
-    if (index < 0 || index > propertyInfoList.Count() - 1) {
+    if (index < 0 || index > propertyDescList.Count() - 1) {
         return false;
     }
 
-    outPropertyInfo = propertyInfoList[index];
+    outPropertyDesc = propertyDescList[index];
     return true;
 }
 
-bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &outPropertyInfo) const {
-    Array<PropertyInfo> propertyInfoList(64);
-    GetPropertyInfoList(propertyInfoList);
+bool Serializable::GetPropertyDesc(const char *name, PropertyDesc &outPropertyDesc) const {
+    Array<PropertyDesc> propertyDescList(64);
+    GetPropertyDescList(propertyDescList);
 
-    for (PropertyInfo &propertyInfo : propertyInfoList) {
-        if (!Str::Cmp(propertyInfo.GetName(), name)) {
-            outPropertyInfo = propertyInfo;
+    for (PropertyDesc &propertyDesc : propertyDescList) {
+        if (!Str::Cmp(propertyDesc.GetName(), name)) {
+            outPropertyDesc = propertyDesc;
             return true;
         }
     }
@@ -51,36 +52,36 @@ bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &outPropertyIn
 }
 
 void Serializable::Serialize(Json::Value &out, bool forCopying) const {
-    Array<PropertyInfo> propertyInfoList(64);
-    GetPropertyInfoList(propertyInfoList);
+    Array<PropertyDesc> propertyDescList(64);
+    GetPropertyDescList(propertyDescList);
 
-    const int numProperties = propertyInfoList.Count();
+    const int numProperties = propertyDescList.Count();
     for (int propertyIndex = 0; propertyIndex < numProperties; propertyIndex++) {
-        const PropertyInfo &propertyInfo = propertyInfoList[propertyIndex];
+        const PropertyDesc &propertyDesc = propertyDescList[propertyIndex];
 
-        if (propertyInfo.GetFlags() & PropertyInfo::Flag::SkipSerialization) {
+        if (propertyDesc.GetFlags() & PropertyDesc::Flag::SkipSerialization) {
             continue;
         }
 
-        if (forCopying && (propertyInfo.GetFlags() & PropertyInfo::Flag::NonCopying)) {
+        if (forCopying && (propertyDesc.GetFlags() & PropertyDesc::Flag::NonCopying)) {
             continue;
         }
 
-        const char *name = propertyInfo.name.c_str();
+        const char *name = propertyDesc.name.c_str();
 
-        if (propertyInfo.GetFlags() & PropertyInfo::Flag::Array) {
+        if (propertyDesc.GetFlags() & PropertyDesc::Flag::Array) {
             out[name] = Json::arrayValue;
 
             const int count = GetPropertyArrayCount(propertyIndex);
             for (int elementIndex = 0; elementIndex < count; elementIndex++) {
                 Variant value;
-                GetArrayProperty(propertyInfo, elementIndex, value);
+                GetArrayProperty(propertyDesc, elementIndex, value);
 
                 out[name][elementIndex] = value.ToJsonValue();
             }
         } else {
             Variant value;
-            GetProperty(propertyInfo, value);
+            GetProperty(propertyDesc, value);
 
             out[name] = value.ToJsonValue();
         }
@@ -88,25 +89,25 @@ void Serializable::Serialize(Json::Value &out, bool forCopying) const {
 }
 
 void Serializable::Deserialize(const Json::Value &node) {
-    Array<PropertyInfo> propertyInfoList(64);
-    GetPropertyInfoList(propertyInfoList);
+    Array<PropertyDesc> propertyDescList(64);
+    GetPropertyDescList(propertyDescList);
 
-    for (int propertyIndex = 0; propertyIndex < propertyInfoList.Count(); propertyIndex++) {
-        const PropertyInfo &propertyInfo = propertyInfoList[propertyIndex];
+    for (int propertyIndex = 0; propertyIndex < propertyDescList.Count(); propertyIndex++) {
+        const PropertyDesc &propertyDesc = propertyDescList[propertyIndex];
 
-        if (propertyInfo.GetFlags() & PropertyInfo::Flag::SkipSerialization) {
+        if (propertyDesc.GetFlags() & PropertyDesc::Flag::SkipSerialization) {
             continue;
         }
 
-        if (propertyInfo.GetFlags() & PropertyInfo::Flag::ReadOnly) {
+        if (propertyDesc.GetFlags() & PropertyDesc::Flag::ReadOnly) {
             continue;
         }
 
-        const char *name = propertyInfo.name.c_str();
-        const Variant::Type::Enum type = propertyInfo.GetType();
-        const Variant defaultValue = propertyInfo.GetDefaultValue();
+        const char *name = propertyDesc.name.c_str();
+        const Variant::Type::Enum type = propertyDesc.GetType();
+        const Variant defaultValue = propertyDesc.GetDefaultValue();
 
-        if (propertyInfo.GetFlags() & PropertyInfo::Flag::Array) {
+        if (propertyDesc.GetFlags() & PropertyDesc::Flag::Array) {
             const Json::Value subNode = node.get(name, Json::Value());
 
             SetPropertyArrayCount(propertyIndex, subNode.size());
@@ -339,66 +340,66 @@ void Serializable::Deserialize(const Json::Value &node) {
 }
 
 Variant Serializable::GetPropertyDefault(const char *name) const {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
     Variant out;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
+    if (!GetPropertyDesc(name, propertyDesc)) {
         BE_WARNLOG("Serializable::GetPropertyDefault: invalid property name '%s'\n", name);
         return out;
     }
 
-    out = propertyInfo.GetDefaultValue();
+    out = propertyDesc.GetDefaultValue();
     return out;
 }
 
 Variant Serializable::GetPropertyDefault(int index) const {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
     Variant out;
 
-    if (!GetPropertyInfo(index, propertyInfo)) {
+    if (!GetPropertyDesc(index, propertyDesc)) {
         BE_WARNLOG("Serializable::GetPropertyDefault: invalid property index %i\n", index);
         return out;
     }
 
-    out = propertyInfo.GetDefaultValue();
+    out = propertyDesc.GetDefaultValue();
     return out;
 }
 
 Variant Serializable::GetProperty(int index) const {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
     Variant out;
 
-    if (!GetPropertyInfo(index, propertyInfo)) {
+    if (!GetPropertyDesc(index, propertyDesc)) {
         BE_WARNLOG("Serializable::GetProperty: invalid property index %i\n", index);
         return out;
     }
 
-    GetProperty(propertyInfo, out);
+    GetProperty(propertyDesc, out);
     return out;
 }
 
 Variant Serializable::GetProperty(const char *name) const {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
     Variant out;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
+    if (!GetPropertyDesc(name, propertyDesc)) {
         BE_WARNLOG("Serializable::GetProperty: invalid property name '%s'\n", name);
         return out;
     }
 
-    GetProperty(propertyInfo, out);
+    GetProperty(propertyDesc, out);
     return out;
 }
 
-void Serializable::GetProperty(const PropertyInfo &propertyInfo, Variant &out) const {
-    if (propertyInfo.accessor) {
-        propertyInfo.accessor->Get(this, out);
+void Serializable::GetProperty(const PropertyDesc &propertyDesc, Variant &out) const {
+    if (propertyDesc.accessor) {
+        propertyDesc.accessor->Get(this, out);
         return;
     }
 
-    const void *src = reinterpret_cast<const byte *>(this) + propertyInfo.offset;
+    const void *src = reinterpret_cast<const byte *>(this) + propertyDesc.offset;
 
-    switch (propertyInfo.GetType()) {
+    switch (propertyDesc.GetType()) {
     case Variant::Type::Int:
         out = *(reinterpret_cast<const int *>(src));
         break;
@@ -474,45 +475,45 @@ void Serializable::GetProperty(const PropertyInfo &propertyInfo, Variant &out) c
 }
 
 Variant Serializable::GetArrayProperty(int index, int elementIndex) const {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
     Variant out;
 
-    if (!GetPropertyInfo(index, propertyInfo)) {
+    if (!GetPropertyDesc(index, propertyDesc)) {
         BE_WARNLOG("Serializable::GetArrayProperty: invalid property index %i\n", index);
         return out;
     }
 
-    GetArrayProperty(propertyInfo, elementIndex, out);
+    GetArrayProperty(propertyDesc, elementIndex, out);
     return out;
 }
 
 Variant Serializable::GetArrayProperty(const char *name, int elementIndex) const {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
     Variant out;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
+    if (!GetPropertyDesc(name, propertyDesc)) {
         BE_WARNLOG("Serializable::GetArrayProperty: invalid property name '%s'\n", name);
         return out;
     }
 
-    GetArrayProperty(propertyInfo, elementIndex, out);
+    GetArrayProperty(propertyDesc, elementIndex, out);
     return out;
 }
 
-void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, Variant &out) const {
-    if (!(propertyInfo.GetFlags() & PropertyInfo::Flag::Array)) {
-        BE_WARNLOG("Serializable::GetArrayProperty: property '%s' is not array\n", propertyInfo.name.c_str());
+void Serializable::GetArrayProperty(const PropertyDesc &propertyDesc, int elementIndex, Variant &out) const {
+    if (!(propertyDesc.GetFlags() & PropertyDesc::Flag::Array)) {
+        BE_WARNLOG("Serializable::GetArrayProperty: property '%s' is not array\n", propertyDesc.name.c_str());
         return;
     }
 
-    if (propertyInfo.accessor) {
-        propertyInfo.accessor->Get(this, elementIndex, out);
+    if (propertyDesc.accessor) {
+        propertyDesc.accessor->Get(this, elementIndex, out);
         return;
     }
 
-    const void *src = reinterpret_cast<const byte *>(this) + propertyInfo.offset;
+    const void *src = reinterpret_cast<const byte *>(this) + propertyDesc.offset;
 
-    switch (propertyInfo.GetType()) {
+    switch (propertyDesc.GetType()) {
     case Variant::Type::Int:
         out = (*reinterpret_cast<const Array<int> *>(src))[elementIndex];
         break;
@@ -586,31 +587,31 @@ void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elemen
 }
 
 bool Serializable::SetProperty(const char *name, const Variant &value, bool forceWrite) {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
+    if (!GetPropertyDesc(name, propertyDesc)) {
         BE_WARNLOG("Serializable::SetProperty: invalid property name '%s'\n", name);
         return false;
     }
 
-    return SetProperty(propertyInfo, value, forceWrite);
+    return SetProperty(propertyDesc, value, forceWrite);
 }
 
 bool Serializable::SetProperty(int index, const Variant &value, bool forceWrite) {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(index, propertyInfo)) {
+    if (!GetPropertyDesc(index, propertyDesc)) {
         BE_WARNLOG("Serializable::SetProperty: invalid property index %i\n", index);
         return false;
     }
 
-    return SetProperty(propertyInfo, value, forceWrite);
+    return SetProperty(propertyDesc, value, forceWrite);
 }
 
-bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &value, bool forceWrite) {
+bool Serializable::SetProperty(const PropertyDesc &propertyDesc, const Variant &value, bool forceWrite) {
     // You can force to write a value even though a property has read only flag.
-    if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::Flag::ReadOnly)) {
-        BE_WARNLOG("Serializable::SetProperty: property '%s' is readonly\n", propertyInfo.name.c_str());
+    if (!forceWrite && (propertyDesc.GetFlags() & PropertyDesc::Flag::ReadOnly)) {
+        BE_WARNLOG("Serializable::SetProperty: property '%s' is readonly\n", propertyDesc.name.c_str());
         return false;
     }
 
@@ -618,14 +619,14 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     float minValue;
     float maxValue;
 
-    bool ranged = propertyInfo.IsRanged();
+    bool ranged = propertyDesc.IsRanged();
 
     if (ranged) {
-        minValue = propertyInfo.GetMinValue();
-        maxValue = propertyInfo.GetMaxValue();
+        minValue = propertyDesc.GetMinValue();
+        maxValue = propertyDesc.GetMaxValue();
     }
 
-    switch (propertyInfo.GetType()) {
+    switch (propertyDesc.GetType()) {
     case Variant::Type::Int: {
         int i = value.As<int>();
         if (ranged) {
@@ -774,20 +775,20 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     }
 
     Variant oldValue;
-    GetProperty(propertyInfo, oldValue);
+    GetProperty(propertyDesc, oldValue);
 
-    if (!(propertyInfo.GetFlags() & PropertyInfo::Flag::ForceToSet)) {
+    if (!(propertyDesc.GetFlags() & PropertyDesc::Flag::ForceToSet)) {
         if (newValue == oldValue) {
             return true;
         }
     }
     
-    if (propertyInfo.accessor) {
-        propertyInfo.accessor->Set(this, newValue);
+    if (propertyDesc.accessor) {
+        propertyDesc.accessor->Set(this, newValue);
     } else {
-        void *dest = reinterpret_cast<byte *>(this) + propertyInfo.offset;
+        void *dest = reinterpret_cast<byte *>(this) + propertyDesc.offset;
 
-        switch (propertyInfo.GetType()) {
+        switch (propertyDesc.GetType()) {
         case Variant::Type::Int:
             *(reinterpret_cast<int *>(dest)) = newValue.As<int>();
             break;
@@ -860,62 +861,62 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         }
     }
 
-    EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), -1);
+    EmitSignal(&Serializable::SIG_PropertyChanged, propertyDesc.name.c_str(), -1);
     return true;
 }
 
 bool Serializable::SetPropertyDefault(const char *name, bool forceWrite) {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
+    if (!GetPropertyDesc(name, propertyDesc)) {
         BE_WARNLOG("Serializable::SetPropertyDefault: invalid property name '%s'\n", name);
         return false;
     }
 
-    return SetProperty(propertyInfo, propertyInfo.defaultValue, forceWrite);
+    return SetProperty(propertyDesc, propertyDesc.defaultValue, forceWrite);
 }
 
 bool Serializable::SetPropertyDefault(int index, bool forceWrite) {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(index, propertyInfo)) {
+    if (!GetPropertyDesc(index, propertyDesc)) {
         BE_WARNLOG("Serializable::SetPropertyDefault: invalid property index %i\n", index);
         return false;
     }
 
-    return SetProperty(propertyInfo, propertyInfo.defaultValue, forceWrite);
+    return SetProperty(propertyDesc, propertyDesc.defaultValue, forceWrite);
 }
 
 bool Serializable::SetArrayProperty(const char *name, int elementIndex, const Variant &value, bool forceWrite) {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
+    if (!GetPropertyDesc(name, propertyDesc)) {
         BE_WARNLOG("Serializable::SetArrayProperty: invalid property name '%s'\n", name);
         return false;
     }
 
-    return SetArrayProperty(propertyInfo, elementIndex, value, forceWrite);
+    return SetArrayProperty(propertyDesc, elementIndex, value, forceWrite);
 }
 
 bool Serializable::SetArrayProperty(int index, int elementIndex, const Variant &value, bool forceWrite) {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(index, propertyInfo)) {
+    if (!GetPropertyDesc(index, propertyDesc)) {
         BE_WARNLOG("Serializable::SetArrayProperty: invalid property index %i\n", index);
         return false;
     }
 
-    return SetArrayProperty(propertyInfo, elementIndex, value, forceWrite);
+    return SetArrayProperty(propertyDesc, elementIndex, value, forceWrite);
 }
 
-bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elementIndex, const Variant &value, bool forceWrite) {
-    if (!(propertyInfo.GetFlags() & PropertyInfo::Flag::Array)) {
-        BE_WARNLOG("Serializable::SetArrayProperty: property '%s' is not array\n", propertyInfo.name.c_str());
+bool Serializable::SetArrayProperty(const PropertyDesc &propertyDesc, int elementIndex, const Variant &value, bool forceWrite) {
+    if (!(propertyDesc.GetFlags() & PropertyDesc::Flag::Array)) {
+        BE_WARNLOG("Serializable::SetArrayProperty: property '%s' is not array\n", propertyDesc.name.c_str());
         return false;
     }
 
-    if (!forceWrite && (propertyInfo.GetFlags() & PropertyInfo::Flag::ReadOnly)) {
-        BE_WARNLOG("Serializable::SetArrayProperty: property '%s' is readonly\n", propertyInfo.name.c_str());
+    if (!forceWrite && (propertyDesc.GetFlags() & PropertyDesc::Flag::ReadOnly)) {
+        BE_WARNLOG("Serializable::SetArrayProperty: property '%s' is readonly\n", propertyDesc.name.c_str());
         return false;
     }
 
@@ -923,14 +924,14 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     float minValue;
     float maxValue;
 
-    bool ranged = propertyInfo.IsRanged();
+    bool ranged = propertyDesc.IsRanged();
 
     if (ranged) {
-        minValue = propertyInfo.GetMinValue();
-        maxValue = propertyInfo.GetMaxValue();
+        minValue = propertyDesc.GetMinValue();
+        maxValue = propertyDesc.GetMaxValue();
     }
 
-    switch (propertyInfo.GetType()) {
+    switch (propertyDesc.GetType()) {
     case Variant::Type::Int: {
         int i = value.As<int>();
         if (ranged) {
@@ -1075,20 +1076,20 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     }
 
     Variant oldValue;
-    GetArrayProperty(propertyInfo, elementIndex, oldValue);
+    GetArrayProperty(propertyDesc, elementIndex, oldValue);
 
-    if (!(propertyInfo.GetFlags() & PropertyInfo::Flag::ForceToSet)) {
+    if (!(propertyDesc.GetFlags() & PropertyDesc::Flag::ForceToSet)) {
         if (newValue == oldValue) {
             return true;
         }
     }
 
-    if (propertyInfo.accessor) {
-        propertyInfo.accessor->Set(this, elementIndex, newValue);
+    if (propertyDesc.accessor) {
+        propertyDesc.accessor->Set(this, elementIndex, newValue);
     } else {
-        void *dest = reinterpret_cast<byte *>(this) + propertyInfo.offset;
+        void *dest = reinterpret_cast<byte *>(this) + propertyDesc.offset;
 
-        switch (propertyInfo.GetType()) {
+        switch (propertyDesc.GetType()) {
         case Variant::Type::Int:
             (*reinterpret_cast<Array<int> *>(dest))[elementIndex] = newValue.As<int>();
             break;
@@ -1161,92 +1162,92 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         }
     }
 
-    EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), elementIndex);
+    EmitSignal(&Serializable::SIG_PropertyChanged, propertyDesc.name.c_str(), elementIndex);
     return true;
 }
 
 int Serializable::GetPropertyArrayCount(const char *name) const {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
+    if (!GetPropertyDesc(name, propertyDesc)) {
         BE_WARNLOG("Serializable::GetPropertyArrayCount: invalid property name '%s'\n", name);
         return 0;
     }
 
-    return GetPropertyArrayCount(propertyInfo);
+    return GetPropertyArrayCount(propertyDesc);
 }
 
 int Serializable::GetPropertyArrayCount(int index) const {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(index, propertyInfo)) {
+    if (!GetPropertyDesc(index, propertyDesc)) {
         BE_WARNLOG("Serializable::GetPropertyArrayCount: invalid property index %i\n", index);
         return 0;
     }
 
-    return GetPropertyArrayCount(propertyInfo);
+    return GetPropertyArrayCount(propertyDesc);
 }
 
-int Serializable::GetPropertyArrayCount(const PropertyInfo &propertyInfo) const {
-    if (!(propertyInfo.GetFlags() & PropertyInfo::Flag::Array)) {
-        BE_WARNLOG("Serializable::GetPropertyArrayCount: property '%s' is not array\n", propertyInfo.name.c_str());
+int Serializable::GetPropertyArrayCount(const PropertyDesc &propertyDesc) const {
+    if (!(propertyDesc.GetFlags() & PropertyDesc::Flag::Array)) {
+        BE_WARNLOG("Serializable::GetPropertyArrayCount: property '%s' is not array\n", propertyDesc.name.c_str());
         return 0;
     }
 
-    if (propertyInfo.accessor) {
-        return propertyInfo.accessor->GetCount(this);
+    if (propertyDesc.accessor) {
+        return propertyDesc.accessor->GetCount(this);
     }
 
-    const void *src = reinterpret_cast<const byte *>(this) + propertyInfo.offset;
+    const void *src = reinterpret_cast<const byte *>(this) + propertyDesc.offset;
     return reinterpret_cast<const Array<int> *>(src)->Count();
 }
 
 void Serializable::SetPropertyArrayCount(const char *name, int count) {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(name, propertyInfo)) {
+    if (!GetPropertyDesc(name, propertyDesc)) {
         BE_WARNLOG("Serializable::SetPropertyArrayCount: invalid property name '%s'\n", name);
         return;
     }
 
-    SetPropertyArrayCount(propertyInfo, count);
+    SetPropertyArrayCount(propertyDesc, count);
 }
 
 void Serializable::SetPropertyArrayCount(int index, int count) {
-    PropertyInfo propertyInfo;
+    PropertyDesc propertyDesc;
 
-    if (!GetPropertyInfo(index, propertyInfo)) {
+    if (!GetPropertyDesc(index, propertyDesc)) {
         BE_WARNLOG("Serializable::SetPropertyArrayCount: invalid property index %i'\n", index);
         return;
     }
 
-    SetPropertyArrayCount(propertyInfo, count);
+    SetPropertyArrayCount(propertyDesc, count);
 }
 
-void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int count) {
-    if (!(propertyInfo.GetFlags() & PropertyInfo::Flag::Array)) {
-        BE_WARNLOG("Serializable::SetPropertyArrayCount: property '%s' is not array\n", propertyInfo.name.c_str());
+void Serializable::SetPropertyArrayCount(const PropertyDesc &propertyDesc, int count) {
+    if (!(propertyDesc.GetFlags() & PropertyDesc::Flag::Array)) {
+        BE_WARNLOG("Serializable::SetPropertyArrayCount: property '%s' is not array\n", propertyDesc.name.c_str());
         return;
     }
 
-    if (propertyInfo.GetFlags() & PropertyInfo::Flag::ReadOnly) {
-        BE_WARNLOG("Serializable::SetPropertyArrayCount: property '%s' is readonly\n", propertyInfo.name.c_str());
+    if (propertyDesc.GetFlags() & PropertyDesc::Flag::ReadOnly) {
+        BE_WARNLOG("Serializable::SetPropertyArrayCount: property '%s' is readonly\n", propertyDesc.name.c_str());
         return;
     }
 
     int oldCount = 0;
 
-    if (propertyInfo.accessor) {
-        oldCount = propertyInfo.accessor->GetCount(this);
+    if (propertyDesc.accessor) {
+        oldCount = propertyDesc.accessor->GetCount(this);
         if (oldCount == count) {
             return;
         }
 
-        propertyInfo.accessor->SetCount(this, count);
+        propertyDesc.accessor->SetCount(this, count);
     } else {
-        void *src = reinterpret_cast<byte *>(this) + propertyInfo.offset;
+        void *src = reinterpret_cast<byte *>(this) + propertyDesc.offset;
 
-        switch (propertyInfo.GetType()) {
+        switch (propertyDesc.GetType()) {
         case Variant::Type::Int:
             oldCount = reinterpret_cast<Array<int> *>(src)->Count();
             if (oldCount == count) {
@@ -1410,7 +1411,7 @@ void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int c
 
         if (count > oldCount) {
             for (int elementIndex = oldCount; elementIndex < count; elementIndex++) {
-                SetArrayProperty(propertyInfo, elementIndex, propertyInfo.defaultValue, true);
+                SetArrayProperty(propertyDesc, elementIndex, propertyDesc.defaultValue, true);
             }
         }
 
@@ -1418,7 +1419,7 @@ void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int c
     }
 
     if (count != oldCount) {
-        EmitSignal(&SIG_PropertyArrayCountChanged, propertyInfo.name.c_str());
+        EmitSignal(&SIG_PropertyArrayCountChanged, propertyDesc.name.c_str());
     }
 }
 

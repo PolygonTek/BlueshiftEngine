@@ -72,12 +72,12 @@ static BE1::Str ResolveTextureName(const ShaderTemplate::PropertyValue &property
     return "";
 }
 
-static const SharedPtr<Texture> &GetFallbackTexture(const ShaderPropertyInfo &propertyInfo) {
-    if (propertyInfo.textureType == ShaderPropertyInfo::TextureType::Texture3D) {
+static const SharedPtr<Texture> &GetFallbackTexture(const ShaderPropertyDesc &propertyDesc) {
+    if (propertyDesc.textureType == ShaderPropertyDesc::TextureType::Texture3D) {
         return textureManager.whiteTexture3D;
     }
 
-    return propertyInfo.IsNormal() ? textureManager.flatNormalTexture : textureManager.whiteTexture;
+    return propertyDesc.IsNormal() ? textureManager.flatNormalTexture : textureManager.whiteTexture;
 }
 
 int Material::FindPropertyIndex(const char *propertyName) const {
@@ -175,25 +175,25 @@ bool Material::SetPropertyValue(int propertyIndex, const ShaderTemplate::Propert
         return false;
     }
 
-    const BE1::Array<ShaderPropertyInfo> &properties = internalData.shaderTemplate->GetProperties();
+    const BE1::Array<ShaderPropertyDesc> &properties = internalData.shaderTemplate->GetProperties();
     if (propertyIndex < 0 || propertyIndex >= properties.Count() || propertyIndex >= internalData.propertyValues.Count()) {
         return false;
     }
 
-    const ShaderPropertyInfo &propertyInfo = properties[propertyIndex];
+    const ShaderPropertyDesc &propertyDesc = properties[propertyIndex];
     ShaderTemplate::PropertyValue newValue;
-    if (propertyInfo.IsTexture()) {
+    if (propertyDesc.IsTexture()) {
         if (value.GetType() == BE1::Variant::Type::Str) {
             newValue = BE1::resourceGuidMapper.GetOrCreateGuid(value.As<BE1::Str>());
         } else if (value.GetType() == BE1::Variant::Type::Guid) {
             newValue = value;
         } else {
-            BE_WARNLOG("Material::SetPropertyValue: texture property '%s' in material '%s' requires a Guid or Str value\n", propertyInfo.GetName(), hashName.c_str());
+            BE_WARNLOG("Material::SetPropertyValue: texture property '%s' in material '%s' requires a Guid or Str value\n", propertyDesc.GetName(), hashName.c_str());
             return false;
         }
     } else {
-        if (value.GetType() != propertyInfo.GetType()) {
-            BE_WARNLOG("Material::SetPropertyValue: property '%s' type mismatch in material '%s'\n", propertyInfo.GetName(), hashName.c_str());
+        if (value.GetType() != propertyDesc.GetType()) {
+            BE_WARNLOG("Material::SetPropertyValue: property '%s' type mismatch in material '%s'\n", propertyDesc.GetName(), hashName.c_str());
             return false;
         }
         newValue = value;
@@ -208,10 +208,10 @@ bool Material::SetPropertyValue(int propertyIndex, const ShaderTemplate::Propert
 
     internalData.propertyValues[propertyIndex] = newValue;
 
-    if (propertyInfo.IsShaderDefine()) {
+    if (propertyDesc.IsShaderDefine()) {
         InvalidatePermutationKeys();
     }
-    if (propertyInfo.IsTexture()) {
+    if (propertyDesc.IsTexture()) {
         UpdateTextureProperties();
     }
 
@@ -222,19 +222,19 @@ bool Material::SetPropertyValue(const char *propertyName, const ShaderTemplate::
     return SetPropertyValue(FindPropertyIndex(propertyName), value);
 }
 
-static Texture::Flag GetTextureFlags(const ShaderPropertyInfo &propertyInfo) {
+static Texture::Flag GetTextureFlags(const ShaderPropertyDesc &propertyDesc) {
     Texture::Flag flags = Texture::Flag::None;
 
-    if (!propertyInfo.IsNoStreaming()) {
+    if (!propertyDesc.IsNoStreaming()) {
         flags |= Texture::Flag::Streaming;
     }
-    if (propertyInfo.IsNormal()) {
+    if (propertyDesc.IsNormal()) {
         flags |= Texture::Flag::NormalMap;
     }
-    if (propertyInfo.IsNormal() || propertyInfo.IsLinear()) {
+    if (propertyDesc.IsNormal() || propertyDesc.IsLinear()) {
         flags |= Texture::Flag::LinearColorSpace;
     }
-    if (propertyInfo.IsNoMipmaps()) {
+    if (propertyDesc.IsNoMipmaps()) {
         flags |= Texture::Flag::NoMipmaps;
     }
 
@@ -271,11 +271,11 @@ void Material::UpdateTextureProperties() {
         return;
     }
 
-    const BE1::Array<ShaderPropertyInfo> &properties = internalData.shaderTemplate->GetProperties();
+    const BE1::Array<ShaderPropertyDesc> &properties = internalData.shaderTemplate->GetProperties();
     const int numProperties = properties.Count();
     for (int propertyIndex = 0; propertyIndex < numProperties; propertyIndex++) {
-        const ShaderPropertyInfo &propertyInfo = properties[propertyIndex];
-        if (!propertyInfo.IsTexture()) {
+        const ShaderPropertyDesc &propertyDesc = properties[propertyIndex];
+        if (!propertyDesc.IsTexture()) {
             continue;
         }
 
@@ -286,12 +286,12 @@ void Material::UpdateTextureProperties() {
         if (propertyValue) {
             BE1::Str textureName = ResolveTextureName(*propertyValue);
             if (!textureName.IsEmpty()) {
-                textureProperty.texture = textureManager.GetTexture(textureName.c_str(), GetTextureFlags(propertyInfo), true);
+                textureProperty.texture = textureManager.GetTexture(textureName.c_str(), GetTextureFlags(propertyDesc), true);
             }
         }
 
         if (!textureProperty.texture) {
-            textureProperty.texture = GetFallbackTexture(propertyInfo);
+            textureProperty.texture = GetFallbackTexture(propertyDesc);
         }
     }
 
@@ -303,7 +303,7 @@ bool Material::HasStreamingTextureProperties() const {
         return false;
     }
 
-    const BE1::Array<ShaderPropertyInfo> &properties = internalData.shaderTemplate->GetProperties();
+    const BE1::Array<ShaderPropertyDesc> &properties = internalData.shaderTemplate->GetProperties();
     for (const TextureProperty &textureProperty : internalData.textureProperties) {
         if (textureProperty.propertyIndex < 0 || textureProperty.propertyIndex >= properties.Count()) {
             continue;
@@ -636,7 +636,7 @@ bool Material::ParseProperties(BE1::Lexer &lexer, const char *materialName, Inte
         return false;
     }
 
-    const BE1::Array<ShaderPropertyInfo> &properties = outInternalData.shaderTemplate->GetProperties();
+    const BE1::Array<ShaderPropertyDesc> &properties = outInternalData.shaderTemplate->GetProperties();
 
     while (lexer.ReadToken(&token)) {
         if (token[0] == '}') {
@@ -676,7 +676,7 @@ bool Material::ParseProperties(BE1::Lexer &lexer, const char *materialName, Inte
     return true;
 }
 
-void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo> &oldProperties) {
+void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyDesc> &oldProperties) {
     if (!internalData.shaderTemplate) {
         return;
     }
@@ -691,13 +691,13 @@ void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo
     internalData.shaderTemplate->InitDefaultPropertyValues(internalData.propertyValues);
 
     // 이름/타입이 예전과 같은 프로퍼티가 있다면 값을 옮겨온다.
-    const BE1::Array<ShaderPropertyInfo> &newProperties = internalData.shaderTemplate->GetProperties();
+    const BE1::Array<ShaderPropertyDesc> &newProperties = internalData.shaderTemplate->GetProperties();
     const int numNewProperties = newProperties.Count();
     for (int newIndex = 0; newIndex < numNewProperties; newIndex++) {
-        const ShaderPropertyInfo &newProperty = newProperties[newIndex];
+        const ShaderPropertyDesc &newProperty = newProperties[newIndex];
 
         for (int oldIndex = 0; oldIndex < numOldProperties; oldIndex++) {
-            const ShaderPropertyInfo &oldProperty = oldProperties[oldIndex];
+            const ShaderPropertyDesc &oldProperty = oldProperties[oldIndex];
             if (BE1::Str::Cmp(newProperty.GetName(), oldProperty.GetName())) {
                 continue;
             }

@@ -45,32 +45,32 @@ END_EVENTS
 
 void Entity::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero,
-        "Parent Entity", PropertyInfo::Flag::ForceToSet | PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
+        "Parent Entity", PropertyDesc::Flag::ForceToSet | PropertyDesc::Flag::Editor).SetMetaObject(&Entity::metaObject);
     REGISTER_ACCESSOR_PROPERTY("siblingIndex", "Sibling Index", int, GetSiblingIndex, SetSiblingIndex, -1,
-        "", PropertyInfo::Flag::ForceToSet | PropertyInfo::Flag::SkipSerialization);
+        "", PropertyDesc::Flag::ForceToSet | PropertyDesc::Flag::SkipSerialization);
     REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false,
-        "Is prefab ?", PropertyInfo::Flag::Editor);
+        "Is prefab ?", PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&Entity::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity",
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged",
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("staticMask", "Static Mask", int, GetStaticMask, SetStaticMask, 0,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("active", "Active", bool, IsActiveSelf, SetActive, true,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("activeInHierarchy", "Active In Hierarchy", bool, activeInHierarchy, true,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("lockedInHierarchy", "Locked In Hierarchy", bool, lockedInHierarchy, false,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
 #if WITH_EDITOR
     REGISTER_ACCESSOR_PROPERTY("visibleInEditor", "Visible", bool, IsVisible, SetVisible, true,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("selectableInEditor", "Selectable", bool, IsSelectable, SetSelectable, true,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
 #endif
 }
 
@@ -963,18 +963,18 @@ Json::Value Entity::CloneEntitiesValue(const Json::Value &entitiesValue, HashTab
 }
 
 void Entity::RemapGuids(const HashTable<Guid, Guid> &guidMap) {
-    PropertyInfo propInfo;
+    PropertyDesc propDesc;
     Guid toGuid;
 
-    Array<PropertyInfo> propertyInfoList;
-    GetPropertyInfoList(propertyInfoList);
+    Array<PropertyDesc> propertyDescList;
+    GetPropertyDescList(propertyDescList);
 
-    for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
-        const auto &propInfo = propertyInfoList[propIndex];
+    for (int propIndex = 0; propIndex < propertyDescList.Count(); propIndex++) {
+        const auto &propDesc = propertyDescList[propIndex];
             
-        if (propInfo.GetType() == Variant::Type::Guid) {
-            if (propInfo.GetFlags() & PropertyInfo::Flag::Array) {
-                for (int arrayIndex = 0; arrayIndex < GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+        if (propDesc.GetType() == Variant::Type::Guid) {
+            if (propDesc.GetFlags() & PropertyDesc::Flag::Array) {
+                for (int arrayIndex = 0; arrayIndex < GetPropertyArrayCount(propDesc.GetName()); arrayIndex++) {
                     const Guid fromGuid = GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
                     if (guidMap.Get(fromGuid, &toGuid)) {
@@ -994,16 +994,16 @@ void Entity::RemapGuids(const HashTable<Guid, Guid> &guidMap) {
     for (int componentIndex = 0; componentIndex < NumComponents(); componentIndex++) {
         Component *component = GetComponent(componentIndex);
 
-        Array<PropertyInfo> propertyInfoList;
-        component->GetPropertyInfoList(propertyInfoList);
+        Array<PropertyDesc> propertyDescList;
+        component->GetPropertyDescList(propertyDescList);
 
-        const int propertyInfoCount = propertyInfoList.Count();
-        for (int propIndex = 0; propIndex < propertyInfoCount; propIndex++) {
-            const auto &propInfo = propertyInfoList[propIndex];
+        const int propertyDescCount = propertyDescList.Count();
+        for (int propIndex = 0; propIndex < propertyDescCount; propIndex++) {
+            const auto &propDesc = propertyDescList[propIndex];
 
-            if (propInfo.GetType() == Variant::Type::Guid) {
-                if (propInfo.GetFlags() & PropertyInfo::Flag::Array) {
-                    const int arrayCount = component->GetPropertyArrayCount(propInfo.GetName());
+            if (propDesc.GetType() == Variant::Type::Guid) {
+                if (propDesc.GetFlags() & PropertyDesc::Flag::Array) {
+                    const int arrayCount = component->GetPropertyArrayCount(propDesc.GetName());
 
                     for (int arrayIndex = 0; arrayIndex < arrayCount; arrayIndex++) {
                         const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();

@@ -119,7 +119,7 @@ private:
     struct PendingShaderTemplateReload {
         SharedPtr<ShaderTemplate>   shaderTemplate;
         ShaderTemplate::InternalData internalData;
-        BE1::Array<ShaderPropertyInfo> oldProperties;
+        BE1::Array<ShaderPropertyDesc> oldProperties;
     };
 
     void                            UpdateWorkerSettings();

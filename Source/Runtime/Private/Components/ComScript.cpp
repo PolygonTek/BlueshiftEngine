@@ -31,7 +31,7 @@ END_EVENTS
 
 void ComScript::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("script", "Script", Guid, GetScriptGuid, SetScriptGuid, Guid::zero, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&ScriptResource::metaObject);
+        "", PropertyDesc::Flag::Editor).SetMetaObject(&ScriptResource::metaObject);
 }
 
 ComScript::ComScript() {
@@ -109,10 +109,10 @@ void ComScript::SetOwnerValues() {
     owner["script"] = this;
 }
 
-void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
-    Component::GetPropertyInfoList(propInfos);
+void ComScript::GetPropertyDescList(Array<PropertyDesc> &propDescs) const {
+    Component::GetPropertyDescList(propDescs);
 
-    propInfos.AppendArray(fieldInfos);
+    propDescs.AppendArray(fieldInfos);
 }
 
 void ComScript::Deserialize(const Json::Value &in) {
@@ -204,7 +204,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         fieldInfos.Clear();
         fieldGuids.Clear();
 
-        // Get the script property informations with this sandboxed script.
+        // Get the script property descriptors for this sandboxed script.
         if (sandbox["properties"].IsTable() && propertyNames.Count() > 0) {
             InitScriptFields();
         }
@@ -292,7 +292,7 @@ void ComScript::InitScriptFields() {
         }
     };
 
-    // Create all the property info.
+    // Create all the property descriptor.
     auto fieldInfoEnumerator = [this](const char *name) {
         auto prop = sandbox["properties"][name];
         if (!prop.IsValid()) {
@@ -319,7 +319,7 @@ void ComScript::InitScriptFields() {
                     range.step = Math::Abs((range.maxValue - range.minValue) / 100.0f);
                 }
 
-                auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
+                auto propDesc = PropertyDesc(name, label, VariantType<int>::GetType(),
                     BE_NEW PropertyLambdaAccessorImpl<Class, int>(
                         [propValue]() {
                             return (int)propValue;
@@ -334,13 +334,13 @@ void ComScript::InitScriptFields() {
                             }
 #endif
                         }
-                    ), (int)propValue, desc, PropertyInfo::Flag::Editor);
+                    ), (int)propValue, desc, PropertyDesc::Flag::Editor);
 
-                propInfo.SetRange(minimum, maximum, step);
+                propDesc.SetRange(minimum, maximum, step);
 
-                fieldInfos.Append(propInfo);
+                fieldInfos.Append(propDesc);
             } else {
-                auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
+                auto propDesc = PropertyDesc(name, label, VariantType<int>::GetType(),
                     BE_NEW PropertyLambdaAccessorImpl<Class, int>(
                         [propValue]() {
                             return (int)propValue;
@@ -355,14 +355,14 @@ void ComScript::InitScriptFields() {
                             }
 #endif
                         }
-                    ), (int)propValue, desc, PropertyInfo::Flag::Editor);
+                    ), (int)propValue, desc, PropertyDesc::Flag::Editor);
 
-                fieldInfos.Append(propInfo);
+                fieldInfos.Append(propDesc);
             }
         } else if (!Str::Cmp(type, "enum")) {
             const char *enumSequence = prop["sequence"];
 
-            auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<int>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, int>(
                     [propValue]() {
                         return (int)propValue;
@@ -377,13 +377,13 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (int)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (int)propValue, desc, PropertyDesc::Flag::Editor);
 
-                propInfo.SetEnumString(enumSequence);
+                propDesc.SetEnumString(enumSequence);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "bool")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<bool>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<bool>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, bool>(
                     [propValue]() {
                         return (bool)propValue;
@@ -398,9 +398,9 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (bool)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (bool)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "float")) {
             if (prop["minimum"].LuaType() == LUA_TNUMBER && prop["maximum"].LuaType() == LUA_TNUMBER) {
                 float minimum = prop["minimum"];
@@ -412,7 +412,7 @@ void ComScript::InitScriptFields() {
                     range.step = Math::Abs((range.maxValue - range.minValue) / 100.0f);
                 }
 
-                auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), 
+                auto propDesc = PropertyDesc(name, label, VariantType<float>::GetType(),
                     BE_NEW PropertyLambdaAccessorImpl<Class, float>(
                         [propValue]() {
                             return (float)propValue;
@@ -427,13 +427,13 @@ void ComScript::InitScriptFields() {
                             }
 #endif
                         }
-                    ), (float)propValue, desc, PropertyInfo::Flag::Editor);
+                    ), (float)propValue, desc, PropertyDesc::Flag::Editor);
 
-                propInfo.SetRange(minimum, maximum, step);
+                propDesc.SetRange(minimum, maximum, step);
 
-                fieldInfos.Append(propInfo);
+                fieldInfos.Append(propDesc);
             } else {
-                auto propInfo = PropertyInfo(name, label, VariantType<float>::GetType(), 
+                auto propDesc = PropertyDesc(name, label, VariantType<float>::GetType(),
                     BE_NEW PropertyLambdaAccessorImpl<Class, float>(
                         [propValue]() {
                             return (float)propValue;
@@ -448,12 +448,12 @@ void ComScript::InitScriptFields() {
                             }
 #endif
                         }
-                    ), (float)propValue, desc, PropertyInfo::Flag::Editor);
+                    ), (float)propValue, desc, PropertyDesc::Flag::Editor);
 
-                fieldInfos.Append(propInfo);
+                fieldInfos.Append(propDesc);
             }
         } else if (!Str::Cmp(type, "vec2")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Vec2>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Vec2>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Vec2, MixedPropertyTrait>(
                     [propValue]() {
                         return (Vec2 &)propValue;
@@ -468,11 +468,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Vec2 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Vec2 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "vec3")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Vec3>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Vec3>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Vec3, MixedPropertyTrait>(
                     [propValue]() {
                         return (Vec3 &)propValue;
@@ -487,11 +487,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Vec3 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Vec3 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "vec4")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Vec4>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Vec4>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Vec4, MixedPropertyTrait>(
                     [propValue]() {
                         return (Vec4 &)propValue;
@@ -506,11 +506,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Vec4 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Vec4 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "color3")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Color3>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Color3>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Color3, MixedPropertyTrait>(
                     [propValue]() {
                         return (Color3 &)propValue;
@@ -525,11 +525,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Color3 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Color3 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "color4")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Color4>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Color4>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Color4, MixedPropertyTrait>(
                     [propValue]() {
                         return (Color4 &)propValue;
@@ -544,11 +544,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Color4 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Color4 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "angles")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Angles>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Angles>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Angles, MixedPropertyTrait>(
                     [propValue]() {
                         return (Angles &)propValue;
@@ -563,11 +563,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Angles &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Angles &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "quat")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Quat>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Quat>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Quat, MixedPropertyTrait>(
                     [propValue]() {
                         return (Quat &)propValue;
@@ -582,11 +582,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Quat &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Quat &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "mat2")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Mat2>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Mat2>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Mat2, MixedPropertyTrait>(
                     [propValue]() {
                         return (Mat2 &)propValue;
@@ -601,11 +601,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Mat2 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Mat2 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "mat3")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Mat3>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Mat3>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Mat3, MixedPropertyTrait>(
                     [propValue]() {
                         return (Mat3 &)propValue;
@@ -620,11 +620,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Mat3 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Mat3 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "mat3x4")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Mat3x4>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Mat3x4>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Mat3x4, MixedPropertyTrait>(
                     [propValue]() {
                         return (Mat3x4 &)propValue;
@@ -639,11 +639,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Mat3x4 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Mat3x4 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "mat4")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Mat4>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Mat4>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Mat4, MixedPropertyTrait>(
                     [propValue]() {
                         return (Mat4 &)propValue;
@@ -658,11 +658,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Mat4 &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Mat4 &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "point")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Point>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Point>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Point, MixedPropertyTrait>(
                     [propValue]() {
                         return (Point &)propValue;
@@ -677,11 +677,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Point &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Point &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "rect")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Rect>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Rect>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Rect, MixedPropertyTrait>(
                     [propValue]() {
                         return (Rect &)propValue;
@@ -696,11 +696,11 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Rect &)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (Rect &)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "string")) {
-            auto propInfo = PropertyInfo(name, label, VariantType<Str>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Str>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Str, MixedPropertyTrait>(
                     [propValue]() {
                         return (const char *)propValue;
@@ -715,15 +715,15 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (const char *)propValue, desc, PropertyInfo::Flag::Editor);
+                ), (const char *)propValue, desc, PropertyDesc::Flag::Editor);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         } else if (!Str::Cmp(type, "object")) {
             auto pairPtr = fieldGuids.Get(name);
             int fieldIndex = fieldGuids.GetPairs().IndexOf(pairPtr);
             assert(fieldIndex >= 0);
 
-            auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), 
+            auto propDesc = PropertyDesc(name, label, VariantType<Guid>::GetType(),
                 BE_NEW PropertyLambdaAccessorImpl<Class, Guid, MixedPropertyTrait>(
                     [fieldIndex, this]() {
                         auto pairPtr = fieldGuids.GetByIndex(fieldIndex);
@@ -740,14 +740,14 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), pairPtr->second.As<Guid>(), desc, PropertyInfo::Flag::Editor);
+                ), pairPtr->second.As<Guid>(), desc, PropertyDesc::Flag::Editor);
 
             const char *classname = prop["classname"];
             const MetaObject *metaObject = Object::FindMetaObject(classname);
 
-            propInfo.SetMetaObject(metaObject);
+            propDesc.SetMetaObject(metaObject);
 
-            fieldInfos.Append(propInfo);
+            fieldInfos.Append(propDesc);
         }
     };
 
@@ -831,9 +831,9 @@ void ComScript::SetScriptProperties() {
     LuaCpp::Selector properties = sandbox["properties"];
 
     for (int i = 0; i < fieldInfos.Count(); i++) {
-        const PropertyInfo *propInfo = &fieldInfos[i];
-        const char *name = propInfo->GetName();
-        const Variant::Type::Enum type = propInfo->GetType();
+        const PropertyDesc *propDesc = &fieldInfos[i];
+        const char *name = propDesc->GetName();
+        const Variant::Type::Enum type = propDesc->GetType();
         const Variant value = GetProperty(name);
 
         auto property = properties[name];
@@ -899,10 +899,10 @@ void ComScript::SetScriptProperties() {
             if (object) {
                 property["value"] = object;
             } else {
-                if (propInfo->GetMetaObject()->IsTypeOf(Resource::metaObject)) {
+                if (propDesc->GetMetaObject()->IsTypeOf(Resource::metaObject)) {
                     if (!objectGuid.IsZero()) {
                         Asset *asset = (Asset *)Asset::CreateInstance(objectGuid);
-                        asset->CreateResource(*propInfo->GetMetaObject());
+                        asset->CreateResource(*propDesc->GetMetaObject());
                         property["value"] = asset;
 
                         // FIXME: when we should delete asset ?
@@ -960,7 +960,7 @@ void ComScript::OnValidate() {
     if (onValidateFunc.IsValid()) {
         onValidateFunc();
 
-        EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 0);
+        EmitSignal(&Serializable::SIG_PropertyDescUpdated, 0);
     }
 }
 
@@ -1082,7 +1082,7 @@ void ComScript::ScriptReloaded() {
 
 #if WITH_EDITOR
     // Update editor UI.
-    EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
+    EmitSignal(&Serializable::SIG_PropertyDescUpdated, 1);
 #endif
 }
 
@@ -1098,7 +1098,7 @@ void ComScript::SetScriptGuid(const Guid &guid) {
 #if WITH_EDITOR
     if (IsInitialized()) {
         // Update editor UI.
-        EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
+        EmitSignal(&Serializable::SIG_PropertyDescUpdated, 1);
     }
 #endif
 }

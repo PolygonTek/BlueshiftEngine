@@ -93,7 +93,7 @@ void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
     BE1::Swap(flags, rhs.flags);
 }
 
-const ShaderPropertyInfo *ShaderTemplate::InternalData::FindProperty(const char *name) const {
+const ShaderPropertyDesc *ShaderTemplate::InternalData::FindProperty(const char *name) const {
     int propertyIndex = FindPropertyIndex(name);
     if (propertyIndex >= 0) {
         return &properties[propertyIndex];
@@ -137,33 +137,33 @@ void ShaderTemplate::InternalData::RefreshStandardPropertyIndices() {
     }
 }
 
-bool ShaderTemplate::AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *desc, int flags, ShaderPropertyInfo::ShaderFlag shaderFlags) {
-    ShaderPropertyInfo propertyInfo(name, label, type, defaultValue, desc, flags, shaderFlags);
-    if (!internalData.AddProperty(propertyInfo)) {
-        BE_WARNLOG("ShaderTemplate::AddProperty: duplicated property name '%s' in shader template '%s'\n", propertyInfo.GetName(), hashName.c_str());
+bool ShaderTemplate::AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *description, int flags, ShaderPropertyDesc::ShaderFlag shaderFlags) {
+    ShaderPropertyDesc propertyDesc(name, label, type, defaultValue, description, flags, shaderFlags);
+    if (!internalData.AddProperty(propertyDesc)) {
+        BE_WARNLOG("ShaderTemplate::AddProperty: duplicated property name '%s' in shader template '%s'\n", propertyDesc.GetName(), hashName.c_str());
         return false;
     }
 
     return true;
 }
 
-bool ShaderTemplate::AddProperty(const ShaderPropertyInfo &propertyInfo) {
-    if (!internalData.AddProperty(propertyInfo)) {
-        BE_WARNLOG("ShaderTemplate::AddProperty: duplicated property name '%s' in shader template '%s'\n", propertyInfo.GetName(), hashName.c_str());
+bool ShaderTemplate::AddProperty(const ShaderPropertyDesc &propertyDesc) {
+    if (!internalData.AddProperty(propertyDesc)) {
+        BE_WARNLOG("ShaderTemplate::AddProperty: duplicated property name '%s' in shader template '%s'\n", propertyDesc.GetName(), hashName.c_str());
         return false;
     }
 
     return true;
 }
 
-bool ShaderTemplate::InternalData::AddProperty(const ShaderPropertyInfo &propertyInfo) {
-    if (FindProperty(propertyInfo.GetName())) {
+bool ShaderTemplate::InternalData::AddProperty(const ShaderPropertyDesc &propertyDesc) {
+    if (FindProperty(propertyDesc.GetName())) {
         assert(0);
         return false;
     }
 
-    int propertyIndex = properties.Append(propertyInfo);
-    int hash = propertyHash.GenerateHash(propertyInfo.GetName(), true);
+    int propertyIndex = properties.Append(propertyDesc);
+    int hash = propertyHash.GenerateHash(propertyDesc.GetName(), true);
     propertyHash.Add(hash, propertyIndex);
     RefreshStandardPropertyIndices();
     return true;
@@ -180,18 +180,18 @@ bool ShaderTemplate::CopyPropertiesFrom(const ShaderTemplate &shaderTemplate) {
 }
 
 bool ShaderTemplate::InternalData::CopyPropertiesFrom(const InternalData &rhs, const char **duplicatedPropertyName) {
-    for (const ShaderPropertyInfo &propertyInfo : rhs.properties) {
-        if (FindProperty(propertyInfo.GetName())) {
+    for (const ShaderPropertyDesc &propertyDesc : rhs.properties) {
+        if (FindProperty(propertyDesc.GetName())) {
             assert(0);
             if (duplicatedPropertyName) {
-                *duplicatedPropertyName = propertyInfo.GetName();
+                *duplicatedPropertyName = propertyDesc.GetName();
             }
             return false;
         }
     }
 
-    for (const ShaderPropertyInfo &propertyInfo : rhs.properties) {
-        AddProperty(propertyInfo);
+    for (const ShaderPropertyDesc &propertyDesc : rhs.properties) {
+        AddProperty(propertyDesc);
     }
 
     return true;
@@ -200,8 +200,8 @@ bool ShaderTemplate::InternalData::CopyPropertiesFrom(const InternalData &rhs, c
 void ShaderTemplate::InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const {
     outPropertyValues.Clear();
 
-    for (const ShaderPropertyInfo &propertyInfo : internalData.properties) {
-        outPropertyValues.Append(propertyInfo.GetDefaultValue());
+    for (const ShaderPropertyDesc &propertyDesc : internalData.properties) {
+        outPropertyValues.Append(propertyDesc.GetDefaultValue());
     }
 }
 
@@ -310,12 +310,12 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
     // 프로퍼티 중에 shader define 프로퍼티로 define 목록을 만든다.
     const int numProperties = internalData.properties.Count();
     for (int i = 0; i < numProperties; i++) {
-        const ShaderPropertyInfo &propertyInfo = internalData.properties[i];
-        if (!propertyInfo.IsShaderDefine()) {
+        const ShaderPropertyDesc &propertyDesc = internalData.properties[i];
+        if (!propertyDesc.IsShaderDefine()) {
             continue;
         }
 
-        const char *propertyDefineName = propertyInfo.GetName();
+        const char *propertyDefineName = propertyDesc.GetName();
         if (HasDefine(internalData.baseDefines, propertyDefineName) || HasFeatureSetDefine(featureSet, propertyDefineName) || HasDefine(propertyDefines, propertyDefineName)) {
             // permutation 의 define name 과 프로퍼티의 define name 은 중복되면 안된다.
             BE_ERRLOG("ShaderTemplate::RegisterPermutation: permutation define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
@@ -323,9 +323,9 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
         }
 
         const PropertyValue *propertyValue = i < propertyValues.Count() ? &propertyValues[i] : nullptr;
-        const BE1::Variant &value = propertyValue ? *propertyValue : propertyInfo.GetDefaultValue();
+        const BE1::Variant &value = propertyValue ? *propertyValue : propertyDesc.GetDefaultValue();
 
-        switch (propertyInfo.GetType()) {
+        switch (propertyDesc.GetType()) {
         case BE1::Variant::Type::Bool:
             AddDefine(propertyDefines, propertyDefineName, value.As<bool>() ? 1 : 0);
             break;
@@ -794,15 +794,15 @@ bool ShaderTemplate::ParseProperties(BE1::Lexer &lexer, const char *shaderTempla
 
             lexer.UnreadToken(&token);
 
-            ShaderPropertyInfo shaderPropInfo;
-            if (!shaderPropInfo.Parse(lexer)) {
+            ShaderPropertyDesc shaderPropDesc;
+            if (!shaderPropDesc.Parse(lexer)) {
                 BE_WARNLOG("error occurred in parsing property propInfo in shader '%s'\n", shaderTemplateName);
                 lexer.SkipRestOfLine();
                 continue;
             }
 
-            if (!outInternalData.AddProperty(shaderPropInfo)) {
-                BE_WARNLOG("duplicated property name '%s' in shader template '%s'\n", shaderPropInfo.GetName(), shaderTemplateName);
+            if (!outInternalData.AddProperty(shaderPropDesc)) {
+                BE_WARNLOG("duplicated property name '%s' in shader template '%s'\n", shaderPropDesc.GetName(), shaderTemplateName);
                 return false;
             }
         }
@@ -816,9 +816,9 @@ bool ShaderTemplate::ParseProperties(BE1::Lexer &lexer, const char *shaderTempla
     return true;
 }
 
-bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
+bool ShaderPropertyDesc::Parse(BE1::Lexer &lexer) {
     type = BE1::Variant::Type::None;
-    flags = BE1::PropertyInfo::Flag::Editor;
+    flags = BE1::PropertyDesc::Flag::Editor;
     shaderFlags = ShaderFlag::None;
     textureType = TextureType::None;
     range = BE1::Rangef(0, 0, 1);
@@ -951,7 +951,7 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
 
                 while (lexer.ReadToken(&token, false)) {
                     if (token == ")") {
-                        conditions.Append(ShaderPropertyInfo::Condition(conditionName, valueList));
+                        conditions.Append(ShaderPropertyDesc::Condition(conditionName, valueList));
 
                         lexer.UnreadToken(&token);
                         conditionClosed = true;
@@ -994,17 +994,17 @@ bool ShaderPropertyInfo::Parse(BE1::Lexer &lexer) {
                 closed = true;
                 break;
             } else if (token == "shaderDefine") {
-                shaderFlags |= ShaderPropertyInfo::ShaderFlag::ShaderDefine;
+                shaderFlags |= ShaderPropertyDesc::ShaderFlag::ShaderDefine;
             } else if (token == "hidden") {
-                shaderFlags |= ShaderPropertyInfo::ShaderFlag::Hidden;
+                shaderFlags |= ShaderPropertyDesc::ShaderFlag::Hidden;
             } else if (token == "normal") {
-                shaderFlags |= ShaderPropertyInfo::ShaderFlag::Normal;
+                shaderFlags |= ShaderPropertyDesc::ShaderFlag::Normal;
             } else if (token == "linear") {
-                shaderFlags |= ShaderPropertyInfo::ShaderFlag::Linear;
+                shaderFlags |= ShaderPropertyDesc::ShaderFlag::Linear;
             } else if (token == "noStreaming") {
-                shaderFlags |= ShaderPropertyInfo::ShaderFlag::NoStreaming;
+                shaderFlags |= ShaderPropertyDesc::ShaderFlag::NoStreaming;
             } else if (token == "noMipmaps") {
-                shaderFlags |= ShaderPropertyInfo::ShaderFlag::NoMipmaps;
+                shaderFlags |= ShaderPropertyDesc::ShaderFlag::NoMipmaps;
             } else {
                 BE_WARNLOG("unknown shader property flag '%s' in shader property '%s'\n", token.c_str(), name.c_str());
                 return false;

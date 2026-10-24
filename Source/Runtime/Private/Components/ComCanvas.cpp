@@ -36,15 +36,15 @@ END_EVENTS
 
 void ComCanvas::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("scaleMode", "Scale Mode", ScaleMode::Enum, GetScaleMode, SetScaleMode, ScaleMode::ScaleWithScreenSize,
-        "", PropertyInfo::Flag::Editor).SetEnumString("Constant Pixel Size;Scale With Screen Size");
+        "", PropertyDesc::Flag::Editor).SetEnumString("Constant Pixel Size;Scale With Screen Size");
     REGISTER_PROPERTY("referenceResolution", "Reference Resolution", Size, referenceResolution, Size(1280, 720),
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("matchMode", "Match Mode", MatchMode::Enum, matchMode, MatchMode::MatchWidthOrHeight,
-        "", PropertyInfo::Flag::Editor).SetEnumString("Match Width Or Height;Expand;Shrink");
+        "", PropertyDesc::Flag::Editor).SetEnumString("Match Width Or Height;Expand;Shrink");
     REGISTER_PROPERTY("match", "Match (Width " u8"\u27f7" " Height)", float, match, 0.0f,
-        "", PropertyInfo::Flag::Editor).SetRange(0.0f, 1.0f, 0.01f);
+        "", PropertyDesc::Flag::Editor).SetRange(0.0f, 1.0f, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("clearDepth", "Clear Depth", bool, GetClearDepth, SetClearDepth, false,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
 }
 
 ComCanvas::ComCanvas() {

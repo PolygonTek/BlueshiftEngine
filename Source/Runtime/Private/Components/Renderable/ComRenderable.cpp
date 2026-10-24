@@ -27,21 +27,21 @@ END_EVENTS
 
 void ComRenderable::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, 
-        "The color to use when rendering.", PropertyInfo::Flag::Editor);
+        "The color to use when rendering.", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("alpha", "Alpha", float, GetAlpha, SetAlpha, 1.f, 
-        "The alpha to use when rendering.", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+        "The alpha to use when rendering.", PropertyDesc::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("billboard", "Billboard", bool, IsBillboard, SetBillboard, false, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 4000.f, 
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("skipRendering", "Skip Rendering", bool, IsSkipRendering, SetSkipRendering, false,
-        "", PropertyInfo::Flag::SkipSerialization);
+        "", PropertyDesc::Flag::SkipSerialization);
     REGISTER_ACCESSOR_PROPERTY("skipSelection", "Skip Selection", bool, IsSkipSelection, SetSkipSelection, false, 
-        "", PropertyInfo::Flag::SkipSerialization);
+        "", PropertyDesc::Flag::SkipSerialization);
 }
 
 ComRenderable::ComRenderable() {

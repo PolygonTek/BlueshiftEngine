@@ -90,25 +90,25 @@ static const char *builtInTextureNames[] = {
     "probe1SpecularCubeMap",                // Probe1SpecularCubeMap
 };
 
-const StrHashMap<Shader::ShaderPropertyInfo> &Shader::GetPropertyInfoHashMap() const {
+const StrHashMap<Shader::ShaderPropertyDesc> &Shader::GetPropertyDescHashMap() const {
     if (originalShader) {
-        return originalShader->propertyInfoHashMap;
+        return originalShader->propertyDescHashMap;
     }
-    return propertyInfoHashMap;
+    return propertyDescHashMap;
 }
 
 bool Shader::IsPropertyUsed(const Str &propName, const StrHashMap<Shader::Property> &shaderProperties) const {
-    const auto &propInfos = GetPropertyInfoHashMap();
-    const auto *keyValue = propInfos.Get(propName);
-    const ShaderPropertyInfo &propInfo = keyValue->second;
+    const auto &propDescs = GetPropertyDescHashMap();
+    const auto *keyValue = propDescs.Get(propName);
+    const ShaderPropertyDesc &propDesc = keyValue->second;
 
     // No conditions.
-    if (propInfo.conditions.Count() == 0) {
+    if (propDesc.conditions.Count() == 0) {
         return true;
     }
 
-    for (int conditionIndex = 0; conditionIndex < propInfo.conditions.Count(); conditionIndex++) {
-        const Condition &condition = propInfo.conditions[conditionIndex];
+    for (int conditionIndex = 0; conditionIndex < propDesc.conditions.Count(); conditionIndex++) {
+        const Condition &condition = propDesc.conditions[conditionIndex];
 
         const BE1::Variant &value = shaderProperties.Get(condition.name)->second.data;
 
@@ -180,7 +180,7 @@ void Shader::Purge() {
     }
 
     defineArray.Clear();
-    propertyInfoHashMap.Clear();
+    propertyDescHashMap.Clear();
 }
 
 bool Shader::Create(const char *text, const char *baseDir) {
@@ -224,7 +224,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 Shader *shader = shaderManager.FindShader(path);
                 if (shader) {
-                    propertyInfoHashMap = shader->propertyInfoHashMap;
+                    propertyDescHashMap = shader->propertyDescHashMap;
                 }
             } else {
                 BE_WARNLOG("missing inheritProperties name in shader '%s'\n", hashName.c_str());
@@ -349,9 +349,9 @@ bool Shader::Create(const char *text, const char *baseDir) {
     return Finish(generatePerforatedVersion, generateGpuSkinningVersion, generateGpuInstancingVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion);
 }
 
-bool Shader::ShaderPropertyInfo::Parse(Lexer &lexer) {
+bool Shader::ShaderPropertyDesc::Parse(Lexer &lexer) {
     type = Variant::Type::None;
-    flags = PropertyInfo::Flag::Editor;
+    flags = PropertyDesc::Flag::Editor;
     shaderFlags = 0;
     range = Rangef(0, 0, 1);
     metaObject = nullptr;
@@ -504,11 +504,11 @@ bool Shader::ShaderPropertyInfo::Parse(Lexer &lexer) {
             if (token == "]") {
                 break;
             } else if (token == "shaderDefine") {
-                shaderFlags |= ShaderPropertyInfo::Flag::ShaderDefine;
+                shaderFlags |= ShaderPropertyDesc::Flag::ShaderDefine;
             } else if (token == "normal") {
-                shaderFlags |= ShaderPropertyInfo::Flag::Normal;
+                shaderFlags |= ShaderPropertyDesc::Flag::Normal;
             } else if (token == "linear") {
-                shaderFlags |= ShaderPropertyInfo::Flag::Linear;
+                shaderFlags |= ShaderPropertyDesc::Flag::Linear;
             }
         }
     } else {
@@ -531,7 +531,7 @@ bool Shader::ParseProperties(Lexer &lexer) {
         if (token[0] == '}') {
             break;
         } else {
-            if (propertyInfoHashMap.Get(token)) {
+            if (propertyDescHashMap.Get(token)) {
                 BE_WARNLOG("same property name '%s' ignored in shader '%s'\n", token.c_str(), hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
@@ -539,14 +539,14 @@ bool Shader::ParseProperties(Lexer &lexer) {
 
             lexer.UnreadToken(&token);
 
-            ShaderPropertyInfo shaderPropInfo;
-            if (!shaderPropInfo.Parse(lexer)) {
+            ShaderPropertyDesc shaderPropDesc;
+            if (!shaderPropDesc.Parse(lexer)) {
                 BE_WARNLOG("error occured in parsing property propInfo in shader '%s'\n", hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
             }
 
-            propertyInfoHashMap.Set(token, shaderPropInfo);
+            propertyDescHashMap.Set(token, shaderPropDesc);
         }
     }
 
@@ -620,7 +620,7 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         shader->flags |= Flag::Shadowing;
     }
 
-    shader->propertyInfoHashMap = propertyInfoHashMap;
+    shader->propertyDescHashMap = propertyDescHashMap;
 
     return shader;
 }

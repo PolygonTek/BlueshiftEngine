@@ -27,29 +27,29 @@ END_EVENTS
 
 void ComWheelJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, 
-        "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "Joint position in local space", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Angles::zero,
-        "Joint angles in local space", PropertyInfo::Flag::Editor);
+        "Joint angles in local space", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useSusLimits", "Suspension/Use Limits", bool, GetEnableSuspensionLimit, SetEnableSuspensionLimit, false, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minSusDist", "Suspension/Min Distance", float, GetMinimumSuspensionDistance, SetMinimumSuspensionDistance, 0.f, 
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxSusDist", "Suspension/Max Distance", float, GetMaximumSuspensionDistance, SetMaximumSuspensionDistance, 0.f, 
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::SystemUnits | PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension/Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 30.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension/Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f,
-        "", PropertyInfo::Flag::Editor);// .SetRange(0, 1, 0.01f);
+        "", PropertyDesc::Flag::Editor);// .SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Steering/Use Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minSteeringAngle", "Steering/Min Angle", float, GetMinimumSteeringAngle, SetMinimumSteeringAngle, 0.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(-90, 0, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(-90, 0, 1);
     REGISTER_ACCESSOR_PROPERTY("maxSteeringAngle", "Steering/Max Angle", float, GetMaximumSteeringAngle, SetMaximumSteeringAngle, 0.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 90, 1);
+        "", PropertyDesc::Flag::Editor).SetRange(0, 90, 1);
     REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor/Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f,
-        "Target angular velocity (degree/s) of motor", PropertyInfo::Flag::Editor);
+        "Target angular velocity (degree/s) of motor", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Motor/Maximum Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f,
-        "Maximum motor impulse", PropertyInfo::Flag::Editor);
+        "Maximum motor impulse", PropertyDesc::Flag::Editor);
 }
 
 ComWheelJoint::ComWheelJoint() {

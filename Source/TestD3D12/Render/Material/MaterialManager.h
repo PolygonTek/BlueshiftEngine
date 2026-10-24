@@ -53,7 +53,7 @@ public:
     SharedPtr<Material>             defaultSkyboxMaterial;
 
 private:
-    void                            OnShaderTemplateReloaded(const ShaderTemplate *shaderTemplate, const BE1::Array<ShaderPropertyInfo> &oldProperties);
+    void                            OnShaderTemplateReloaded(const ShaderTemplate *shaderTemplate, const BE1::Array<ShaderPropertyDesc> &oldProperties);
     void                            CleanExpiredMaterials();
     void                            CreateDefaultMaterials();
     void                            DestroyDefaultMaterials();

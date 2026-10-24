@@ -29,19 +29,19 @@ END_EVENTS
 
 void ComRectTransform::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("anchorMins", "Anchor Mins", Vec2, GetAnchorMins, SetAnchorMins, Vec2(0.5, 0.5),
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("anchorMaxs", "Anchor Maxs", Vec2, GetAnchorMaxs, SetAnchorMaxs, Vec2(0.5, 0.5),
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("anchoredPosition", "Anchored Position", Vec2, GetAnchoredPosition, SetAnchoredPosition, Vec2(0, 0),
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("sizeDelta", "Size Delta", Vec2, GetSizeDelta, SetSizeDelta, Vec2(100, 100),
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("pivot", "Pivot", Vec2, GetPivot, SetPivot, Vec2(0.5, 0.5),
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("rayCastTarget", "Ray Cast Target", bool, rayCastTarget, true,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
     REGISTER_PROPERTY("clipChildren", "Clip Children", bool, clipChildren, true,
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyDesc::Flag::Editor);
 }
 
 ComRectTransform::ComRectTransform() {

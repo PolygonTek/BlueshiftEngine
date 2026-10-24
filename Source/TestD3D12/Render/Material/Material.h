@@ -148,7 +148,7 @@ private:
 
     void                            UpdateSampler();
     void                            UpdateTextureProperties();
-    void                            RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyInfo> &oldProperties);
+    void                            RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyDesc> &oldProperties);
     bool                            HasStreamingTextureProperties() const;
     void                            RequestStreamingMaxDimension(uint32_t requestedMaxDimension) const;
 

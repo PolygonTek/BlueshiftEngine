@@ -50,7 +50,7 @@ public:
     virtual void            SetCount(Serializable *ptr, int count) = 0;
 };
 
-class BE_API PropertyInfo {
+class BE_API PropertyDesc {
     friend class Serializable;
 
     using PropertyAccessorPtr = std::shared_ptr<PropertyAccessor>;
@@ -72,15 +72,15 @@ public:
         };
     };
 
-    PropertyInfo();
-    PropertyInfo(const char *name, const char *label, Variant::Type::Enum type, intptr_t offset, const Variant &defaultValue, const char *desc, int flags);
-    PropertyInfo(const char *name, const char *label, Variant::Type::Enum type, PropertyAccessor *accessor, const Variant &defaultValue, const char *desc, int flags);
+    PropertyDesc();
+    PropertyDesc(const char *name, const char *label, Variant::Type::Enum type, intptr_t offset, const Variant &defaultValue, const char *description, int flags);
+    PropertyDesc(const char *name, const char *label, Variant::Type::Enum type, PropertyAccessor *accessor, const Variant &defaultValue, const char *description, int flags);
 
     Variant::Type::Enum     GetType() const { return type; }
     const char *            GetName() const { return name; }
     const Variant &         GetDefaultValue() const { return defaultValue; }
     const char *            GetLabel() const { return label; }
-    const char *            GetDescription() const { return desc; }
+    const char *            GetDescription() const { return description; }
     int                     GetFlags() const { return flags; }
 
                             /// Tests if this property is array.
@@ -113,7 +113,7 @@ protected:
     Variant                 defaultValue;       ///< Default value
     Str                     name;               ///< Property name
     Str                     label;              ///< Label in Editor
-    Str                     desc;               ///< Description in Editor
+    Str                     description;        ///< Description in Editor
     intptr_t                offset;             ///< Byte offsets from start of object
     PropertyAccessorPtr     accessor;
     Rangef                  range;
@@ -122,30 +122,30 @@ protected:
     int                     flags;
 };
 
-BE_INLINE PropertyInfo::PropertyInfo() :
+BE_INLINE PropertyDesc::PropertyDesc() :
     type(Variant::Type::None),
     offset(0),
     metaObject(nullptr),
     flags(Flag::Empty) {
 }
 
-BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type::Enum _type, intptr_t _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
+BE_INLINE PropertyDesc::PropertyDesc(const char *_name, const char *_label, Variant::Type::Enum _type, intptr_t _offset, const Variant &_defaultValue, const char *_description, int _flags) :
     type(_type),
     defaultValue(_defaultValue),
     name(_name),
     label(_label),
-    desc(_desc),
+    description(_description),
     offset(_offset),
     metaObject(nullptr),
     flags(_flags) {
 }
 
-BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type::Enum _type, PropertyAccessor *_accessor, const Variant &_defaultValue, const char *_desc, int _flags) :
+BE_INLINE PropertyDesc::PropertyDesc(const char *_name, const char *_label, Variant::Type::Enum _type, PropertyAccessor *_accessor, const Variant &_defaultValue, const char *_description, int _flags) :
     type(_type),
     defaultValue(_defaultValue),
     name(_name),
     label(_label),
-    desc(_desc),
+    description(_description),
     offset(0),
     accessor(_accessor),
     metaObject(nullptr),
@@ -382,31 +382,31 @@ public:
 
 #define UNREGISTER_PROPERTY(name) Class::metaObject.UnregisterProperty(name)
 
-#define REGISTER_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        ::offset_of(&Class::var), defaultValue, desc, flags))
+#define REGISTER_PROPERTY(name, label, type, var, defaultValue, description, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertyDesc(name, label, BE1::VariantType<type>::GetType(), \
+        ::offset_of(&Class::var), defaultValue, description, flags))
 
-#define REGISTER_ARRAY_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        ::offset_of(&Class::var), defaultValue, desc, flags | BE1::PropertyInfo::Flag::Array))
+#define REGISTER_ARRAY_PROPERTY(name, label, type, var, defaultValue, description, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertyDesc(name, label, BE1::VariantType<type>::GetType(), \
+        ::offset_of(&Class::var), defaultValue, description, flags | BE1::PropertyDesc::Flag::Array))
 
-#define REGISTER_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        BE_NEW BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, desc, flags))
+#define REGISTER_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, description, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertyDesc(name, label, BE1::VariantType<type>::GetType(), \
+        BE_NEW BE1::PropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter), defaultValue, description, flags))
 
-#define REGISTER_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
+#define REGISTER_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, description, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertyDesc(name, label, BE1::VariantType<type>::GetType(), \
         BE_NEW BE1::ArrayPropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
-        defaultValue, desc, flags | BE1::PropertyInfo::Flag::Array))
+        defaultValue, description, flags | BE1::PropertyDesc::Flag::Array))
 
-#define REGISTER_MIXED_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
+#define REGISTER_MIXED_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, description, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertyDesc(name, label, BE1::VariantType<type>::GetType(), \
         BE_NEW BE1::PropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter), \
-        defaultValue, desc, flags))
+        defaultValue, description, flags))
 
-#define REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
-    Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
+#define REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, description, flags) \
+    Class::metaObject.RegisterProperty(BE1::PropertyDesc(name, label, BE1::VariantType<type>::GetType(), \
         BE_NEW BE1::ArrayPropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
-        defaultValue, desc, flags | BE1::PropertyInfo::Flag::Array))
+        defaultValue, description, flags | BE1::PropertyDesc::Flag::Array))
 
 BE_NAMESPACE_END

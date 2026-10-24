@@ -231,7 +231,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
     return material;
 }
 
-void MaterialManager::OnShaderTemplateReloaded(const ShaderTemplate *shaderTemplate, const BE1::Array<ShaderPropertyInfo> &oldProperties) {
+void MaterialManager::OnShaderTemplateReloaded(const ShaderTemplate *shaderTemplate, const BE1::Array<ShaderPropertyDesc> &oldProperties) {
     if (!shaderTemplate) {
         return;
     }

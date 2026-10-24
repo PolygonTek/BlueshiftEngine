@@ -846,7 +846,7 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
             *(Mat3x4 *)instanceData = localToWorldMatrix;
             instanceData += 48;
 
-            /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyInfoHashMap().Get("_PARALLAX")) {
+            /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyDescHashMap().Get("_PARALLAX")) {
                 Mat3x4 worldToLocalMatrix = renderObject->GetWorldMatrixInverse();
                 *(Mat3x4 *)instanceData = worldToLocalMatrix; 
                 instanceData += 48;

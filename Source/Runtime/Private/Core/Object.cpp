@@ -164,17 +164,17 @@ void MetaObject::Shutdown() {
     lastChildIndex = 0;
 }
 
-bool MetaObject::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
+bool MetaObject::GetPropertyDesc(const char *name, PropertyDesc &propertyDesc) const {
     if (!name || !name[0]) {
         return false;
     }
 
-    int hash = propertyInfoHash.GenerateHash(name, false);
+    int hash = propertyDescHash.GenerateHash(name, false);
     
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
-        for (int i = t->propertyInfoHash.First(hash); i != -1; i = t->propertyInfoHash.Next(i)) {
-            if (!Str::Icmp(t->propertyInfoList[i].GetName(), name)) {
-                propertyInfo = t->propertyInfoList[i];
+        for (int i = t->propertyDescHash.First(hash); i != -1; i = t->propertyDescHash.Next(i)) {
+            if (!Str::Icmp(t->propertyDescList[i].GetName(), name)) {
+                propertyDesc = t->propertyDescList[i];
                 return true;
             }
         }
@@ -183,37 +183,37 @@ bool MetaObject::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) c
     return false;
 }
 
-void MetaObject::GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const {
-    Array<Str> names(propertyInfoList.GetGranularity());
+void MetaObject::GetPropertyDescList(Array<PropertyDesc> &propertyDescList) const {
+    Array<Str> names(propertyDescList.GetGranularity());
 
     for (const MetaObject *t = this; t != nullptr; t = t->super) {
-        const int count = t->propertyInfoList.Count();
+        const int count = t->propertyDescList.Count();
         for (int index = 0; index < count; index++) {
-            const PropertyInfo &propInfo = t->propertyInfoList[index];
-            const char *propName = propInfo.GetName();
+            const PropertyDesc &propDesc = t->propertyDescList[index];
+            const char *propName = propDesc.GetName();
 
             if (!names.Find(propName)) {
                 names.Append(propName);
-                propertyInfoList.Append(propInfo);
+                propertyDescList.Append(propDesc);
             }
         }
     }
 }
 
-PropertyInfo &MetaObject::RegisterProperty(const PropertyInfo &propInfo) {
-    int index = propertyInfoList.Append(propInfo);
-    int hash = propertyInfoHash.GenerateHash(propInfo.GetName(), false);
-    propertyInfoHash.Add(hash, index);
-    return propertyInfoList[index];
+PropertyDesc &MetaObject::RegisterProperty(const PropertyDesc &propDesc) {
+    int index = propertyDescList.Append(propDesc);
+    int hash = propertyDescHash.GenerateHash(propDesc.GetName(), false);
+    propertyDescHash.Add(hash, index);
+    return propertyDescList[index];
 }
 
 bool MetaObject::UnregisterProperty(const char *name) {
-    int hash = propertyInfoHash.GenerateHash(name, false);
+    int hash = propertyDescHash.GenerateHash(name, false);
 
-    for (int index = propertyInfoHash.First(hash); index != HashIndex::EmptyTable[0]; index = propertyInfoHash.Next(index)) {
-        if (!Str::Cmp(propertyInfoList[index].GetName(), name)) {
-            propertyInfoList.RemoveIndex(index);
-            propertyInfoHash.Remove(hash, index);
+    for (int index = propertyDescHash.First(hash); index != HashIndex::EmptyTable[0]; index = propertyDescHash.Next(index)) {
+        if (!Str::Cmp(propertyDescList[index].GetName(), name)) {
+            propertyDescList.RemoveIndex(index);
+            propertyDescHash.Remove(hash, index);
             return true;
         }
     }
@@ -238,8 +238,8 @@ static HashTable<Guid, Object *> instanceHash;
 static std::atomic_int instanceCounter(0);
 
 void Object::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::Flag::ReadOnly),
-    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::Flag::ReadOnly);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyDesc::Flag::ReadOnly),
+    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyDesc::Flag::ReadOnly);
 }
 
 #define CHECK_GUID_CONFLICT 1

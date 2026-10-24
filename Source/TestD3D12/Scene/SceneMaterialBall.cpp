@@ -114,9 +114,9 @@ void SceneMaterialBall::UpdateEnvironmentLightRotation() {
 }
 
 #ifdef ENABLE_IMGUI
-static bool IsMaterialPropertyVisible(Material *material, const ShaderPropertyInfo &propertyInfo) {
-    for (int conditionIndex = 0; conditionIndex < propertyInfo.conditions.Count(); ++conditionIndex) {
-        const ShaderPropertyInfo::Condition &condition = propertyInfo.conditions[conditionIndex];
+static bool IsMaterialPropertyVisible(Material *material, const ShaderPropertyDesc &propertyDesc) {
+    for (int conditionIndex = 0; conditionIndex < propertyDesc.conditions.Count(); ++conditionIndex) {
+        const ShaderPropertyDesc::Condition &condition = propertyDesc.conditions[conditionIndex];
         const ShaderTemplate::PropertyValue *conditionValue = material->GetPropertyValue(condition.name.c_str());
         if (!conditionValue ||
             conditionValue->GetType() != BE1::Variant::Type::Int ||
@@ -134,10 +134,10 @@ static void DrawMaterialProperties(Material *material, float itemWidth) {
         return;
     }
 
-    const BE1::Array<ShaderPropertyInfo> &properties = shaderTemplate->GetProperties();
+    const BE1::Array<ShaderPropertyDesc> &properties = shaderTemplate->GetProperties();
     for (int propertyIndex = 0; propertyIndex < properties.Count(); ++propertyIndex) {
-        const ShaderPropertyInfo &propertyInfo = properties[propertyIndex];
-        if (propertyInfo.IsHidden() || !IsMaterialPropertyVisible(material, propertyInfo)) {
+        const ShaderPropertyDesc &propertyDesc = properties[propertyIndex];
+        if (propertyDesc.IsHidden() || !IsMaterialPropertyVisible(material, propertyDesc)) {
             continue;
         }
 
@@ -146,23 +146,23 @@ static void DrawMaterialProperties(Material *material, float itemWidth) {
             continue;
         }
 
-        ImGui::PushID(propertyInfo.GetName());
+        ImGui::PushID(propertyDesc.GetName());
 
-        switch (propertyInfo.GetType()) {
+        switch (propertyDesc.GetType()) {
         case BE1::Variant::Type::Bool: {
             bool value = propertyValue->As<bool>();
-            if (ImGui::Checkbox(propertyInfo.GetLabel(), &value)) {
+            if (ImGui::Checkbox(propertyDesc.GetLabel(), &value)) {
                 material->SetPropertyValue(propertyIndex, value);
             }
             break;
         }
         case BE1::Variant::Type::Int: {
             int value = propertyValue->As<int>();
-            const BE1::Array<BE1::Str> &enumValues = propertyInfo.GetEnum();
+            const BE1::Array<BE1::Str> &enumValues = propertyDesc.GetEnum();
             ImGui::SetNextItemWidth(itemWidth);
             if (enumValues.Count() > 0) {
                 const char *previewValue = value >= 0 && value < enumValues.Count() ? enumValues[value].c_str() : "";
-                if (ImGui::BeginCombo(propertyInfo.GetLabel(), previewValue)) {
+                if (ImGui::BeginCombo(propertyDesc.GetLabel(), previewValue)) {
                     for (int enumIndex = 0; enumIndex < enumValues.Count(); ++enumIndex) {
                         const bool selected = value == enumIndex;
                         if (ImGui::Selectable(enumValues[enumIndex].c_str(), selected)) {
@@ -174,11 +174,11 @@ static void DrawMaterialProperties(Material *material, float itemWidth) {
                     }
                     ImGui::EndCombo();
                 }
-            } else if (propertyInfo.IsRanged()) {
-                if (ImGui::SliderInt(propertyInfo.GetLabel(), &value, static_cast<int>(propertyInfo.GetMinValue()), static_cast<int>(propertyInfo.GetMaxValue()))) {
+            } else if (propertyDesc.IsRanged()) {
+                if (ImGui::SliderInt(propertyDesc.GetLabel(), &value, static_cast<int>(propertyDesc.GetMinValue()), static_cast<int>(propertyDesc.GetMaxValue()))) {
                     material->SetPropertyValue(propertyIndex, value);
                 }
-            } else if (ImGui::InputInt(propertyInfo.GetLabel(), &value)) {
+            } else if (ImGui::InputInt(propertyDesc.GetLabel(), &value)) {
                 material->SetPropertyValue(propertyIndex, value);
             }
             break;
@@ -186,9 +186,9 @@ static void DrawMaterialProperties(Material *material, float itemWidth) {
         case BE1::Variant::Type::Float: {
             float value = propertyValue->As<float>();
             ImGui::SetNextItemWidth(itemWidth);
-            const bool changed = propertyInfo.IsRanged()
-                ? ImGui::SliderFloat(propertyInfo.GetLabel(), &value, propertyInfo.GetMinValue(), propertyInfo.GetMaxValue(), "%.3f")
-                : ImGui::InputFloat(propertyInfo.GetLabel(), &value);
+            const bool changed = propertyDesc.IsRanged()
+                ? ImGui::SliderFloat(propertyDesc.GetLabel(), &value, propertyDesc.GetMinValue(), propertyDesc.GetMaxValue(), "%.3f")
+                : ImGui::InputFloat(propertyDesc.GetLabel(), &value);
             if (changed) {
                 material->SetPropertyValue(propertyIndex, value);
             }
@@ -197,7 +197,7 @@ static void DrawMaterialProperties(Material *material, float itemWidth) {
         case BE1::Variant::Type::Color3: {
             BE1::Color3 color = propertyValue->As<BE1::Color3>();
             ImGui::SetNextItemWidth(itemWidth);
-            if (ImGui::ColorEdit3(propertyInfo.GetLabel(), color.Ptr(), ImGuiColorEditFlags_Float)) {
+            if (ImGui::ColorEdit3(propertyDesc.GetLabel(), color.Ptr(), ImGuiColorEditFlags_Float)) {
                 material->SetPropertyValue(propertyIndex, color);
             }
             break;
@@ -205,7 +205,7 @@ static void DrawMaterialProperties(Material *material, float itemWidth) {
         case BE1::Variant::Type::Color4: {
             BE1::Color4 color = propertyValue->As<BE1::Color4>();
             ImGui::SetNextItemWidth(itemWidth);
-            if (ImGui::ColorEdit4(propertyInfo.GetLabel(), color.Ptr(), ImGuiColorEditFlags_Float)) {
+            if (ImGui::ColorEdit4(propertyDesc.GetLabel(), color.Ptr(), ImGuiColorEditFlags_Float)) {
                 material->SetPropertyValue(propertyIndex, color);
             }
             break;
@@ -218,7 +218,7 @@ static void DrawMaterialProperties(Material *material, float itemWidth) {
             }
 
             ImGui::SetNextItemWidth(itemWidth);
-            ImGui::InputText(propertyInfo.GetLabel(), &texturePath[0], texturePath.Length() + 1,
+            ImGui::InputText(propertyDesc.GetLabel(), &texturePath[0], texturePath.Length() + 1,
                 ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_ElideLeft);
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
                 ImGui::SetTooltip("%s", texturePath.c_str());

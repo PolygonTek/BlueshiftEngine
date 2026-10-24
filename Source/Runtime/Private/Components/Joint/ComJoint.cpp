@@ -27,11 +27,11 @@ END_EVENTS
 
 void ComJoint::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("connectedBody", "Connected Body", Guid, GetConnectedBodyGuid, SetConnectedBodyGuid, Guid::zero, 
-        "Optional reference to the RigidBody that the joint is dependent upon. If not set, the joint connects to the world.", PropertyInfo::Flag::Editor).SetMetaObject(&ComRigidBody::metaObject);
+        "Optional reference to the RigidBody that the joint is dependent upon. If not set, the joint connects to the world.", PropertyDesc::Flag::Editor).SetMetaObject(&ComRigidBody::metaObject);
     REGISTER_ACCESSOR_PROPERTY("collisionEnabled", "Collision Enabled", bool, IsCollisionEnabled, SetCollisionEnabled, false, 
-        "Enable collisions between bodies connected with a joint.", PropertyInfo::Flag::Editor);
+        "Enable collisions between bodies connected with a joint.", PropertyDesc::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("breakImpulse", "Break Impulse", float, GetBreakImpulse, SetBreakImpulse, 1e30f, 
-        "Maximum impulse the joint can withstand before breaking.", PropertyInfo::Flag::Editor);
+        "Maximum impulse the joint can withstand before breaking.", PropertyDesc::Flag::Editor);
 }
 
 ComJoint::ComJoint() {
