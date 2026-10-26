@@ -564,7 +564,7 @@ void RenderSystem::CreateColorGradingLUT() {
 
     // color grading 3D LUT texture 생성
     colorGradingLUTTexture = textureManager.AllocTexture("_Generated/ColorGradingLUT");
-    if (!colorGradingLUTTexture->Create3D(textureImage, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::Compute)) {
+    if (!colorGradingLUTTexture->Create3D(std::move(textureImage), Texture::Flag::HighQuality | Texture::Flag::NoMipmaps | Texture::Flag::Compute)) {
         BE_FATALERROR("RenderSystem::CreateColorGradingLUT: failed to create LUT texture\n");
     }
 

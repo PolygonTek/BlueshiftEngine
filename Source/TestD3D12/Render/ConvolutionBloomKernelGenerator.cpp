@@ -208,7 +208,7 @@ static RHI::Texture *CreateGeneratorTexture(const char *debugName, uint32_t size
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(size, size, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    RHI::Texture *texture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::Texture *texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!texture) {
         BE_WARNLOG("ConvolutionBloomKernelGenerator::EnsureResources: failed to create %s\n", debugName);
         return nullptr;

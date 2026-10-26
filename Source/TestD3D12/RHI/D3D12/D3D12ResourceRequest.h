@@ -35,7 +35,7 @@ struct D3D12UploadBufferSubDataRequest {
 };
 
 struct D3D12UploadTextureRequest {
-    std::shared_ptr<const BE1::Image>   srcImage;
+    SharedPtr<const BE1::Image>         srcImage;
     D3D12_RESOURCE_DESC                 resourceDesc = {};
     int                                 dstFirstMip = 0;
     int                                 mipCount = 0;
@@ -53,7 +53,7 @@ struct D3D12UploadTextureSubImageRequest {
 };
 
 struct D3D12BuildMipChainRequest {
-    std::shared_ptr<const BE1::Image>   srcImage;
+    SharedPtr<const BE1::Image>         srcImage;
 };
 
 struct D3D12ResourceRequest {

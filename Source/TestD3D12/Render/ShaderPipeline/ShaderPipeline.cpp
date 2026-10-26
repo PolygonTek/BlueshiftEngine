@@ -77,23 +77,21 @@ uint64_t GraphicsPipelineDesc::GenerateGraphicsPipelineHash(ShaderPermutationKey
     return hash;
 }
 
-static bool PrepareStageShader(const ShaderCompileData &compileData, RHI::ShaderStage shaderStage, const BE1::StrArray &compileDefines, RHI::Shader *&outShader) {
+bool ShaderPipeline::CreateStageShader(const ShaderCompileData &compileData, RHI::ShaderStage shaderStage, RHI::Shader *&outShader) {
     assert(shaderStage < RHI::ShaderStage::Count);
 
     const ShaderStageSource &stageSource = compileData.stageSources[to_int(shaderStage)];
-    if (stageSource.filename.IsEmpty()) {
-        return false;
-    }
+    const BE1::StrArray &compileDefines = compileData.compileDefines;
 
     outShader = RHI::renderer->CreateShaderFromFile(stageSource.shaderModel, shaderStage, stageSource.filename, stageSource.entryPoint, compileDefines.Count() > 0 ? &compileDefines : nullptr);
     if (!outShader) {
-        BE_FATALERROR("ShaderPipeline::PrepareStageShader: failed to compile shader '%s'\n", stageSource.filename.c_str());
+        BE_FATALERROR("ShaderPipeline::CreateStageShader: failed to compile shader '%s'\n", stageSource.filename.c_str());
         return false;
     }
     return true;
 }
 
-static bool PreparePipelineGraphicsShaders(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
+bool ShaderPipeline::CreateGraphicsShaders(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
     static constexpr RHI::ShaderStage GraphicsShaderStages[] = {
         RHI::ShaderStage::Vertex,
         RHI::ShaderStage::Hull,
@@ -117,40 +115,32 @@ static bool PreparePipelineGraphicsShaders(const ShaderCompileData &compileData,
         hasGraphicsStage = true;
 
         RHI::Shader *&stageShader = stageShaders[to_int(shaderStage)];
-        if (!stageShader) {
-            if (!PrepareStageShader(compileData, shaderStage, compileData.compileDefines, stageShader)) {
-                return false;
-            }
-        }
-    }
-
-    if (!hasGraphicsStage) {
-        BE_WARNLOG("ShaderPipeline::PreparePipelineGraphicsShaders: no graphics shader stages\n");
-        return false;
-    }
-
-    return true;
-}
-
-static bool PreparePipelineComputeShader(const ShaderCompileData &compileData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    const ShaderStageSource &stageSource = compileData.stageSources[to_int(RHI::ShaderStage::Compute)];
-    if (stageSource.filename.IsEmpty()) {
-        return false;
-    }
-
-    RHI::Shader *&stageShader = stageShaders[to_int(RHI::ShaderStage::Compute)];
-    if (!stageShader) {
-        if (!PrepareStageShader(compileData, RHI::ShaderStage::Compute, compileData.compileDefines, stageShader)) {
-            BE_WARNLOG("ShaderPipeline::PreparePipelineComputeShader: no compute shader stage\n");
+        if (!CreateStageShader(compileData, shaderStage, stageShader)) {
             return false;
         }
     }
 
+    if (!hasGraphicsStage) {
+        BE_WARNLOG("ShaderPipeline::CreateGraphicsShaders: no graphics shader stages\n");
+        return false;
+    }
+
     return true;
 }
 
-static RHI::PipelineState *CreateGraphicsPSO(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    if (!PreparePipelineGraphicsShaders(compileData, pipelineDesc, stageShaders)) {
+bool ShaderPipeline::CreateComputeShader(const ShaderCompileData &compileData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
+    const ShaderStageSource &stageSource = compileData.stageSources[to_int(RHI::ShaderStage::Compute)];
+    if (stageSource.filename.IsEmpty()) {
+        BE_WARNLOG("ShaderPipeline::CreateComputeShader: no compute shader stage\n");
+        return false;
+    }
+
+    RHI::Shader *&stageShader = stageShaders[to_int(RHI::ShaderStage::Compute)];
+    return CreateStageShader(compileData, RHI::ShaderStage::Compute, stageShader);
+}
+
+RHI::PipelineState *ShaderPipeline::CreateGraphicsPSO(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
+    if (!CreateGraphicsShaders(compileData, pipelineDesc, stageShaders)) {
         return nullptr;
     }
 
@@ -187,20 +177,13 @@ static RHI::PipelineState *CreateGraphicsPSO(const ShaderCompileData &compileDat
     return RHI::renderer->CreateGraphicsPSO(&psoDesc);
 }
 
-static RHI::PipelineState *CreateComputePSO(const ShaderCompileData &compileData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    if (!PreparePipelineComputeShader(compileData, stageShaders)) {
+RHI::PipelineState *ShaderPipeline::CreateComputePSO(const ShaderCompileData &compileData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
+    if (!CreateComputeShader(compileData, stageShaders)) {
         return nullptr;
     }
 
     RHI::Shader *computeShader = stageShaders[to_int(RHI::ShaderStage::Compute)];
     return RHI::renderer->CreateComputePSO(computeShader);
-}
-
-void ShaderCompileData::Clear() {
-    for (ShaderStageSource &stageSource : stageSources) {
-        stageSource = ShaderStageSource();
-    }
-    compileDefines.Clear();
 }
 
 void ShaderPipeline::Purge() {
@@ -217,24 +200,24 @@ void ShaderPipeline::Reset() {
     Purge();
 }
 
-void ShaderPipeline::SetPSO(RHI::PipelineState *newPso) {
+void ShaderPipeline::ReplacePSO(RHI::PipelineState *newPso) {
     if (pso) {
         RHI::renderer->DestroyPSO(pso);
     }
     pso = newPso;
 }
 
-bool ShaderPipeline::PreparePSO(const ShaderCompileData &compileData, RHI::PipelineState *&outPSO) const {
-    outPSO = nullptr;
+RHI::PipelineState *ShaderPipeline::CreatePSO(const ShaderCompileData &compileData) const {
+    RHI::PipelineState *pso = nullptr;
 
     RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)] = {};
 
     switch (GetType()) {
     case Type::Graphics:
-        outPSO = CreateGraphicsPSO(compileData, graphicsPipelineDesc, stageShaders);
+        pso = CreateGraphicsPSO(compileData, graphicsPipelineDesc, stageShaders);
         break;
     case Type::Compute:
-        outPSO = CreateComputePSO(compileData, stageShaders);
+        pso = CreateComputePSO(compileData, stageShaders);
         break;
     default:
         assert(0);
@@ -247,29 +230,32 @@ bool ShaderPipeline::PreparePSO(const ShaderCompileData &compileData, RHI::Pipel
             stageShaders[stageIndex] = nullptr;
         }
     }
-    return outPSO != nullptr;
+    return pso;
 }
 
 bool ShaderPipeline::Build(const SharedPtr<ShaderTemplate> &shaderTemplate) {
     assert(!pso);
 
+    BumpBuildSerial(); // 진행 중인 async completion 무효화
+
     if (!shaderTemplate) {
+        state = State::Failed;
         return false;
     }
 
     ShaderCompileData compileData;
     if (!shaderTemplate->PrepareShaderCompileData(shaderPermutationKey, compileData)) {
+        state = State::Failed;
         return false;
     }
 
-    RHI::PipelineState *preparedPSO = nullptr;
-    if (!PreparePSO(compileData, preparedPSO)) {
+    RHI::PipelineState *preparedPSO = CreatePSO(compileData);
+    if (!preparedPSO) {
+        state = State::Failed;
         return false;
     }
 
-    BumpBuildSerial(); // 진행 중인 async completion 무효화
-
-    SetPSO(preparedPSO);
+    ReplacePSO(preparedPSO);
     state = State::Ready;
     return true;
 }
@@ -307,8 +293,8 @@ bool ShaderPipeline::Rebuild(const SharedPtr<ShaderTemplate> &shaderTemplate) {
         return false;
     }
 
-    RHI::PipelineState *preparedPSO = nullptr;
-    if (!PreparePSO(compileData, preparedPSO)) {
+    RHI::PipelineState *preparedPSO = CreatePSO(compileData);
+    if (!preparedPSO) {
         return false;
     }
 
@@ -317,7 +303,7 @@ bool ShaderPipeline::Rebuild(const SharedPtr<ShaderTemplate> &shaderTemplate) {
 
     renderSystem->WaitAllRenderCompleted();
 
-    SetPSO(preparedPSO);
+    ReplacePSO(preparedPSO);
     state = State::Ready;
     return true;
 }
@@ -353,7 +339,7 @@ bool ShaderPipeline::EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplat
         return false;
     }
 
-    if (!loadingSystem.EnqueueShaderPipelineBuild(shared_from_this(), compileData, newSerial, LoadingSystem::LoadPriority::High)) {
+    if (!loadingSystem.EnqueueShaderPipelineBuild(shared_from_this(), std::move(compileData), newSerial, LoadingSystem::LoadPriority::High)) {
         return false;
     }
     return true;
@@ -379,7 +365,7 @@ bool ShaderPipeline::WaitReady() {
     return currentState == State::Ready || currentState == State::Rebuilding;
 }
 
-bool ShaderPipeline::WaitLoadComplete() {
+bool ShaderPipeline::WaitBuildComplete() {
     assert(BE1::Engine::IsInMainThread());
 
     State currentState = GetState();

@@ -26,7 +26,10 @@ void RenderPassDepthPSOResolver::Begin(const RenderPass *renderPass, uint32_t in
     passFeatureSet = renderPass->featureSet;
     basePipelineDesc = renderPass->graphicsPipelineDesc;
     baseInputLayoutId = renderPass->baseInputLayoutId;
-    this->shaderTemplate = shaderTemplate;
+
+    if (this->shaderTemplate != shaderTemplate) {
+        this->shaderTemplate = shaderTemplate;
+    }
 
     memset(pipelineDescValid, 0, sizeof(pipelineDescValid));
 
@@ -141,7 +144,7 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
     }
 
     ShaderPermutationKey permutationKey = GetPermutationKey(shaderTemplate.get(), featureSet);
-    result.pso = ShaderPipeline::GetReadyPSO(shaderPipelineCache.GetGraphicsPipeline(shaderTemplate, permutationKey, graphicsPipelineDesc, async));
+    result.pso = ShaderPipeline::GetReadyPSO(shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplate, permutationKey, graphicsPipelineDesc, async));
 
     // featureSet, input layout id, cull mode 로 새 PSO entry 를 추가한다.
     RenderPassDepthPSOResolver::PSOEntry &entry = psoEntries.Alloc();

@@ -367,7 +367,7 @@ bool D3D12Texture::GetViewInfo(RHI::ViewType viewType, RHI::ViewID viewID, RHI::
     return true;
 }
 
-RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> srcImage, RHI::TextureMipInitMode mipInitMode, const RHI::ClearValue &clearValue, uint32_t sampleCount, RHI::GPUResourceState initialState) {
+RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, RHI::TextureMipInitMode mipInitMode, const RHI::ClearValue &clearValue, uint32_t sampleCount, RHI::GPUResourceState initialState) {
     if (!srcImage) {
         BE_ERRLOG("D3D12Renderer::CreateTexture: srcImage is null\n");
         return nullptr;
@@ -564,14 +564,14 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
 
         if (mipInitMode == RHI::TextureMipInitMode::GenerateOnGPU) {
             request.type = D3D12ResourceRequest::Type::BuildMipChain;
-            request.buildMipChainRequest.srcImage = srcImage;
+            request.buildMipChainRequest.srcImage = std::move(srcImage);
         } else {
             request.type = D3D12ResourceRequest::Type::UploadTexture;
-            request.uploadTextureRequest.srcImage = srcImage;
+            request.uploadTextureRequest.srcImage = std::move(srcImage);
             request.uploadTextureRequest.resourceDesc = textureDesc;
             request.uploadTextureRequest.dstFirstMip = 0;
             // AllocateEmpty 라면, srcImage 의 mipmap level 0 만 사용하고, 나머지 서브 mipmap levels 는 빈 공간으로 채운다.
-            request.uploadTextureRequest.mipCount = mipInitMode == RHI::TextureMipInitMode::AllocateEmpty ? 1 : srcImage->NumMipmaps();
+            request.uploadTextureRequest.mipCount = mipInitMode == RHI::TextureMipInitMode::AllocateEmpty ? 1 : request.uploadTextureRequest.srcImage->NumMipmaps();
         }
         EnqueueResourceRequest(std::move(request));
     }
@@ -579,7 +579,7 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
     return texture;
 }
 
-bool D3D12Renderer::UploadTextureMipRange(RHI::Texture *texture, std::shared_ptr<const BE1::Image> srcImage, int firstMip) {
+bool D3D12Renderer::UploadTextureMipRange(RHI::Texture *texture, SharedPtr<const BE1::Image> srcImage, int firstMip) {
     assert(texture);
     const D3D12Texture *_texture = static_cast<D3D12Texture *>(texture);
 
@@ -607,10 +607,10 @@ bool D3D12Renderer::UploadTextureMipRange(RHI::Texture *texture, std::shared_ptr
     D3D12ResourceRequest request;
     request.type = D3D12ResourceRequest::Type::UploadTexture;
     request.object = texture;
-    request.uploadTextureRequest.srcImage = srcImage;
+    request.uploadTextureRequest.srcImage = std::move(srcImage);
     request.uploadTextureRequest.resourceDesc = _texture->textureDesc;
     request.uploadTextureRequest.dstFirstMip = firstMip;
-    request.uploadTextureRequest.mipCount = srcImage->NumMipmaps();
+    request.uploadTextureRequest.mipCount = request.uploadTextureRequest.srcImage->NumMipmaps();
     EnqueueResourceRequest(std::move(request));
     return true;
 }
@@ -737,7 +737,7 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
     return true;
 }
 
-bool D3D12Renderer::ExecuteBuildMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12BuildMipChainRequest &request) {
+bool D3D12Renderer::ExecuteBuildMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, D3D12BuildMipChainRequest &&request) {
     if (!request.srcImage || request.srcImage->IsEmpty()) {
         BE_ERRLOG("D3D12Renderer::ExecuteBuildMipChain: source image is empty\n");
         return false;
@@ -759,7 +759,7 @@ bool D3D12Renderer::ExecuteBuildMipChain(D3D12ResourceCommandContext &commandCon
     }
 
     D3D12UploadTextureRequest uploadRequest;
-    uploadRequest.srcImage = request.srcImage;
+    uploadRequest.srcImage = std::move(request.srcImage);
     uploadRequest.resourceDesc = tempTexture->textureDesc;
     uploadRequest.dstFirstMip = 0;
     uploadRequest.mipCount = 1;

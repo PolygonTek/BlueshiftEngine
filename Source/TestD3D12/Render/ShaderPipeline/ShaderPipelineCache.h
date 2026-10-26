@@ -37,8 +37,14 @@ public:
                                     // shaderTemplate, permutationKey, graphicsPipelineDesc 로 캐시된 그래픽스 ShaderPipeline 을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
     SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async = true);
 
+                                    // GetGraphicsPipeline 과 같은 방식으로 준비하고, 캐시가 소유하는 ShaderPipeline 포인터를 리턴한다. 반환된 포인터는 해당 캐시 항목이 제거될 때까지 유효하다.
+    ShaderPipeline *                GetGraphicsPipelinePtr(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async = true);
+
                                     // shaderTemplate, permutationKey 로 캐시된 컴퓨트 ShaderPipeline 을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
     SharedPtr<ShaderPipeline>       GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async = true);
+
+                                    // GetComputePipeline 과 같은 방식으로 준비하고, 캐시가 소유하는 ShaderPipeline 포인터를 리턴한다. 반환된 포인터는 해당 캐시 항목이 제거될 때까지 유효하다.
+    ShaderPipeline *                GetComputePipelinePtr(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async = true);
 
                                     // shaderTemplate 으로 캐싱된 모든 ShaderPipeline 을 제거한다. (빌드 중인 ShaderPipeline 은 폐기된다)
     void                            ClearShaderTemplatePipelines(const ShaderTemplate *shaderTemplate);
@@ -67,8 +73,10 @@ private:
         SharedPtr<ShaderPipeline>   shaderPipeline;
     };
 
-    SharedPtr<ShaderPipeline>       FindCachedGraphicsPipeline(const ShaderTemplate *shaderTemplate, uint64_t graphicsPipelineCacheHash) const;
-    SharedPtr<ShaderPipeline>       FindCachedComputePipeline(const ShaderTemplate *shaderTemplate, ShaderPermutationKey permutationKey) const;
+    const CachedGraphicsPipeline *  GetOrCreateGraphicsPipelineEntry(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async);
+    const CachedGraphicsPipeline *  FindCachedGraphicsPipeline(const ShaderTemplate *shaderTemplate, uint64_t graphicsPipelineCacheHash) const;
+    const CachedComputePipeline *   GetOrCreateComputePipelineEntry(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async);
+    const CachedComputePipeline *   FindCachedComputePipeline(const ShaderTemplate *shaderTemplate, ShaderPermutationKey permutationKey) const;
     void                            RemoveCachedGraphicsPipelineIndex(int index);
     void                            RemoveCachedComputePipelineIndex(int index);
 
@@ -80,3 +88,23 @@ private:
 };
 
 extern ShaderPipelineCache          shaderPipelineCache;
+
+BE_INLINE SharedPtr<ShaderPipeline> ShaderPipelineCache::GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async) {
+    const CachedGraphicsPipeline *entry = GetOrCreateGraphicsPipelineEntry(shaderTemplate, permutationKey, graphicsPipelineDesc, async);
+    return entry ? entry->shaderPipeline : nullptr;
+}
+
+BE_INLINE ShaderPipeline *ShaderPipelineCache::GetGraphicsPipelinePtr(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async) {
+    const CachedGraphicsPipeline *entry = GetOrCreateGraphicsPipelineEntry(shaderTemplate, permutationKey, graphicsPipelineDesc, async);
+    return entry ? entry->shaderPipeline.get() : nullptr;
+}
+
+BE_INLINE SharedPtr<ShaderPipeline> ShaderPipelineCache::GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async) {
+    const CachedComputePipeline *entry = GetOrCreateComputePipelineEntry(shaderTemplate, permutationKey, async);
+    return entry ? entry->shaderPipeline : nullptr;
+}
+
+BE_INLINE ShaderPipeline *ShaderPipelineCache::GetComputePipelinePtr(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async) {
+    const CachedComputePipeline *entry = GetOrCreateComputePipelineEntry(shaderTemplate, permutationKey, async);
+    return entry ? entry->shaderPipeline.get() : nullptr;
+}

@@ -124,7 +124,7 @@ void Texture::Reset() {
 
 bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags) {
     InternalData newInternalData;
-    if (!Texture::Prepare(textureType, srcImage, flags, newInternalData)) {
+    if (!Texture::Prepare(textureType, std::move(srcImage), flags, newInternalData)) {
         return false;
     }
 
@@ -159,7 +159,7 @@ void Texture::CreateMissingTexture(int size, Texture::Flag flags) {
         }
     }
 
-    Create2D(image, flags | Texture::Flag::HighQuality | Texture::Flag::NoCompression);
+    Create2D(std::move(image), flags | Texture::Flag::HighQuality | Texture::Flag::NoCompression);
 }
 
 void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags) {
@@ -174,7 +174,22 @@ void Texture::CreateColorTexture(int size, const BE1::Color4 &color, Flag flags)
         }
     }
 
-    Create2D(image, flags | Texture::Flag::HighQuality);
+    Create2D(std::move(image), flags | Texture::Flag::HighQuality);
+}
+
+void Texture::CreateColor3DTexture(int size, const BE1::Color4 &color, Flag flags) {
+    SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
+    image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr);
+    uint32_t *dstPtr = (uint32_t *)image->GetPixels();
+    uint32_t c = color.ToUInt32();
+
+    for (int y = 0; y < size; y++) {
+        for (int x = 0; x < size; x++) {
+            *(uint32_t *)dstPtr++ = c;
+        }
+    }
+
+    Create3D(std::move(image), flags | Texture::Flag::HighQuality);
 }
 
 void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
@@ -191,7 +206,7 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
         }
     }
 
-    Create2D(image, flags | Texture::Flag::NormalMap | Texture::Flag::NoScaleDown);
+    Create2D(std::move(image), flags | Texture::Flag::NormalMap | Texture::Flag::HighQuality);
 }
 
 RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState) {
@@ -221,7 +236,7 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
 
                     SharedPtr<BE1::Image> uncompressedImage = MakeShared<BE1::Image>();
                     srcImage->ConvertFormat(supportedUncompressedFormat, *uncompressedImage);
-                    srcImage = uncompressedImage;
+                    srcImage = std::move(uncompressedImage);
 
                     srcFormat = supportedUncompressedFormat;
                     srcFormatSupported = RHI::renderer->IsSupportedImageFormat(srcFormat);
@@ -233,7 +248,7 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
                 mipmappedImage->Create(w, h, d, srcImage->GetArraySize(), maxMipLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
                 mipmappedImage->CopyFrom(*srcImage, 0, 1);
                 mipmappedImage->GenerateMipmaps();
-                srcImage = mipmappedImage;
+                srcImage = std::move(mipmappedImage);
             }
         }
 
@@ -241,24 +256,24 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
         if (srcFormat != dstFormat) {
             SharedPtr<BE1::Image> dstImage = MakeShared<BE1::Image>();
             srcImage->ConvertFormat(dstFormat, *dstImage);
-            srcImage = dstImage;
+            srcImage = std::move(dstImage);
         }
     }
 
-    return RHI::renderer->CreateTexture(textureType, flags, srcImage, mipInitMode, {}, 1, initialState);
+    return RHI::renderer->CreateTexture(textureType, flags, std::move(srcImage), mipInitMode, {}, 1, initialState);
 }
 
-static bool ShouldGenerateMipmapsOnGPU(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat) {
-    if (!srcImage || srcImage->IsEmpty()) {
+static bool ShouldGenerateMipmapsOnGPU(RHI::TextureType textureType, const BE1::Image &srcImage, BE1::Image::Format dstFormat) {
+    if (srcImage.IsEmpty()) {
         return false;
     }
 
-    const int maxMipLevels = BE1::Image::MaxMipLevels(srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth());
-    if (maxMipLevels <= 1 || srcImage->NumMipmaps() >= maxMipLevels) {
+    const int maxMipLevels = BE1::Image::MaxMipLevels(srcImage.GetWidth(), srcImage.GetHeight(), srcImage.GetDepth());
+    if (maxMipLevels <= 1 || srcImage.NumMipmaps() >= maxMipLevels) {
         return false;
     }
 
-    return RHI::renderer->CanGenerateMipmapsOnGPU(textureType, dstFormat, srcImage->GetArraySize());
+    return RHI::renderer->CanGenerateMipmapsOnGPU(textureType, dstFormat, srcImage.GetArraySize());
 }
 
 bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData) {
@@ -294,7 +309,7 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
         if (srcImage->GetWidth() != dstWidth || srcImage->GetHeight() != dstHeight) {
             SharedPtr<BE1::Image> scaledImage = MakeShared<BE1::Image>();
             srcImage->Resize(dstWidth, dstHeight, BE1::Image::ResampleFilter::Bicubic, *scaledImage);
-            srcImage = scaledImage;
+            srcImage = std::move(scaledImage);
         }
     }
 
@@ -323,7 +338,7 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
     bool generateMipmapsOnCPU = false;
 
     if (generateMipmaps) {
-        generateMipmapsOnGPU = ShouldGenerateMipmapsOnGPU(textureType, srcImage, dstFormat);
+        generateMipmapsOnGPU = ShouldGenerateMipmapsOnGPU(textureType, *srcImage, dstFormat);
         generateMipmapsOnCPU = !generateMipmapsOnGPU;
     }
 
@@ -332,7 +347,7 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
     outInternalData.rhiTextureType = textureType;
     outInternalData.format = dstFormat;
     outInternalData.flags = flags;
-    outInternalData.rhiTexture = Texture::CreateRHITexture(textureType, resourceFlags, srcImage, dstFormat, generateMipmapsOnCPU, mipInitMode, initialState);
+    outInternalData.rhiTexture = Texture::CreateRHITexture(textureType, resourceFlags, std::move(srcImage), dstFormat, generateMipmapsOnCPU, mipInitMode, initialState);
 
     return outInternalData.rhiTexture != nullptr;
 }
@@ -366,15 +381,16 @@ bool Texture::PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::I
         resourceFlags |= RHI::TextureFlag::Typeless;
     }
 
-    RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
+    const RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
+    const BE1::Image::Format imageFormat = srcImage->GetFormat();
 
-    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, resourceFlags, srcImage, RHI::TextureMipInitMode::FromImage, {}, 1, initialState);
+    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, resourceFlags, std::move(srcImage), RHI::TextureMipInitMode::FromImage, {}, 1, initialState);
     if (!texture) {
         return false;
     }
 
     outInternalData.rhiTextureType = textureType;
-    outInternalData.format = srcImage->GetFormat();
+    outInternalData.format = imageFormat;
     outInternalData.flags = flags;
     outInternalData.rhiTexture = texture;
 
@@ -415,7 +431,7 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
         textureType = RHI::TextureType::Texture2D;
     }
 
-    return Create(textureType, image, flags | Texture::Flag::LoadedFromFile);
+    return Create(textureType, std::move(image), flags | Texture::Flag::LoadedFromFile);
 }
 
 bool Texture::LoadAsync(const char *filename, Flag flags) {

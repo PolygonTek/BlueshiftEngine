@@ -1176,19 +1176,12 @@ namespace RHI {
         void                            AdjustTextureFormat(bool useCompression, bool useNormalMap, bool useUAV, BE1::Image::Format inFormat, BE1::Image::Format *outFormat);
         void                            AdjustTextureSize(TextureType textureType, bool useNPOT, uint32_t inWidth, uint32_t inHeight, uint32_t inDepth, uint32_t *outWidth, uint32_t *outHeight, uint32_t *outDepth);
 
-        virtual Texture *               CreateTexture(TextureType textureType, TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
-        Texture *                       CreateTexture1D(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::Texture1D, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
-        Texture *                       CreateTexture2D(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::Texture2D, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
-        Texture *                       CreateTexture2DArray(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::Texture2DArray, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
-        Texture *                       CreateTextureCube(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::TextureCube, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
-        Texture *                       CreateTextureCubeArray(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::TextureCubeArray, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
-        Texture *                       CreateTexture3D(TextureFlag flags, std::shared_ptr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) { return CreateTexture(TextureType::Texture3D, flags, std::move(image), mipInitMode, clearValue, sampleCount, initialState); }
-
+        virtual Texture *               CreateTexture(TextureType textureType, TextureFlag flags, SharedPtr<const BE1::Image> image, TextureMipInitMode mipInitMode, const ClearValue &clearValue = {}, uint32_t sampleCount = 1, GPUResourceState initialState = GPUResourceState::Undefined) = 0;
         virtual void                    DestroyTexture(Texture *texture, bool immediate = false) = 0;
 
         virtual bool                    SetBufferSubData(Buffer *buffer, uint64_t offset, uint64_t size, const void *data, GPUResourceState stateBefore, GPUResourceState stateAfter) = 0;
 
-        virtual bool                    UploadTextureMipRange(Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) = 0;
+        virtual bool                    UploadTextureMipRange(Texture *texture, SharedPtr<const BE1::Image> image, int firstMip) = 0;
 
         virtual bool                    GetTextureImage2D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;
         virtual bool                    GetTextureImage3D(Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) = 0;

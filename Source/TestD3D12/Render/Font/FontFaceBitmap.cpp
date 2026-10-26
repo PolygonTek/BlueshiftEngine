@@ -31,7 +31,7 @@ Texture *BitmapFontFace::AddBitmap(const char *filename) {
     }
 
     SharedPtr<Material> material = materialManager.GetSingleTextureMaterial(texture->GetHashName(), Material::TextureHint::Overlay);
-    materials.Append(material);
+    materials.Append(std::move(material));
 
     return texture.get();
 }

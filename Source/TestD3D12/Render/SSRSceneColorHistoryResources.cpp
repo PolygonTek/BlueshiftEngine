@@ -45,7 +45,7 @@ bool SSRSceneColorHistoryResources::Ensure(uint32_t renderWidth, uint32_t render
     if (fullResolutionDepth && !fullResolutionDepthTexture) {
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->Init2DFromMemory(renderWidth, renderHeight, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
-        fullResolutionDepthTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess,
+        fullResolutionDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess,
             image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!fullResolutionDepthTexture) {
             BE_WARNLOG("SSRSceneColorHistoryResources::Ensure: failed to create full-resolution depth history texture\n");
@@ -71,7 +71,7 @@ bool SSRSceneColorHistoryResources::CreateTextures(uint32_t width, uint32_t heig
 
     SharedPtr<BE1::Image> radianceImage = MakeShared<BE1::Image>();
     radianceImage->Init2DFromMemory(width, height, 1, radianceImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
-    radianceTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource, radianceImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    radianceTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource, radianceImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!radianceTexture) {
         BE_WARNLOG("SSRSceneColorHistoryResources::CreateTextures: failed to create radiance history texture\n");
         Destroy();
@@ -102,7 +102,7 @@ bool SSRSceneColorHistoryResources::CreateTextures(uint32_t width, uint32_t heig
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(pyramidWidth, pyramidHeight, levelCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    radiancePyramidTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    radiancePyramidTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!radiancePyramidTexture) {
         BE_WARNLOG("SSRSceneColorHistoryResources::CreateTextures: failed to create radiance pyramid texture\n");
         Destroy();
@@ -116,7 +116,7 @@ bool SSRSceneColorHistoryResources::CreateTextures(uint32_t width, uint32_t heig
     SharedPtr<BE1::Image> depthExtremaImage = MakeShared<BE1::Image>();
     depthExtremaImage->Init2DFromMemory(pyramidWidth, pyramidHeight, 1, depthExtremaImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    depthExtremaTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource, depthExtremaImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    depthExtremaTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource, depthExtremaImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!depthExtremaTexture) {
         BE_WARNLOG("SSRSceneColorHistoryResources::CreateTextures: failed to create depth extrema history texture\n");
         Destroy();

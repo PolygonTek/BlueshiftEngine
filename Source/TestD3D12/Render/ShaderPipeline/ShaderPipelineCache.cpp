@@ -19,67 +19,6 @@
 
 ShaderPipelineCache       shaderPipelineCache;
 
-SharedPtr<ShaderPipeline> ShaderPipelineCache::GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async) {
-    if (!shaderTemplate) {
-        return nullptr;
-    }
-
-    // ShaderTemplate/ShaderPermutationKey/GraphicsPipelineDesc 조합으로 캐싱된 그래픽스 파이프라인을 찾는다.
-    const uint64_t hash = GenerateGraphicsPipelineCacheHash(shaderTemplate.get(), permutationKey, graphicsPipelineDesc);
-
-    SharedPtr<ShaderPipeline> graphicsPipeline = FindCachedGraphicsPipeline(shaderTemplate.get(), hash);
-    if (!graphicsPipeline) {
-        CachedGraphicsPipeline &cachedGraphicsPipeline = cachedGraphicsPipelines.Alloc();
-        cachedGraphicsPipeline.shaderTemplatePtr = shaderTemplate.get();
-        cachedGraphicsPipeline.shaderTemplateRef = shaderTemplate;
-        cachedGraphicsPipeline.graphicsPipelineCacheHash = hash;
-        cachedGraphicsPipeline.shaderPipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Graphics, permutationKey, graphicsPipelineDesc);
-
-        const int cachedPipelineIndex = cachedGraphicsPipelines.Count() - 1;
-        cachedGraphicsPipelineHash.Add(cachedGraphicsPipelineHash.GenerateHash(hash), cachedPipelineIndex);
-
-        graphicsPipeline = cachedGraphicsPipeline.shaderPipeline;
-    }
-
-    if (graphicsPipeline->GetState() == ShaderPipeline::State::Empty) {
-        if (async && LoadingSystem::IsAsyncAllowed()) {
-            graphicsPipeline->BuildAsync(shaderTemplate);
-        } else {
-            graphicsPipeline->Build(shaderTemplate);
-        }
-    }
-
-    return graphicsPipeline;
-}
-
-SharedPtr<ShaderPipeline> ShaderPipelineCache::GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async) {
-    if (!shaderTemplate) {
-        return nullptr;
-    }
-
-    // ShaderTemplate/ShaderPermutationKey 조합으로 캐싱된 컴퓨트 파이프라인을 찾는다.
-    SharedPtr<ShaderPipeline> computePipeline = FindCachedComputePipeline(shaderTemplate.get(), permutationKey);
-    if (!computePipeline) {
-        CachedComputePipeline &cachedComputePipeline = cachedComputePipelines.Alloc();
-        cachedComputePipeline.shaderTemplatePtr = shaderTemplate.get();
-        cachedComputePipeline.shaderTemplateRef = shaderTemplate;
-        cachedComputePipeline.permutationKey = permutationKey;
-        cachedComputePipeline.shaderPipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Compute, permutationKey);
-
-        computePipeline = cachedComputePipeline.shaderPipeline;
-    }
-
-    if (computePipeline->GetState() == ShaderPipeline::State::Empty) {
-        if (async && LoadingSystem::IsAsyncAllowed()) {
-            computePipeline->BuildAsync(shaderTemplate);
-        } else {
-            computePipeline->Build(shaderTemplate);
-        }
-    }
-
-    return computePipeline;
-}
-
 void ShaderPipelineCache::ClearAllPipelines() {
     for (CachedGraphicsPipeline &cachedGraphicsPipeline : cachedGraphicsPipelines) {
         if (cachedGraphicsPipeline.shaderPipeline) {
@@ -215,13 +154,47 @@ void ShaderPipelineCache::RebuildShaderTemplatePipelines(const SharedPtr<ShaderT
     }
 }
 
-SharedPtr<ShaderPipeline> ShaderPipelineCache::FindCachedGraphicsPipeline(const ShaderTemplate *shaderTemplate, uint64_t graphicsPipelineCacheHash) const {
+const ShaderPipelineCache::CachedGraphicsPipeline *ShaderPipelineCache::GetOrCreateGraphicsPipelineEntry(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async) {
+    if (!shaderTemplate) {
+        return nullptr;
+    }
+
+    // ShaderTemplate/ShaderPermutationKey/GraphicsPipelineDesc 조합으로 캐싱된 그래픽스 파이프라인을 찾는다.
+    const uint64_t hash = GenerateGraphicsPipelineCacheHash(shaderTemplate.get(), permutationKey, graphicsPipelineDesc);
+
+    const CachedGraphicsPipeline *entry = FindCachedGraphicsPipeline(shaderTemplate.get(), hash);
+    if (!entry) {
+        CachedGraphicsPipeline &cachedGraphicsPipeline = cachedGraphicsPipelines.Alloc();
+        cachedGraphicsPipeline.shaderTemplatePtr = shaderTemplate.get();
+        cachedGraphicsPipeline.shaderTemplateRef = shaderTemplate;
+        cachedGraphicsPipeline.graphicsPipelineCacheHash = hash;
+        cachedGraphicsPipeline.shaderPipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Graphics, permutationKey, graphicsPipelineDesc);
+
+        const int cachedPipelineIndex = cachedGraphicsPipelines.Count() - 1;
+        cachedGraphicsPipelineHash.Add(cachedGraphicsPipelineHash.GenerateHash(hash), cachedPipelineIndex);
+
+        entry = &cachedGraphicsPipeline;
+    }
+
+    ShaderPipeline *graphicsPipeline = entry->shaderPipeline.get();
+    if (graphicsPipeline->GetState() == ShaderPipeline::State::Empty) {
+        if (async && LoadingSystem::IsAsyncAllowed()) {
+            graphicsPipeline->BuildAsync(shaderTemplate);
+        } else {
+            graphicsPipeline->Build(shaderTemplate);
+        }
+    }
+
+    return entry;
+}
+
+const ShaderPipelineCache::CachedGraphicsPipeline *ShaderPipelineCache::FindCachedGraphicsPipeline(const ShaderTemplate *shaderTemplate, uint64_t graphicsPipelineCacheHash) const {
     const int hashKey = cachedGraphicsPipelineHash.GenerateHash(graphicsPipelineCacheHash);
 
     for (int index = cachedGraphicsPipelineHash.First(hashKey); index != -1; index = cachedGraphicsPipelineHash.Next(index)) {
         const CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines[index];
         if (cachedPipeline.shaderTemplatePtr == shaderTemplate && cachedPipeline.graphicsPipelineCacheHash == graphicsPipelineCacheHash) {
-            return cachedPipeline.shaderPipeline;
+            return &cachedPipeline;
         }
     }
 
@@ -236,10 +209,39 @@ void ShaderPipelineCache::RemoveCachedGraphicsPipelineIndex(int index) {
     cachedGraphicsPipelines.RemoveIndex(index);
 }
 
-SharedPtr<ShaderPipeline> ShaderPipelineCache::FindCachedComputePipeline(const ShaderTemplate *shaderTemplate, ShaderPermutationKey permutationKey) const {
+const ShaderPipelineCache::CachedComputePipeline *ShaderPipelineCache::GetOrCreateComputePipelineEntry(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async) {
+    if (!shaderTemplate) {
+        return nullptr;
+    }
+
+    // ShaderTemplate/ShaderPermutationKey 조합으로 캐싱된 컴퓨트 파이프라인을 찾는다.
+    const CachedComputePipeline *entry = FindCachedComputePipeline(shaderTemplate.get(), permutationKey);
+    if (!entry) {
+        CachedComputePipeline &cachedComputePipeline = cachedComputePipelines.Alloc();
+        cachedComputePipeline.shaderTemplatePtr = shaderTemplate.get();
+        cachedComputePipeline.shaderTemplateRef = shaderTemplate;
+        cachedComputePipeline.permutationKey = permutationKey;
+        cachedComputePipeline.shaderPipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Compute, permutationKey);
+
+        entry = &cachedComputePipeline;
+    }
+
+    ShaderPipeline *computePipeline = entry->shaderPipeline.get();
+    if (computePipeline->GetState() == ShaderPipeline::State::Empty) {
+        if (async && LoadingSystem::IsAsyncAllowed()) {
+            computePipeline->BuildAsync(shaderTemplate);
+        } else {
+            computePipeline->Build(shaderTemplate);
+        }
+    }
+
+    return entry;
+}
+
+const ShaderPipelineCache::CachedComputePipeline *ShaderPipelineCache::FindCachedComputePipeline(const ShaderTemplate *shaderTemplate, ShaderPermutationKey permutationKey) const {
     for (const CachedComputePipeline &cachedPipeline : cachedComputePipelines) {
         if (cachedPipeline.shaderTemplatePtr == shaderTemplate && cachedPipeline.permutationKey == permutationKey) {
-            return cachedPipeline.shaderPipeline;
+            return &cachedPipeline;
         }
     }
 

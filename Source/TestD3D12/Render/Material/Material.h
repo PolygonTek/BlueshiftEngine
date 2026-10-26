@@ -147,6 +147,7 @@ private:
     static bool                     ParseProperties(BE1::Lexer &lexer, const char *materialName, InternalData &outInternalData);
 
     void                            UpdateSampler();
+    void                            UpdateTextureProperty(TextureProperty &textureProperty, const ShaderPropertyDesc &propertyDesc);
     void                            UpdateTextureProperties();
     void                            RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyDesc> &oldProperties);
     bool                            HasStreamingTextureProperties() const;

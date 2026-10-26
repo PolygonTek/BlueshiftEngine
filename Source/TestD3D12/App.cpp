@@ -64,7 +64,7 @@ void App::Init(void *mainWindowHandle) {
 
     SharedPtr<Texture> bloomDirtMaskTexture = textureManager.GetTexture("Data/EngineTextures/LensDirt/LensDirt02.png", Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo | Texture::Flag::NoMipmaps | Texture::Flag::Compute, false);
     if (bloomDirtMaskTexture && bloomDirtMaskTexture != textureManager.missingTexture) {
-        renderCamera->GetBloomResources().SetBloomDirtMaskTexture(bloomDirtMaskTexture);
+        renderCamera->GetBloomResources().SetBloomDirtMaskTexture(std::move(bloomDirtMaskTexture));
     }
 
     cameraYaw = targetCameraYaw;

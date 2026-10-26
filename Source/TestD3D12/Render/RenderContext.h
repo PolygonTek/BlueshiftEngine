@@ -161,7 +161,7 @@ public:
 
                                     // 컨텍스트의 GUI 그리기 함수들
     void                            SetColor(const BE1::Color4 &color);
-    void                            SetFont(SharedPtr<Font> font);
+    void                            SetFont(const SharedPtr<Font> &font);
     void                            SetTextScale(float scale);
     void                            SetTextLineSpacing(float lineSpacing);
     void                            SetTextShadowColor(const BE1::Color4 &shadowColor);

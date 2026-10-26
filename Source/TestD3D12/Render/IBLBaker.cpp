@@ -332,7 +332,7 @@ bool IBLBaker::GenerateDFGSumGGXToImage(RHI::FrameThreadData *frameThreadData, i
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>();
     textureImage->Init2DFromMemory(size, size, 1, DFGImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    RHI::Texture *texture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, textureImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::Texture *texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, textureImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!texture) {
         return false;
     }

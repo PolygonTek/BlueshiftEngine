@@ -57,8 +57,8 @@ private:
     void                            CleanExpiredMaterials();
     void                            CreateDefaultMaterials();
     void                            DestroyDefaultMaterials();
-    void                            RefreshStreamingMaterial(const SharedPtr<Material> &material);
-    void                            RegisterStreamingMaterial(const SharedPtr<Material> &material);
+    void                            RefreshStreamingMaterial(Material *material);
+    void                            RegisterStreamingMaterial(Material *material);
     void                            UnregisterStreamingMaterial(Material *material);
 
     BE1::StrIHashMap<WeakPtr<Material>> materialHashMap;

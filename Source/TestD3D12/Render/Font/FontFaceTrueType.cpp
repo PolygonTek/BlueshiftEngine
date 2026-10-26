@@ -40,7 +40,7 @@ static void Atlas_Add(int textureSize) {
     memset(image->GetPixels(), 0, image->SizeInBytes());
 
     atlas.texture = textureManager.AllocTexture(BE1::va("_glyph_cache_%i", atlasArray.Count() - 1));
-    atlas.texture->Create2D(image, Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    atlas.texture->Create2D(std::move(image), Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
 
     // 대략 16x16 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
     // 2048*2048 / 16*16 = 16384

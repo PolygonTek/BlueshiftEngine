@@ -52,8 +52,8 @@ public:
     SharedPtr<Texture>              missingTexture;
     SharedPtr<Texture>              blackTexture;
     SharedPtr<Texture>              whiteTexture;
+    SharedPtr<Texture>              white3DTexture;
     SharedPtr<Texture>              flatNormalTexture;
-    SharedPtr<Texture>              whiteTexture3D;
 
 private:
     void                            CleanExpiredTextures();

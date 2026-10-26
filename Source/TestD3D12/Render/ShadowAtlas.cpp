@@ -34,7 +34,7 @@ bool ShadowAtlas::Ensure(uint32_t atlasSize, uint32_t maxTileResolution, uint32_
 
     const RHI::TextureFlag flags = RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless;
     const RHI::ClearValue clearValue = RHI::ClearValue::DepthStencil(0.0f, 0);
-    RHI::Texture *newTexture = RHI::renderer->CreateTexture2D(flags, depthImage, RHI::TextureMipInitMode::FromImage, clearValue, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::Texture *newTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, flags, depthImage, RHI::TextureMipInitMode::FromImage, clearValue, 1, RHI::GPUResourceState::ShaderResource);
     if (!newTexture) {
         return false;
     }
@@ -151,7 +151,7 @@ ShadowAtlas::Entry *ShadowAtlas::Alloc(uint64_t lightId, uint32_t requestedResol
         entries.Reserve(BE1::Max(64, entries.Capacity() * 2));
     }
 
-    const int index = entries.Append(entry);
+    const int index = entries.Append(std::move(entry));
     entryHash.Add(entryHash.GenerateHash(lightId), index);
     return &entries[index];
 }

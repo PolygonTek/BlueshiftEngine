@@ -46,7 +46,7 @@ public:
     };
 
     ProbeBakeJob() = default;
-    explicit ProbeBakeJob(const Desc &desc) : desc(desc) {}
+    explicit ProbeBakeJob(Desc &&desc) : desc(std::move(desc)) {}
 
     bool                            Execute(RHI::CommandList *commandList);
 

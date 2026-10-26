@@ -107,7 +107,7 @@ public:
     bool                                ExecuteUploadBufferSubData(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferSubDataRequest &request);
     bool                                ExecuteUploadTexture(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureRequest &request);
     bool                                ExecuteUploadTextureSubImage(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureSubImageRequest &request);
-    bool                                ExecuteBuildMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12BuildMipChainRequest &request);
+    bool                                ExecuteBuildMipChain(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, D3D12BuildMipChainRequest &&request);
 
     virtual void                        SetName(RHI::GPUResource *resource, const char *name) const override;
 
@@ -123,12 +123,12 @@ public:
     virtual RHI::ConstantBuffer *       CreateConstantBuffer(RHI::BufferUsage usage, uint32_t size, const void *data) override;
     virtual void                        DestroyConstantBuffer(RHI::ConstantBuffer *constantBuffer, bool immediate = false) override;
 
-    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, std::shared_ptr<const BE1::Image> image, RHI::TextureMipInitMode mipInitMode, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
+    virtual RHI::Texture *              CreateTexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> image, RHI::TextureMipInitMode mipInitMode, const RHI::ClearValue &clearValue = {}, uint32_t sampleCount = 1, RHI::GPUResourceState initialState = RHI::GPUResourceState::Undefined) override;
     virtual void                        DestroyTexture(RHI::Texture *texture, bool immediate = false) override;
 
     virtual bool                        SetBufferSubData(RHI::Buffer *buffer, uint64_t offset, uint64_t size, const void *data, RHI::GPUResourceState stateBefore, RHI::GPUResourceState stateAfter) override;
 
-    virtual bool                        UploadTextureMipRange(RHI::Texture *texture, std::shared_ptr<const BE1::Image> image, int firstMip) override;
+    virtual bool                        UploadTextureMipRange(RHI::Texture *texture, SharedPtr<const BE1::Image> image, int firstMip) override;
 
     virtual bool                        GetTextureImage2D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;
     virtual bool                        GetTextureImage3D(RHI::Texture *texture, int mipLevel, BE1::Image::Format imageFormat, void *outPixels) override;

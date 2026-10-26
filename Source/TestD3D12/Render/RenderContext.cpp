@@ -284,7 +284,7 @@ void RenderContext::CreateFrameCompositionTexture() {
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, 1, imageFormat, isSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr);
-    frameCompositionTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, RHI::ClearValue::Color(baseClearColor), 1, RHI::GPUResourceState::ShaderResource);
+    frameCompositionTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, RHI::ClearValue::Color(baseClearColor), 1, RHI::GPUResourceState::ShaderResource);
     assert(frameCompositionTexture);
 
     RHI::renderer->SetName(frameCompositionTexture, "RenderContext::frameCompositionTexture");
@@ -322,7 +322,7 @@ bool RenderContext::CreateCSMDepthTexture(uint32_t resolution) {
 
     const RHI::TextureFlag textureFlags = RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless;
     const RHI::ClearValue optimizedClearValue = RHI::ClearValue::DepthStencil(0.0f, 0);
-    RHI::Texture *newTexture = RHI::renderer->CreateTexture2DArray(textureFlags, depthImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+    RHI::Texture *newTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2DArray, textureFlags, depthImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
     if (!newTexture) {
         return false;
     }
@@ -448,7 +448,7 @@ void RenderContext::InitBootstrapGlyphCacheAndPipeline() {
     // bootstrap 텍스트가 첫 프레임부터 보이도록 필요한 glyph 와 font material pipeline 을 미리 준비한다.
     static constexpr char bootstrapTextGlyphs[] = "Building shader pipelines... 0123456789%Shader pipeline build failed";
     bool cachedGlyphs[128] = {};
-    SharedPtr<Material> bootstrapFontMaterial;
+    Material *bootstrapFontMaterial = nullptr;
 
     for (const unsigned char character : bootstrapTextGlyphs) {
         if (character == 0 || character >= COUNT_OF(cachedGlyphs) || cachedGlyphs[character]) {
@@ -458,7 +458,7 @@ void RenderContext::InitBootstrapGlyphCacheAndPipeline() {
 
         FontGlyph *glyph = fontManager.defaultFont->GetGlyph(static_cast<char32_t>(character));
         if (glyph && glyph->material && !bootstrapFontMaterial) {
-            bootstrapFontMaterial = glyph->material;
+            bootstrapFontMaterial = glyph->material.get();
         }
     }
 
@@ -842,12 +842,11 @@ void RenderContext::SetColor(const BE1::Color4 &color) {
     currentColor = color;
 }
 
-void RenderContext::SetFont(SharedPtr<Font> font) {
-    if (!font) {
-        currentFont = fontManager.defaultFont;
-        return;
+void RenderContext::SetFont(const SharedPtr<Font> &font) {
+    const SharedPtr<Font> &newFont = font ? font : fontManager.defaultFont;
+    if (currentFont != newFont) {
+        currentFont = newFont;
     }
-    currentFont = font;
 }
 
 void RenderContext::SetTextScale(float scale) {

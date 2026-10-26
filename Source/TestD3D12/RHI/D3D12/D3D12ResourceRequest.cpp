@@ -165,7 +165,7 @@ void D3D12Renderer::ExecuteResourceRequests(BE1::Array<D3D12ResourceRequest> &re
             break;
         case D3D12ResourceRequest::Type::BuildMipChain:
             if (commandContext) {
-                if (ExecuteBuildMipChain(*commandContext, static_cast<D3D12Texture *>(request.object), request.buildMipChainRequest)) {
+                if (ExecuteBuildMipChain(*commandContext, static_cast<D3D12Texture *>(request.object), std::move(request.buildMipChainRequest))) {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Ready);
                 } else {
                     static_cast<RHI::GPUResource *>(request.object)->SetStatus(RHI::GPUResourceStatus::Failed);

@@ -194,6 +194,7 @@ private:
 
     void                            CreateMissingTexture(int size, Texture::Flag flags = Texture::Flag::None);
     void                            CreateColorTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);
+    void                            CreateColor3DTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);
     void                            CreateFlatNormalTexture(int size, Texture::Flag flags = Texture::Flag::None);
 
     BE1::Str                        hashName;

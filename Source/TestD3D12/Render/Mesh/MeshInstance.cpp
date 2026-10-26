@@ -25,7 +25,7 @@ void MeshInstance::Reset() {
     skinningJointCache.reset();
 }
 
-bool MeshInstance::InitStatic(const SharedPtr<Mesh> &newSourceMesh) {
+bool MeshInstance::InitStatic(SharedPtr<Mesh> newSourceMesh) {
     Reset();
 
     if (!newSourceMesh) {
@@ -33,12 +33,12 @@ bool MeshInstance::InitStatic(const SharedPtr<Mesh> &newSourceMesh) {
     }
 
     type = Type::Static;
-    sourceMesh = newSourceMesh;
+    sourceMesh = std::move(newSourceMesh);
 
     return IsSourceReady() ? RefreshFromSource() : true;
 }
 
-bool MeshInstance::InitSkinned(const SharedPtr<Mesh> &newSourceMesh) {
+bool MeshInstance::InitSkinned(SharedPtr<Mesh> newSourceMesh) {
     Reset();
 
     if (!newSourceMesh) {
@@ -46,7 +46,7 @@ bool MeshInstance::InitSkinned(const SharedPtr<Mesh> &newSourceMesh) {
     }
 
     type = Type::Skinned;
-    sourceMesh = newSourceMesh;
+    sourceMesh = std::move(newSourceMesh);
 
     return IsSourceReady() ? RefreshFromSource() : true;
 }

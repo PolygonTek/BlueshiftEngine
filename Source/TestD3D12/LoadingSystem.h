@@ -53,7 +53,7 @@ public:
     bool                            EnqueueMeshLoad(SharedPtr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueSkeletonLoad(SharedPtr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, const ShaderCompileData &compileData, uint32_t serial, LoadPriority priority = LoadPriority::High);
+    bool                            EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, ShaderCompileData &&compileData, uint32_t serial, LoadPriority priority = LoadPriority::High);
 
     void                            QueueMaterialReload(SharedPtr<Material> material, Material::InternalData &newInternalData);
     void                            QueueShaderTemplateReload(SharedPtr<ShaderTemplate> shaderTemplate, ShaderTemplate::InternalData &newInternalData);
@@ -126,12 +126,12 @@ private:
 
     void                            Run();
     bool                            PopNextRequest(LoadRequest &outRequest);
-    bool                            ProcessTextureLoadRequest(const LoadRequest &request);
-    bool                            ProcessTextureStreamingReplacementRequest(const LoadRequest &request);
-    bool                            ProcessMeshLoadRequest(const LoadRequest &request);
-    bool                            ProcessSkeletonLoadRequest(const LoadRequest &request);
-    bool                            ProcessAnimLoadRequest(const LoadRequest &request);
-    bool                            ProcessShaderPipelineBuildRequest(const LoadRequest &request);
+    bool                            ProcessTextureLoadRequest(LoadRequest &&request);
+    bool                            ProcessTextureStreamingReplacementRequest(LoadRequest &&request);
+    bool                            ProcessMeshLoadRequest(LoadRequest &&request);
+    bool                            ProcessSkeletonLoadRequest(LoadRequest &&request);
+    bool                            ProcessAnimLoadRequest(LoadRequest &&request);
+    bool                            ProcessShaderPipelineBuildRequest(LoadRequest &&request);
 
     void                            PushCompletion(LoadCompletion &&completion);
     void                            DiscardCompletion(LoadCompletion &completion);

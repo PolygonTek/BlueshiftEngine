@@ -159,11 +159,11 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
 
     // probe bake 는 render work 로 등록한다.
     ProbeBakeJob::Desc bakeJobDesc;
-    bakeJobDesc.radianceCubeMap = radianceCubeMap;
+    bakeJobDesc.radianceCubeMap = std::move(radianceCubeMap);
     bakeJobDesc.outputFlags = ProbeBakeJob::OutputFlag::All;
 
     const uint64_t bakeSerial = ++nextBakeSerial;
-    UniquePtr<RenderWork> renderWork = MakeUnique<ProbeBakeRenderWork>(bakeSerial, bakeJobDesc, generateRadianceMipChain);
+    UniquePtr<RenderWork> renderWork = MakeUnique<ProbeBakeRenderWork>(bakeSerial, std::move(bakeJobDesc), generateRadianceMipChain);
 
     activeEnvironmentLightRequest = request;
     activeBakeSerial = bakeSerial;

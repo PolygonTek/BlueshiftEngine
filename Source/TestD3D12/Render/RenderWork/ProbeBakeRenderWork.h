@@ -19,7 +19,7 @@
 
 class ProbeBakeRenderWork : public RenderWork {
 public:
-    ProbeBakeRenderWork(uint64_t bakeSerial, const ProbeBakeJob::Desc &jobDesc, bool generateRadianceMipChain);
+    ProbeBakeRenderWork(uint64_t bakeSerial, ProbeBakeJob::Desc &&jobDesc, bool generateRadianceMipChain);
 
     virtual const char *            GetDebugName() const override { return "ProbeBakeRenderWork"; }
     virtual bool                    IsReadyToAttach() const override;

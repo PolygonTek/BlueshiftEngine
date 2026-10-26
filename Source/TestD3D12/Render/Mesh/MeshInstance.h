@@ -43,8 +43,8 @@ public:
 
     void                            Reset();
 
-    bool                            InitStatic(const SharedPtr<Mesh> &sourceMesh);
-    bool                            InitSkinned(const SharedPtr<Mesh> &sourceMesh);
+    bool                            InitStatic(SharedPtr<Mesh> sourceMesh);
+    bool                            InitSkinned(SharedPtr<Mesh> sourceMesh);
 
     Type                            GetType() const { return type; }
     bool                            IsSkinned() const { return type == Type::Skinned; }

@@ -79,22 +79,18 @@ void MaterialManager::UpdateFrame() {
 }
 
 void MaterialManager::ApplyStreamingFeedback(const uint32_t *feedbackData, uint32_t feedbackCapacity) {
-    const int numStreamingMaterials = streamingMaterials.Count();
-    for (int i = 0; i < numStreamingMaterials; ++i) {
+    const uint32_t numStreamingMaterials = BE1::Min(static_cast<uint32_t>(streamingMaterials.Count()), feedbackCapacity);
+    for (uint32_t i = 0; i < numStreamingMaterials; ++i) {
+        const uint32_t feedbackMask = feedbackData[i];
+        if (!feedbackMask) {
+            continue;
+        }
+
         SharedPtr<Material> material = streamingMaterials[i].lock();
         if (!material) {
             continue;
         }
-
-        uint32_t streamingListIndex = material->GetStreamingListIndex();
-        if (streamingListIndex >= feedbackCapacity) {
-            continue;
-        }
-
-        uint32_t feedbackMask = feedbackData[streamingListIndex];
-        if (!feedbackMask) {
-            continue;
-        }
+        assert(material->GetStreamingListIndex() == i);
 
         // UV 미분값 기준으로 계산된 가장 큰 요청 해상도
         uint32_t feedbackMaxDimension = 1u << FloorLog2(feedbackMask);
@@ -273,7 +269,7 @@ void MaterialManager::CleanExpiredMaterials() {
     }
 }
 
-void MaterialManager::RefreshStreamingMaterial(const SharedPtr<Material> &material) {
+void MaterialManager::RefreshStreamingMaterial(Material *material) {
     if (!material) {
         return;
     }
@@ -281,11 +277,11 @@ void MaterialManager::RefreshStreamingMaterial(const SharedPtr<Material> &materi
     if (material->HasStreamingTextureProperties()) {
         RegisterStreamingMaterial(material);
     } else {
-        UnregisterStreamingMaterial(material.get());
+        UnregisterStreamingMaterial(material);
     }
 }
 
-void MaterialManager::RegisterStreamingMaterial(const SharedPtr<Material> &material) {
+void MaterialManager::RegisterStreamingMaterial(Material *material) {
     if (!material) {
         return;
     }
@@ -294,7 +290,7 @@ void MaterialManager::RegisterStreamingMaterial(const SharedPtr<Material> &mater
         return;
     }
 
-    material->streamingListIndex = streamingMaterials.Append(WeakPtr<Material>(material));
+    material->streamingListIndex = streamingMaterials.Append(material->weak_from_this());
 }
 
 void MaterialManager::UnregisterStreamingMaterial(Material *material) {

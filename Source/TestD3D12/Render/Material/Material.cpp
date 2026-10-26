@@ -74,7 +74,7 @@ static BE1::Str ResolveTextureName(const ShaderTemplate::PropertyValue &property
 
 static const SharedPtr<Texture> &GetFallbackTexture(const ShaderPropertyDesc &propertyDesc) {
     if (propertyDesc.textureType == ShaderPropertyDesc::TextureType::Texture3D) {
-        return textureManager.whiteTexture3D;
+        return textureManager.white3DTexture;
     }
 
     return propertyDesc.IsNormal() ? textureManager.flatNormalTexture : textureManager.whiteTexture;
@@ -102,15 +102,16 @@ bool Material::SetShaderTemplate(const SharedPtr<ShaderTemplate> &shaderTemplate
     if (!shaderTemplate) {
         return false;
     }
+
     if (internalData.shaderTemplate == shaderTemplate) {
         return true;
     }
 
-    // Remap 이 끝날 때까지 이전 template 의 프로퍼티 정보를 유지한다.
-    SharedPtr<ShaderTemplate> oldShaderTemplate = internalData.shaderTemplate;
-
     // 렌더 백엔드에서 이전 프레임의 material 데이터 사용을 마칠 때까지 기다린다.
     renderSystem->WaitAllRenderCompleted();
+
+    // Remap 이 끝날 때까지 이전 template 의 프로퍼티 정보를 유지한다.
+    SharedPtr<ShaderTemplate> oldShaderTemplate = std::move(internalData.shaderTemplate);
 
     internalData.shaderTemplate = shaderTemplate;
 
@@ -211,8 +212,15 @@ bool Material::SetPropertyValue(int propertyIndex, const ShaderTemplate::Propert
     if (propertyDesc.IsShaderDefine()) {
         InvalidatePermutationKeys();
     }
+
     if (propertyDesc.IsTexture()) {
-        UpdateTextureProperties();
+        // 텍스쳐 값만 바뀌므로 프로퍼티 구성과 material 스트리밍 등록은 유지한다.
+        for (TextureProperty &textureProperty : internalData.textureProperties) {
+            if (textureProperty.propertyIndex == propertyIndex) {
+                UpdateTextureProperty(textureProperty, propertyDesc);
+                break;
+            }
+        }
     }
 
     return true;
@@ -262,6 +270,25 @@ void Material::UpdateSampler() {
     sampler = newSampler;
 }
 
+void Material::UpdateTextureProperty(TextureProperty &textureProperty, const ShaderPropertyDesc &propertyDesc) {
+    SharedPtr<Texture> newTexture;
+    const int propertyIndex = textureProperty.propertyIndex;
+    const ShaderTemplate::PropertyValue *propertyValue = propertyIndex < internalData.propertyValues.Count() ? &internalData.propertyValues[propertyIndex] : nullptr;
+    if (propertyValue) {
+        BE1::Str textureName = ResolveTextureName(*propertyValue);
+        if (!textureName.IsEmpty()) {
+            newTexture = textureManager.GetTexture(textureName.c_str(), GetTextureFlags(propertyDesc), true);
+        }
+    }
+
+    if (!newTexture) {
+        newTexture = GetFallbackTexture(propertyDesc);
+    }
+
+    // 새 참조를 확보한 뒤 교체하여 같은 텍스쳐의 불필요한 해제와 재로딩을 피한다.
+    textureProperty.texture = std::move(newTexture);
+}
+
 // 프로퍼티 중에 텍스쳐 프로퍼티만 골라서 internalData.textureProperties 배열을 업데이트한다.
 void Material::UpdateTextureProperties() {
     internalData.textureProperties.Clear();
@@ -281,21 +308,10 @@ void Material::UpdateTextureProperties() {
 
         TextureProperty &textureProperty = internalData.textureProperties.Alloc();
         textureProperty.propertyIndex = propertyIndex;
-
-        const ShaderTemplate::PropertyValue *propertyValue = propertyIndex < internalData.propertyValues.Count() ? &internalData.propertyValues[propertyIndex] : nullptr;
-        if (propertyValue) {
-            BE1::Str textureName = ResolveTextureName(*propertyValue);
-            if (!textureName.IsEmpty()) {
-                textureProperty.texture = textureManager.GetTexture(textureName.c_str(), GetTextureFlags(propertyDesc), true);
-            }
-        }
-
-        if (!textureProperty.texture) {
-            textureProperty.texture = GetFallbackTexture(propertyDesc);
-        }
+        UpdateTextureProperty(textureProperty, propertyDesc);
     }
 
-    materialManager.RefreshStreamingMaterial(shared_from_this());
+    materialManager.RefreshStreamingMaterial(this);
 }
 
 bool Material::HasStreamingTextureProperties() const {
@@ -407,11 +423,10 @@ ShaderPipeline *Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet
 
     GraphicsPipelineDesc graphicsPipelineDesc = baseGraphicsPipelineDesc;
     graphicsPipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseGraphicsPipelineDesc.rasterizerStateType, internalData.cullMode);
-    // Surface prepass records the nearest receiver's attributes without material blending.
     const bool useMaterialBlending = internalData.renderingMode == RenderingMode::Blend && !featureSet.HasFeature(ShaderFeature::SurfacePrepass);
     graphicsPipelineDesc.blendStateType = useMaterialBlending ? internalData.blendType : RHI::BlendStateType::Disabled;
 
-    return shaderPipelineCache.GetGraphicsPipeline(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, async).get();
+    return shaderPipelineCache.GetGraphicsPipelinePtr(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, async);
 }
 
 bool Material::Create(const char *text, const char *baseDir) {
@@ -617,7 +632,7 @@ bool Material::ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, const
         return false;
     }
 
-    outInternalData.shaderTemplate = shaderTemplate;
+    outInternalData.shaderTemplate = std::move(shaderTemplate);
     outInternalData.shaderTemplate->InitDefaultPropertyValues(outInternalData.propertyValues);
 
     return true;

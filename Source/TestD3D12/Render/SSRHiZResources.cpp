@@ -69,7 +69,7 @@ bool SSRHiZResources::CreateTexture(uint32_t width, uint32_t height) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, levelCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    texture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!texture) {
         BE_WARNLOG("SSRHiZResources::CreateTexture: failed to create SSRHiZ texture\n");
         Destroy();

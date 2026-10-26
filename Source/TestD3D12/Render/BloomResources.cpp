@@ -270,11 +270,11 @@ bool BloomResources::SetConvolutionBloomKernelFromImage(const char *textureName,
 
     SharedPtr<BE1::Image> textureImage = MakeShared<BE1::Image>(kernelImage);
     SharedPtr<Texture> texture = textureManager.AllocTexture(textureName);
-    if (!texture->Create2D(textureImage, Texture::Flag::HighQuality)) {
+    if (!texture->Create2D(std::move(textureImage), Texture::Flag::HighQuality)) {
         return false;
     }
 
-    SetConvolutionBloomKernelTexture(texture, normalizedKernelExtents, inverseAverageLuminance);
+    SetConvolutionBloomKernelTexture(std::move(texture), normalizedKernelExtents, inverseAverageLuminance);
     return true;
 }
 
@@ -297,19 +297,21 @@ bool BloomResources::SetConvolutionBloomKernelFromFile(const char *filename) {
         return false;
     }
 
-    SetConvolutionBloomKernelTexture(texture, normalizedKernelExtents, inverseAverageLuminance);
+    SetConvolutionBloomKernelTexture(std::move(texture), normalizedKernelExtents, inverseAverageLuminance);
     return true;
 }
 
-void BloomResources::SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, const BE1::Vec2 &normalizedKernelExtents, float inverseAverageLuminance) {
+void BloomResources::SetConvolutionBloomKernelTexture(SharedPtr<Texture> texture, const BE1::Vec2 &normalizedKernelExtents, float inverseAverageLuminance) {
     if (fftBloomKernelSourceTexture != texture) {
-        fftBloomKernelSourceTexture = texture;
+        fftBloomKernelSourceTexture = std::move(texture);
         fftBloomKernelDirty = true;
     }
+
     if (fftBloomKernelNormalizedExtents != normalizedKernelExtents) {
         fftBloomKernelNormalizedExtents = normalizedKernelExtents;
         fftBloomKernelDirty = true;
     }
+
     fftBloomKernelInverseAverageLuminance = inverseAverageLuminance;
 }
 
@@ -451,7 +453,7 @@ bool BloomResources::CreatePyramidBloomTextures(uint32_t width, uint32_t height,
     SharedPtr<BE1::Image> bloomDownImage = MakeShared<BE1::Image>();
     bloomDownImage->Init2DFromMemory(bloomMipWidths[0], bloomMipHeights[0], bloomDownMipCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    bloomDownTexture = RHI::renderer->CreateTexture2D(bloomTextureFlags, bloomDownImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    bloomDownTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, std::move(bloomDownImage), RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!bloomDownTexture) {
         BE_WARNLOG("BloomResources::CreatePyramidBloomTextures: failed to create bloom down texture\n");
         return false;
@@ -462,7 +464,7 @@ bool BloomResources::CreatePyramidBloomTextures(uint32_t width, uint32_t height,
     SharedPtr<BE1::Image> bloomUpImage = MakeShared<BE1::Image>();
     bloomUpImage->Init2DFromMemory(bloomMipWidths[0], bloomMipHeights[0], bloomUpMipCount, bloomImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    bloomUpTexture = RHI::renderer->CreateTexture2D(bloomTextureFlags, bloomUpImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    bloomUpTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, bloomTextureFlags, std::move(bloomUpImage), RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!bloomUpTexture) {
         BE_WARNLOG("BloomResources::CreatePyramidBloomTextures: failed to create bloom up texture\n");
         DestroyPyramidBloomTextures();
@@ -638,7 +640,7 @@ bool BloomResources::CreateConvolutionBloomOutputTexture(uint32_t width, uint32_
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, mipLevelCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    fftBloomConvolutionOutputTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    fftBloomConvolutionOutputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!fftBloomConvolutionOutputTexture) {
         BE_WARNLOG("BloomResources::CreateConvolutionBloomOutputTexture: failed to create convolution texture\n");
         return false;

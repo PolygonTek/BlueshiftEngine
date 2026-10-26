@@ -54,6 +54,13 @@ struct ShaderCompileData {
     BE1::StrArray                   compileDefines;
 };
 
+BE_INLINE void ShaderCompileData::Clear() {
+    for (ShaderStageSource &stageSource : stageSources) {
+        stageSource = ShaderStageSource();
+    }
+    compileDefines.Clear();
+}
+
 /*
 ---------------------------------------------------------------------------------------------------
 
@@ -120,13 +127,19 @@ public:
     bool                            WaitReady();
 
                                     // 최초 빌딩과 리빌딩이 모두 완료될 때까지 기다린다.
-    bool                            WaitLoadComplete();
+    bool                            WaitBuildComplete();
 
 private:
     void                            Purge();
 
-    bool                            PreparePSO(const ShaderCompileData &compileData, RHI::PipelineState *&outPSO) const;
-    void                            SetPSO(RHI::PipelineState *newPso);
+    static bool                     CreateStageShader(const ShaderCompileData &compileData, RHI::ShaderStage shaderStage, RHI::Shader *&outShader);
+    static bool                     CreateGraphicsShaders(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
+    static bool                     CreateComputeShader(const ShaderCompileData &compileData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
+    static RHI::PipelineState *     CreateGraphicsPSO(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
+    static RHI::PipelineState *     CreateComputePSO(const ShaderCompileData &compileData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
+
+    RHI::PipelineState *            CreatePSO(const ShaderCompileData &compileData) const;
+    void                            ReplacePSO(RHI::PipelineState *newPso);
 
     bool                            Build(const SharedPtr<ShaderTemplate> &shaderTemplate);
     void                            BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);

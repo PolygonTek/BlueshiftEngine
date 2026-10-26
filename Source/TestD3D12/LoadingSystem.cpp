@@ -97,7 +97,7 @@ bool LoadingSystem::EnqueueTextureLoad(SharedPtr<Texture> texture, const char *f
         }
 
         LoadRequest request;
-        request.texture = texture;
+        request.texture = std::move(texture);
         request.filename = filename;
         request.textureFlags = flags;
         request.streamingMinResidentMaxDimension = streamingMinResidentMaxDimension;
@@ -118,10 +118,12 @@ bool LoadingSystem::EnqueueTextureStreamingReplacement(SharedPtr<Texture> textur
     if (!texture || !filename || !filename[0]) {
         return false;
     }
+
     // 텍스쳐를 교체할 것이므로 이미 생성되어 있어야 한다.
     if (!texture->GetRHITexture()) {
         return false;
     }
+
     if (firstMip < 0 || firstMip >= texture->GetStreaming()->originalMipLevels) {
         return false;
     }
@@ -134,13 +136,13 @@ bool LoadingSystem::EnqueueTextureStreamingReplacement(SharedPtr<Texture> textur
         }
 
         LoadRequest request;
-        request.texture = texture;
+        request.texture = std::move(texture);
         request.filename = filename;
-        request.textureFlags = texture->GetFlags();
+        request.textureFlags = request.texture->GetFlags();
         request.isStreamingReplacement = true;
-        request.originalMipLevels = texture->GetStreaming()->originalMipLevels;
+        request.originalMipLevels = request.texture->GetStreaming()->originalMipLevels;
         request.firstMip = firstMip;
-        request.serial = texture->GetLoadSerial();
+        request.serial = request.texture->GetLoadSerial();
         request.priority = priority;
         request.sequence = nextRequestSequence++;
         requests.Append(std::move(request));
@@ -165,7 +167,7 @@ bool LoadingSystem::EnqueueMeshLoad(SharedPtr<Mesh> mesh, const char *filename, 
         }
 
         LoadRequest request;
-        request.mesh = mesh;
+        request.mesh = std::move(mesh);
         request.filename = filename;
         request.isReload = isReload;
         request.serial = serial;
@@ -193,7 +195,7 @@ bool LoadingSystem::EnqueueSkeletonLoad(SharedPtr<Skeleton> skeleton, const char
         }
 
         LoadRequest request;
-        request.skeleton = skeleton;
+        request.skeleton = std::move(skeleton);
         request.filename = filename;
         request.isReload = isReload;
         request.serial = serial;
@@ -221,7 +223,7 @@ bool LoadingSystem::EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, 
         }
 
         LoadRequest request;
-        request.anim = anim;
+        request.anim = std::move(anim);
         request.filename = filename;
         request.isReload = isReload;
         request.serial = serial;
@@ -236,7 +238,7 @@ bool LoadingSystem::EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, 
     return true;
 }
 
-bool LoadingSystem::EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, const ShaderCompileData &compileData, uint32_t serial, LoadPriority priority) {
+bool LoadingSystem::EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, ShaderCompileData &&compileData, uint32_t serial, LoadPriority priority) {
     if (!shaderPipeline) {
         return false;
     }
@@ -249,8 +251,8 @@ bool LoadingSystem::EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderP
         }
 
         LoadRequest request;
-        request.shaderPipeline = shaderPipeline;
-        request.shaderCompileData = compileData;
+        request.shaderPipeline = std::move(shaderPipeline);
+        request.shaderCompileData = std::move(compileData);
         request.serial = serial;
         request.priority = priority;
         request.sequence = nextRequestSequence++;
@@ -434,23 +436,23 @@ void LoadingSystem::Run() {
 
         if (request.texture) {
             if (request.isStreamingReplacement) {
-                ProcessTextureStreamingReplacementRequest(request);
+                ProcessTextureStreamingReplacementRequest(std::move(request));
             } else {
-                ProcessTextureLoadRequest(request);
+                ProcessTextureLoadRequest(std::move(request));
             }
         } else if (request.mesh) {
-            ProcessMeshLoadRequest(request);
+            ProcessMeshLoadRequest(std::move(request));
         } else if (request.skeleton) {
-            ProcessSkeletonLoadRequest(request);
+            ProcessSkeletonLoadRequest(std::move(request));
         } else if (request.anim) {
-            ProcessAnimLoadRequest(request);
+            ProcessAnimLoadRequest(std::move(request));
         } else if (request.shaderPipeline) {
-            ProcessShaderPipelineBuildRequest(request);
+            ProcessShaderPipelineBuildRequest(std::move(request));
         }
     }
 }
 
-bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
+bool LoadingSystem::ProcessTextureLoadRequest(LoadRequest &&request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessTextureLoadRequest");
 
     // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 하지 않는다.
@@ -459,7 +461,7 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
     }
 
     LoadCompletion completion;
-    completion.texture = request.texture;
+    completion.texture = std::move(request.texture);
     completion.isReload = request.isReload;
     completion.serial = request.serial;
 
@@ -507,9 +509,9 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
 
     if (useMipRange) {
         completion.mipRange = mipRange;
-        completion.success = Texture::PrepareDirect(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
+        completion.success = Texture::PrepareDirect(textureType, std::move(image), request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
     } else {
-        completion.success = Texture::Prepare(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
+        completion.success = Texture::Prepare(textureType, std::move(image), request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
     }
 
     if (completion.textureData.rhiTexture) {
@@ -521,7 +523,7 @@ bool LoadingSystem::ProcessTextureLoadRequest(const LoadRequest &request) {
     return true;
 }
 
-bool LoadingSystem::ProcessTextureStreamingReplacementRequest(const LoadRequest &request) {
+bool LoadingSystem::ProcessTextureStreamingReplacementRequest(LoadRequest &&request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessTextureStreamingReplacementRequest");
 
     // 로딩 요청을 처리하려는 사이에 시리얼이 변경되었다면, 로딩을 하지 않는다.
@@ -530,7 +532,7 @@ bool LoadingSystem::ProcessTextureStreamingReplacementRequest(const LoadRequest 
     }
 
     LoadCompletion completion;
-    completion.texture = request.texture;
+    completion.texture = std::move(request.texture);
     completion.serial = request.serial;
 
     // 기존 텍스쳐의 교체 요청을 받았다고 표시
@@ -569,13 +571,13 @@ bool LoadingSystem::ProcessTextureStreamingReplacementRequest(const LoadRequest 
     }
 
     completion.mipRange = mipRange;
-    completion.success = Texture::PrepareDirect(textureType, image, request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
+    completion.success = Texture::PrepareDirect(textureType, std::move(image), request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
 
     PushCompletion(std::move(completion));
     return true;
 }
 
-bool LoadingSystem::ProcessMeshLoadRequest(const LoadRequest &request) {
+bool LoadingSystem::ProcessMeshLoadRequest(LoadRequest &&request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessMeshLoadRequest");
 
     // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 하지 않는다.
@@ -584,7 +586,7 @@ bool LoadingSystem::ProcessMeshLoadRequest(const LoadRequest &request) {
     }
 
     LoadCompletion completion;
-    completion.mesh = request.mesh;
+    completion.mesh = std::move(request.mesh);
     completion.isReload = request.isReload;
     completion.serial = request.serial;
     completion.success = Mesh::Prepare(request.filename, completion.meshData);
@@ -593,7 +595,7 @@ bool LoadingSystem::ProcessMeshLoadRequest(const LoadRequest &request) {
     return true;
 }
 
-bool LoadingSystem::ProcessSkeletonLoadRequest(const LoadRequest &request) {
+bool LoadingSystem::ProcessSkeletonLoadRequest(LoadRequest &&request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessSkeletonLoadRequest");
 
     // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 하지 않는다.
@@ -602,7 +604,7 @@ bool LoadingSystem::ProcessSkeletonLoadRequest(const LoadRequest &request) {
     }
 
     LoadCompletion completion;
-    completion.skeleton = request.skeleton;
+    completion.skeleton = std::move(request.skeleton);
     completion.isReload = request.isReload;
     completion.serial = request.serial;
     completion.success = Skeleton::Prepare(request.filename, completion.skeletonData);
@@ -611,7 +613,7 @@ bool LoadingSystem::ProcessSkeletonLoadRequest(const LoadRequest &request) {
     return true;
 }
 
-bool LoadingSystem::ProcessAnimLoadRequest(const LoadRequest &request) {
+bool LoadingSystem::ProcessAnimLoadRequest(LoadRequest &&request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessAnimLoadRequest");
 
     // 로딩 요청을 처리하려는 사이에 로딩이 취소되었거나 시리얼이 변경되었다면, 로딩을 하지 않는다.
@@ -620,7 +622,7 @@ bool LoadingSystem::ProcessAnimLoadRequest(const LoadRequest &request) {
     }
 
     LoadCompletion completion;
-    completion.anim = request.anim;
+    completion.anim = std::move(request.anim);
     completion.isReload = request.isReload;
     completion.serial = request.serial;
     completion.success = Anim::Prepare(request.filename, completion.animData);
@@ -629,7 +631,7 @@ bool LoadingSystem::ProcessAnimLoadRequest(const LoadRequest &request) {
     return true;
 }
 
-bool LoadingSystem::ProcessShaderPipelineBuildRequest(const LoadRequest &request) {
+bool LoadingSystem::ProcessShaderPipelineBuildRequest(LoadRequest &&request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessShaderPipelineBuildRequest");
 
     // 빌딩 요청을 처리하려는 사이에 빌딩이 취소되었거나 시리얼이 변경되었다면, 빌딩을 하지 않는다.
@@ -638,9 +640,10 @@ bool LoadingSystem::ProcessShaderPipelineBuildRequest(const LoadRequest &request
     }
 
     LoadCompletion completion;
-    completion.shaderPipeline = request.shaderPipeline;
+    completion.shaderPipeline = std::move(request.shaderPipeline);
     completion.serial = request.serial;
-    completion.success = request.shaderPipeline->PreparePSO(request.shaderCompileData, completion.pso);
+    completion.pso = completion.shaderPipeline->CreatePSO(request.shaderCompileData);
+    completion.success = completion.pso != nullptr;
 
     PushCompletion(std::move(completion));
     return true;
@@ -863,7 +866,7 @@ void LoadingSystem::ProcessLoadCompletion(LoadCompletion &completion) {
 }
 
 bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
-    SharedPtr<Texture> texture = completion.texture;
+    const SharedPtr<Texture> &texture = completion.texture;
 
     // 로딩 요청 이후 시리얼이 변경된 경우, 새로 만든 텍스쳐를 폐기한다.
     if (completion.serial != texture->GetLoadSerial()) {
@@ -917,7 +920,7 @@ bool LoadingSystem::ProcessTextureLoadCompletion(LoadCompletion &completion) {
 }
 
 bool LoadingSystem::ProcessMeshLoadCompletion(LoadCompletion &completion) {
-    SharedPtr<Mesh> mesh = completion.mesh;
+    const SharedPtr<Mesh> &mesh = completion.mesh;
 
     // 로딩 요청 이후 시리얼이 변경된 경우, 새로 만든 메시를 폐기한다.
     if (completion.serial != mesh->GetLoadSerial()) {
@@ -941,7 +944,7 @@ bool LoadingSystem::ProcessMeshLoadCompletion(LoadCompletion &completion) {
 }
 
 bool LoadingSystem::ProcessSkeletonLoadCompletion(LoadCompletion &completion) {
-    SharedPtr<Skeleton> skeleton = completion.skeleton;
+    const SharedPtr<Skeleton> &skeleton = completion.skeleton;
 
     // 로딩 요청 이후 시리얼이 변경된 경우, 새로 만든 스켈레톤을 폐기한다.
     if (completion.serial != skeleton->GetLoadSerial()) {
@@ -965,7 +968,7 @@ bool LoadingSystem::ProcessSkeletonLoadCompletion(LoadCompletion &completion) {
 }
 
 bool LoadingSystem::ProcessAnimLoadCompletion(LoadCompletion &completion) {
-    SharedPtr<Anim> anim = completion.anim;
+    const SharedPtr<Anim> &anim = completion.anim;
 
     // 로딩 요청 이후 시리얼이 변경된 경우, 새로 만든 스켈레톤을 폐기한다.
     if (completion.serial != anim->GetLoadSerial()) {
@@ -989,7 +992,7 @@ bool LoadingSystem::ProcessAnimLoadCompletion(LoadCompletion &completion) {
 }
 
 bool LoadingSystem::ProcessShaderPipelineBuildCompletion(LoadCompletion &completion) {
-    SharedPtr<ShaderPipeline> shaderPipeline = completion.shaderPipeline;
+    const SharedPtr<ShaderPipeline> &shaderPipeline = completion.shaderPipeline;
 
     // 빌드 요청 이후 시리얼이 변경된 경우, 새로 만든 PipelineState 를 폐기한다.
     if (completion.serial != shaderPipeline->GetBuildSerial()) {
@@ -1005,7 +1008,7 @@ bool LoadingSystem::ProcessShaderPipelineBuildCompletion(LoadCompletion &complet
     }
 
     // 준비된 PSO 로 교체한다.
-    shaderPipeline->SetPSO(completion.pso);
+    shaderPipeline->ReplacePSO(completion.pso);
     completion.pso = nullptr;
 
     // 빌드가 성공했으므로 Ready 상태로 바꿔준다.

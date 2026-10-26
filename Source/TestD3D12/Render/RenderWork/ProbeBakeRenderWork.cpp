@@ -18,8 +18,8 @@
 #include "Render/RenderSystem.h"
 #include "Render/Texture/Texture.h"
 
-ProbeBakeRenderWork::ProbeBakeRenderWork(uint64_t bakeSerial, const ProbeBakeJob::Desc &jobDesc, bool generateRadianceMipChain)
-    : bakeSerial(bakeSerial), bakeJob(jobDesc), generateRadianceMipChain(generateRadianceMipChain) {
+ProbeBakeRenderWork::ProbeBakeRenderWork(uint64_t bakeSerial, ProbeBakeJob::Desc &&jobDesc, bool generateRadianceMipChain)
+    : bakeSerial(bakeSerial), bakeJob(std::move(jobDesc)), generateRadianceMipChain(generateRadianceMipChain) {
 }
 
 bool ProbeBakeRenderWork::IsReadyToAttach() const {

@@ -38,8 +38,8 @@ public:
 
     bool                        SetConvolutionBloomKernelFromImage(const char *textureName, const BE1::Image &kernelImage);
     bool                        SetConvolutionBloomKernelFromFile(const char *filename);
-    void                        SetConvolutionBloomKernelTexture(const SharedPtr<Texture> &texture, const BE1::Vec2 &normalizedKernelExtents, float inverseAverageLuminance);
-    void                        SetBloomDirtMaskTexture(const SharedPtr<Texture> &texture) { bloomDirtMaskTexture = texture; }
+    void                        SetConvolutionBloomKernelTexture(SharedPtr<Texture> texture, const BE1::Vec2 &normalizedKernelExtents, float inverseAverageLuminance);
+    void                        SetBloomDirtMaskTexture(SharedPtr<Texture> texture) { bloomDirtMaskTexture = std::move(texture); }
     void                        SetConvolutionBloomKernelRotation(float rotation);
     void                        SetConvolutionBloomKernelScale(float scale);
     void                        SetConvolutionBloomPaddingTrim(float paddingTrim);

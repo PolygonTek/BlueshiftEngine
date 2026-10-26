@@ -820,7 +820,7 @@ bool RenderCamera::CreateColorTextures(uint32_t width, uint32_t height, RHI::For
         textureFlags |= RHI::TextureFlag::ShaderResource;
     }
 
-    colorTexture = RHI::renderer->CreateTexture2D(textureFlags, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
+    colorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, textureFlags, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
     if (!colorTexture) {
         DestroyRenderTextures();
         BE_WARNLOG("RenderCamera::CreateColorTextures: failed to create color texture\n");
@@ -829,7 +829,7 @@ bool RenderCamera::CreateColorTextures(uint32_t width, uint32_t height, RHI::For
     RHI::renderer->SetName(colorTexture, "RenderCamera::colorTexture");
 
     if (useMSAA) {
-        resolvedColorTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        resolvedColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (!resolvedColorTexture) {
             DestroyRenderTextures();
             BE_WARNLOG("RenderCamera::CreateColorTextures: failed to create resolved color texture\n");
@@ -848,7 +848,7 @@ bool RenderCamera::CreateDepthTexture(uint32_t width, uint32_t height, RHI::Form
 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
-    depthTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
+    depthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
     if (!depthTexture) {
         BE_WARNLOG("RenderCamera::CreateDepthTexture: failed to create depth texture\n");
         DestroyRenderTextures();
@@ -880,7 +880,7 @@ bool RenderCamera::CreateNormalRoughnessTextures(uint32_t width, uint32_t height
         textureFlags |= RHI::TextureFlag::UnorderedAccess;
     }
 
-    normalRoughnessTexture = RHI::renderer->CreateTexture2D(textureFlags, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
+    normalRoughnessTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, textureFlags, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
     if (!normalRoughnessTexture) {
         BE_WARNLOG("RenderCamera::CreateNormalRoughnessTextures: failed to create normal/roughness texture\n");
         DestroyRenderTextures();
@@ -889,7 +889,7 @@ bool RenderCamera::CreateNormalRoughnessTextures(uint32_t width, uint32_t height
     RHI::renderer->SetName(normalRoughnessTexture, "RenderCamera::normalRoughnessTexture");
 
     if (useMSAA) {
-        resolvedNormalRoughnessTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        resolvedNormalRoughnessTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (!resolvedNormalRoughnessTexture) {
             BE_WARNLOG("RenderCamera::CreateNormalRoughnessTextures: failed to create resolved normal/roughness texture\n");
             DestroyRenderTextures();
@@ -915,7 +915,7 @@ bool RenderCamera::CreateVelocityTextures(uint32_t width, uint32_t height, uint3
         textureFlags |= RHI::TextureFlag::UnorderedAccess;
     }
 
-    velocityTexture = RHI::renderer->CreateTexture2D(textureFlags, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
+    velocityTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, textureFlags, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
     if (!velocityTexture) {
         BE_WARNLOG("RenderCamera::CreateVelocityTextures: failed to create velocity texture\n");
         DestroyRenderTextures();
@@ -924,7 +924,7 @@ bool RenderCamera::CreateVelocityTextures(uint32_t width, uint32_t height, uint3
     RHI::renderer->SetName(velocityTexture, "RenderCamera::velocityTexture");
 
     if (useMSAA) {
-        resolvedVelocityTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        resolvedVelocityTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (!resolvedVelocityTexture) {
             BE_WARNLOG("RenderCamera::CreateVelocityTextures: failed to create resolved velocity texture\n");
             DestroyRenderTextures();
@@ -943,7 +943,7 @@ bool RenderCamera::CreateVelocityTextures(uint32_t width, uint32_t height, uint3
     SharedPtr<BE1::Image> reactiveMaskImage = MakeShared<BE1::Image>();
     reactiveMaskImage->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
     const RHI::TextureFlag reactiveMaskFlags = RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource;
-    taaReactiveMaskTexture = RHI::renderer->CreateTexture2D(reactiveMaskFlags, reactiveMaskImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
+    taaReactiveMaskTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, reactiveMaskFlags, reactiveMaskImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, sampleCount, RHI::GPUResourceState::ShaderResource);
     if (!taaReactiveMaskTexture) {
         BE_WARNLOG("RenderCamera::CreateVelocityTextures: failed to create TAA reactive mask texture\n");
         DestroyRenderTextures();
@@ -952,7 +952,7 @@ bool RenderCamera::CreateVelocityTextures(uint32_t width, uint32_t height, uint3
     RHI::renderer->SetName(taaReactiveMaskTexture, "RenderCamera::taaReactiveMaskTexture");
 
     if (useMSAA) {
-        resolvedTAAReactiveMaskTexture = RHI::renderer->CreateTexture2D(reactiveMaskFlags, reactiveMaskImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        resolvedTAAReactiveMaskTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, reactiveMaskFlags, reactiveMaskImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (!resolvedTAAReactiveMaskTexture) {
             BE_WARNLOG("RenderCamera::CreateVelocityTextures: failed to create resolved TAA reactive mask texture\n");
             DestroyRenderTextures();
@@ -1002,7 +1002,7 @@ bool RenderCamera::CreateSceneSnapshotResources(bool halfResolution) {
 
     SharedPtr<BE1::Image> colorImage = MakeShared<BE1::Image>();
     colorImage->Init2DFromMemory(snapshotWidth, snapshotHeight, 1, colorImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
-    snapshotColorTexture = RHI::renderer->CreateTexture2D(snapshotColorFlags, colorImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    snapshotColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, snapshotColorFlags, colorImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!snapshotColorTexture) {
         BE_WARNLOG("RenderCamera::CreateSceneSnapshotResources: failed to create scene color texture\n");
         return false;
@@ -1012,7 +1012,7 @@ bool RenderCamera::CreateSceneSnapshotResources(bool halfResolution) {
     if (halfResolution) {
         SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
         depthImage->Init2DFromMemory(snapshotWidth, snapshotHeight, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
-        snapshotDepthTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::SkipDefaultViews, depthImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        snapshotDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::SkipDefaultViews, depthImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (snapshotDepthTexture) {
             // Half-resolution depth 는 MRT color output 과 ocean shader input 양쪽에서 사용한다.
             const RHI::ViewID srvViewID = RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::SRV);
@@ -1032,7 +1032,7 @@ bool RenderCamera::CreateSceneSnapshotResources(bool halfResolution) {
         const RHI::ClearValue depthClearValue = RHI::ClearValue::DepthStencil(desc.projectionPolicy.GetDepthClearValue(), 0);
         SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
         depthImage->Init2DFromMemory(snapshotWidth, snapshotHeight, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
-        snapshotDepthTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthImage, RHI::TextureMipInitMode::FromImage, depthClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        snapshotDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthImage, RHI::TextureMipInitMode::FromImage, depthClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (snapshotDepthTexture && (!RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::SRV).IsValid() || !RHI::renderer->CreateView(snapshotDepthTexture, RHI::ViewType::DSV).IsValid())) {
             RHI::renderer->DestroyTexture(snapshotDepthTexture);
             snapshotDepthTexture = nullptr;
@@ -1147,7 +1147,7 @@ bool RenderCamera::CreateTransparentSSRResources(uint32_t width, uint32_t height
     depthImage->Init2DFromMemory(width, height, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
     const RHI::ClearValue depthClearValue = RHI::ClearValue::DepthStencil(desc.projectionPolicy.GetDepthClearValue(), 0);
     for (uint32_t index = 0; index < COUNT_OF(transparentSSRDepthTextures); ++index) {
-        transparentSSRDepthTextures[index] = RHI::renderer->CreateTexture2D(RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthImage, RHI::TextureMipInitMode::FromImage, depthClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        transparentSSRDepthTextures[index] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthImage, RHI::TextureMipInitMode::FromImage, depthClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (!transparentSSRDepthTextures[index] ||
             !RHI::renderer->CreateView(transparentSSRDepthTextures[index], RHI::ViewType::SRV).IsValid() ||
             !RHI::renderer->CreateView(transparentSSRDepthTextures[index], RHI::ViewType::DSV).IsValid()) {
@@ -1160,7 +1160,7 @@ bool RenderCamera::CreateTransparentSSRResources(uint32_t width, uint32_t height
     SharedPtr<BE1::Image> normalRoughnessImage = MakeShared<BE1::Image>();
     // RG stores the UNORM octahedral normal; B stores perceptual roughness. Velocity has its own texture.
     normalRoughnessImage->Init2DFromMemory(width, height, 1, BE1::Image::Format::R10G10B10A2, BE1::Image::GammaSpace::Linear, nullptr);
-    transparentSSRNormalRoughnessTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, normalRoughnessImage, RHI::TextureMipInitMode::FromImage, RHI::ClearValue::Color(0.5f, 0.5f, 1.0f, 0.0f), 1, RHI::GPUResourceState::ShaderResource);
+    transparentSSRNormalRoughnessTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, std::move(normalRoughnessImage), RHI::TextureMipInitMode::FromImage, RHI::ClearValue::Color(0.5f, 0.5f, 1.0f, 0.0f), 1, RHI::GPUResourceState::ShaderResource);
     if (!transparentSSRNormalRoughnessTexture) {
         BE_WARNLOG("RenderCamera::CreateTransparentSSRResources: failed to create normal/roughness texture\n");
         return false;
@@ -1169,7 +1169,7 @@ bool RenderCamera::CreateTransparentSSRResources(uint32_t width, uint32_t height
 
     SharedPtr<BE1::Image> velocityImage = MakeShared<BE1::Image>();
     velocityImage->Init2DFromMemory(width, height, 1, BE1::Image::Format::R16G16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
-    transparentSSRVelocityTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, velocityImage, RHI::TextureMipInitMode::FromImage, RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f), 1, RHI::GPUResourceState::ShaderResource);
+    transparentSSRVelocityTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::RenderTarget | RHI::TextureFlag::ShaderResource, std::move(velocityImage), RHI::TextureMipInitMode::FromImage, RHI::ClearValue::Color(0.0f, 0.0f, 0.0f, 0.0f), 1, RHI::GPUResourceState::ShaderResource);
     if (!transparentSSRVelocityTexture) {
         BE_WARNLOG("RenderCamera::CreateTransparentSSRResources: failed to create velocity texture\n");
         return false;
@@ -1183,7 +1183,7 @@ bool RenderCamera::CreateTransparentSSRResources(uint32_t width, uint32_t height
     SharedPtr<BE1::Image> historyImage = MakeShared<BE1::Image>();
     historyImage->Init2DFromMemory(traceWidth, traceHeight, 1, reflectionImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
     for (uint32_t index = 0; index < COUNT_OF(transparentSSRTemporalReflectionTextures); ++index) {
-        transparentSSRTemporalReflectionTextures[index] = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, historyImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+        transparentSSRTemporalReflectionTextures[index] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, historyImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!transparentSSRTemporalReflectionTextures[index]) {
             BE_WARNLOG("RenderCamera::CreateTransparentSSRResources: failed to create temporal history texture\n");
             return false;
@@ -1193,7 +1193,7 @@ bool RenderCamera::CreateTransparentSSRResources(uint32_t width, uint32_t height
 
     SharedPtr<BE1::Image> reflectionImage = MakeShared<BE1::Image>();
     reflectionImage->Init2DFromMemory(width, height, 1, reflectionImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
-    transparentSSRUpsampledReflectionTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, reflectionImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    transparentSSRUpsampledReflectionTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(reflectionImage), RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!transparentSSRUpsampledReflectionTexture) {
         BE_WARNLOG("RenderCamera::CreateTransparentSSRResources: failed to create reflection texture\n");
         return false;
@@ -1252,7 +1252,7 @@ bool RenderCamera::CreateSSRTraceTexture(uint32_t width, uint32_t height) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    ssrTraceTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    ssrTraceTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!ssrTraceTexture) {
         BE_WARNLOG("RenderCamera::CreateSSRTraceTexture: failed to create trace texture\n");
         return false;
@@ -1271,7 +1271,7 @@ bool RenderCamera::CreateSSRReceiverSurfaceTexture(uint32_t width, uint32_t heig
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    ssrReceiverSurfaceTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    ssrReceiverSurfaceTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!ssrReceiverSurfaceTexture) {
         BE_WARNLOG("RenderCamera::CreateSSRReceiverSurfaceTexture: failed to create receiver surface texture\n");
         return false;
@@ -1286,7 +1286,7 @@ bool RenderCamera::CreateSSRResolveReflectionTexture(uint32_t width, uint32_t he
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    ssrResolveReflectionTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    ssrResolveReflectionTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!ssrResolveReflectionTexture) {
         BE_WARNLOG("RenderCamera::CreateSSRResolveReflectionTexture: failed to create trace-resolution reflection texture\n");
         return false;
@@ -1302,7 +1302,7 @@ bool RenderCamera::CreateSSRTemporalReflectionTextures(uint32_t width, uint32_t 
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
     for (uint32_t index = 0; index < COUNT_OF(ssrTemporalReflectionTextures); ++index) {
-        ssrTemporalReflectionTextures[index] = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+        ssrTemporalReflectionTextures[index] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!ssrTemporalReflectionTextures[index]) {
             BE_WARNLOG("RenderCamera::CreateSSRTemporalReflectionTextures: failed to create temporal reflection texture\n");
             return false;
@@ -1328,7 +1328,7 @@ bool RenderCamera::CreateSSRUpsampledReflectionTexture(uint32_t width, uint32_t 
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    ssrUpsampledReflectionTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    ssrUpsampledReflectionTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!ssrUpsampledReflectionTexture) {
         BE_WARNLOG("RenderCamera::CreateSSRUpsampledReflectionTexture: failed to create full-resolution reflection texture\n");
         return false;
@@ -1389,7 +1389,7 @@ bool RenderCamera::CreateResolvedDepthTexture(uint32_t width, uint32_t height) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    resolvedDepthTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    resolvedDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!resolvedDepthTexture) {
         BE_WARNLOG("RenderCamera::CreateResolvedDepthTexture: failed to create resolved depth texture\n");
         return false;
@@ -1420,7 +1420,7 @@ bool RenderCamera::CreatePostProcessColorTexture(uint32_t width, uint32_t height
 
     SharedPtr<BE1::Image> postProcessColorImage = MakeShared<BE1::Image>();
     postProcessColorImage->Init2DFromMemory(width, height, 1, postProcessColorImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
-    postProcessColorTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, postProcessColorImage, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+    postProcessColorTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(postProcessColorImage), RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!postProcessColorTexture) {
         BE_WARNLOG("RenderCamera::CreatePostProcessColorTexture: failed to create post process color texture\n");
         return false;
@@ -1464,7 +1464,7 @@ bool RenderCamera::CreateColorHistoryTextures(uint32_t width, uint32_t height, R
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
     for (uint32_t textureIndex = 0; textureIndex < 2; ++textureIndex) {
-        colorHistoryTextures[textureIndex] = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        colorHistoryTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!colorHistoryTextures[textureIndex]) {
             BE_WARNLOG("RenderCamera::CreateColorHistoryTextures: failed to create color history texture %i\n", textureIndex);
             DestroyColorHistoryTextures();
@@ -1514,7 +1514,7 @@ bool RenderCamera::CreateDepthHistoryResolveTargets(uint32_t width, uint32_t hei
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
     for (uint32_t textureIndex = 0; textureIndex < 2; ++textureIndex) {
-        depthHistoryTextures[textureIndex] = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+        depthHistoryTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!depthHistoryTextures[textureIndex]) {
             BE_WARNLOG("RenderCamera::CreateDepthHistoryResolveTargets: failed to create depth history resolve target %i\n", textureIndex);
             DestroyDepthHistoryTextures();
@@ -1548,7 +1548,7 @@ bool RenderCamera::CreateDepthHistoryRenderTargets(uint32_t width, uint32_t heig
     image->Init2DFromMemory(width, height, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
     for (uint32_t textureIndex = 0; textureIndex < 2; ++textureIndex) {
-        depthHistoryTextures[textureIndex] = RHI::renderer->CreateTexture2D(RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        depthHistoryTextures[textureIndex] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, image, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (!depthHistoryTextures[textureIndex] ||
             !RHI::renderer->CreateView(depthHistoryTextures[textureIndex], RHI::ViewType::SRV).IsValid() ||
             !RHI::renderer->CreateView(depthHistoryTextures[textureIndex], RHI::ViewType::DSV).IsValid()) {

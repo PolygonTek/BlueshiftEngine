@@ -39,7 +39,7 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         // L8 uses R8_UNORM storage and an (R, R, R, 1) SRV swizzle for the existing fullscreen blit.
         image->Init2DFromMemory(renderWidth, renderHeight, 1, BE1::Image::Format::L8, BE1::Image::GammaSpace::Linear, nullptr);
-        textureSet.outputTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        textureSet.outputTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!textureSet.outputTexture) {
             BE_WARNLOG("ScreenSpaceAOResources::Ensure: failed to create AO texture\n");
             Destroy();
@@ -72,7 +72,7 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
     if (!textureSet.rawTexture) {
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->Init2DFromMemory(aoWidth, aoHeight, 1, BE1::Image::Format::R16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
-        textureSet.rawTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        textureSet.rawTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (textureSet.rawTexture) {
             RHI::renderer->SetName(textureSet.rawTexture, "ScreenSpaceAOResources::rawTexture");
         }
@@ -82,7 +82,7 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
         // AO 를 평가한 표면의 device depth 를 정확히 보존한다.
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->Init2DFromMemory(aoWidth, aoHeight, 1, BE1::Image::Format::R32_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
-        textureSet.halfDepthTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        textureSet.halfDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (textureSet.halfDepthTexture) {
             RHI::renderer->SetName(textureSet.halfDepthTexture, "ScreenSpaceAOResources::halfDepthTexture");
         }
@@ -91,7 +91,7 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
     if (needTemp && textureSet.rawTexture && !textureSet.tempTexture) {
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->Init2DFromMemory(aoWidth, aoHeight, 1, BE1::Image::Format::R16_FLOAT, BE1::Image::GammaSpace::Linear, nullptr);
-        textureSet.tempTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
+        textureSet.tempTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::FromImage, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (textureSet.tempTexture) {
             RHI::renderer->SetName(textureSet.tempTexture, "ScreenSpaceAOResources::tempTexture");
         }
@@ -119,7 +119,7 @@ void ScreenSpaceAOResources::Ensure(uint32_t renderWidth, uint32_t renderHeight,
         const BE1::Image::Format imageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R8);
         SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
         image->Init2DFromMemory(aoWidth, aoHeight, 1, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
-        textureSet.gtaoPackedEdgesTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+        textureSet.gtaoPackedEdgesTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!textureSet.gtaoPackedEdgesTexture) {
             BE_WARNLOG("ScreenSpaceAOResources::Ensure: failed to create GTAO packed edges texture\n");
             DestroyGTAOResources();
@@ -163,7 +163,7 @@ bool ScreenSpaceAOResources::CreateGTAOPrefilterDepthTexture(uint32_t width, uin
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DFromMemory(width, height, mipCount, imageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
-    textureSet.gtaoPrefilterDepthTexture = RHI::renderer->CreateTexture2D(RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
+    textureSet.gtaoPrefilterDepthTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, image, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
     if (!textureSet.gtaoPrefilterDepthTexture) {
         BE_WARNLOG("ScreenSpaceAOResources::CreateGTAOPrefilterDepthTexture: failed to create texture\n");
         DestroyGTAOResources();

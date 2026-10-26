@@ -118,7 +118,7 @@ void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
         renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
     }
 
-    this->skyboxMaterial = skyboxMaterial;
+    this->skyboxMaterial = std::move(skyboxMaterial);
 }
 
 static bool IsMaterialTextureReady(const Material *material, ShaderTemplate::StandardProperty property) {
@@ -262,7 +262,7 @@ static RHI::PipelineState *GetOutputBlitPSO(const RHI::Texture *outputTexture, R
     graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
 
-    const SharedPtr<ShaderPipeline> imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    ShaderPipeline *imagePipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
     return ShaderPipeline::GetReadyPSO(imagePipeline);
 }
 
@@ -281,7 +281,7 @@ static RHI::PipelineState *GetSceneSnapshotDownsamplePSO(RHI::Format outputForma
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
 
     // Half-resolution color/depth 가 같은 원본 texel 을 나타내도록 전용 point downsample pipeline 을 사용한다.
-    const SharedPtr<ShaderPipeline> downsamplePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.sceneSnapshotDownsampleShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    ShaderPipeline *downsamplePipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.sceneSnapshotDownsampleShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
     return ShaderPipeline::GetReadyPSO(downsamplePipeline);
 }
 
@@ -1217,7 +1217,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
 
     const ShaderPermutationKey permutationKey = shaderTemplate->RegisterPermutation({}, featureSet);
     const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
-    const SharedPtr<ShaderPipeline> shaderPipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplate, permutationKey, graphicsPipelineDesc, allowAsyncPSOBuild);
+    ShaderPipeline *shaderPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplate, permutationKey, graphicsPipelineDesc, allowAsyncPSOBuild);
     frameCamera->oceanSurfacePSO = ShaderPipeline::GetReadyPSO(shaderPipeline);
 
     if (frameCamera->traceTransparentSSR) {
@@ -1241,7 +1241,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
         prepassPipelineDesc.renderDest.sampleCount = 1;
 
         const ShaderPermutationKey prepassPermutationKey = shaderTemplate->RegisterPermutation({}, prepassFeatureSet);
-        const SharedPtr<ShaderPipeline> prepassPipeline = shaderPipelineCache.GetGraphicsPipeline(
+        ShaderPipeline *prepassPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(
             shaderTemplate, prepassPermutationKey, prepassPipelineDesc, allowAsyncPSOBuild);
         frameCamera->oceanSurfaceSSRPrepassPSO = ShaderPipeline::GetReadyPSO(prepassPipeline);
     }
@@ -2522,7 +2522,7 @@ void RenderWorld::PrepareDebugDrawPipelines(FrameCamera *frameCamera) {
             graphicsPipelineDesc.depthStencilStateType = frameCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualNoWrite : RHI::DepthStencilStateType::LEqualNoWrite;
         }
 
-        const SharedPtr<ShaderPipeline> shaderPipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.debugDrawShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
+        ShaderPipeline *shaderPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.debugDrawShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
         frameCamera->debugDrawPSOs[pipelineIndex] = ShaderPipeline::GetReadyPSO(shaderPipeline);
     }
 }

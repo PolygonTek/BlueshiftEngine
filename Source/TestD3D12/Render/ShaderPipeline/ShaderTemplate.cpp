@@ -484,7 +484,7 @@ static bool ParseShaderModel(const BE1::Str &token, RHI::ShaderModel &outShaderM
         RHI::ShaderModel shaderModel;
     };
 
-    static constexpr ModelName ModelNames[] = {
+    static constexpr ModelName modelNames[] = {
         { "SM_5_0", RHI::ShaderModel::SM_5_0 },
         { "SM_6_0", RHI::ShaderModel::SM_6_0 },
         { "SM_6_1", RHI::ShaderModel::SM_6_1 },
@@ -497,7 +497,7 @@ static bool ParseShaderModel(const BE1::Str &token, RHI::ShaderModel &outShaderM
         { "SM_6_8", RHI::ShaderModel::SM_6_8 }
     };
 
-    for (const ModelName &modelName : ModelNames) {
+    for (const ModelName &modelName : modelNames) {
         if (!token.Icmp(modelName.modelName)) {
             outShaderModel = modelName.shaderModel;
             return true;
