@@ -118,7 +118,7 @@ bool Material::SetShaderTemplate(const SharedPtr<ShaderTemplate> &shaderTemplate
     if (oldShaderTemplate) {
         RemapShaderTemplateProperties(oldShaderTemplate->GetProperties());
     } else {
-        internalData.shaderTemplate->InitDefaultPropertyValues(internalData.propertyValues);
+        internalData.shaderTemplate->BuildDefaultPropertyValues(internalData.propertyValues);
         UpdateTextureProperties();
         InvalidatePermutationKeys();
     }
@@ -633,7 +633,7 @@ bool Material::ParseShaderTemplate(BE1::Lexer &lexer, const char *baseDir, const
     }
 
     outInternalData.shaderTemplate = std::move(shaderTemplate);
-    outInternalData.shaderTemplate->InitDefaultPropertyValues(outInternalData.propertyValues);
+    outInternalData.shaderTemplate->BuildDefaultPropertyValues(outInternalData.propertyValues);
 
     return true;
 }
@@ -703,7 +703,7 @@ void Material::RemapShaderTemplateProperties(const BE1::Array<ShaderPropertyDesc
     oldPropertyValues.Swap(internalData.propertyValues);
 
     // 기본 프로퍼티 값들로 세팅한다.
-    internalData.shaderTemplate->InitDefaultPropertyValues(internalData.propertyValues);
+    internalData.shaderTemplate->BuildDefaultPropertyValues(internalData.propertyValues);
 
     // 이름/타입이 예전과 같은 프로퍼티가 있다면 값을 옮겨온다.
     const BE1::Array<ShaderPropertyDesc> &newProperties = internalData.shaderTemplate->GetProperties();

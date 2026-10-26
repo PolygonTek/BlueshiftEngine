@@ -174,26 +174,17 @@ SharedPtr<ShaderTemplate> ShaderTemplateManager::CreateComputeShaderTemplate(con
     }
 
     BE1::Str shaderTemplateText;
-    if (baseDefines && baseDefines[0]) {
-        shaderTemplateText.sPrintf(
-            "{\n"
-            "    baseDefines {\n"
-            "        %s\n"
-            "    }\n"
-            "    stages {\n"
-            "        compute %s \"%s\" \"%s\"\n"
-            "    }\n"
-            "}\n",
-            baseDefines, RHI::Renderer::ShaderModelName(shaderModel), filename, entryPoint);
-    } else {
-        shaderTemplateText.sPrintf(
-            "{\n"
-            "    stages {\n"
-            "        compute %s \"%s\" \"%s\"\n"
-            "    }\n"
-            "}\n",
-            RHI::Renderer::ShaderModelName(shaderModel), filename, entryPoint);
-    }
+    shaderTemplateText.sPrintf(
+        "{\n"
+        "    baseDefines {\n"
+        "        %s\n"
+        "    }\n"
+        "    stages {\n"
+        "        compute %s \"%s\" \"%s\"\n"
+        "    }\n"
+        "}\n",
+        baseDefines ? baseDefines : "",
+        RHI::Renderer::ShaderModelName(shaderModel), filename, entryPoint);
 
     SharedPtr<ShaderTemplate> shaderTemplate = AllocShaderTemplate(hashName);
     if (!shaderTemplate->Create(shaderTemplateText.c_str(), baseDir)) {
@@ -343,7 +334,7 @@ void ShaderTemplateManager::RemoveGlobalDefine(const char *define) {
     }
 }
 
-uint32_t ShaderTemplateManager::CopyGlobalDefines(BE1::StrArray &outDefines) const {
+uint32_t ShaderTemplateManager::GetGlobalDefines(BE1::StrArray &outDefines) const {
     BE1::ScopedLock lock(globalDefinesMutex);
 
     outDefines = globalDefines;

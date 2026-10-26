@@ -45,7 +45,7 @@ public:
     bool                            FindGlobalDefine(const char *define) const;
     void                            AddGlobalDefine(const char *define);
     void                            RemoveGlobalDefine(const char *define);
-    uint32_t                        CopyGlobalDefines(BE1::StrArray &outDefines) const;
+    uint32_t                        GetGlobalDefines(BE1::StrArray &outDefines) const;
 
     SharedPtr<ShaderTemplate>       fullscreenImageShaderTemplate;
     SharedPtr<ShaderTemplate>       fullscreenImageLinearShaderTemplate;
@@ -69,8 +69,8 @@ private:
     BE1::StrArray                   globalDefines;
     uint32_t                        globalDefineModCount = 0;
     uint32_t                        lastInvalidatedGlobalDefineModCount = 0;
-    int                             shadowMapQuality = 2;
-    int                             shadowDebugMode = 0;
+    int                             shadowMapQuality;
+    int                             shadowDebugMode;
     mutable BE1::Mutex              globalDefinesMutex;
 };
 

@@ -22,7 +22,7 @@
 
 ShaderTemplate::ReloadedDelegate ShaderTemplate::reloaded;
 
-static constexpr const char *StandardPropertyNames[] = {
+static constexpr const char *standardPropertyNames[] = {
     "alphaCutoff",
     "baseColorMap",
     "baseColorFactor",
@@ -54,7 +54,7 @@ static constexpr const char *StandardPropertyNames[] = {
     "tcScale",
     "tcTranslation"
 };
-static_assert(COUNT_OF(StandardPropertyNames) == static_cast<int>(ShaderTemplate::StandardProperty::Count));
+static_assert(COUNT_OF(standardPropertyNames) == static_cast<int>(ShaderTemplate::StandardProperty::Count));
 
 ShaderTemplate::InternalData::InternalData() {
     ResetStandardPropertyIndices();
@@ -161,7 +161,7 @@ bool ShaderTemplate::InternalData::AddProperty(const ShaderPropertyDesc &propert
     propertyHash.Add(hash, propertyIndex);
 
     for (int i = 0; i < NumStandardProperties; ++i) {
-        if (!BE1::Str::Cmp(propertyDesc.GetName(), StandardPropertyNames[i])) {
+        if (!BE1::Str::Cmp(propertyDesc.GetName(), standardPropertyNames[i])) {
             standardPropertyIndices[i] = propertyIndex;
             break;
         }
@@ -180,6 +180,7 @@ bool ShaderTemplate::CopyPropertiesFrom(const ShaderTemplate &shaderTemplate) {
 }
 
 bool ShaderTemplate::InternalData::CopyPropertiesFrom(const InternalData &rhs, const char **duplicatedPropertyName) {
+    // 중복된 프로퍼티 이름이 있다면 duplicatedPropertyName 에 기록하고 false 를 리턴한다.
     for (const ShaderPropertyDesc &propertyDesc : rhs.properties) {
         if (FindProperty(propertyDesc.GetName())) {
             assert(0);
@@ -197,7 +198,7 @@ bool ShaderTemplate::InternalData::CopyPropertiesFrom(const InternalData &rhs, c
     return true;
 }
 
-void ShaderTemplate::InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const {
+void ShaderTemplate::BuildDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const {
     outPropertyValues.Clear();
 
     for (const ShaderPropertyDesc &propertyDesc : internalData.properties) {
@@ -304,20 +305,19 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
 
     // 프로퍼티 중에 shader define 프로퍼티로 define 목록을 만든다.
     const int numProperties = internalData.properties.Count();
-    for (int i = 0; i < numProperties; i++) {
-        const ShaderPropertyDesc &propertyDesc = internalData.properties[i];
+    for (int propertyIndex = 0; propertyIndex < numProperties; propertyIndex++) {
+        const ShaderPropertyDesc &propertyDesc = internalData.properties[propertyIndex];
         if (!propertyDesc.IsShaderDefine()) {
             continue;
         }
 
         const char *propertyDefineName = propertyDesc.GetName();
-        if (HasDefine(internalData.baseDefines, propertyDefineName) || HasFeatureDefine(featureSet, propertyDefineName) || HasDefine(propertyDefines, propertyDefineName)) {
-            // permutation 의 define name 과 프로퍼티의 define name 은 중복되면 안된다.
-            BE_ERRLOG("ShaderTemplate::RegisterPermutation: permutation define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
+        if (HasDefine(propertyDefines, propertyDefineName) || HasDefine(internalData.baseDefines, propertyDefineName) || HasFeatureDefine(featureSet, propertyDefineName)) {
+            BE_ERRLOG("ShaderTemplate::RegisterPermutation: property define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
             continue;
         }
 
-        const PropertyValue *propertyValue = i < propertyValues.Count() ? &propertyValues[i] : nullptr;
+        const PropertyValue *propertyValue = propertyIndex < propertyValues.Count() ? &propertyValues[propertyIndex] : nullptr;
         const BE1::Variant &value = propertyValue ? *propertyValue : propertyDesc.GetDefaultValue();
 
         switch (propertyDesc.GetType()) {
@@ -335,6 +335,7 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
 
     ShaderPermutationKey::NormalizeDefines(propertyDefines);
 
+    // 프로퍼티 define 과 feature set mask 를 합쳐서 permutation key 를 만든다.
     ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(propertyDefines, featureSet);
     if (FindPermutation(permutationKey)) {
         return permutationKey;
@@ -1161,7 +1162,8 @@ bool ShaderTemplate::PrepareShaderCompileData(ShaderPermutationKey permutationKe
     }
 
     // global defines + base defines + property defines + feature defines 순으로 합쳐서 컴파일 define 을 만든다.
-    shaderTemplateManager.CopyGlobalDefines(outCompileData.compileDefines);
+    shaderTemplateManager.GetGlobalDefines(outCompileData.compileDefines);
+
     if (!AddDefines(outCompileData.compileDefines, internalData.baseDefines)) {
         BE_ERRLOG("ShaderTemplate::PrepareShaderCompileData: failed to append base defines in shader template '%s'\n", GetHashName());
         return false;

@@ -23,29 +23,40 @@ void ShaderPermutationKey::NormalizeDefines(BE1::StrArray &defines) {
         }
     }
 
+    const int numDefines = defines.Count();
+    if (numDefines < 2) {
+        return;
+    }
+
     // Keep permutation keys deterministic.
     defines.Sort();
 
-    // Remove duplicated defines.
-    for (int i = 1; i < defines.Count();) {
-        if (defines[i - 1] == defines[i]) {
-            defines.RemoveIndex(i);
+    // Remove duplicated defines by compacting in place.
+    int writeIndex = 1;
+    for (int readIndex = 1; readIndex < numDefines; readIndex++) {
+        if (defines[writeIndex - 1] == defines[readIndex]) {
             continue;
         }
-        i++;
+
+        if (writeIndex != readIndex) {
+            defines[writeIndex] = std::move(defines[readIndex]);
+        }
+        writeIndex++;
     }
+    defines.SetCount(writeIndex, false);
 }
 
-ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &defines, const ShaderFeatureSet &featureSet) {
-    if (defines.IsEmpty() && featureSet.IsEmpty()) {
+ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet) {
+    if (propertyDefines.IsEmpty() && featureSet.IsEmpty()) {
         return ShaderPermutationKey();
     }
 
-    uint64_t hash = 1469598103934665603ull;
+    uint64_t hash = 0;
     if (!featureSet.IsEmpty()) {
         hash = hash_combine(hash, uint64_t(featureSet.flags));
     }
-    for (const BE1::Str &define : defines) {
+
+    for (const BE1::Str &define : propertyDefines) {
         hash = hash_combine(hash, define.ToHash64());
     }
 

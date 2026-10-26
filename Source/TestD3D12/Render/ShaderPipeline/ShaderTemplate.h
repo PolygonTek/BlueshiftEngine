@@ -84,7 +84,7 @@ struct ShaderPropertyDesc : public BE1::PropertyDesc {
 
     - stages, baseDefines, features, properties 정보를 보관하는 셰이더 템플릿이다.
     - shader define property 값들과 featureSet 조합으로 필요한 shader permutation 을 미리 등록해야 한다.
-    - 셰이더 컴파일에 필요한 정보는 shaderTemplate 과 등록된 shaderPermutationKey 로 얻을 수 있다.
+    - 셰이더 컴파일에 필요한 정보는 등록된 shaderPermutationKey 로 얻을 수 있다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -149,18 +149,18 @@ public:
     const char *                    GetName() const { return name.c_str(); }
     const char *                    GetHashName() const { return hashName.c_str(); }
 
-    const BE1::Array<ShaderPropertyDesc> &GetProperties() const { return internalData.properties; }
     bool                            IsSkySurface() const { return BE1::HasFlag(internalData.flags, Flag::SkySurface); }
 
+    const BE1::Array<ShaderPropertyDesc> &GetProperties() const { return internalData.properties; }
     const ShaderPropertyDesc *      FindProperty(const char *name) const { return internalData.FindProperty(name); }
     int                             FindPropertyIndex(const char *name) const { return internalData.FindPropertyIndex(name); }
-    int                             GetStandardPropertyIndex(StandardProperty standardProperty) const { return internalData.GetStandardPropertyIndex(standardProperty); }
     bool                            AddProperty(const ShaderPropertyDesc &propertyDesc);
     bool                            AddProperty(const char *name, const char *label, BE1::Variant::Type::Enum type, const BE1::Variant &defaultValue, const char *description = "", int flags = BE1::PropertyDesc::Flag::Editor, ShaderPropertyDesc::ShaderFlag shaderFlags = ShaderPropertyDesc::ShaderFlag::None);
     bool                            CopyPropertiesFrom(const ShaderTemplate &shaderTemplate);
+    int                             GetStandardPropertyIndex(StandardProperty standardProperty) const { return internalData.GetStandardPropertyIndex(standardProperty); }
 
                                     // 프로퍼티 초기값 배열을 만들어 준다.
-    void                            InitDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const;
+    void                            BuildDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const;
 
                                     // 지원하는 feature 인지 검사
     bool                            SupportsFeature(ShaderFeature feature) const;
@@ -194,11 +194,13 @@ private:
 
         const ShaderPropertyDesc *  FindProperty(const char *name) const;
         int                         FindPropertyIndex(const char *name) const;
-        int                         GetStandardPropertyIndex(StandardProperty standardProperty) const;
         bool                        AddProperty(const ShaderPropertyDesc &propertyDesc);
         bool                        CopyPropertiesFrom(const InternalData &rhs, const char **duplicatedPropertyName = nullptr);
-        void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
+
+        int                         GetStandardPropertyIndex(StandardProperty standardProperty) const;
         void                        ResetStandardPropertyIndices();
+
+        void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
 
         ShaderStageSource           stageSources[to_int(RHI::ShaderStage::Count)] = {};
         BE1::Str                    inheritedShaderTemplateName;
