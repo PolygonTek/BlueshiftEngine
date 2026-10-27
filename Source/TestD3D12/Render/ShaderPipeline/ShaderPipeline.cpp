@@ -233,7 +233,7 @@ bool ShaderPipeline::Rebuild(const SharedPtr<ShaderTemplate> &shaderTemplate) {
         return false;
     }
 
-    if (GetState() != State::Ready) {
+    if (!IsReady()) {
         BE_WARNLOG("ShaderPipeline::Rebuild: shader pipeline for shader template '%s' permutation 0x%llx is not ready\n", shaderTemplate->GetHashName(), shaderPermutationKey.hash);
         return false;
     }

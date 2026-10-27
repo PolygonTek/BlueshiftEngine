@@ -451,7 +451,7 @@ bool Texture::Reload() {
         return false;
     }
 
-    if (state != State::Ready) {
+    if (!IsReady()) {
         BE_WARNLOG("Texture::Reload: texture '%s' is not ready\n", GetHashName());
         return false;
     }
