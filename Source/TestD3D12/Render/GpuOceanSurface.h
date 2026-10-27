@@ -70,7 +70,7 @@ public:
         bool                        wireframe = false;
         float                       roughness = 0.08f;
         float                       fresnelF0 = 0.02f;
-        BE1::Color3                 waterColor = BE1::Color3(0.061f, 0.18f, 0.25f); ///< sRGB water body color
+        BE1::Color3                 waterColor = BE1::Color3(0.058f, 0.11f, 0.147f); ///< sRGB water body color
         bool                        refractionEnabled = true;
         float                       refractionDistance = 2.0f;      ///< 화면 공간 굴절 방향을 추적할 최대 거리 (m)
         float                       absorptionDistance = 30.0f;     ///< 투과율이 waterColor 에 도달하는 물 속 거리 (m)

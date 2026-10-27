@@ -21,9 +21,9 @@ GpuOcean::SimulationSettings::SimulationSettings() {
         cascadeSettings[0] = { 60.0f, 0.7f, 4.0f, 0.8f };
         cascadeSettings[1] = { 30.0f, 0.75f, 4.0f, 0.5f };
     } else if constexpr (CascadeCount == 3) {
-        cascadeSettings[0] = { 60.0f, 0.7f, 4.0f, 0.8f };
-        cascadeSettings[1] = { 45.0f, 0.75f, 2.0f, 0.6f };
-        cascadeSettings[2] = { 30.0f, 0.8f, 0.0f, 0.3f };
+        cascadeSettings[0] = { 60.0f, 0.64f, 2.5f, 0.9f };
+        cascadeSettings[1] = { 45.0f, 0.65f, 2.6f, 1.1f };
+        cascadeSettings[2] = { 30.0f, 0.72f, 3.1f, 1.3f };
     } else {
         cascadeSettings[0] = { 60.0f, 0.7f, 4.0f, 0.8f };
         cascadeSettings[1] = { 50.0f, 0.75f, 3.0f, 0.6f };
