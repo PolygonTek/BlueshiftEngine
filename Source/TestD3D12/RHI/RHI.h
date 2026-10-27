@@ -789,6 +789,7 @@ namespace RHI {
         uint32_t                        sampleQuality = 0;
 
         uint64_t                        GetHash() const {
+            assert(sampleCount >= 1 && sampleCount <= 8 && (sampleCount & (sampleCount - 1)) == 0);
             union Hasher {
                 struct {
                     uint64_t renderTargetFormat_0 : 6;
@@ -800,7 +801,8 @@ namespace RHI {
                     uint64_t renderTargetFormat_6 : 6;
                     uint64_t renderTargetFormat_7 : 6;
                     uint64_t depthStencilFormat : 6;
-                    uint64_t sampleCount : 6;
+                    uint64_t sampleCountLog2 : 2; // 1/2/4/8 samples -> 0/1/2/3
+                    uint64_t reserved : 8;
                 } bits;
                 uint64_t value;
             } hasher = {};
@@ -814,7 +816,7 @@ namespace RHI {
             hasher.bits.renderTargetFormat_6 = (uint64_t)renderTargetFormats[6];
             hasher.bits.renderTargetFormat_7 = (uint64_t)renderTargetFormats[7];
             hasher.bits.depthStencilFormat = (uint64_t)depthStencilFormat;
-            hasher.bits.sampleCount = (uint64_t)sampleCount;
+            hasher.bits.sampleCountLog2 = FloorLog2(sampleCount);
             return hash_combine(hasher.value, sampleQuality);
         }
     };

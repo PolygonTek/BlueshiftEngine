@@ -35,10 +35,10 @@ struct ShaderPermutationKey {
     bool                            operator==(const ShaderPermutationKey &rhs) const { return hash == rhs.hash; }
     bool                            operator!=(const ShaderPermutationKey &rhs) const { return hash != rhs.hash; }
 
+    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet = {});
+
                                     // 중복 define 제거 + deterministic 하게 순서 정렬
     static void                     NormalizeDefines(BE1::StrArray &defines);
-
-    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet = {});
 
     uint64_t                        hash = 0;
 };

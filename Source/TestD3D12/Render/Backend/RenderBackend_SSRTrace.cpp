@@ -219,6 +219,12 @@ bool RenderBackend::DispatchSSRTemporal(bool transparent) {
 
     params.transparentReceiver = transparent ? 1u : 0u;
 
+    // 기록이 없으면 이전 transparent depth 는 아직 초기화되지 않았을 수 있다.
+    // 셰이더의 historyValid 분기와 무관하게 D3D12 바인딩에는 prepass 에서 Clear 한 현재 depth 를 사용한다.
+    if (transparent && params.historyValid == 0u) {
+        prevDepthTexture = currDepthTexture;
+    }
+
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::SSRTemporal);
 
     RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(outputReflectionTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess));

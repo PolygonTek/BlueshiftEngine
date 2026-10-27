@@ -176,13 +176,18 @@ const ShaderPipelineCache::CachedGraphicsPipeline *ShaderPipelineCache::GetOrCre
         entry = &cachedGraphicsPipeline;
     }
 
+    const bool useAsyncBuild = async && LoadingSystem::IsAsyncAllowed();
     ShaderPipeline *graphicsPipeline = entry->shaderPipeline.get();
     if (graphicsPipeline->GetState() == ShaderPipeline::State::Empty) {
-        if (async && LoadingSystem::IsAsyncAllowed()) {
+        if (useAsyncBuild) {
             graphicsPipeline->BuildAsync(shaderTemplate);
         } else {
             graphicsPipeline->Build(shaderTemplate);
         }
+    }
+
+    if (!useAsyncBuild && !graphicsPipeline->WaitReady()) {
+        return nullptr;
     }
 
     return entry;
@@ -205,8 +210,20 @@ void ShaderPipelineCache::RemoveCachedGraphicsPipelineIndex(int index) {
     CachedGraphicsPipeline &cachedPipeline = cachedGraphicsPipelines[index];
 
     const int hashKey = cachedGraphicsPipelineHash.GenerateHash(cachedPipeline.graphicsPipelineCacheHash);
-    cachedGraphicsPipelineHash.RemoveIndex(hashKey, index);
-    cachedGraphicsPipelines.RemoveIndex(index);
+    cachedGraphicsPipelineHash.Remove(hashKey, index);
+
+    const int lastIndex = cachedGraphicsPipelines.Count() - 1;
+    if (index != lastIndex) {
+        // 마지막 항목으로 빈자리를 채우므로 해당 항목의 해시 인덱스만 삭제 위치로 옮긴다.
+        const int lastHashKey = cachedGraphicsPipelineHash.GenerateHash(cachedGraphicsPipelines[lastIndex].graphicsPipelineCacheHash);
+        cachedGraphicsPipelineHash.Remove(lastHashKey, lastIndex);
+        cachedGraphicsPipelineHash.Add(lastHashKey, index);
+    } else {
+        // 마지막 원소는 RemoveIndexFast 에서 이동 대입 없이 count 만 줄이므로 cachedPipeline 의 내부 참조를 직접 해제한다.
+        cachedPipeline.shaderPipeline.reset();
+        cachedPipeline.shaderTemplateRef.reset();
+    }
+    cachedGraphicsPipelines.RemoveIndexFast(index);
 }
 
 const ShaderPipelineCache::CachedComputePipeline *ShaderPipelineCache::GetOrCreateComputePipelineEntry(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async) {
@@ -226,13 +243,18 @@ const ShaderPipelineCache::CachedComputePipeline *ShaderPipelineCache::GetOrCrea
         entry = &cachedComputePipeline;
     }
 
+    const bool useAsyncBuild = async && LoadingSystem::IsAsyncAllowed();
     ShaderPipeline *computePipeline = entry->shaderPipeline.get();
     if (computePipeline->GetState() == ShaderPipeline::State::Empty) {
-        if (async && LoadingSystem::IsAsyncAllowed()) {
+        if (useAsyncBuild) {
             computePipeline->BuildAsync(shaderTemplate);
         } else {
             computePipeline->Build(shaderTemplate);
         }
+    }
+
+    if (!useAsyncBuild && !computePipeline->WaitReady()) {
+        return nullptr;
     }
 
     return entry;
@@ -249,6 +271,12 @@ const ShaderPipelineCache::CachedComputePipeline *ShaderPipelineCache::FindCache
 }
 
 void ShaderPipelineCache::RemoveCachedComputePipelineIndex(int index) {
+    // 마지막 원소는 RemoveIndexFast 에서 이동 대입 없이 count 만 줄이므로 cachedPipeline 의 내부 참조를 직접 해제한다.
+    if (index == cachedComputePipelines.Count() - 1) {
+        CachedComputePipeline &cachedPipeline = cachedComputePipelines[index];
+        cachedPipeline.shaderPipeline.reset();
+        cachedPipeline.shaderTemplateRef.reset();
+    }
     cachedComputePipelines.RemoveIndexFast(index);
 }
 

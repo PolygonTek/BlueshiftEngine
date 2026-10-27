@@ -35,12 +35,14 @@ class ShaderTemplate;
 class ShaderPipelineCache {
 public:
                                     // shaderTemplate, permutationKey, graphicsPipelineDesc 로 캐시된 그래픽스 ShaderPipeline 을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
+                                    // 동기 요청이면 WaitReady() 로 사용 가능해질 때까지 기다리고, 실패하면 nullptr 를 리턴한다. 리빌딩 중이면 기존 PSO 를 사용한다.
     SharedPtr<ShaderPipeline>       GetGraphicsPipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async = true);
 
                                     // GetGraphicsPipeline 과 같은 방식으로 준비하고, 캐시가 소유하는 ShaderPipeline 포인터를 리턴한다. 반환된 포인터는 해당 캐시 항목이 제거될 때까지 유효하다.
     ShaderPipeline *                GetGraphicsPipelinePtr(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async = true);
 
                                     // shaderTemplate, permutationKey 로 캐시된 컴퓨트 ShaderPipeline 을 리턴한다. 캐시된게 없다면 빌드를 요청한다.
+                                    // 동기 요청이면 WaitReady() 로 사용 가능해질 때까지 기다리고, 실패하면 nullptr 를 리턴한다. 리빌딩 중이면 기존 PSO 를 사용한다.
     SharedPtr<ShaderPipeline>       GetComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async = true);
 
                                     // GetComputePipeline 과 같은 방식으로 준비하고, 캐시가 소유하는 ShaderPipeline 포인터를 리턴한다. 반환된 포인터는 해당 캐시 항목이 제거될 때까지 유효하다.

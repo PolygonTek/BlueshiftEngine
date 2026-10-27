@@ -43,7 +43,7 @@ uint64_t GraphicsPipelineDesc::GeneratePipelineDescHash() const {
         float       constantDepthBias;
         float       depthBiasClamp;
         float       slopeScaledDepthBias;
-    } hashData = {};
+    } hashData;
 
     // CityHash64 hashes the entire object representation, including padding.
     memset(&hashData, 0, sizeof(hashData));

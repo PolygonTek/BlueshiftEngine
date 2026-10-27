@@ -15,6 +15,23 @@
 #include "Precompiled.h"
 #include "ShaderPermutationKey.h"
 
+ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet) {
+    if (propertyDefines.IsEmpty() && featureSet.IsEmpty()) {
+        return ShaderPermutationKey();
+    }
+
+    uint64_t hash = 0;
+    if (!featureSet.IsEmpty()) {
+        hash = hash_combine(hash, uint64_t(featureSet.flags));
+    }
+
+    for (const BE1::Str &define : propertyDefines) {
+        hash = hash_combine(hash, define.ToHash64());
+    }
+
+    return ShaderPermutationKey(hash);
+}
+
 void ShaderPermutationKey::NormalizeDefines(BE1::StrArray &defines) {
     // Remove empty defines.
     for (int i = defines.Count() - 1; i >= 0; --i) {
@@ -44,21 +61,4 @@ void ShaderPermutationKey::NormalizeDefines(BE1::StrArray &defines) {
         writeIndex++;
     }
     defines.SetCount(writeIndex, false);
-}
-
-ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet) {
-    if (propertyDefines.IsEmpty() && featureSet.IsEmpty()) {
-        return ShaderPermutationKey();
-    }
-
-    uint64_t hash = 0;
-    if (!featureSet.IsEmpty()) {
-        hash = hash_combine(hash, uint64_t(featureSet.flags));
-    }
-
-    for (const BE1::Str &define : propertyDefines) {
-        hash = hash_combine(hash, define.ToHash64());
-    }
-
-    return ShaderPermutationKey(hash);
 }
