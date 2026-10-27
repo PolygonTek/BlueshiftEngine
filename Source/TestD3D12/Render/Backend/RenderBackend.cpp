@@ -387,6 +387,8 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
         constants->csm = {};
     }
     constants->shadowAtlas = shadowAtlasData;
+    const BE1::Color3 &skyboxRadianceScale = currentFrameCamera->skyboxRadianceScale;
+    constants->skyboxRadianceScale = float4(skyboxRadianceScale.r, skyboxRadianceScale.g, skyboxRadianceScale.b, 1.0f);
 }
 
 void RenderBackend::UpdateFramePSOs() {
@@ -865,7 +867,7 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
             outputOverrideTexture = currentFrameCamera->ao.textureSet.outputTexture;
         } else if (frameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
             outputOverrideTexture = useMSAA ? currentFrameCamera->resolvedColorTexture : currentFrameCamera->colorTexture;
-        } else if (frameSettings.ssrDebugMode != SSRDebugModeOff) {
+        } else if (currentFrameCamera->useSSR && frameSettings.ssrDebugMode != SSRDebugModeOff) {
             const bool debugTransparentSSR = frameSettings.ssrTransparent && frameSettings.ssrDebugTransparent;
             const bool debugSSRReady = debugTransparentSSR ? transparentSSRReady : ssrReady;
             if (debugSSRReady) {

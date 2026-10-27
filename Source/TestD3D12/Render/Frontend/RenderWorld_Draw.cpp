@@ -121,6 +121,21 @@ void RenderWorld::SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial) {
     this->skyboxMaterial = std::move(skyboxMaterial);
 }
 
+void RenderWorld::SetSkyboxLighting(const BE1::Color3 &linearColor, float intensity) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    /// 화면 표시용 sky 색과 밝기. 환경광 베이크 원본에는 적용하지 않는다.
+    skyboxRadianceScale = linearColor * intensity;
+}
+
+void RenderWorld::SetSkyboxRotation(const BE1::Mat3 &axis) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    skyboxAxis = axis;
+}
+
 static bool IsMaterialTextureReady(const Material *material, ShaderTemplate::StandardProperty property) {
     const SharedPtr<Texture> *texture = material->GetPropertyTexture(property);
     return texture && *texture && (*texture)->IsReadyForRendering();
@@ -330,12 +345,14 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool useAO = frameSettings.aoMode != RenderAOMode::Off;
     const bool debugAO = useAO && frameSettings.gtaoDebug != 0;
     const bool temporalHistoryEnabled = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
-    const bool useSSR = temporalHistoryEnabled && frameSettings.ssr;
+    const bool useEnvironmentLight = hasEnvironmentLight && envLight.GetDesc().enabled;
+    // 환경광을 끄면 SSR 리소스와 히스토리도 기존 비활성화 경로에서 정리한다.
+    const bool useSSR = useEnvironmentLight && temporalHistoryEnabled && frameSettings.ssr;
     const bool needsSSRTemporalAccumulation = frameSettings.ssrTemporal && frameSettings.ssrTemporalHistoryWeight > 0.0f && (frameSettings.ssrDebugMode == SSRDebugModeOff || frameSettings.ssrDebugMode == SSRDebugModeUpsampledReflection);
-    const bool debugSSR = frameSettings.ssrDebugMode != SSRDebugModeOff;
+    const bool debugSSR = useSSR && frameSettings.ssrDebugMode != SSRDebugModeOff;
     const bool debugTransparentSSR = debugSSR && frameSettings.ssrTransparent && frameSettings.ssrDebugTransparent;
     const bool useTransparentSSR = useSSR && frameSettings.ssrTransparent && (!debugSSR || debugTransparentSSR);
-    const bool useTAA = temporalHistoryEnabled && frameSettings.taa && !skipPostProcess && !debugAO && frameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility && frameSettings.ssrDebugMode == SSRDebugModeOff;
+    const bool useTAA = temporalHistoryEnabled && frameSettings.taa && !skipPostProcess && !debugAO && frameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility && !debugSSR;
     const bool needNormalRoughnessTexture = useAO || useSSR;
     const bool needVelocityTexture = useTAA || useSSR;
     const bool needColorHistory = useTAA;
@@ -418,8 +435,9 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     frameCamera->origin = cameraDesc.origin;
     frameCamera->axis = cameraDesc.axis;
+    frameCamera->skyboxRadianceScale = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::SkipSkyboxLighting) ? BE1::Color3::white : skyboxRadianceScale;
 
-    if (hasEnvironmentLight) {
+    if (useEnvironmentLight) {
         const EnvironmentLight::Desc &envLightDesc = envLight.GetDesc();
         frameCamera->envLightAxis = envLightDesc.axis;
         frameCamera->envLightColor = envLightDesc.linearColor;
@@ -1207,6 +1225,9 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
     if (frameCamera->taaResolve) {
         featureSet.EnableFeature(ShaderFeature::OutputVelocity);
     }
+    if (hasEnvironmentLight && envLight.GetDesc().enabled) {
+        featureSet.EnableFeature(ShaderFeature::IndirectLighting);
+    }
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = nullptr;
     graphicsPipelineDesc.rasterizerStateType = surfaceSettings.wireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidTwoSided;
@@ -1899,7 +1920,8 @@ void RenderWorld::AddTextMeshes(RenderFrame *frame, const RenderCamera *renderCa
 void RenderWorld::AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::AddSkyBoxMeshes");
 
-    if (renderCamera->GetDesc().clearMethod != RenderCamera::ClearMethod::Skybox) {
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    if (cameraDesc.clearMethod != RenderCamera::ClearMethod::Skybox) {
         return;
     }
 
@@ -1917,7 +1939,8 @@ void RenderWorld::AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *render
         return;
     }
 
-    frameObject->worldMatrix.SetTRS(renderCamera->GetDesc().origin, BE1::Mat3::identity, BE1::Vec3(10, 10, 10));
+    const BE1::Mat3 &axis = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::SkipSkyboxLighting) ? BE1::Mat3::identity : skyboxAxis;
+    frameObject->worldMatrix.SetTRS(cameraDesc.origin, axis, BE1::Vec3(1, 1, 1));
     frameObject->prevWorldMatrix = frameObject->worldMatrix;
     frameObject->flags |= FrameObject::Flag::CameraVisible;
     Material *material = frame->RetainMaterial(skyboxMaterial);

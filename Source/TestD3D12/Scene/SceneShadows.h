@@ -40,4 +40,8 @@ private:
 
     bool                        pointLightEnabled = false;
     bool                        spotLightEnabled = false;
+
+#ifdef ENABLE_IMGUI
+    float                       envLightRotation = 0.0f;
+#endif
 };

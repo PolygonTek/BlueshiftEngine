@@ -31,6 +31,8 @@ void SceneDebugDraw::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWo
 
     renderWorld->ClearDebugPrimitives();
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+    renderWorld->SetSkyboxLighting(BE1::Color3::white, 1.0f);
+    renderWorld->SetSkyboxRotation(BE1::Mat3::identity);
 }
 
 void SceneDebugDraw::Shutdown() {

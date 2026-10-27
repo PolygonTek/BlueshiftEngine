@@ -49,8 +49,8 @@ private:
     GameLight                   directionalLight;
     BE1::Array<GameLight>       gameLights;
 
-    float                       directionalLightAzimuth = 145.0f;
-    float                       directionalLightElevation = 55.0f;
+    float                       directionalLightAzimuth = 190.0f;
+    float                       directionalLightElevation = 48.0f;
     bool                        directionalLightEnabled = true;
 
     uint32_t                    objectCountX = 1;
@@ -66,6 +66,7 @@ private:
     bool                        pointLightShadows = false;
 
 #ifdef ENABLE_IMGUI
+    float                       envLightRotation = 0.0f;
     int                         imguiObjectCountX = 1;
     int                         imguiObjectCountY = 1;
     int                         imguiObjectCountZ = 1;

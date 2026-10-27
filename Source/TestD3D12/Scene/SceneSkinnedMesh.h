@@ -103,6 +103,7 @@ private:
     bool                            envLightAdded = false;
 
 #ifdef ENABLE_IMGUI
+    float                           envLightRotation = 0.0f;
     uint64_t                        imguiTrianglesPerObject = 0;
     int                             imguiObjectCountX = 1;
     int                             imguiObjectCountY = 1;

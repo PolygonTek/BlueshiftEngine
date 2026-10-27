@@ -350,6 +350,8 @@ struct FrameCamera {
 
     RHI::Buffer *                   skinningJointBuffer = nullptr;
 
+    BE1::Color3                     skyboxRadianceScale = BE1::Color3::white;
+
     BE1::Mat3                       envLightAxis = BE1::Mat3::identity;
     BE1::Color3                     envLightColor = BE1::Color3::white;
     float                           envLightIntensity = 0.0f;

@@ -66,4 +66,8 @@ private:
     bool                        showPontoons = false;
     bool                        oceanAdded = false;
     bool                        envLightAdded = false;
+
+#ifdef ENABLE_IMGUI
+    float                       envLightRotation = 0.0f;
+#endif
 };

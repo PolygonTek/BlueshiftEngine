@@ -144,7 +144,8 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
 
         radiancePrepared = CreateRadianceCubemap(radianceCubemapSize, true, radianceCubeMap);
         if (radiancePrepared) {
-            radiancePrepared = RenderCapture::RenderEnvCubeToTexture(renderContext, request.renderWorld, 0, true, colorClear, BE1::Color4::black, request.captureOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), radianceCubeMap, true);
+            // 환경광 색, 밝기와 회전은 셰이딩에서 적용하므로, sky 표시용 보정은 베이크에서 제외한다.
+            radiancePrepared = RenderCapture::RenderEnvCubeToTexture(renderContext, request.renderWorld, 0, true, false, colorClear, BE1::Color4::black, request.captureOrigin, BE1::CmToUnit(5.0f), BE1::MeterToUnit(100.0f), radianceCubeMap, true);
         }
         generateRadianceMipChain = radiancePrepared;
     }

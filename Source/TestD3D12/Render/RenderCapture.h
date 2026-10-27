@@ -41,11 +41,11 @@ public:
                             const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fov, bool useHDR, int width, int height, const char *filename);
 
                         // 씬을 지정된 cubemap face 에 렌더링한다.
-    static bool         RenderEnvCubeFaceToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+    static bool         RenderEnvCubeFaceToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool applySkyboxLighting, bool colorClear, const BE1::Color4 &clearColor,
                             const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, RHI::CubemapFace face, bool waitForCompletion = false);
 
                         // 씬을 지정된 cubemap 의 각 face 에 렌더링한다.
-    static bool         RenderEnvCubeToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+    static bool         RenderEnvCubeToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool applySkyboxLighting, bool colorClear, const BE1::Color4 &clearColor,
                             const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, bool waitForCompletion = false);
 
                         // 씬을 임시 cubemap 렌더 타겟 텍스쳐에 렌더링하여 캡처하고, CPU 이미지로 읽어온다.

@@ -223,7 +223,7 @@ bool RenderCapture::CaptureSceneToFile(RenderContext *renderContext, RenderWorld
     return true;
 }
 
-static bool RenderEnvCubeFacesToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+static bool RenderEnvCubeFacesToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool applySkyboxLighting, bool colorClear, const BE1::Color4 &clearColor,
     const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, const RHI::CubemapFace *faces, uint32_t faceCount, bool waitForCompletion, const char *captureName) {
     assert(BE1::Engine::IsInMainThread());
 
@@ -283,6 +283,9 @@ static bool RenderEnvCubeFacesToTexture(RenderContext *renderContext, RenderWorl
 
         RenderCamera::Desc cameraDesc;
         SetupCameraDesc(cameraDesc, layerMask, staticOnly, colorClear, clearColor, origin, axis, 90.0f, 90.0f, zNear, zFar, faceSize, faceSize, targetRHITexture, faceViewIDs[faceIndex]);
+        if (!applySkyboxLighting) {
+            cameraDesc.flags |= RenderCamera::Flag::SkipSkyboxLighting;
+        }
 
         // Cubemap 렌더링과 샘플링 모두 EngineAxis (오른손 좌표계) 를 사용한다.
         // 다만 카메라 출력과 cubemap face 의 세로축 방향이 반대이므로, cubemap face 에 저장할 때 최종 blit 의 Y를 반전시킨다.
@@ -297,12 +300,12 @@ static bool RenderEnvCubeFacesToTexture(RenderContext *renderContext, RenderWorl
     return true;
 }
 
-bool RenderCapture::RenderEnvCubeFaceToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+bool RenderCapture::RenderEnvCubeFaceToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool applySkyboxLighting, bool colorClear, const BE1::Color4 &clearColor,
     const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, RHI::CubemapFace face, bool waitForCompletion) {
-    return RenderEnvCubeFacesToTexture(renderContext, renderWorld, layerMask, staticOnly, colorClear, clearColor, origin, zNear, zFar, targetCubeTexture, &face, 1, waitForCompletion, "RenderCapture::RenderEnvCubeFaceToTexture");
+    return RenderEnvCubeFacesToTexture(renderContext, renderWorld, layerMask, staticOnly, applySkyboxLighting, colorClear, clearColor, origin, zNear, zFar, targetCubeTexture, &face, 1, waitForCompletion, "RenderCapture::RenderEnvCubeFaceToTexture");
 }
 
-bool RenderCapture::RenderEnvCubeToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
+bool RenderCapture::RenderEnvCubeToTexture(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool applySkyboxLighting, bool colorClear, const BE1::Color4 &clearColor,
     const BE1::Vec3 &origin, float zNear, float zFar, const SharedPtr<Texture> &targetCubeTexture, bool waitForCompletion) {
     static constexpr RHI::CubemapFace Faces[6] = {
         RHI::CubemapFace::PositiveX,
@@ -313,7 +316,7 @@ bool RenderCapture::RenderEnvCubeToTexture(RenderContext *renderContext, RenderW
         RHI::CubemapFace::NegativeZ
     };
 
-    return RenderEnvCubeFacesToTexture(renderContext, renderWorld, layerMask, staticOnly, colorClear, clearColor, origin, zNear, zFar, targetCubeTexture, Faces, 6, waitForCompletion, "RenderCapture::RenderEnvCubeToTexture");
+    return RenderEnvCubeFacesToTexture(renderContext, renderWorld, layerMask, staticOnly, applySkyboxLighting, colorClear, clearColor, origin, zNear, zFar, targetCubeTexture, Faces, 6, waitForCompletion, "RenderCapture::RenderEnvCubeToTexture");
 }
 
 bool RenderCapture::CaptureEnvCubeToImage(RenderContext *renderContext, RenderWorld *renderWorld, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
@@ -338,7 +341,7 @@ bool RenderCapture::CaptureEnvCubeToImage(RenderContext *renderContext, RenderWo
         return false;
     }
 
-    if (!RenderEnvCubeToTexture(renderContext, renderWorld, layerMask, staticOnly, colorClear, clearColor, origin, zNear, zFar, targetCubeTexture, true)) {
+    if (!RenderEnvCubeToTexture(renderContext, renderWorld, layerMask, staticOnly, true, colorClear, clearColor, origin, zNear, zFar, targetCubeTexture, true)) {
         return false;
     }
 
@@ -397,7 +400,7 @@ bool RenderCapture::CaptureDiffuseIrradianceEnvCubeToImage(RenderContext *render
         return false;
     }
 
-    if (!RenderEnvCubeToTexture(renderContext, renderWorld, layerMask, staticOnly, false, BE1::Color4::black, origin, zNear, zFar, radianceCubeTexture, true)) {
+    if (!RenderEnvCubeToTexture(renderContext, renderWorld, layerMask, staticOnly, true, false, BE1::Color4::black, origin, zNear, zFar, radianceCubeTexture, true)) {
         return false;
     }
 
@@ -477,7 +480,7 @@ bool RenderCapture::CaptureSpecularPrefilteredEnvCubeToImage(RenderContext *rend
         return false;
     }
 
-    if (!RenderEnvCubeToTexture(renderContext, renderWorld, layerMask, staticOnly, false, BE1::Color4::black, origin, zNear, zFar, radianceCubeTexture, true)) {
+    if (!RenderEnvCubeToTexture(renderContext, renderWorld, layerMask, staticOnly, true, false, BE1::Color4::black, origin, zNear, zFar, radianceCubeTexture, true)) {
         return false;
     }
 

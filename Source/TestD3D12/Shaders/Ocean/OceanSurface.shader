@@ -5,6 +5,10 @@ shader "Ocean/OceanSurface" {
     }
 
     features {
+        indirectLighting {
+            INDIRECT_LIGHTING=1
+        }
+
         outputNormal {
             OUTPUT_NORMAL=1
         }

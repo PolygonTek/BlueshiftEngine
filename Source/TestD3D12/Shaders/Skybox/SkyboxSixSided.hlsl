@@ -41,36 +41,18 @@ PSInput VSMain(VSInput input) {
 
     ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID, cameraConstants.surfaceTableIndex);
 
-    float3 v = input.position.xyz;
-
-    static const float rotation = 0.0;
-    float radian = rotation * 0.01745329251;
-    float s;
-    float c;
-    sincos(radian, s, c);
-
-    float3 dir;
-    dir.x = c * v.x - s * v.y;
-    dir.y = s * v.x + c * v.y;
-    dir.z = v.z;
-
-    result.texCoord.x = dir.y;
-    result.texCoord.y = dir.z;
-    result.texCoord.z = dir.x;
+    result.texCoord = input.position.yzx;
 
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, input.position), 1.0);
     result.position = mul(cameraConstants.viewProjMatrix, positionWS);
     result.position.z = cameraConstants.depthClearValue * result.position.w;
-    result.color = input.color;
+    result.color = input.color * cameraConstants.skyboxRadianceScale;
 
     return result;
 }
 
 [RootSignature(SKYBOX_SIX_SIDED_ROOT_SIGNATURE)]
 float4 PSMain(PSInput input) : SV_TARGET {
-    static const float3 tint = float3(1.0, 1.0, 1.0);
-    static const float exposure = 1.0;
-
     float3 dir = normalize(input.texCoord);
     float3 absDir = abs(dir);
 
@@ -105,6 +87,5 @@ float4 PSMain(PSInput input) : SV_TARGET {
         }
     }
 
-    color *= tint * exposure;
     return input.color * float4(color, 1.0);
 }

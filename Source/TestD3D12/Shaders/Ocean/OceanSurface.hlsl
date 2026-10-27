@@ -6,7 +6,7 @@
 #include "../SurfacePassOutput.hlsli"
 #include "../PBR/BRDFLibrary.hlsli"
 #include "../PBR/SpecularAA.hlsli"
-#if USE_SSR && !defined(SURFACE_PREPASS)
+#if defined(INDIRECT_LIGHTING) && USE_SSR && !defined(SURFACE_PREPASS)
     #include "../SSR/SSRComposite.hlsli"
 #endif
 
@@ -95,6 +95,7 @@ float3 SampleOceanClipmapPosition(float2 positionXY, uint level) {
     return basePosition + SampleOceanDisplacement(positionXY, cascadeLodWeights, float(level));
 }
 
+#ifdef INDIRECT_LIGHTING
 // 환경광 specular cubemap 을 거칠기에 맞는 mip 에서 샘플링하여 수면 반사광을 계산한다.
 float3 SampleOceanReflection(float3 reflectionDir, float roughness) {
     if (cameraConstants.envLightSpecularCubeMapIndex != 0u && cameraConstants.envLightSpecularMipCount > 0u) {
@@ -118,6 +119,7 @@ float3 SampleOceanDiffuseLighting(float3 normal) {
 
     return 0.0f;
 }
+#endif
 
 float2 ProjectOceanWorldPositionToUV(float3 worldPos) {
     const float4 clipPos = mul(cameraConstants.viewProjMatrix, float4(worldPos, 1.0f));
@@ -318,9 +320,11 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     return result;
 #else
 
+    float3 reflection = 0.0f;
+#ifdef INDIRECT_LIGHTING
     // 공용 SSR radiance 를 환경 반사 fallback 과 합성한 뒤 Fresnel 로 선택적인 scene refraction 과 섞는다.
     const float3 reflectionDir = reflect(-V, normal);
-    float3 reflection = SampleOceanReflection(reflectionDir, specularRoughness);
+    reflection = SampleOceanReflection(reflectionDir, specularRoughness);
 #if USE_SSR
     [branch]
     if ((cameraConstants.flags & ShaderCameraFlagUseTransparentSSR) != 0u) {
@@ -328,6 +332,7 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
             (uint2)input.position.xy, input.position.z, reflection,
             cameraConstants.transparentSSRUpsampledReflectionTextureIndex, cameraConstants.transparentSSRDepthTextureIndex);
     }
+#endif
 #endif
     // 직접광의 shadow 는 한 번만 평가하고 물 내부색, 파도 마루 산란, 정반사와 거품에 공유한다.
     const bool directionalLightEnabled = (cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0u;
@@ -343,7 +348,10 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     const float3 diffuseLightIntensityRGB = lightIntensityRGB * Fd_Lambert();
 
     // 물 내부색은 평균 수면으로 들어오는 빛으로 조명하며 굴절의 흡수 종착색에도 같은 값을 사용한다.
-    const float3 waterBodyLighting = SampleOceanDiffuseLighting(float3(0.0f, 0.0f, 1.0f)) + diffuseLightIntensityRGB * saturate(L.z);
+    float3 waterBodyLighting = diffuseLightIntensityRGB * saturate(L.z);
+#ifdef INDIRECT_LIGHTING
+    waterBodyLighting += SampleOceanDiffuseLighting(float3(0.0f, 0.0f, 1.0f));
+#endif
     const float waterBodyFactor = lerp(0.35f, 1.0f, NdotV);
     const float3 waterBodyColor = oceanSurfaceParams.waterColor * waterBodyFactor * waterBodyLighting;
     float3 transmission = waterBodyColor;
@@ -398,7 +406,10 @@ SurfacePassPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     // 거품은 수면 normal 을 따르는 diffuse 재질로 조명한다. 거품이 없으면 환경광 샘플링을 생략한다.
     [branch]
     if (foam > 0.0f) {
-        const float3 foamLighting = SampleOceanDiffuseLighting(normal) + diffuseLightIntensityRGB * NdotL;
+        float3 foamLighting = diffuseLightIntensityRGB * NdotL;
+#ifdef INDIRECT_LIGHTING
+        foamLighting += SampleOceanDiffuseLighting(normal);
+#endif
         const float3 foamColor = oceanSurfaceParams.foamColor * foamLighting;
         color = lerp(color, foamColor, foam);
     }

@@ -35,7 +35,6 @@ public:
 
 private:
     void                        UpdateDirectionalLightDirection();
-    void                        UpdateEnvironmentLightRotation();
 
     RenderWorld *               renderWorld = nullptr;
     BE1::PhysicsWorld *         physicsWorld = nullptr;
@@ -48,8 +47,11 @@ private:
 
     float                       directionalLightAzimuth = 145.0f;
     float                       directionalLightElevation = 55.0f;
-    float                       envLightRotation = 0.0f;
     bool                        indirectLightingEnabled = true;
     bool                        directionalLightEnabled = false;
     bool                        envLightAdded = false;
+
+#ifdef ENABLE_IMGUI
+    float                       envLightRotation = 0.0f;
+#endif
 };

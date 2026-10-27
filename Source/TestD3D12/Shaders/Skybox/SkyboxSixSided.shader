@@ -7,9 +7,6 @@ shader "Skybox/SixSided" {
     }
 
     properties {
-        tint("Tint") : color3 = "1 1 1"
-        exposure("Exposure") : float range 0 8 0.1 = "1.0"
-        rotation("Rotation") : float range 0 360 1 = "0"
         skyBackMap("Back (+X)") : texture "2D" = "_missingTexture" [noStreaming noMipmaps]
         skyFrontMap("Front (-X)") : texture "2D" = "_missingTexture" [noStreaming noMipmaps]
         skyRightMap("Right (+Y)") : texture "2D" = "_missingTexture" [noStreaming noMipmaps]

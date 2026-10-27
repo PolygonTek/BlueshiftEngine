@@ -30,13 +30,15 @@ static constexpr const char *meshPath = "Data/Test/House/House_scene_01.bmesh ";
 void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
 
+    EnvironmentLight::Desc envLightDesc;
+    envLightDesc.intensity = 0.1f;
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+    renderWorld->SetSkyboxLighting(envLightDesc.linearColor, envLightDesc.intensity);
+    renderWorld->SetSkyboxRotation(envLightDesc.axis);
 
     app.SetCameraPitchYaw(15.0f, -120.0f);
     app.SetCameraDistance(5.5f);
 
-    EnvironmentLight::Desc envLightDesc;
-    envLightDesc.intensity = 0.1f;
     if (renderWorld->AddEnvironmentLight(envLightDesc)) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
     }
@@ -229,5 +231,47 @@ void SceneShadows::BuildImGui() {
     ImGui::PopID();
 
     ImGui::EndDisabled();
+
+    if (const EnvironmentLight *envLight = renderWorld ? renderWorld->GetEnvironmentLight() : nullptr) {
+        const EnvironmentLight::Desc &currentDesc = envLight->GetDesc();
+        bool enabled = currentDesc.enabled;
+        float intensity = currentDesc.intensity;
+        BE1::Color3 linearColor = currentDesc.linearColor;
+        const float envLightItemWidth = ImGui::GetFontSize() * 17.0f;
+
+        ImGui::Separator();
+        ImGui::TextUnformatted("Environment Light");
+        ImGui::PushID("EnvironmentLight");
+
+        const bool enabledChanged = ImGui::Checkbox("Enabled", &enabled);
+        ImGui::BeginDisabled(!enabled);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        bool lightingChanged = ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        lightingChanged |= ImGui::ColorEdit3("Color", linearColor.Ptr(), ImGuiColorEditFlags_Float);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        const bool rotationChanged = ImGui::SliderFloat("Rotation", &envLightRotation, 0.0f, 360.0f, "%.1f deg", ImGuiSliderFlags_AlwaysClamp);
+
+        ImGui::EndDisabled();
+        ImGui::PopID();
+
+        if (enabledChanged || lightingChanged || rotationChanged) {
+            EnvironmentLight::Desc desc = currentDesc;
+            desc.enabled = enabled;
+            desc.intensity = intensity;
+            desc.linearColor = linearColor;
+            if (rotationChanged) {
+                desc.axis = BE1::Mat3::FromRotationZ(DEG2RAD(envLightRotation));
+                renderWorld->SetSkyboxRotation(desc.axis);
+            }
+            renderWorld->UpdateEnvironmentLight(desc);
+            if (lightingChanged) {
+                renderWorld->SetSkyboxLighting(desc.linearColor, desc.intensity);
+            }
+        }
+    }
 }
 #endif

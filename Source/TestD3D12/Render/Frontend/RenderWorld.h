@@ -143,6 +143,8 @@ public:
     virtual bool                GetQueryResult(uint32_t queryId, BE1::PhysBuoyancySurfaceQueryResult &result) const override;
 
     void                        SetSkyboxMaterial(SharedPtr<Material> skyboxMaterial);
+    void                        SetSkyboxLighting(const BE1::Color3 &linearColor, float intensity);
+    void                        SetSkyboxRotation(const BE1::Mat3 &axis);
 
     void                        RenderScene(RenderCamera *renderCamera);
     void                        RenderGUI(GuiMesh &guiMesh);
@@ -269,6 +271,7 @@ private:
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
     EnvironmentLight            envLight;
     bool                        hasEnvironmentLight = false;
+
     OceanSurface                oceanSurface;
     bool                        hasOceanSurface = false;
 
@@ -285,7 +288,10 @@ private:
     BE1::Array<const FrameSkinnedMesh *> skinningJointCacheUpdateObjects = BE1::Array<const FrameSkinnedMesh *>(256); // Reused across cameras/frames.
 
     GuiMesh                     textMesh;           ///< 3D text mesh
+
     SharedPtr<Material>         skyboxMaterial;
+    BE1::Mat3                   skyboxAxis = BE1::Mat3::identity;
+    BE1::Color3                 skyboxRadianceScale = BE1::Color3::white;
 
     RenderPassBuilder           renderPassBuilder;
 

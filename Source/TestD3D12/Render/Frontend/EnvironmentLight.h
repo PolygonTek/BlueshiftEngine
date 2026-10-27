@@ -27,6 +27,7 @@ public:
         BE1::Mat3                   axis = BE1::Mat3::identity;         ///< Environment orientation in world space
         BE1::Color3                 linearColor = BE1::Color3::white;   ///< Linear RGB environment tint in [0, 1]
         float                       intensity = 1.0f;
+        bool                        enabled = true;                   ///< Disabling preserves lighting settings and baked cubemaps.
         SharedPtr<Texture>          radianceCubeMap;                    ///< Optional source radiance cubemap. When null, the RenderWorld sky is captured.
     };
 

@@ -948,6 +948,7 @@ struct CameraConstants {
 
     ShaderCSMData csm;
     ShaderShadowAtlasData shadowAtlas;
+    float4 skyboxRadianceScale;
 
 #ifndef __cplusplus
     inline bool IsOrthogonal() {
@@ -975,7 +976,8 @@ struct CameraConstants {
 #ifdef __cplusplus
 static_assert(offsetof(CameraConstants, projectionScaleBiasZ) == 560 && offsetof(CameraConstants, envLightAxis) == 624, "Camera depth coefficients and matrices must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, csm) == 704 && offsetof(CameraConstants, shadowAtlas) == 960, "Shadow atlas data must follow the existing camera constants");
-static_assert(sizeof(CameraConstants) == 992, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, skyboxRadianceScale) == 992, "Skybox radiance scale must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 1008, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {

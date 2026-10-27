@@ -52,4 +52,8 @@ private:
     float                       directionalLightAzimuth = 30.0f;
     float                       directionalLightElevation = 45.0f;
     bool                        directionalLightEnabled = false;
+
+#ifdef ENABLE_IMGUI
+    float                       envLightRotation = 0.0f;
+#endif
 };

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Render/Frontend/RenderWorld.h"
+#include "Render/Frontend/EnvironmentLight.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/Mesh/MeshInstance.h"
@@ -30,7 +31,10 @@ void SceneMatrix::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld
     this->renderWorld = renderWorld;
     this->physicsWorld = physicsWorld;
 
+    EnvironmentLight::Desc envLightDesc;
     renderWorld->SetSkyboxMaterial(materialManager.GetMaterial("Source/TestD3D12/Materials/skybox.material"));
+    renderWorld->SetSkyboxLighting(envLightDesc.linearColor, envLightDesc.intensity);
+    renderWorld->SetSkyboxRotation(envLightDesc.axis);
 
     directionalLight.type = RenderLight::Type::Directional;
     directionalLight.flags = RenderLight::Flag::CastShadows;
@@ -42,6 +46,10 @@ void SceneMatrix::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld
 
     InitGameObjects(50, 50, 4);
     InitGameLights(32, 32, 1);
+
+    if (renderWorld->AddEnvironmentLight(envLightDesc)) {
+        renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
+    }
 }
 
 void SceneMatrix::Shutdown() {
@@ -53,6 +61,7 @@ void SceneMatrix::Shutdown() {
     ClearGameObjects();
     ClearGameLights();
     directionalLightEnabled = directionalLight.SetEnabled(renderWorld, false);
+    renderWorld->ClearScene(RenderWorld::ClearFlag::EnvironmentLight);
 
     physicsWorld = nullptr;
     renderWorld = nullptr;
@@ -377,5 +386,47 @@ void SceneMatrix::BuildImGui() {
     }
 
     ImGui::EndDisabled();
+
+    if (const EnvironmentLight *envLight = renderWorld ? renderWorld->GetEnvironmentLight() : nullptr) {
+        const EnvironmentLight::Desc &currentDesc = envLight->GetDesc();
+        bool enabled = currentDesc.enabled;
+        float intensity = currentDesc.intensity;
+        BE1::Color3 linearColor = currentDesc.linearColor;
+        const float envLightItemWidth = ImGui::GetFontSize() * 17.0f;
+
+        ImGui::Separator();
+        ImGui::TextUnformatted("Environment Light");
+        ImGui::PushID("EnvironmentLight");
+
+        const bool enabledChanged = ImGui::Checkbox("Enabled", &enabled);
+        ImGui::BeginDisabled(!enabled);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        bool lightingChanged = ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        lightingChanged |= ImGui::ColorEdit3("Color", linearColor.Ptr(), ImGuiColorEditFlags_Float);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        const bool rotationChanged = ImGui::SliderFloat("Rotation", &envLightRotation, 0.0f, 360.0f, "%.1f deg", ImGuiSliderFlags_AlwaysClamp);
+
+        ImGui::EndDisabled();
+        ImGui::PopID();
+
+        if (enabledChanged || lightingChanged || rotationChanged) {
+            EnvironmentLight::Desc desc = currentDesc;
+            desc.enabled = enabled;
+            desc.intensity = intensity;
+            desc.linearColor = linearColor;
+            if (rotationChanged) {
+                desc.axis = BE1::Mat3::FromRotationZ(DEG2RAD(envLightRotation));
+                renderWorld->SetSkyboxRotation(desc.axis);
+            }
+            renderWorld->UpdateEnvironmentLight(desc);
+            if (lightingChanged) {
+                renderWorld->SetSkyboxLighting(desc.linearColor, desc.intensity);
+            }
+        }
+    }
 }
 #endif

@@ -32,7 +32,10 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physic
     this->renderWorld = renderWorld;
     this->physicsWorld = physicsWorld;
 
+    EnvironmentLight::Desc envLightDesc;
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+    renderWorld->SetSkyboxLighting(envLightDesc.linearColor, envLightDesc.intensity);
+    renderWorld->SetSkyboxRotation(envLightDesc.axis);
 
     app.SetCameraPitchYaw(25, 30);
     app.SetCameraDistance(5.0f);
@@ -64,7 +67,6 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physic
     materialBallDesc.materials[0] = testMaterial;
     materialBall.renderObjectHandle = renderWorld->AddRenderObject(materialBallDesc);
 
-    EnvironmentLight::Desc envLightDesc;
     envLightAdded = renderWorld->AddEnvironmentLight(envLightDesc);
     if (envLightAdded) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
@@ -100,17 +102,6 @@ void SceneMaterialBall::Update(uint64_t elapsedUsec) {
 void SceneMaterialBall::UpdateDirectionalLightDirection() {
     // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
     directionalLight.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
-}
-
-void SceneMaterialBall::UpdateEnvironmentLightRotation() {
-    const EnvironmentLight *envLight = renderWorld->GetEnvironmentLight();
-    if (!envLight) {
-        return;
-    }
-
-    EnvironmentLight::Desc envLightDesc = envLight->GetDesc();
-    envLightDesc.axis = BE1::Mat3::FromRotationZ(DEG2RAD(envLightRotation));
-    renderWorld->UpdateEnvironmentLight(envLightDesc);
 }
 
 #ifdef ENABLE_IMGUI
@@ -295,14 +286,46 @@ void SceneMaterialBall::BuildImGui() {
 
     ImGui::EndDisabled();
 
-    ImGui::Separator();
-    ImGui::Text("Environment Light");
+    if (const EnvironmentLight *envLight = renderWorld ? renderWorld->GetEnvironmentLight() : nullptr) {
+        const EnvironmentLight::Desc &currentDesc = envLight->GetDesc();
+        bool enabled = currentDesc.enabled;
+        float intensity = currentDesc.intensity;
+        BE1::Color3 linearColor = currentDesc.linearColor;
+        const float envLightItemWidth = ImGui::GetFontSize() * 17.0f;
 
-    ImGui::BeginDisabled(!envLightAdded);
-    ImGui::SetNextItemWidth(itemWidth);
-    if (ImGui::SliderFloat("Rotation##EnvironmentLight", &envLightRotation, 0.0f, 360.0f, "%.1f deg")) {
-        UpdateEnvironmentLightRotation();
+        ImGui::Separator();
+        ImGui::TextUnformatted("Environment Light");
+        ImGui::PushID("EnvironmentLight");
+
+        const bool enabledChanged = ImGui::Checkbox("Enabled", &enabled);
+        ImGui::BeginDisabled(!enabled);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        bool lightingChanged = ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        lightingChanged |= ImGui::ColorEdit3("Color", linearColor.Ptr(), ImGuiColorEditFlags_Float);
+
+        ImGui::SetNextItemWidth(envLightItemWidth);
+        const bool rotationChanged = ImGui::SliderFloat("Rotation", &envLightRotation, 0.0f, 360.0f, "%.1f deg", ImGuiSliderFlags_AlwaysClamp);
+
+        ImGui::EndDisabled();
+        ImGui::PopID();
+
+        if (enabledChanged || lightingChanged || rotationChanged) {
+            EnvironmentLight::Desc desc = currentDesc;
+            desc.enabled = enabled;
+            desc.intensity = intensity;
+            desc.linearColor = linearColor;
+            if (rotationChanged) {
+                desc.axis = BE1::Mat3::FromRotationZ(DEG2RAD(envLightRotation));
+                renderWorld->SetSkyboxRotation(desc.axis);
+            }
+            renderWorld->UpdateEnvironmentLight(desc);
+            if (lightingChanged) {
+                renderWorld->SetSkyboxLighting(desc.linearColor, desc.intensity);
+            }
+        }
     }
-    ImGui::EndDisabled();
 }
 #endif
