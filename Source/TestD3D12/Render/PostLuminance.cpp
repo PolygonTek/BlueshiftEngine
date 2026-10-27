@@ -30,8 +30,8 @@ void PostLuminance::Init() {
     luminancePass1ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_luminancePass1Shader", computeShaderModel, "ToneMapping/LuminancePass1.hlsl", baseDir);
     luminancePass2ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_luminancePass2Shader", computeShaderModel, "ToneMapping/LuminancePass2.hlsl", baseDir);
 
-    luminancePass1Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass1ShaderTemplate, ShaderPermutationKey(), true);
-    luminancePass2Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass2ShaderTemplate, ShaderPermutationKey(), true);
+    luminancePass1Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass1ShaderTemplate, {}, true);
+    luminancePass2Pipeline = shaderPipelineCache.GetComputePipeline(luminancePass2ShaderTemplate, {}, true);
 }
 
 void PostLuminance::Shutdown() {

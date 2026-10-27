@@ -31,7 +31,7 @@ void GpuOcean::Init() {
 
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
-    constexpr bool asyncPipelineBuild = true;
+    constexpr bool asyncBuild = true;
 
     generatePhillipsInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generatePhillipsInitialOceanSpectrumShader", shaderModel, "Ocean/GenInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=0");
     generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateTMAPositiveCosineSquaredInitialOceanSpectrumShader", shaderModel, "Ocean/GenInitialSpectrum.hlsl", baseDir, "CSMain", "OCEAN_SPECTRUM_MODEL=1, OCEAN_TMA_DIRECTIONAL_SPREAD_MODEL=0");
@@ -41,13 +41,13 @@ void GpuOcean::Init() {
     generateTimeSpectrumShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_generateOceanTimeSpectrumShader", shaderModel, "Ocean/GenTimeSpectrum.hlsl", baseDir, "CSMain");
     resolveOceanFieldsShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_resolveOceanFieldsShader", shaderModel, "Ocean/ResolveOceanFields.hlsl", baseDir, "CSMain");
 
-    generatePhillipsInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generatePhillipsInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    generateTMAPositiveCosineSquaredInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    generateTMAHasselmannInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAHasselmannInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    generateTMADonelanBannerInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMADonelanBannerInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    generateTMAMitsuyasuInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAMitsuyasuInitialSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    generateTimeSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTimeSpectrumShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    resolveOceanFieldsPipeline = shaderPipelineCache.GetComputePipeline(resolveOceanFieldsShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    generatePhillipsInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generatePhillipsInitialSpectrumShaderTemplate, {}, asyncBuild);
+    generateTMAPositiveCosineSquaredInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate, {}, asyncBuild);
+    generateTMAHasselmannInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAHasselmannInitialSpectrumShaderTemplate, {}, asyncBuild);
+    generateTMADonelanBannerInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMADonelanBannerInitialSpectrumShaderTemplate, {}, asyncBuild);
+    generateTMAMitsuyasuInitialSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTMAMitsuyasuInitialSpectrumShaderTemplate, {}, asyncBuild);
+    generateTimeSpectrumPipeline = shaderPipelineCache.GetComputePipeline(generateTimeSpectrumShaderTemplate, {}, asyncBuild);
+    resolveOceanFieldsPipeline = shaderPipelineCache.GetComputePipeline(resolveOceanFieldsShaderTemplate, {}, asyncBuild);
 }
 
 void GpuOcean::Shutdown() {

@@ -31,9 +31,9 @@ void SSRHiZ::Init() {
     genFirstMipMSAAShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrHiZFirstMipMSAAShader", computeShaderModel, "SSR/GenSSRHiZFirstMipMSAA.hlsl", baseDir);
     genMipShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrHiZMipShader", computeShaderModel, "SSR/GenSSRHiZMip.hlsl", baseDir);
 
-    genFirstMipPipeline = shaderPipelineCache.GetComputePipeline(genFirstMipShaderTemplate, ShaderPermutationKey(), true);
-    genFirstMipMSAAPipeline = shaderPipelineCache.GetComputePipeline(genFirstMipMSAAShaderTemplate, ShaderPermutationKey(), true);
-    genMipPipeline = shaderPipelineCache.GetComputePipeline(genMipShaderTemplate, ShaderPermutationKey(), true);
+    genFirstMipPipeline = shaderPipelineCache.GetComputePipeline(genFirstMipShaderTemplate, {}, true);
+    genFirstMipMSAAPipeline = shaderPipelineCache.GetComputePipeline(genFirstMipMSAAShaderTemplate, {}, true);
+    genMipPipeline = shaderPipelineCache.GetComputePipeline(genMipShaderTemplate, {}, true);
 }
 
 void SSRHiZ::Shutdown() {

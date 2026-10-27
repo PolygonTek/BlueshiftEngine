@@ -33,12 +33,12 @@ void HiZ::Init() {
     cullInstancesShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZCullInstancesShader", computeShaderModel, "HiZ/HiZCullInstances.hlsl", baseDir);
     debugPreviewShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_hiZDebugPreviewShader", computeShaderModel, "HiZ/HiZDebugPreview.hlsl", baseDir);
 
-    firstBatchPipeline = shaderPipelineCache.GetComputePipeline(firstBatchShaderTemplate, ShaderPermutationKey(), true);
-    firstBatchMSAAPipeline = shaderPipelineCache.GetComputePipeline(firstBatchMSAAShaderTemplate, ShaderPermutationKey(), true);
-    mipBatchPipeline = shaderPipelineCache.GetComputePipeline(mipBatchShaderTemplate, ShaderPermutationKey(), true);
-    oddDimPipeline = shaderPipelineCache.GetComputePipeline(oddDimShaderTemplate, ShaderPermutationKey(), true);
-    cullInstancesPipeline = shaderPipelineCache.GetComputePipeline(cullInstancesShaderTemplate, ShaderPermutationKey(), true);
-    debugPreviewPipeline = shaderPipelineCache.GetComputePipeline(debugPreviewShaderTemplate, ShaderPermutationKey(), true);
+    firstBatchPipeline = shaderPipelineCache.GetComputePipeline(firstBatchShaderTemplate, {}, true);
+    firstBatchMSAAPipeline = shaderPipelineCache.GetComputePipeline(firstBatchMSAAShaderTemplate, {}, true);
+    mipBatchPipeline = shaderPipelineCache.GetComputePipeline(mipBatchShaderTemplate, {}, true);
+    oddDimPipeline = shaderPipelineCache.GetComputePipeline(oddDimShaderTemplate, {}, true);
+    cullInstancesPipeline = shaderPipelineCache.GetComputePipeline(cullInstancesShaderTemplate, {}, true);
+    debugPreviewPipeline = shaderPipelineCache.GetComputePipeline(debugPreviewShaderTemplate, {}, true);
 }
 
 void HiZ::Shutdown() {

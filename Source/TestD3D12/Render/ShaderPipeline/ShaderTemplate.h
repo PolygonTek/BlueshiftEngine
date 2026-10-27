@@ -201,7 +201,8 @@ private:
         int                         GetStandardPropertyIndex(StandardProperty standardProperty) const;
         void                        ResetStandardPropertyIndices();
 
-        void                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
+                                    // 그래픽스와 컴퓨트 스테이지가 혼합되면 추가하지 않고 false 를 리턴한다.
+        bool                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
 
         ShaderStageSource           stageSources[to_int(RHI::ShaderStage::Count)] = {};
         BE1::Str                    inheritedShaderTemplateName;

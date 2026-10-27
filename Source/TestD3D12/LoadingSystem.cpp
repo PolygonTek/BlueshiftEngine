@@ -635,7 +635,7 @@ bool LoadingSystem::ProcessAnimLoadRequest(LoadRequest &&request) {
 bool LoadingSystem::ProcessShaderPipelineBuildRequest(LoadRequest &&request) {
     PROFILER_CPU_SCOPED_EVENT("LoadingSystem::ProcessShaderPipelineBuildRequest");
 
-    // 빌딩 요청을 처리하려는 사이에 빌딩이 취소되었거나 시리얼이 변경되었다면, 빌딩을 하지 않는다.
+    // 빌드 요청을 처리하려는 사이에 빌드가 취소되었거나 시리얼이 변경되었다면, 빌드를 하지 않는다.
     if (!request.shaderPipeline->IsBuilding() || request.serial != request.shaderPipeline->GetBuildSerial()) {
         return false;
     }

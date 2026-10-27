@@ -25,17 +25,17 @@
 void IBLBaker::Init() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
-    constexpr bool asyncPipelineBuild = true;
+    constexpr bool asyncBuild = true;
 
     genDiffuseIrradianceShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDiffuseIrradianceShader", shaderModel, "PBR/GenDiffuseIrradiance.hlsl", baseDir);
     genLDSumPhongSpecularShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genLDSumPhongSpecularShader", shaderModel, "PBR/GenLDSumPhongSpecular.hlsl", baseDir);
     genLDSumGGXShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genLDSumGGXShader", shaderModel, "PBR/GenLDSumGGX.hlsl", baseDir);
     genDFGSumGGXShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_genDFGSumGGXShader", shaderModel, "PBR/GenDFGSumGGX.hlsl", baseDir);
 
-    genDiffuseIrradiancePipeline = shaderPipelineCache.GetComputePipeline(genDiffuseIrradianceShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    genLDSumPhongSpecularPipeline = shaderPipelineCache.GetComputePipeline(genLDSumPhongSpecularShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    genLDSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genLDSumGGXShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    genDFGSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genDFGSumGGXShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    genDiffuseIrradiancePipeline = shaderPipelineCache.GetComputePipeline(genDiffuseIrradianceShaderTemplate, {}, asyncBuild);
+    genLDSumPhongSpecularPipeline = shaderPipelineCache.GetComputePipeline(genLDSumPhongSpecularShaderTemplate, {}, asyncBuild);
+    genLDSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genLDSumGGXShaderTemplate, {}, asyncBuild);
+    genDFGSumGGXPipeline = shaderPipelineCache.GetComputePipeline(genDFGSumGGXShaderTemplate, {}, asyncBuild);
 }
 
 void IBLBaker::Shutdown() {

@@ -32,12 +32,12 @@ void Bloom::Init() {
     convolutionBloomKernelPrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomKernelPrepareShader", computeShaderModel, "Bloom/ConvolutionBloomKernelPrepare.hlsl", baseDir);
     convolutionBloomResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveShader", computeShaderModel, "Bloom/ConvolutionBloomResolve.hlsl", baseDir);
 
-    bloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(bloomPrefilterShaderTemplate, ShaderPermutationKey(), true);
-    bloomDownsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomDownsampleShaderTemplate, ShaderPermutationKey(), true);
-    bloomUpsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomUpsampleShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomScreenPreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomScreenPrepareShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomKernelPreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomKernelPrepareShaderTemplate, ShaderPermutationKey(), true);
-    convolutionBloomResolvePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveShaderTemplate, ShaderPermutationKey(), true);
+    bloomPrefilterPipeline = shaderPipelineCache.GetComputePipeline(bloomPrefilterShaderTemplate, {}, true);
+    bloomDownsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomDownsampleShaderTemplate, {}, true);
+    bloomUpsamplePipeline = shaderPipelineCache.GetComputePipeline(bloomUpsampleShaderTemplate, {}, true);
+    convolutionBloomScreenPreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomScreenPrepareShaderTemplate, {}, true);
+    convolutionBloomKernelPreparePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomKernelPrepareShaderTemplate, {}, true);
+    convolutionBloomResolvePipeline = shaderPipelineCache.GetComputePipeline(convolutionBloomResolveShaderTemplate, {}, true);
 }
 
 void Bloom::Shutdown() {

@@ -30,17 +30,17 @@ void ConvolutionBloomKernelGenerator::Init() {
 
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel computeShaderModel = RHI::Renderer::MinimumShaderModel();
+    constexpr bool asyncBuild = true;
 
     aperturePrepareShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomAperturePrepareShader", computeShaderModel, "Bloom/ConvolutionBloomAperturePrepare.hlsl", baseDir);
     reduceApertureEnergyShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomReduceApertureEnergyShader", computeShaderModel, "Bloom/ConvolutionBloomReduceApertureEnergy.hlsl", baseDir);
     resolveDiffractionPSFShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomResolveDiffractionPSFShader", computeShaderModel, "Bloom/ConvolutionBloomResolveDiffractionPSF.hlsl", baseDir);
     applyDispersionShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_convolutionBloomApplyDispersionShader", computeShaderModel, "Bloom/ConvolutionBloomApplyDispersion.hlsl", baseDir);
 
-    static constexpr bool asyncPipelineBuild = true;
-    aperturePreparePipeline = shaderPipelineCache.GetComputePipeline(aperturePrepareShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    reduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(reduceApertureEnergyShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    resolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(resolveDiffractionPSFShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    applyDispersionPipeline = shaderPipelineCache.GetComputePipeline(applyDispersionShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    aperturePreparePipeline = shaderPipelineCache.GetComputePipeline(aperturePrepareShaderTemplate, {}, asyncBuild);
+    reduceApertureEnergyPipeline = shaderPipelineCache.GetComputePipeline(reduceApertureEnergyShaderTemplate, {}, asyncBuild);
+    resolveDiffractionPSFPipeline = shaderPipelineCache.GetComputePipeline(resolveDiffractionPSFShaderTemplate, {}, asyncBuild);
+    applyDispersionPipeline = shaderPipelineCache.GetComputePipeline(applyDispersionShaderTemplate, {}, asyncBuild);
 
     EnsureResources();
 }

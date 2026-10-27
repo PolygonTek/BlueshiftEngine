@@ -498,7 +498,7 @@ static void EnsureComputePipeline(const SharedPtr<ShaderTemplate> &shaderTemplat
     static constexpr char groupName[] = "RenderSystem";
 
     if (!pipeline || pipeline->GetState() == ShaderPipeline::State::Empty) {
-        pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, ShaderPermutationKey(), true);
+        pipeline = shaderPipelineCache.GetComputePipeline(shaderTemplate, {}, true);
     }
     bootstrap.TrackPipeline(groupName, pipeline);
 }

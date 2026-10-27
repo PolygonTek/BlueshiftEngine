@@ -277,7 +277,7 @@ static RHI::PipelineState *GetOutputBlitPSO(const RHI::Texture *outputTexture, R
     graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
 
-    ShaderPipeline *imagePipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    ShaderPipeline *imagePipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.fullscreenImageShaderTemplate, {}, graphicsPipelineDesc, false);
     return ShaderPipeline::GetReadyPSO(imagePipeline);
 }
 
@@ -296,7 +296,7 @@ static RHI::PipelineState *GetSceneSnapshotDownsamplePSO(RHI::Format outputForma
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
 
     // Half-resolution color/depth 가 같은 원본 texel 을 나타내도록 전용 point downsample pipeline 을 사용한다.
-    ShaderPipeline *downsamplePipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.sceneSnapshotDownsampleShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    ShaderPipeline *downsamplePipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.sceneSnapshotDownsampleShaderTemplate, {}, graphicsPipelineDesc, false);
     return ShaderPipeline::GetReadyPSO(downsamplePipeline);
 }
 
@@ -2545,7 +2545,7 @@ void RenderWorld::PrepareDebugDrawPipelines(FrameCamera *frameCamera) {
             graphicsPipelineDesc.depthStencilStateType = frameCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualNoWrite : RHI::DepthStencilStateType::LEqualNoWrite;
         }
 
-        ShaderPipeline *shaderPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.debugDrawShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc);
+        ShaderPipeline *shaderPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplateManager.debugDrawShaderTemplate, {}, graphicsPipelineDesc);
         frameCamera->debugDrawPSOs[pipelineIndex] = ShaderPipeline::GetReadyPSO(shaderPipeline);
     }
 }

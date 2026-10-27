@@ -423,8 +423,8 @@ ShaderPipeline *Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet
 
     GraphicsPipelineDesc graphicsPipelineDesc = baseGraphicsPipelineDesc;
     graphicsPipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseGraphicsPipelineDesc.rasterizerStateType, internalData.cullMode);
-    const bool useMaterialBlending = internalData.renderingMode == RenderingMode::Blend && !featureSet.HasFeature(ShaderFeature::SurfacePrepass);
-    graphicsPipelineDesc.blendStateType = useMaterialBlending ? internalData.blendType : RHI::BlendStateType::Disabled;
+    const bool useBlending = internalData.renderingMode == RenderingMode::Blend && !featureSet.HasFeature(ShaderFeature::SurfacePrepass);
+    graphicsPipelineDesc.blendStateType = useBlending ? internalData.blendType : RHI::BlendStateType::Disabled;
 
     return shaderPipelineCache.GetGraphicsPipelinePtr(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, async);
 }

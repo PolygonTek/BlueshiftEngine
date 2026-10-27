@@ -42,7 +42,7 @@ static FFTDispatchEntry     fftDispatchTable[static_cast<uint32_t>(GpuFFT::FFTSi
 void GpuFFT::Init() {
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
-    constexpr bool asyncPipelineBuild = true;
+    constexpr bool asyncBuild = true;
 
     fftComplex256ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_fftComplex256Shader", shaderModel, "FFT/FFTComplex256.hlsl", baseDir, "CSMain", "FFT_INVERSE=0");
     fftComplex512ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_fftComplex512Shader", shaderModel, "FFT/FFTComplex512.hlsl", baseDir, "CSMain", "FFT_INVERSE=0");
@@ -87,48 +87,48 @@ void GpuFFT::Init() {
     transposeComplex1024x2048ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_transposeComplex1024x2048Shader", shaderModel, "Transpose/TransposeComplex1024x2048.hlsl", baseDir);
     transposeComplex2048x1024ShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_transposeComplex2048x1024Shader", shaderModel, "Transpose/TransposeComplex2048x1024.hlsl", baseDir);
 
-    fftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    fftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    fftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    fftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex256ShaderTemplate, {}, asyncBuild);
+    fftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex512ShaderTemplate, {}, asyncBuild);
+    fftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex1024ShaderTemplate, {}, asyncBuild);
+    fftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(fftComplex2048ShaderTemplate, {}, asyncBuild);
 
-    ifftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(ifftComplex256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    ifftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(ifftComplex512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    ifftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftComplex1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    ifftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftComplex2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    ifftComplex256Pipeline = shaderPipelineCache.GetComputePipeline(ifftComplex256ShaderTemplate, {}, asyncBuild);
+    ifftComplex512Pipeline = shaderPipelineCache.GetComputePipeline(ifftComplex512ShaderTemplate, {}, asyncBuild);
+    ifftComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftComplex1024ShaderTemplate, {}, asyncBuild);
+    ifftComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftComplex2048ShaderTemplate, {}, asyncBuild);
 
-    fftReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftReal512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    fftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftReal1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    fftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftReal2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftReal512ShaderTemplate, {}, asyncBuild);
+    fftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftReal1024ShaderTemplate, {}, asyncBuild);
+    fftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftReal2048ShaderTemplate, {}, asyncBuild);
 
-    ifftReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    ifftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    ifftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    ifftReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal512ShaderTemplate, {}, asyncBuild);
+    ifftReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal1024ShaderTemplate, {}, asyncBuild);
+    ifftReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftReal2048ShaderTemplate, {}, asyncBuild);
 
-    fftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    fftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    fftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    fftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    fftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal256ShaderTemplate, {}, asyncBuild);
+    fftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal512ShaderTemplate, {}, asyncBuild);
+    fftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal1024ShaderTemplate, {}, asyncBuild);
+    fftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(fftDualReal2048ShaderTemplate, {}, asyncBuild);
 
-    ifftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    ifftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    ifftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    ifftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    ifftDualReal256Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal256ShaderTemplate, {}, asyncBuild);
+    ifftDualReal512Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal512ShaderTemplate, {}, asyncBuild);
+    ifftDualReal1024Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal1024ShaderTemplate, {}, asyncBuild);
+    ifftDualReal2048Pipeline = shaderPipelineCache.GetComputePipeline(ifftDualReal2048ShaderTemplate, {}, asyncBuild);
 
-    multiplyComplexSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyComplexSpectrum2DShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    multiplyPackedRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedRealSpectrum2DShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    multiplyPackedDualRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedDualRealSpectrum2DShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    multiplyComplexSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyComplexSpectrum2DShaderTemplate, {}, asyncBuild);
+    multiplyPackedRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedRealSpectrum2DShaderTemplate, {}, asyncBuild);
+    multiplyPackedDualRealSpectrum2DPipeline = shaderPipelineCache.GetComputePipeline(multiplyPackedDualRealSpectrum2DShaderTemplate, {}, asyncBuild);
 
-    transposeComplex256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex256x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256x512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex512x256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x256ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex512x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex1024x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x512ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex1024x2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x2048ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
-    transposeComplex2048x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048x1024ShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    transposeComplex256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256ShaderTemplate, {}, asyncBuild);
+    transposeComplex512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512ShaderTemplate, {}, asyncBuild);
+    transposeComplex1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024ShaderTemplate, {}, asyncBuild);
+    transposeComplex2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048ShaderTemplate, {}, asyncBuild);
+    transposeComplex256x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex256x512ShaderTemplate, {}, asyncBuild);
+    transposeComplex512x256Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x256ShaderTemplate, {}, asyncBuild);
+    transposeComplex512x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex512x1024ShaderTemplate, {}, asyncBuild);
+    transposeComplex1024x512Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x512ShaderTemplate, {}, asyncBuild);
+    transposeComplex1024x2048Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex1024x2048ShaderTemplate, {}, asyncBuild);
+    transposeComplex2048x1024Pipeline = shaderPipelineCache.GetComputePipeline(transposeComplex2048x1024ShaderTemplate, {}, asyncBuild);
 
     fftRealTwiddle512Buffer = CreateRealFFTTwiddleBuffer(512);
     fftRealTwiddle1024Buffer = CreateRealFFTTwiddleBuffer(1024);

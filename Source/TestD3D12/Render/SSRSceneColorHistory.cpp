@@ -30,8 +30,8 @@ void SSRSceneColorHistory::Init() {
     genMipShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrSceneColorHistoryMipShader", computeShaderModel, "SSR/GenSSRSceneColorHistoryMip.hlsl", baseDir);
 
     genMipDepthShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrSceneColorHistoryMipDepthShader", computeShaderModel, "SSR/GenSSRSceneColorHistoryMip.hlsl", baseDir, "CSMain", "SSR_CAPTURE_FULL_RESOLUTION_DEPTH=1");
-    genMipPipeline = shaderPipelineCache.GetComputePipeline(genMipShaderTemplate, ShaderPermutationKey(), true);
-    genMipDepthPipeline = shaderPipelineCache.GetComputePipeline(genMipDepthShaderTemplate, ShaderPermutationKey(), true);
+    genMipPipeline = shaderPipelineCache.GetComputePipeline(genMipShaderTemplate, {}, true);
+    genMipDepthPipeline = shaderPipelineCache.GetComputePipeline(genMipDepthShaderTemplate, {}, true);
 }
 
 void SSRSceneColorHistory::Shutdown() {

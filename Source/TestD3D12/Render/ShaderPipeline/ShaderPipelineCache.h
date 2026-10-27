@@ -27,7 +27,7 @@ class ShaderTemplate;
 
     - Graphics shader pipeline 은 ShaderTemplate/ShaderPermutationKey/GraphicsPipelineDesc 조합으로 ShaderPipeline 을 캐싱하고 재사용한다.
     - Compute shader pipeline 은 ShaderTemplate/ShaderPermutationKey 조합으로 ShaderPipeline 을 캐싱하고 재사용한다.
-    - ShaderPipeline 은 ClearShaderTemplatePipelines/ClearAllPipelines 를 통해 Clear 될 수 있다. (Empty 상태로 바뀜)
+    - ShaderPipeline 은 ClearPipelines/ClearAllPipelines 를 통해 Clear 될 수 있다. (Empty 상태로 바뀜)
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -49,28 +49,28 @@ public:
     ShaderPipeline *                GetComputePipelinePtr(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async = true);
 
                                     // shaderTemplate 으로 캐싱된 모든 ShaderPipeline 을 제거한다. (빌드 중인 ShaderPipeline 은 폐기된다)
-    void                            ClearShaderTemplatePipelines(const ShaderTemplate *shaderTemplate);
+    void                            ClearPipelines(const ShaderTemplate *shaderTemplate);
 
                                     // 캐싱된 모든 ShaderPipeline 을 제거한다. (빌드 중인 ShaderPipeline 은 폐기된다)
     void                            ClearAllPipelines();
 
                                     // shaderTemplate 으로 캐싱된 모든 ShaderPipeline 을 재빌드한다.
-    void                            RebuildShaderTemplatePipelines(const SharedPtr<ShaderTemplate> &shaderTemplate);
+    void                            RebuildPipelines(const SharedPtr<ShaderTemplate> &shaderTemplate);
 
                                     // 캐싱된 모든 ShaderPipeline 을 재빌드한다.
     void                            RebuildAllPipelines();
 
 private:
     struct CachedGraphicsPipeline {
-        const ShaderTemplate *      shaderTemplatePtr = nullptr;
         WeakPtr<ShaderTemplate>     shaderTemplateRef;
+        const ShaderTemplate *      shaderTemplatePtr = nullptr;
         uint64_t                    graphicsPipelineCacheHash = 0;
         SharedPtr<ShaderPipeline>   shaderPipeline;
     };
 
     struct CachedComputePipeline {
-        const ShaderTemplate *      shaderTemplatePtr = nullptr;
         WeakPtr<ShaderTemplate>     shaderTemplateRef;
+        const ShaderTemplate *      shaderTemplatePtr = nullptr;
         ShaderPermutationKey        permutationKey;
         SharedPtr<ShaderPipeline>   shaderPipeline;
     };

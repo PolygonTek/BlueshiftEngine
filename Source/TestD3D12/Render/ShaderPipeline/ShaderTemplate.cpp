@@ -206,14 +206,25 @@ void ShaderTemplate::BuildDefaultPropertyValues(BE1::Array<PropertyValue> &outPr
     }
 }
 
-void ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint) {
+bool ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint) {
     assert(shaderStage >= RHI::ShaderStage::Vertex && shaderStage < RHI::ShaderStage::Count);
+
+    if (shaderStage == RHI::ShaderStage::Compute) {
+        for (int stageIndex = to_int(RHI::ShaderStage::Vertex); stageIndex < to_int(RHI::ShaderStage::Compute); ++stageIndex) {
+            if (!stageSources[stageIndex].filename.IsEmpty()) {
+                return false;
+            }
+        }
+    } else if (!stageSources[to_int(RHI::ShaderStage::Compute)].filename.IsEmpty()) {
+        return false;
+    }
 
     ShaderStageSource &stageSource = stageSources[to_int(shaderStage)];
 
     stageSource.shaderModel = shaderModel;
     stageSource.filename = filename;
     stageSource.entryPoint = entryPoint;
+    return true;
 }
 
 bool ShaderTemplate::SupportsFeature(ShaderFeature feature) const {
@@ -767,7 +778,10 @@ bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, const c
         }
 
         BE1::Str resolvedFilename = ResolveShaderStageFilename(baseDir, filename.c_str());
-        outInternalData.AddStage(shaderStage, shaderModel, resolvedFilename.c_str(), entryPoint.c_str());
+        if (!outInternalData.AddStage(shaderStage, shaderModel, resolvedFilename.c_str(), entryPoint.c_str())) {
+            BE_WARNLOG("ShaderTemplate::ParseStages: cannot mix graphics and compute stages in shader template '%s'\n", shaderTemplateName);
+            return false;
+        }
     }
 
     if (!closed) {
@@ -1096,7 +1110,7 @@ bool ShaderTemplate::Reload() {
 
 void ShaderTemplate::Purge() {
     // 파이프라인 캐시에서 이 ShaderTemplate 을 사용하는 모든 ShaderPipeline 캐시를 제거한다.
-    shaderPipelineCache.ClearShaderTemplatePipelines(this);
+    shaderPipelineCache.ClearPipelines(this);
 
     ClearPermutations();
 

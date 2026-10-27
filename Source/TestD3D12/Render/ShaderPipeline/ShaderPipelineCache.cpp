@@ -36,7 +36,7 @@ void ShaderPipelineCache::ClearAllPipelines() {
     cachedComputePipelines.Clear();
 }
 
-void ShaderPipelineCache::ClearShaderTemplatePipelines(const ShaderTemplate *shaderTemplate) {
+void ShaderPipelineCache::ClearPipelines(const ShaderTemplate *shaderTemplate) {
     if (!shaderTemplate) {
         return;
     }
@@ -116,7 +116,7 @@ void ShaderPipelineCache::RebuildAllPipelines() {
     }
 }
 
-void ShaderPipelineCache::RebuildShaderTemplatePipelines(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+void ShaderPipelineCache::RebuildPipelines(const SharedPtr<ShaderTemplate> &shaderTemplate) {
     if (!shaderTemplate) {
         return;
     }
@@ -165,8 +165,8 @@ const ShaderPipelineCache::CachedGraphicsPipeline *ShaderPipelineCache::GetOrCre
     const CachedGraphicsPipeline *entry = FindCachedGraphicsPipeline(shaderTemplate.get(), hash);
     if (!entry) {
         CachedGraphicsPipeline &cachedGraphicsPipeline = cachedGraphicsPipelines.Alloc();
-        cachedGraphicsPipeline.shaderTemplatePtr = shaderTemplate.get();
         cachedGraphicsPipeline.shaderTemplateRef = shaderTemplate;
+        cachedGraphicsPipeline.shaderTemplatePtr = shaderTemplate.get();
         cachedGraphicsPipeline.graphicsPipelineCacheHash = hash;
         cachedGraphicsPipeline.shaderPipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Graphics, permutationKey, graphicsPipelineDesc);
 
@@ -235,8 +235,8 @@ const ShaderPipelineCache::CachedComputePipeline *ShaderPipelineCache::GetOrCrea
     const CachedComputePipeline *entry = FindCachedComputePipeline(shaderTemplate.get(), permutationKey);
     if (!entry) {
         CachedComputePipeline &cachedComputePipeline = cachedComputePipelines.Alloc();
-        cachedComputePipeline.shaderTemplatePtr = shaderTemplate.get();
         cachedComputePipeline.shaderTemplateRef = shaderTemplate;
+        cachedComputePipeline.shaderTemplatePtr = shaderTemplate.get();
         cachedComputePipeline.permutationKey = permutationKey;
         cachedComputePipeline.shaderPipeline = MakeShared<ShaderPipeline>(ShaderPipeline::Type::Compute, permutationKey);
 

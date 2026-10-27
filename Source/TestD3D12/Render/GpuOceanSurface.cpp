@@ -39,10 +39,10 @@ void GpuOceanSurface::Init(GpuOcean *gpuOcean) {
 
     const char *baseDir = "Source/TestD3D12/Shaders";
     const RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
-    constexpr bool asyncPipelineBuild = true;
+    constexpr bool asyncBuild = true;
 
     queryShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_sampleOceanSurfaceShader", shaderModel, "Ocean/SampleOceanSurface.hlsl", baseDir, "CSMain");
-    queryPipeline = shaderPipelineCache.GetComputePipeline(queryShaderTemplate, ShaderPermutationKey(), asyncPipelineBuild);
+    queryPipeline = shaderPipelineCache.GetComputePipeline(queryShaderTemplate, {}, asyncBuild);
 
     shaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Ocean/OceanSurface");
     if (!shaderTemplate) {

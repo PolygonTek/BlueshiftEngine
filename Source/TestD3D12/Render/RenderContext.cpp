@@ -404,7 +404,7 @@ void RenderContext::InitPipelines() {
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
 
     // Fullscreen triangle 은 frame composition 과 bootstrap 화면에 항상 필요하므로 동기적으로 준비한다.
-    imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+    imagePipeline = shaderPipelineCache.GetGraphicsPipeline(shaderTemplateManager.fullscreenImageShaderTemplate, {}, graphicsPipelineDesc, false);
     if (!ShaderPipeline::GetReadyPSO(imagePipeline)) {
         BE_FATALERROR("RenderContext::InitPipelines: failed to build image pipeline\n");
     }
@@ -424,7 +424,7 @@ void RenderContext::InitPipelines() {
 
     if (hdrOutputShaderTemplate) {
         graphicsPipelineDesc.renderDest.renderTargetFormats[0] = swapChain->GetRTVFormat();
-        hdrOutputPipeline = shaderPipelineCache.GetGraphicsPipeline(*hdrOutputShaderTemplate, ShaderPermutationKey(), graphicsPipelineDesc, false);
+        hdrOutputPipeline = shaderPipelineCache.GetGraphicsPipeline(*hdrOutputShaderTemplate, {}, graphicsPipelineDesc, false);
         if (!ShaderPipeline::GetReadyPSO(hdrOutputPipeline)) {
             BE_FATALERROR("RenderContext::InitPipelines: failed to build HDR output pipeline\n");
         }

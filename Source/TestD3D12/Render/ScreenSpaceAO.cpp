@@ -39,15 +39,15 @@ void ScreenSpaceAO::Init() {
     gtaoDenoiseShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoDenoiseShader", computeShaderModel, "AO/GTAODenoise.hlsl", baseDir);
     gtaoDebugShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_gtaoDebugShader", computeShaderModel, "AO/GTAODebug.hlsl", baseDir);
 
-    aoUpsamplePipeline = shaderPipelineCache.GetComputePipeline(aoUpsampleShaderTemplate, ShaderPermutationKey(), true);
+    aoUpsamplePipeline = shaderPipelineCache.GetComputePipeline(aoUpsampleShaderTemplate, {}, true);
 
-    gtaoPrefilterPipeline = shaderPipelineCache.GetComputePipeline(gtaoPrefilterShaderTemplate, ShaderPermutationKey(), true);
-    gtaoMainLowPipeline = shaderPipelineCache.GetComputePipeline(gtaoMainLowShaderTemplate, ShaderPermutationKey(), true);
-    gtaoMainMediumPipeline = shaderPipelineCache.GetComputePipeline(gtaoMainMediumShaderTemplate, ShaderPermutationKey(), true);
-    gtaoMainHighPipeline = shaderPipelineCache.GetComputePipeline(gtaoMainHighShaderTemplate, ShaderPermutationKey(), true);
-    gtaoMainUltraPipeline = shaderPipelineCache.GetComputePipeline(gtaoMainUltraShaderTemplate, ShaderPermutationKey(), true);
-    gtaoDenoisePipeline = shaderPipelineCache.GetComputePipeline(gtaoDenoiseShaderTemplate, ShaderPermutationKey(), true);
-    gtaoDebugPipeline = shaderPipelineCache.GetComputePipeline(gtaoDebugShaderTemplate, ShaderPermutationKey(), true);
+    gtaoPrefilterPipeline = shaderPipelineCache.GetComputePipeline(gtaoPrefilterShaderTemplate, {}, true);
+    gtaoMainLowPipeline = shaderPipelineCache.GetComputePipeline(gtaoMainLowShaderTemplate, {}, true);
+    gtaoMainMediumPipeline = shaderPipelineCache.GetComputePipeline(gtaoMainMediumShaderTemplate, {}, true);
+    gtaoMainHighPipeline = shaderPipelineCache.GetComputePipeline(gtaoMainHighShaderTemplate, {}, true);
+    gtaoMainUltraPipeline = shaderPipelineCache.GetComputePipeline(gtaoMainUltraShaderTemplate, {}, true);
+    gtaoDenoisePipeline = shaderPipelineCache.GetComputePipeline(gtaoDenoiseShaderTemplate, {}, true);
+    gtaoDebugPipeline = shaderPipelineCache.GetComputePipeline(gtaoDebugShaderTemplate, {}, true);
 }
 
 void ScreenSpaceAO::TrackBootstrapPipelines(ShaderPipelineBootstrap &bootstrap) const {

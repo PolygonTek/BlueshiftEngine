@@ -35,7 +35,27 @@ bool ShaderPipeline::CreateStageShader(const ShaderCompileData &compileData, RHI
 }
 
 bool ShaderPipeline::CreateGraphicsShaders(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]) {
-    static constexpr RHI::ShaderStage GraphicsShaderStages[] = {
+    if (compileData.stageSources[to_int(RHI::ShaderStage::Vertex)].filename.IsEmpty()) {
+        BE_WARNLOG("ShaderPipeline::CreateGraphicsShaders: no vertex shader stage\n");
+        return false;
+    }
+
+    // Hull/Domain 셰이더는 함께 지정해야 한다.
+    const bool hasHullShader = !compileData.stageSources[to_int(RHI::ShaderStage::Hull)].filename.IsEmpty();
+    const bool hasDomainShader = !compileData.stageSources[to_int(RHI::ShaderStage::Domain)].filename.IsEmpty();
+    if (hasHullShader != hasDomainShader) {
+        BE_WARNLOG("ShaderPipeline::CreateGraphicsShaders: hull and domain shader stages must be specified together\n");
+        return false;
+    }
+
+    // Hull/Domain 셰이더 쌍의 존재 여부와 PatchList 사용 여부가 일치해야 한다.
+    const bool usesPatchTopology = pipelineDesc.primitiveTopology == RHI::PrimitiveTopology::PatchList;
+    if (hasHullShader != usesPatchTopology) {
+        BE_WARNLOG("ShaderPipeline::CreateGraphicsShaders: patch topology and hull/domain shader stages must be used together\n");
+        return false;
+    }
+
+    static constexpr RHI::ShaderStage graphicsShaderStages[] = {
         RHI::ShaderStage::Vertex,
         RHI::ShaderStage::Hull,
         RHI::ShaderStage::Domain,
@@ -43,9 +63,7 @@ bool ShaderPipeline::CreateGraphicsShaders(const ShaderCompileData &compileData,
         RHI::ShaderStage::Fragment
     };
 
-    bool hasGraphicsStage = false;
-
-    for (RHI::ShaderStage shaderStage : GraphicsShaderStages) {
+    for (RHI::ShaderStage shaderStage : graphicsShaderStages) {
         if (shaderStage == RHI::ShaderStage::Fragment && !pipelineDesc.fragmentShaderEnabled) {
             continue;
         }
@@ -55,17 +73,10 @@ bool ShaderPipeline::CreateGraphicsShaders(const ShaderCompileData &compileData,
             continue;
         }
 
-        hasGraphicsStage = true;
-
         RHI::Shader *&stageShader = stageShaders[to_int(shaderStage)];
         if (!CreateStageShader(compileData, shaderStage, stageShader)) {
             return false;
         }
-    }
-
-    if (!hasGraphicsStage) {
-        BE_WARNLOG("ShaderPipeline::CreateGraphicsShaders: no graphics shader stages\n");
-        return false;
     }
 
     return true;
