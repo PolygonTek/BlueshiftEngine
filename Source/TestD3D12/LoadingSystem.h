@@ -21,7 +21,7 @@
 #include "Render/Animation/Skeleton.h"
 #include "Render/Animation/Anim.h"
 #include "Render/Material/Material.h"
-#include "Render/ShaderPipeline/ShaderPipeline.h"
+#include "Render/ShaderPipeline/ShaderCompileData.h"
 
 class ShaderPipeline;
 

@@ -19,6 +19,7 @@
 #include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/Texture/Texture.h"
 #include "Render/Texture/TextureManager.h"
 #include "Shaders/ShaderInterop.h"

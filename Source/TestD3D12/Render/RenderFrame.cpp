@@ -19,6 +19,7 @@
 #include "ShadowAtlas.h"
 #include "Animation/Skeleton.h"
 #include "Material/Material.h"
+#include "ShaderPipeline/ShaderPipeline.h"
 #include "Texture/Texture.h"
 
 uint64_t                    RenderFrame::globalFrameSerial = 0;

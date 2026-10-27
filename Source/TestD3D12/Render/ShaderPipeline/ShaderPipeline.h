@@ -15,51 +15,12 @@
 #pragma once
 
 #include "RHI/RHI.h"
+#include "GraphicsPipelineDesc.h"
 #include "ShaderPermutationKey.h"
 
 class ShaderTemplate;
 class LoadingSystem;
-
-struct GraphicsPipelineDesc {
-    uint64_t                        GeneratePipelineDescHash() const;
-    uint64_t                        GenerateGraphicsPipelineHash(ShaderPermutationKey permutationKey) const;
-
-    static uint64_t                 GenerateInputLayoutHash(const RHI::InputLayout *inputLayout);
-
-    const RHI::InputLayout *        inputLayout = nullptr;
-    RHI::RenderDest                 renderDest;
-    RHI::RasterizerStateType        rasterizerStateType = RHI::RasterizerStateType::SolidFrontSided;
-    RHI::DepthStencilStateType      depthStencilStateType = RHI::DepthStencilStateType::LEqualWrite;
-    RHI::BlendStateType             blendStateType = RHI::BlendStateType::Disabled;
-    RHI::PrimitiveTopology          primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-    uint32_t                        sampleMask = 0xffffffff;
-    bool                            fragmentShaderEnabled = true;
-    bool                            depthClipEnabled = true;
-    bool                            depthBiasOverride = false;
-    float                           constantDepthBias = 0;
-    float                           depthBiasClamp = 0;
-    float                           slopeScaledDepthBias = 0;
-};
-
-struct ShaderStageSource {
-    RHI::ShaderModel                shaderModel = RHI::Renderer::MinimumShaderModel();
-    BE1::Str                        filename;
-    BE1::Str                        entryPoint;
-};
-
-struct ShaderCompileData {
-    void                            Clear();
-
-    ShaderStageSource               stageSources[to_int(RHI::ShaderStage::Count)] = {};
-    BE1::StrArray                   compileDefines;
-};
-
-BE_INLINE void ShaderCompileData::Clear() {
-    for (ShaderStageSource &stageSource : stageSources) {
-        stageSource = ShaderStageSource();
-    }
-    compileDefines.Clear();
-}
+struct ShaderCompileData;
 
 /*
 ---------------------------------------------------------------------------------------------------

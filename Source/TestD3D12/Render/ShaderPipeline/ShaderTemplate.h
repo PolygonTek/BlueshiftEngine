@@ -18,7 +18,8 @@
 #include "Containers/HashMap.h"
 #include "Core/Delegate.h"
 #include "Core/Property.h"
-#include "ShaderPipeline.h"
+#include "ShaderCompileData.h"
+#include "ShaderPermutationKey.h"
 
 class ShaderTemplateManager;
 class LoadingSystem;

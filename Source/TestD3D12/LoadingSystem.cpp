@@ -18,6 +18,7 @@
 #include "Platform/PlatformProcess.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/Texture/TextureManager.h"
 
 LoadingSystem      loadingSystem;

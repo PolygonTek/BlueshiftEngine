@@ -126,6 +126,9 @@ set(SRC_FILES
     Render/ShaderPipeline/ShaderFeatureSet.cpp
     Render/ShaderPipeline/ShaderPermutationKey.h
     Render/ShaderPipeline/ShaderPermutationKey.cpp
+    Render/ShaderPipeline/GraphicsPipelineDesc.h
+    Render/ShaderPipeline/GraphicsPipelineDesc.cpp
+    Render/ShaderPipeline/ShaderCompileData.h
     Render/ShaderPipeline/ShaderPipeline.h
     Render/ShaderPipeline/ShaderPipeline.cpp
     Render/ShaderPipeline/ShaderTemplate.h

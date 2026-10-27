@@ -18,7 +18,7 @@
 #include "Containers/HashIndex.h"
 #include "RHI/RHI.h"
 #include "Render/ShaderPipeline/ShaderFeatureSet.h"
-#include "Render/ShaderPipeline/ShaderPipeline.h"
+#include "Render/ShaderPipeline/GraphicsPipelineDesc.h"
 #include "Render/ShaderPipeline/ShaderPermutationKey.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 

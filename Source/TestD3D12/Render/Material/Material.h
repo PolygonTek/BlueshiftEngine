@@ -21,6 +21,8 @@ class MaterialManager;
 class LoadingSystem;
 class Sampler;
 class Texture;
+class ShaderPipeline;
+struct GraphicsPipelineDesc;
 
 /*
 ---------------------------------------------------------------------------------------------------

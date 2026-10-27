@@ -16,6 +16,7 @@
 #include "RenderPassDepthPSOResolver.h"
 #include "Render/RenderInternal.h"
 #include "Render/ShaderPipeline/ShaderPermutationKey.h"
+#include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplate.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"

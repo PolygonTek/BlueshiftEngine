@@ -19,6 +19,7 @@
 #include "Math/OBB.h"
 #include "Math/Plane.h"
 #include "Shaders/ShaderInterop.h"
+#include "ShaderPipeline/GraphicsPipelineDesc.h"
 #include "ShaderPipeline/VertexInputLayoutFactory.h"
 #include "Material/Material.h"
 #include "Font/Font.h"
