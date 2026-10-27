@@ -80,9 +80,10 @@ static const uint ToneMappingOperatorFilmicACES = 7;
 static const uint ToneMappingOperatorFilmicUnreal3 = 8;
 static const uint ToneMappingOperatorFilmicUncharted2 = 9;
 static const uint ToneMappingOperatorFilmicGT = 10;
-static const uint ToneMappingOperatorPBRNeutral = 11;
-static const uint ToneMappingOperatorAgX = 12;
-static const uint ToneMappingOperatorAgXPunch = 13;
+static const uint ToneMappingOperatorGT7 = 11;
+static const uint ToneMappingOperatorPBRNeutral = 12;
+static const uint ToneMappingOperatorAgX = 13;
+static const uint ToneMappingOperatorAgXPunch = 14;
 
 static const uint BloomBlockSizeX = 16;
 static const uint BloomBlockSizeY = 16;
@@ -297,6 +298,15 @@ struct LuminancePass2Params {
     float maxExposure;
 };
 
+struct GT7ToneMappingParams {
+    float3 shoulder;               // Precomputed kA, kB, kC for the highlight curve.
+    float linearEnd;
+    float inputScale;              // Engine linear units to GT7's 100-nit units.
+    float outputScale;             // GT7's 100-nit units to display-linear engine units.
+    float peakIntensity;
+    float inverseTargetIntensity;  // Reciprocal of the target's ICtCp intensity.
+};
+
 struct FinalPostProcessParams {
     uint2 outputSize;
     float2 outputTexelSize;
@@ -313,10 +323,13 @@ struct FinalPostProcessParams {
     float2 bloomDirtUvScale;
     float paperWhiteNits;           // Absolute luminance represented by linear 1.0.
     float maxDisplayLinearValue;    // Peak luminance in paper-white-relative linear units.
+    GT7ToneMappingParams gt7;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(FinalPostProcessParams) == 80, "FinalPostProcessParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(GT7ToneMappingParams) == 32, "GT7ToneMappingParams must match the HLSL constant-buffer layout");
+static_assert(offsetof(FinalPostProcessParams, gt7) == 80, "GT7 parameters must start on an HLSL constant-buffer register boundary");
+static_assert(sizeof(FinalPostProcessParams) == 112, "FinalPostProcessParams must match the HLSL constant-buffer layout");
 #endif
 
 struct TAAResolveParams {

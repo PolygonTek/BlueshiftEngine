@@ -1,5 +1,6 @@
 #include "Common.hlsli"
 #include "ToneMapping/ToneMapOperators.hlsli"
+#include "ToneMapping/GT7.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), UAV(u0)), " \
@@ -75,8 +76,12 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     if ((finalPostProcessParams.flags & FinalPostProcessFlagToneMapping) != 0) {
         float exposure = luminanceBuffer.Load<float>(LuminanceBufferOffsetExposure);
         float3 exposedColor = color * exposure;
-        // HDR 출력 시에는 Filmic GT 톤 매핑 적용, 그렇지 않으면 선택한 톤 매핑 연산자 적용
-        color = hdrOutput ? ToneMapFilmicGT(exposedColor, maxOutputLinearValue) : ToneMap(exposedColor, finalPostProcessParams.toneMappingOperator);
+        // CPU 에서 출력 모드에 맞게 선택한 연산자를 적용한다. HDR 은 Filmic GT 또는 GT7 을 사용한다.
+        if (finalPostProcessParams.toneMappingOperator == ToneMappingOperatorGT7) {
+            color = ToneMapGT7(exposedColor, finalPostProcessParams.gt7);
+        } else {
+            color = ToneMap(exposedColor, finalPostProcessParams.toneMappingOperator, maxOutputLinearValue);
+        }
     }
 
     // 컬러 그레이딩 적용

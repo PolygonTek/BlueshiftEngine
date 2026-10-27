@@ -169,7 +169,7 @@ float3 ToneMapPBRNeutral(float3 color) {
     return lerp(color, float3(newPeak, newPeak, newPeak), g);
 }
 
-float3 ToneMap(float3 color, uint toneMappingOperator) {
+float3 ToneMap(float3 color, uint toneMappingOperator, float maxDisplayLinearValue) {
     switch (toneMappingOperator) {
     case ToneMappingOperatorLinear:
         return ToneMapLinear(color);
@@ -190,7 +190,7 @@ float3 ToneMap(float3 color, uint toneMappingOperator) {
     case ToneMappingOperatorFilmicUncharted2:
         return ToneMapFilmicUncharted2(color);
     case ToneMappingOperatorFilmicGT:
-        return ToneMapFilmicGT(color, 1.0);
+        return ToneMapFilmicGT(color, maxDisplayLinearValue);
     case ToneMappingOperatorPBRNeutral:
         return ToneMapPBRNeutral(color);
     case ToneMappingOperatorAgX:

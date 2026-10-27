@@ -1649,28 +1649,33 @@ void App::BuildImGuiOverlay() {
                         }
 
                         const bool hdrOutput = mainRenderContext && RHI::SwapChain::IsHDRColorSpace(mainRenderContext->GetSwapChain()->GetColorSpace());
-                        int toneMapOp = hdrOutput ? static_cast<int>(ToneMappingOperatorFilmicGT) :
-                            BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorAgXPunch));
-                        ImGui::SetNextItemWidth(fontSize * 12.0f);
-                        ImGui::BeginDisabled(hdrOutput);
-                        if (ImGui::Combo("Tone map operator", &toneMapOp,
-                            "Linear\0"
-                            "Exponential\0"
-                            "Logarithmic\0"
-                            "Drago Logarithmic\0"
-                            "Reinhard\0"
-                            "Reinhard Extended\0"
-                            "Filmic ALU\0"
-                            "Filmic ACES\0"
-                            "Filmic Unreal3\0"
-                            "Filmic Uncharted 2\0"
-                            "Filmic GT\0"
-                            "PBR Neutral\0"
-                            "AgX\0"
-                            "AgXPunch\0\0")) {
-                            r_toneMapOp.SetInteger(toneMapOp);
+                        if (hdrOutput) {
+                            const auto &outputSettings = mainRenderContext->GetDisplayOutputSettings();
+                            const float targetNits = outputSettings.paperWhiteNits * outputSettings.maxDisplayLinearValue;
+                            ImGui::Text("HDR tone map operator: %s (auto)", targetNits < 250.0f ? "Filmic GT" : "GT7");
+                            ImGui::SetItemTooltip("Uses Filmic GT below 250 nits of output peak luminance, otherwise GT7.");
+                        } else {
+                            int toneMapOp = BE1::Clamp(r_toneMapOp.GetInteger(), static_cast<int>(ToneMappingOperatorLinear), static_cast<int>(ToneMappingOperatorAgXPunch));
+                            ImGui::SetNextItemWidth(fontSize * 12.0f);
+                            if (ImGui::Combo("Tone map operator", &toneMapOp,
+                                "Linear\0"
+                                "Exponential\0"
+                                "Logarithmic\0"
+                                "Drago Logarithmic\0"
+                                "Reinhard\0"
+                                "Reinhard Extended\0"
+                                "Filmic ALU\0"
+                                "Filmic ACES\0"
+                                "Filmic Unreal3\0"
+                                "Filmic Uncharted 2\0"
+                                "Filmic GT\0"
+                                "GT7\0"
+                                "PBR Neutral\0"
+                                "AgX\0"
+                                "AgXPunch\0\0")) {
+                                r_toneMapOp.SetInteger(toneMapOp);
+                            }
                         }
-                        ImGui::EndDisabled();
 
                         float luminanceLogMin = r_toneMapLuminanceLogMin.GetFloat();
                         float luminanceLogMax = r_toneMapLuminanceLogMax.GetFloat();

@@ -235,6 +235,7 @@ set(SRC_FILES
     Render/Backend/RenderBackend_HiZCulling.cpp
     Render/Backend/RenderBackend_SSRTrace.cpp
     Render/Backend/RenderBackend_PostProcess.cpp
+    Render/GT7ToneMapping.h
     Render/Backend/RenderBackend_DebugDraw.cpp
     Render/Backend/RenderBackend_DrawGenericSurf.cpp
     Render/Backend/RenderBackend_DrawSkySurf.cpp

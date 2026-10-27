@@ -18,6 +18,7 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
 #include "Render/RenderFrame.h"
+#include "Render/GT7ToneMapping.h"
 #include "Shaders/ShaderInterop.h"
 
 bool RenderBackend::DispatchLuminance() {
@@ -337,11 +338,21 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.outputSize = uint2(outputW, outputH);
     finalPostProcessParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     finalPostProcessParams.flags = useToneMapping ? FinalPostProcessFlagToneMapping : 0u;
-    finalPostProcessParams.toneMappingOperator = frameSettings.toneMappingOperator;
     const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
     const bool hdrOutput = RHI::SwapChain::IsHDRColorSpace(currentContext->GetSwapChain()->GetColorSpace());
     finalPostProcessParams.paperWhiteNits = displayOutputSettings.paperWhiteNits;
     finalPostProcessParams.maxDisplayLinearValue = displayOutputSettings.maxDisplayLinearValue;
+    const float referenceWhiteNits = hdrOutput ? displayOutputSettings.paperWhiteNits : 250.0f;
+    // Use the peak represented by the actual output path, including EDR's linear limit.
+    const float targetNits = hdrOutput ? referenceWhiteNits * displayOutputSettings.maxDisplayLinearValue : 250.0f;
+    if (hdrOutput) {
+        // GT7's published toe/linear parameters require at least a 250-nit target.
+        finalPostProcessParams.toneMappingOperator = targetNits < 250.0f ? ToneMappingOperatorFilmicGT : ToneMappingOperatorGT7;
+    }
+    if (useToneMapping && finalPostProcessParams.toneMappingOperator == ToneMappingOperatorGT7) {
+        InitializeGT7ToneMappingParams(referenceWhiteNits, BE1::Min(targetNits, 10000.0f), finalPostProcessParams.gt7);
+    }
+
     finalPostProcessParams.bloomIntensity = bloomIntensity;
     finalPostProcessParams.bloomDirtIntensity = useBloomDirtMask ? bloomDirtIntensity : 0.0f;
     finalPostProcessParams.bloomDirtUvScale = float2(1.0f, 1.0f);
