@@ -10,8 +10,10 @@
 
 struct DepthVSInput {
     float4 position : POSITION;
+#ifdef PERFORATED
     float2 texCoord : TEXCOORD0;
     float4 color : COLOR;
+#endif
 #ifdef OUTPUT_NORMAL
     #ifdef PACKED_VERTEX_TANGENT_FRAME
         uint normal : NORMAL;

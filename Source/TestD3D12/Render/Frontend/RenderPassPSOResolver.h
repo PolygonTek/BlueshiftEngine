@@ -32,7 +32,7 @@ public:
         RHI::PipelineState *        pso = nullptr;
     };
 
-    void                            Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity);
+    void                            Prepare(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity);
 
     ResolveResult                   Resolve(const FrameSurf *frameSurf, const ShaderFeatureSet &featureSet, bool async = true);
 

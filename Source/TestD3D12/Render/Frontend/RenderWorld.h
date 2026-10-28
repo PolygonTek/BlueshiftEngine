@@ -21,6 +21,7 @@
 #include "Physics/PhysicsWorld.h"
 #include "Render/Mesh/GuiMesh.h"
 #include "RenderPassBuilder.h"
+#include "SkinningJointBufferBuilder.h"
 #include "Render/DebugDrawPipeline.h"
 #include "Render/DebugDrawVertex.h"
 #include "Render/RenderFrame.h"
@@ -29,7 +30,6 @@ struct FrameCamera;
 struct FrameLight;
 struct FrameObject;
 struct FrameSurf;
-struct FrameSkinnedMesh;
 struct FrameShadowAtlas;
 struct FrameCascadedShadow;
 struct DebugDrawData;
@@ -204,12 +204,6 @@ private:
         BE1::Array<DebugPrimitiveRange> primitives;
     };
 
-    struct UpdateSkinningJointCachesTaskDesc {
-        RenderWorld *           renderWorld = nullptr;
-        const FrameSkinnedMesh ** skinnedMeshObjects = nullptr;
-        uint32_t                numSkinnedMeshObjects = 0;
-    };
-
     struct LocalShadowCasterRef {
         FrameObject *           object;
         uint32_t                shadowViewIndex;
@@ -230,13 +224,6 @@ private:
     void                        SetFrameObjectWorldMatrices(const RenderObject *renderObject, FrameObject *frameObject);
     void                        FindFrameObjects(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
-    int                         CountSkinningUploadJoints(const RenderFrame::ChunkRange<FrameSkinnedMesh> &frameSkinnedMeshes, bool needVelocityOutput, uint64_t currentFrameSerial) const;
-    void                        BuildSkinningJointBuffer(RenderFrame *frame, FrameCamera *frameCamera);
-    void                        UpdateSkinningJointCaches(RenderFrame *frame, const FrameSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints);
-    void                        UpdateSkinningJointCachesWithoutTask(const FrameSkinnedMesh **objects, uint32_t numObjects);
-    void                        UpdateSkinningJointCachesWithTask(const FrameSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints, uint32_t numTasks);
-    void                        UpdateSkinningJointCachesByTask(RenderWorld::UpdateSkinningJointCachesTaskDesc *taskDesc);
-    static void                 UpdateSkinningJointCachesByTaskFunction(void *data);
     void                        AddTextMeshes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
     SkyboxState                 GetSkyboxState() const;
     void                        AddSkyBoxMeshes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
@@ -246,12 +233,7 @@ private:
     void                        FindDirectionalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, const FrameCascadedShadow *cascadedShadow);
     void                        FindLocalShadowCasters(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        BuildLocalShadowSurfaceLists(RenderFrame *frame, FrameShadowAtlas *frameShadowAtlas);
-    static uint32_t             ComputeLightTileRange(const FrameCamera *frameCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax);
-    static void                 BuildLightCullingData(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
-    static void                 BuildLightZBins(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
     bool                        IsFrameObjectRegisteredInCurrentView(const RenderObject *renderObject) const;
-    void                        SetupPyramidBloom(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
-    void                        SetupConvolutionBloom(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
 
     DebugDrawVertex *           ReserveDebugVertices(DebugDrawPipelineId pipelineId, uint32_t numVerts, const BE1::Color4 &color, int lifeTime);
     DebugDrawVertex *           ReserveDebugLineVertices(uint32_t numVerts, bool depthTest, int lifeTime);
@@ -263,6 +245,8 @@ private:
     void                        PrepareOceanSurfacePipeline(FrameCamera *frameCamera);
 
     void                        DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
+    void                        SetupFrameTransparentSSR(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
+    void                        BuildCameraPasses(RenderFrame *frame, FrameCamera *frameCamera);
     void                        DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32_t screenHeight, GuiMesh &guiMesh);
 
     const FrameSurf *           AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel = 0);
@@ -283,9 +267,7 @@ private:
     uint64_t                    frameIndex = 0;
     uint64_t                    viewCount = 0;      ///< Counter used to track how many views (or scene renderings) have been issued.
 
-    uint32_t                    renderWorldGroupId = -1;
-    BE1::Array<UpdateSkinningJointCachesTaskDesc> updateSkinningJointCachesTaskDescs;
-    BE1::Array<const FrameSkinnedMesh *> skinningJointCacheUpdateObjects = BE1::Array<const FrameSkinnedMesh *>(256); // Reused across cameras/frames.
+    SkinningJointBufferBuilder  skinningJointBufferBuilder;
 
     GuiMesh                     textMesh;           ///< 3D text mesh
 

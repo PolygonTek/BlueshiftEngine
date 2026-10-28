@@ -16,7 +16,9 @@
 
 #include "RHI/RHI.h"
 
+class RenderFrame;
 class Texture;
+struct FrameBloom;
 struct RenderFrameSettings;
 
 static constexpr int RenderBloomDownMaxLevelCount = 8;
@@ -32,6 +34,10 @@ public:
 
     void                        Ensure(uint32_t renderWidth, uint32_t renderHeight, const RenderFrameSettings &renderFrameSettings);
     void                        Destroy();
+
+                                /// 기본 초기화 및 렌더 해상도 설정이 완료된 프레임 데이터에 bloom 리소스를 연결한다.
+                                /// 참조 텍스처의 수명을 유지하고, convolution 커널 준비에 성공한 경우에만 dirty 상태를 해제한다.
+    void                        PrepareFrame(RenderFrame &frame, FrameBloom &outBloom);
 
                                 /// Calculates the effective normalized extents and inverse average luminance of a convolution bloom kernel image.
     static void                 CalcConvolutionBloomKernelParams(const BE1::Image &kernelImage, BE1::Vec2 &outNormalizedKernelExtents, float &inverseAverageLuminance);
@@ -81,6 +87,8 @@ public:
     void                        MarkConvolutionBloomKernelClean() { fftBloomKernelDirty = false; }
 
 private:
+    void                        PreparePyramidFrame(FrameBloom &outBloom) const;
+    void                        PrepareConvolutionFrame(RenderFrame &frame, FrameBloom &outBloom);
     void                        EnsurePyramidResources(uint32_t requestedBloomMipMaxLevelCount);
     void                        EnsureConvolutionResources(uint32_t maxFFTSize);
     bool                        CreatePyramidBloomTextures(uint32_t width, uint32_t height, uint32_t requestedBloomMipMaxLevelCount);

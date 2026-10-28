@@ -1790,7 +1790,7 @@ const void *RenderBackend::ExecuteSwapBuffers(const void *data) {
     return (const void *)(cmd + 1);
 }
 
-void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const {
+void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const DrawSurf2 *drawSurf) const {
     const SubMesh *subMesh = drawSurf->frameSurf->subMesh;
     RHI::renderer->SetVertexBuffer(commandList, 0, subMesh->vertexBuffer);
 
@@ -1933,7 +1933,7 @@ bool RenderBackend::DispatchLightCulling() {
     return frame->DispatchLightCulling(frame->GetThreadData(0), mainCommandList, frameLightCullingPSO);
 }
 
-static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, const RenderPassDrawSurf *drawSurf) {
+static bool CanBatchSurfaceInstances(const DrawSurf2 *baseDrawSurf, const DrawSurf2 *drawSurf) {
     return drawSurf->pso &&
         drawSurf->pso == baseDrawSurf->pso &&
         drawSurf->frameSurf->subMesh == baseDrawSurf->frameSurf->subMesh &&
@@ -1942,10 +1942,10 @@ static bool CanBatchSurfaceInstances(const RenderPassDrawSurf *baseDrawSurf, con
 }
 
 // startIndex 부터 batch 렌더링할 수 있는 최대 endIndex 를 구한다 (MaxInstancesPerDraw 제한은 있음)
-uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const {
+uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const {
     assert(startIndex < numDrawSurfs);
 
-    const RenderPassDrawSurf *baseDrawSurf = drawSurfs[startIndex];
+    const DrawSurf2 *baseDrawSurf = drawSurfs[startIndex];
     uint32_t endIndex = startIndex + 1;
     while (endIndex < numDrawSurfs && endIndex - startIndex < MaxInstancesPerDraw && CanBatchSurfaceInstances(baseDrawSurf, drawSurfs[endIndex])) {
         endIndex++;
@@ -1953,7 +1953,7 @@ uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const RenderPassDrawSurf **d
     return endIndex;
 }
 
-RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount) const {
+RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t instanceCount) const {
     RHI::Buffer *buffer = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), instanceCount, nullptr);
     if (!buffer) {
         return nullptr;
@@ -1967,7 +1967,7 @@ RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadDa
     return buffer;
 }
 
-bool RenderBackend::PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const {
+bool RenderBackend::PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const {
     assert(instanceCount > 0);
 
     RHI::Buffer *instanceToShaderSurfaceTable = AllocInstanceToShaderSurfaceTable(frameThreadData, drawSurfs, instanceCount);
@@ -1990,7 +1990,7 @@ bool RenderBackend::PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThrea
     return true;
 }
 
-void RenderBackend::DrawSurfaceInstanceBatch(RHI::CommandList *commandList, const RenderPassDrawSurf **drawSurfs, const SurfaceInstanceBatch &batch, uint32_t &drawCount, uint64_t &drawTriangleCount) {
+void RenderBackend::DrawSurfaceInstanceBatch(RHI::CommandList *commandList, const DrawSurf2 **drawSurfs, const SurfaceInstanceBatch &batch, uint32_t &drawCount, uint64_t &drawTriangleCount) {
     assert(batch.valid);
     assert(batch.instanceCount > 0);
     assert(batch.instanceToShaderSurfaceTable);

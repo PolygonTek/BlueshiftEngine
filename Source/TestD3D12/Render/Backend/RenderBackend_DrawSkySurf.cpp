@@ -76,7 +76,7 @@ static bool BindSkyboxTextures(RHI::CommandList *commandList, const Material *ma
     return true;
 }
 
-void RenderBackend::DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs) {
+void RenderBackend::DrawSkySurfaces(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawSkySurfaces");
 
     assert(numDrawSurfs > 0);
@@ -91,7 +91,7 @@ void RenderBackend::DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32
     uint32_t instanceTableUploadBytes = 0;
 
     for (uint32_t drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
-        const RenderPassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
+        const DrawSurf2 *drawSurf = drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
             continue;
         }

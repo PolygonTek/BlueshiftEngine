@@ -44,7 +44,7 @@ bool RenderBackend::PrepareHiZCulling() {
 
         uint32_t drawSurfIndex = 0;
         while (drawSurfIndex < renderPass->numDrawSurfs) {
-            const RenderPassDrawSurf *drawSurf = renderPass->drawSurfs[drawSurfIndex];
+            const DrawSurf2 *drawSurf = renderPass->drawSurfs[drawSurfIndex];
             if (!drawSurf->pso) {
                 drawSurfIndex++;
                 continue;
@@ -98,7 +98,7 @@ bool RenderBackend::PrepareHiZCulling() {
 
         uint32_t drawSurfIndex = 0;
         while (drawSurfIndex < renderPass->numDrawSurfs) {
-            const RenderPassDrawSurf *drawSurf = renderPass->drawSurfs[drawSurfIndex];
+            const DrawSurf2 *drawSurf = renderPass->drawSurfs[drawSurfIndex];
             if (!drawSurf->pso) {
                 drawSurfIndex++;
                 continue;

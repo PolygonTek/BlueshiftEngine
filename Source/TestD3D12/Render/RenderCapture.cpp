@@ -23,7 +23,7 @@
 
 static void SetupCameraDesc(RenderCamera::Desc &cameraDesc, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
     const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fovX, float fovY, float zNear, float zFar, uint32_t width, uint32_t height, RHI::Texture *outputTexture, RHI::ViewID outputViewID) {
-    cameraDesc.flags = RenderCamera::Flag::SkipDebugDraw | RenderCamera::Flag::SkipPostProcess | RenderCamera::Flag::DisableTemporalHistory | RenderCamera::Flag::DisableHiZCulling | RenderCamera::Flag::ForceSyncPassPSOBuild;
+    cameraDesc.flags = RenderCamera::Flag::SkipDebugDraw | RenderCamera::Flag::SkipPostProcess | RenderCamera::Flag::DisableTemporalHistory | RenderCamera::Flag::DisableHiZCulling | RenderCamera::Flag::DisableAsyncPSOBuild;
     if (staticOnly) {
         cameraDesc.flags |= RenderCamera::Flag::StaticOnly;
     }

@@ -96,14 +96,14 @@ static bool IsTransparentSSRReceiver(const FrameSurf *frameSurf) {
         shaderTemplate->SupportsFeature(ShaderFeature::OutputRoughness);
 }
 
-void RenderPassBuilder::AllocRenderPassDrawSurfs(RenderFrame *frame, FrameCamera *frameCamera, uint32_t maxDrawSurfs) {
+void RenderPassBuilder::AllocDrawSurfs(RenderFrame *frame, FrameCamera *frameCamera, uint32_t maxDrawSurfs) {
     assert(!frameCamera->renderPassDrawSurfs);
     assert(!frameCamera->renderPassDrawSurfStorage);
 
     frameCamera->maxRenderPassDrawSurfs = maxDrawSurfs;
     frameCamera->numRenderPassDrawSurfs = 0;
-    frameCamera->renderPassDrawSurfs = (const RenderPassDrawSurf **)frame->MemAlloc(maxDrawSurfs * sizeof(RenderPassDrawSurf *));
-    frameCamera->renderPassDrawSurfStorage = (RenderPassDrawSurf *)frame->MemAlloc(maxDrawSurfs * sizeof(RenderPassDrawSurf));
+    frameCamera->renderPassDrawSurfs = (const DrawSurf2 **)frame->MemAlloc(maxDrawSurfs * sizeof(DrawSurf2 *));
+    frameCamera->renderPassDrawSurfStorage = (DrawSurf2 *)frame->MemAlloc(maxDrawSurfs * sizeof(DrawSurf2));
 }
 
 RenderPass *RenderPassBuilder::AllocRenderPass(FrameCamera *frameCamera, RenderPassType type, ShaderFeatureSet passFeatureSet, VertexInputLayoutId passBaseInputLayoutId, uint32_t maxDrawSurfs) {
@@ -138,8 +138,8 @@ static RHI::DepthStencilStateType GetDepthState(const RHI::ProjectionPolicy &pro
     return write ? RHI::DepthStencilStateType::LEqualWrite : RHI::DepthStencilStateType::LEqualNoWrite;
 }
 
-void RenderPassBuilder::BuildCascadedShadow(RenderFrame *frame, FrameCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild) {
-    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildCascadedShadow");
+void RenderPassBuilder::BuildShadowCascadePass(RenderFrame *frame, FrameCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildShadowCascadePass");
 
     assert(cascadedShadow);
     assert(cascadedShadow->depthTexture);
@@ -168,11 +168,11 @@ void RenderPassBuilder::BuildCascadedShadow(RenderFrame *frame, FrameCascadedSha
     pipelineDesc.constantDepthBias = -frameSettings.csmConstantDepthBias[cascadeIndex];
     pipelineDesc.slopeScaledDepthBias = -frameSettings.csmSlopeScaledDepthBias[cascadeIndex];
 
-    BuildShadow(frame, shadowPass, static_cast<uint8_t>(1u << cascadeIndex), frameSurfs, numFrameSurfs, allowAsyncPSOBuild);
+    BuildShadowPass(frame, shadowPass, static_cast<uint8_t>(1u << cascadeIndex), frameSurfs, numFrameSurfs, allowAsyncPSOBuild);
 }
 
-void RenderPassBuilder::BuildLocalShadow(RenderFrame *frame, FrameShadowAtlas *shadowAtlas, uint32_t shadowViewIndex, bool allowAsyncPSOBuild) {
-    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildLocalShadow");
+void RenderPassBuilder::BuildLocalShadowPass(RenderFrame *frame, FrameShadowAtlas *shadowAtlas, uint32_t shadowViewIndex, bool allowAsyncPSOBuild) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildLocalShadowPass");
 
     assert(shadowAtlas);
     assert(shadowAtlas->shadowTexture);
@@ -203,11 +203,11 @@ void RenderPassBuilder::BuildLocalShadow(RenderFrame *frame, FrameShadowAtlas *s
     pipelineDesc.slopeScaledDepthBias = -shadowLight->shadowOffsetFactor;
 
     // View 별 caster/submesh 컬링을 마친 목록은 CSM mask 와 무관하게 그대로 사용한다.
-    BuildShadow(frame, shadowPass, 0, shadowView.shadowSurfs, shadowView.numShadowSurfs, allowAsyncPSOBuild);
+    BuildShadowPass(frame, shadowPass, 0, shadowView.shadowSurfs, shadowView.numShadowSurfs, allowAsyncPSOBuild);
 }
 
-void RenderPassBuilder::BuildShadow(RenderFrame *frame, RenderPass *shadowPass, uint8_t shadowCascadeMask, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild) {
-    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildShadow");
+void RenderPassBuilder::BuildShadowPass(RenderFrame *frame, RenderPass *shadowPass, uint8_t shadowCascadeMask, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildShadowPass");
 
     assert(shadowPass);
     assert(!shadowPass->drawSurfs && !shadowPass->drawSurfStorage);
@@ -237,11 +237,11 @@ void RenderPassBuilder::BuildShadow(RenderFrame *frame, RenderPass *shadowPass, 
     }
 
     shadowPass->maxDrawSurfs = numShadowDrawSurfs;
-    shadowPass->drawSurfs = (const RenderPassDrawSurf **)frame->MemAlloc(numShadowDrawSurfs * sizeof(RenderPassDrawSurf *));
-    shadowPass->drawSurfStorage = (RenderPassDrawSurf *)frame->MemAlloc(numShadowDrawSurfs * sizeof(RenderPassDrawSurf));
+    shadowPass->drawSurfs = (const DrawSurf2 **)frame->MemAlloc(numShadowDrawSurfs * sizeof(DrawSurf2 *));
+    shadowPass->drawSurfStorage = (DrawSurf2 *)frame->MemAlloc(numShadowDrawSurfs * sizeof(DrawSurf2));
 
     // ShadowViewCB 에 광원 행렬과 surface table 을 전달하는 전용 셰이더를 사용한다.
-    shadowPSOResolver.Begin(shadowPass, BE1::Min(numShadowDrawSurfs, 24u), shaderTemplateManager.shadowDepthShaderTemplate);
+    shadowPSOResolver.Prepare(shadowPass, BE1::Min(numShadowDrawSurfs, 24u), shaderTemplateManager.shadowDepthShaderTemplate);
 
     for (uint32_t i = 0; i < numFrameSurfs; ++i) {
         const FrameSurf *frameSurf = frameSurfs[i];
@@ -250,29 +250,56 @@ void RenderPassBuilder::BuildShadow(RenderFrame *frame, RenderPass *shadowPass, 
         }
 
         const RenderPassDepthPSOResolver::ResolveResult rr = shadowPSOResolver.Resolve(frameSurf, allowAsyncPSOBuild);
-        AddRenderPassDrawSurf(shadowPass, frameSurf, BuildOpaqueSortKey(frameSurf, rr.pso), rr.inputLayoutId, rr.pso);
+        AddDrawSurf(shadowPass, frameSurf, BuildOpaqueSortKey(frameSurf, rr.pso), rr.inputLayoutId, rr.pso);
     }
 
-    SortRenderPassDrawSurfs(frame, shadowPass);
+    SortDrawSurfs(frame, shadowPass);
 }
 
-void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildMain");
+struct RenderPassBuilder::ScenePassCounts {
+    int depth = 0;
+    int opaque = 0;
+    int skybox = 0;
+    int transparentSSR = 0;
+    int blend = 0;
+
+    uint32_t Total() const { return depth + opaque + skybox + transparentSSR + blend; }
+};
+
+struct RenderPassBuilder::ScenePasses {
+    RenderPass *depthPrepass;
+    RenderPass *opaquePass;
+    RenderPass *skyboxPass;
+    RenderPass *transparentSSRPrepass;
+    RenderPass *blendPass;
+};
+
+void RenderPassBuilder::BuildScenePasses(RenderFrame *frame, FrameCamera *frameCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildScenePasses");
 
     if (frameCamera->numFrameSurfs == 0) {
         return;
     }
 
-    // Forward lighting 에서 불투명 표면을 렌더링하려면 AO 가 필요하다.
     // AO, velocity 또는 roughness 출력이 필요하면 depth prepass 를 강제로 켠다.
     const bool useDepthPrepass = frame->GetRenderFrameSettings().depthPrepass || frameCamera->applyAO || frameCamera->needVelocityOutput || frameCamera->needRoughnessOutput;
 
-    int numDepthDrawSurfs = 0;
-    int numOpaqueDrawSurfs = 0;
-    int numSkyboxDrawSurfs = 0;
-    int numBlendDrawSurfs = 0;
-    int numTransparentSSRDrawSurfs = 0;
+    const ScenePassCounts counts = CountSceneDrawSurfs(frameCamera, useDepthPrepass);
+    const uint32_t numDrawSurfs = counts.Total();
+    if (numDrawSurfs == 0) {
+        return;
+    }
 
+    // RenderPass 에서 필요한 모든 DrawSurf2 를 미리 할당한다.
+    AllocDrawSurfs(frame, frameCamera, numDrawSurfs);
+
+    const ScenePasses passes = CreateScenePasses(frameCamera, counts);
+    AddSceneDrawSurfs(frameCamera, passes);
+    SortSceneDrawSurfs(frame, passes);
+}
+
+RenderPassBuilder::ScenePassCounts RenderPassBuilder::CountSceneDrawSurfs(const FrameCamera *frameCamera, bool useDepthPrepass) {
+    ScenePassCounts counts;
     for (int i = 0; i < frameCamera->numFrameSurfs; ++i) {
         const FrameSurf *frameSurf = frameCamera->frameSurfs[i];
 
@@ -281,34 +308,24 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
         }
 
         if (BE1::HasFlag(frameSurf->flags, FrameSurf::Flag::Skybox)) {
-            numSkyboxDrawSurfs++;
+            counts.skybox++;
         } else if (frameSurf->material->GetRenderingMode() == Material::RenderingMode::Blend) {
-            numBlendDrawSurfs++;
+            counts.blend++;
             if (frameCamera->traceTransparentSSR && IsTransparentSSRReceiver(frameSurf)) {
-                numTransparentSSRDrawSurfs++;
+                counts.transparentSSR++;
             }
         } else {
-            if (useDepthPrepass) {
-                numDepthDrawSurfs++;
-            }
-            numOpaqueDrawSurfs++;
+            counts.opaque++;
         }
     }
 
-    // Shadow 전용 surface 만 있다면 메인 패스용 메모리를 할당하지 않는다.
-    const uint32_t numMainDrawSurfs = numDepthDrawSurfs + numOpaqueDrawSurfs + numSkyboxDrawSurfs + numBlendDrawSurfs + numTransparentSSRDrawSurfs;
-    if (numMainDrawSurfs == 0) {
-        return;
-    }
+    counts.depth = useDepthPrepass ? counts.opaque : 0;
+    return counts;
+}
 
-    const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
-    const bool directLighting = frameCamera->directionalLightVisible || frameCamera->numFrameLocalLights > 0;
-    const bool indirectLighting = frameCamera->envLightDiffuseIrradianceCubeMap && frameCamera->envLightSpecularCubeMap;
-
-    // RenderPass 에서 필요한 모든 RenderPassDrawSurf 를 미리 할당한다.
-    AllocRenderPassDrawSurfs(frame, frameCamera, numMainDrawSurfs);
-
+RenderPassBuilder::ScenePasses RenderPassBuilder::CreateScenePasses(FrameCamera *frameCamera, const ScenePassCounts &counts) {
     // AllocRenderPass 호출 순서대로 백엔드에서 RenderPass 가 렌더링된다.
+    // 
     // 1. DepthPrepass RenderPass 를 할당한다.
     ShaderFeatureSet depthPassFeatureSet;
     const bool useSurfacePrepass = frameCamera->needRoughnessOutput;
@@ -316,6 +333,7 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
         depthPassFeatureSet.EnableFeature(ShaderFeature::SurfacePrepass);
         depthPassFeatureSet.EnableFeature(ShaderFeature::OutputRoughness);
     }
+
     if (frameCamera->needNormalOutput) {
         depthPassFeatureSet.EnableFeature(ShaderFeature::OutputNormal);
     }
@@ -325,7 +343,7 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
     }
 
     const VertexInputLayoutId depthInputLayout = useSurfacePrepass ? VertexInputLayoutId::XyzStColorNormalTangent : (frameCamera->needNormalOutput ? VertexInputLayoutId::XyzStColorNormal : VertexInputLayoutId::XyzStColor);
-    RenderPass *depthPrepass = AllocRenderPass(frameCamera, RenderPassType::DepthPrepass, depthPassFeatureSet, depthInputLayout, numDepthDrawSurfs);
+    RenderPass *depthPrepass = AllocRenderPass(frameCamera, RenderPassType::DepthPrepass, depthPassFeatureSet, depthInputLayout, counts.depth);
     if (depthPrepass) {
         depthPrepass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(frameCamera->projectionPolicy, true);
         RHI::RenderDest &renderDest = depthPrepass->graphicsPipelineDesc.renderDest;
@@ -344,29 +362,28 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
         renderDest.sampleCount = frameCamera->depthTexture->GetSampleCount();
 
         if (useSurfacePrepass) {
-            surfacePrepassPSOResolver.Begin(depthPrepass, BE1::Min(numDepthDrawSurfs, 1024));
+            surfacePrepassPSOResolver.Prepare(depthPrepass, BE1::Min(counts.depth, 1024));
         } else {
-            depthPrepassPSOResolver.Begin(depthPrepass, BE1::Min(numDepthDrawSurfs, 16), shaderTemplateManager.depthPrepassShaderTemplate);
+            depthPrepassPSOResolver.Prepare(depthPrepass, BE1::Min(counts.depth, 16), shaderTemplateManager.depthPrepassShaderTemplate);
         }
     }
 
     // 2. Opaque RenderPass 를 할당한다.
-    RenderPass *opaquePass = AllocRenderPass(frameCamera, RenderPassType::Opaque, {}, VertexInputLayoutId::XyzStColorNormalTangent, numOpaqueDrawSurfs);
+    RenderPass *opaquePass = AllocRenderPass(frameCamera, RenderPassType::Opaque, {}, VertexInputLayoutId::XyzStColorNormalTangent, counts.opaque);
     if (opaquePass) {
-        // Prepass 에서 확정한 depth/coverage 를 재사용한다. Equal 비교는 reverse-Z 여부와 무관하다.
         opaquePass->graphicsPipelineDesc.depthStencilStateType = depthPrepass ? RHI::DepthStencilStateType::EqualNoWrite : GetDepthState(frameCamera->projectionPolicy, true);
         RenderContext::activeContext->GetMainRenderDest(opaquePass->graphicsPipelineDesc.renderDest, false, false, false);
 
-        opaquePSOResolver.Begin(opaquePass, BE1::Min(numOpaqueDrawSurfs, 1024));
+        opaquePSOResolver.Prepare(opaquePass, BE1::Min(counts.opaque, 1024));
     }
 
     // 3. Skybox RenderPass 를 할당한다.
-    RenderPass *skyboxPass = AllocRenderPass(frameCamera, RenderPassType::Skybox, {}, VertexInputLayoutId::XyzStColor, numSkyboxDrawSurfs);
+    RenderPass *skyboxPass = AllocRenderPass(frameCamera, RenderPassType::Skybox, {}, VertexInputLayoutId::XyzStColor, counts.skybox);
     if (skyboxPass) {
         skyboxPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(frameCamera->projectionPolicy, false);
         RenderContext::activeContext->GetMainRenderDest(skyboxPass->graphicsPipelineDesc.renderDest, false, false, false);
 
-        skyboxPSOResolver.Begin(skyboxPass, BE1::Min(numSkyboxDrawSurfs, 1));
+        skyboxPSOResolver.Prepare(skyboxPass, BE1::Min(counts.skybox, 1));
     }
 
     // 4. Transparent SSR receiver prepass 를 할당한다. 별도 depth 로 가장 가까운 한 layer 만 보존한다.
@@ -376,7 +393,7 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
     transparentSSRPrepassFeatureSet.EnableFeature(ShaderFeature::OutputNormal);
     transparentSSRPrepassFeatureSet.EnableFeature(ShaderFeature::OutputVelocity);
     transparentSSRPrepassFeatureSet.EnableFeature(ShaderFeature::OutputRoughness);
-    RenderPass *transparentSSRPrepass = AllocRenderPass(frameCamera, RenderPassType::TransparentSSRPrepass, transparentSSRPrepassFeatureSet, VertexInputLayoutId::XyzStColorNormalTangent, numTransparentSSRDrawSurfs);
+    RenderPass *transparentSSRPrepass = AllocRenderPass(frameCamera, RenderPassType::TransparentSSRPrepass, transparentSSRPrepassFeatureSet, VertexInputLayoutId::XyzStColorNormalTangent, counts.transparentSSR);
     if (transparentSSRPrepass) {
         transparentSSRPrepass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(frameCamera->projectionPolicy, true);
         RHI::RenderDest &renderDest = transparentSSRPrepass->graphicsPipelineDesc.renderDest;
@@ -385,17 +402,29 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
         renderDest.renderTargetFormats[1] = frameCamera->transparentSSRVelocityTexture->GetFormat();
         renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
         renderDest.sampleCount = 1;
-        transparentSSRPrepassPSOResolver.Begin(transparentSSRPrepass, BE1::Min(numTransparentSSRDrawSurfs, 256));
+        transparentSSRPrepassPSOResolver.Prepare(transparentSSRPrepass, BE1::Min(counts.transparentSSR, 256));
     }
 
     // 5. Blend RenderPass 를 할당한다.
-    RenderPass *blendPass = AllocRenderPass(frameCamera, RenderPassType::Transparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, numBlendDrawSurfs);
+    RenderPass *blendPass = AllocRenderPass(frameCamera, RenderPassType::Transparent, {}, VertexInputLayoutId::XyzStColorNormalTangent, counts.blend);
     if (blendPass) {
         blendPass->graphicsPipelineDesc.depthStencilStateType = GetDepthState(frameCamera->projectionPolicy, false);
         RenderContext::activeContext->GetMainRenderDest(blendPass->graphicsPipelineDesc.renderDest, false, false, frameCamera->taaResolve);
 
-        blendPSOResolver.Begin(blendPass, BE1::Min(numBlendDrawSurfs, 256));
+        blendPSOResolver.Prepare(blendPass, BE1::Min(counts.blend, 256));
     }
+
+    return { depthPrepass, opaquePass, skyboxPass, transparentSSRPrepass, blendPass };
+}
+
+void RenderPassBuilder::AddSceneDrawSurfs(const FrameCamera *frameCamera, const ScenePasses &passes) {
+    const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::DisableAsyncPSOBuild);
+    const bool directLighting = frameCamera->directionalLightVisible || frameCamera->numFrameLocalLights > 0;
+    const bool indirectLighting = frameCamera->envLightDiffuseIrradianceCubeMap && frameCamera->envLightSpecularCubeMap;
+    const bool useSurfacePrepass = frameCamera->needRoughnessOutput;
+    RenderPass *skyboxPass = passes.skyboxPass;
+    RenderPass *transparentSSRPrepass = passes.transparentSSRPrepass;
+    RenderPass *blendPass = passes.blendPass;
 
     // 카메라에 보이는 모든 surfaces 를 순회하면서, 각 render pass 에 visible surfaces 를 추가한다.
     for (int i = 0; i < frameCamera->numFrameSurfs; ++i) {
@@ -405,101 +434,109 @@ void RenderPassBuilder::BuildMain(RenderFrame *frame, FrameCamera *frameCamera) 
             continue;
         }
 
-        // 각 surface 의 특성 (material, featureSet, maxVertexWeights) 에 따라 PSO, inputLayoutId 를 얻고, RenderPassDrawSurf 를 추가한다.
+        // 각 surface 의 특성 (material, featureSet, maxVertexWeights) 에 따라 PSO, inputLayoutId 를 얻고, DrawSurf2 를 추가한다.
         if (BE1::HasFlag(frameSurf->flags, FrameSurf::Flag::Skybox)) {
-            if (skyboxPass) {
-                const RenderPassPSOResolver::ResolveResult rr = skyboxPSOResolver.Resolve(frameSurf, frameSurf->baseFeatureSet | skyboxPass->featureSet, allowAsyncPSOBuild);
-                AddRenderPassDrawSurf(skyboxPass, frameSurf, 0, rr.inputLayoutId, rr.pso);
-            }
+            assert(skyboxPass);
+            const RenderPassPSOResolver::ResolveResult rr = skyboxPSOResolver.Resolve(frameSurf, frameSurf->baseFeatureSet | skyboxPass->featureSet, allowAsyncPSOBuild);
+            AddDrawSurf(skyboxPass, frameSurf, 0, rr.inputLayoutId, rr.pso);
         } else if (frameSurf->material->GetRenderingMode() == Material::RenderingMode::Blend) {
             if (transparentSSRPrepass && IsTransparentSSRReceiver(frameSurf)) {
                 const ShaderFeatureSet featureSet = frameSurf->baseFeatureSet | transparentSSRPrepass->featureSet;
                 const RenderPassPSOResolver::ResolveResult rr = transparentSSRPrepassPSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
-                AddRenderPassDrawSurf(transparentSSRPrepass, frameSurf, BuildDepthSortKey(frameSurf), rr.inputLayoutId, rr.pso);
+                AddDrawSurf(transparentSSRPrepass, frameSurf, BuildDepthSortKey(frameSurf), rr.inputLayoutId, rr.pso);
             }
-            if (blendPass) {
-                const ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(frameSurf, blendPass, directLighting, indirectLighting);
-                const RenderPassPSOResolver::ResolveResult rr = blendPSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
-                AddRenderPassDrawSurf(blendPass, frameSurf, BuildTransparentSortKey(frameSurf), rr.inputLayoutId, rr.pso);
-            }
+            assert(blendPass);
+            const ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(frameSurf, blendPass, directLighting, indirectLighting);
+            const RenderPassPSOResolver::ResolveResult rr = blendPSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
+            AddDrawSurf(blendPass, frameSurf, BuildTransparentSortKey(frameSurf), rr.inputLayoutId, rr.pso);
         } else {
-            RHI::PipelineState *depthPSO = nullptr;
-            VertexInputLayoutId depthInputLayoutId = depthInputLayout;
-            if (depthPrepass) {
-                if (useSurfacePrepass) {
-                    const ShaderFeatureSet featureSet = frameSurf->baseFeatureSet | depthPrepass->featureSet;
-                    const RenderPassPSOResolver::ResolveResult rr = surfacePrepassPSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
-                    depthPSO = rr.pso;
-                    depthInputLayoutId = rr.inputLayoutId;
-                } else {
-                    const RenderPassDepthPSOResolver::ResolveResult rr = depthPrepassPSOResolver.Resolve(frameSurf, allowAsyncPSOBuild);
-                    depthPSO = rr.pso;
-                    depthInputLayoutId = rr.inputLayoutId;
-                }
-            }
-            if (opaquePass) {
-                ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(frameSurf, opaquePass, directLighting, indirectLighting);
-                if (depthPrepass) {
-                    // Alpha test 는 prepass 에서만 수행하고 color 는 일반 opaque permutation 을 재사용한다.
-                    featureSet.flags &= ~ShaderFeatureSet::Perforated;
-                }
-                const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
-                if (depthPrepass) {
-                    // 두 PSO 를 모두 요청한 뒤 함께 등록하여 비동기 컴파일 중 depth 또는 color 만 그려지는 것을 막는다.
-                    if (!depthPSO || !rr.pso) {
-                        continue;
-                    }
-                    AddRenderPassDrawSurf(depthPrepass, frameSurf, BuildDepthSortKey(frameSurf), depthInputLayoutId, depthPSO);
-                }
-                AddRenderPassDrawSurf(opaquePass, frameSurf, BuildOpaqueSortKey(frameSurf, rr.pso), rr.inputLayoutId, rr.pso);
-            }
+            AddOpaqueDrawSurfs(frameSurf, passes, useSurfacePrepass, directLighting, indirectLighting, allowAsyncPSOBuild);
         }
-    }
-
-    // 필요한 경우 각 render pass 마다 surface 들을 sorting 한다.
-    if (depthPrepass) {
-        SortRenderPassDrawSurfs(frame, depthPrepass);
-    }
-    if (opaquePass) {
-        SortRenderPassDrawSurfs(frame, opaquePass);
-    }
-    if (transparentSSRPrepass) {
-        SortRenderPassDrawSurfs(frame, transparentSSRPrepass);
-    }
-    if (blendPass) {
-        SortRenderPassDrawSurfs(frame, blendPass);
     }
 }
 
-void RenderPassBuilder::BuildGUI(RenderFrame *frame, FrameCamera *frameCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildGUI");
+void RenderPassBuilder::AddOpaqueDrawSurfs(const FrameSurf *frameSurf, const ScenePasses &passes, bool useSurfacePrepass, bool directLighting, bool indirectLighting, bool allowAsyncPSOBuild) {
+    RenderPass *depthPrepass = passes.depthPrepass;
+    RenderPass *opaquePass = passes.opaquePass;
+    assert(opaquePass);
+
+    RHI::PipelineState *depthPSO = nullptr;
+    VertexInputLayoutId depthInputLayoutId = VertexInputLayoutId::XyzStColor;
+    if (depthPrepass) {
+        if (useSurfacePrepass) {
+            const ShaderFeatureSet featureSet = frameSurf->baseFeatureSet | depthPrepass->featureSet;
+            const RenderPassPSOResolver::ResolveResult rr = surfacePrepassPSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
+            depthPSO = rr.pso;
+            depthInputLayoutId = rr.inputLayoutId;
+        } else {
+            const RenderPassDepthPSOResolver::ResolveResult rr = depthPrepassPSOResolver.Resolve(frameSurf, allowAsyncPSOBuild);
+            depthPSO = rr.pso;
+            depthInputLayoutId = rr.inputLayoutId;
+        }
+    }
+
+    ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(frameSurf, opaquePass, directLighting, indirectLighting);
+    if (depthPrepass) {
+        // Alpha test 는 prepass 에서만 수행하고 color 는 일반 opaque permutation 을 재사용한다.
+        featureSet.flags &= ~ShaderFeatureSet::Perforated;
+    }
+    const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
+
+    if (depthPrepass) {
+        // 두 PSO 를 모두 요청한 뒤 함께 등록하여 비동기 컴파일 중 depth 또는 color 만 그려지는 것을 막는다.
+        if (!depthPSO || !rr.pso) {
+            return;
+        }
+        AddDrawSurf(depthPrepass, frameSurf, BuildDepthSortKey(frameSurf), depthInputLayoutId, depthPSO);
+    }
+    AddDrawSurf(opaquePass, frameSurf, BuildOpaqueSortKey(frameSurf, rr.pso), rr.inputLayoutId, rr.pso);
+}
+
+void RenderPassBuilder::SortSceneDrawSurfs(RenderFrame *frame, const ScenePasses &passes) {
+    // 필요한 경우 각 render pass 마다 surface 들을 sorting 한다.
+    if (passes.depthPrepass) {
+        SortDrawSurfs(frame, passes.depthPrepass);
+    }
+    if (passes.opaquePass) {
+        SortDrawSurfs(frame, passes.opaquePass);
+    }
+    if (passes.transparentSSRPrepass) {
+        SortDrawSurfs(frame, passes.transparentSSRPrepass);
+    }
+    if (passes.blendPass) {
+        SortDrawSurfs(frame, passes.blendPass);
+    }
+}
+
+void RenderPassBuilder::BuildGuiPass(RenderFrame *frame, FrameCamera *frameCamera) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::BuildGuiPass");
 
     if (frameCamera->numFrameSurfs == 0) {
         return;
     }
 
-    AllocRenderPassDrawSurfs(frame, frameCamera, frameCamera->numFrameSurfs);
+    AllocDrawSurfs(frame, frameCamera, frameCamera->numFrameSurfs);
 
     RenderPass *guiPass = AllocRenderPass(frameCamera, RenderPassType::Gui, {}, VertexInputLayoutId::XyzStColor, frameCamera->numFrameSurfs);
     RenderContext::activeContext->GetSwapChainRenderDest(guiPass->graphicsPipelineDesc.renderDest);
     guiPass->graphicsPipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
 
-    guiPSOResolver.Begin(guiPass, BE1::Min(frameCamera->numFrameSurfs, 16u));
+    guiPSOResolver.Prepare(guiPass, BE1::Min(frameCamera->numFrameSurfs, 16u));
 
     for (uint32_t i = 0; i < frameCamera->numFrameSurfs; ++i) {
         const FrameSurf *frameSurf = frameCamera->frameSurfs[i];
         const ShaderFeatureSet featureSet = frameSurf->baseFeatureSet | guiPass->featureSet;
         const RenderPassPSOResolver::ResolveResult rr = guiPSOResolver.Resolve(frameSurf, featureSet);
 
-        AddRenderPassDrawSurf(guiPass, frameSurf, i, rr.inputLayoutId, rr.pso);
+        AddDrawSurf(guiPass, frameSurf, i, rr.inputLayoutId, rr.pso);
     }
 }
 
-void RenderPassBuilder::AddRenderPassDrawSurf(RenderPass *renderPass, const FrameSurf *frameSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso) {
+void RenderPassBuilder::AddDrawSurf(RenderPass *renderPass, const FrameSurf *frameSurf, uint64_t sortKey, VertexInputLayoutId inputLayoutId, RHI::PipelineState *pso) {
     assert(renderPass->numDrawSurfs < renderPass->maxDrawSurfs);
 
     const uint32_t drawSurfIndex = renderPass->numDrawSurfs++;
-    RenderPassDrawSurf *passDrawSurf = &renderPass->drawSurfStorage[drawSurfIndex];
+    DrawSurf2 *passDrawSurf = &renderPass->drawSurfStorage[drawSurfIndex];
     passDrawSurf->frameSurf = frameSurf;
     passDrawSurf->sortKey = sortKey;
     passDrawSurf->inputLayoutId = inputLayoutId;
@@ -508,30 +545,30 @@ void RenderPassBuilder::AddRenderPassDrawSurf(RenderPass *renderPass, const Fram
     renderPass->drawSurfs[drawSurfIndex] = passDrawSurf;
 }
 
-void RenderPassBuilder::SortRenderPassDrawSurfs(RenderFrame *frame, RenderPass *renderPass) {
-    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::SortRenderPassDrawSurfs");
+void RenderPassBuilder::SortDrawSurfs(RenderFrame *frame, RenderPass *renderPass) {
+    PROFILER_CPU_SCOPED_EVENT("RenderPassBuilder::SortDrawSurfs");
 
     if (renderPass->numDrawSurfs == 0) {
         return;
     }
 
     if (renderPass->numDrawSurfs < 128) {
-        std::sort(renderPass->drawSurfs, renderPass->drawSurfs + renderPass->numDrawSurfs, [](const RenderPassDrawSurf *lhs, const RenderPassDrawSurf *rhs) {
+        std::sort(renderPass->drawSurfs, renderPass->drawSurfs + renderPass->numDrawSurfs, [](const DrawSurf2 *lhs, const DrawSurf2 *rhs) {
             return lhs->sortKey < rhs->sortKey;
         });
         return;
     }
 
-    const RenderPassDrawSurf **tempDrawSurfs = (const RenderPassDrawSurf **)frame->MemAlloc(renderPass->numDrawSurfs * sizeof(tempDrawSurfs[0]));
+    const DrawSurf2 **tempDrawSurfs = (const DrawSurf2 **)frame->MemAlloc(renderPass->numDrawSurfs * sizeof(tempDrawSurfs[0]));
     RadixSortDrawSurfs(renderPass->drawSurfs, renderPass->numDrawSurfs, tempDrawSurfs);
 }
 
-void RenderPassBuilder::RadixSortDrawSurfs(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RenderPassDrawSurf **tempDrawSurfs) {
+void RenderPassBuilder::RadixSortDrawSurfs(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, const DrawSurf2 **tempDrawSurfs) {
     constexpr uint32_t NumBuckets = 256;
     constexpr uint32_t NumPasses = 8;
 
-    const RenderPassDrawSurf **src = drawSurfs;
-    const RenderPassDrawSurf **dst = tempDrawSurfs;
+    const DrawSurf2 **src = drawSurfs;
+    const DrawSurf2 **dst = tempDrawSurfs;
 
     for (uint32_t pass = 0; pass < NumPasses; pass++) {
         const uint32_t shift = pass * 8;
@@ -552,12 +589,12 @@ void RenderPassBuilder::RadixSortDrawSurfs(const RenderPassDrawSurf **drawSurfs,
         }
 
         for (uint32_t i = 0; i < numDrawSurfs; i++) {
-            const RenderPassDrawSurf *drawSurf = src[i];
+            const DrawSurf2 *drawSurf = src[i];
             const uint32_t bucket = (drawSurf->sortKey >> shift) & 0xFF;
             dst[offsets[bucket]++] = drawSurf;
         }
 
-        const RenderPassDrawSurf **swap = src;
+        const DrawSurf2 **swap = src;
         src = dst;
         dst = swap;
     }

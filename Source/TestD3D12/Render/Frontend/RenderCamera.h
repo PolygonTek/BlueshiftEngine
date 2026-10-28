@@ -39,7 +39,7 @@ public:
         SkipPostProcess         = BIT(2),               ///< Post-process 렌더링을 생략한다.
         DisableTemporalHistory  = BIT(3),               ///< Temporal history 사용과 갱신을 비활성화한다.
         DisableHiZCulling       = BIT(4),               ///< Hi-Z 기반 occlusion culling 을 비활성화한다.
-        ForceSyncPassPSOBuild   = BIT(5),               ///< Render pass PSO 를 강제로 동기적으로 빌드한다.
+        DisableAsyncPSOBuild    = BIT(5),               ///< PSO 의 비동기 빌드를 비활성화하고 동기적으로 준비한다.
         FlipOutputTextureY      = BIT(6),               ///< output texture 에 최종 렌더링할 때 Y축을 뒤집는다.
         StaticOnly              = BIT(7),               ///< Static render object 만 렌더링한다.
         SkipSkyboxLighting      = BIT(8)                ///< 환경광 베이크를 위해 sky 표시용 색, 밝기와 회전을 제외한 원본 radiance 를 렌더링한다.

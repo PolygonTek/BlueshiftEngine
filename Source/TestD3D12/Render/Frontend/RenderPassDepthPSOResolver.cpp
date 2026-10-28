@@ -21,7 +21,7 @@
 #include "Render/ShaderPipeline/ShaderTemplate.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
-void RenderPassDepthPSOResolver::Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity, const SharedPtr<ShaderTemplate> &shaderTemplate) {
+void RenderPassDepthPSOResolver::Prepare(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity, const SharedPtr<ShaderTemplate> &shaderTemplate) {
     assert(renderPass);
 
     passFeatureSet = renderPass->featureSet;
@@ -112,9 +112,14 @@ RenderPassDepthPSOResolver::ResolveResult RenderPassDepthPSOResolver::Resolve(co
     ShaderFeatureSet featureSet = BuildDepthFeatureSet(frameSurf->baseFeatureSet | passFeatureSet);
     featureSet = shaderTemplate->MaskSupportedFeatures(featureSet);
 
+    // Opaque depth surface 는 UV/color 입력이 필요 없고, normal 출력에만 normal 입력을 추가한다.
+    if (!featureSet.HasFeature(ShaderFeature::Perforated)) {
+        result.inputLayoutId = featureSet.HasFeature(ShaderFeature::OutputNormal) ? VertexInputLayoutId::XyzNormal : VertexInputLayoutId::Xyz;
+    }
+
     const int maxVertexWeights = frameSurf->subMesh->MaxVertexWeights();
     if (maxVertexWeights > 0 && (featureSet.flags & ShaderFeatureSet::GpuSkinningWeightMask) != 0) {
-        result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
+        result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(result.inputLayoutId, maxVertexWeights);
     }
 
     const RHI::CullMode cullMode = frameSurf->material->GetCullMode();

@@ -15,7 +15,9 @@
 #include "Precompiled.h"
 #include "BloomResources.h"
 #include "Render/RenderCvars.h"
+#include "Render/RenderFrame.h"
 #include "Render/RenderFrameSettings.h"
+#include "Render/RenderInternal.h"
 #include "Render/Texture/TextureManager.h"
 #include "Shaders/ShaderInterop.h"
 
@@ -61,6 +63,99 @@ void BloomResources::Ensure(uint32_t renderWidth, uint32_t renderHeight, const R
     } else {
         EnsureConvolutionResources(renderFrameSettings.convolutionBloomFFTMaxSize);
     }
+}
+
+void BloomResources::PrepareFrame(RenderFrame &frame, FrameBloom &outBloom) {
+    Texture *dirtMaskTexture = frame.RetainTexture(bloomDirtMaskTexture);
+    outBloom.bloomDirtMaskTexture = dirtMaskTexture ? dirtMaskTexture->GetRHITexture() : nullptr;
+
+    const RenderBloomMode mode = frame.GetRenderFrameSettings().bloomMode;
+    if (mode == RenderBloomMode::Pyramid) {
+        PreparePyramidFrame(outBloom);
+    } else if (mode == RenderBloomMode::Convolution) {
+        PrepareConvolutionFrame(frame, outBloom);
+    }
+}
+
+void BloomResources::PreparePyramidFrame(FrameBloom &outBloom) const {
+    if (bloomMipCount < 2) {
+        return;
+    }
+
+    outBloom.bloomDownTexture = bloomDownTexture;
+    outBloom.bloomUpTexture = bloomUpTexture;
+    outBloom.bloomMipCount = bloomMipCount;
+
+    for (uint32_t mipLevel = 0; mipLevel < RenderBloomDownMaxLevelCount; ++mipLevel) {
+        outBloom.bloomMipWidths[mipLevel] = bloomMipWidths[mipLevel];
+        outBloom.bloomMipHeights[mipLevel] = bloomMipHeights[mipLevel];
+        outBloom.bloomDownMipSRVs[mipLevel] = bloomDownMipSRVs[mipLevel];
+        outBloom.bloomDownMipUAVs[mipLevel] = bloomDownMipUAVs[mipLevel];
+    }
+    for (uint32_t mipLevel = 0; mipLevel < RenderBloomUpMaxLevelCount; ++mipLevel) {
+        outBloom.bloomUpMipSRVs[mipLevel] = bloomUpMipSRVs[mipLevel];
+        outBloom.bloomUpMipUAVs[mipLevel] = bloomUpMipUAVs[mipLevel];
+    }
+
+    outBloom.outputTexture = bloomUpTexture;
+    outBloom.outputViewID = bloomUpMipSRVs[0];
+}
+
+void BloomResources::PrepareConvolutionFrame(RenderFrame &frame, FrameBloom &outBloom) {
+    if (fftBloomSize == 0 || !fftBloomConvolutionOutputTexture ||
+        fftBloomConvolutionOutputWidth == 0 || fftBloomConvolutionOutputHeight == 0) {
+        return;
+    }
+
+    const RenderFrameSettings &frameSettings = frame.GetRenderFrameSettings();
+    SetConvolutionBloomKernelRotation(frameSettings.convolutionBloomKernelRotation);
+    SetConvolutionBloomKernelScale(frameSettings.convolutionBloomKernelScale);
+    SetConvolutionBloomPaddingTrim(frameSettings.convolutionBloomPaddingTrim);
+
+    const bool updateFFTBloomKernelBuffer = fftBloomKernelDirty;
+
+    RHI::Texture *kernelSourceRHITexture = nullptr;
+    if (updateFFTBloomKernelBuffer) {
+        Texture *kernelSourceTexture = frame.RetainTexture(fftBloomKernelSourceTexture);
+        if (!kernelSourceTexture || !kernelSourceTexture->IsReadyForRendering()) {
+            return;
+        }
+        kernelSourceRHITexture = kernelSourceTexture->GetRHITexture();
+
+        UpdateConvolutionBloomMapping();
+    }
+
+    outBloom.fftBloomSize = fftBloomSize;
+    outBloom.fftBloomScreenSpatialBuffer = fftBloomScreenSpatialBuffer;
+    outBloom.fftBloomScreenSpectrumBuffer = fftBloomScreenSpectrumBuffer;
+    outBloom.fftBloomKernelSourceTexture = kernelSourceRHITexture;
+    outBloom.fftBloomKernelSpatialBuffer = fftBloomKernelSpatialBuffer;
+    outBloom.fftBloomKernelSpectrumBuffer = fftBloomKernelSpectrumBuffer;
+    outBloom.fftBloomWorkBuffer = fftBloomWorkBuffer;
+    outBloom.fftBloomConvolutionOutputTexture = fftBloomConvolutionOutputTexture;
+    outBloom.fftBloomConvolutionOutputWidth = fftBloomConvolutionOutputWidth;
+    outBloom.fftBloomConvolutionOutputHeight = fftBloomConvolutionOutputHeight;
+    outBloom.fftBloomConvolutionOutputMipCount = fftBloomConvolutionOutputMipCount;
+
+    for (uint32_t mipLevel = 0; mipLevel < RenderConvolutionBloomMaxMipLevelCount; ++mipLevel) {
+        outBloom.fftBloomConvolutionOutputMipSRVs[mipLevel] = fftBloomConvolutionOutputMipSRVs[mipLevel];
+        outBloom.fftBloomConvolutionOutputMipUAVs[mipLevel] = fftBloomConvolutionOutputMipUAVs[mipLevel];
+    }
+
+    outBloom.fftBloomKernelRotation = fftBloomKernelRotation;
+    outBloom.fftBloomKernelScale = fftBloomKernelScale;
+    outBloom.fftBloomPaddingTrim = fftBloomPaddingTrim;
+    outBloom.fftBloomKernelNormalizedExtents = fftBloomKernelNormalizedExtents;
+    outBloom.fftBloomMappedContentRect = fftBloomMappedContentRect;
+    outBloom.fftBloomMappedKernelScale = fftBloomMappedKernelScale;
+    outBloom.fftBloomKernelInverseAverageLuminance = fftBloomKernelInverseAverageLuminance;
+    outBloom.fftBloomKernelDirty = updateFFTBloomKernelBuffer;
+
+    if (updateFFTBloomKernelBuffer) {
+        fftBloomKernelDirty = false;
+    }
+
+    outBloom.outputTexture = fftBloomConvolutionOutputTexture;
 }
 
 void BloomResources::EnsurePyramidResources(uint32_t requestedBloomMipMaxLevelCount) {

@@ -14,13 +14,13 @@
 
 #include "Precompiled.h"
 #include "RenderWorld.h"
+#include "LightCullingBuilder.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
 #include "RenderCamera.h"
 #include "Render/RenderInternal.h"
 #include "Render/RenderUtils.h"
 #include "Render/LocalShadowCasterCuller.h"
-#include "Render/Animation/Skeleton.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
@@ -179,91 +179,6 @@ RenderWorld::SkyboxState RenderWorld::GetSkyboxState() const {
     return SkyboxState::Ready;
 }
 
-void RenderWorld::SetupPyramidBloom(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {
-    BloomResources &resources = renderCamera->GetBloomResources();
-    if (resources.GetBloomMipCount() < 2) {
-        return;
-    }
-
-    frameCamera->bloom.bloomDownTexture = resources.GetBloomDownTexture();
-    frameCamera->bloom.bloomUpTexture = resources.GetBloomUpTexture();
-    frameCamera->bloom.bloomMipCount = resources.GetBloomMipCount();
-
-    for (uint32_t mipLevel = 0; mipLevel < RenderBloomDownMaxLevelCount; ++mipLevel) {
-        frameCamera->bloom.bloomMipWidths[mipLevel] = resources.GetBloomMipWidths()[mipLevel];
-        frameCamera->bloom.bloomMipHeights[mipLevel] = resources.GetBloomMipHeights()[mipLevel];
-        frameCamera->bloom.bloomDownMipSRVs[mipLevel] = resources.GetBloomDownMipSRVs()[mipLevel];
-        frameCamera->bloom.bloomDownMipUAVs[mipLevel] = resources.GetBloomDownMipUAVs()[mipLevel];
-    }
-    for (uint32_t mipLevel = 0; mipLevel < RenderBloomUpMaxLevelCount; ++mipLevel) {
-        frameCamera->bloom.bloomUpMipSRVs[mipLevel] = resources.GetBloomUpMipSRVs()[mipLevel];
-        frameCamera->bloom.bloomUpMipUAVs[mipLevel] = resources.GetBloomUpMipUAVs()[mipLevel];
-    }
-
-    frameCamera->bloom.outputTexture = resources.GetBloomUpTexture();
-    frameCamera->bloom.outputViewID = resources.GetBloomUpMipSRVs()[0];
-}
-
-void RenderWorld::SetupConvolutionBloom(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {
-    BloomResources &resources = renderCamera->GetBloomResources();
-    if (resources.GetFFTBloomSize() == 0 ||
-        !resources.GetFFTBloomConvolutionOutputTexture() ||
-        resources.GetFFTBloomConvolutionOutputWidth() == 0 ||
-        resources.GetFFTBloomConvolutionOutputHeight() == 0) {
-        return;
-    }
-
-    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
-    resources.SetConvolutionBloomKernelRotation(frameSettings.convolutionBloomKernelRotation);
-    resources.SetConvolutionBloomKernelScale(frameSettings.convolutionBloomKernelScale);
-    resources.SetConvolutionBloomPaddingTrim(frameSettings.convolutionBloomPaddingTrim);
-
-    const uint32_t fftBloomSize = resources.GetFFTBloomSize();
-    const bool updateFFTBloomKernelBuffer = resources.IsFFTBloomKernelDirty();
-
-    Texture *fftBloomKernelSourceTexture = nullptr;
-    RHI::Texture *fftBloomKernelSourceRHITexture = nullptr;
-    if (updateFFTBloomKernelBuffer) {
-        fftBloomKernelSourceTexture = frame->RetainTexture(resources.GetFFTBloomKernelTexture());
-        if (!fftBloomKernelSourceTexture || !fftBloomKernelSourceTexture->IsReadyForRendering()) {
-            return;
-        }
-        fftBloomKernelSourceRHITexture = fftBloomKernelSourceTexture->GetRHITexture();
-
-        resources.UpdateConvolutionBloomMapping();
-    }
-
-    frameCamera->bloom.fftBloomSize = fftBloomSize;
-    frameCamera->bloom.fftBloomScreenSpatialBuffer = resources.GetFFTBloomScreenSpatialBuffer();
-    frameCamera->bloom.fftBloomScreenSpectrumBuffer = resources.GetFFTBloomScreenSpectrumBuffer();
-    frameCamera->bloom.fftBloomKernelSourceTexture = updateFFTBloomKernelBuffer ? fftBloomKernelSourceRHITexture : nullptr;
-    frameCamera->bloom.fftBloomKernelSpatialBuffer = resources.GetFFTBloomKernelSpatialBuffer();
-    frameCamera->bloom.fftBloomKernelSpectrumBuffer = resources.GetFFTBloomKernelSpectrumBuffer();
-    frameCamera->bloom.fftBloomWorkBuffer = resources.GetFFTBloomWorkBuffer();
-    frameCamera->bloom.fftBloomConvolutionOutputTexture = resources.GetFFTBloomConvolutionOutputTexture();
-    frameCamera->bloom.fftBloomConvolutionOutputWidth = resources.GetFFTBloomConvolutionOutputWidth();
-    frameCamera->bloom.fftBloomConvolutionOutputHeight = resources.GetFFTBloomConvolutionOutputHeight();
-    frameCamera->bloom.fftBloomConvolutionOutputMipCount = resources.GetFFTBloomConvolutionOutputMipCount();
-    for (uint32_t mipLevel = 0; mipLevel < RenderConvolutionBloomMaxMipLevelCount; ++mipLevel) {
-        frameCamera->bloom.fftBloomConvolutionOutputMipSRVs[mipLevel] = resources.GetFFTBloomConvolutionOutputMipSRVs()[mipLevel];
-        frameCamera->bloom.fftBloomConvolutionOutputMipUAVs[mipLevel] = resources.GetFFTBloomConvolutionOutputMipUAVs()[mipLevel];
-    }
-    frameCamera->bloom.fftBloomKernelRotation = resources.GetFFTBloomKernelRotation();
-    frameCamera->bloom.fftBloomKernelScale = resources.GetFFTBloomKernelScale();
-    frameCamera->bloom.fftBloomPaddingTrim = resources.GetFFTBloomPaddingTrim();
-    frameCamera->bloom.fftBloomKernelNormalizedExtents = resources.GetFFTBloomKernelNormalizedExtents();
-    frameCamera->bloom.fftBloomMappedContentRect = resources.GetFFTBloomMappedContentRect();
-    frameCamera->bloom.fftBloomMappedKernelScale = resources.GetFFTBloomMappedKernelScale();
-    frameCamera->bloom.fftBloomKernelInverseAverageLuminance = resources.GetFFTBloomKernelInverseAverageLuminance();
-    frameCamera->bloom.fftBloomKernelDirty = updateFFTBloomKernelBuffer;
-
-    if (updateFFTBloomKernelBuffer) {
-        resources.MarkConvolutionBloomKernelClean();
-    }
-
-    frameCamera->bloom.outputTexture = resources.GetFFTBloomConvolutionOutputTexture();
-}
-
 static RHI::PipelineState *GetOutputBlitPSO(const RHI::Texture *outputTexture, RHI::ViewID outputViewID) {
     RHI::TextureViewInfo outputViewInfo;
     if (!outputTexture || !outputTexture->GetViewInfo(RHI::ViewType::RTV, outputViewID, outputViewInfo)) {
@@ -360,8 +275,6 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool needHiZCullResources = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableHiZCulling) && frameSettings.hiZOcclusionCulling;
     const bool needHiZTexture = needHiZCullResources;
     const bool needHiZDebugPreview = needHiZTexture && frameSettings.hiZDebugPreview;
-
-    const RenderBloomMode bloomMode = frameSettings.bloomMode;
 
     // 장면 렌더링에 필요한 컬러, 깊이, 노멀, roughness, velocity 텍스처를 준비한다.
     if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, needNormalRoughnessTexture, needVelocityTexture, renderContext->GetBaseClearColor())) {
@@ -605,14 +518,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         Texture *colorGradingLUTTexture = frame->RetainTexture(renderSystem->GetColorGradingLUTTexture());
         frameCamera->colorGradingLUTTexture = colorGradingLUTTexture->GetRHITexture();
 
-        Texture *bloomDirtMaskTexture = frame->RetainTexture(renderCamera->GetBloomResources().GetBloomDirtMaskTexture());
-        frameCamera->bloom.bloomDirtMaskTexture = bloomDirtMaskTexture ? bloomDirtMaskTexture->GetRHITexture() : nullptr;
-
-        if (bloomMode == RenderBloomMode::Pyramid) {
-            SetupPyramidBloom(frame, renderCamera, frameCamera);
-        } else if (bloomMode == RenderBloomMode::Convolution) {
-            SetupConvolutionBloom(frame, renderCamera, frameCamera);
-        }
+        renderCamera->GetBloomResources().PrepareFrame(*frame, frameCamera->bloom);
     }
 
     frameCamera->worldAABB.Clear();
@@ -698,7 +604,8 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
     AddMeshes(frame, renderCamera, frameCamera);
 
     // visibleLights 들로 GPU light culling 데이터를 구성한다.
-    BuildLightCullingData(frame, renderCamera, frameCamera);
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    LightCullingBuilder::Build(frame, frameCamera, cameraDesc.zNear, cameraDesc.zFar);
 
     // frameObjects 중에서 text mesh 를 frameCamera->frameSurfs 에 추가한다.
     AddTextMeshes(frame, renderCamera, frameCamera);
@@ -706,70 +613,14 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
     // Add drawing surface of skybox.
     AddSkyBoxMeshes(frame, renderCamera, frameCamera);
 
-    if (frameCamera->traceTransparentSSR) {
-        bool hasReceiver = hasOceanSurface && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::StaticOnly);
-
-        for (uint32_t i = 0; !hasReceiver && i < frameCamera->numFrameSurfs; ++i) {
-            const FrameSurf *surf = frameCamera->frameSurfs[i];
-            if (!BE1::HasFlag(surf->flags, FrameSurf::Flag::CameraVisible) ||
-                surf->material->GetRenderingMode() != Material::RenderingMode::Blend) {
-                continue;
-            }
-
-            const SharedPtr<ShaderTemplate> &shader = surf->material->GetShaderTemplate();
-            hasReceiver = shader &&
-                shader->SupportsFeature(ShaderFeature::SurfacePrepass) &&
-                shader->SupportsFeature(ShaderFeature::TransparentSSRPrepass) &&
-                shader->SupportsFeature(ShaderFeature::OutputNormal) &&
-                shader->SupportsFeature(ShaderFeature::OutputVelocity) &&
-                shader->SupportsFeature(ShaderFeature::OutputRoughness);
-        }
-
-        bool transparentSSRResourcesReady = false;
-        if (hasReceiver) {
-            transparentSSRResourcesReady = renderCamera->EnsureTransparentSSRResources(frameCamera->renderWidth, frameCamera->renderHeight, RenderContext::activeContext->GetMainRTDepthFormat(), frame->GetRenderFrameSettings().ssrResolutionMode, true);
-
-            frameCamera->transparentSSRDepthTexture = renderCamera->GetCurrentTransparentSSRDepthTexture();
-            frameCamera->transparentSSRPreviousDepthTexture = renderCamera->GetPreviousTransparentSSRDepthTexture();
-            frameCamera->transparentSSRNormalRoughnessTexture = renderCamera->GetTransparentSSRNormalRoughnessTexture();
-            frameCamera->transparentSSRVelocityTexture = renderCamera->GetTransparentSSRVelocityTexture();
-            frameCamera->transparentSSRPreviousTemporalReflectionTexture = renderCamera->GetPreviousTransparentSSRTemporalReflectionTexture();
-            frameCamera->transparentSSRCurrentTemporalReflectionTexture = renderCamera->GetCurrentTransparentSSRTemporalReflectionTexture();
-            frameCamera->transparentSSRUpsampledReflectionTexture = renderCamera->GetTransparentSSRUpsampledReflectionTexture();
-            frameCamera->transparentSSRTemporalHistoryValid = renderCamera->IsTransparentSSRTemporalHistoryValid();
-        }
-        frameCamera->traceTransparentSSR &= transparentSSRResourcesReady;
-        frameCamera->accumulateTransparentSSR &= transparentSSRResourcesReady;
-    }
+    // Transparent SSR receiver 를 확인하고 프레임 데이터를 준비한다.
+    SetupFrameTransparentSSR(frame, renderCamera, frameCamera);
 
     // Ocean surface 와 query 정보를 프레임 데이터에 등록한다.
     RegisterFrameOceanSurface(frame);
 
-    const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
-
-    // CSM 렌더 패스를 구성한다.
-    if (frameCamera->frameCascadedShadow) {
-        for (uint32_t cascadeIndex = 0; cascadeIndex < frameCamera->frameCascadedShadow->cascadeCount; cascadeIndex++) {
-            renderPassBuilder.BuildCascadedShadow(frame, frameCamera->frameCascadedShadow, cascadeIndex, frameCamera->frameSurfs, frameCamera->numFrameSurfs, allowAsyncPSOBuild);
-        }
-    }
-
-    // 갱신할 local shadow 의 view 들만 렌더 패스를 구성한다.
-    FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
-    if (frameShadowAtlas) {
-        for (uint32_t shadowIndex = 0; shadowIndex < frameShadowAtlas->numShadows; ++shadowIndex) {
-            const FrameLocalShadow &shadow = frameShadowAtlas->shadows[shadowIndex];
-            if (shadow.updateDepth) {
-                const uint32_t endShadowView = shadow.firstShadowView + shadow.numShadowViews;
-                for (uint32_t shadowViewIndex = shadow.firstShadowView; shadowViewIndex < endShadowView; ++shadowViewIndex) {
-                    renderPassBuilder.BuildLocalShadow(frame, frameShadowAtlas, shadowViewIndex, allowAsyncPSOBuild);
-                }
-            }
-        }
-    }
-
-    // 메인 렌더 패스를 구성한다.
-    renderPassBuilder.BuildMain(frame, frameCamera);
+    // 카메라의 렌더 패스를 구성한다.
+    BuildCameraPasses(frame, frameCamera);
 
     // Post-Opaque 본 패스와 transparent SSR receiver prepass 에 사용할 ocean pipeline 을 준비한다.
     PrepareOceanSurfacePipeline(frameCamera);
@@ -781,6 +632,73 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
     frame->CmdDrawCamera(frameCamera);
 
     viewCount++;
+}
+
+void RenderWorld::SetupFrameTransparentSSR(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {
+    if (!frameCamera->traceTransparentSSR) {
+        return;
+    }
+
+    bool hasReceiver = hasOceanSurface && !oceanSurface.desc.surface.wireframe && !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::StaticOnly);
+
+    for (uint32_t i = 0; !hasReceiver && i < frameCamera->numFrameSurfs; ++i) {
+        const FrameSurf *surf = frameCamera->frameSurfs[i];
+        if (!BE1::HasFlag(surf->flags, FrameSurf::Flag::CameraVisible) || surf->material->GetRenderingMode() != Material::RenderingMode::Blend) {
+            continue;
+        }
+
+        const SharedPtr<ShaderTemplate> &shader = surf->material->GetShaderTemplate();
+        hasReceiver = shader &&
+            shader->SupportsFeature(ShaderFeature::SurfacePrepass) &&
+            shader->SupportsFeature(ShaderFeature::TransparentSSRPrepass) &&
+            shader->SupportsFeature(ShaderFeature::OutputNormal) &&
+            shader->SupportsFeature(ShaderFeature::OutputVelocity) &&
+            shader->SupportsFeature(ShaderFeature::OutputRoughness);
+    }
+
+    bool transparentSSRResourcesReady = false;
+    if (hasReceiver) {
+        transparentSSRResourcesReady = renderCamera->EnsureTransparentSSRResources(frameCamera->renderWidth, frameCamera->renderHeight, RenderContext::activeContext->GetMainRTDepthFormat(), frame->GetRenderFrameSettings().ssrResolutionMode, true);
+
+        frameCamera->transparentSSRDepthTexture = renderCamera->GetCurrentTransparentSSRDepthTexture();
+        frameCamera->transparentSSRPreviousDepthTexture = renderCamera->GetPreviousTransparentSSRDepthTexture();
+        frameCamera->transparentSSRNormalRoughnessTexture = renderCamera->GetTransparentSSRNormalRoughnessTexture();
+        frameCamera->transparentSSRVelocityTexture = renderCamera->GetTransparentSSRVelocityTexture();
+        frameCamera->transparentSSRPreviousTemporalReflectionTexture = renderCamera->GetPreviousTransparentSSRTemporalReflectionTexture();
+        frameCamera->transparentSSRCurrentTemporalReflectionTexture = renderCamera->GetCurrentTransparentSSRTemporalReflectionTexture();
+        frameCamera->transparentSSRUpsampledReflectionTexture = renderCamera->GetTransparentSSRUpsampledReflectionTexture();
+        frameCamera->transparentSSRTemporalHistoryValid = renderCamera->IsTransparentSSRTemporalHistoryValid();
+    }
+    frameCamera->traceTransparentSSR &= transparentSSRResourcesReady;
+    frameCamera->accumulateTransparentSSR &= transparentSSRResourcesReady;
+}
+
+void RenderWorld::BuildCameraPasses(RenderFrame *frame, FrameCamera *frameCamera) {
+    const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::DisableAsyncPSOBuild);
+
+    // CSM 렌더 패스를 구성한다.
+    if (frameCamera->frameCascadedShadow) {
+        for (uint32_t cascadeIndex = 0; cascadeIndex < frameCamera->frameCascadedShadow->cascadeCount; cascadeIndex++) {
+            renderPassBuilder.BuildShadowCascadePass(frame, frameCamera->frameCascadedShadow, cascadeIndex, frameCamera->frameSurfs, frameCamera->numFrameSurfs, allowAsyncPSOBuild);
+        }
+    }
+
+    // 갱신할 local shadow 의 view 들만 렌더 패스를 구성한다.
+    FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
+    if (frameShadowAtlas) {
+        for (uint32_t shadowIndex = 0; shadowIndex < frameShadowAtlas->numShadows; ++shadowIndex) {
+            const FrameLocalShadow &shadow = frameShadowAtlas->shadows[shadowIndex];
+            if (shadow.updateDepth) {
+                const uint32_t endShadowView = shadow.firstShadowView + shadow.numShadowViews;
+                for (uint32_t shadowViewIndex = shadow.firstShadowView; shadowViewIndex < endShadowView; ++shadowViewIndex) {
+                    renderPassBuilder.BuildLocalShadowPass(frame, frameShadowAtlas, shadowViewIndex, allowAsyncPSOBuild);
+                }
+            }
+        }
+    }
+
+    // 장면 렌더 패스를 구성한다.
+    renderPassBuilder.BuildScenePasses(frame, frameCamera);
 }
 
 // Receiver sphere 로 cascade 투영 영역을 계산한다. near 밖 caster 는 depth clamp 로 처리한다.
@@ -1225,9 +1143,11 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
     if (frameCamera->taaResolve) {
         featureSet.EnableFeature(ShaderFeature::OutputVelocity);
     }
+
     if (hasEnvironmentLight && envLight.GetDesc().enabled) {
         featureSet.EnableFeature(ShaderFeature::IndirectLighting);
     }
+
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = nullptr;
     graphicsPipelineDesc.rasterizerStateType = surfaceSettings.wireframe ? RHI::RasterizerStateType::Wire : RHI::RasterizerStateType::SolidTwoSided;
@@ -1237,7 +1157,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
     RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, false, false, frameCamera->taaResolve);
 
     const ShaderPermutationKey permutationKey = shaderTemplate->RegisterPermutation({}, featureSet);
-    const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::ForceSyncPassPSOBuild);
+    const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::DisableAsyncPSOBuild);
     ShaderPipeline *shaderPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplate, permutationKey, graphicsPipelineDesc, allowAsyncPSOBuild);
     frameCamera->oceanSurfacePSO = ShaderPipeline::GetReadyPSO(shaderPipeline);
 
@@ -1262,8 +1182,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
         prepassPipelineDesc.renderDest.sampleCount = 1;
 
         const ShaderPermutationKey prepassPermutationKey = shaderTemplate->RegisterPermutation({}, prepassFeatureSet);
-        ShaderPipeline *prepassPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(
-            shaderTemplate, prepassPermutationKey, prepassPipelineDesc, allowAsyncPSOBuild);
+        ShaderPipeline *prepassPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplate, prepassPermutationKey, prepassPipelineDesc, allowAsyncPSOBuild);
         frameCamera->oceanSurfaceSSRPrepassPSO = ShaderPipeline::GetReadyPSO(prepassPipeline);
     }
 }
@@ -1447,216 +1366,6 @@ void RenderWorld::FindFrameObjects(RenderFrame *frame, const RenderCamera *rende
     }
 }
 
-void RenderWorld::UpdateSkinningJointCaches(RenderFrame *frame, const FrameSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCaches");
-
-    if (numObjects == 0 || numSkinningJoints == 0) {
-        return;
-    }
-
-#ifdef USE_RENDER_TASK
-    static constexpr uint32_t MaxSkinningJointsPerTask = 8192;
-
-    uint32_t numTasks = (numSkinningJoints + MaxSkinningJointsPerTask - 1) / MaxSkinningJointsPerTask;
-    numTasks = BE1::Min(frame->NumRenderTaskThreads(), numTasks);
-
-    if (numTasks > 1) {
-        UpdateSkinningJointCachesWithTask(objects, numObjects, numSkinningJoints, numTasks);
-    } else {
-        UpdateSkinningJointCachesWithoutTask(objects, numObjects);
-    }
-#else
-    UpdateSkinningJointCachesWithoutTask(objects, numObjects);
-#endif
-}
-
-void RenderWorld::UpdateSkinningJointCachesWithoutTask(const FrameSkinnedMesh **objects, uint32_t numObjects) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesWithoutTask");
-
-    for (uint32_t i = 0; i < numObjects; ++i) {
-        const FrameSkinnedMesh *frameSkinnedMesh = objects[i];
-        frameSkinnedMesh->meshInstance->UpdateSkinningJointCache(frameSkinnedMesh->skeleton);
-    }
-}
-
-void RenderWorld::UpdateSkinningJointCachesByTask(RenderWorld::UpdateSkinningJointCachesTaskDesc *taskDesc) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesByTask");
-
-    for (uint32_t i = 0; i < taskDesc->numSkinnedMeshObjects; ++i) {
-        const FrameSkinnedMesh *frameSkinnedMesh = taskDesc->skinnedMeshObjects[i];
-        frameSkinnedMesh->meshInstance->UpdateSkinningJointCache(frameSkinnedMesh->skeleton);
-    }
-}
-
-void RenderWorld::UpdateSkinningJointCachesByTaskFunction(void *data) {
-    RenderWorld::UpdateSkinningJointCachesTaskDesc *taskDesc = reinterpret_cast<RenderWorld::UpdateSkinningJointCachesTaskDesc *>(data);
-    taskDesc->renderWorld->UpdateSkinningJointCachesByTask(taskDesc);
-}
-
-void RenderWorld::UpdateSkinningJointCachesWithTask(const FrameSkinnedMesh **objects, uint32_t numObjects, uint32_t numSkinningJoints, uint32_t numTasks) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::UpdateSkinningJointCachesWithTask");
-
-    const uint32_t targetJointsPerTask = (numSkinningJoints + numTasks - 1) / numTasks;
-    uint32_t firstIndex = 0;
-
-    updateSkinningJointCachesTaskDescs.Reserve(numTasks);
-    updateSkinningJointCachesTaskDescs.SetCount(0, false);
-
-    while (firstIndex < numObjects) {
-        uint32_t endIndex = firstIndex;
-        uint32_t numTaskJoints = 0;
-        const bool lastTask = updateSkinningJointCachesTaskDescs.Count() + 1 == static_cast<int>(numTasks);
-        do {
-            numTaskJoints += objects[endIndex++]->meshInstance->NumJointMats();
-        } while (endIndex < numObjects && (lastTask || numTaskJoints < targetJointsPerTask));
-
-        UpdateSkinningJointCachesTaskDesc &taskDesc = updateSkinningJointCachesTaskDescs.Alloc();
-        taskDesc.renderWorld = this;
-        taskDesc.skinnedMeshObjects = objects + firstIndex;
-        taskDesc.numSkinnedMeshObjects = endIndex - firstIndex;
-        firstIndex = endIndex;
-    }
-
-    for (int taskIndex = 0; taskIndex < updateSkinningJointCachesTaskDescs.Count(); ++taskIndex) {
-        UpdateSkinningJointCachesTaskDesc &taskDesc = updateSkinningJointCachesTaskDescs[taskIndex];
-        if (!BE1::Engine::taskManager->AddTask(RenderWorld::UpdateSkinningJointCachesByTaskFunction, &taskDesc, renderWorldGroupId, false)) {
-            UpdateSkinningJointCachesByTask(&taskDesc);
-        }
-    }
-
-    BE1::Engine::taskManager->WaitFinish(renderWorldGroupId, true);
-}
-
-int RenderWorld::CountSkinningUploadJoints(const RenderFrame::ChunkRange<FrameSkinnedMesh> &frameSkinnedMeshes, bool needVelocityOutput, uint64_t currentFrameSerial) const {
-    uint32_t numTotalUploadJoints = 0;
-
-    for (const FrameSkinnedMesh &frameSkinnedMesh : frameSkinnedMeshes) {
-        if (!frameSkinnedMesh.space->IsRenderable()) {
-            continue;
-        }
-
-        const SkinningJointCache *skinningJointCache = frameSkinnedMesh.meshInstance->GetSkinningJointCache();
-        if (!skinningJointCache) {
-            continue;
-        }
-
-        // 캐시가 최신 상태가 아니라면 업로드를 하지 않는다.
-        if (!skinningJointCache->IsUpToDate(frameSkinnedMesh.skeleton, frameSkinnedMesh.meshInstance->GetJointMatsSerial())) {
-            continue;
-        }
-
-        const uint32_t numJoints = static_cast<uint32_t>(skinningJointCache->NumJoints());
-        const bool needPreviousPose = needVelocityOutput && BE1::HasFlag(frameSkinnedMesh.space->flags, FrameObject::Flag::CameraVisible);
-        const uint32_t numPoses = needPreviousPose && skinningJointCache->HasPreviousPose(currentFrameSerial) ? 2u : 1u;
-        const uint32_t numUploadJoints = numJoints * numPoses;
-
-        if (numUploadJoints > (UINT32_MAX / sizeof(ShaderSkinningJoint) - numTotalUploadJoints)) {
-            return -1;
-        }
-
-        numTotalUploadJoints += numUploadJoints;
-    }
-    return static_cast<int>(numTotalUploadJoints);
-}
-
-void RenderWorld::BuildSkinningJointBuffer(RenderFrame *frame, FrameCamera *frameCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildSkinningJointBuffer");
-
-    if (frame->NumFrameSkinnedMeshes() == frameCamera->firstFrameSkinnedMeshIndex) {
-        return;
-    }
-
-    skinningJointCacheUpdateObjects.SetCount(0, false);
-
-    uint32_t numTotalJoints = 0;
-
-    const auto frameSkinnedMeshes = frame->GetFrameSkinnedMeshes(frameCamera->firstFrameSkinnedMeshIndex);
-    const uint64_t currentFrameSerial = frame->GetFrameSerial();
-
-    // 카메라/CSM/local shadow 가 공유하는 FrameSkinnedMesh 를 순회하여 광원 수와 무관하게 한 번만 준비한다.
-    for (const FrameSkinnedMesh &frameSkinnedMesh : frameSkinnedMeshes) {
-        if (!frameSkinnedMesh.space->IsRenderable()) {
-            continue;
-        }
-
-        if (!frameSkinnedMesh.skeleton->IsReady() || !frameSkinnedMesh.meshInstance->EnsureCurrent()) {
-            continue;
-        }
-
-        SkinningJointCache *skinningJointCache = frameSkinnedMesh.meshInstance->GetSkinningJointCache();
-        if (!skinningJointCache) {
-            continue;
-        }
-
-        // 캐시의 joint pose 나 skeleton 이 변경되었다면 업데이트를 예약한다.
-        // 캐시 업데이트가 예약된 상태이거나 이미 업데이트된 상태라면 건너뛴다.
-        if (!skinningJointCache->PrepareUpdate(frameSkinnedMesh.skeleton, frameSkinnedMesh.meshInstance->GetJointMatsSerial(), currentFrameSerial)) {
-            continue;
-        }
-
-        skinningJointCacheUpdateObjects.Alloc() = &frameSkinnedMesh;
-
-        numTotalJoints += skinningJointCache->NumJoints();
-    }
-
-    // 앞선 카메라나 프레임에서 이미 갱신된 캐시도 현재 카메라의 jointBuffer 에 업로드해야 한다.
-    UpdateSkinningJointCaches(frame, skinningJointCacheUpdateObjects.Ptr(), skinningJointCacheUpdateObjects.Count(), numTotalJoints);
-
-    // jointBuffer 에 업로드할 전체 joint pose 개수를 계산한다. 카메라 velocity 에 필요한 이전 pose 만 포함한다.
-    const int numTotalUploadJoints = CountSkinningUploadJoints(frameSkinnedMeshes, frameCamera->needVelocityOutput, currentFrameSerial);
-    if (numTotalUploadJoints < 0) {
-        BE_WARNLOG("RenderWorld::BuildSkinningJointBuffer: too many skinning joints\n");
-        return;
-    }
-
-    if (numTotalUploadJoints == 0) {
-        return;
-    }
-
-    // 전체 joint pose 를 한 번에 업로드하기 위해서 업로드 버퍼를 할당한다.
-    RHI::Buffer *jointBuffer = frame->GetThreadData(0)->AllocStructuredBuffer(sizeof(ShaderSkinningJoint), static_cast<uint32_t>(numTotalUploadJoints));
-    if (!jointBuffer) {
-        return;
-    }
-
-    // 업로드 버퍼에는 메인 스레드에서 연속으로 복사한다.
-    BE1::Mat3x4 *dst = static_cast<BE1::Mat3x4 *>(jointBuffer->mappedPtr);
-    uint32_t jointOffset = 0;
-    for (FrameSkinnedMesh &frameSkinnedMesh : frameSkinnedMeshes) {
-        if (!frameSkinnedMesh.space->IsRenderable()) {
-            continue;
-        }
-
-        const SkinningJointCache *skinningJointCache = frameSkinnedMesh.meshInstance->GetSkinningJointCache();
-        if (!skinningJointCache) {
-            continue;
-        }
-
-        if (!skinningJointCache->IsUpToDate(frameSkinnedMesh.skeleton, frameSkinnedMesh.meshInstance->GetJointMatsSerial())) {
-            continue;
-        }
-
-        const uint32_t numJoints = static_cast<uint32_t>(skinningJointCache->NumJoints());
-        const uint32_t byteSize = numJoints * sizeof(ShaderSkinningJoint);
-
-        BE1::simdProcessor->Memcpy(dst + jointOffset, skinningJointCache->GetSkinningJoints(), byteSize);
-        frameSkinnedMesh.skinningJointOffset = jointOffset;
-        jointOffset += numJoints;
-
-        frameSkinnedMesh.prevSkinningJointOffset = frameSkinnedMesh.skinningJointOffset;
-
-        const bool needPreviousPose = frameCamera->needVelocityOutput && BE1::HasFlag(frameSkinnedMesh.space->flags, FrameObject::Flag::CameraVisible);
-        if (needPreviousPose && skinningJointCache->HasPreviousPose(currentFrameSerial)) {
-            BE1::simdProcessor->Memcpy(dst + jointOffset, skinningJointCache->GetPrevSkinningJoints(), byteSize);
-            frameSkinnedMesh.prevSkinningJointOffset = jointOffset;
-            jointOffset += numJoints;
-        }
-    }
-
-    assert(jointOffset == static_cast<uint32_t>(numTotalUploadJoints));
-    frameCamera->skinningJointBuffer = jointBuffer;
-}
-
 static int SelectMeshLOD(const SubMesh *subMesh, int requestedLOD, float squaredLODErrorLimit) {
     const int numLODs = subMesh->NumLODs();
     if (requestedLOD == 0 || numLODs <= 1) {
@@ -1690,7 +1399,7 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
         return;
     }
 
-    BuildSkinningJointBuffer(frame, frameCamera);
+    skinningJointBufferBuilder.Build(frame, frameCamera);
 
     const bool skipViewCulling = frame->GetRenderFrameSettings().skipViewCulling;
     const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
@@ -1732,7 +1441,9 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
 
             const Material *material = materialManager.defaultLitMaterial.get();
             if (meshSurf->materialIndex >= 0 && static_cast<uint32_t>(meshSurf->materialIndex) < frameObject.numMaterials) {
-                material = frameObject.GetMaterials()[meshSurf->materialIndex];
+                if (const Material *surfaceMaterial = frameObject.GetMaterials()[meshSurf->materialIndex]) {
+                    material = surfaceMaterial;
+                }
             }
 
             const bool castsShadow = !BE1::HasFlag(material->GetFlags(), Material::Flag::NoShadow) && material->GetRenderingMode() != Material::RenderingMode::Blend;
@@ -2041,7 +1752,7 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera
             frameLight->viewZMax = viewZMax;
 
             // 광원의 light culling 타일 범위와 화면 투영 크기를 계산한다.
-            const uint32_t projectedSize = ComputeLightTileRange(frameCamera, screenClipRect, frameLight->packedTileMin, frameLight->packedTileMax);
+            const uint32_t projectedSize = LightCullingBuilder::ComputeTileRange(frameCamera, screenClipRect, frameLight->packedTileMin, frameLight->packedTileMax);
             frameLight->projectedSize = projectedSize;
 
             if (localShadowsEnabled && BE1::HasFlag(frameLight->flags, RenderLight::Flag::CastShadows)) {
@@ -2256,179 +1967,6 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
     }
 }
 
-static BE_INLINE uint16_t PackLightTileCoord(uint32_t x, uint32_t y) {
-    assert(x <= FrameLight::TileCoordMask);
-    assert(y <= FrameLight::TileCoordMask);
-    return static_cast<uint16_t>(x | (y << FrameLight::TileCoordBitCount));
-}
-
-// Light-culling 타일 범위를 계산하고, 렌더 픽셀 기준 광원 화면 영역의 긴 변 길이를 반환한다.
-uint32_t RenderWorld::ComputeLightTileRange(const FrameCamera *frameCamera, const BE1::Rect &screenClipRect, uint16_t &packedTileMin, uint16_t &packedTileMax) {
-    if (frameCamera->outputRect.w <= 0 || frameCamera->outputRect.h <= 0 || frameCamera->renderWidth == 0 || frameCamera->renderHeight == 0) {
-        assert(0);
-        packedTileMin = 0;
-        packedTileMax = 0;
-        return 0;
-    }
-
-    const int32_t outputMinX = frameCamera->outputRect.x;
-    const int32_t outputMinY = frameCamera->outputRect.y;
-    const int32_t outputMaxX = outputMinX + frameCamera->outputRect.w;
-    const int32_t outputMaxY = outputMinY + frameCamera->outputRect.h;
-
-    int32_t clipMinX = screenClipRect.x;
-    int32_t clipMinY = screenClipRect.y;
-    int32_t clipMaxX = static_cast<int32_t>(screenClipRect.x) + screenClipRect.w;
-    int32_t clipMaxY = static_cast<int32_t>(screenClipRect.y) + screenClipRect.h;
-
-    // 1 픽셀보다 작은 투영 영역은 정수 Rect 에서 크기가 0 이 될 수 있으므로 최소 한 픽셀을 보수적으로 포함한다.
-    if (clipMinX >= clipMaxX && screenClipRect.w == 0) {
-        clipMinX = BE1::Clamp<int32_t>(screenClipRect.x, outputMinX, outputMaxX - 1);
-        clipMaxX = clipMinX + 1;
-    }
-    if (clipMinY >= clipMaxY && screenClipRect.h == 0) {
-        clipMinY = BE1::Clamp<int32_t>(screenClipRect.y, outputMinY, outputMaxY - 1);
-        clipMaxY = clipMinY + 1;
-    }
-
-    if (clipMinX >= clipMaxX || clipMinY >= clipMaxY) {
-        assert(0);
-        packedTileMin = 0;
-        packedTileMax = 0;
-        return 0;
-    }
-
-    const uint32_t outputWidth = static_cast<uint32_t>(frameCamera->outputRect.w);
-    const uint32_t outputHeight = static_cast<uint32_t>(frameCamera->outputRect.h);
-    const uint32_t renderWidth = frameCamera->renderWidth;
-    const uint32_t renderHeight = frameCamera->renderHeight;
-
-    // screenClipRect 는 outputRect 좌표계이므로, 동적 해상도를 반영한 렌더 타겟 좌표계로 변환한다.
-    const uint32_t renderMinX = static_cast<uint32_t>(clipMinX - outputMinX) * renderWidth / outputWidth;
-    const uint32_t renderMinY = static_cast<uint32_t>(clipMinY - outputMinY) * renderHeight / outputHeight;
-    const uint32_t renderMaxX = (static_cast<uint32_t>(clipMaxX - outputMinX) * renderWidth + outputWidth - 1) / outputWidth;
-    const uint32_t renderMaxY = (static_cast<uint32_t>(clipMaxY - outputMinY) * renderHeight + outputHeight - 1) / outputHeight;
-
-    // 렌더 타겟 좌표계 기준으로 타일 좌표 (MinX, MinY, MaxX, MaxY) 를 구한다.
-    const uint32_t tileMinX = static_cast<uint32_t>(renderMinX / ShaderLightTileSize);
-    const uint32_t tileMinY = static_cast<uint32_t>(renderMinY / ShaderLightTileSize);
-    const uint32_t tileMaxX = static_cast<uint32_t>((renderMaxX - 1) / ShaderLightTileSize);
-    const uint32_t tileMaxY = static_cast<uint32_t>((renderMaxY - 1) / ShaderLightTileSize);
-
-    packedTileMin = PackLightTileCoord(tileMinX, tileMinY);
-    packedTileMax = PackLightTileCoord(tileMaxX, tileMaxY);
-
-    // 타일 단위로 양자화하기 전의 크기를 shadow 요청 해상도 계산에서도 공유한다.
-    return BE1::Max(renderMaxX - renderMinX, renderMaxY - renderMinY);
-}
-
-void RenderWorld::BuildLightCullingData(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildLightCullingData");
-
-    // 현재 카메라의 visible lights 를 minmax z 에 따라 정렬하고, z-bins 를 작성한다.
-    BuildLightZBins(frame, renderCamera, frameCamera);
-
-    if (frameCamera->lightCulling.zBins) {
-        // 현재 카메라의 Z-bin 이 시작되는 프레임 공용 light Z-bin 테이블을 예약한다.
-        frameCamera->lightCulling.zBinTableOffset = frame->ReserveLightCullingZBins();
-    }
-
-    if (frameCamera->numFrameLocalLights > 0) {
-        assert(frameCamera->renderWidth > 0 && frameCamera->renderHeight > 0);
-
-        // 렌더링 화면에 필요한 타일 개수
-        frameCamera->lightCulling.tileCountX = (frameCamera->renderWidth + ShaderLightTileSize - 1) / ShaderLightTileSize;
-        frameCamera->lightCulling.tileCountY = (frameCamera->renderHeight + ShaderLightTileSize - 1) / ShaderLightTileSize;
-
-        // 각 타일이 필요한 비트 마스크 워드의 개수
-        frameCamera->lightCulling.wordsPerTile = (frameCamera->numFrameLocalLights + ShaderLightWordBits - 1) / ShaderLightWordBits;
-
-        // 전체 타일에 필요한 비트 마스크 워드의 개수
-        const uint64_t numLightCullingWords = static_cast<uint64_t>(frameCamera->lightCulling.tileCountX) * frameCamera->lightCulling.tileCountY * frameCamera->lightCulling.wordsPerTile;
-
-        if (numLightCullingWords <= UINT32_MAX) {
-            // 현재 카메라의 타일 마스크 워드가 시작되는 프레임 공용 테이블을 예약한다.
-            frameCamera->lightCulling.tileWordTableOffset = frame->ReserveLightCullingWords(static_cast<uint32_t>(numLightCullingWords));
-        }
-    }
-}
-
-static BE_INLINE uint32_t PackLightZBin(uint32_t minLightIndex, uint32_t maxLightIndex) {
-    assert(minLightIndex <= ShaderLightZBinIndexMask);
-    assert(maxLightIndex <= ShaderLightZBinIndexMask);
-    return (maxLightIndex << 16) | minLightIndex;
-}
-
-void RenderWorld::BuildLightZBins(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
-    PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildLightZBins");
-
-    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
-
-    const uint32_t numFrameLocalLights = frameCamera->numFrameLocalLights;
-    if (numFrameLocalLights == 0) {
-        return;
-    }
-
-    if (numFrameLocalLights > 1) {
-        // viewZMin, viewZMax 순으로 오름차순 정렬하고, 두 값이 같으면 index 가 작은 라이트를 먼저 배치해 순서를 고정한다.
-        std::sort(frameCamera->frameLocalLights, frameCamera->frameLocalLights + numFrameLocalLights, [](const FrameLight *lhs, const FrameLight *rhs) {
-            if (lhs->viewZMin < rhs->viewZMin) {
-                return true;
-            }
-            if (lhs->viewZMin > rhs->viewZMin) {
-                return false;
-            }
-            if (lhs->viewZMax < rhs->viewZMax) {
-                return true;
-            }
-            if (lhs->viewZMax > rhs->viewZMax) {
-                return false;
-            }
-            return lhs->index < rhs->index;
-        });
-    }
-
-    // Z-bin light index 는 16 비트로 패킹된다. 오버플로가 발생하면 라이트를 누락하지 않고 GPU 경로에서
-    // 폴백할 수 있도록 정렬된 라이트 목록은 유지하고 lightCulling.zBins 는 nullptr 로 둔다.
-    if (numFrameLocalLights > ShaderLightZBinMaxLightCount) {
-        return;
-    }
-
-    if (cameraDesc.zFar <= cameraDesc.zNear) {
-        return;
-    }
-
-    const float viewZRange = cameraDesc.zFar - cameraDesc.zNear;
-    const float zBinSize = viewZRange / static_cast<float>(ShaderLightZBinCount);
-
-    // linear view Z 를 Z-bin index 로 변환하기 위한 scale 과 bias 를 미리 계산한다.
-    frameCamera->lightCulling.zBinScale = static_cast<float>(ShaderLightZBinCount) / viewZRange;
-    frameCamera->lightCulling.zBinBias = -cameraDesc.zNear * frameCamera->lightCulling.zBinScale;
-    frameCamera->lightCulling.zBins = (uint32_t *)frame->MemAlloc(ShaderLightZBinCount * sizeof(frameCamera->lightCulling.zBins[0]));
-
-    uint32_t startLightIndex = 0;
-    uint32_t endLightIndex = 0;
-
-    // 각 Z-bin 에 라이트 범위 [startLightIndex, endLightIndex) 를 패킹한다. (endLightIndex 의 라이트는 포함되지 않는다)
-    for (uint32_t zBinIndex = 0; zBinIndex < ShaderLightZBinCount; ++zBinIndex) {
-        const float currentZBinMin = cameraDesc.zNear + static_cast<float>(zBinIndex) * zBinSize;
-        const float currentZBinMax = zBinIndex + 1 == ShaderLightZBinCount ? cameraDesc.zFar : currentZBinMin + zBinSize;
-
-        while (startLightIndex < numFrameLocalLights && frameCamera->frameLocalLights[startLightIndex]->viewZMax < currentZBinMin) {
-            ++startLightIndex;
-        }
-        while (endLightIndex < numFrameLocalLights && frameCamera->frameLocalLights[endLightIndex]->viewZMin <= currentZBinMax) {
-            ++endLightIndex;
-        }
-
-        if (startLightIndex < endLightIndex) {
-            frameCamera->lightCulling.zBins[zBinIndex] = PackLightZBin(startLightIndex, endLightIndex - 1);
-        } else {
-            frameCamera->lightCulling.zBins[zBinIndex] = ShaderLightZBinEmpty;
-        }
-    }
-}
-
 void RenderWorld::BuildDebugDraw(RenderFrame *frame, FrameCamera *frameCamera) {
     PROFILER_CPU_SCOPED_EVENT("RenderWorld::BuildDebugDraw");
 
@@ -2639,7 +2177,7 @@ void RenderWorld::DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32
 
     guiMesh.Clear();
 
-    renderPassBuilder.BuildGUI(frame, frameCamera);
+    renderPassBuilder.BuildGuiPass(frame, frameCamera);
 
     frame->CmdDrawCamera(frameCamera);
 

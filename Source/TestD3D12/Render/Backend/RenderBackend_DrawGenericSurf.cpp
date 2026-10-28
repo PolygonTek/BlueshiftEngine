@@ -18,7 +18,7 @@
 #include "Render/RenderInternal.h"
 #include "Render/RenderFrame.h"
 
-void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
+void RenderBackend::DrawGenericSurfaces(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfaces");
 
     assert(numDrawSurfs > 0);
@@ -36,7 +36,7 @@ void RenderBackend::DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, ui
 #endif
 }
 
-void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
+void RenderBackend::DrawGenericSurfacesWithoutTask(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithoutTask");
 
     RHI::PipelineState *currentPSO = nullptr;
@@ -53,7 +53,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **dr
     uint32_t hiZCullBatchIndex = 0;
 
     while (drawSurfIndex < numDrawSurfs) {
-        const RenderPassDrawSurf *drawSurf = drawSurfs[drawSurfIndex];
+        const DrawSurf2 *drawSurf = drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
             drawSurfIndex++;
             continue;
@@ -124,7 +124,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
     uint32_t drawSurfIndex = 0;
     uint32_t hiZCullBatchIndex = 0;
     while (drawSurfIndex < taskDesc->numDrawSurfs) {
-        const RenderPassDrawSurf *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
+        const DrawSurf2 *drawSurf = taskDesc->drawSurfs[drawSurfIndex];
         if (!drawSurf->pso) {
             drawSurfIndex++;
             continue;
@@ -191,7 +191,7 @@ void RenderBackend::DrawGenericSurfacesByTaskFunction(void *data) {
     renderSystem->GetBackend()->DrawGenericSurfacesByTask(taskDesc);
 }
 
-void RenderBackend::DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
+void RenderBackend::DrawGenericSurfacesWithTask(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches, uint32_t hiZCullBatchCount) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawGenericSurfacesWithTask");
 
     // numDrawSurfs 로 만들어 질 수 있는 최대 태스크 개수를 계산한다.

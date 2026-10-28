@@ -30,7 +30,7 @@ struct ShaderCSMData;
 struct ShaderShadowAtlasData;
 struct RenderPass;
 struct FrameSurf;
-struct RenderPassDrawSurf;
+struct DrawSurf2;
 
 class RenderBackend {
 public:
@@ -75,7 +75,7 @@ private:
 
     struct DrawSurfsTaskDesc {
         int32_t                     threadIndex = -1;
-        const RenderPassDrawSurf ** drawSurfs = nullptr;
+        const DrawSurf2 **          drawSurfs = nullptr;
         uint32_t                    numDrawSurfs = 0;
         const RHI::ConstantBuffer * viewConstantBuffer = nullptr;
         uint32_t                    firstDrawSurfIndex = 0;
@@ -128,13 +128,13 @@ private:
     void                            DrawDebugLights();
     void                            DrawDebugPrimitives();
 
-    void                            SetPassVertexBuffers(RHI::CommandList *commandList, const RenderPassDrawSurf *drawSurf) const;
+    void                            SetPassVertexBuffers(RHI::CommandList *commandList, const DrawSurf2 *drawSurf) const;
 
-    void                            DrawGenericSurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
-    void                            DrawSkySurfaces(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs);
+    void                            DrawGenericSurfaces(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
+    void                            DrawSkySurfaces(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs);
 
-    void                            DrawGenericSurfacesWithoutTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
-    void                            DrawGenericSurfacesWithTask(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
+    void                            DrawGenericSurfacesWithoutTask(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
+    void                            DrawGenericSurfacesWithTask(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, const RHI::ConstantBuffer *viewConstantBuffer, const SurfaceInstanceBatch *hiZCullBatches = nullptr, uint32_t hiZCullBatchCount = 0);
     void                            DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *taskDesc);
     static void                     DrawGenericSurfacesByTaskFunction(void *data);
 
@@ -166,10 +166,10 @@ private:
 
     bool                            DispatchLightCulling();
 
-    uint32_t                        FindSurfaceInstanceBatchEnd(const RenderPassDrawSurf **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
-    RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t instanceCount) const;
-    bool                            PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const RenderPassDrawSurf **drawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const;
-    void                            DrawSurfaceInstanceBatch(RHI::CommandList *commandList, const RenderPassDrawSurf **drawSurfs, const SurfaceInstanceBatch &batch, uint32_t &drawCount, uint64_t &drawTriangleCount);
+    uint32_t                        FindSurfaceInstanceBatchEnd(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
+    RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t instanceCount) const;
+    bool                            PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const;
+    void                            DrawSurfaceInstanceBatch(RHI::CommandList *commandList, const DrawSurf2 **drawSurfs, const SurfaceInstanceBatch &batch, uint32_t &drawCount, uint64_t &drawTriangleCount);
 
     void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);
     void                            UpdateFrameStats();

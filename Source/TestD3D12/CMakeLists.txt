@@ -265,6 +265,10 @@ set(SRC_FILES
     Render/Frontend/RenderPassPSOResolver.cpp
     Render/Frontend/RenderPassBuilder.h
     Render/Frontend/RenderPassBuilder.cpp
+    Render/Frontend/LightCullingBuilder.h
+    Render/Frontend/LightCullingBuilder.cpp
+    Render/Frontend/SkinningJointBufferBuilder.h
+    Render/Frontend/SkinningJointBufferBuilder.cpp
     Render/Sampler.h
     Render/SamplerManager.h
     Render/SamplerManager.cpp

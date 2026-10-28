@@ -75,7 +75,7 @@ struct FrameSurf {
     uint8_t                         shadowCascadeMask;      ///< 이 surface 를 그릴 directional shadow cascade bit mask.
 };
 
-struct RenderPassDrawSurf {
+struct DrawSurf2 {
     const FrameSurf *               frameSurf;
     uint64_t                        sortKey;
 
@@ -101,8 +101,8 @@ struct RenderPass {
 
     uint32_t                        maxDrawSurfs;
     uint32_t                        numDrawSurfs;
-    const RenderPassDrawSurf **     drawSurfs;
-    RenderPassDrawSurf *            drawSurfStorage;
+    const DrawSurf2 **              drawSurfs;
+    DrawSurf2 *                     drawSurfStorage;
 };
 
 // XY 범위는 border 를 포함하고, XY 중심은 texel grid 에 snap 된다.
@@ -381,8 +381,8 @@ struct FrameCamera {
     RenderPass *                    renderPasses = nullptr;
     uint32_t                        maxRenderPassDrawSurfs = 0;
     uint32_t                        numRenderPassDrawSurfs = 0;
-    const RenderPassDrawSurf **     renderPassDrawSurfs = nullptr;  // RenderPass 들이 나눠 쓰는 draw surf pointer pool
-    RenderPassDrawSurf *            renderPassDrawSurfStorage = nullptr; // RenderPass 들이 나눠 쓰는 draw surf pool
+    const DrawSurf2 **              renderPassDrawSurfs = nullptr;  // RenderPass 들이 나눠 쓰는 draw surf pointer pool
+    DrawSurf2 *                     renderPassDrawSurfStorage = nullptr; // RenderPass 들이 나눠 쓰는 draw surf pool
 
     BE1::Rect                       outputRect;
     RHI::Texture *                  outputTexture = nullptr;

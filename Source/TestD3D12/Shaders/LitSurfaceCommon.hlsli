@@ -120,8 +120,7 @@ struct LitSurfaceInput {
 #endif
 };
 
-LitSurfaceInput PrepareLitSurfaceInput(PSInput input, ShaderMaterial shaderMaterial, SamplerState materialSampler,
-    float2 texCoord, float2 texCoordDx, float2 texCoordDy, bool hasTexCoordGradients) {
+LitSurfaceInput PrepareLitSurfaceInput(PSInput input, ShaderMaterial shaderMaterial, SamplerState materialSampler, float2 texCoord, float2 texCoordDx, float2 texCoordDy, bool hasTexCoordGradients) {
     const float3 worldNormal = normalize(input.worldNormal);
 
 #if USE_SURFACE_TANGENT_FRAME

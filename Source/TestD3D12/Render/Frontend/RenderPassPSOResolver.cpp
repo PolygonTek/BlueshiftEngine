@@ -19,7 +19,7 @@
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
-void RenderPassPSOResolver::Begin(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity) {
+void RenderPassPSOResolver::Prepare(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity) {
     assert(renderPass);
 
     basePipelineDesc = renderPass->graphicsPipelineDesc;

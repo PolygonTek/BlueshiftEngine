@@ -21,6 +21,10 @@ enum class VertexInputLayoutId : uint8_t {
     XyzSkinning1,
     XyzSkinning4,
     XyzSkinning8,
+    XyzNormal,
+    XyzNormalSkinning1,
+    XyzNormalSkinning4,
+    XyzNormalSkinning8,
     XyzColor,
     XyzSt,
     XyzStSkinning1,
@@ -52,4 +56,10 @@ public:
 
     static VertexInputLayoutId      GetIdForVertexWeights(VertexInputLayoutId baseId, int maxVertexWeights);
     static bool                     IsSkinning(VertexInputLayoutId id);
+
+private:
+    static constexpr int            NumVertexInputLayouts = static_cast<int>(VertexInputLayoutId::Count);
+
+    static RHI::InputLayout         inputLayouts[NumVertexInputLayouts];
+    static bool                     inputLayoutsInitialized;
 };
