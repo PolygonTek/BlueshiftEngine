@@ -171,6 +171,60 @@ void SceneReflection::BuildImGui() {
     ImGui::Text("SSR reflection test");
     ImGui::Checkbox("Rotate Objects", &rotateObjects);
 
+    static constexpr Material::RenderingMode renderingModes[] = {
+        Material::RenderingMode::Opaque, Material::RenderingMode::AlphaCutoff, Material::RenderingMode::Dithered, Material::RenderingMode::Blend
+    };
+    int renderingModeIndex = 0;
+    for (const auto &material : objectMaterials) {
+        if (material && material != materialManager.whiteLitMaterial) {
+            const Material::RenderingMode renderingMode = material->GetRenderingMode();
+            for (int modeIndex = 0; modeIndex < COUNT_OF(renderingModes); ++modeIndex) {
+                if (renderingModes[modeIndex] == renderingMode) {
+                    renderingModeIndex = modeIndex;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::Combo("Rendering Mode", &renderingModeIndex, "Opaque\0AlphaCutoff\0Dithered\0Blend\0")) {
+        for (const auto &material : objectMaterials) {
+            if (material && material != materialManager.whiteLitMaterial) {
+                material->SetRenderingMode(renderingModes[renderingModeIndex]);
+            }
+        }
+    }
+
+    static const char *const alphaLabels[ObjectCount] = { "Sphere Alpha", "Box Alpha", "Cylinder Alpha", "Quad Alpha" };
+    static const char *const fadeLabels[ObjectCount] = { "Sphere Fade Opacity", "Box Fade Opacity", "Cylinder Fade Opacity", "Quad Fade Opacity" };
+    for (int objectIndex = 0; objectIndex < ObjectCount; ++objectIndex) {
+        const int renderObjectHandle = objects[objectIndex].renderObjectHandle;
+        const RenderObject *renderObject = renderWorld && renderObjectHandle >= 0 ? renderWorld->GetRenderObject(renderObjectHandle) : nullptr;
+        if (renderObject) {
+            float fadeOpacity = renderObject->GetFadeOpacity();
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::SliderFloat(fadeLabels[objectIndex], &fadeOpacity, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                renderWorld->UpdateRenderObjectFadeOpacity(renderObjectHandle, fadeOpacity);
+            }
+        }
+
+        const auto &material = objectMaterials[objectIndex];
+        if (!material || material == materialManager.whiteLitMaterial) {
+            continue;
+        }
+
+        const int baseColorPropertyIndex = material->FindPropertyIndex(ShaderTemplate::StandardProperty::BaseColorFactor);
+        const ShaderTemplate::PropertyValue *baseColorValue = material->GetPropertyValue(baseColorPropertyIndex);
+        if (baseColorValue && baseColorValue->GetType() == BE1::Variant::Type::Color4) {
+            BE1::Color4 baseColor = baseColorValue->As<BE1::Color4>();
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::SliderFloat(alphaLabels[objectIndex], &baseColor.a, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                material->SetPropertyValue(baseColorPropertyIndex, baseColor);
+            }
+        }
+    }
+
     ImGui::Separator();
     ImGui::Text("Floor Material");
 

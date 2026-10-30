@@ -76,6 +76,10 @@ void RenderObject::UpdateMaterials(const BE1::Array<SharedPtr<Material>> &materi
     desc.materials = materials;
 }
 
+void RenderObject::UpdateFadeOpacity(float fadeOpacity) {
+    desc.fadeOpacity = BE1::Clamp(fadeOpacity, 0.0f, 1.0f);
+}
+
 void RenderObject::UpdateFont(const SharedPtr<Font> &font) {
     desc.GetTextDesc().font = font;
 }
@@ -127,6 +131,10 @@ void RenderObject::Update(const RenderObject::Desc &src, RenderObject::Desc::Upd
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::MeshLOD)) {
         UpdateMeshLOD(src.meshLOD);
+    }
+
+    if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::FadeOpacity)) {
+        UpdateFadeOpacity(src.fadeOpacity);
     }
 
     if (BE1::HasFlag(updateFlags, Desc::UpdateFlag::Skeleton)) {

@@ -2,6 +2,7 @@
 #define __LIT_SURFACE_COMMON_HLSLI__
 
 #include "SurfaceDrawCommon.hlsli"
+#include "AlphaTest.hlsli"
 
 cbuffer CameraCB : register(b1) {
     CameraConstants cameraConstants;
@@ -10,7 +11,7 @@ cbuffer CameraCB : register(b1) {
 #include "PBR/ParallaxMapping.hlsli"
 
 #ifdef LIT_PREPASS
-    #if defined(PERFORATED) || defined(TRANSPARENT_SSR_PREPASS)
+    #if defined(PERFORATED) || defined(DITHERED) || defined(TRANSPARENT_SSR_PREPASS)
         #define LIT_USE_COLOR 1
     #else
         #define LIT_USE_COLOR 0
@@ -99,6 +100,10 @@ struct VSInput {
 struct PSInput {
     float4 position : SV_POSITION;
 
+#if LIT_USE_COLOR || defined(DITHER_FADE)
+    nointerpolation uint surfaceFlags : TEXCOORD7;
+#endif
+
 #if LIT_USE_COLOR
     float4 color : COLOR;
 #endif
@@ -142,6 +147,10 @@ PSInput VSMain(VSInput input) {
 #endif
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, localPosition), 1.0);
     result.position = mul(cameraConstants.viewProjMatrix, positionWS);
+
+#if LIT_USE_COLOR || defined(DITHER_FADE)
+    result.surfaceFlags = shaderSurface.flags;
+#endif
 
 #if LIT_USE_COLOR
     result.color = input.color;
@@ -259,21 +268,31 @@ LitSurfaceInput PrepareLitSurfaceInput(PSInput input, ShaderMaterial shaderMater
 #if LIT_USE_COLOR
 float4 EvaluateLitBaseColor(PSInput input, ShaderMaterial shaderMaterial, SamplerState materialSampler, float2 baseTc) {
     float4 baseColor = shaderMaterial.GetBaseColorFactor() * input.color;
-    #if _BASECOLOR != 0
-        baseColor *= GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, baseTc);
-    #endif
+#if _BASECOLOR != 0
+    baseColor *= GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, baseTc);
+#endif
 
-    #ifdef PERFORATED
-        clip(baseColor.a - shaderMaterial.alphaCutoff);
+#if defined(PERFORATED) || defined(DITHERED)
+    #ifdef DITHERED
+        const uint patternSeed = shaderMaterial.flags >> ShaderMaterialDitherPatternShift;
+    #else
+        const uint patternSeed = GetSurfaceDitherPatternSeed(input.surfaceFlags);
     #endif
+    ApplyAlphaTest(baseColor.a, shaderMaterial.alphaCutoff, GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, patternSeed);
+#elif defined(DITHER_FADE)
+    ApplyDitherFade(GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, GetSurfaceDitherPatternSeed(input.surfaceFlags));
+#endif
 
-    #ifdef TRANSPARENT_SSR_PREPASS
-        // 완전히 투명한 texel 은 가장 가까운 transparent SSR receiver 로 기록하지 않는다.
-        clip(baseColor.a - (1.0f / 255.0f));
-    #endif
+    if ((shaderMaterial.flags & ShaderMaterialFlagTransparent) != 0u) {
+        baseColor.a *= GetSurfaceFadeOpacity(input.surfaceFlags);
+    }
+
+#ifdef TRANSPARENT_SSR_PREPASS
+    // 완전히 투명한 texel 은 가장 가까운 transparent SSR receiver 로 기록하지 않는다.
+    clip(baseColor.a - (1.0f / 255.0f));
+#endif
     return baseColor;
 }
-
 #endif // LIT_USE_COLOR
 
 #endif // __LIT_SURFACE_COMMON_HLSLI__

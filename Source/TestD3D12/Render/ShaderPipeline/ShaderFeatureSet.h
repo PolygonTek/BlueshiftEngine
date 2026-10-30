@@ -18,6 +18,8 @@
 
 enum class ShaderFeature : uint8_t {
     Perforated,
+    Dithered,
+    DitherFade,
     GpuSkinningWeight1,
     GpuSkinningWeight4,
     GpuSkinningWeight8,
@@ -33,6 +35,8 @@ enum class ShaderFeature : uint8_t {
 struct ShaderFeatureSet {
     enum Flag : uint32_t {
         Perforated                  = 1u << to_int(ShaderFeature::Perforated),
+        Dithered                    = 1u << to_int(ShaderFeature::Dithered),
+        DitherFade                  = 1u << to_int(ShaderFeature::DitherFade),
         GpuSkinningWeight1          = 1u << to_int(ShaderFeature::GpuSkinningWeight1),
         GpuSkinningWeight4          = 1u << to_int(ShaderFeature::GpuSkinningWeight4),
         GpuSkinningWeight8          = 1u << to_int(ShaderFeature::GpuSkinningWeight8),
@@ -42,6 +46,7 @@ struct ShaderFeatureSet {
         DirectLighting              = 1u << to_int(ShaderFeature::DirectLighting),
         IndirectLighting            = 1u << to_int(ShaderFeature::IndirectLighting),
         TransparentSSRPrepass       = 1u << to_int(ShaderFeature::TransparentSSRPrepass),
+        AlphaTestMask               = Perforated | Dithered | DitherFade,
         GpuSkinningWeightMask       = GpuSkinningWeight1 | GpuSkinningWeight4 | GpuSkinningWeight8
     };
 

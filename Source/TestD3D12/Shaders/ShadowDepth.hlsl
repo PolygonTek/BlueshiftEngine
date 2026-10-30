@@ -1,4 +1,5 @@
 #include "SurfaceDrawCommon.hlsli"
+#include "AlphaTest.hlsli"
 
 cbuffer ShadowViewCB : register(b1) {
     ShadowViewConstants shadowViewConstants;
@@ -11,7 +12,7 @@ cbuffer ShadowViewCB : register(b1) {
 
 struct VSInput {
     float4 position : POSITION;
-#ifdef PERFORATED
+#if defined(PERFORATED) || defined(DITHERED)
 #if _BASECOLOR != 0
     float2 texCoord : TEXCOORD0;
 #endif
@@ -25,7 +26,10 @@ struct VSInput {
 
 struct PSInput {
     float4 position : SV_POSITION;
-#ifdef PERFORATED
+#ifdef DITHER_FADE
+    nointerpolation uint surfaceFlags : TEXCOORD2;
+#endif
+#if defined(PERFORATED) || defined(DITHERED)
 #if _BASECOLOR != 0
     float2 texCoord : TEXCOORD0;
 #endif
@@ -48,7 +52,11 @@ PSInput VSMain(VSInput input) {
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, localPosition), 1.0);
     result.position = mul(shadowViewConstants.viewProjMatrix, positionWS);
 
-#ifdef PERFORATED
+#ifdef DITHER_FADE
+    result.surfaceFlags = shaderSurface.flags;
+#endif
+
+#if defined(PERFORATED) || defined(DITHERED)
 #if _BASECOLOR != 0
     result.texCoord = input.texCoord;
 #endif
@@ -60,9 +68,17 @@ PSInput VSMain(VSInput input) {
 
 [RootSignature(SHADOW_ROOT_SIGNATURE)]
 void PSMain(PSInput input) {
-#ifdef PERFORATED
+    uint surfaceFlags = 0u;
+    float fadeOpacity = 1.0f;
+#ifdef DITHER_FADE
+    surfaceFlags = input.surfaceFlags;
+    fadeOpacity = GetSurfaceFadeOpacity(surfaceFlags);
+#endif
+
+#if defined(PERFORATED) || defined(DITHERED)
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     float baseColorAlpha = shaderMaterial.GetBaseColorFactor().a;
+
 #if _BASECOLOR != 0
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
 
@@ -70,6 +86,14 @@ void PSMain(PSInput input) {
     float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, texCoord);
     baseColorAlpha = textureColor.a * baseColorAlpha;
 #endif
-    clip(baseColorAlpha * input.color.a - shaderMaterial.alphaCutoff);
+#ifdef DITHERED
+    const uint patternSeed = shaderMaterial.flags >> ShaderMaterialDitherPatternShift;
+#else
+    const uint patternSeed = GetSurfaceDitherPatternSeed(surfaceFlags);
+#endif
+    ApplyAlphaTest(baseColorAlpha * input.color.a, shaderMaterial.alphaCutoff, fadeOpacity, (uint2)input.position.xy, patternSeed);
+
+#elif defined(DITHER_FADE)
+    ApplyDitherFade(fadeOpacity, (uint2)input.position.xy, GetSurfaceDitherPatternSeed(surfaceFlags));
 #endif
 }

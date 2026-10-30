@@ -4,6 +4,10 @@
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PrepassPSOutput PSMain(PSInput input) {
+#if defined(DITHER_FADE) && !defined(PERFORATED) && !defined(DITHERED)
+    ApplyDitherFade(GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, GetSurfaceDitherPatternSeed(input.surfaceFlags));
+#endif
+
 #if LIT_USE_MATERIAL
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
@@ -14,7 +18,7 @@ PrepassPSOutput PSMain(PSInput input) {
 #endif
     const LitSurfaceInput surfaceInput = PrepareLitSurfaceInput(input, shaderMaterial, materialSampler, texCoord, 0.0f, 0.0f, false);
 
-#if defined(PERFORATED) || defined(TRANSPARENT_SSR_PREPASS)
+#if defined(PERFORATED) || defined(DITHERED) || defined(TRANSPARENT_SSR_PREPASS)
     // Opaque receivers do not need a base-color sample; preserve material alpha coverage otherwise.
     EvaluateLitBaseColor(input, shaderMaterial, materialSampler, surfaceInput.texCoord);
 #endif

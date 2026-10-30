@@ -44,12 +44,20 @@ shader "Lit" {
 
         stages {
             vertex SM_6_6 "LitPrepass.hlsl" "VSMain"
-            fragment SM_6_6 "LitPrepass.hlsl" "PSMain" (features perforated transparentSSRPrepass outputNormal outputRoughness outputVelocity)
+            fragment SM_6_6 "LitPrepass.hlsl" "PSMain" (features perforated dithered ditherFade transparentSSRPrepass outputNormal outputRoughness outputVelocity)
         }
 
         features {
             perforated {
                 PERFORATED=1
+            }
+
+            dithered {
+                DITHERED=1
+            }
+
+            ditherFade {
+                DITHER_FADE=1
             }
 
             outputNormal {
@@ -92,12 +100,20 @@ shader "Lit" {
 
         stages {
             vertex SM_6_6 "ShadowDepth.hlsl" "VSMain"
-            fragment SM_6_6 "ShadowDepth.hlsl" "PSMain" (features perforated)
+            fragment SM_6_6 "ShadowDepth.hlsl" "PSMain" (features perforated dithered ditherFade)
         }
 
         features {
             perforated {
                 PERFORATED=1
+            }
+
+            dithered {
+                DITHERED=1
+            }
+
+            ditherFade {
+                DITHER_FADE=1
             }
 
             gpuSkinningWeight1 {
@@ -134,6 +150,14 @@ shader "Lit" {
 
             perforated {
                 PERFORATED=1
+            }
+
+            dithered {
+                DITHERED=1
+            }
+
+            ditherFade {
+                DITHER_FADE=1
             }
 
             gpuSkinningWeight1 {

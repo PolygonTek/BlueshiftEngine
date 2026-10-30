@@ -15,12 +15,20 @@ shader "Unlit" {
 
         stages {
             vertex SM_6_6 "UnlitPrepass.hlsl" "VSMain"
-            fragment SM_6_6 "UnlitPrepass.hlsl" "PSMain" (features perforated outputNormal outputRoughness outputVelocity)
+            fragment SM_6_6 "UnlitPrepass.hlsl" "PSMain" (features perforated dithered ditherFade outputNormal outputRoughness outputVelocity)
         }
 
         features {
             perforated {
                 PERFORATED=1
+            }
+
+            dithered {
+                DITHERED=1
+            }
+
+            ditherFade {
+                DITHER_FADE=1
             }
 
             outputNormal {
@@ -59,12 +67,20 @@ shader "Unlit" {
 
         stages {
             vertex SM_6_6 "ShadowDepth.hlsl" "VSMain"
-            fragment SM_6_6 "ShadowDepth.hlsl" "PSMain" (features perforated)
+            fragment SM_6_6 "ShadowDepth.hlsl" "PSMain" (features perforated dithered ditherFade)
         }
 
         features {
             perforated {
                 PERFORATED=1
+            }
+
+            dithered {
+                DITHERED=1
+            }
+
+            ditherFade {
+                DITHER_FADE=1
             }
 
             gpuSkinningWeight1 {
@@ -93,6 +109,14 @@ shader "Unlit" {
         features {
             perforated {
                 PERFORATED=1
+            }
+
+            dithered {
+                DITHERED=1
+            }
+
+            ditherFade {
+                DITHER_FADE=1
             }
 
             gpuSkinningWeight1 {

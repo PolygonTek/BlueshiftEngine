@@ -56,7 +56,7 @@ static uint64_t BuildDepthSortKey(const FrameSurf *frameSurf) {
     // 0x7FFFFFFF00000000 (31비트, 0~2147483647) : shader material index (alpha-test only)
     // 0x00000000FFFFFFFF (32비트, 0~4294967295) : near-to-far view depth
     //--------------------------------------------------------------
-    const bool alphaTest = frameSurf->baseFeatureSet.HasFeature(ShaderFeature::Perforated);
+    const bool alphaTest = (frameSurf->baseFeatureSet.flags & ShaderFeatureSet::AlphaTestMask) != 0;
     const uint64_t alphaTestBucket = alphaTest ? 1ull : 0ull;
     const uint64_t shaderMaterialIndex = alphaTest ? (frameSurf->shaderMaterialIndex & 0x7FFFFFFFull) : 0;
     const uint64_t depthKey = static_cast<uint64_t>(FloatToDescendingSortKey(frameSurf->viewZ));
@@ -253,16 +253,16 @@ void RenderPassBuilder::BuildShadowPass(RenderFrame *frame, RenderPass *shadowPa
             continue;
         }
 
-        // 그림자 렌더링에 필요한 alpha cutoff 와 GPU skinning feature 만 남긴다.
+        // 그림자 렌더링에 필요한 alpha test 와 GPU skinning feature 만 남긴다.
         ShaderFeatureSet featureSet = frameSurf->baseFeatureSet | shadowPass->featureSet;
-        featureSet.flags &= ShaderFeatureSet::Perforated | ShaderFeatureSet::GpuSkinningWeightMask;
+        featureSet.flags &= ShaderFeatureSet::AlphaTestMask | ShaderFeatureSet::GpuSkinningWeightMask;
         featureSet = shaderTemplate->MaskSupportedFeatures(ShaderProgram::Shadow, featureSet);
 
-        // 그림자 depth 만 기록하므로, opaque surface 는 UV/color 입력이 필요 없다.
-        const VertexInputLayoutId inputLayoutId = featureSet.HasFeature(ShaderFeature::Perforated) ? shadowPass->baseInputLayoutId : VertexInputLayoutId::Xyz;
+        // Material alpha 가 필요한 경우만 UV/color 를 사용한다. Object fade 만 검사할 때는 위치 입력이면 충분하다.
+        const VertexInputLayoutId inputLayoutId = (featureSet.flags & (ShaderFeatureSet::Perforated | ShaderFeatureSet::Dithered)) ? shadowPass->baseInputLayoutId : VertexInputLayoutId::Xyz;
 
-        // Shadow 프로그램의 stage 조건으로 opaque 는 fragment shader 를 생략하고 alpha cutoff 에만 사용한다.
-        // Material 이 property define 과 cull mode 를 적용하여 양면 alpha-cutoff surface 도 양쪽에서 depth 를 기록한다.
+        // Shadow 프로그램의 stage 조건으로 opaque 는 fragment shader 를 생략하고 alpha test 에만 사용한다.
+        // Material 이 property define 과 cull mode 를 적용하여 양면 alpha-tested surface 도 양쪽에서 depth 를 기록한다.
         const RenderPassPSOResolver::ResolveResult rr = shadowPSOResolver.Resolve(frameSurf, featureSet, inputLayoutId, allowAsyncPSOBuild);
         AddDrawSurf(shadowPass, frameSurf, BuildOpaqueSortKey(frameSurf, rr.pso), rr.inputLayoutId, rr.pso);
     }
@@ -477,8 +477,8 @@ void RenderPassBuilder::AddOpaqueDrawSurfs(const FrameSurf *frameSurf, const Sce
 
     ShaderFeatureSet featureSet = BuildSurfaceFeatureSet(frameSurf, opaquePass, directLighting, indirectLighting);
     if (prepass) {
-        // Alpha test 는 prepass 에서만 수행하고 color 는 일반 opaque permutation 을 재사용한다.
-        featureSet.flags &= ~ShaderFeatureSet::Perforated;
+        // Alpha cutoff/dither coverage 는 prepass 에서만 수행하고 color 는 일반 opaque permutation 을 재사용한다.
+        featureSet.flags &= ~ShaderFeatureSet::AlphaTestMask;
     }
     const RenderPassPSOResolver::ResolveResult rr = opaquePSOResolver.Resolve(frameSurf, featureSet, allowAsyncPSOBuild);
 

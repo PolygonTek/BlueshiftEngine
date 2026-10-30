@@ -19,6 +19,10 @@ bool ShaderFeatureSet::HasFeature(ShaderFeature feature) const {
     switch (feature) {
     case ShaderFeature::Perforated:
         return !!(flags & Perforated);
+    case ShaderFeature::Dithered:
+        return !!(flags & Dithered);
+    case ShaderFeature::DitherFade:
+        return !!(flags & DitherFade);
     case ShaderFeature::GpuSkinningWeight1:
         return !!(flags & GpuSkinningWeight1);
     case ShaderFeature::GpuSkinningWeight4:
@@ -46,6 +50,12 @@ void ShaderFeatureSet::EnableFeature(ShaderFeature feature) {
     switch (feature) {
     case ShaderFeature::Perforated:
         flags |= Perforated;
+        break;
+    case ShaderFeature::Dithered:
+        flags |= Dithered;
+        break;
+    case ShaderFeature::DitherFade:
+        flags |= DitherFade;
         break;
     case ShaderFeature::GpuSkinningWeight1:
         flags = (flags & ~GpuSkinningWeightMask) | GpuSkinningWeight1;

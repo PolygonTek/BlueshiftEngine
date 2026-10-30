@@ -126,6 +126,22 @@ bool Material::SetShaderTemplate(const SharedPtr<ShaderTemplate> &shaderTemplate
     return true;
 }
 
+void Material::SetRenderingMode(RenderingMode renderingMode) {
+    assert(BE1::Engine::IsInMainThread());
+
+    if (internalData.renderingMode == renderingMode) {
+        return;
+    }
+
+    // 렌더 백엔드에서 이전 프레임의 material 데이터 사용을 마칠 때까지 기다린다.
+    renderSystem->WaitAllRenderCompleted();
+
+    internalData.renderingMode = renderingMode;
+    if (renderingMode == RenderingMode::Blend && internalData.blendType == RHI::BlendStateType::Disabled) {
+        internalData.blendType = RHI::BlendStateType::AlphaBlend;
+    }
+}
+
 const ShaderTemplate::PropertyValue *Material::GetPropertyValue(int propertyIndex) const {
     if (propertyIndex < 0 || propertyIndex >= internalData.propertyValues.Count()) {
         return nullptr;
@@ -584,6 +600,8 @@ bool Material::ParseRenderingMode(BE1::Lexer &lexer, const char *materialName, I
         outInternalData.renderingMode = RenderingMode::Opaque;
     } else if (!renderingModeString.Icmp("AlphaCutoff")) {
         outInternalData.renderingMode = RenderingMode::AlphaCutoff;
+    } else if (!renderingModeString.Icmp("Dithered")) {
+        outInternalData.renderingMode = RenderingMode::Dithered;
     } else if (!renderingModeString.Icmp("Blend")) {
         outInternalData.renderingMode = RenderingMode::Blend;
         outInternalData.blendType = RHI::BlendStateType::AlphaBlend; // 기본 블렌딩 타입 설정

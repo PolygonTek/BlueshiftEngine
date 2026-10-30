@@ -104,6 +104,7 @@ public:
     void                        UpdateRenderObjectBounds(int index, const BE1::AABB &aabb);
     void                        UpdateRenderObjectMesh(int index, const SharedPtr<MeshInstance> &meshInstance);
     void                        UpdateRenderObjectMeshLOD(int index, int lodLevel);
+    void                        UpdateRenderObjectFadeOpacity(int index, float fadeOpacity);
     void                        UpdateRenderObjectSkeleton(int index, const SharedPtr<Skeleton> &skeleton);
     void                        UpdateRenderObjectMaterials(int index, const BE1::Array<SharedPtr<Material>> &materials);
     void                        UpdateRenderObjectFont(int index, const SharedPtr<Font> &font);

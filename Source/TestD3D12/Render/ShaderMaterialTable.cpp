@@ -277,6 +277,10 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
     outShaderMaterial.packedTexCoordTransform = ShaderPacking::PackFloat4ToRGBA16F(float4(tcScale.x, tcScale.y, tcTranslation.x, tcTranslation.y));
 
     uint32_t flags = 0;
+    if (material && material->GetRenderingMode() == Material::RenderingMode::Dithered) {
+        // GPU table indices are assigned per frame; use the persistent material ID for a fixed pattern.
+        flags |= (material->GetIndex() & 63u) << ShaderMaterialDitherPatternShift;
+    }
     if (material && material->GetRenderingMode() == Material::RenderingMode::Blend) {
         flags |= ShaderMaterialFlagTransparent;
     }

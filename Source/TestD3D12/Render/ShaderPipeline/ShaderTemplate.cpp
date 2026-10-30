@@ -843,6 +843,8 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
 
     static constexpr FeatureName featureNames[] = {
         { "perforated",         ShaderFeature::Perforated },
+        { "dithered",           ShaderFeature::Dithered },
+        { "ditherFade",         ShaderFeature::DitherFade },
         { "gpuSkinningWeight1", ShaderFeature::GpuSkinningWeight1 },
         { "gpuSkinningWeight4", ShaderFeature::GpuSkinningWeight4 },
         { "gpuSkinningWeight8", ShaderFeature::GpuSkinningWeight8 },

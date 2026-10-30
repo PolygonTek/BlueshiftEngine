@@ -37,11 +37,17 @@ static BE_INLINE bool IsRenderLayerVisible(uint32_t layerMask, uint8_t layer) {
     return layer < 32 && (layerMask & BIT(layer)) != 0;
 }
 
-static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubMesh *subMesh, bool skinning) {
+static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubMesh *subMesh, bool skinning, float fadeOpacity) {
     ShaderFeatureSet featureSet;
 
     if (material->GetRenderingMode() == Material::RenderingMode::AlphaCutoff) {
         featureSet.EnableFeature(ShaderFeature::Perforated);
+    } else if (material->GetRenderingMode() == Material::RenderingMode::Dithered) {
+        featureSet.EnableFeature(ShaderFeature::Dithered);
+    }
+
+    if (fadeOpacity < 1.0f && material->GetRenderingMode() != Material::RenderingMode::Blend) {
+        featureSet.EnableFeature(ShaderFeature::DitherFade);
     }
 
     int maxVertexWeights = skinning ? subMesh->MaxVertexWeights() : 0;
@@ -57,6 +63,10 @@ static ShaderFeatureSet BuildBaseFeatureSet(const Material *material, const SubM
 }
 
 const FrameSurf *RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *frameCamera, FrameObject *frameObject, const Material *material, SubMesh *subMesh, FrameSurfFlag flags, uint8_t shadowCascadeMask, int lodLevel) {
+    if (frameObject->fadeOpacity <= 0.0f) {
+        return nullptr;
+    }
+
     if (frameCamera->numFrameSurfs + 1 > frameCamera->maxFrameSurfs) {
         BE_WARNLOG("RenderWorld::AddFrameSurf: not enough available visible surfaces\n");
         return nullptr;
@@ -101,7 +111,7 @@ const FrameSurf *RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *fram
     drawSurf->lodLevel = lodLevel;
     drawSurf->viewZ = viewZ;
     drawSurf->material = material;
-    drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh, frameSkinnedMesh && frameSkinnedMesh->skinningJointOffset != ShaderSkinningJointOffsetInvalid);
+    drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh, frameSkinnedMesh && frameSkinnedMesh->skinningJointOffset != ShaderSkinningJointOffsetInvalid, frameObject->fadeOpacity);
     drawSurf->shaderMaterialIndex = frame->RegisterShaderMaterial(material);
     drawSurf->flags = flags;
     drawSurf->shadowCascadeMask = shadowCascadeMask;
@@ -1239,6 +1249,8 @@ FrameObject *RenderWorld::RegisterFrameObject(RenderFrame *frame, RenderObject *
     renderObject->viewCount = viewCount;
     renderObject->frameObject = frameObject;
     frameObject->meshLOD = frame->GetRenderFrameSettings().meshLOD ? renderObject->GetMeshLOD() : 0;
+    frameObject->fadeOpacity = renderObject->GetFadeOpacity();
+    frameObject->ditherPatternSeed = static_cast<uint8_t>(renderObject->GetIndex() & 63);
     if (renderObject->nonUniformScale) {
         frameObject->flags |= FrameObject::Flag::NonUniformScale;
     }
@@ -1534,7 +1546,7 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
             const int lodLevel = SelectMeshLOD(meshSurf->subMesh, frameObject.meshLOD, frameObject.squaredLODErrorLimit);
             const FrameSurf *frameSurf = AddFrameSurf(frame, frameCamera, &frameObject, material, meshSurf->subMesh, surfaceflags, surfaceShadowCascadeMask, lodLevel);
             if (!frameSurf) {
-                // 공통 surface 생성 실패 시 어느 shadow view 에도 미완성 참조를 남기지 않는다.
+                // 공통 surface 생성 생략/실패 시 어느 shadow view 에도 미완성 참조를 남기지 않는다.
                 localShadowSurfRefs.SetCount(firstSurfaceRef, false);
                 continue;
             }

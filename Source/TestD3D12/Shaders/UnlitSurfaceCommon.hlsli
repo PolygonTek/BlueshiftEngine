@@ -2,6 +2,7 @@
 #define __UNLIT_SURFACE_COMMON_HLSLI__
 
 #include "SurfaceDrawCommon.hlsli"
+#include "AlphaTest.hlsli"
 
 cbuffer CameraCB : register(b1) {
     CameraConstants cameraConstants;
@@ -14,7 +15,7 @@ cbuffer CameraCB : register(b1) {
 
 struct VSInput {
     float4 position : POSITION;
-#if !defined(UNLIT_PREPASS) || defined(PERFORATED)
+#if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED)
 #if _BASECOLOR != 0
     float2 texCoord : TEXCOORD0;
 #endif
@@ -35,7 +36,10 @@ struct VSInput {
 
 struct PSInput {
     float4 position : SV_POSITION;
-#if !defined(UNLIT_PREPASS) || defined(PERFORATED)
+#if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED) || defined(DITHER_FADE)
+    nointerpolation uint surfaceFlags : TEXCOORD5;
+#endif
+#if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED)
     float4 color : COLOR;
 #if _BASECOLOR != 0
     float2 texCoord : TEXCOORD0;
@@ -64,7 +68,12 @@ PSInput VSMain(VSInput input) {
 #endif
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, localPosition), 1.0);
     result.position = mul(cameraConstants.viewProjMatrix, positionWS);
-#if !defined(UNLIT_PREPASS) || defined(PERFORATED)
+
+#if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED) || defined(DITHER_FADE)
+    result.surfaceFlags = shaderSurface.flags;
+#endif
+
+#if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED)
     result.color = input.color;
 #if _BASECOLOR != 0
     result.texCoord = input.texCoord;
@@ -97,7 +106,7 @@ PSInput VSMain(VSInput input) {
     return result;
 }
 
-#if !defined(UNLIT_PREPASS) || defined(PERFORATED)
+#if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED)
 float4 EvaluateUnlitBaseColor(PSInput input, ShaderMaterial shaderMaterial, float2 texCoord) {
     float4 baseColor = shaderMaterial.GetBaseColorFactor();
 #if _BASECOLOR != 0
@@ -106,10 +115,22 @@ float4 EvaluateUnlitBaseColor(PSInput input, ShaderMaterial shaderMaterial, floa
     baseColor = textureColor * baseColor;
 #endif
     baseColor *= input.color;
-#ifdef PERFORATED
+
     // Depth 전용 경로에서 수행하던 alpha coverage 를 재질 Prepass 와 Main 에서 공유한다.
-    clip(baseColor.a - shaderMaterial.alphaCutoff);
+#if defined(PERFORATED) || defined(DITHERED)
+    #ifdef DITHERED
+        const uint patternSeed = shaderMaterial.flags >> ShaderMaterialDitherPatternShift;
+    #else
+        const uint patternSeed = GetSurfaceDitherPatternSeed(input.surfaceFlags);
+    #endif
+    ApplyAlphaTest(baseColor.a, shaderMaterial.alphaCutoff, GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, patternSeed);
+#elif defined(DITHER_FADE)
+    ApplyDitherFade(GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, GetSurfaceDitherPatternSeed(input.surfaceFlags));
 #endif
+
+    if ((shaderMaterial.flags & ShaderMaterialFlagTransparent) != 0u) {
+        baseColor.a *= GetSurfaceFadeOpacity(input.surfaceFlags);
+    }
     return baseColor;
 }
 #endif

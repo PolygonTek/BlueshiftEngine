@@ -203,6 +203,13 @@ void RenderWorld::UpdateRenderObjectMaterials(int index, const BE1::Array<Shared
     }
 }
 
+void RenderWorld::UpdateRenderObjectFadeOpacity(int index, float fadeOpacity) {
+    RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectFadeOpacity");
+    if (renderObject) {
+        renderObject->UpdateFadeOpacity(fadeOpacity);
+    }
+}
+
 void RenderWorld::UpdateRenderObjectFont(int index, const SharedPtr<Font> &font) {
     RenderObject *renderObject = GetRenderObjectForUpdate(index, "RenderWorld::UpdateRenderObjectFont");
     if (renderObject) {

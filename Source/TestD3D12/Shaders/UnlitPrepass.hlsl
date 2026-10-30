@@ -3,7 +3,11 @@
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PrepassPSOutput PSMain(PSInput input) {
-#ifdef PERFORATED
+#if defined(DITHER_FADE) && !defined(PERFORATED) && !defined(DITHERED)
+    ApplyDitherFade(GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, GetSurfaceDitherPatternSeed(input.surfaceFlags));
+#endif
+
+#if defined(PERFORATED) || defined(DITHERED)
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
 #if _BASECOLOR != 0
     const float2 texCoord = shaderMaterial.TransformTexCoord(input.texCoord);

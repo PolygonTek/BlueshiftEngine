@@ -156,11 +156,17 @@ static const uint HiZCullIndirectArgInstanceCountOffset = 4;
 static const uint HiZCullIndirectArgSize = 20;
 
 static const uint ShaderSurfaceFlagNonUniformScale = 1u << 0;
+// Pack object fading into unused flag bits to preserve the 128-byte surface stride.
+static const uint ShaderSurfaceDitherPatternShift = 1;
+static const uint ShaderSurfaceDitherPatternMask = 63u;
+static const uint ShaderSurfaceFadeOpacityShift = 16;
 static const uint ShaderSkinningJointOffsetInvalid = 0xFFFFFFFF;
 
 // Independent material properties shared by CPU and GPU code.
 static const uint ShaderMaterialFlagTransparent = 1u << 0;
 static const uint ShaderMaterialFlagTexCoordTransform = 1u << 1;
+// Upper six bits of ShaderMaterial::flags hold a stable 8x8 dither pattern offset.
+static const uint ShaderMaterialDitherPatternShift = 26;
 
 static const uint ShaderLightTypeBitCount = 2;
 static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
@@ -1007,7 +1013,7 @@ struct ShaderSurface {
 
     float4 localBoundingSphere;
     uint shaderMaterialIndex;
-    uint flags;
+    uint flags; // ShaderSurfaceFlag* bits, object dither pattern and UNorm16 fade opacity.
     uint skinningJointOffset; // Element offset in the camera joint buffer; ShaderSkinningJointOffsetInvalid if unavailable.
     uint prevSkinningJointOffset; // Previous rendered pose; aliases the current offset when history is unavailable.
 };
@@ -1039,7 +1045,7 @@ struct ShaderMaterial {
     uint packedClearCoatFactors;
     float heightScale;
     uint2 packedTexCoordTransform;
-    uint flags; // ShaderMaterialFlag* bitmask.
+    uint flags; // ShaderMaterialFlag* bitmask and dither pattern offset.
 
 #ifndef __cplusplus
     inline float4 GetBaseColorFactor() { return UnpackRGBA8UNormToFloat4(packedBaseColorFactor); }

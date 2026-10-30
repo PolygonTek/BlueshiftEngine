@@ -50,6 +50,7 @@ public:
     enum class RenderingMode : uint8_t {
         Opaque,
         AlphaCutoff,
+        Dithered,
         Blend
     };
 
@@ -75,6 +76,7 @@ public:
     RHI::TextureAddressMode         GetTextureAddressMode() const { return internalData.textureAddressMode; }
     const Sampler *                 GetSampler() const { return sampler; }
     RenderingMode                   GetRenderingMode() const { return internalData.renderingMode; }
+    void                            SetRenderingMode(RenderingMode renderingMode);
     RHI::BlendStateType             GetBlendType() const { return internalData.blendType; }
     Flag                            GetFlags() const { return internalData.flags; }
 

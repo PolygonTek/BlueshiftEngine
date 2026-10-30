@@ -504,8 +504,10 @@ struct FrameObject {
     int8_t                          meshLOD = -1;                   ///< 요청 LOD. -1 은 자동 선택, 0~127 은 지정 LOD.
     Flag                            flags = Flag::None;
     uint8_t                         shadowCascadeMask = 0;          ///< 이 object 가 투영되는 directional shadow cascade bit mask.
+    uint8_t                         ditherPatternSeed = 0;          ///< Stable object pattern offset, independent of per-frame surface indices.
 
     float                           squaredLODErrorLimit = 0.0f;    ///< 현재 view 에서 공유 LOD 를 선택하는 로컬 공간 허용 오차 제곱.
+    float                           fadeOpacity = 1.0f;             ///< Snapshot of object visibility, separate from material alpha.
 
     uint32_t                        firstLocalShadowCasterRef = 0;  ///< 현재 카메라의 surface 를 구성하는 동안만 사용하는 RenderWorld::localShadowCasterRefs 범위.
     uint32_t                        numLocalShadowCasterRefs = 0;   ///< 백엔드는 이 임시 범위 대신 FrameLocalShadowView::shadowSurfs 를 사용한다.

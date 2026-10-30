@@ -114,6 +114,7 @@ public:
             TextStyle               = BIT(8),
             Skeleton                = BIT(9),
             MeshLOD                 = BIT(10),
+            FadeOpacity             = BIT(11),
         };
 
         friend constexpr std::true_type EnableBitmaskEnum(UpdateFlag) noexcept { return {}; }
@@ -123,6 +124,7 @@ public:
         Flag                        flags = Flag::None;
         uint8_t                     layer = 0;                  ///< Render layer bit index in [0, 31]
         int8_t                      meshLOD = -1;               ///< 요청 LOD. -1 은 자동 선택, 0~127 은 지정 LOD.
+        float                       fadeOpacity = 1.0f;         ///< Object visibility in [0, 1], independent of material alpha.
 
         BE1::Mat3x4                 worldMatrix = BE1::Mat3x4::identity;
         BE1::AABB                   aabb = BE1::AABB::empty;    ///< non-scaled AABB in local space
@@ -140,6 +142,7 @@ public:
     int                             GetIndex() const { return index; }
 
     int8_t                          GetMeshLOD() const { return desc.meshLOD; }
+    float                           GetFadeOpacity() const { return desc.fadeOpacity; }
 
                                     /// Returns local to world matrix.
     const BE1::Mat3x4 &             GetWorldMatrix() const { return desc.worldMatrix; }
@@ -162,6 +165,7 @@ private:
     void                            UpdateBounds(const BE1::AABB &aabb);
     void                            UpdateMesh(const SharedPtr<MeshInstance> &meshInstance);
     void                            UpdateMeshLOD(int lodLevel);
+    void                            UpdateFadeOpacity(float fadeOpacity);
     void                            UpdateSkeleton(const SharedPtr<Skeleton> &skeleton);
     void                            UpdateMaterials(const BE1::Array<SharedPtr<Material>> &materials);
     void                            UpdateFont(const SharedPtr<Font> &font);

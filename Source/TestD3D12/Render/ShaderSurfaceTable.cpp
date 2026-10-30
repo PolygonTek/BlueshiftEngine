@@ -134,6 +134,8 @@ void ShaderSurfaceTable::Build(const FrameSurf *frameSurf, ShaderSurface &outSha
 
     outShaderSurface.shaderMaterialIndex = frameSurf->shaderMaterialIndex;
     outShaderSurface.flags = BE1::HasFlag(frameSurf->space->flags, FrameObject::Flag::NonUniformScale) ? ShaderSurfaceFlagNonUniformScale : 0;
+    outShaderSurface.flags |= (static_cast<uint32_t>(frameSurf->space->ditherPatternSeed) & ShaderSurfaceDitherPatternMask) << ShaderSurfaceDitherPatternShift;
+    outShaderSurface.flags |= static_cast<uint32_t>(frameSurf->space->fadeOpacity * 65535.0f + 0.5f) << ShaderSurfaceFadeOpacityShift;
 
     const FrameSkinnedMesh *frameSkinnedMesh = frameSurf->space->skinnedMesh;
     if (frameSkinnedMesh) {
