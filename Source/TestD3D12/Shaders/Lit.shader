@@ -1,9 +1,4 @@
 shader "Lit" {
-    stages {
-        vertex SM_6_6 "Lit.hlsl" "VSMain"
-        fragment SM_6_6 "Lit.hlsl" "PSMain"
-    }
-
     properties {
         tcScale("Texture Coordinate Scale") : vec2 = "1 1"
         tcTranslation("Texture Coordinate Translation") : vec2 = "0 0"
@@ -39,52 +34,122 @@ shader "Lit" {
         emissionFactor("Emission Factor") : float range 0 16 0.001 = "1.0" (condition _EMISSION 1 2)
     }
 
-    features {
-        directLighting {
-            DIRECT_LIGHTING=1
+    program prepass {
+        propertyDependencies {
+            _BASECOLOR
+            _NORMAL
+            _ROUGHNESS
+            _PARALLAX
         }
 
-        indirectLighting {
-            INDIRECT_LIGHTING=1
+        stages {
+            vertex SM_6_6 "LitPrepass.hlsl" "VSMain"
+            fragment SM_6_6 "LitPrepass.hlsl" "PSMain" (features perforated transparentSSRPrepass outputNormal outputRoughness outputVelocity)
         }
 
-        perforated {
-            PERFORATED=1
+        features {
+            perforated {
+                PERFORATED=1
+            }
+
+            outputNormal {
+                OUTPUT_NORMAL=1
+            }
+
+            outputRoughness {
+                OUTPUT_ROUGHNESS=1
+            }
+
+            outputVelocity {
+                OUTPUT_VELOCITY=1
+            }
+
+            transparentSSRPrepass {
+                TRANSPARENT_SSR_PREPASS=1
+            }
+
+            gpuSkinningWeight1 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=1
+            }
+
+            gpuSkinningWeight4 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=4
+            }
+
+            gpuSkinningWeight8 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=8
+            }
+        }
+    }
+
+    program shadow {
+        propertyDependencies {
+            _BASECOLOR
         }
 
-        outputNormal {
-            OUTPUT_NORMAL=1
+        stages {
+            vertex SM_6_6 "ShadowDepth.hlsl" "VSMain"
+            fragment SM_6_6 "ShadowDepth.hlsl" "PSMain" (features perforated)
         }
 
-        outputRoughness {
-            OUTPUT_ROUGHNESS=1
+        features {
+            perforated {
+                PERFORATED=1
+            }
+
+            gpuSkinningWeight1 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=1
+            }
+
+            gpuSkinningWeight4 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=4
+            }
+
+            gpuSkinningWeight8 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=8
+            }
+        }
+    }
+
+    program main {
+        stages {
+            vertex SM_6_6 "Lit.hlsl" "VSMain"
+            fragment SM_6_6 "Lit.hlsl" "PSMain"
         }
 
-        outputVelocity {
-            OUTPUT_VELOCITY=1
-        }
+        features {
+            directLighting {
+                DIRECT_LIGHTING=1
+            }
 
-        surfacePrepass {
-            SURFACE_PREPASS=1
-        }
+            indirectLighting {
+                INDIRECT_LIGHTING=1
+            }
 
-        transparentSSRPrepass {
-            TRANSPARENT_SSR_PREPASS=1
-        }
+            perforated {
+                PERFORATED=1
+            }
 
-        gpuSkinningWeight1 {
-            GPU_SKINNING=1
-            GPU_SKINNING_WEIGHTS=1
-        }
+            gpuSkinningWeight1 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=1
+            }
 
-        gpuSkinningWeight4 {
-            GPU_SKINNING=1
-            GPU_SKINNING_WEIGHTS=4
-        }
+            gpuSkinningWeight4 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=4
+            }
 
-        gpuSkinningWeight8 {
-            GPU_SKINNING=1
-            GPU_SKINNING_WEIGHTS=8
+            gpuSkinningWeight8 {
+                GPU_SKINNING=1
+                GPU_SKINNING_WEIGHTS=8
+            }
         }
     }
 }

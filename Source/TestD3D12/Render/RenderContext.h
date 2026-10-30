@@ -128,7 +128,7 @@ public:
     RHI::Format                     GetMainRTDepthFormat() const { return mainRTDepthFormat; }
     RHI::Format                     GetPostProcessColorFormat() const;
     uint32_t                        GetMainRTSampleCount() const { return mainRTSampleCount; }
-    void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputRoughness, bool outputVelocity) const;
+    void                            GetMainRenderDest(RHI::RenderDest &renderDest, bool outputVelocity) const;
     void                            GetSwapChainRenderDest(RHI::RenderDest &renderDest) const;
 
     RHI::Texture *                  GetCSMDepthTexture() const { return csmDepthTexture; }

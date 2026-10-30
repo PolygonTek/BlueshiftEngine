@@ -5,6 +5,7 @@
 #include "BRDFLibrary.hlsli"
 #include "SpecularAA.hlsli"
 
+#ifndef LIT_PREPASS
 #ifndef USE_MULTIPLE_SCATTERING_COMPENSATION
     #define USE_MULTIPLE_SCATTERING_COMPENSATION 0
 #endif
@@ -37,8 +38,9 @@ struct ShadingParams {
 #endif
 #endif
 };
+#endif // !LIT_PREPASS
 
-struct SurfacePrepassParams {
+struct PrepassParams {
     float3 normal;
     float roughness;
 };
@@ -50,49 +52,78 @@ float3 DecodeTangentSpaceNormal(float2 encodedNormal) {
     return float3(normalXY, normalZ);
 }
 
-// SSR trace 전에 필요한 shading normal 과 perceptual roughness 만 계산한다.
+float3 EvaluateMaterialNormal(ShaderMaterial shaderMaterial, float2 texCoord, float3 normal,
+#if _NORMAL != 0
+    float3x3 tangentToWorld,
+#endif
+    SamplerState materialSampler) {
+#if _NORMAL != 0
+    const float2 encodedNormal = GetTexture2D(shaderMaterial.normalTextureIndex).Sample(materialSampler, texCoord).xy;
+    const float3 normalTS = DecodeTangentSpaceNormal(encodedNormal);
+    return normalize(mul(normalTS, tangentToWorld));
+#else
+    return normalize(normal);
+#endif
+}
+
+// Main 에서는 다른 material 입력과 공유하는 packed-map sample 을 재사용한다.
+float EvaluateMaterialRoughness(ShaderMaterial shaderMaterial, float2 texCoord, float roughnessFactor,
+#if _ROUGHNESS >= 3
+    float4 metallicSample,
+#endif
+    SamplerState materialSampler) {
+#if _ROUGHNESS == 0
+    return roughnessFactor;
+#elif _ROUGHNESS == 1
+    return GetTexture2D(shaderMaterial.roughnessTextureIndex).Sample(materialSampler, texCoord).r * roughnessFactor;
+#elif _ROUGHNESS == 2
+    return (1.0f - GetTexture2D(shaderMaterial.roughnessTextureIndex).Sample(materialSampler, texCoord).r) * roughnessFactor;
+#elif _ROUGHNESS == 3
+    return metallicSample.r * roughnessFactor;
+#elif _ROUGHNESS == 4
+    return metallicSample.g * roughnessFactor;
+#elif _ROUGHNESS == 5
+    return metallicSample.b * roughnessFactor;
+#elif _ROUGHNESS == 6
+    return metallicSample.a * roughnessFactor;
+#endif
+}
+
+// AO/SSR 에 필요한 shading normal 과 요청된 perceptual roughness 만 계산한다.
 // Lighting 전용 metallic/AO/emission/clear-coat texture 는 이 경로에서 읽지 않는다.
-SurfacePrepassParams PrepareSurfacePrepassParams(ShaderMaterial shaderMaterial, float2 texCoord, float3 normal,
+PrepassParams PreparePrepassParams(ShaderMaterial shaderMaterial, float2 texCoord, float3 normal,
 #if _NORMAL != 0
     float3x3 tangentToWorld,
 #endif
     bool useSpecularAA, SamplerState materialSampler) {
-    SurfacePrepassParams surface;
-    surface.normal = normalize(normal);
-
+    PrepassParams surface;
 #if _NORMAL != 0
-    const float2 encodedNormal = GetTexture2D(shaderMaterial.normalTextureIndex).Sample(materialSampler, texCoord).xy;
-    const float3 normalTS = DecodeTangentSpaceNormal(encodedNormal);
-    surface.normal = normalize(mul(normalTS, tangentToWorld));
+    surface.normal = EvaluateMaterialNormal(shaderMaterial, texCoord, normal, tangentToWorld, materialSampler);
+#else
+    surface.normal = EvaluateMaterialNormal(shaderMaterial, texCoord, normal, materialSampler);
 #endif
 
+#ifdef OUTPUT_ROUGHNESS
     const float roughnessFactor = shaderMaterial.GetMetallicRoughnessFactors().y;
-#if _ROUGHNESS == 0
-    surface.roughness = roughnessFactor;
-#elif _ROUGHNESS == 1
-    surface.roughness = GetTexture2D(shaderMaterial.roughnessTextureIndex).Sample(materialSampler, texCoord).r * roughnessFactor;
-#elif _ROUGHNESS == 2
-    surface.roughness = (1.0f - GetTexture2D(shaderMaterial.roughnessTextureIndex).Sample(materialSampler, texCoord).r) * roughnessFactor;
-#elif _ROUGHNESS >= 3
+#if _ROUGHNESS >= 3
     const float4 metallicSample = GetTexture2D(shaderMaterial.metallicTextureIndex).Sample(materialSampler, texCoord);
-    #if _ROUGHNESS == 3
-        surface.roughness = metallicSample.r * roughnessFactor;
-    #elif _ROUGHNESS == 4
-        surface.roughness = metallicSample.g * roughnessFactor;
-    #elif _ROUGHNESS == 5
-        surface.roughness = metallicSample.b * roughnessFactor;
-    #elif _ROUGHNESS == 6
-        surface.roughness = metallicSample.a * roughnessFactor;
-    #endif
+    surface.roughness = EvaluateMaterialRoughness(shaderMaterial, texCoord, roughnessFactor, metallicSample, materialSampler);
+#else
+    surface.roughness = EvaluateMaterialRoughness(shaderMaterial, texCoord, roughnessFactor, materialSampler);
 #endif
 
     surface.roughness = clamp(surface.roughness, MinRoughness, 1.0f);
     if (useSpecularAA) {
         surface.roughness = ApplySpecularAA(surface.roughness, ComputeSpecularAAKernelRoughness(surface.normal, frameConstants.specularAAVariance, frameConstants.specularAALimit));
     }
+#else
+    // AO 전용 출력은 roughness texture 와 Specular AA 를 평가하지 않는다.
+    surface.roughness = 1.0f;
+#endif
     return surface;
 }
 
+#ifndef LIT_PREPASS
 // Emission is independent of lighting inputs and remains visible when all lighting is disabled.
 float3 EvaluateMaterialEmission(ShaderMaterial shaderMaterial, float2 texCoord, SamplerState materialSampler) {
 #if _EMISSION == 0
@@ -118,12 +149,10 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 
     shading.baseColor = baseColor;
     shading.viewDir = normalize(viewDir);
-    shading.normal = normalize(normal);
-
 #if _NORMAL != 0
-    const float2 encodedNormal = GetTexture2D(shaderMaterial.normalTextureIndex).Sample(materialSampler, texCoord).xy;
-    const float3 normalTS = DecodeTangentSpaceNormal(encodedNormal);
-    shading.normal = normalize(mul(normalTS, tangentToWorld));
+    shading.normal = EvaluateMaterialNormal(shaderMaterial, texCoord, normal, tangentToWorld, materialSampler);
+#else
+    shading.normal = EvaluateMaterialNormal(shaderMaterial, texCoord, normal, materialSampler);
 #endif
 
     float specularAAKernelRoughness = 0.0;
@@ -153,20 +182,10 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
     shading.metallic = metallicSample.a * metallicRoughnessFactors.x;
 #endif
 
-#if _ROUGHNESS == 0
-    shading.roughness = metallicRoughnessFactors.y;
-#elif _ROUGHNESS == 1
-    shading.roughness = GetTexture2D(shaderMaterial.roughnessTextureIndex).Sample(materialSampler, texCoord).r * metallicRoughnessFactors.y;
-#elif _ROUGHNESS == 2
-    shading.roughness = (1.0f - GetTexture2D(shaderMaterial.roughnessTextureIndex).Sample(materialSampler, texCoord).r) * metallicRoughnessFactors.y;
-#elif _ROUGHNESS == 3
-    shading.roughness = metallicSample.r * metallicRoughnessFactors.y;
-#elif _ROUGHNESS == 4
-    shading.roughness = metallicSample.g * metallicRoughnessFactors.y;
-#elif _ROUGHNESS == 5
-    shading.roughness = metallicSample.b * metallicRoughnessFactors.y;
-#elif _ROUGHNESS == 6
-    shading.roughness = metallicSample.a * metallicRoughnessFactors.y;
+#if _ROUGHNESS >= 3
+    shading.roughness = EvaluateMaterialRoughness(shaderMaterial, texCoord, metallicRoughnessFactors.y, metallicSample, materialSampler);
+#else
+    shading.roughness = EvaluateMaterialRoughness(shaderMaterial, texCoord, metallicRoughnessFactors.y, materialSampler);
 #endif
 
     shading.metallic = saturate(shading.metallic);
@@ -255,5 +274,6 @@ ShadingParams PrepareShadingParams(ShaderMaterial shaderMaterial, float4 baseCol
 
     return shading;
 }
+#endif // !LIT_PREPASS
 
 #endif // __SHADING_PARAMS_HLSLI__

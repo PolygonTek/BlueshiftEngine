@@ -17,25 +17,34 @@
 #include <stdint.h>
 #include "Containers/StrArray.h"
 #include "ShaderFeatureSet.h"
+#include "ShaderProgram.h"
 
 /*
 ---------------------------------------------------------------------------------------------------
 
     Shader Permutation Key
 
-    64 비트 해시 키는 property defines + featureSet flags 로 만들어진다.
+    64 비트 해시 키는 program + property defines + featureSet flags 로 만들어진다.
+    main program 의 feature/properties 가 하나도 없으면 해시 키는 0 이 된다.
 
 ---------------------------------------------------------------------------------------------------
 */
 
 struct ShaderPermutationKey {
+    static constexpr uint64_t       InvalidHash = UINT64_MAX;
+
     ShaderPermutationKey() = default;
     explicit ShaderPermutationKey(uint64_t hash) : hash(hash) {}
 
     bool                            operator==(const ShaderPermutationKey &rhs) const { return hash == rhs.hash; }
     bool                            operator!=(const ShaderPermutationKey &rhs) const { return hash != rhs.hash; }
 
-    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet = {});
+    bool                            IsValid() const { return hash != InvalidHash; }
+
+    static ShaderPermutationKey     Invalid() { return ShaderPermutationKey(InvalidHash); }
+
+    static ShaderPermutationKey     GeneratePermutationKey(ShaderProgram program, const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet = {});
+    static ShaderPermutationKey     GeneratePermutationKey(const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet = {}) { return GeneratePermutationKey(ShaderProgram::Main, propertyDefines, featureSet); }
 
                                     // 중복 define 제거 + deterministic 하게 순서 정렬
     static void                     NormalizeDefines(BE1::StrArray &defines);

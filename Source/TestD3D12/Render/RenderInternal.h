@@ -84,7 +84,7 @@ struct DrawSurf2 {
 };
 
 enum class RenderPassType : uint8_t {
-    DepthPrepass,
+    Prepass,
     Shadow,
     Opaque,
     Skybox,
@@ -471,6 +471,9 @@ struct FrameCamera {
     FrameBloom                      bloom;
 
     bool                            is2D;
+
+                                    // 출력이 필요하면 draw 가 없어도 Prepass 에서 출력 버퍼를 clear 한다.
+    bool                            NeedsPrepass() const { return needNormalOutput || needRoughnessOutput || needVelocityOutput; }
 };
 
 // 한 프레임 렌더링에서만 유효한 카메라별 렌더링 객체.

@@ -19,9 +19,10 @@
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
-void RenderPassPSOResolver::Prepare(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity) {
+void RenderPassPSOResolver::Prepare(const RenderPass *renderPass, ShaderProgram program, uint32_t initialPSOEntryCapacity) {
     assert(renderPass);
 
+    this->program = program;
     basePipelineDesc = renderPass->graphicsPipelineDesc;
     baseInputLayoutId = renderPass->baseInputLayoutId;
 
@@ -63,17 +64,17 @@ RenderPassPSOResolver::PSOEntry *RenderPassPSOResolver::FindPSOEntry(const Mater
     return nullptr;
 }
 
-RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const FrameSurf *frameSurf, const ShaderFeatureSet &featureSet, bool async) {
+RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const FrameSurf *frameSurf, const ShaderFeatureSet &featureSet, VertexInputLayoutId inputLayoutId, bool async) {
     assert(frameSurf);
     assert(frameSurf->material);
     assert(frameSurf->subMesh);
 
     ResolveResult result;
-    result.inputLayoutId = baseInputLayoutId;
+    result.inputLayoutId = inputLayoutId;
 
     const int maxVertexWeights = frameSurf->subMesh->MaxVertexWeights();
     if (maxVertexWeights > 0 && (featureSet.flags & ShaderFeatureSet::GpuSkinningWeightMask) != 0) {
-        result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(baseInputLayoutId, maxVertexWeights);
+        result.inputLayoutId = VertexInputLayoutFactory::GetIdForVertexWeights(inputLayoutId, maxVertexWeights);
     }
 
     const Material *material = frameSurf->material;
@@ -87,7 +88,7 @@ RenderPassPSOResolver::ResolveResult RenderPassPSOResolver::Resolve(const FrameS
     const GraphicsPipelineDesc &graphicsPipelineDesc = GetGraphicsPipelineDesc(result.inputLayoutId);
 
     // material->GetGraphicsPipeline 호출로 새 ShaderPipeline 을 얻고, 준비된 PSO 까지 얻는다.
-    result.pso = ShaderPipeline::GetReadyPSO(material->GetGraphicsPipeline(featureSet, graphicsPipelineDesc, async));
+    result.pso = ShaderPipeline::GetReadyPSO(material->GetGraphicsPipeline(program, featureSet, graphicsPipelineDesc, async));
 
     // material pointer, featureSet, input layout id 로 새 PSO entry 를 추가한다.
     RenderPassPSOResolver::PSOEntry &entry = psoEntries.Alloc();

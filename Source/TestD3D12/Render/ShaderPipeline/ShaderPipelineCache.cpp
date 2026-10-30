@@ -155,7 +155,7 @@ void ShaderPipelineCache::RebuildPipelines(const SharedPtr<ShaderTemplate> &shad
 }
 
 const ShaderPipelineCache::CachedGraphicsPipeline *ShaderPipelineCache::GetOrCreateGraphicsPipelineEntry(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &graphicsPipelineDesc, bool async) {
-    if (!shaderTemplate) {
+    if (!shaderTemplate || !permutationKey.IsValid()) {
         return nullptr;
     }
 
@@ -227,7 +227,7 @@ void ShaderPipelineCache::RemoveCachedGraphicsPipelineIndex(int index) {
 }
 
 const ShaderPipelineCache::CachedComputePipeline *ShaderPipelineCache::GetOrCreateComputePipelineEntry(const SharedPtr<ShaderTemplate> &shaderTemplate, ShaderPermutationKey permutationKey, bool async) {
-    if (!shaderTemplate) {
+    if (!shaderTemplate || !permutationKey.IsValid()) {
         return nullptr;
     }
 

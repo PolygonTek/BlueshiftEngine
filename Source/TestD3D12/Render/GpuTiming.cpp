@@ -22,7 +22,7 @@ const char *GpuTiming::TagName(Tag tag) {
         "GPU Frame",
         "Shadow Pass",
         "Shadow Atlas",
-        "Depth Prepass",
+        "Prepass",
         "Opaque Pass",
         "Sky Pass",
         "Scene Snapshot",

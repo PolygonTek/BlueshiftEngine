@@ -33,7 +33,7 @@ public:
         GpuFrame,
         ShadowPass,
         ShadowAtlas,
-        DepthPrepass,
+        Prepass,
         OpaquePass,
         SkyPass,
         SceneSnapshot,

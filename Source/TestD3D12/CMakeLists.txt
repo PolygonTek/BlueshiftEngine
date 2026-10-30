@@ -129,6 +129,7 @@ set(SRC_FILES
     Render/ShaderPipeline/GraphicsPipelineDesc.h
     Render/ShaderPipeline/GraphicsPipelineDesc.cpp
     Render/ShaderPipeline/ShaderCompileData.h
+    Render/ShaderPipeline/ShaderProgram.h
     Render/ShaderPipeline/ShaderPipeline.h
     Render/ShaderPipeline/ShaderPipeline.cpp
     Render/ShaderPipeline/ShaderTemplate.h
@@ -259,8 +260,6 @@ set(SRC_FILES
     Render/LocalShadowCasterCuller.cpp
     Render/RenderInternal.h
     Render/RenderInternal.cpp
-    Render/Frontend/RenderPassDepthPSOResolver.h
-    Render/Frontend/RenderPassDepthPSOResolver.cpp
     Render/Frontend/RenderPassPSOResolver.h
     Render/Frontend/RenderPassPSOResolver.cpp
     Render/Frontend/RenderPassBuilder.h

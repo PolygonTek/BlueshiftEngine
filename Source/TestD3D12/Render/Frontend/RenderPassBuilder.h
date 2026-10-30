@@ -15,7 +15,6 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "RenderPassDepthPSOResolver.h"
 #include "RenderPassPSOResolver.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
@@ -34,10 +33,10 @@ public:
                                     // mask 가 0 이면 이미 선별된 전체 목록을, 아니면 해당 cascade bit 가 설정된 surface 를 사용한다.
     void                            BuildShadowPass(RenderFrame *frame, RenderPass *shadowPass, uint8_t shadowCascadeMask, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild);
 
-                                    // 해당 cascade 의 DSV, bias, surface mask 로 depth pass 를 구성한다.
+                                    // 해당 cascade 의 DSV, bias, surface mask 로 cascade shadow pass 를 구성한다.
     void                            BuildShadowCascadePass(RenderFrame *frame, FrameCascadedShadow *cascadedShadow, uint32_t cascadeIndex, const FrameSurf *const *frameSurfs, uint32_t numFrameSurfs, bool allowAsyncPSOBuild);
 
-                                    // 해당 local shadow view 의 surface 목록과 광원 bias 로 depth pass 를 구성한다.
+                                    // 해당 local shadow view 의 surface 목록과 광원 bias 로 local shadow pass 를 구성한다.
     void                            BuildLocalShadowPass(RenderFrame *frame, FrameShadowAtlas *shadowAtlas, uint32_t shadowViewIndex, bool allowAsyncPSOBuild);
     void                            BuildScenePasses(RenderFrame *frame, FrameCamera *frameCamera);
     void                            BuildGuiPass(RenderFrame *frame, FrameCamera *frameCamera);
@@ -46,10 +45,10 @@ private:
     struct ScenePassCounts;
     struct ScenePasses;
 
-    static ScenePassCounts          CountSceneDrawSurfs(const FrameCamera *frameCamera, bool useDepthPrepass);
+    static ScenePassCounts          CountSceneDrawSurfs(const FrameCamera *frameCamera);
     ScenePasses                     CreateScenePasses(FrameCamera *frameCamera, const ScenePassCounts &counts);
     void                            AddSceneDrawSurfs(const FrameCamera *frameCamera, const ScenePasses &passes);
-    void                            AddOpaqueDrawSurfs(const FrameSurf *frameSurf, const ScenePasses &passes, bool useSurfacePrepass, bool directLighting, bool indirectLighting, bool allowAsyncPSOBuild);
+    void                            AddOpaqueDrawSurfs(const FrameSurf *frameSurf, const ScenePasses &passes, bool directLighting, bool indirectLighting, bool allowAsyncPSOBuild);
     void                            SortSceneDrawSurfs(RenderFrame *frame, const ScenePasses &passes);
 
     void                            AllocDrawSurfs(RenderFrame *frame, FrameCamera *frameCamera, uint32_t maxDrawSurfs);
@@ -58,9 +57,8 @@ private:
     void                            SortDrawSurfs(RenderFrame *frame, RenderPass *renderPass);
     void                            RadixSortDrawSurfs(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, const DrawSurf2 **tempDrawSurfs);
 
-    RenderPassDepthPSOResolver      depthPrepassPSOResolver;
-    RenderPassDepthPSOResolver      shadowPSOResolver;
-    RenderPassPSOResolver           surfacePrepassPSOResolver;
+    RenderPassPSOResolver           shadowPSOResolver;
+    RenderPassPSOResolver           prepassPSOResolver;
     RenderPassPSOResolver           transparentSSRPrepassPSOResolver;
     RenderPassPSOResolver           opaquePSOResolver;
     RenderPassPSOResolver           blendPSOResolver;

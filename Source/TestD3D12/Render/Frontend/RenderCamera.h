@@ -316,7 +316,7 @@ private:
     RHI::Texture *              taaReactiveMaskTexture = nullptr; // TAA 사용 시 굴절 등 표면 velocity 로 추적할 수 없는 색의 기여도.
 
     RHI::Texture *              resolvedColorTexture = nullptr; // MSAA on 상태에서 생성, off 상태에서는 nullptr
-    RHI::Texture *              resolvedDepthTexture = nullptr; // MSAA on 상태에서 depth prepass 이후 GTAO/SSR 에서 필요
+    RHI::Texture *              resolvedDepthTexture = nullptr; // MSAA on 상태에서 prepass 이후 GTAO/SSR 에서 필요
     RHI::Texture *              resolvedNormalRoughnessTexture = nullptr; // MSAA on 이고 normalRoughnessTexture 가 필요할 때 생성, 그 외에는 nullptr
     RHI::Texture *              resolvedVelocityTexture = nullptr; // MSAA on 이고 velocityTexture 가 필요할 때 생성, 그 외에는 nullptr
     RHI::Texture *              resolvedTAAReactiveMaskTexture = nullptr; // MSAA on 이고 TAA 사용 시 생성한다.

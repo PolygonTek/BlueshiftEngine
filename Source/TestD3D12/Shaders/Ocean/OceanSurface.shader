@@ -1,32 +1,43 @@
 shader "Ocean/OceanSurface" {
-    stages {
-        vertex SM_6_6 "OceanSurface.hlsl" "VSMain"
-        fragment SM_6_6 "OceanSurface.hlsl" "PSMain"
+    program prepass {
+        stages {
+            vertex SM_6_6 "OceanPrepass.hlsl" "VSMain"
+            fragment SM_6_6 "OceanPrepass.hlsl" "PSMain" (features outputNormal outputRoughness outputVelocity)
+        }
+
+        features {
+            outputNormal {
+                OUTPUT_NORMAL=1
+            }
+
+            outputRoughness {
+                OUTPUT_ROUGHNESS=1
+            }
+
+            outputVelocity {
+                OUTPUT_VELOCITY=1
+            }
+
+            transparentSSRPrepass {
+                TRANSPARENT_SSR_PREPASS=1
+            }
+        }
     }
 
-    features {
-        indirectLighting {
-            INDIRECT_LIGHTING=1
+    program main {
+        stages {
+            vertex SM_6_6 "OceanSurface.hlsl" "VSMain"
+            fragment SM_6_6 "OceanSurface.hlsl" "PSMain"
         }
 
-        outputNormal {
-            OUTPUT_NORMAL=1
-        }
+        features {
+            indirectLighting {
+                INDIRECT_LIGHTING=1
+            }
 
-        outputRoughness {
-            OUTPUT_ROUGHNESS=1
-        }
-
-        outputVelocity {
-            OUTPUT_VELOCITY=1
-        }
-
-        surfacePrepass {
-            SURFACE_PREPASS=1
-        }
-
-        transparentSSRPrepass {
-            TRANSPARENT_SSR_PREPASS=1
+            outputVelocity {
+                OUTPUT_VELOCITY=1
+            }
         }
     }
 }

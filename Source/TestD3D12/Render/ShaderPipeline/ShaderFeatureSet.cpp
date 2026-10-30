@@ -31,8 +31,6 @@ bool ShaderFeatureSet::HasFeature(ShaderFeature feature) const {
         return !!(flags & OutputVelocity);
     case ShaderFeature::OutputRoughness:
         return !!(flags & OutputRoughness);
-    case ShaderFeature::SurfacePrepass:
-        return !!(flags & SurfacePrepass);
     case ShaderFeature::TransparentSSRPrepass:
         return !!(flags & TransparentSSRPrepass);
     case ShaderFeature::DirectLighting:
@@ -66,9 +64,6 @@ void ShaderFeatureSet::EnableFeature(ShaderFeature feature) {
         break;
     case ShaderFeature::OutputRoughness:
         flags |= OutputRoughness;
-        break;
-    case ShaderFeature::SurfacePrepass:
-        flags |= SurfacePrepass;
         break;
     case ShaderFeature::TransparentSSRPrepass:
         flags |= TransparentSSRPrepass;

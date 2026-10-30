@@ -21,7 +21,7 @@
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/Mesh/MeshInstance.h"
-#include "Render/ShaderPipeline/ShaderTemplateManager.h"
+#include "Render/ShaderPipeline/ShaderTemplate.h"
 #include "Scene/SceneMaterialBall.h"
 
 #ifdef ENABLE_IMGUI
@@ -40,7 +40,6 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physic
     app.SetCameraPitchYaw(25, 30);
     app.SetCameraDistance(5.0f);
 
-    indirectLightingEnabled = true;
     directionalLightEnabled = false;
 
     directionalLight.type = RenderLight::Type::Directional;
@@ -51,8 +50,6 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physic
     directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
 
     testMaterial = materialManager.GetMaterial("Source/TestD3D12/Materials/materialBall.material");
-    litShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/Lit");
-    litDirectShaderTemplate = shaderTemplateManager.GetShaderTemplate("Source/TestD3D12/Shaders/LitDirect");
 
     testMesh = meshManager.GetMesh("Data/Test/MaterialBall.bmesh", false);
 
@@ -86,8 +83,6 @@ void SceneMaterialBall::Shutdown() {
 
     testMesh.reset();
     testMaterial.reset();
-    litShaderTemplate.reset();
-    litDirectShaderTemplate.reset();
 
     physicsWorld = nullptr;
     renderWorld = nullptr;
@@ -230,13 +225,6 @@ void SceneMaterialBall::BuildImGui() {
     ImGui::Text("Materials");
 
     if (testMaterial) {
-        if (ImGui::Checkbox("Indirect Lighting", &indirectLightingEnabled)) {
-            const SharedPtr<ShaderTemplate> &shaderTemplate = indirectLightingEnabled ? litShaderTemplate : litDirectShaderTemplate;
-            if (!testMaterial->SetShaderTemplate(shaderTemplate)) {
-                indirectLightingEnabled = !indirectLightingEnabled;
-            }
-        }
-
         DrawMaterialProperties(testMaterial.get(), itemWidth);
     } else {
         ImGui::TextDisabled("Material is unavailable.");

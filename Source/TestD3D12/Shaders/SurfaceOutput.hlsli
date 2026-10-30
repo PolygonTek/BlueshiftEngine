@@ -1,5 +1,5 @@
-#ifndef __SURFACE_PASS_OUTPUT_HLSLI__
-#define __SURFACE_PASS_OUTPUT_HLSLI__
+#ifndef __SURFACE_OUTPUT_HLSLI__
+#define __SURFACE_OUTPUT_HLSLI__
 
 #include "Octahedral.hlsli"
 
@@ -11,23 +11,11 @@ float2 CalcVelocity(float4 currClipPos, float4 prevClipPos) {
     return currUV - prevUV;
 }
 
-struct SurfacePassPSOutput {
+struct MainPSOutput {
     float4 color : SV_Target0;
-#if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
-    float4 normalRoughness : SV_Target1; // RG: UNORM octahedral view-space normal, B: perceptual roughness, A: unused.
-#endif
-#ifdef OUTPUT_VELOCITY
-    #if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
-    float2 velocity : SV_Target2;
-    float taaReactiveMask : SV_Target3;
-    #else
-    float2 velocity : SV_Target1;
-    float taaReactiveMask : SV_Target2;
-    #endif
-#endif
 };
 
-struct SurfacePrepassPSOutput {
+struct PrepassPSOutput {
 #if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
     float4 normalRoughness : SV_Target0; // RG: UNORM octahedral view-space normal, B: perceptual roughness, A: unused.
 #endif
@@ -40,4 +28,4 @@ struct SurfacePrepassPSOutput {
 #endif
 };
 
-#endif // __SURFACE_PASS_OUTPUT_HLSLI__
+#endif // __SURFACE_OUTPUT_HLSLI__

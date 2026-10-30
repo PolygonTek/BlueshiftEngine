@@ -9,7 +9,56 @@ cbuffer CameraCB : register(b1) {
 
 #include "PBR/ParallaxMapping.hlsli"
 
-#if _PARALLAX != 0 || _NORMAL != 0 || (_CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
+#ifdef LIT_PREPASS
+    #if defined(PERFORATED) || defined(TRANSPARENT_SSR_PREPASS)
+        #define LIT_USE_COLOR 1
+    #else
+        #define LIT_USE_COLOR 0
+    #endif
+
+    #if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
+        #define LIT_USE_SHADING_NORMAL 1
+    #else
+        #define LIT_USE_SHADING_NORMAL 0
+    #endif
+
+    #if (LIT_USE_COLOR && _BASECOLOR != 0) || (LIT_USE_SHADING_NORMAL && _NORMAL != 0) || (defined(OUTPUT_ROUGHNESS) && _ROUGHNESS != 0)
+        #define LIT_USE_TEXCOORD 1
+    #else
+        #define LIT_USE_TEXCOORD 0
+    #endif
+
+    #if LIT_USE_COLOR || defined(OUTPUT_ROUGHNESS) || (LIT_USE_SHADING_NORMAL && _NORMAL != 0)
+        #define LIT_USE_MATERIAL 1
+    #else
+        #define LIT_USE_MATERIAL 0
+    #endif
+#else
+    #define LIT_USE_COLOR 1
+    #define LIT_USE_SHADING_NORMAL 1
+    #define LIT_USE_TEXCOORD 1
+    #define LIT_USE_MATERIAL 1
+#endif
+
+#if _PARALLAX != 0 && LIT_USE_TEXCOORD
+    #define USE_SURFACE_PARALLAX 1
+#else
+    #define USE_SURFACE_PARALLAX 0
+#endif
+
+#if !defined(LIT_PREPASS) || USE_SURFACE_PARALLAX
+    #define LIT_USE_WORLD_POSITION 1
+#else
+    #define LIT_USE_WORLD_POSITION 0
+#endif
+
+#if LIT_USE_SHADING_NORMAL || USE_SURFACE_PARALLAX
+    #define LIT_USE_NORMAL 1
+#else
+    #define LIT_USE_NORMAL 0
+#endif
+
+#if USE_SURFACE_PARALLAX || (LIT_USE_SHADING_NORMAL && _NORMAL != 0) || (!defined(LIT_PREPASS) && _CLEARCOAT != 0 && _CLEARCOAT_NORMAL != 0)
     #define USE_SURFACE_TANGENT_FRAME 1
 #else
     #define USE_SURFACE_TANGENT_FRAME 0
@@ -22,15 +71,26 @@ cbuffer CameraCB : register(b1) {
 
 struct VSInput {
     float4 position : POSITION;
+#if LIT_USE_TEXCOORD
     float2 texCoord : TEXCOORD0;
+#endif
+
+#if LIT_USE_COLOR
     float4 color : COLOR;
+#endif
+
+#if LIT_USE_NORMAL
 #ifdef PACKED_VERTEX_TANGENT_FRAME
     uint normal : NORMAL;
 #else
     float4 normal : NORMAL;
+    #if !defined(LIT_PREPASS) || USE_SURFACE_TANGENT_FRAME
     float4 tangent : TEXCOORD1;
+    #endif
+#endif
 #endif
     uint instanceID : SV_InstanceID;
+
 #if GPU_SKINNING
     SkinningVertexInput skinning;
 #endif
@@ -38,14 +98,31 @@ struct VSInput {
 
 struct PSInput {
     float4 position : SV_POSITION;
+
+#if LIT_USE_COLOR
     float4 color : COLOR;
+#endif
+
+#if LIT_USE_TEXCOORD
     float2 texCoord : TEXCOORD0;
+#endif
+
+#if LIT_USE_MATERIAL
     nointerpolation uint shaderMaterialIndex : TEXCOORD1;
+#endif
+
+#if LIT_USE_WORLD_POSITION
     float3 worldPosition : TEXCOORD2;
+#endif
+
+#if LIT_USE_NORMAL
     float3 worldNormal : TEXCOORD3;
+#endif
+
 #if USE_SURFACE_TANGENT_FRAME
     float4 worldTangent : TEXCOORD4;
 #endif
+
 #ifdef OUTPUT_VELOCITY
     float4 currUnjitteredClipPos : TEXCOORD5;
     float4 prevUnjitteredClipPos : TEXCOORD6;
@@ -65,10 +142,24 @@ PSInput VSMain(VSInput input) {
 #endif
     float4 positionWS = float4(mul(shaderSurface.worldMatrix, localPosition), 1.0);
     result.position = mul(cameraConstants.viewProjMatrix, positionWS);
+
+#if LIT_USE_COLOR
     result.color = input.color;
+#endif
+
+#if LIT_USE_TEXCOORD
     result.texCoord = input.texCoord;
+#endif
+
+#if LIT_USE_MATERIAL
     result.shaderMaterialIndex = shaderSurface.shaderMaterialIndex;
+#endif
+
+#if LIT_USE_WORLD_POSITION
     result.worldPosition = positionWS.xyz;
+#endif
+
+#if LIT_USE_NORMAL
     float3 vertexNormal;
 #if USE_SURFACE_TANGENT_FRAME
     float4 vertexTangent;
@@ -97,6 +188,7 @@ PSInput VSMain(VSInput input) {
 #if USE_SURFACE_TANGENT_FRAME
     result.worldTangent = TransformSurfaceTangent(vertexTangent, shaderSurface.worldMatrix);
 #endif
+#endif // LIT_USE_NORMAL
 
 #ifdef OUTPUT_VELOCITY
     result.currUnjitteredClipPos = mul(cameraConstants.unjitteredViewProjMatrix, positionWS);
@@ -121,7 +213,11 @@ struct LitSurfaceInput {
 };
 
 LitSurfaceInput PrepareLitSurfaceInput(PSInput input, ShaderMaterial shaderMaterial, SamplerState materialSampler, float2 texCoord, float2 texCoordDx, float2 texCoordDy, bool hasTexCoordGradients) {
+#if LIT_USE_NORMAL
     const float3 worldNormal = normalize(input.worldNormal);
+#else
+    const float3 worldNormal = float3(0.0f, 0.0f, 1.0f);
+#endif
 
 #if USE_SURFACE_TANGENT_FRAME
     // worldTangent 를 worldNormal 에 대해 Gram-Schmidt 직교화 + normalize
@@ -133,10 +229,14 @@ LitSurfaceInput PrepareLitSurfaceInput(PSInput input, ShaderMaterial shaderMater
     const float3x3 tangentToWorld = float3x3(worldTangent, worldBitangent, worldNormal);
 #endif
 
+#if LIT_USE_WORLD_POSITION
     const float3 viewDir = normalize(cameraConstants.cameraOrigin - input.worldPosition);
+#else
+    const float3 viewDir = float3(0.0f, 0.0f, 1.0f);
+#endif
     float2 baseTc = texCoord;
 
-#if _PARALLAX != 0
+#if USE_SURFACE_PARALLAX
     const float3 viewTS = mul(tangentToWorld, viewDir);
     if (!hasTexCoordGradients) {
         texCoordDx = ddx_coarse(texCoord);
@@ -156,6 +256,7 @@ LitSurfaceInput PrepareLitSurfaceInput(PSInput input, ShaderMaterial shaderMater
     return result;
 }
 
+#if LIT_USE_COLOR
 float4 EvaluateLitBaseColor(PSInput input, ShaderMaterial shaderMaterial, SamplerState materialSampler, float2 baseTc) {
     float4 baseColor = shaderMaterial.GetBaseColorFactor() * input.color;
     #if _BASECOLOR != 0
@@ -165,11 +266,14 @@ float4 EvaluateLitBaseColor(PSInput input, ShaderMaterial shaderMaterial, Sample
     #ifdef PERFORATED
         clip(baseColor.a - shaderMaterial.alphaCutoff);
     #endif
+
     #ifdef TRANSPARENT_SSR_PREPASS
         // 완전히 투명한 texel 은 가장 가까운 transparent SSR receiver 로 기록하지 않는다.
         clip(baseColor.a - (1.0f / 255.0f));
     #endif
     return baseColor;
 }
+
+#endif // LIT_USE_COLOR
 
 #endif // __LIT_SURFACE_COMMON_HLSLI__

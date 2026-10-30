@@ -53,8 +53,6 @@ public:
     SharedPtr<ShaderTemplate>       hdr10OutputShaderTemplate;
     SharedPtr<ShaderTemplate>       displayP3EDROutputShaderTemplate;
     SharedPtr<ShaderTemplate>       debugDrawShaderTemplate;
-    SharedPtr<ShaderTemplate>       depthPrepassShaderTemplate;
-    SharedPtr<ShaderTemplate>       shadowDepthShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
 

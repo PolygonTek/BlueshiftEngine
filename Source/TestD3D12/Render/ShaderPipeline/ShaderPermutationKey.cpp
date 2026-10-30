@@ -15,21 +15,23 @@
 #include "Precompiled.h"
 #include "ShaderPermutationKey.h"
 
-ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet) {
-    if (propertyDefines.IsEmpty() && featureSet.IsEmpty()) {
-        return ShaderPermutationKey();
+ShaderPermutationKey ShaderPermutationKey::GeneratePermutationKey(ShaderProgram program, const BE1::StrArray &propertyDefines, const ShaderFeatureSet &featureSet) {
+    if (program >= ShaderProgram::Count) {
+        return Invalid();
     }
 
+    const uint64_t programFeatures = (uint64_t(program) << 32) | uint64_t(featureSet.flags);
     uint64_t hash = 0;
-    if (!featureSet.IsEmpty()) {
-        hash = hash_combine(hash, uint64_t(featureSet.flags));
+    if (programFeatures != 0) {
+        hash = hash_combine(hash, programFeatures);
     }
 
     for (const BE1::Str &define : propertyDefines) {
         hash = hash_combine(hash, define.ToHash64());
     }
 
-    return ShaderPermutationKey(hash);
+    // 계산된 hash 가 우연히 InvalidHash 와 같아지면, 실패 키와 구분되도록 다른 값으로 바꾼다.
+    return ShaderPermutationKey(hash == InvalidHash ? InvalidHash - 1 : hash);
 }
 
 void ShaderPermutationKey::NormalizeDefines(BE1::StrArray &defines) {

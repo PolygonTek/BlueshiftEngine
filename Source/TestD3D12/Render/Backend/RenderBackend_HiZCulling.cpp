@@ -20,7 +20,7 @@
 #include "Shaders/ShaderInterop.h"
 
 static bool IsHiZCullRenderPass(RenderPassType passType) {
-    return passType == RenderPassType::DepthPrepass || passType == RenderPassType::Opaque;
+    return passType == RenderPassType::Prepass || passType == RenderPassType::Opaque;
 }
 
 bool RenderBackend::PrepareHiZCulling() {
@@ -37,7 +37,7 @@ bool RenderBackend::PrepareHiZCulling() {
     // 전체 렌더패스들을 순회하면서 Hi-Z Culling 을 수행할 수 있는 DrawSurf 들을 찾아서 배치 개수, 인스턴스 개수를 계산한다.
     for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
         const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
-        // 현재 Hi-Z Culling 은 DepthPrepass 와 Opaque Pass 에서만 수행한다.
+        // 현재 Hi-Z Culling 은 Prepass 와 Opaque Pass 에서만 수행한다.
         if (!IsHiZCullRenderPass(renderPass->type)) {
             continue;
         }

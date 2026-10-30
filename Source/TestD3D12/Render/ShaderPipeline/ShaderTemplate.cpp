@@ -56,37 +56,57 @@ static constexpr const char *standardPropertyNames[] = {
 };
 static_assert(COUNT_OF(standardPropertyNames) == static_cast<int>(ShaderTemplate::StandardProperty::Count));
 
+void ShaderTemplate::ProgramData::Purge() {
+    for (ShaderStageSource &stageSource : stageSources) {
+        stageSource = ShaderStageSource();
+    }
+
+    memset(stageFeatureMasks, 0, sizeof(stageFeatureMasks));
+    baseDefines.Clear();
+    propertyDefineIndices.Clear();
+    for (BE1::StrArray &defines : featureDefines) {
+        defines.Clear();
+    }
+    supportedFeatureMask = 0;
+    defined = false;
+}
+
+void ShaderTemplate::ProgramData::Swap(ProgramData &rhs) {
+    for (int i = 0; i < to_int(RHI::ShaderStage::Count); i++) {
+        BE1::Swap(stageSources[i], rhs.stageSources[i]);
+        BE1::Swap(stageFeatureMasks[i], rhs.stageFeatureMasks[i]);
+    }
+
+    baseDefines.Swap(rhs.baseDefines);
+    propertyDefineIndices.Swap(rhs.propertyDefineIndices);
+    for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
+        featureDefines[i].Swap(rhs.featureDefines[i]);
+    }
+    BE1::Swap(supportedFeatureMask, rhs.supportedFeatureMask);
+    BE1::Swap(defined, rhs.defined);
+}
+
 ShaderTemplate::InternalData::InternalData() {
     ResetStandardPropertyIndices();
 }
 
 void ShaderTemplate::InternalData::Purge() {
-    for (ShaderStageSource &stageSource : stageSources) {
-        stageSource = ShaderStageSource();
+    for (ProgramData &program : programs) {
+        program.Purge();
     }
 
-    inheritedShaderTemplateName.Clear();
-    baseDefines.Clear();
-    for (BE1::StrArray &defines : featureDefines) {
-        defines.Clear();
-    }
-    supportedFeatureMask = 0;
+    parentName.Clear();
     properties.Clear();
     propertyHash.Clear(64, 64);
     ResetStandardPropertyIndices();
 }
 
 void ShaderTemplate::InternalData::Swap(InternalData &rhs) {
-    for (int i = 0; i < to_int(RHI::ShaderStage::Count); i++) {
-        BE1::Swap(stageSources[i], rhs.stageSources[i]);
+    for (int i = 0; i < to_int(ShaderProgram::Count); i++) {
+        programs[i].Swap(rhs.programs[i]);
     }
 
-    BE1::Swap(inheritedShaderTemplateName, rhs.inheritedShaderTemplateName);
-    baseDefines.Swap(rhs.baseDefines);
-    for (int i = 0; i < to_int(ShaderFeature::Count); i++) {
-        featureDefines[i].Swap(rhs.featureDefines[i]);
-    }
-    BE1::Swap(supportedFeatureMask, rhs.supportedFeatureMask);
+    BE1::Swap(parentName, rhs.parentName);
     properties.Swap(rhs.properties);
     propertyHash.Swap(rhs.propertyHash);
     for (int i = 0; i < NumStandardProperties; ++i) {
@@ -206,8 +226,13 @@ void ShaderTemplate::BuildDefaultPropertyValues(BE1::Array<PropertyValue> &outPr
     }
 }
 
-bool ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint) {
+bool ShaderTemplate::ProgramData::AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint) {
     assert(shaderStage >= RHI::ShaderStage::Vertex && shaderStage < RHI::ShaderStage::Count);
+
+    ShaderStageSource &stageSource = stageSources[to_int(shaderStage)];
+    if (!stageSource.filename.IsEmpty()) {
+        return false;
+    }
 
     if (shaderStage == RHI::ShaderStage::Compute) {
         for (int stageIndex = to_int(RHI::ShaderStage::Vertex); stageIndex < to_int(RHI::ShaderStage::Compute); ++stageIndex) {
@@ -219,24 +244,28 @@ bool ShaderTemplate::InternalData::AddStage(RHI::ShaderStage shaderStage, RHI::S
         return false;
     }
 
-    ShaderStageSource &stageSource = stageSources[to_int(shaderStage)];
-
     stageSource.shaderModel = shaderModel;
     stageSource.filename = filename;
     stageSource.entryPoint = entryPoint;
     return true;
 }
 
-bool ShaderTemplate::SupportsFeature(ShaderFeature feature) const {
-    if (feature >= ShaderFeature::Count) {
-        return false;
-    }
-    return internalData.featureDefines[to_int(feature)].Count() > 0;
+bool ShaderTemplate::HasProgram(ShaderProgram program) const {
+    return program < ShaderProgram::Count && internalData.programs[to_int(program)].defined;
 }
 
-ShaderFeatureSet ShaderTemplate::MaskSupportedFeatures(const ShaderFeatureSet &requestedFeatureSet) const {
+bool ShaderTemplate::SupportsFeature(ShaderProgram program, ShaderFeature feature) const {
+    if (feature >= ShaderFeature::Count || !HasProgram(program)) {
+        return false;
+    }
+    return (internalData.programs[to_int(program)].supportedFeatureMask & (1u << to_int(feature))) != 0;
+}
+
+ShaderFeatureSet ShaderTemplate::MaskSupportedFeatures(ShaderProgram program, const ShaderFeatureSet &requestedFeatureSet) const {
     ShaderFeatureSet supportedFeatureSet = {};
-    supportedFeatureSet.flags = requestedFeatureSet.flags & internalData.supportedFeatureMask;
+    if (HasProgram(program)) {
+        supportedFeatureSet.flags = requestedFeatureSet.flags & internalData.programs[to_int(program)].supportedFeatureMask;
+    }
     return supportedFeatureSet;
 }
 
@@ -311,21 +340,29 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
     return RegisterPermutation(propertyValues, ShaderFeatureSet());
 }
 
-ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) {
+ShaderPermutationKey ShaderTemplate::RegisterPermutation(ShaderProgram shaderProgram, const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) {
+    if (!HasProgram(shaderProgram)) {
+        BE_WARNLOG("ShaderTemplate::RegisterPermutation: shader template '%s' has no '%s' program\n", hashName.c_str(), ShaderProgramName(shaderProgram));
+        return ShaderPermutationKey::Invalid();
+    }
+
+    const ProgramData &program = internalData.programs[to_int(shaderProgram)];
+    const uint32_t unsupportedFeatures = featureSet.flags & ~program.supportedFeatureMask;
+    if (unsupportedFeatures != 0) {
+        BE_WARNLOG("ShaderTemplate::RegisterPermutation: unsupported features 0x%08x in program '%s' of shader template '%s'\n", unsupportedFeatures, ShaderProgramName(shaderProgram), hashName.c_str());
+        return ShaderPermutationKey::Invalid();
+    }
+
     BE1::StrArray propertyDefines;
 
-    // 프로퍼티 중에 shader define 프로퍼티로 define 목록을 만든다.
-    const int numProperties = internalData.properties.Count();
-    for (int propertyIndex = 0; propertyIndex < numProperties; propertyIndex++) {
+    // 이 프로그램의 의존 프로퍼티 디파인 목록을 모은다.
+    for (int propertyIndex : program.propertyDefineIndices) {
         const ShaderPropertyDesc &propertyDesc = internalData.properties[propertyIndex];
-        if (!propertyDesc.IsShaderDefine()) {
-            continue;
-        }
 
         const char *propertyDefineName = propertyDesc.GetName();
-        if (HasDefine(propertyDefines, propertyDefineName) || HasDefine(internalData.baseDefines, propertyDefineName) || HasFeatureDefine(featureSet, propertyDefineName)) {
-            BE_ERRLOG("ShaderTemplate::RegisterPermutation: property define name '%s' conflicts with an existing shader property in shader template '%s'\n", propertyDefineName, hashName.c_str());
-            continue;
+        if (HasDefine(propertyDefines, propertyDefineName) || HasDefine(program.baseDefines, propertyDefineName) || HasFeatureDefine(shaderProgram, featureSet, propertyDefineName)) {
+            BE_ERRLOG("ShaderTemplate::RegisterPermutation: property define name '%s' conflicts with an existing define in program '%s' of shader template '%s'\n", propertyDefineName, ShaderProgramName(shaderProgram), hashName.c_str());
+            return ShaderPermutationKey::Invalid();
         }
 
         const PropertyValue *propertyValue = propertyIndex < propertyValues.Count() ? &propertyValues[propertyIndex] : nullptr;
@@ -346,13 +383,14 @@ ShaderPermutationKey ShaderTemplate::RegisterPermutation(const BE1::Array<Proper
 
     ShaderPermutationKey::NormalizeDefines(propertyDefines);
 
-    // 프로퍼티 define 과 feature set mask 를 합쳐서 permutation key 를 만든다.
-    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(propertyDefines, featureSet);
+    // 프로그램, 프로퍼티 define 과 feature set mask 를 합쳐서 permutation key 를 만든다.
+    ShaderPermutationKey permutationKey = ShaderPermutationKey::GeneratePermutationKey(shaderProgram, propertyDefines, featureSet);
     if (FindPermutation(permutationKey)) {
         return permutationKey;
     }
 
     ShaderPermutation *permutation = new ShaderPermutation;
+    permutation->program = shaderProgram;
     permutation->featureSet = featureSet;
     permutation->propertyDefines.Swap(propertyDefines);
     permutationMap.Set(permutationKey.hash, permutation);
@@ -382,6 +420,8 @@ void ShaderTemplate::ApplyPrepared(InternalData &newInternalData) {
 bool ShaderTemplate::Parse(const char *text, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData) {
     outInternalData.Purge();
 
+    PropertyDependencies propertyDependencies[to_int(ShaderProgram::Count)];
+
     BE1::Lexer lexer;
     lexer.Init(BE1::Lexer::Flag::NoErrors);
     lexer.Load(text, BE1::Str::Length(text), shaderTemplateName);
@@ -407,22 +447,17 @@ bool ShaderTemplate::Parse(const char *text, const char *baseDir, const char *sh
             if (!ParseInheritProperties(lexer, baseDir, shaderTemplateName, outInternalData)) {
                 return false;
             }
-        } else if (!token.Icmp("baseDefines")) {
-            if (!ParseBaseDefines(lexer, shaderTemplateName, outInternalData)) {
-                return false;
-            }
-        } else if (!token.Icmp("features")) {
-            if (!ParseFeatures(lexer, shaderTemplateName, outInternalData)) {
-                return false;
-            }
-        } else if (!token.Icmp("stages")) {
-            if (!ParseStages(lexer, baseDir, shaderTemplateName, outInternalData)) {
+        } else if (!token.Icmp("program")) {
+            if (!ParseProgram(lexer, baseDir, shaderTemplateName, outInternalData, propertyDependencies)) {
                 return false;
             }
         } else if (!token.Icmp("properties")) {
             if (!ParseProperties(lexer, shaderTemplateName, outInternalData)) {
                 return false;
             }
+        } else if (!token.Icmp("stages") || !token.Icmp("baseDefines") || !token.Icmp("features") || !token.Icmp("propertyDependencies")) {
+            BE_WARNLOG("ShaderTemplate::Parse: '%s' must be declared inside a program in shader template '%s'\n", token.c_str(), shaderTemplateName);
+            return false;
         } else {
             BE_WARNLOG("unknown token '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
             return false;
@@ -434,8 +469,105 @@ bool ShaderTemplate::Parse(const char *text, const char *baseDir, const char *sh
         return false;
     }
 
+    if (!outInternalData.programs[to_int(ShaderProgram::Main)].defined) {
+        BE_WARNLOG("ShaderTemplate::Parse: shader template '%s' has no main program\n", shaderTemplateName);
+        return false;
+    }
+
+    // 상속과 properties 파싱이 끝난 뒤 이름을 index 로 변환한다.
+    return ResolvePropertyDependencies(propertyDependencies, shaderTemplateName, outInternalData);
+}
+
+bool ShaderTemplate::ParseProgram(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData, PropertyDependencies *outPropertyDependencies) {
+    BE1::Str programName;
+    if (!lexer.ReadToken(&programName, false)) {
+        return false;
+    }
+
+    ShaderProgram program;
+    if (!programName.Icmp("main")) {
+        program = ShaderProgram::Main;
+    } else if (!programName.Icmp("prepass")) {
+        program = ShaderProgram::Prepass;
+    } else if (!programName.Icmp("shadow")) {
+        program = ShaderProgram::Shadow;
+    } else {
+        BE_WARNLOG("ShaderTemplate::ParseProgram: unknown program '%s' in shader template '%s'\n", programName.c_str(), shaderTemplateName);
+        return false;
+    }
+
+    ProgramData &outProgram = outInternalData.programs[to_int(program)];
+    PropertyDependencies &dependencies = outPropertyDependencies[to_int(program)];
+    if (outProgram.defined) {
+        BE_WARNLOG("ShaderTemplate::ParseProgram: duplicated program '%s' in shader template '%s'\n", programName.c_str(), shaderTemplateName);
+        return false;
+    }
+
+    if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
+        return false;
+    }
+
+    BE1::Str token;
+    bool closed = false;
+    bool stagesParsed = false;
+    bool baseDefinesParsed = false;
+    bool featuresParsed = false;
+
+    while (lexer.ReadToken(&token)) {
+        if (token[0] == '}') {
+            closed = true;
+            break;
+        }
+
+        if (!token.Icmp("stages")) {
+            if (stagesParsed) {
+                BE_WARNLOG("ShaderTemplate::ParseProgram: duplicated '%s' block in program '%s' of shader template '%s'\n", token.c_str(), programName.c_str(), shaderTemplateName);
+                return false;
+            }
+            if (!ParseStages(lexer, baseDir, shaderTemplateName, programName.c_str(), outProgram)) {
+                return false;
+            }
+            stagesParsed = true;
+        } else if (!token.Icmp("baseDefines")) {
+            if (baseDefinesParsed) {
+                BE_WARNLOG("ShaderTemplate::ParseProgram: duplicated '%s' block in program '%s' of shader template '%s'\n", token.c_str(), programName.c_str(), shaderTemplateName);
+                return false;
+            }
+            if (!ParseBaseDefines(lexer, shaderTemplateName, programName.c_str(), outProgram)) {
+                return false;
+            }
+            baseDefinesParsed = true;
+        } else if (!token.Icmp("propertyDependencies")) {
+            if (dependencies.declared) {
+                BE_WARNLOG("ShaderTemplate::ParseProgram: duplicated '%s' block in program '%s' of shader template '%s'\n", token.c_str(), programName.c_str(), shaderTemplateName);
+                return false;
+            }
+            if (!ParsePropertyDependencies(lexer, shaderTemplateName, programName.c_str(), dependencies)) {
+                return false;
+            }
+            dependencies.declared = true;
+        } else if (!token.Icmp("features")) {
+            if (featuresParsed) {
+                BE_WARNLOG("ShaderTemplate::ParseProgram: duplicated '%s' block in program '%s' of shader template '%s'\n", token.c_str(), programName.c_str(), shaderTemplateName);
+                return false;
+            }
+            if (!ParseFeatures(lexer, shaderTemplateName, programName.c_str(), outProgram)) {
+                return false;
+            }
+            featuresParsed = true;
+        } else {
+            BE_WARNLOG("ShaderTemplate::ParseProgram: unknown token '%s' in program '%s' of shader template '%s'\n", token.c_str(), programName.c_str(), shaderTemplateName);
+            return false;
+        }
+    }
+
+    if (!closed) {
+        BE_WARNLOG("ShaderTemplate::ParseProgram: missing closing brace in program '%s' of shader template '%s'\n", programName.c_str(), shaderTemplateName);
+        return false;
+    }
+
     bool hasShaderStage = false;
-    for (const ShaderStageSource &stageSource : outInternalData.stageSources) {
+    for (const ShaderStageSource &stageSource : outProgram.stageSources) {
         if (!stageSource.filename.IsEmpty()) {
             hasShaderStage = true;
             break;
@@ -443,18 +575,95 @@ bool ShaderTemplate::Parse(const char *text, const char *baseDir, const char *sh
     }
 
     if (!hasShaderStage) {
-        BE_WARNLOG("ShaderTemplate::Parse: shader template '%s' has no shader stages\n", shaderTemplateName);
+        BE_WARNLOG("ShaderTemplate::ParseProgram: program '%s' of shader template '%s' has no shader stages\n", programName.c_str(), shaderTemplateName);
         return false;
     }
 
     for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
-        if (!outInternalData.featureDefines[featureIndex].IsEmpty()) {
+        if (!outProgram.featureDefines[featureIndex].IsEmpty()) {
             ShaderFeatureSet featureSet = {};
             featureSet.EnableFeature(static_cast<ShaderFeature>(featureIndex));
-            outInternalData.supportedFeatureMask |= featureSet.flags;
+            outProgram.supportedFeatureMask |= featureSet.flags;
         }
     }
 
+    uint32_t conditionFeatures = 0;
+    for (uint32_t mask : outProgram.stageFeatureMasks) {
+        conditionFeatures |= mask;
+    }
+
+    if ((conditionFeatures & ~outProgram.supportedFeatureMask) != 0) {
+        BE_WARNLOG("ShaderTemplate::ParseProgram: condition references unsupported features in program '%s' of shader template '%s'\n", programName.c_str(), shaderTemplateName);
+        return false;
+    }
+
+    outProgram.defined = true;
+    return true;
+}
+
+bool ShaderTemplate::ParsePropertyDependencies(BE1::Lexer &lexer, const char *shaderTemplateName, const char *programName, PropertyDependencies &outDependencies) {
+    if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
+        return false;
+    }
+
+    BE1::Str token;
+    while (lexer.ReadToken(&token)) {
+        if (token == "}") {
+            return true;
+        }
+
+        if (lexer.GetTokenType() != BE1::Lexer::TokenType::Identifier) {
+            BE_WARNLOG("ShaderTemplate::ParsePropertyDependencies: expected a property name, got '%s' in program '%s' of shader template '%s'\n", token.c_str(), programName, shaderTemplateName);
+            return false;
+        }
+
+        if (outDependencies.names.FindIndex(token) >= 0) {
+            BE_WARNLOG("ShaderTemplate::ParsePropertyDependencies: duplicated property '%s' in program '%s' of shader template '%s'\n", token.c_str(), programName, shaderTemplateName);
+            return false;
+        }
+
+        outDependencies.names.Append(token);
+    }
+
+    BE_WARNLOG("ShaderTemplate::ParsePropertyDependencies: missing closing brace in program '%s' of shader template '%s'\n", programName, shaderTemplateName);
+    return false;
+}
+
+bool ShaderTemplate::ResolvePropertyDependencies(const PropertyDependencies *propertyDependencies, const char *shaderTemplateName, InternalData &outInternalData) {
+    for (int programIndex = 0; programIndex < to_int(ShaderProgram::Count); programIndex++) {
+        ProgramData &program = outInternalData.programs[programIndex];
+        if (!program.defined) {
+            continue;
+        }
+
+        const PropertyDependencies &dependencies = propertyDependencies[programIndex];
+        const char *programName = ShaderProgramName(static_cast<ShaderProgram>(programIndex));
+        if (dependencies.declared) {
+            for (const BE1::Str &propertyName : dependencies.names) {
+                const int propertyIndex = outInternalData.FindPropertyIndex(propertyName);
+                if (propertyIndex < 0 || !outInternalData.properties[propertyIndex].IsShaderDefine()) {
+                    BE_WARNLOG("ShaderTemplate::ResolvePropertyDependencies: '%s' is not a shaderDefine property in program '%s' of shader template '%s'\n", propertyName.c_str(), programName, shaderTemplateName);
+                    return false;
+                }
+                program.propertyDefineIndices.Append(propertyIndex);
+            }
+        } else {
+            // 블록 생략은 전체 shaderDefine 에 의존한다. 명시한 빈 블록은 빈 목록을 유지한다.
+            for (int propertyIndex = 0; propertyIndex < outInternalData.properties.Count(); propertyIndex++) {
+                if (outInternalData.properties[propertyIndex].IsShaderDefine()) {
+                    program.propertyDefineIndices.Append(propertyIndex);
+                }
+            }
+        }
+
+        for (int propertyIndex : program.propertyDefineIndices) {
+            const ShaderPropertyDesc &property = outInternalData.properties[propertyIndex];
+            if (property.GetType() != BE1::Variant::Type::Bool && property.GetType() != BE1::Variant::Type::Int) {
+                BE_WARNLOG("ShaderTemplate::ResolvePropertyDependencies: shaderDefine property '%s' has unsupported type in program '%s' of shader template '%s'\n", property.GetName(), programName, shaderTemplateName);
+                return false;
+            }
+        }
+    }
     return true;
 }
 
@@ -536,7 +745,7 @@ bool ShaderTemplate::ParseInheritProperties(BE1::Lexer &lexer, const char *baseD
         return false;
     }
 
-    if (!outInternalData.inheritedShaderTemplateName.IsEmpty()) {
+    if (!outInternalData.parentName.IsEmpty()) {
         BE_WARNLOG("ShaderTemplate::ParseInheritProperties: shader template '%s' cannot inherit properties from multiple shader templates\n", shaderTemplateName);
         return false;
     }
@@ -559,7 +768,7 @@ bool ShaderTemplate::ParseInheritProperties(BE1::Lexer &lexer, const char *baseD
         return false;
     }
 
-    outInternalData.inheritedShaderTemplateName = inheritedShaderTemplate->GetHashName();
+    outInternalData.parentName = inheritedShaderTemplate->GetHashName();
     return true;
 }
 
@@ -586,7 +795,7 @@ static bool ParseDefine(BE1::Lexer &lexer, const BE1::Str &nameToken, BE1::Str &
     return true;
 }
 
-bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData) {
+bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTemplateName, const char *programName, ProgramData &outProgram) {
     BE1::Str token;
     bool closed = false;
 
@@ -606,20 +815,20 @@ bool ShaderTemplate::ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTempl
 
         BE1::Str define;
         if (!ParseDefine(lexer, token, define)) {
-            BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing value for base define '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
+            BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing value for base define '%s' in program '%s' of shader template '%s'\n", define.c_str(), programName, shaderTemplateName);
             return false;
         }
 
-        if (HasDefine(outInternalData.baseDefines, define.c_str())) {
-            BE_WARNLOG("ShaderTemplate::ParseBaseDefines: duplicated base define name '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
+        if (HasDefine(outProgram.baseDefines, define.c_str())) {
+            BE_WARNLOG("ShaderTemplate::ParseBaseDefines: duplicated base define name '%s' in program '%s' of shader template '%s'\n", define.c_str(), programName, shaderTemplateName);
             return false;
         }
 
-        outInternalData.baseDefines.Append(define);
+        outProgram.baseDefines.Append(define);
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing closing brace in shader template '%s'\n", shaderTemplateName);
+        BE_WARNLOG("ShaderTemplate::ParseBaseDefines: missing closing brace in program '%s' of shader template '%s'\n", programName, shaderTemplateName);
         return false;
     }
 
@@ -632,7 +841,7 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
         ShaderFeature feature;
     };
 
-    static constexpr FeatureName FeatureNames[] = {
+    static constexpr FeatureName featureNames[] = {
         { "perforated",         ShaderFeature::Perforated },
         { "gpuSkinningWeight1", ShaderFeature::GpuSkinningWeight1 },
         { "gpuSkinningWeight4", ShaderFeature::GpuSkinningWeight4 },
@@ -640,13 +849,12 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
         { "outputNormal",       ShaderFeature::OutputNormal },
         { "outputRoughness",    ShaderFeature::OutputRoughness },
         { "outputVelocity",     ShaderFeature::OutputVelocity },
-        { "surfacePrepass",     ShaderFeature::SurfacePrepass },
         { "transparentSSRPrepass", ShaderFeature::TransparentSSRPrepass },
         { "directLighting",     ShaderFeature::DirectLighting },
         { "indirectLighting",   ShaderFeature::IndirectLighting }
     };
 
-    for (const FeatureName &featureName : FeatureNames) {
+    for (const FeatureName &featureName : featureNames) {
         if (!token.Icmp(featureName.featureName)) {
             outFeature = featureName.feature;
             return true;
@@ -656,7 +864,41 @@ static bool ParseShaderFeature(const BE1::Str &token, ShaderFeature &outFeature)
     return false;
 }
 
-bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData) {
+// Optional (features ...) condition: any listed feature enables the entry; omission is unconditional.
+static bool ParseFeatureCondition(BE1::Lexer &lexer, uint32_t &outFeatureMask) {
+    outFeatureMask = 0;
+    BE1::Str token;
+
+    if (!lexer.ReadToken(&token)) {
+        return false;
+    }
+
+    if (token != "(") {
+        lexer.UnreadToken(&token);
+        return true;
+    }
+
+    if (!lexer.ExpectTokenString("features")) {
+        return false;
+    }
+
+    while (lexer.ReadToken(&token)) {
+        if (token == ")") {
+            return outFeatureMask != 0;
+        }
+
+        ShaderFeature feature;
+        if (!ParseShaderFeature(token, feature) || (outFeatureMask & (1u << to_int(feature))) != 0) {
+            BE_WARNLOG("ShaderTemplate: unknown or duplicate condition feature '%s'\n", token.c_str());
+            return false;
+        }
+
+        outFeatureMask |= 1u << to_int(feature);
+    }
+    return false;
+}
+
+bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplateName, const char *programName, ProgramData &outProgram) {
     BE1::Str token;
     bool closed = false;
     bool declaredFeatures[to_int(ShaderFeature::Count)] = {};
@@ -673,18 +915,18 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplate
 
         ShaderFeature feature = ShaderFeature::Count;
         if (!ParseShaderFeature(token, feature)) {
-            BE_WARNLOG("ShaderTemplate::ParseFeatures: unknown feature '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: unknown feature '%s' in program '%s' of shader template '%s'\n", token.c_str(), programName, shaderTemplateName);
             return false;
         }
 
         int featureIndex = to_int(feature);
         if (declaredFeatures[featureIndex]) {
-            BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature '%s' in program '%s' of shader template '%s'\n", token.c_str(), programName, shaderTemplateName);
             return false;
         }
         declaredFeatures[featureIndex] = true;
 
-        BE1::StrArray &featureDefines = outInternalData.featureDefines[featureIndex];
+        BE1::StrArray &featureDefines = outProgram.featureDefines[featureIndex];
 
         bool featureClosed = false;
         if (!lexer.ExpectPunctuation(BE1::Lexer::PuncType::BraceOpen)) {
@@ -704,12 +946,12 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplate
 
             BE1::Str define;
             if (!ParseDefine(lexer, defineToken, define)) {
-                BE_WARNLOG("ShaderTemplate::ParseFeatures: missing value for feature define '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
+                BE_WARNLOG("ShaderTemplate::ParseFeatures: missing value for feature define '%s' in program '%s' of shader template '%s'\n", define.c_str(), programName, shaderTemplateName);
                 return false;
             }
 
             if (HasDefine(featureDefines, define.c_str())) {
-                BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature define name '%s' in shader template '%s'\n", define.c_str(), shaderTemplateName);
+                BE_WARNLOG("ShaderTemplate::ParseFeatures: duplicated feature define name '%s' in program '%s' of shader template '%s'\n", define.c_str(), programName, shaderTemplateName);
                 return false;
             }
 
@@ -717,20 +959,20 @@ bool ShaderTemplate::ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplate
         }
 
         if (!featureClosed) {
-            BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in feature '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
+            BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in feature '%s' in program '%s' of shader template '%s'\n", token.c_str(), programName, shaderTemplateName);
             return false;
         }
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in shader template '%s'\n", shaderTemplateName);
+        BE_WARNLOG("ShaderTemplate::ParseFeatures: missing closing brace in program '%s' of shader template '%s'\n", programName, shaderTemplateName);
         return false;
     }
 
     return true;
 }
 
-bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData) {
+bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, const char *programName, ProgramData &outProgram) {
     BE1::Str token;
     bool closed = false;
 
@@ -752,7 +994,7 @@ bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, const c
 
         RHI::ShaderStage shaderStage = RHI::ShaderStage::Count;
         if (!ParseShaderStage(token, shaderStage)) {
-            BE_WARNLOG("unknown shader stage '%s' in shader template '%s'\n", token.c_str(), shaderTemplateName);
+            BE_WARNLOG("unknown shader stage '%s' in program '%s' of shader template '%s'\n", token.c_str(), programName, shaderTemplateName);
             return false;
         }
 
@@ -763,7 +1005,7 @@ bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, const c
 
         RHI::ShaderModel shaderModel = RHI::Renderer::MinimumShaderModel();
         if (!ParseShaderModel(shaderModelName, shaderModel)) {
-            BE_WARNLOG("unknown shader model '%s' in shader template '%s'\n", shaderModelName.c_str(), shaderTemplateName);
+            BE_WARNLOG("unknown shader model '%s' in program '%s' of shader template '%s'\n", shaderModelName.c_str(), programName, shaderTemplateName);
             return false;
         }
 
@@ -777,15 +1019,26 @@ bool ShaderTemplate::ParseStages(BE1::Lexer &lexer, const char *baseDir, const c
             return false;
         }
 
+        uint32_t featureMask;
+        if (!ParseFeatureCondition(lexer, featureMask)) {
+            return false;
+        }
+
+        if (featureMask != 0 && shaderStage != RHI::ShaderStage::Fragment) {
+            BE_WARNLOG("ShaderTemplate::ParseStages: only fragment stages support feature conditions\n");
+            return false;
+        }
+        outProgram.stageFeatureMasks[to_int(shaderStage)] = featureMask;
+
         BE1::Str resolvedFilename = ResolveShaderStageFilename(baseDir, filename.c_str());
-        if (!outInternalData.AddStage(shaderStage, shaderModel, resolvedFilename.c_str(), entryPoint.c_str())) {
-            BE_WARNLOG("ShaderTemplate::ParseStages: cannot mix graphics and compute stages in shader template '%s'\n", shaderTemplateName);
+        if (!outProgram.AddStage(shaderStage, shaderModel, resolvedFilename.c_str(), entryPoint.c_str())) {
+            BE_WARNLOG("ShaderTemplate::ParseStages: duplicate stage or mixed graphics and compute stages in program '%s' of shader template '%s'\n", programName, shaderTemplateName);
             return false;
         }
     }
 
     if (!closed) {
-        BE_WARNLOG("ShaderTemplate::ParseStages: missing closing brace in shader template '%s'\n", shaderTemplateName);
+        BE_WARNLOG("ShaderTemplate::ParseStages: missing closing brace in program '%s' of shader template '%s'\n", programName, shaderTemplateName);
         return false;
     }
 
@@ -1122,6 +1375,10 @@ void ShaderTemplate::ClearPermutations() {
 }
 
 const ShaderTemplate::ShaderPermutation *ShaderTemplate::FindPermutation(ShaderPermutationKey permutationKey) const {
+    if (!permutationKey.IsValid()) {
+        return nullptr;
+    }
+
     const auto *entry = permutationMap.Get(permutationKey.hash);
     if (entry) {
         return entry->second;
@@ -1129,14 +1386,15 @@ const ShaderTemplate::ShaderPermutation *ShaderTemplate::FindPermutation(ShaderP
     return nullptr;
 }
 
-bool ShaderTemplate::HasFeatureDefine(const ShaderFeatureSet &featureSetToCheck, const char *defineName) const {
+bool ShaderTemplate::HasFeatureDefine(ShaderProgram shaderProgram, const ShaderFeatureSet &featureSetToCheck, const char *defineName) const {
+    const ProgramData &program = internalData.programs[to_int(shaderProgram)];
     for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
         ShaderFeature feature = static_cast<ShaderFeature>(featureIndex);
         if (!featureSetToCheck.HasFeature(feature)) {
             continue;
         }
 
-        if (HasDefine(internalData.featureDefines[featureIndex], defineName)) {
+        if (HasDefine(program.featureDefines[featureIndex], defineName)) {
             return true;
         }
     }
@@ -1144,7 +1402,8 @@ bool ShaderTemplate::HasFeatureDefine(const ShaderFeatureSet &featureSetToCheck,
     return false;
 }
 
-bool ShaderTemplate::CollectFeatureDefines(const ShaderFeatureSet &featureSet, BE1::StrArray &outDefines) const {
+bool ShaderTemplate::CollectFeatureDefines(ShaderProgram shaderProgram, const ShaderFeatureSet &featureSet, BE1::StrArray &outDefines) const {
+    const ProgramData &program = internalData.programs[to_int(shaderProgram)];
     bool addedAllDefines = true;
 
     for (int featureIndex = 0; featureIndex < to_int(ShaderFeature::Count); featureIndex++) {
@@ -1153,9 +1412,9 @@ bool ShaderTemplate::CollectFeatureDefines(const ShaderFeatureSet &featureSet, B
             continue;
         }
 
-        for (const BE1::Str &define : internalData.featureDefines[featureIndex]) {
+        for (const BE1::Str &define : program.featureDefines[featureIndex]) {
             if (!TryAddDefine(outDefines, define.c_str())) {
-                BE_ERRLOG("ShaderTemplate::CollectFeatureDefines: feature define name '%s' conflicts with an existing define in shader template '%s'\n", define.c_str(), hashName.c_str());
+                BE_ERRLOG("ShaderTemplate::CollectFeatureDefines: feature define name '%s' conflicts with an existing define in program '%s' of shader template '%s'\n", define.c_str(), ShaderProgramName(shaderProgram), hashName.c_str());
                 addedAllDefines = false;
                 continue;
             }
@@ -1175,10 +1434,12 @@ bool ShaderTemplate::PrepareShaderCompileData(ShaderPermutationKey permutationKe
         return false;
     }
 
+    const ProgramData &program = internalData.programs[to_int(srcPermutation->program)];
+
     // global defines + base defines + property defines + feature defines 순으로 합쳐서 컴파일 define 을 만든다.
     shaderTemplateManager.GetGlobalDefines(outCompileData.compileDefines);
 
-    if (!AddDefines(outCompileData.compileDefines, internalData.baseDefines)) {
+    if (!AddDefines(outCompileData.compileDefines, program.baseDefines)) {
         BE_ERRLOG("ShaderTemplate::PrepareShaderCompileData: failed to append base defines in shader template '%s'\n", GetHashName());
         return false;
     }
@@ -1188,14 +1449,17 @@ bool ShaderTemplate::PrepareShaderCompileData(ShaderPermutationKey permutationKe
         return false;
     }
 
-    if (!CollectFeatureDefines(srcPermutation->featureSet, outCompileData.compileDefines)) {
+    if (!CollectFeatureDefines(srcPermutation->program, srcPermutation->featureSet, outCompileData.compileDefines)) {
         return false;
     }
 
     ShaderPermutationKey::NormalizeDefines(outCompileData.compileDefines);
 
     for (int i = 0; i < to_int(RHI::ShaderStage::Count); i++) {
-        outCompileData.stageSources[i] = internalData.stageSources[i];
+        const uint32_t featureMask = program.stageFeatureMasks[i];
+        if (featureMask == 0 || !!(srcPermutation->featureSet.flags & featureMask)) {
+            outCompileData.stageSources[i] = program.stageSources[i];
+        }
     }
 
     return true;

@@ -1,8 +1,4 @@
-#ifdef SURFACE_PREPASS
-#include "SurfacePrepass.hlsl"
-#else
 #include "LitSurfaceCommon.hlsli"
-
 #include "TextureStreamingFeedback.hlsli"
 #include "Lighting/LightCullingCommon.hlsli"
 #include "Lighting/LightCullingDebug.hlsli"
@@ -18,7 +14,7 @@
 #endif
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-SurfacePassPSOutput PSMain(PSInput input) {
+MainPSOutput PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
     const float2 texCoord = shaderMaterial.TransformTexCoord(input.texCoord);
@@ -48,22 +44,9 @@ SurfacePassPSOutput PSMain(PSInput input) {
     ShadingParams shading = PrepareShadingParams(shaderMaterial, baseColor, materialTexCoord, surfaceInput.viewDir, surfaceInput.worldNormal, useSpecularAA, materialSampler);
 #endif
 
-    SurfacePassPSOutput result;
-#if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
-    result.normalRoughness = float4(0.5f, 0.5f, 1.0f, 0.0f);
-#endif
+    MainPSOutput result;
     result.color = baseColor;
-#ifdef OUTPUT_VELOCITY
-    result.velocity = CalcVelocity(input.currUnjitteredClipPos, input.prevUnjitteredClipPos);
-    result.taaReactiveMask = 0.0f;
-#endif
-#ifdef OUTPUT_NORMAL
-    // Lighting stays in world space; the shared AO/SSR buffer stores view-space normals.
-    result.normalRoughness.xy = EncodeUnitVectorOctahedralUNorm(mul((float3x3)cameraConstants.viewRotation, shading.normal));
-#endif
-#ifdef OUTPUT_ROUGHNESS
-    result.normalRoughness.z = shading.roughness;
-#endif
+
 #if DEBUG_CASCADED_SHADOW_MAP == 1
     result.color.rgb = EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition);
     return result;
@@ -94,7 +77,7 @@ SurfacePassPSOutput PSMain(PSInput input) {
 #endif
 
 #ifdef INDIRECT_LIGHTING
-    // Opaque and alpha-tested surfaces use screen-space AO from the depth prepass.
+    // Opaque and alpha-tested surfaces use screen-space AO from the prepass.
     if ((cameraConstants.flags & ShaderCameraFlagUseScreenSpaceAO) != 0 && (shaderMaterial.flags & ShaderMaterialFlagTransparent) == 0) {
         const float screenAO = GetTexture2D(cameraConstants.aoTextureIndex).Load(int3(uint2(input.position.xy), 0)).r;
         // Material AO and screen-space AO can describe the same cavity; use the stronger
@@ -124,5 +107,3 @@ SurfacePassPSOutput PSMain(PSInput input) {
     result.color.rgb = lighting + emission;
     return result;
 }
-
-#endif // SURFACE_PREPASS

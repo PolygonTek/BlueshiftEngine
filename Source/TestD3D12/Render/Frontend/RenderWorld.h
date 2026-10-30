@@ -242,7 +242,7 @@ private:
     void                        BuildDebugDraw(RenderFrame *frame, FrameCamera *frameCamera);
     const DebugDrawData *       BuildDebugDrawData(RenderFrame *frame);
     void                        PrepareDebugDrawPipelines(FrameCamera *frameCamera);
-    void                        PrepareOceanSurfacePipeline(FrameCamera *frameCamera);
+    void                        PrepareOceanSurfacePipeline(FrameCamera *frameCamera, bool indirectLighting);
 
     void                        DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        SetupFrameTransparentSSR(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);

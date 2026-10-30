@@ -20,6 +20,7 @@
 #include "Core/Property.h"
 #include "ShaderCompileData.h"
 #include "ShaderPermutationKey.h"
+#include "ShaderProgram.h"
 
 class ShaderTemplateManager;
 class LoadingSystem;
@@ -83,8 +84,8 @@ struct ShaderPropertyDesc : public BE1::PropertyDesc {
 
     Shader Template
 
-    - stages, baseDefines, features, properties 정보를 보관하는 셰이더 템플릿이다.
-    - shader define property 값들과 featureSet 조합으로 필요한 shader permutation 을 미리 등록해야 한다.
+    - properties 와 프로그램별 stages, baseDefines, features 를 보관한다.
+    - program, shader define property 값들과 featureSet 조합으로 필요한 shader permutation 을 미리 등록해야 한다.
     - 셰이더 컴파일에 필요한 정보는 등록된 shaderPermutationKey 로 얻을 수 있다.
 
 ---------------------------------------------------------------------------------------------------
@@ -163,21 +164,27 @@ public:
                                     // 프로퍼티 초기값 배열을 만들어 준다.
     void                            BuildDefaultPropertyValues(BE1::Array<PropertyValue> &outPropertyValues) const;
 
-                                    // 지원하는 feature 인지 검사
-    bool                            SupportsFeature(ShaderFeature feature) const;
+    bool                            HasProgram(ShaderProgram program) const;
 
-                                    // requestedFeatureSet 에서 이 템플릿이 지원하는 feature 만 포함한 featureSet 을 리턴한다.
-    ShaderFeatureSet                MaskSupportedFeatures(const ShaderFeatureSet &requestedFeatureSet) const;
+                                    // 프로그램이 지원하는 feature 인지 검사한다. 기존 렌더링 경로는 Main 을 사용한다.
+    bool                            SupportsFeature(ShaderProgram program, ShaderFeature feature) const;
+    bool                            SupportsFeature(ShaderFeature feature) const { return SupportsFeature(ShaderProgram::Main, feature); }
+
+                                    // requestedFeatureSet 에서 해당 프로그램이 지원하는 feature 만 포함한 featureSet 을 리턴한다.
+    ShaderFeatureSet                MaskSupportedFeatures(ShaderProgram program, const ShaderFeatureSet &requestedFeatureSet) const;
+    ShaderFeatureSet                MaskSupportedFeatures(const ShaderFeatureSet &requestedFeatureSet) const { return MaskSupportedFeatures(ShaderProgram::Main, requestedFeatureSet); }
 
     bool                            Create(const char *text, const char *baseDir);
 
                                     // 리로드 완료 후 리소스를 사용할 수 있으면 true 를 반환한다. 새 데이터 로딩 성공 여부와는 무관하다.
     bool                            Reload();
 
-                                    // defines (shader define properties) + featureSet flags 으로 permutation 을 등록하고 그 hash key 를 리턴한다.
+                                    // program + 해당 프로그램이 의존하는 property defines + featureSet flags 으로 permutation 을 등록한다.
+                                    // 프로그램 미지원 또는 등록 실패 시 Invalid 키를 반환한다.
+    ShaderPermutationKey            RegisterPermutation(ShaderProgram program, const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet = {});
     ShaderPermutationKey            RegisterPermutation();
     ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues);
-    ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet);
+    ShaderPermutationKey            RegisterPermutation(const BE1::Array<PropertyValue> &propertyValues, const ShaderFeatureSet &featureSet) { return RegisterPermutation(ShaderProgram::Main, propertyValues, featureSet); }
 
                                     // 셰이더 컴파일에 필요한 정보들을 준비한다.
     bool                            PrepareShaderCompileData(ShaderPermutationKey permutationKey, ShaderCompileData &outCompileData) const;
@@ -185,6 +192,22 @@ public:
     static ReloadedDelegate         reloaded;
 
 private:
+    struct ProgramData {
+        void                        Purge();
+        void                        Swap(ProgramData &rhs);
+
+                                    // 중복 스테이지 또는 그래픽스/컴퓨트 혼합이면 추가하지 않고 false 를 리턴한다.
+        bool                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
+
+        ShaderStageSource           stageSources[to_int(RHI::ShaderStage::Count)] = {};
+        uint32_t                    stageFeatureMasks[to_int(RHI::ShaderStage::Count)] = {};
+        BE1::StrArray               baseDefines;
+        BE1::Array<int>             propertyDefineIndices;
+        BE1::StrArray               featureDefines[to_int(ShaderFeature::Count)] = {};
+        uint32_t                    supportedFeatureMask = 0;
+        bool                        defined = false;
+    };
+
     struct InternalData {
         static constexpr int        NumStandardProperties = static_cast<int>(StandardProperty::Count);
 
@@ -201,14 +224,8 @@ private:
         int                         GetStandardPropertyIndex(StandardProperty standardProperty) const;
         void                        ResetStandardPropertyIndices();
 
-                                    // 그래픽스와 컴퓨트 스테이지가 혼합되면 추가하지 않고 false 를 리턴한다.
-        bool                        AddStage(RHI::ShaderStage shaderStage, RHI::ShaderModel shaderModel, const char *filename, const char *entryPoint);
-
-        ShaderStageSource           stageSources[to_int(RHI::ShaderStage::Count)] = {};
-        BE1::Str                    inheritedShaderTemplateName;
-        BE1::StrArray               baseDefines;
-        BE1::StrArray               featureDefines[to_int(ShaderFeature::Count)] = {};
-        uint32_t                    supportedFeatureMask = 0;
+        ProgramData                 programs[to_int(ShaderProgram::Count)];
+        BE1::Str                    parentName; // properties 를 상속받은 부모 템플릿 이름
         BE1::Array<ShaderPropertyDesc> properties;
         BE1::HashIndex              propertyHash { 64, 64 };
         int                         standardPropertyIndices[NumStandardProperties];
@@ -218,6 +235,12 @@ private:
     struct ShaderPermutation {
         BE1::StrArray               propertyDefines;
         ShaderFeatureSet            featureSet;
+        ShaderProgram               program = ShaderProgram::Main;
+    };
+
+    struct PropertyDependencies {
+        BE1::StrArray               names;
+        bool                        declared = false;
     };
 
     void                            Purge();
@@ -229,19 +252,22 @@ private:
 
     static bool                     Parse(const char *text, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData);
     static bool                     ParseInheritProperties(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData);
-    static bool                     ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData);
-    static bool                     ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData);
-    static bool                     ParseStages(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData);
+    static bool                     ParseProgram(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, InternalData &outInternalData, PropertyDependencies *outPropertyDependencies);
+    static bool                     ParsePropertyDependencies(BE1::Lexer &lexer, const char *shaderTemplateName, const char *programName, PropertyDependencies &outDependencies);
+    static bool                     ResolvePropertyDependencies(const PropertyDependencies *propertyDependencies, const char *shaderTemplateName, InternalData &outInternalData);
+    static bool                     ParseBaseDefines(BE1::Lexer &lexer, const char *shaderTemplateName, const char *programName, ProgramData &outProgram);
+    static bool                     ParseFeatures(BE1::Lexer &lexer, const char *shaderTemplateName, const char *programName, ProgramData &outProgram);
+    static bool                     ParseStages(BE1::Lexer &lexer, const char *baseDir, const char *shaderTemplateName, const char *programName, ProgramData &outProgram);
     static bool                     ParseProperties(BE1::Lexer &lexer, const char *shaderTemplateName, InternalData &outInternalData);
 
     const ShaderPermutation *       FindPermutation(ShaderPermutationKey permutationKey) const;
     void                            ClearPermutations();
 
                                     // featureSetToCheck 에 포함된 feature 의 define 중 같은 이름이 있는지 확인한다. 값은 비교하지 않는다.
-    bool                            HasFeatureDefine(const ShaderFeatureSet &featureSetToCheck, const char *defineName) const;
+    bool                            HasFeatureDefine(ShaderProgram program, const ShaderFeatureSet &featureSetToCheck, const char *defineName) const;
 
                                     // featureSet 에 포함된 feature 의 define 을 수집해 outDefines 의 기존 항목 뒤에 추가한다.
-    bool                            CollectFeatureDefines(const ShaderFeatureSet &featureSet, BE1::StrArray &outDefines) const;
+    bool                            CollectFeatureDefines(ShaderProgram program, const ShaderFeatureSet &featureSet, BE1::StrArray &outDefines) const;
 
     BE1::Str                        hashName;
     BE1::Str                        name;

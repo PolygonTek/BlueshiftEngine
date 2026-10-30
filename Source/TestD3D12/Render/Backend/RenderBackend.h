@@ -107,7 +107,7 @@ private:
     void                            DrawShadowAtlasPass(ShaderShadowAtlasData &outData);
     void                            ClearShadowAtlasTiles(const FrameShadowAtlas &shadowAtlas);
     bool                            DrawShadowAtlasViews(FrameShadowAtlas &shadowAtlas, RHI::FrameThreadData *frameThreadData);
-    void                            DrawDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
+    void                            DrawPrepass(RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            DrawScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            CaptureSceneSnapshot();
     bool                            DrawTransparentSSRPrepass();

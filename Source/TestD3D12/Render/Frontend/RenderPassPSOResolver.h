@@ -18,6 +18,7 @@
 #include "Containers/HashIndex.h"
 #include "RHI/RHI.h"
 #include "Render/ShaderPipeline/ShaderFeatureSet.h"
+#include "Render/ShaderPipeline/ShaderProgram.h"
 #include "Render/ShaderPipeline/GraphicsPipelineDesc.h"
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 
@@ -32,9 +33,12 @@ public:
         RHI::PipelineState *        pso = nullptr;
     };
 
-    void                            Prepare(const RenderPass *renderPass, uint32_t initialPSOEntryCapacity);
+    void                            Prepare(const RenderPass *renderPass, ShaderProgram program, uint32_t initialPSOEntryCapacity);
 
-    ResolveResult                   Resolve(const FrameSurf *frameSurf, const ShaderFeatureSet &featureSet, bool async = true);
+    ResolveResult                   Resolve(const FrameSurf *frameSurf, const ShaderFeatureSet &featureSet, bool async = true) { return Resolve(frameSurf, featureSet, baseInputLayoutId, async); }
+
+                                    // 지정한 기본 input layout 에 GPU skinning 을 적용한 뒤 PSO 를 찾는다.
+    ResolveResult                   Resolve(const FrameSurf *frameSurf, const ShaderFeatureSet &featureSet, VertexInputLayoutId inputLayoutId, bool async = true);
 
 private:
     struct PSOEntry {
@@ -51,6 +55,7 @@ private:
 
     static constexpr int            NumInputLayouts = static_cast<int>(VertexInputLayoutId::Count);
 
+    ShaderProgram                   program = ShaderProgram::Main;              // Prepare 사이에는 고정되며 Prepare 시 PSO 캐시를 비운다.
     VertexInputLayoutId             baseInputLayoutId;                          // RenderPass 의 기반 input layout id
     GraphicsPipelineDesc            basePipelineDesc;                           // RenderPass 의 기반 graphics pipeline desc
 

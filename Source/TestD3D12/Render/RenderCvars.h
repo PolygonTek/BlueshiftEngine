@@ -32,13 +32,13 @@ extern BE1::CVar    r_debugDrawMaxVertices;
 extern BE1::CVar    r_showLights2;
 extern BE1::CVar    r_lightCullingZBin;
 extern BE1::CVar    r_lightCullingDebug;
+extern BE1::CVar    r_indirectLighting;
 
 extern BE1::CVar    r_vsync;
 extern BE1::CVar    r_hdrOutput;
 extern BE1::CVar    r_hdrPaperWhiteNits;
 extern BE1::CVar    r_hdrPeakNits;
 
-extern BE1::CVar    r_depthPrepass;
 extern BE1::CVar    r_snapshotColorHalfRes;
 extern BE1::CVar    r_specularEnergyCompensation2;
 

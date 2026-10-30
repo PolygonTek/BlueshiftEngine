@@ -176,11 +176,13 @@ SharedPtr<ShaderTemplate> ShaderTemplateManager::CreateComputeShaderTemplate(con
     BE1::Str shaderTemplateText;
     shaderTemplateText.sPrintf(
         "{\n"
-        "    baseDefines {\n"
-        "        %s\n"
-        "    }\n"
-        "    stages {\n"
-        "        compute %s \"%s\" \"%s\"\n"
+        "    program main {\n"
+        "        baseDefines {\n"
+        "            %s\n"
+        "        }\n"
+        "        stages {\n"
+        "            compute %s \"%s\" \"%s\"\n"
+        "        }\n"
         "    }\n"
         "}\n",
         baseDefines ? baseDefines : "",
@@ -393,16 +395,6 @@ void ShaderTemplateManager::CreateDefaultShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load debug draw shader template");
     }
 
-    depthPrepassShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DepthPrepass");
-    if (!depthPrepassShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load depth prepass shader template");
-    }
-
-    shadowDepthShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/ShadowDepth");
-    if (!shadowDepthShaderTemplate) {
-        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load shadow depth shader template");
-    }
-
     unlitShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Unlit");
     if (!unlitShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load unlit shader template");
@@ -432,12 +424,6 @@ void ShaderTemplateManager::DestroyDefaultShaderTemplates() {
     }
     if (debugDrawShaderTemplate) {
         debugDrawShaderTemplate.reset();
-    }
-    if (depthPrepassShaderTemplate) {
-        depthPrepassShaderTemplate.reset();
-    }
-    if (shadowDepthShaderTemplate) {
-        shadowDepthShaderTemplate.reset();
     }
     if (unlitShaderTemplate) {
         unlitShaderTemplate.reset();

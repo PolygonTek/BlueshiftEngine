@@ -20,7 +20,6 @@
 
 class Mesh;
 class Material;
-class ShaderTemplate;
 
 class SceneMaterialBall : public Scene {
 public:
@@ -40,14 +39,11 @@ private:
     BE1::PhysicsWorld *         physicsWorld = nullptr;
     SharedPtr<Mesh>             testMesh;
     SharedPtr<Material>         testMaterial;
-    SharedPtr<ShaderTemplate>   litShaderTemplate;
-    SharedPtr<ShaderTemplate>   litDirectShaderTemplate;
     GameObject                  materialBall;
     GameLight                   directionalLight;
 
     float                       directionalLightAzimuth = 145.0f;
     float                       directionalLightElevation = 55.0f;
-    bool                        indirectLightingEnabled = true;
     bool                        directionalLightEnabled = false;
     bool                        envLightAdded = false;
 

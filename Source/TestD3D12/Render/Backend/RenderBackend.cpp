@@ -328,7 +328,7 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->flags = flags;
     constants->projectionScaleBiasZ = float2(currentFrameCamera->projectionScaleBiasZ);
 
-    // depth prepass 와 동일한 jitter 를 사용해 뷰 공간에서 직접 복원한다.
+    // prepass 와 동일한 jitter 를 사용해 뷰 공간에서 직접 복원한다.
     BE1::Vec4 projectionScaleBiasXY = currentFrameCamera->projectionScaleBiasXY;
     projectionScaleBiasXY.z += currentFrameCamera->ndcJitter.x;
     projectionScaleBiasXY.w += currentFrameCamera->ndcJitter.y;
@@ -741,15 +741,15 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
         hiZCullingPrepared = PrepareHiZCulling();
     }
 
-    const bool needDepthPrepass = currentFrameCamera->needNormalOutput || currentFrameCamera->needVelocityOutput || FindRenderPass(currentFrameCamera, RenderPassType::DepthPrepass) != nullptr;
+    const bool needPrepass = currentFrameCamera->NeedsPrepass();
 
     const RHI::RenderPassImage::LoadAction depthLoadAction = BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth) ? RHI::RenderPassImage::LoadAction::Clear : RHI::RenderPassImage::LoadAction::Load;
 
     bool ssrHiZReady = false;
     bool aoReady = false;
 
-    if (needDepthPrepass) {
-        DrawDepthPrepass(depthLoadAction);
+    if (needPrepass) {
+        DrawPrepass(depthLoadAction);
 
         if (currentFrameCamera->generateSSRHiZ) {
             // MSAA 가 켜져있다면 SSR hi-Z generation 은 depth/normal/roughness/velocity 텍스쳐를 resolve 까지 한다.
@@ -795,7 +795,7 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
     }
 
     // Opaque surface 와 Skybox 를 렌더링한다.
-    const RHI::RenderPassImage::LoadAction sceneDepthLoadAction = needDepthPrepass ? RHI::RenderPassImage::LoadAction::Load : depthLoadAction;
+    const RHI::RenderPassImage::LoadAction sceneDepthLoadAction = needPrepass ? RHI::RenderPassImage::LoadAction::Load : depthLoadAction;
     DrawScenePass(clearFlags, clearColor, useExplicitClearColor, sceneDepthLoadAction);
 
     // refraction 을 사용할 수 있도록 현재의 scene color/depth 를 보존한다.
@@ -1141,8 +1141,8 @@ bool RenderBackend::DrawLocalShadowPass(const RenderPass *renderPass, const RHI:
     return true;
 }
 
-void RenderBackend::DrawDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
-    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawDepthPrepass");
+void RenderBackend::DrawPrepass(RHI::RenderPassImage::LoadAction depthLoadAction) {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawPrepass");
 
     RHI::RenderPassImage renderPassImages[3];
     uint32_t renderPassImageCount = 0;
@@ -1167,7 +1167,7 @@ void RenderBackend::DrawDepthPrepass(RHI::RenderPassImage::LoadAction depthLoadA
 
     for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
         const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
-        if (renderPass->type == RenderPassType::DepthPrepass) {
+        if (renderPass->type == RenderPassType::Prepass) {
             DrawGenericPass(renderPass, cameraConstantBuffer);
         }
     }
@@ -1800,15 +1800,15 @@ void RenderBackend::SetPassVertexBuffers(RHI::CommandList *commandList, const Dr
 }
 
 static bool IsHiZCullRenderPass(RenderPassType passType) {
-    return passType == RenderPassType::DepthPrepass || passType == RenderPassType::Opaque;
+    return passType == RenderPassType::Prepass || passType == RenderPassType::Opaque;
 }
 
 static GpuTiming::Tag GpuTagForRenderPass(RenderPassType passType) {
     switch (passType) {
     case RenderPassType::Shadow:
         return GpuTiming::Tag::ShadowPass;
-    case RenderPassType::DepthPrepass:
-        return GpuTiming::Tag::DepthPrepass;
+    case RenderPassType::Prepass:
+        return GpuTiming::Tag::Prepass;
     case RenderPassType::Opaque:
         return GpuTiming::Tag::OpaquePass;
     case RenderPassType::Skybox:

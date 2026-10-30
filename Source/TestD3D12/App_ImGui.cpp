@@ -738,32 +738,6 @@ void App::BuildImGuiOverlay() {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
             }
 
-            bool specularEnergyCompensation = r_specularEnergyCompensation2.GetBool();
-            if (ImGui::Checkbox("Specular energy compensation", &specularEnergyCompensation)) {
-                r_specularEnergyCompensation2.SetBool(specularEnergyCompensation);
-            }
-
-            bool specularAA = r_specularAA.GetBool();
-            if (ImGui::Checkbox("Specular AA", &specularAA)) {
-                r_specularAA.SetBool(specularAA);
-            }
-
-            ImGui::BeginDisabled(!specularAA);
-            float specularAAVariance = r_specularAAVariance.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Specular AA Variance", &specularAAVariance, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
-                r_specularAAVariance.SetFloat(specularAAVariance);
-            }
-            ImGui::SetItemTooltip("Normal variation scale. Higher values reduce specular aliasing more strongly.");
-
-            float specularAALimit = r_specularAALimit.GetFloat();
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::SliderFloat("Specular AA Limit", &specularAALimit, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
-                r_specularAALimit.SetFloat(specularAALimit);
-            }
-            ImGui::SetItemTooltip("Maximum roughness correction. 0 disables the correction.");
-            ImGui::EndDisabled();
-
             static constexpr int msaaSampleCounts[] = { 1, 2, 4, 8 };
             int msaaSampleCount = r_msaa.GetInteger();
             int msaaSampleCountIndex = msaaSampleCount >= 8 ? 3 : (msaaSampleCount >= 4 ? 2 : (msaaSampleCount >= 2 ? 1 : 0));
@@ -800,21 +774,6 @@ void App::BuildImGuiOverlay() {
             }
             ImGui::EndDisabled();
 
-            bool lightCullingZBin = r_lightCullingZBin.GetBool();
-            if (ImGui::Checkbox("Light culling Z-bin", &lightCullingZBin)) {
-                r_lightCullingZBin.SetBool(lightCullingZBin);
-            }
-
-            int lightCullingDebugMode = BE1::Clamp(r_lightCullingDebug.GetInteger(),
-                static_cast<int>(r_lightCullingDebug.GetMinValue()), static_cast<int>(r_lightCullingDebug.GetMaxValue()));
-            ImGui::SetNextItemWidth(fontSize * 12.0f);
-            if (ImGui::Combo("Light culling debug", &lightCullingDebugMode,
-                "Off\0"
-                "Tile mask\0"
-                "Tile mask + Z-bin\0")) {
-                r_lightCullingDebug.SetInteger(lightCullingDebugMode);
-            }
-
             if (roundedCollapsingHeader("Skip options##RenderSkipOptionsHeader")) {
                 bool skipCulling = r_skipViewCulling.GetBool();
                 if (ImGui::Checkbox("Skip view culling", &skipCulling)) {
@@ -850,6 +809,55 @@ void App::BuildImGuiOverlay() {
                         r_hdrPaperWhiteNits.SetFloat(hdrPaperWhiteNits);
                     }
                     ImGui::Unindent();
+                }
+            }
+
+            if (roundedCollapsingHeader("Lighting##LightingHeader")) {
+                bool indirectLighting = r_indirectLighting.GetBool();
+                if (ImGui::Checkbox("Indirect Lighting", &indirectLighting)) {
+                    r_indirectLighting.SetBool(indirectLighting);
+                }
+                ImGui::SetItemTooltip("Enable environment lighting and screen-space reflections on surfaces.");
+
+                bool specularEnergyCompensation = r_specularEnergyCompensation2.GetBool();
+                if (ImGui::Checkbox("Specular energy compensation", &specularEnergyCompensation)) {
+                    r_specularEnergyCompensation2.SetBool(specularEnergyCompensation);
+                }
+
+                bool specularAA = r_specularAA.GetBool();
+                if (ImGui::Checkbox("Specular AA", &specularAA)) {
+                    r_specularAA.SetBool(specularAA);
+                }
+
+                ImGui::BeginDisabled(!specularAA);
+                float specularAAVariance = r_specularAAVariance.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Specular AA Variance", &specularAAVariance, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_specularAAVariance.SetFloat(specularAAVariance);
+                }
+                ImGui::SetItemTooltip("Normal variation scale. Higher values reduce specular aliasing more strongly.");
+
+                float specularAALimit = r_specularAALimit.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Specular AA Limit", &specularAALimit, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_specularAALimit.SetFloat(specularAALimit);
+                }
+                ImGui::SetItemTooltip("Maximum roughness correction. 0 disables the correction.");
+                ImGui::EndDisabled();
+
+                bool lightCullingZBin = r_lightCullingZBin.GetBool();
+                if (ImGui::Checkbox("Light culling Z-bin", &lightCullingZBin)) {
+                    r_lightCullingZBin.SetBool(lightCullingZBin);
+                }
+
+                int lightCullingDebugMode = BE1::Clamp(r_lightCullingDebug.GetInteger(),
+                    static_cast<int>(r_lightCullingDebug.GetMinValue()), static_cast<int>(r_lightCullingDebug.GetMaxValue()));
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::Combo("Light culling debug", &lightCullingDebugMode,
+                    "Off\0"
+                    "Tile mask\0"
+                    "Tile mask + Z-bin\0")) {
+                    r_lightCullingDebug.SetInteger(lightCullingDebugMode);
                 }
             }
 

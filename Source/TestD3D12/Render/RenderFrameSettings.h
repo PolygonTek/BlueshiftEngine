@@ -151,7 +151,7 @@ struct RenderFrameSettings {
     bool                        shadows;
 
     bool                        lightCullingZBin;
-    bool                        depthPrepass;
+    bool                        indirectLighting;
     bool                        specularAA;
 
     bool                        vsync;

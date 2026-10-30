@@ -364,14 +364,11 @@ void RenderContext::DestroyCSMDepthTexture() {
     }
 }
 
-void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputNormal, bool outputRoughness, bool outputVelocity) const {
+void RenderContext::GetMainRenderDest(RHI::RenderDest &renderDest, bool outputVelocity) const {
     renderDest = RHI::RenderDest();
     renderDest.renderTargetCount = 1;
     renderDest.depthStencilFormat = GetMainRTDepthFormat();
     renderDest.renderTargetFormats[0] = GetMainRTColorFormat();
-    if (outputNormal || outputRoughness) {
-        renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R10G10B10A2_UNORM;
-    }
     if (outputVelocity) {
         renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R16G16_FLOAT;
         renderDest.renderTargetFormats[renderDest.renderTargetCount++] = RHI::Format::R8_UNORM;

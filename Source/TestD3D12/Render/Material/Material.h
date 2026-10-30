@@ -93,15 +93,19 @@ public:
 
     uint32_t                        GetStreamingListIndex() const { return streamingListIndex; }
 
-                                    // material 에 캐시된 permutation key 를 무효화한다.
+                                    // material 의 모든 프로그램에 캐시된 permutation key 를 무효화한다.
     void                            InvalidatePermutationKeys() const;
 
-                                    // (지원하지 않는 shader features 를 제외한) material permutation key 를 등록한다.
-    ShaderPermutationKey            EnsurePermutation(const ShaderFeatureSet &featureSet = {}) const;
-    void                            EnsurePermutations(const BE1::Array<ShaderFeatureSet> &featureSets) const;
+                                    // 선택한 프로그램에서 지원하지 않는 features 를 제외하고 material permutation 을 등록한다.
+                                    // 프로그램 미지원 또는 등록 실패 시 Invalid 키를 반환한다.
+    ShaderPermutationKey            EnsurePermutation(ShaderProgram program, const ShaderFeatureSet &featureSet) const;
+    ShaderPermutationKey            EnsurePermutation(const ShaderFeatureSet &featureSet = {}) const { return EnsurePermutation(ShaderProgram::Main, featureSet); }
+    void                            EnsurePermutations(ShaderProgram program, const BE1::Array<ShaderFeatureSet> &featureSets) const;
+    void                            EnsurePermutations(const BE1::Array<ShaderFeatureSet> &featureSets) const { EnsurePermutations(ShaderProgram::Main, featureSets); }
 
-                                    // featureSet/baseGraphicsPipelineDesc 기반에서 material 의 렌더링 상태를 반영하여 graphics pipeline 을 가져온다.
-    ShaderPipeline *                GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async = true) const;
+                                    // program/featureSet/baseGraphicsPipelineDesc 기반에서 material 의 렌더링 상태를 반영하여 graphics pipeline 을 가져온다.
+    ShaderPipeline *                GetGraphicsPipeline(ShaderProgram program, const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async = true) const;
+    ShaderPipeline *                GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async = true) const { return GetGraphicsPipeline(ShaderProgram::Main, featureSet, baseGraphicsPipelineDesc, async); }
 
     bool                            Create(const char *text, const char *baseDir);
 
@@ -131,6 +135,7 @@ private:
     struct CachedPermutationKey {
         ShaderPermutationKey        key;
         ShaderFeatureSet            featureSet;
+        ShaderProgram               program = ShaderProgram::Main;
     };
 
     void                            Purge();

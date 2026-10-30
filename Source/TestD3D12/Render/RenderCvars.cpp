@@ -30,13 +30,13 @@ CVAR(r_debugDrawMaxVertices, "262144", BE1::CVar::Flag::Integer, "maximum number
 CVAR(r_showLights2, "0", BE1::CVar::Flag::Bool, "show visible light bounding volumes");
 CVAR(r_lightCullingZBin, "1", BE1::CVar::Flag::Bool, "enable light Z-bin culling in forward lighting");
 CVAR_MINMAX(r_lightCullingDebug, "0", BE1::CVar::Flag::Integer, "light culling debug view (0 = off, 1 = tile mask, 2 = tile mask and Z-bin)", 0, 2);
+CVAR(r_indirectLighting, "1", BE1::CVar::Flag::Bool, "enable indirect lighting and screen-space reflections for surfaces");
 
 CVAR(r_vsync, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "synchronize presentation to the vertical refresh rate");
 CVAR(r_hdrOutput, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable HDR output when supported");
 CVAR_MINMAX(r_hdrPaperWhiteNits, "200", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR paper white luminance in nits", 80.0f, 500.0f);
 CVAR_MINMAX(r_hdrPeakNits, "0", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "HDR peak luminance in nits (0 = use the display value)", 0.0f, 10000.0f);
 
-CVAR(r_depthPrepass, "0", BE1::CVar::Flag::Bool, "enable depth prepass");
 CVAR(r_snapshotColorHalfRes, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "capture non-MSAA scene snapshot color and depth at half resolution");
 CVAR(r_specularEnergyCompensation2, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
 
@@ -306,7 +306,7 @@ RenderFrameSettings CaptureRenderFrameSettings() {
 
     settings.showDebugLights = r_showLights2.GetBool();
     settings.lightCullingZBin = r_lightCullingZBin.GetBool();
-    settings.depthPrepass = r_depthPrepass.GetBool();
+    settings.indirectLighting = r_indirectLighting.GetBool();
     settings.specularAA = r_specularAA.GetBool();
     settings.specularAAVariance = r_specularAAVariance.GetFloat();
     settings.specularAALimit = r_specularAALimit.GetFloat();

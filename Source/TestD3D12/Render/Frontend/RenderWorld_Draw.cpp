@@ -260,8 +260,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool useAO = frameSettings.aoMode != RenderAOMode::Off;
     const bool debugAO = useAO && frameSettings.gtaoDebug != 0;
     const bool temporalHistoryEnabled = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
-    const bool useEnvironmentLight = hasEnvironmentLight && envLight.GetDesc().enabled;
-    // 환경광을 끄면 SSR 리소스와 히스토리도 기존 비활성화 경로에서 정리한다.
+    const bool useEnvironmentLight = frameSettings.indirectLighting && hasEnvironmentLight && envLight.GetDesc().enabled;
+    // 간접광이나 환경광을 끄면 SSR 리소스와 히스토리도 기존 비활성화 경로에서 정리한다.
     const bool useSSR = useEnvironmentLight && temporalHistoryEnabled && frameSettings.ssr;
     const bool needsSSRTemporalAccumulation = frameSettings.ssrTemporal && frameSettings.ssrTemporalHistoryWeight > 0.0f && (frameSettings.ssrDebugMode == SSRDebugModeOff || frameSettings.ssrDebugMode == SSRDebugModeUpsampledReflection);
     const bool debugSSR = useSSR && frameSettings.ssrDebugMode != SSRDebugModeOff;
@@ -623,7 +623,7 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
     BuildCameraPasses(frame, frameCamera);
 
     // Post-Opaque 본 패스와 transparent SSR receiver prepass 에 사용할 ocean pipeline 을 준비한다.
-    PrepareOceanSurfacePipeline(frameCamera);
+    PrepareOceanSurfacePipeline(frameCamera, frame->GetRenderFrameSettings().indirectLighting);
 
     // 카메라의 debug draw 데이터를 구성한다.
     BuildDebugDraw(frame, frameCamera);
@@ -649,11 +649,10 @@ void RenderWorld::SetupFrameTransparentSSR(RenderFrame *frame, RenderCamera *ren
 
         const SharedPtr<ShaderTemplate> &shader = surf->material->GetShaderTemplate();
         hasReceiver = shader &&
-            shader->SupportsFeature(ShaderFeature::SurfacePrepass) &&
-            shader->SupportsFeature(ShaderFeature::TransparentSSRPrepass) &&
-            shader->SupportsFeature(ShaderFeature::OutputNormal) &&
-            shader->SupportsFeature(ShaderFeature::OutputVelocity) &&
-            shader->SupportsFeature(ShaderFeature::OutputRoughness);
+            shader->SupportsFeature(ShaderProgram::Prepass, ShaderFeature::TransparentSSRPrepass) &&
+            shader->SupportsFeature(ShaderProgram::Prepass, ShaderFeature::OutputNormal) &&
+            shader->SupportsFeature(ShaderProgram::Prepass, ShaderFeature::OutputVelocity) &&
+            shader->SupportsFeature(ShaderProgram::Prepass, ShaderFeature::OutputRoughness);
     }
 
     bool transparentSSRResourcesReady = false;
@@ -1127,7 +1126,7 @@ void RenderWorld::RegisterFrameOceanSurface(RenderFrame *frame) {
     }
 }
 
-void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
+void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera, bool indirectLighting) {
     if (!hasOceanSurface || BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::StaticOnly)) {
         return;
     }
@@ -1144,7 +1143,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
         featureSet.EnableFeature(ShaderFeature::OutputVelocity);
     }
 
-    if (hasEnvironmentLight && envLight.GetDesc().enabled) {
+    if (indirectLighting && hasEnvironmentLight && envLight.GetDesc().enabled) {
         featureSet.EnableFeature(ShaderFeature::IndirectLighting);
     }
 
@@ -1154,16 +1153,15 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
     graphicsPipelineDesc.depthStencilStateType = frameCamera->projectionPolicy.reverseZ ? RHI::DepthStencilStateType::GEqualWrite : RHI::DepthStencilStateType::LEqualWrite;
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::Disabled;
     graphicsPipelineDesc.primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, false, false, frameCamera->taaResolve);
+    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, frameCamera->taaResolve);
 
-    const ShaderPermutationKey permutationKey = shaderTemplate->RegisterPermutation({}, featureSet);
+    const ShaderPermutationKey permutationKey = shaderTemplate->RegisterPermutation(ShaderProgram::Main, {}, featureSet);
     const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::DisableAsyncPSOBuild);
     ShaderPipeline *shaderPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplate, permutationKey, graphicsPipelineDesc, allowAsyncPSOBuild);
     frameCamera->oceanSurfacePSO = ShaderPipeline::GetReadyPSO(shaderPipeline);
 
     if (frameCamera->traceTransparentSSR) {
         ShaderFeatureSet prepassFeatureSet;
-        prepassFeatureSet.EnableFeature(ShaderFeature::SurfacePrepass);
         prepassFeatureSet.EnableFeature(ShaderFeature::TransparentSSRPrepass);
         prepassFeatureSet.EnableFeature(ShaderFeature::OutputNormal);
         prepassFeatureSet.EnableFeature(ShaderFeature::OutputVelocity);
@@ -1181,7 +1179,7 @@ void RenderWorld::PrepareOceanSurfacePipeline(FrameCamera *frameCamera) {
         prepassPipelineDesc.renderDest.depthStencilFormat = RenderContext::activeContext->GetMainRTDepthFormat();
         prepassPipelineDesc.renderDest.sampleCount = 1;
 
-        const ShaderPermutationKey prepassPermutationKey = shaderTemplate->RegisterPermutation({}, prepassFeatureSet);
+        const ShaderPermutationKey prepassPermutationKey = shaderTemplate->RegisterPermutation(ShaderProgram::Prepass, {}, prepassFeatureSet);
         ShaderPipeline *prepassPipeline = shaderPipelineCache.GetGraphicsPipelinePtr(shaderTemplate, prepassPermutationKey, prepassPipelineDesc, allowAsyncPSOBuild);
         frameCamera->oceanSurfaceSSRPrepassPSO = ShaderPipeline::GetReadyPSO(prepassPipeline);
     }
@@ -1446,7 +1444,8 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
                 }
             }
 
-            const bool castsShadow = !BE1::HasFlag(material->GetFlags(), Material::Flag::NoShadow) && material->GetRenderingMode() != Material::RenderingMode::Blend;
+            const SharedPtr<ShaderTemplate> &shaderTemplate = material->GetShaderTemplate();
+            const bool castsShadow = !BE1::HasFlag(material->GetFlags(), Material::Flag::NoShadow) && material->GetRenderingMode() != Material::RenderingMode::Blend && shaderTemplate && shaderTemplate->HasProgram(ShaderProgram::Shadow);
 
             // 아래 가시성 값은 오브젝트 컬링 결과를 물려받은 렌더링 후보 상태이며, 아직 surface 단위 컬링 전이다.
             bool surfaceCameraVisible = objectCameraVisible;
@@ -2064,7 +2063,7 @@ void RenderWorld::PrepareDebugDrawPipelines(FrameCamera *frameCamera) {
     GraphicsPipelineDesc graphicsPipelineDesc;
     graphicsPipelineDesc.inputLayout = &VertexInputLayoutFactory::Get(VertexInputLayoutId::XyzColor);
     graphicsPipelineDesc.blendStateType = RHI::BlendStateType::AlphaBlend;
-    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, false, false, frameCamera->taaResolve);
+    RenderContext::activeContext->GetMainRenderDest(graphicsPipelineDesc.renderDest, frameCamera->taaResolve);
 
     // 필요한 graphics pipeline 들을 준비한다.
     for (uint32_t pipelineIndex = 0; pipelineIndex < DebugDrawData::MaxBatches; ++pipelineIndex) {

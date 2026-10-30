@@ -1,11 +1,17 @@
+#define LIT_PREPASS 1
 #include "LitSurfaceCommon.hlsli"
 #include "PBR/ShadingParams.hlsli"
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
-SurfacePrepassPSOutput PSMain(PSInput input) {
+PrepassPSOutput PSMain(PSInput input) {
+#if LIT_USE_MATERIAL
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
+#if LIT_USE_TEXCOORD
     const float2 texCoord = shaderMaterial.TransformTexCoord(input.texCoord);
+#else
+    const float2 texCoord = 0.0f;
+#endif
     const LitSurfaceInput surfaceInput = PrepareLitSurfaceInput(input, shaderMaterial, materialSampler, texCoord, 0.0f, 0.0f, false);
 
 #if defined(PERFORATED) || defined(TRANSPARENT_SSR_PREPASS)
@@ -13,14 +19,24 @@ SurfacePrepassPSOutput PSMain(PSInput input) {
     EvaluateLitBaseColor(input, shaderMaterial, materialSampler, surfaceInput.texCoord);
 #endif
 
+#endif // LIT_USE_MATERIAL
+
+#if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
+#if LIT_USE_MATERIAL
     const bool useSpecularAA = (cameraConstants.flags & ShaderCameraFlagUseSpecularAA) != 0u;
 #if _NORMAL != 0
-    const SurfacePrepassParams surface = PrepareSurfacePrepassParams(shaderMaterial, surfaceInput.texCoord, surfaceInput.worldNormal, surfaceInput.tangentToWorld, useSpecularAA, materialSampler);
+    const PrepassParams surface = PreparePrepassParams(shaderMaterial, surfaceInput.texCoord, surfaceInput.worldNormal, surfaceInput.tangentToWorld, useSpecularAA, materialSampler);
 #else
-    const SurfacePrepassParams surface = PrepareSurfacePrepassParams(shaderMaterial, surfaceInput.texCoord, surfaceInput.worldNormal, useSpecularAA, materialSampler);
+    const PrepassParams surface = PreparePrepassParams(shaderMaterial, surfaceInput.texCoord, surfaceInput.worldNormal, useSpecularAA, materialSampler);
 #endif
+#else
+    PrepassParams surface;
+    surface.normal = normalize(input.worldNormal);
+    surface.roughness = 1.0f;
+#endif // LIT_USE_MATERIAL
+#endif // OUTPUT_NORMAL || OUTPUT_ROUGHNESS
 
-    SurfacePrepassPSOutput result;
+    PrepassPSOutput result;
 #if defined(OUTPUT_NORMAL) || defined(OUTPUT_ROUGHNESS)
     result.normalRoughness = float4(0.5f, 0.5f, 1.0f, 0.0f);
 #endif

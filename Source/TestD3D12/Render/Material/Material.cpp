@@ -349,46 +349,55 @@ void Material::RequestStreamingMaxDimension(uint32_t requestedMaxDimension) cons
     }
 }
 
-ShaderPermutationKey Material::EnsurePermutation(const ShaderFeatureSet &featureSet) const {
+ShaderPermutationKey Material::EnsurePermutation(ShaderProgram program, const ShaderFeatureSet &featureSet) const {
     if (!internalData.shaderTemplate) {
-        return ShaderPermutationKey();
+        return ShaderPermutationKey::Invalid();
+    }
+
+    if (!internalData.shaderTemplate->HasProgram(program)) {
+        BE_WARNLOG("Material::EnsurePermutation: shader template '%s' of material '%s' has no '%s' program\n", internalData.shaderTemplate->GetHashName(), hashName.c_str(), ShaderProgramName(program));
+        return ShaderPermutationKey::Invalid();
     }
 
     ShaderFeatureSet supportedFeatureSet = featureSet;
     if (!featureSet.IsEmpty()) {
-        // 템플릿에서 지원하지 않는 features 는 거른다.
-        supportedFeatureSet = internalData.shaderTemplate->MaskSupportedFeatures(featureSet);
+        // 선택한 프로그램에서 지원하지 않는 features 는 거른다.
+        supportedFeatureSet = internalData.shaderTemplate->MaskSupportedFeatures(program, featureSet);
     }
 
-    // permutation 캐시에서 실제로 사용할 featureSet 에 대한 permutation 을 찾아본다.
+    // permutation 캐시에서 실제로 사용할 program/featureSet 에 대한 permutation 을 찾아본다.
     for (const CachedPermutationKey &cachedPermutationKey : cachedPermutationKeys) {
-        // propertyValues 가 바뀌면 캐시가 무효화되므로, 여기서는 featureSet 만 비교하면 된다.
-        if (cachedPermutationKey.featureSet == supportedFeatureSet) {
+        // propertyValues 가 바뀌면 캐시가 무효화되므로, 여기서는 program 과 featureSet 만 비교하면 된다.
+        if (cachedPermutationKey.program == program && cachedPermutationKey.featureSet == supportedFeatureSet) {
             return cachedPermutationKey.key;
         }
     }
 
     if (supportedFeatureSet != featureSet) {
-        BE_WARNLOG("Material::EnsurePermutation: material '%s' requested unsupported shader features 0x%08x in shader template '%s'\n", hashName.c_str(), featureSet.flags & ~supportedFeatureSet.flags, internalData.shaderTemplate->GetHashName());
+        BE_WARNLOG("Material::EnsurePermutation: material '%s' requested unsupported shader features 0x%08x in program '%s' of shader template '%s'\n", hashName.c_str(), featureSet.flags & ~supportedFeatureSet.flags, ShaderProgramName(program), internalData.shaderTemplate->GetHashName());
     }
 
-    // 프로퍼티 + 피쳐셋에 대한 permutation 을 등록한다.
-    ShaderPermutationKey permutationKey = internalData.shaderTemplate->RegisterPermutation(internalData.propertyValues, supportedFeatureSet);
+    // 프로그램 + 프로퍼티 + 피쳐셋에 대한 permutation 을 등록한다.
+    ShaderPermutationKey permutationKey = internalData.shaderTemplate->RegisterPermutation(program, internalData.propertyValues, supportedFeatureSet);
+    if (!permutationKey.IsValid()) {
+        return permutationKey;
+    }
 
     CachedPermutationKey &cachedPermutationKey = cachedPermutationKeys.Alloc();
     cachedPermutationKey.key = permutationKey;
     cachedPermutationKey.featureSet = supportedFeatureSet;
+    cachedPermutationKey.program = program;
 
     return permutationKey;
 }
 
-void Material::EnsurePermutations(const BE1::Array<ShaderFeatureSet> &featureSets) const {
+void Material::EnsurePermutations(ShaderProgram program, const BE1::Array<ShaderFeatureSet> &featureSets) const {
     if (!internalData.shaderTemplate) {
         return;
     }
 
     for (const ShaderFeatureSet &featureSet : featureSets) {
-        EnsurePermutation(featureSet);
+        EnsurePermutation(program, featureSet);
     }
 }
 
@@ -416,17 +425,19 @@ static RHI::RasterizerStateType GetMaterialRasterizerStateType(RHI::RasterizerSt
     return baseRasterizerStateType;
 }
 
-ShaderPipeline *Material::GetGraphicsPipeline(const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async) const {
-    if (!internalData.shaderTemplate) {
+ShaderPipeline *Material::GetGraphicsPipeline(ShaderProgram program, const ShaderFeatureSet &featureSet, const GraphicsPipelineDesc &baseGraphicsPipelineDesc, bool async) const {
+    const ShaderPermutationKey permutationKey = EnsurePermutation(program, featureSet);
+    if (!permutationKey.IsValid()) {
         return nullptr;
     }
 
     GraphicsPipelineDesc graphicsPipelineDesc = baseGraphicsPipelineDesc;
     graphicsPipelineDesc.rasterizerStateType = GetMaterialRasterizerStateType(baseGraphicsPipelineDesc.rasterizerStateType, internalData.cullMode);
-    const bool useBlending = internalData.renderingMode == RenderingMode::Blend && !featureSet.HasFeature(ShaderFeature::SurfacePrepass);
+    // Blending 은 Main 프로그램에만 적용하고 Prepass/Shadow 는 depth 와 surface 값을 그대로 기록한다.
+    const bool useBlending = program == ShaderProgram::Main && internalData.renderingMode == RenderingMode::Blend;
     graphicsPipelineDesc.blendStateType = useBlending ? internalData.blendType : RHI::BlendStateType::Disabled;
 
-    return shaderPipelineCache.GetGraphicsPipelinePtr(internalData.shaderTemplate, EnsurePermutation(featureSet), graphicsPipelineDesc, async);
+    return shaderPipelineCache.GetGraphicsPipelinePtr(internalData.shaderTemplate, permutationKey, graphicsPipelineDesc, async);
 }
 
 bool Material::Create(const char *text, const char *baseDir) {
