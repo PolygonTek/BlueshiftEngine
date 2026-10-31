@@ -13,7 +13,7 @@
 
 #include "Precompiled.h"
 #include "LocalShadowCasterCuller.h"
-#include "RenderInternal.h"
+#include "Render/RenderInternal.h"
 
 bool LocalShadowCasterCuller::PrepareBounds() {
     if (boundsInitialized) {

@@ -17,9 +17,9 @@
 #include "RenderContext.h"
 #include "RenderSystem.h"
 #include "RenderUtils.h"
-#include "Render/Frontend/RenderCamera.h"
-#include "Render/Frontend/RenderWorld.h"
-#include "Render/Texture/Texture.h"
+#include "Frontend/RenderCamera.h"
+#include "Frontend/RenderWorld.h"
+#include "Texture/Texture.h"
 
 static void SetupCameraDesc(RenderCamera::Desc &cameraDesc, uint32_t layerMask, bool staticOnly, bool colorClear, const BE1::Color4 &clearColor,
     const BE1::Vec3 &origin, const BE1::Mat3 &axis, float fovX, float fovY, float zNear, float zFar, uint32_t width, uint32_t height, RHI::Texture *outputTexture, RHI::ViewID outputViewID) {

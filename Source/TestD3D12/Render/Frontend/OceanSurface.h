@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include "Render/GpuOcean.h"
-#include "Render/GpuOceanSurface.h"
+#include "Render/Ocean/GpuOcean.h"
+#include "Render/Ocean/GpuOceanSurface.h"
 
 class RenderWorld;
 

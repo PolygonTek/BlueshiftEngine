@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShaderPipelineBootstrap.h"
-#include "Render/ShaderPipeline/ShaderPipeline.h"
+#include "ShaderPipeline.h"
 
 void ShaderPipelineBootstrap::BeginCollection(int expectedPipelineCount) {
     pipelines.Clear();

@@ -120,6 +120,55 @@ set(SRC_FILES
     Render/Mesh/SubMesh.cpp
     Render/Mesh/GuiMesh.h
     Render/Mesh/GuiMesh.cpp
+    Render/Mesh/GeometryClipmap.h
+    Render/Mesh/GeometryClipmap.cpp
+    Render/Ocean/GpuOcean.h
+    Render/Ocean/GpuOcean.cpp
+    Render/Ocean/GpuOceanSettings.cpp
+    Render/Ocean/GpuOceanSurface.h
+    Render/Ocean/GpuOceanSurface.cpp
+    Render/PostProcess/Bloom.h
+    Render/PostProcess/Bloom.cpp
+    Render/PostProcess/Bloom_Pyramid.cpp
+    Render/PostProcess/Bloom_Convolution.cpp
+    Render/PostProcess/BloomResources.h
+    Render/PostProcess/BloomResources.cpp
+    Render/PostProcess/PostLuminance.h
+    Render/PostProcess/PostLuminance.cpp
+    Render/PostProcess/ColorGradingLUTGenerator.h
+    Render/PostProcess/ColorGradingLUTGenerator.cpp
+    Render/PostProcess/ConvolutionBloomKernelGenerator.h
+    Render/PostProcess/ConvolutionBloomKernelGenerator.cpp
+    Render/PostProcess/GT7ToneMapping.h
+    Render/ScreenSpace/HiZ.h
+    Render/ScreenSpace/HiZ.cpp
+    Render/ScreenSpace/HiZResources.h
+    Render/ScreenSpace/HiZResources.cpp
+    Render/ScreenSpace/ScreenSpaceAO.h
+    Render/ScreenSpace/ScreenSpaceAO.cpp
+    Render/ScreenSpace/ScreenSpaceAOResources.h
+    Render/ScreenSpace/ScreenSpaceAOResources.cpp
+    Render/ScreenSpace/SSRHiZ.h
+    Render/ScreenSpace/SSRHiZ.cpp
+    Render/ScreenSpace/SSRHiZResources.h
+    Render/ScreenSpace/SSRHiZResources.cpp
+    Render/ScreenSpace/SSRSceneColorHistory.h
+    Render/ScreenSpace/SSRSceneColorHistory.cpp
+    Render/ScreenSpace/SSRSceneColorHistoryResources.h
+    Render/ScreenSpace/SSRSceneColorHistoryResources.cpp
+    Render/ShaderData/ShaderPacking.h
+    Render/ShaderData/ShaderMaterialTable.h
+    Render/ShaderData/ShaderMaterialTable.cpp
+    Render/ShaderData/ShaderLightTable.h
+    Render/ShaderData/ShaderLightTable.cpp
+    Render/ShaderData/ShaderLightCullingTable.h
+    Render/ShaderData/ShaderLightCullingTable.cpp
+    Render/ShaderData/ShaderSurfaceTable.h
+    Render/ShaderData/ShaderSurfaceTable.cpp
+    Render/ShaderData/ShaderShadowTable.h
+    Render/ShaderData/ShaderShadowTable.cpp
+    Render/ShaderPipeline/ShaderPipelineBootstrap.h
+    Render/ShaderPipeline/ShaderPipelineBootstrap.cpp
     Render/ShaderPipeline/ShaderPipelineCache.h
     Render/ShaderPipeline/ShaderPipelineCache.cpp
     Render/ShaderPipeline/ShaderFeatureSet.h
@@ -138,26 +187,25 @@ set(SRC_FILES
     Render/ShaderPipeline/ShaderTemplateManager.cpp
     Render/ShaderPipeline/VertexInputLayoutFactory.h
     Render/ShaderPipeline/VertexInputLayoutFactory.cpp
+    Render/Shadow/ShadowAtlas.h
+    Render/Shadow/ShadowAtlas.cpp
+    Render/Shadow/ShadowAtlasAllocator.h
+    Render/Shadow/ShadowAtlasAllocator.cpp
+    Render/Shadow/ShadowResolutionHistory.h
+    Render/Shadow/ShadowResolutionHistory.cpp
     Render/Texture/TextureStreamingFeedback.h
     Render/Texture/TextureStreamingFeedback.cpp
     Render/Texture/Texture.h
     Render/Texture/Texture.cpp
     Render/Texture/TextureManager.h
     Render/Texture/TextureManager.cpp
+    Render/Texture/Sampler.h
+    Render/Texture/SamplerManager.h
+    Render/Texture/SamplerManager.cpp
     Render/RenderCapture.h
     Render/RenderCapture.cpp
     Render/RenderCvars.h
     Render/RenderCvars.cpp
-    Render/ShadowAtlas.h
-    Render/ShadowAtlas.cpp
-    Render/ShadowAtlasAllocator.h
-    Render/ShadowAtlasAllocator.cpp
-    Render/ShadowResolutionHistory.h
-    Render/ShadowResolutionHistory.cpp
-    Render/ColorGradingLUTGenerator.h
-    Render/ColorGradingLUTGenerator.cpp
-    Render/ConvolutionBloomKernelGenerator.h
-    Render/ConvolutionBloomKernelGenerator.cpp
     Render/RenderWork/ConvolutionBloomKernelRenderWork.h
     Render/RenderWork/ConvolutionBloomKernelRenderWork.cpp
     Render/IBLBaker.h
@@ -170,8 +218,6 @@ set(SRC_FILES
     Render/ProbeBakeSystem.cpp
     Render/GpuTiming.h
     Render/GpuTiming.cpp
-    Render/ShaderPipelineBootstrap.h
-    Render/ShaderPipelineBootstrap.cpp
     Render/RenderContext.h
     Render/RenderContext.cpp
     Render/RenderFrame.h
@@ -180,53 +226,11 @@ set(SRC_FILES
     Render/RenderWork/RenderWork.h
     Render/RenderWork/RenderWorkQueue.h
     Render/RenderWork/RenderWorkQueue.cpp
-    Render/Bloom.h
-    Render/Bloom.cpp
-    Render/Bloom_Pyramid.cpp
-    Render/Bloom_Convolution.cpp
-    Render/BloomResources.h
-    Render/BloomResources.cpp
-    Render/PostLuminance.h
-    Render/PostLuminance.cpp
-    Render/ScreenSpaceAO.h
-    Render/ScreenSpaceAO.cpp
-    Render/ScreenSpaceAOResources.h
-    Render/ScreenSpaceAOResources.cpp
-    Render/SSRHiZ.h
-    Render/SSRHiZ.cpp
-    Render/SSRHiZResources.h
-    Render/SSRHiZResources.cpp
-    Render/SSRSceneColorHistory.h
-    Render/SSRSceneColorHistory.cpp
-    Render/SSRSceneColorHistoryResources.h
-    Render/SSRSceneColorHistoryResources.cpp
-    Render/HiZ.h
-    Render/HiZ.cpp
-    Render/HiZResources.h
-    Render/HiZResources.cpp
     Render/GpuFFT.h
     Render/GpuFFT.cpp
-    Render/GpuOcean.h
-    Render/GpuOceanSettings.cpp
-    Render/GeometryClipmap.h
-    Render/GeometryClipmap.cpp
     Shaders/GeometryClipmapInterop.h
-    Render/GpuOceanSurface.h
-    Render/GpuOceanSurface.cpp
-    Render/GpuOcean.cpp
     Render/GpuSphericalHarmonics.h
     Render/GpuSphericalHarmonics.cpp
-    Render/ShaderPacking.h
-    Render/ShaderMaterialTable.h
-    Render/ShaderMaterialTable.cpp
-    Render/ShaderLightTable.h
-    Render/ShaderLightTable.cpp
-    Render/ShaderLightCullingTable.h
-    Render/ShaderLightCullingTable.cpp
-    Render/ShaderSurfaceTable.h
-    Render/ShaderSurfaceTable.cpp
-    Render/ShaderShadowTable.h
-    Render/ShaderShadowTable.cpp
     Render/RenderSystem.h
     Render/RenderSystem.cpp
     Render/DebugDrawPipeline.h
@@ -236,7 +240,6 @@ set(SRC_FILES
     Render/Backend/RenderBackend_HiZCulling.cpp
     Render/Backend/RenderBackend_SSRTrace.cpp
     Render/Backend/RenderBackend_PostProcess.cpp
-    Render/GT7ToneMapping.h
     Render/Backend/RenderBackend_DebugDraw.cpp
     Render/Backend/RenderBackend_DrawGenericSurf.cpp
     Render/Backend/RenderBackend_DrawSkySurf.cpp
@@ -254,10 +257,10 @@ set(SRC_FILES
     Render/Frontend/RenderWorld_DebugTools.cpp
     Render/Frontend/RenderCamera.h
     Render/Frontend/RenderCamera.cpp
+    Render/Frontend/LocalShadowCasterCuller.h
+    Render/Frontend/LocalShadowCasterCuller.cpp
     Render/RenderUtils.h
     Render/RenderUtils.cpp
-    Render/LocalShadowCasterCuller.h
-    Render/LocalShadowCasterCuller.cpp
     Render/RenderInternal.h
     Render/RenderInternal.cpp
     Render/Frontend/RenderPassPSOResolver.h
@@ -268,9 +271,6 @@ set(SRC_FILES
     Render/Frontend/LightCullingBuilder.cpp
     Render/Frontend/SkinningJointBufferBuilder.h
     Render/Frontend/SkinningJointBufferBuilder.cpp
-    Render/Sampler.h
-    Render/SamplerManager.h
-    Render/SamplerManager.cpp
     Shaders/ShaderTypes.h
     Shaders/ShaderInterop.h)
 

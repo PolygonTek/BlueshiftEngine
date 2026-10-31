@@ -16,15 +16,15 @@
 
 #include "Core/Allocator.h"
 #include "RHI/RHI.h"
-#include "GpuOcean.h"
-#include "GpuOceanSurface.h"
+#include "Ocean/GpuOcean.h"
+#include "Ocean/GpuOceanSurface.h"
 #include "RenderFrameSettings.h"
 #include "Frontend/RenderLight.h"
-#include "ShaderLightCullingTable.h"
-#include "ShaderLightTable.h"
-#include "ShaderMaterialTable.h"
-#include "ShaderSurfaceTable.h"
-#include "ShaderShadowTable.h"
+#include "ShaderData/ShaderLightCullingTable.h"
+#include "ShaderData/ShaderLightTable.h"
+#include "ShaderData/ShaderMaterialTable.h"
+#include "ShaderData/ShaderSurfaceTable.h"
+#include "ShaderData/ShaderShadowTable.h"
 
 class RenderContext;
 class RenderWork;

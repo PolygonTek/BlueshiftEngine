@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Bloom.h"
-#include "RenderSystem.h"
+#include "Render/RenderSystem.h"
 #include "Render/Backend/RenderBackend.h"
 #include "Render/RenderInternal.h"
 #include "Render/GpuTiming.h"

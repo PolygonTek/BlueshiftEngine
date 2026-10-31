@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShaderShadowTable.h"
-#include "RenderInternal.h"
+#include "Render/RenderInternal.h"
 
 static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLocalShadowView &firstView, const RenderFrameSettings &settings, ShaderLocalShadow &outShadow) {
     assert(shadow.resolution > 2 * firstView.borderTexels);

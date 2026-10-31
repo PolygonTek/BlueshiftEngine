@@ -16,8 +16,8 @@
 
 #include "RHI/RHI.h"
 #include "Render/GpuTiming.h"
-#include "Render/GpuOceanSurface.h"
-#include "Render/HiZResources.h"
+#include "Render/Ocean/GpuOceanSurface.h"
+#include "Render/ScreenSpace/HiZResources.h"
 
 class GpuFFT;
 class RenderFrame;

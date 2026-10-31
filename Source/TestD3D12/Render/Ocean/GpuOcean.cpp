@@ -14,8 +14,8 @@
 
 #include "Precompiled.h"
 #include "GpuOcean.h"
-#include "ShaderPipelineBootstrap.h"
-#include "RenderSystem.h"
+#include "Render/ShaderPipeline/ShaderPipelineBootstrap.h"
+#include "Render/RenderSystem.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"

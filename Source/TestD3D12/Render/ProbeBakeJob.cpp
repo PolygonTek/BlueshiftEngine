@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "ProbeBakeJob.h"
 #include "RenderSystem.h"
-#include "Render/Texture/Texture.h"
+#include "Texture/Texture.h"
 #include "Image/Image.h"
 
 static bool CreateProbeOutputCubemapTexture(int32_t size, bool useHDR, bool allocateMipmaps, SharedPtr<Texture> &outTexture) {

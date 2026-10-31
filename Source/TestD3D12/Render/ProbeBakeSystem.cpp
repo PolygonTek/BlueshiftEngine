@@ -18,8 +18,8 @@
 #include "RenderCapture.h"
 #include "RenderContext.h"
 #include "RenderSystem.h"
-#include "Render/Frontend/RenderWorld.h"
-#include "Render/Texture/Texture.h"
+#include "Frontend/RenderWorld.h"
+#include "Texture/Texture.h"
 #include "Image/Image.h"
 
 void ProbeBakeSystem::Init() {

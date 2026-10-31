@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShaderSurfaceTable.h"
-#include "RenderInternal.h"
+#include "Render/RenderInternal.h"
 
 bool ShaderSurfaceTable::Init(uint32_t initialCapacity) {
     return EnsureBufferCapacity(initialCapacity);

@@ -14,12 +14,12 @@
 
 #include "Precompiled.h"
 #include "IBLBaker.h"
-#include "ShaderPipelineBootstrap.h"
+#include "ShaderPipeline/ShaderPipelineBootstrap.h"
 #include "RenderSystem.h"
 #include "Image/Image.h"
-#include "Render/ShaderPipeline/ShaderPipeline.h"
-#include "Render/ShaderPipeline/ShaderPipelineCache.h"
-#include "Render/ShaderPipeline/ShaderTemplateManager.h"
+#include "ShaderPipeline/ShaderPipeline.h"
+#include "ShaderPipeline/ShaderPipelineCache.h"
+#include "ShaderPipeline/ShaderTemplateManager.h"
 #include "Shaders/ShaderInterop.h"
 
 void IBLBaker::Init() {

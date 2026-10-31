@@ -15,7 +15,7 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "GpuFFT.h"
+#include "Render/GpuFFT.h"
 
 class Texture;
 class ShaderPipeline;

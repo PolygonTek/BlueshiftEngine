@@ -14,10 +14,10 @@
 
 #include "Precompiled.h"
 #include "GpuSphericalHarmonics.h"
-#include "ShaderPipelineBootstrap.h"
-#include "Render/ShaderPipeline/ShaderTemplateManager.h"
-#include "Render/ShaderPipeline/ShaderPipeline.h"
-#include "Render/ShaderPipeline/ShaderPipelineCache.h"
+#include "ShaderPipeline/ShaderPipelineBootstrap.h"
+#include "ShaderPipeline/ShaderTemplateManager.h"
+#include "ShaderPipeline/ShaderPipeline.h"
+#include "ShaderPipeline/ShaderPipelineCache.h"
 #include "Shaders/ShaderInterop.h"
 
 void GpuSphericalHarmonics::Init() {

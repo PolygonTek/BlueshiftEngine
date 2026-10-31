@@ -16,13 +16,13 @@
 
 #include "RHI/RHI.h"
 #include "Render/RenderFrameSettings.h"
-#include "Render/ShadowAtlas.h"
-#include "Render/ShadowResolutionHistory.h"
-#include "Render/ScreenSpaceAOResources.h"
-#include "Render/SSRHiZResources.h"
-#include "Render/SSRSceneColorHistoryResources.h"
-#include "Render/HiZResources.h"
-#include "Render/BloomResources.h"
+#include "Render/Shadow/ShadowAtlas.h"
+#include "Render/Shadow/ShadowResolutionHistory.h"
+#include "Render/ScreenSpace/ScreenSpaceAOResources.h"
+#include "Render/ScreenSpace/SSRHiZResources.h"
+#include "Render/ScreenSpace/SSRSceneColorHistoryResources.h"
+#include "Render/ScreenSpace/HiZResources.h"
+#include "Render/PostProcess/BloomResources.h"
 
 class RenderWorld;
 class Texture;

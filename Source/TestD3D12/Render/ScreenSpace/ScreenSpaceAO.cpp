@@ -20,7 +20,7 @@
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
-#include "Render/ShaderPipelineBootstrap.h"
+#include "Render/ShaderPipeline/ShaderPipelineBootstrap.h"
 #include "Shaders/ShaderInterop.h"
 
 static_assert(RenderGTAODepthMipMaxLevelCount == GTAODepthMipLevelCount, "GTAO depth mip counts must match");

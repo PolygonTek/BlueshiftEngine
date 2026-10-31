@@ -14,11 +14,11 @@
 
 #include "Precompiled.h"
 #include "ShaderMaterialTable.h"
-#include "RenderInternal.h"
+#include "Render/RenderInternal.h"
 #include "ShaderPacking.h"
 #include "Render/Material/Material.h"
-#include "Render/Sampler.h"
-#include "Render/SamplerManager.h"
+#include "Render/Texture/Sampler.h"
+#include "Render/Texture/SamplerManager.h"
 #include "Render/Texture/TextureManager.h"
 
 bool ShaderMaterialTable::Init(uint32_t initialCapacity) {

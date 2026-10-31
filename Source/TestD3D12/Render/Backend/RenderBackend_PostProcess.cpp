@@ -18,7 +18,7 @@
 #include "Render/RenderSystem.h"
 #include "Render/RenderInternal.h"
 #include "Render/RenderFrame.h"
-#include "Render/GT7ToneMapping.h"
+#include "Render/PostProcess/GT7ToneMapping.h"
 #include "Shaders/ShaderInterop.h"
 
 bool RenderBackend::DispatchLuminance() {

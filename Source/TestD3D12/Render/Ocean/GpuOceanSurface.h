@@ -18,7 +18,7 @@
 
 #include "Containers/HashMap.h"
 #include "GpuOcean.h"
-#include "GeometryClipmap.h"
+#include "Render/Mesh/GeometryClipmap.h"
 #include "Math/Color3.h"
 #include "Math/Vector3.h"
 

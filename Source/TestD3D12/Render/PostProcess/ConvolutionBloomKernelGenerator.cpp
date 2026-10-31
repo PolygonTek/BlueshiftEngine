@@ -14,9 +14,9 @@
 
 #include "Precompiled.h"
 #include "ConvolutionBloomKernelGenerator.h"
-#include "ShaderPipelineBootstrap.h"
+#include "Render/ShaderPipeline/ShaderPipelineBootstrap.h"
 #include "Render/Texture/Texture.h"
-#include "RenderSystem.h"
+#include "Render/RenderSystem.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"

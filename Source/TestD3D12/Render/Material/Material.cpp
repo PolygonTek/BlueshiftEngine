@@ -20,7 +20,7 @@
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/RenderCvars.h"
 #include "Render/RenderSystem.h"
-#include "Render/SamplerManager.h"
+#include "Render/Texture/SamplerManager.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
 #include "Render/Texture/TextureManager.h"

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "ConvolutionBloomKernelRenderWork.h"
-#include "Render/ConvolutionBloomKernelGenerator.h"
+#include "Render/PostProcess/ConvolutionBloomKernelGenerator.h"
 #include "Render/RenderSystem.h"
 #include "Render/Texture/Texture.h"
 

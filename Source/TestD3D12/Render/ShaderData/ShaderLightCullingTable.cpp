@@ -14,8 +14,8 @@
 
 #include "Precompiled.h"
 #include "ShaderLightCullingTable.h"
-#include "RenderFrame.h"
-#include "RenderInternal.h"
+#include "Render/RenderFrame.h"
+#include "Render/RenderInternal.h"
 
 bool ShaderLightCullingTable::Init(uint32_t initialLightRefCapacity, uint32_t initialZBinCapacity, uint32_t initialLightTileMaskCapacity) {
     if (!EnsureBufferCapacity(initialLightRefCapacity, initialZBinCapacity, initialLightTileMaskCapacity)) {

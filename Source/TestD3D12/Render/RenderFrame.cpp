@@ -16,7 +16,7 @@
 #include "RenderFrame.h"
 #include "RenderContext.h"
 #include "RenderInternal.h"
-#include "ShadowAtlas.h"
+#include "Shadow/ShadowAtlas.h"
 #include "Animation/Skeleton.h"
 #include "Material/Material.h"
 #include "ShaderPipeline/ShaderPipeline.h"

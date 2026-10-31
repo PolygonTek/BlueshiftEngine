@@ -19,7 +19,7 @@
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
-#include "Render/ShaderPipelineBootstrap.h"
+#include "Render/ShaderPipeline/ShaderPipelineBootstrap.h"
 
 void Bloom::Init() {
     const char *baseDir = "Source/TestD3D12/Shaders";

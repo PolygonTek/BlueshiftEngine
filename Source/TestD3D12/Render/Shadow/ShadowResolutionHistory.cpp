@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShadowResolutionHistory.h"
-#include "RenderFrameSettings.h"
+#include "Render/RenderFrameSettings.h"
 #include <algorithm>
 #include <cassert>
 
