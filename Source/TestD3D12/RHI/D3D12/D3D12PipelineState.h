@@ -77,6 +77,7 @@ private:
 
     ID3D12PipelineState *           pso = nullptr;
     ID3D12RootSignature *           rootSignature = nullptr;
+    ID3D12VersionedRootSignatureDeserializer *rootSignatureDeserializer = nullptr;
     const D3D12_VERSIONED_ROOT_SIGNATURE_DESC *rootSignatureDesc = nullptr;
     RegisterBinder                  binder; // 루트 시그니처의 모든 리소스에 대한 레지스터 인덱스의 바인딩 정보를 갖는다.
     D3D12_PRIMITIVE_TOPOLOGY        primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;

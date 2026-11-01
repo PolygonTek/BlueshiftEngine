@@ -311,6 +311,8 @@ static constexpr D3D12_PRIMITIVE_TOPOLOGY ToD3DPrimitiveTopology(RHI::PrimitiveT
 void D3D12PipelineState::Release() {
     SAFE_RELEASE(pso);
     SAFE_RELEASE(rootSignature);
+    SAFE_RELEASE(rootSignatureDeserializer);
+    rootSignatureDesc = nullptr;
 }
 
 RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDesc *psDesc) {
@@ -546,6 +548,7 @@ RHI::PipelineState *D3D12Renderer::CreateGraphicsPSO(const RHI::PipelineStateDes
         rootSignatureDeserializer->AddRef();
 
         pipelineState->rootSignature = rootSignature;
+        pipelineState->rootSignatureDeserializer = rootSignatureDeserializer;
         pipelineState->rootSignatureDesc = rootSignatureDesc;
 
         stream1->rootSignature = pipelineState->rootSignature;
@@ -780,6 +783,7 @@ RHI::PipelineState *D3D12Renderer::CreateComputePSO(const RHI::Shader *computeSh
     cs->rootSignatureDeserializer->AddRef();
 
     pipelineState->rootSignature = cs->rootSignature;
+    pipelineState->rootSignatureDeserializer = cs->rootSignatureDeserializer;
     pipelineState->rootSignatureDesc = cs->rootSignatureDesc;
 
     // 루트 시그니처의 모든 리소스에 대한 바인딩 정보를 미리 계산한다.
