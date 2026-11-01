@@ -1404,9 +1404,11 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
     if (depthStencilTexture) {
         const D3D12Texture *_depthStencilTexture = static_cast<const D3D12Texture *>(depthStencilTexture);
-        dsDesc.cpuDescriptor = _depthStencilTexture->dsvEntries[0].cpuDescriptorHandle;
+        const D3D12DSVEntry &dsvEntry = _depthStencilTexture->dsvEntries[0];
+        dsDesc.cpuDescriptor = dsvEntry.cpuDescriptorHandle;
         if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Depth)) {
             dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+            dsDesc.DepthBeginningAccess.Clear.ClearValue.Format = dsvEntry.viewDesc.Format;
             dsDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clearDepth;
         } else {
             dsDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
@@ -1414,9 +1416,10 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
         // depth 를 나중에 후처리할 일이 없다면 preserve 대신 discard 해도 된다.
         dsDesc.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
 
-        if (IsStencilFormat(_depthStencilTexture->textureDesc.Format)) {
+        if (IsStencilFormat(dsvEntry.viewDesc.Format)) {
             if (BE1::HasFlag(clearFlags, RHI::ClearFlag::Stencil)) {
                 dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+                dsDesc.StencilBeginningAccess.Clear.ClearValue.Format = dsvEntry.viewDesc.Format;
                 dsDesc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clearStencil;
             } else {
                 dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
@@ -1448,7 +1451,8 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Sw
 #endif
 }
 
-static void GetInfoFromRTVDesc(const D3D12_RENDER_TARGET_VIEW_DESC &rtvDesc, UINT &mipSlice, UINT &firstArraySlice, UINT &arraySize) {
+static void GetInfoFromRTVDesc(const D3D12_RENDER_TARGET_VIEW_DESC &rtvDesc, UINT &mipSlice, UINT &firstArraySlice, UINT &arraySize, UINT &planeSlice) {
+    planeSlice = 0;
     switch (rtvDesc.ViewDimension) {
     case D3D12_RTV_DIMENSION_TEXTURE1D:
         mipSlice = rtvDesc.Texture1D.MipSlice;
@@ -1462,6 +1466,7 @@ static void GetInfoFromRTVDesc(const D3D12_RENDER_TARGET_VIEW_DESC &rtvDesc, UIN
         break;
     case D3D12_RTV_DIMENSION_TEXTURE2D:
         mipSlice = rtvDesc.Texture2D.MipSlice;
+        planeSlice = rtvDesc.Texture2D.PlaneSlice;
         firstArraySlice = 0;
         arraySize = 1;
         break;
@@ -1472,6 +1477,7 @@ static void GetInfoFromRTVDesc(const D3D12_RENDER_TARGET_VIEW_DESC &rtvDesc, UIN
         break;
     case D3D12_RTV_DIMENSION_TEXTURE2DARRAY:
         mipSlice = rtvDesc.Texture2DArray.MipSlice;
+        planeSlice = rtvDesc.Texture2DArray.PlaneSlice;
         firstArraySlice = rtvDesc.Texture2DArray.FirstArraySlice;
         arraySize = rtvDesc.Texture2DArray.ArraySize;
         break;
@@ -1538,6 +1544,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
         uint32_t maxMipLevels;
         uint32_t maxArraySize;
         uint32_t mipSlice;
+        uint32_t planeSlice;
         uint32_t firstArraySlice;
         uint32_t arraySize;
     };
@@ -1551,9 +1558,13 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
     for (int i = 0; i < numRenderPassImages; ++i) {
         const RHI::RenderPassImage &renderPassImage = renderPassImages[i];
         const D3D12Texture *texture = static_cast<const D3D12Texture *>(renderPassImage.texture);
+        const UINT resourceArraySize = texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : texture->textureDesc.DepthOrArraySize;
+        UINT resourcePlaneCount = 1;
         UINT destMipSlice = 0;
         UINT destFirstArraySlice = 0;
         UINT destArraySize = 1;
+        UINT destPlaneSlice = 0;
+        UINT destPlaneCount = 1;
 
         D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE beginningAccessType = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
         if (renderPassImage.loadAction == RHI::RenderPassImage::LoadAction::Load) {
@@ -1585,15 +1596,16 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             rtDesc.EndingAccess.Type = endingAccessType;
 
             // 텍스쳐의 RTV 정보를 가져온다.
-            GetInfoFromRTVDesc(rtvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            GetInfoFromRTVDesc(rtvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize, destPlaneSlice);
 
             // Resolve 가능하도록 미리 정보를 기록한다.
             ResolveSource &rtResolveSource = rtResolveSources[rtCount];
             rtResolveSource.resource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
             rtResolveSource.preserve = endingAccessType == D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
             rtResolveSource.maxMipLevels = texture->textureDesc.MipLevels;
-            rtResolveSource.maxArraySize = texture->textureDesc.DepthOrArraySize;
+            rtResolveSource.maxArraySize = resourceArraySize;
             rtResolveSource.mipSlice = destMipSlice;
+            rtResolveSource.planeSlice = destPlaneSlice;
             rtResolveSource.firstArraySlice = destFirstArraySlice;
             rtResolveSource.arraySize = destArraySize;
             rtCount++;
@@ -1613,7 +1625,7 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             }
             dsDesc.DepthEndingAccess.Type = endingAccessType;
 
-            if (IsStencilFormat(texture->textureDesc.Format)) {
+            if (IsStencilFormat(dsvEntry.viewDesc.Format)) {
                 dsDesc.StencilBeginningAccess = dsDesc.DepthBeginningAccess;
                 dsDesc.StencilEndingAccess = dsDesc.DepthEndingAccess;
             } else {
@@ -1623,15 +1635,17 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
 
             // 텍스쳐의 DSV 정보를 가져온다.
             GetInfoFromDSVDesc(dsvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            resourcePlaneCount = IsStencilFormat(dsvEntry.viewDesc.Format) ? 2 : 1;
 
             // Resolve 가능하도록 미리 정보를 기록한다.
             dsResolveSource.resource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
             dsResolveSource.preserve = endingAccessType == D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
             dsResolveSource.maxMipLevels = texture->textureDesc.MipLevels;
-            dsResolveSource.maxArraySize = texture->textureDesc.DepthOrArraySize;
+            dsResolveSource.maxArraySize = resourceArraySize;
             dsResolveSource.mipSlice = destMipSlice;
             dsResolveSource.firstArraySlice = destFirstArraySlice;
             dsResolveSource.arraySize = destArraySize;
+            destPlaneCount = resourcePlaneCount;
             break;
         }
         case RHI::RenderPassImage::Type::ResolveColor:
@@ -1648,12 +1662,12 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
 
             if (texture->HasValidView(RHI::ViewType::RTV, renderPassImage.viewID)) {
                 const D3D12RTVEntry &rtvEntry = texture->rtvEntries[renderPassImage.viewID.value];
-                GetInfoFromRTVDesc(rtvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
+                GetInfoFromRTVDesc(rtvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize, destPlaneSlice);
             } else {
                 assert(renderPassImage.viewID.IsPrimary());
                 destMipSlice = 0;
                 destFirstArraySlice = 0;
-                destArraySize = texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : texture->textureDesc.DepthOrArraySize;
+                destArraySize = resourceArraySize;
             }
 
             UINT destWidth = BE1::Max((int)(texture->textureDesc.Width >> destMipSlice), 1);
@@ -1666,18 +1680,19 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
 
             for (UINT slice = 0; slice < arraySize; ++slice) {
                 D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams[slice];
-                params.SrcSubresource = D3D12CalcSubresource(resolveSource.mipSlice, resolveSource.firstArraySlice + slice, 0, resolveSource.maxMipLevels, resolveSource.maxArraySize);
+                params.SrcSubresource = D3D12CalcSubresource(resolveSource.mipSlice, resolveSource.firstArraySlice + slice, resolveSource.planeSlice, resolveSource.maxMipLevels, resolveSource.maxArraySize);
                 params.SrcRect.left = 0;
                 params.SrcRect.top = 0;
                 params.SrcRect.right = destWidth;
                 params.SrcRect.bottom = destHeight;
-                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
+                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, destPlaneSlice, texture->textureDesc.MipLevels, resourceArraySize);
                 params.DstX = 0;
                 params.DstY = 0;
             }
 
             rtDesc.EndingAccess.Resolve.pSubresourceParameters = subresourceParams.Ptr();
             rtDesc.EndingAccess.Resolve.SubresourceCount = subresourceParams.Count();
+            destArraySize = arraySize;
             break;
         }
         case RHI::RenderPassImage::Type::ResolveDepth:
@@ -1701,6 +1716,8 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
 
             // 텍스쳐의 DSV 정보를 가져온다.
             GetInfoFromDSVDesc(dsvEntry.viewDesc, destMipSlice, destFirstArraySlice, destArraySize);
+            resourcePlaneCount = IsStencilFormat(dsvEntry.viewDesc.Format) ? 2 : 1;
+            const bool resolveStencil = resourcePlaneCount == 2 && dsDesc.StencilBeginningAccess.Type != D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
 
             UINT destWidth = BE1::Max((int)(texture->textureDesc.Width >> destMipSlice), 1);
             UINT destHeight = BE1::Max((int)(texture->textureDesc.Height >> destMipSlice), 1);
@@ -1708,7 +1725,8 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
 
             BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> &subresourceParams = _commandList->depthResolveSubresourceParams;
             subresourceParams.SetCount(0, false);
-            subresourceParams.SetCount(arraySize, false);
+            // Depth 와 stencil 의 plane 별 목록을 같은 저장소에 유지한다.
+            subresourceParams.SetCount(arraySize * (resolveStencil ? 2 : 1), false);
 
             for (UINT slice = 0; slice < arraySize; ++slice) {
                 D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams[slice];
@@ -1717,20 +1735,27 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
                 params.SrcRect.top = 0;
                 params.SrcRect.right = destWidth;
                 params.SrcRect.bottom = destHeight;
-                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
+                params.DstSubresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, destPlaneSlice, texture->textureDesc.MipLevels, resourceArraySize);
                 params.DstX = 0;
                 params.DstY = 0;
+
+                if (resolveStencil) {
+                    D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &stencilParams = subresourceParams[arraySize + slice];
+                    stencilParams = params;
+                    stencilParams.SrcSubresource += dsResolveSource.maxMipLevels * dsResolveSource.maxArraySize;
+                    stencilParams.DstSubresource += texture->textureDesc.MipLevels * resourceArraySize;
+                }
             }
 
             dsDesc.DepthEndingAccess.Resolve.pSubresourceParameters = subresourceParams.Ptr();
-            dsDesc.DepthEndingAccess.Resolve.SubresourceCount = subresourceParams.Count();
+            dsDesc.DepthEndingAccess.Resolve.SubresourceCount = arraySize;
 
-            if (IsStencilFormat(texture->textureDesc.Format)) {
+            if (resolveStencil) {
                 dsDesc.StencilEndingAccess = dsDesc.DepthEndingAccess;
-            } else {
-                dsDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
-                dsDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
+                dsDesc.StencilEndingAccess.Resolve.pSubresourceParameters = subresourceParams.Ptr() + arraySize;
             }
+            destArraySize = arraySize;
+            destPlaneCount = resolveStencil ? 2 : 1;
             break;
         }
         case RHI::RenderPassImage::Type::ShadingRateSource:
@@ -1741,63 +1766,44 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             break;
         }
 
-        // RenderPass 시작 배리어를 barriers 에 모은다.
-        {
-            D3D12_RESOURCE_STATES beforeState = ToD3D12ResourceState(renderPassImage.beforeState);
-            D3D12_RESOURCE_STATES afterState = ToD3D12ResourceState(renderPassImage.duringState);
+        // 실제 mip/array slice/plane 범위가 리소스 전체일 때만 전체 배리어를 사용한다.
+        const bool allSubresources = destMipSlice == 0 && texture->textureDesc.MipLevels == 1 && destFirstArraySlice == 0 && destArraySize == resourceArraySize && destPlaneSlice == 0 && destPlaneCount == resourcePlaneCount;
 
-            if (renderPassImage.type == RHI::RenderPassImage::Type::ResolveColor || renderPassImage.type == RHI::RenderPassImage::Type::ResolveDepth) {
-                afterState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
+        auto appendBarriers = [&](BE1::Array<D3D12_RESOURCE_BARRIER> &outBarriers, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState) {
+            if (beforeState == afterState) {
+                return;
             }
-            if (beforeState != afterState) {
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-                barrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
-                barrier.Transition.StateBefore = beforeState;
-                barrier.Transition.StateAfter = afterState;
 
-                if (renderPassImage.viewID.IsPrimary()) {
-                    // NOTE: viewID 가 Primary 라는 게 절대적으로 텍스쳐 전체 View 를 가리키는 게 아닌데 일단은 그렇게 가정한다.
-                    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-                    barriers.Append(barrier);
-                } else {
+            D3D12_RESOURCE_BARRIER barrier = {};
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
+            barrier.Transition.StateBefore = beforeState;
+            barrier.Transition.StateAfter = afterState;
+
+            if (allSubresources) {
+                barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+                outBarriers.Append(barrier);
+            } else {
+                for (UINT plane = 0; plane < destPlaneCount; ++plane) {
                     for (UINT slice = 0; slice < destArraySize; ++slice) {
-                        barrier.Transition.Subresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
-                        barriers.Append(barrier);
+                        barrier.Transition.Subresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, destPlaneSlice + plane, texture->textureDesc.MipLevels, resourceArraySize);
+                        outBarriers.Append(barrier);
                     }
                 }
             }
+        };
+
+        D3D12_RESOURCE_STATES duringState = ToD3D12ResourceState(renderPassImage.duringState);
+        if (renderPassImage.type == RHI::RenderPassImage::Type::ResolveColor || renderPassImage.type == RHI::RenderPassImage::Type::ResolveDepth) {
+            duringState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
         }
+
+        // RenderPass 시작 배리어를 barriers 에 모은다.
+        appendBarriers(barriers, ToD3D12ResourceState(renderPassImage.beforeState), duringState);
 
         // RenderPass 종료 배리어를 _commandList->endRenderPassBarriers 에 모은다. 추후에 EndRenderPass 에서 자동으로 실행된다.
-        {
-            D3D12_RESOURCE_STATES beforeState = ToD3D12ResourceState(renderPassImage.duringState);
-            D3D12_RESOURCE_STATES afterState = ToD3D12ResourceState(renderPassImage.afterState);
-
-            if (renderPassImage.type == RHI::RenderPassImage::Type::ResolveColor || renderPassImage.type == RHI::RenderPassImage::Type::ResolveDepth) {
-                beforeState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
-            }
-            if (beforeState != afterState) {
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-                barrier.Transition.pResource = reinterpret_cast<ID3D12Resource *>(texture->GetNativeResource());
-                barrier.Transition.StateBefore = beforeState;
-                barrier.Transition.StateAfter = afterState;
-
-                if (renderPassImage.viewID.IsPrimary()) {
-                    // NOTE: viewID 가 Primary 라는 게 절대적으로 텍스쳐 전체 View 를 가리키는 게 아닌데 일단은 그렇게 가정한다.
-                    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-                    _commandList->endRenderPassBarriers.Append(barrier);
-                } else {
-                    for (UINT slice = 0; slice < destArraySize; ++slice) {
-                        barrier.Transition.Subresource = D3D12CalcSubresource(destMipSlice, destFirstArraySlice + slice, 0, texture->textureDesc.MipLevels, texture->textureDesc.DepthOrArraySize);
-                        _commandList->endRenderPassBarriers.Append(barrier);
-                    }
-                }
-            }
-        }
+        appendBarriers(_commandList->endRenderPassBarriers, duringState, ToD3D12ResourceState(renderPassImage.afterState));
     }
 
     if (!barriers.IsEmpty()) {
