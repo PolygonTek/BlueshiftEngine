@@ -1423,8 +1423,10 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
 
     // 서브 리소스의 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT subresourceFootprint;
+    UINT numRows; // 압축 포맷일 경우 블록 행 수를 의미한다.
+    UINT64 rowSizeInBytes; // 압축 포맷일 경우 블록 행의 바이트 수 (패딩을 제외한) 를 의미한다.
     UINT64 subresourceSize;
-    device->GetCopyableFootprints(&_texture->textureDesc, subresourceIndex, 1, 0, &subresourceFootprint, nullptr, nullptr, &subresourceSize);
+    device->GetCopyableFootprints(&_texture->textureDesc, subresourceIndex, 1, 0, &subresourceFootprint, &numRows, &rowSizeInBytes, &subresourceSize);
 
     // 리드백 버퍼를 생성한다.
     D3D12Buffer *readbackBuffer = static_cast<D3D12Buffer *>(CreateBuffer(RHI::BufferUsage::Readback, RHI::BufferFlag::None, subresourceSize, nullptr));
@@ -1470,8 +1472,8 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
 
     BE1::Image tempImage;
     if (_texture->srcFormat != dstFormat) {
-        // 컨버팅이 필요하다면, 리드백 버퍼의 내용을 tempImage 에 카피할 준비를 한다.
-        tempImage.Create2D(subresourceFootprint.Footprint.Width, subresourceFootprint.Footprint.Height, subresourceFootprint.Footprint.Depth, _texture->srcFormat, _texture->srcSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr);
+        // 컨버팅이 필요하다면, 서브리소스의 깊이를 보존하는 단일 mip 임시 이미지를 준비한다.
+        tempImage.Create3D(subresourceFootprint.Footprint.Width, subresourceFootprint.Footprint.Height, subresourceFootprint.Footprint.Depth, 1, _texture->srcFormat, _texture->srcSRGB ? BE1::Image::GammaSpace::sRGB : BE1::Image::GammaSpace::Linear, nullptr);
         dstPtr = tempImage.GetPixels();
     } else {
         // 컨버팅할 필요가 없다면, 리드백 버퍼의 내용을 그대로 outPixels 로 카피할 준비를 한다.
@@ -1479,10 +1481,11 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
     }
 
     int srcPitch = subresourceFootprint.Footprint.RowPitch;
-    int dstPitch = static_cast<int>(BE1::Image::MemRequired(subresourceFootprint.Footprint.Width, 1, 1, 1, 1, _texture->srcFormat));
+    int dstPitch = static_cast<int>(rowSizeInBytes);
 
+    // destination 에는 패딩을 제외한 데이터만 복사한다.
     for (UINT z = 0; z < subresourceFootprint.Footprint.Depth; ++z) {
-        for (UINT y = 0; y < subresourceFootprint.Footprint.Height; ++y) {
+        for (UINT y = 0; y < numRows; ++y) {
             BE1::simdProcessor->Memcpy(dstPtr, srcPtr, dstPitch);
             srcPtr += srcPitch;
             dstPtr += dstPitch;

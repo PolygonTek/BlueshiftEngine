@@ -98,7 +98,7 @@ public:
     const SharedPtr<Texture> &      GetColorGradingLUTTexture() const { return colorGradingLUTTexture; }
     void                            RequestColorGradingLUTUpdate() { colorGradingLUTDirty = true; }
 
-                                    // NVIDIA STBN: https://github.com/NVIDIA-RTX/STBN (Assets/STBN.zip, License.txt).
+                                    // NVIDIA STBN: https://github.com/NVIDIA-RTX/STBN
                                     // 128x128, 64 slices, mip 1. 픽셀 좌표 & 127, frameIndex & 63 으로 Load/Point sampling 한다.
                                     // R8: void-and-cluster 스칼라 난수. 디더링, 확률적 알파 테스트, 스칼라 지터.
     const SharedPtr<Texture> &      GetSTBNScalarTexture() const { return stbnScalarTexture; }
