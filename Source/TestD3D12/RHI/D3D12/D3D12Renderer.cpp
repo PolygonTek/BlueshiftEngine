@@ -1167,7 +1167,7 @@ void D3D12Renderer::CopyTexture(RHI::CommandList *commandList, const RHI::Textur
     CD3DX12_TEXTURE_COPY_LOCATION dstLocation(_dstTexture->GetResource(), D3D12CalcSubresource(dstMipLevel, dstSlice, 0, _dstTexture->textureDesc.MipLevels, _dstTexture->textureDesc.DepthOrArraySize));
     CD3DX12_TEXTURE_COPY_LOCATION srcLocation(_srcTexture->GetResource(), D3D12CalcSubresource(srcMipLevel, srcSlice, 0, _srcTexture->textureDesc.MipLevels, _srcTexture->textureDesc.DepthOrArraySize));
 
-    D3D12_BOX srcBox = { srcX, srcY, srcZ, (UINT)width, (UINT)height, (UINT)depth };
+    D3D12_BOX srcBox = { srcX, srcY, srcZ, srcX + width, srcY + height, srcZ + depth };
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     _commandList->GetGraphicsCommandList()->CopyTextureRegion(&dstLocation, dstX, dstY, dstZ, &srcLocation, &srcBox);
 }
