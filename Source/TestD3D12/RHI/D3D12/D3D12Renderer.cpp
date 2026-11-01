@@ -1545,7 +1545,6 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
     ResolveSource dsResolveSource = {};
     D3D12_RENDER_PASS_RENDER_TARGET_DESC rtDescs[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC dsDesc = {};
-    BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> resolveSubresourceParams[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT];
     uint32_t rtCount = 0;
     BE1::Array<D3D12_RESOURCE_BARRIER> barriers;
 
@@ -1661,10 +1660,12 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             UINT destHeight = BE1::Max((int)(texture->textureDesc.Height >> destMipSlice), 1);
             UINT arraySize = BE1::Min(destArraySize, resolveSource.arraySize);
 
-            BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> &subresourceParams = resolveSubresourceParams[renderPassImage.resolveSourceIndex];
+            BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> &subresourceParams = _commandList->colorResolveSubresourceParams[renderPassImage.resolveSourceIndex];
+            subresourceParams.SetCount(0, false);
+            subresourceParams.SetCount(arraySize, false);
 
             for (UINT slice = 0; slice < arraySize; ++slice) {
-                D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams.Alloc();
+                D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams[slice];
                 params.SrcSubresource = D3D12CalcSubresource(resolveSource.mipSlice, resolveSource.firstArraySlice + slice, 0, resolveSource.maxMipLevels, resolveSource.maxArraySize);
                 params.SrcRect.left = 0;
                 params.SrcRect.top = 0;
@@ -1705,10 +1706,12 @@ void D3D12Renderer::BeginRenderPass(RHI::CommandList *commandList, const RHI::Re
             UINT destHeight = BE1::Max((int)(texture->textureDesc.Height >> destMipSlice), 1);
             UINT arraySize = BE1::Min(destArraySize, dsResolveSource.arraySize);
 
-            BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> &subresourceParams = resolveSubresourceParams[renderPassImage.resolveSourceIndex];
+            BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> &subresourceParams = _commandList->depthResolveSubresourceParams;
+            subresourceParams.SetCount(0, false);
+            subresourceParams.SetCount(arraySize, false);
 
             for (UINT slice = 0; slice < arraySize; ++slice) {
-                D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams.Alloc();
+                D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS &params = subresourceParams[slice];
                 params.SrcSubresource = D3D12CalcSubresource(dsResolveSource.mipSlice, dsResolveSource.firstArraySlice + slice, 0, dsResolveSource.maxMipLevels, dsResolveSource.maxArraySize);
                 params.SrcRect.left = 0;
                 params.SrcRect.top = 0;

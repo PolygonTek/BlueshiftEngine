@@ -119,6 +119,10 @@ private:
     ID3D12Resource *                shadingRateImage = nullptr;
     BE1::Array<D3D12_RESOURCE_BARRIER> endRenderPassBarriers;
 
+    // ResolveSubresourceParameters 는 EndRenderPass 까지 유지해야 한다.
+    BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> colorResolveSubresourceParams[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT];
+    BE1::Array<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS> depthResolveSubresourceParams;
+
 #ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
 
