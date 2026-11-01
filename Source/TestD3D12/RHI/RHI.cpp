@@ -485,6 +485,8 @@ bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool 
         if (rhiFormat) *rhiFormat = RHI::Format::Unknown;
         return true;
     case BE1::Image::Format::R32_FLOAT:
+    case BE1::Image::Format::L32_FLOAT:
+    case BE1::Image::Format::A32_FLOAT:
         if (rhiFormat) *rhiFormat = RHI::Format::R32_FLOAT;
         return true;
     case BE1::Image::Format::R32_SINT:
@@ -494,6 +496,7 @@ bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool 
         if (rhiFormat) *rhiFormat = RHI::Format::R32_UINT;
         return true;
     case BE1::Image::Format::R32G32_FLOAT:
+    case BE1::Image::Format::L32A32_FLOAT:
         if (rhiFormat) *rhiFormat = RHI::Format::R32G32_FLOAT;
         return true;
     case BE1::Image::Format::R32G32_SINT:
@@ -522,6 +525,7 @@ bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool 
         return true;
     case BE1::Image::Format::R16_FLOAT:
     case BE1::Image::Format::L16_FLOAT:
+    case BE1::Image::Format::A16_FLOAT:
         if (rhiFormat) *rhiFormat = RHI::Format::R16_FLOAT;
         return true;
     case BE1::Image::Format::R16:
@@ -537,6 +541,7 @@ bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool 
         if (rhiFormat) *rhiFormat = RHI::Format::R16_UINT;
         return true;
     case BE1::Image::Format::R16G16_FLOAT:
+    case BE1::Image::Format::L16A16_FLOAT:
         if (rhiFormat) *rhiFormat = RHI::Format::R16G16_FLOAT;
         return true;
     case BE1::Image::Format::R16G16:
@@ -589,6 +594,7 @@ bool RHI::Renderer::ImageFormatToRHIFormat(BE1::Image::Format imageFormat, bool 
         if (rhiFormat) *rhiFormat = RHI::Format::A8_UNORM;
         return true;
     case BE1::Image::Format::R8G8:
+    case BE1::Image::Format::L8A8:
         if (rhiFormat) *rhiFormat = RHI::Format::R8G8_UNORM;
         return true;
     case BE1::Image::Format::R8G8_SNORM:
