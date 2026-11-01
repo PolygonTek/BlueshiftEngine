@@ -1626,6 +1626,10 @@ void RenderWorld::AddTextMeshes(RenderFrame *frame, const RenderCamera *renderCa
                 break;
             }
 
+            if (!guiSurf->indexBuffer) {
+                continue;
+            }
+
             SubMesh *subMesh = (SubMesh *)frame->MemAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
@@ -2173,6 +2177,10 @@ void RenderWorld::DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32
         const GuiMesh::Surface *guiSurf = guiMesh.GetSurface(surfaceIndex);
         if (!guiSurf->numIndexes) {
             break;
+        }
+
+        if (!guiSurf->indexBuffer) {
+            continue;
         }
 
         SubMesh *subMesh = (SubMesh *)frame->MemAlloc(sizeof(SubMesh));

@@ -54,6 +54,7 @@ public:
                                     // 정렬 패딩을 포함한 다이나믹 버퍼 사용량을 반환한다.
     virtual uint64_t                GetUsedBytes() const override;
 
+                                    // 다이나믹 버퍼의 개별 할당 요청이 블럭 크기 상한을 넘으면 nullptr 을 반환한다.
                                     // 다이나믹 버텍스 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
     virtual RHI::VertexBuffer *     AllocVertex(uint32_t vertexSize, uint32_t count, const void *data = nullptr) override;
 
@@ -69,10 +70,12 @@ public:
                                     // 다이나믹 (structured) 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
     virtual RHI::Buffer *           AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) override;
 
-                                    // 마지막에 할당했던 다이나믹 버텍스 버퍼에 데이터를 추가한다. 블럭의 크기가 부족하지 않은 이상 추가는 성공한다.
+                                    // 다이나믹 버텍스 버퍼에 데이터를 추가한다.
+                                    // data 가 nullptr 이면 공간만 확보한다. 이어 붙일 공간을 확보할 수 없으면 nullptr 을 리턴한다.
     virtual void *                  AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data = nullptr) override;
 
-                                    // 마지막에 할당했던 다이나믹 인덱스 버퍼에 데이터를 추가한다. 블럭의 크기가 부족하지 않은 이상 추가는 성공한다.
+                                    // 다이나믹 인덱스 버퍼에 데이터를 추가한다.
+                                    // data 가 nullptr 이면 공간만 확보한다. 이어 붙일 공간을 확보할 수 없으면 nullptr 을 리턴한다.
     virtual void *                  AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data = nullptr) override;
 
     virtual RHI::CommandList *      AllocGraphicsCommandList(RHI::CommandListKind kind = RHI::CommandListKind::Primary) override;
@@ -86,11 +89,11 @@ private:
     class DynamicBufferBlock {
     public:
         DynamicBufferBlock() = delete;
-        DynamicBufferBlock(uint64_t size);
+        DynamicBufferBlock(uint32_t size);
         ~DynamicBufferBlock();
 
         D3D12Buffer *               buffer = nullptr;
-        UINT                        usedBytes = 0;
+        uint32_t                    usedBytes = 0;
         int                         blockIndex = -1;
     };
 

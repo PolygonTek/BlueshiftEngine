@@ -219,10 +219,15 @@ void GuiMesh::DrawQuads(RHI::FrameThreadData *frameThreadData, const BE1::Vertex
         }
     }
 
+    RHI::VertexBuffer *vertexBuffer = frameThreadData->AllocVertex(sizeof(BE1::VertexGeneric), numVerts, verts);
+    if (!vertexBuffer) {
+        return;
+    }
+
     PrepareNewSurf();
 
     currentSurf->material = material;
-    currentSurf->vertexBuffer = frameThreadData->AllocVertex(sizeof(BE1::VertexGeneric), numVerts, verts);
+    currentSurf->vertexBuffer = vertexBuffer;
     currentSurf->numVerts += numVerts;
     currentSurf->numIndexes += numIndexes;
 }
@@ -663,6 +668,9 @@ void GuiMesh::CacheIndexes(RHI::FrameThreadData *frameThreadData) {
 
         if (!surface.indexBuffer) {
             surface.indexBuffer = frameThreadData->AllocIndex(sizeof(quadTrisIndexes[0]), surface.numIndexes);
+            if (!surface.indexBuffer) {
+                continue;
+            }
             BE1::VertIndex *indexPtr = reinterpret_cast<BE1::VertIndex *>(surface.indexBuffer->mappedPtr);
 
             // 현재 surf 의 첫번째 버텍스가 위치한 곳을 index 로 나타낸 값

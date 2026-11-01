@@ -18,9 +18,14 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12ShaderVisibleDescriptorHeap.h"
 
-static constexpr uint32_t DynamicBufferBlockSize = 1 << 22; // 4MB
+static constexpr uint32_t DynamicBufferBlockMinSize = 1u << 22; // 4MB
+static constexpr uint32_t DynamicBufferBlockMaxSize = (1u << 31) - D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+static_assert(DynamicBufferBlockMaxSize <= INT_MAX);
+static_assert(DynamicBufferBlockMaxSize % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
 
-D3D12FrameThreadData::DynamicBufferBlock::DynamicBufferBlock(uint64_t size) {
+D3D12FrameThreadData::DynamicBufferBlock::DynamicBufferBlock(uint32_t size) {
+    assert(size <= DynamicBufferBlockMaxSize);
+
     // 블럭 단위로 관리할 다이나믹 버퍼 (업로드 버퍼) 를 생성한다.
     // CB/VB/IB/SR 용으로 사용할 수 있다.
     buffer = static_cast<D3D12Buffer *>(RHI::renderer->CreateBuffer(RHI::BufferUsage::Upload,
@@ -92,7 +97,7 @@ void D3D12FrameThreadData::Init(D3D12Renderer *renderer, int32_t frameIndex, int
     dynamicBufferBlocks.SetGranularity(16);
 
     // 미리 다이나믹 버퍼 블럭을 1개만 생성한다.
-    DynamicBufferBlock *dynamicBlock = new DynamicBufferBlock(DynamicBufferBlockSize);
+    DynamicBufferBlock *dynamicBlock = new DynamicBufferBlock(DynamicBufferBlockMinSize);
     dynamicBlock->blockIndex = dynamicBufferBlocks.Append(dynamicBlock);
 
     // 다이나믹 버퍼에서 사용할 디스크립터 풀을 생성한다.
@@ -153,17 +158,19 @@ uint64_t D3D12FrameThreadData::GetUsedBytes() const {
 }
 
 D3D12FrameThreadData::DynamicBufferBlock *D3D12FrameThreadData::FindFreeDynamicBufferBlock(uint32_t size, uint32_t alignSize, uint32_t *outOffset) const {
+    assert(alignSize > 0);
+
     DynamicBufferBlock *currentBlock = nullptr;
 
     const int blockCount = dynamicBufferBlocks.Count();
     for (int blockIndex = 0; blockIndex < blockCount; ++blockIndex) {
         currentBlock = dynamicBufferBlocks[blockIndex];
 
-        uint32_t alignedOffset = BE1::AlignUp(currentBlock->usedBytes, alignSize);
+        const uint64_t alignedOffset = BE1::AlignUp(static_cast<uint64_t>(currentBlock->usedBytes), static_cast<int>(alignSize));
 
         // 필요한 데이터의 크기가 현재 블럭의 크기를 넘어가지 않는다면, 이 블럭을 사용한다.
         if (alignedOffset + size <= currentBlock->buffer->GetSize()) {
-            *outOffset = alignedOffset;
+            *outOffset = static_cast<uint32_t>(alignedOffset);
 
             return currentBlock;
         }
@@ -172,12 +179,18 @@ D3D12FrameThreadData::DynamicBufferBlock *D3D12FrameThreadData::FindFreeDynamicB
 }
 
 RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32_t count, const void *data) {
-    uint32_t size = vertexSize * count;
+    assert(vertexSize > 0);
+
+    const uint64_t requestedSize = static_cast<uint64_t>(vertexSize) * count;
+    if (vertexSize > INT_MAX || requestedSize > DynamicBufferBlockMaxSize) {
+        return nullptr;
+    }
+    const uint32_t size = static_cast<uint32_t>(requestedSize);
 
     uint32_t offset;
     DynamicBufferBlock *currentBlock = FindFreeDynamicBufferBlock(size, vertexSize, &offset);
     if (!currentBlock) {
-        currentBlock = new DynamicBufferBlock(BE1::Max(size, DynamicBufferBlockSize));
+        currentBlock = new DynamicBufferBlock(BE1::Max(size, DynamicBufferBlockMinSize));
         currentBlock->blockIndex = dynamicBufferBlocks.Append(currentBlock);
 
         offset = 0;
@@ -202,12 +215,18 @@ RHI::VertexBuffer *D3D12FrameThreadData::AllocVertex(uint32_t vertexSize, uint32
 }
 
 RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t count, const void *data) {
-    uint32_t size = indexSize * count;
+    assert(indexSize == sizeof(uint16_t) || indexSize == sizeof(uint32_t));
+
+    const uint64_t requestedSize = static_cast<uint64_t>(indexSize) * count;
+    if (requestedSize > DynamicBufferBlockMaxSize) {
+        return nullptr;
+    }
+    const uint32_t size = static_cast<uint32_t>(requestedSize);
 
     uint32_t offset;
     DynamicBufferBlock *currentBlock = FindFreeDynamicBufferBlock(size, indexSize, &offset);
     if (!currentBlock) {
-        currentBlock = new DynamicBufferBlock(BE1::Max(size, DynamicBufferBlockSize));
+        currentBlock = new DynamicBufferBlock(BE1::Max(size, DynamicBufferBlockMinSize));
         currentBlock->blockIndex = dynamicBufferBlocks.Append(currentBlock);
 
         offset = 0;
@@ -233,12 +252,13 @@ RHI::IndexBuffer *D3D12FrameThreadData::AllocIndex(uint32_t indexSize, uint32_t 
 
 RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const void *data) {
     // 상수 버퍼의 사이즈는 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256) 로 정렬되어야 한다.
-    uint32_t alignedSize = BE1::AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    const uint64_t requestedSize = BE1::AlignUp(static_cast<uint64_t>(size), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     // 상수 버퍼의 최대 크기는 64KB 이다.
-    if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
+    if (requestedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
         BE_WARNLOG("Constant buffer size exceeds 64KB limit\n");
         return nullptr;
     }
+    const uint32_t alignedSize = static_cast<uint32_t>(requestedSize);
 
     D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = {};
     if (!dynamicResDescriptorPool->Alloc(&cpuDescriptorHandle, nullptr)) {
@@ -249,7 +269,7 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
     // 상수 버퍼의 오프셋은 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256) 로 정렬되어야 한다.
     DynamicBufferBlock *currentBlock = FindFreeDynamicBufferBlock(alignedSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, &offset);
     if (!currentBlock) {
-        currentBlock = new DynamicBufferBlock(BE1::Max(alignedSize, DynamicBufferBlockSize));
+        currentBlock = new DynamicBufferBlock(BE1::Max(alignedSize, DynamicBufferBlockMinSize));
         currentBlock->blockIndex = dynamicBufferBlocks.Append(currentBlock);
 
         offset = 0;
@@ -278,6 +298,8 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
 }
 
 RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint32_t alignSize, uint32_t structuredStride, const void *data) {
+    assert(size <= DynamicBufferBlockMaxSize);
+
     D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = {};
     if (!dynamicResDescriptorPool->Alloc(&cpuDescriptorHandle, nullptr)) {
         return nullptr;
@@ -286,7 +308,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint
     uint32_t offset;
     DynamicBufferBlock *currentBlock = FindFreeDynamicBufferBlock(size, alignSize, &offset);
     if (!currentBlock) {
-        currentBlock = new DynamicBufferBlock(BE1::Max(size, DynamicBufferBlockSize));
+        currentBlock = new DynamicBufferBlock(BE1::Max(size, DynamicBufferBlockMinSize));
         currentBlock->blockIndex = dynamicBufferBlocks.Append(currentBlock);
 
         offset = 0;
@@ -342,7 +364,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint
 }
 
 RHI::Buffer *D3D12FrameThreadData::AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data) {
-    if (stride == 0 || count == 0 || count > UINT32_MAX / stride) {
+    if (stride == 0 || count == 0) {
         return nullptr;
     }
 
@@ -350,13 +372,19 @@ RHI::Buffer *D3D12FrameThreadData::AllocStructuredBuffer(uint32_t stride, uint32
         return nullptr;
     }
 
-    return AllocShaderResourceBuffer(stride * count, stride, stride, data);
+    const uint64_t requestedSize = static_cast<uint64_t>(stride) * count;
+    if (requestedSize > DynamicBufferBlockMaxSize) {
+        return nullptr;
+    }
+
+    return AllocShaderResourceBuffer(static_cast<uint32_t>(requestedSize), stride, stride, data);
 }
 
 RHI::Buffer *D3D12FrameThreadData::AllocRawBuffer(uint32_t size, uint32_t alignSize, const void *data) {
     assert(BE1::IsAligned(alignSize, 4));
 
-    if (size == 0 || !BE1::IsAligned(size, 4)) {
+    if (alignSize == 0 || alignSize > INT_MAX ||
+        size == 0 || size > DynamicBufferBlockMaxSize || !BE1::IsAligned(size, 4)) {
         return nullptr;
     }
 
@@ -365,61 +393,73 @@ RHI::Buffer *D3D12FrameThreadData::AllocRawBuffer(uint32_t size, uint32_t alignS
 }
 
 void *D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data) {
+    assert(vertexSize > 0);
     D3D12VertexBuffer *_vertexBuffer = static_cast<D3D12VertexBuffer *>(vertexBuffer);
-    if (_vertexBuffer->dynamicBlockIndex == -1) {
+    if (_vertexBuffer->dynamicBlockIndex < 0 || _vertexBuffer->dynamicBlockIndex >= dynamicBufferBlocks.Count() || vertexSize != _vertexBuffer->vbv.StrideInBytes) {
         return nullptr;
     }
 
     DynamicBufferBlock *block = dynamicBufferBlocks[_vertexBuffer->dynamicBlockIndex];
-    if (!block) {
+    if (!block || block->buffer != _vertexBuffer->buffer) {
         return nullptr;
     }
 
-    uint32_t alignedOffset = BE1::AlignUp(block->usedBytes, vertexSize);
-    uint32_t size = vertexSize * count;
-
-    // 버퍼의 전체 크기와 비교하여, 추가 데이터를 수용할 수 있는지 검사
-    if (alignedOffset + size > block->buffer->GetSize()) {
+    // 버텍스 데이터를 이어 붙일 수 있는지 검사
+    byte *destPtr = reinterpret_cast<byte *>(block->buffer->mappedPtr) + block->usedBytes;
+    if (reinterpret_cast<byte *>(_vertexBuffer->mappedPtr) + _vertexBuffer->vbv.SizeInBytes != destPtr) {
         return nullptr;
     }
 
-    _vertexBuffer->vbv.SizeInBytes += size;
+    const uint64_t size = static_cast<uint64_t>(vertexSize) * count;
+    const uint64_t newUsedBytes = block->usedBytes + size;
 
-    block->usedBytes = alignedOffset + size;
+    // 블럭에 여분의 공간이 있는지 검사
+    if (newUsedBytes > block->buffer->GetSize()) {
+        return nullptr;
+    }
 
-    byte *destPtr = reinterpret_cast<byte *>(block->buffer->mappedPtr) + alignedOffset;
-    if (destPtr) {
-        BE1::simdProcessor->Memcpy(destPtr, data, size);
+    _vertexBuffer->vbv.SizeInBytes += static_cast<uint32_t>(size);
+
+    block->usedBytes = static_cast<uint32_t>(newUsedBytes);
+
+    if (data) {
+        BE1::simdProcessor->Memcpy(destPtr, data, static_cast<int>(size));
     }
     return destPtr;
 }
 
 void *D3D12FrameThreadData::AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t indexSize, uint32_t count, const void *data) {
+    assert(indexSize == sizeof(uint16_t) || indexSize == sizeof(uint32_t));
     D3D12IndexBuffer *_indexBuffer = static_cast<D3D12IndexBuffer *>(indexBuffer);
-    if (_indexBuffer->dynamicBlockIndex == -1) {
+    if (_indexBuffer->dynamicBlockIndex < 0 || _indexBuffer->dynamicBlockIndex >= dynamicBufferBlocks.Count() || _indexBuffer->ibv.Format != (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT)) {
         return nullptr;
     }
 
     DynamicBufferBlock *block = dynamicBufferBlocks[_indexBuffer->dynamicBlockIndex];
-    if (!block) {
+    if (!block || block->buffer != _indexBuffer->buffer) {
         return nullptr;
     }
 
-    uint32_t alignedOffset = BE1::AlignUp(block->usedBytes, indexSize);
-    uint32_t size = indexSize * count;
-
-    // 버퍼의 전체 크기와 비교하여, 추가 데이터를 수용할 수 있는지 검사
-    if (alignedOffset + size > block->buffer->GetSize()) {
+    // 인덱스 데이터를 이어 붙일 수 있는지 검사
+    byte *destPtr = reinterpret_cast<byte *>(block->buffer->mappedPtr) + block->usedBytes;
+    if (reinterpret_cast<byte *>(_indexBuffer->mappedPtr) + _indexBuffer->ibv.SizeInBytes != destPtr) {
         return nullptr;
     }
 
-    _indexBuffer->ibv.SizeInBytes += size;
+    const uint64_t size = static_cast<uint64_t>(indexSize) * count;
+    const uint64_t newUsedBytes = block->usedBytes + size;
 
-    block->usedBytes = alignedOffset + size;
+    // 블럭에 여분의 공간이 있는지 검사
+    if (newUsedBytes > block->buffer->GetSize()) {
+        return nullptr;
+    }
 
-    byte *destPtr = reinterpret_cast<byte *>(block->buffer->mappedPtr) + alignedOffset;
-    if (destPtr) {
-        BE1::simdProcessor->Memcpy(destPtr, data, size);
+    _indexBuffer->ibv.SizeInBytes += static_cast<uint32_t>(size);
+
+    block->usedBytes = static_cast<uint32_t>(newUsedBytes);
+
+    if (data) {
+        BE1::simdProcessor->Memcpy(destPtr, data, static_cast<int>(size));
     }
     return destPtr;
 }
