@@ -89,8 +89,8 @@ public:
                                         // Returns the sum of all source elements.
     virtual float BE_FASTCALL           Sum(const float *src, const int count) = 0;
 
-    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) = 0;
-    virtual void BE_FASTCALL            Memset(void *dst, const int val, const int size) = 0;
+    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const size_t size) = 0;
+    virtual void BE_FASTCALL            Memset(void *dst, const int val, const size_t size) = 0;
 
     virtual void BE_FASTCALL            TransformPoints(Vec3 *points, const Mat3x4 &matrix, const int count) = 0;
     virtual void BE_FASTCALL            TransformDirections(Vec3 *directions, const Mat3x4 &matrix, const int count) = 0;

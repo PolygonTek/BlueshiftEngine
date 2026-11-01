@@ -131,7 +131,7 @@ int Pcm::DecodeFile_OggVorbis(byte *outBuffer, int len) {
             lastReadBytes -= overBytes;
         }
 
-        simdProcessor->Memcpy(dstPtr, temp, (int)lastReadBytes);
+        simdProcessor->Memcpy(dstPtr, temp, lastReadBytes);
 
         readBytes += lastReadBytes;
         dstPtr += lastReadBytes;
@@ -244,7 +244,7 @@ bool Pcm::DecodeMemory_OggVorbis(byte *base, size_t fileSize) {
                 break;
             }
 
-            simdProcessor->Memcpy(ptr, temp, (int)length);
+            simdProcessor->Memcpy(ptr, temp, length);
             ptr += length;
         }
     } while (length > 0 && ptr - this->data < this->size);

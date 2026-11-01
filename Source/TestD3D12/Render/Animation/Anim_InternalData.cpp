@@ -140,7 +140,7 @@ bool Anim::InternalData::LoadBinaryAnim(const char *filename) {
 
     frameTimes.SetGranularity(1);
     frameTimes.SetCount(frameTimesCount);
-    BE1::simdProcessor->Memcpy(frameTimes.Ptr(), ptr, (int)frameTimes.MemoryUsed());
+    BE1::simdProcessor->Memcpy(frameTimes.Ptr(), ptr, frameTimes.MemoryUsed());
     ptr += frameTimes.MemoryUsed();
 
     if (bAnimHeader->version == 1) {

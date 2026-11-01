@@ -121,10 +121,11 @@ bool TrueTypeFontFace::Load(const char *filename, int fontSize) {
 
     // Allocate temporary buffer for drawing glyphs.
     // FT_Set_Pixel_Sizes 와는 다르게 fontSize * fontSize 를 넘어가는 비트맵이 나올수도 있어서 넉넉하게 가로 세로 두배씩 더 할당
-    glyphBuffer = (byte *)Mem_Alloc16(Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT) * fontSize * fontSize * 4);
+    const size_t glyphDataSize = static_cast<size_t>(fontSize) * fontSize * Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT);
+    glyphBuffer = (byte *)Mem_Alloc16(glyphDataSize * 4);
 
     // Pad with zeros.
-    simdProcessor->Memset(glyphBuffer, 0, fontSize * fontSize * Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT));
+    simdProcessor->Memset(glyphBuffer, 0, glyphDataSize);
 
     return true;
 }

@@ -90,7 +90,7 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
     const size_t textureDataSize = SizeInBytes(0, numMipLevels);
 
     this->pic = (byte *)Mem_Alloc256(textureDataSize);
-    simdProcessor->Memcpy(this->pic, ptr, (int)textureDataSize);
+    simdProcessor->Memcpy(this->pic, ptr, textureDataSize);
     this->alloced = true;
     
     return true;
@@ -360,7 +360,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
         for (int surfaceIndex = 0; surfaceIndex < numSurfaces; surfaceIndex++) {
             for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
                 const int sliceIndex = surfaceIndex * numFaces + faceIndex;
-                simdProcessor->Memcpy(GetPixels(mipLevel, sliceIndex), ptr, (int)mipSize);
+                simdProcessor->Memcpy(GetPixels(mipLevel, sliceIndex), ptr, mipSize);
                 ptr += mipSize;
             }
         }

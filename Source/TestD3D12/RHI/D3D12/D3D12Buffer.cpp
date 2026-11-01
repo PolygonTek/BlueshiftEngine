@@ -224,7 +224,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
         resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
-    uint32_t alignedSize = size;
+    uint64_t alignedSize = size;
 
     if (BE1::HasFlag(flags, RHI::BufferFlag::ConstantBuffer)) {
         // 상수 버퍼를 생성하면 내부적으로 GPU 에서 어차피 256 바이트로 사이즈가 정렬된다.

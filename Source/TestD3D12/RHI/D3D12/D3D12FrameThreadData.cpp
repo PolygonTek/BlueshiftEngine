@@ -423,7 +423,7 @@ void *D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32
     block->usedBytes = static_cast<uint32_t>(newUsedBytes);
 
     if (data) {
-        BE1::simdProcessor->Memcpy(destPtr, data, static_cast<int>(size));
+        BE1::simdProcessor->Memcpy(destPtr, data, size);
     }
     return destPtr;
 }
@@ -459,7 +459,7 @@ void *D3D12FrameThreadData::AppendIndex(RHI::IndexBuffer *indexBuffer, uint32_t 
     block->usedBytes = static_cast<uint32_t>(newUsedBytes);
 
     if (data) {
-        BE1::simdProcessor->Memcpy(destPtr, data, static_cast<int>(size));
+        BE1::simdProcessor->Memcpy(destPtr, data, size);
     }
     return destPtr;
 }

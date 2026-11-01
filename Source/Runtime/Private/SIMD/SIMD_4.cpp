@@ -413,7 +413,7 @@ float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
     return ret;
 }
 
-void SIMD_4::Memcpy64B(void *dst, const void *src, const int count) {
+void SIMD_4::Memcpy64B(void *dst, const void *src, const size_t count) {
     assert_16_byte_aligned(src);
     assert_16_byte_aligned(dst);
 
@@ -421,7 +421,7 @@ void SIMD_4::Memcpy64B(void *dst, const void *src, const int count) {
     byte *dstPtr = (byte *)dst;
     simd4i r0, r1, r2, r3;
 
-    int c64 = count >> 6;
+    size_t c64 = count >> 6;
     while (c64 > 0) {
         if (c64 > 1) {
             // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
@@ -445,7 +445,7 @@ void SIMD_4::Memcpy64B(void *dst, const void *src, const int count) {
     }
 }
 
-void SIMD_4::Memcpy2KB(void *dst, const void *src, const int count) {
+void SIMD_4::Memcpy2KB(void *dst, const void *src, const size_t count) {
     assert_16_byte_aligned(src);
     assert_16_byte_aligned(dst);
 
@@ -454,7 +454,7 @@ void SIMD_4::Memcpy2KB(void *dst, const void *src, const int count) {
     simd4i r0, r1, r2, r3, r4, r5, r6, r7;
 
     int c128;
-    int c2k = count >> 11;
+    size_t c2k = count >> 11;
     while (c2k > 0) {
         c128 = 16;
         while (c128 > 0) {
@@ -491,7 +491,7 @@ void SIMD_4::Memcpy2KB(void *dst, const void *src, const int count) {
 }
 
 // optimized memory copy routine that handles all alignment cases and block sizes efficiently
-void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int size) {
+void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const size_t size) {
 #if 0
     memcpy(dst, src, size);
 #else
@@ -500,7 +500,7 @@ void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int size) {
         byte *dstPtr = (byte *)dst;
 
         // Copy up to the first 16 byte aligned boundary.
-        int remainingSize = (16 - (((intptr_t)dstPtr) & 15)) & 15;
+        size_t remainingSize = (16 - (((intptr_t)dstPtr) & 15)) & 15;
         if (remainingSize > 0) {
             memcpy(dstPtr, srcPtr, remainingSize);
             dstPtr += remainingSize;
@@ -534,12 +534,12 @@ void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int size) {
 #endif
 }
 
-void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
+void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const size_t count0) {
 #if 1
     memset(dest0, val, count0);
 #else
     byte *dest = (byte *)dest0;
-    int count = count0;
+    size_t count = count0;
 
     while (count > 0 && (((intptr_t)dest) & 15)) {
         *dest = val;
@@ -554,7 +554,7 @@ void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
     simd4i data = set1_epi8((char)val);
 
     if (count >= 128) {
-        int c128 = count >> 7;
+        size_t c128 = count >> 7;
         while (c128 > 0) {
             store_si128(data, (int32_t *)dest);
             store_si128(data, (int32_t *)(dest + 16));
@@ -573,7 +573,7 @@ void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
     }
 
     if (count >= 16) {
-        int c16 = count >> 4;
+        size_t c16 = count >> 4;
         while (c16 > 0) {
             store_si128(data, (int32_t *)dest);
 

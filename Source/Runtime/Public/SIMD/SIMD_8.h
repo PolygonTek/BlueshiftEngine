@@ -43,8 +43,8 @@ public:
 
     virtual float BE_FASTCALL           Sum(const float *src, const int count) override;
 
-    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) override;
-    virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count) override;
+    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const size_t size) override;
+    virtual void BE_FASTCALL            Memset(void *dst, const int val, const size_t count) override;
 
     virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
@@ -71,8 +71,8 @@ public:
     static const simd8f                 F8_mask_000x000x;
 
 private:
-    static BE_FORCE_INLINE void         Memcpy64B(void *dst, const void *src, const int size);
-    static BE_FORCE_INLINE void         Memcpy2KB(void *dst, const void *src, const int size);
+    static BE_FORCE_INLINE void         Memcpy64B(void *dst, const void *src, const size_t size);
+    static BE_FORCE_INLINE void         Memcpy2KB(void *dst, const void *src, const size_t size);
 
     static BE_FORCE_INLINE void         LoadJointQuats8(const JointPose *joints, const int *index, simd8f &qx, simd8f &qy, simd8f &qz, simd8f &qw);
     static BE_FORCE_INLINE void         StoreJointQuats8(JointPose *joints, const int *index, const simd8f &qx, const simd8f &qy, const simd8f &qz, const simd8f &qw);

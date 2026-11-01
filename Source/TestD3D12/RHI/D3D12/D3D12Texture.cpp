@@ -1501,7 +1501,7 @@ bool D3D12Renderer::GetTextureImage(RHI::Texture *texture, int mipLevel, int sli
         if (!tempImage.ConvertFormat(dstFormat, dstImage)) {
             return false;
         }
-        BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), static_cast<int>(dstImage.SizeInBytes()));
+        BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
     }
     return true;
 }

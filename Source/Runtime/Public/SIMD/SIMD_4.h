@@ -45,8 +45,8 @@ public:
 
     virtual float BE_FASTCALL           Sum(const float *src, const int count) override;
 
-    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) override;
-    virtual void BE_FASTCALL            Memset(void *dst, const int val, const int size) override;
+    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const size_t size) override;
+    virtual void BE_FASTCALL            Memset(void *dst, const int val, const size_t size) override;
 
     virtual void BE_FASTCALL            TransformPoints(Vec3 *points, const Mat3x4 &matrix, const int count) override;
     virtual void BE_FASTCALL            TransformDirections(Vec3 *directions, const Mat3x4 &matrix, const int count) override;
@@ -79,8 +79,8 @@ public:
     static const simd4f                 F4_mask_000x;
 
 private:
-    static BE_FORCE_INLINE void         Memcpy64B(void *dst, const void *src, const int size);
-    static BE_FORCE_INLINE void         Memcpy2KB(void *dst, const void *src, const int size);
+    static BE_FORCE_INLINE void         Memcpy64B(void *dst, const void *src, const size_t size);
+    static BE_FORCE_INLINE void         Memcpy2KB(void *dst, const void *src, const size_t size);
 
     static BE_FORCE_INLINE void         LoadJointQuats4(const JointPose *joints, const int *index, simd4f &qx, simd4f &qy, simd4f &qz, simd4f &qw);
     static BE_FORCE_INLINE void         StoreJointQuats4(JointPose *joints, const int *index, const simd4f &qx, const simd4f &qy, const simd4f &qz, const simd4f &qw);

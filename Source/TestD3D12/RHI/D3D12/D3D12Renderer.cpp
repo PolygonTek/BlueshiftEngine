@@ -1354,7 +1354,7 @@ void D3D12Renderer::ReadPixels(RHI::CommandList *commandList, const RHI::SwapCha
     if (backBufferFormat != dstFormat) {
         BE1::Image dstImage;
         if (tempImage.ConvertFormat(dstFormat, dstImage)) {
-            BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), static_cast<int>(dstImage.SizeInBytes()));
+            BE1::simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
         }
     }
 }

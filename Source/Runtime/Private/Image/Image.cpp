@@ -127,7 +127,7 @@ Image &Image::Create(int32_t width, int32_t height, int32_t depth, int32_t numSl
     this->alloced = true;
     
     if (data) {
-        simdProcessor->Memcpy(this->pic, data, static_cast<int>(size));
+        simdProcessor->Memcpy(this->pic, data, size);
     }
 
     return *this;
@@ -157,7 +157,7 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
         assert(images[i].format == images[0].format);
         assert(images[i].numMipLevels == images[0].numMipLevels);
 
-        simdProcessor->Memcpy(dst, images[i].pic, static_cast<int>(bytesForFace));
+        simdProcessor->Memcpy(dst, images[i].pic, bytesForFace);
         dst += bytesForFace;
     }
 
@@ -269,7 +269,7 @@ Image &Image::CopyFrom(const Image &srcImage, int32_t firstMipLevel, int32_t mip
         const byte *src = srcImage.GetPixels(firstMipLevel, sliceIndex);
         byte *dst = GetPixels(firstMipLevel, sliceIndex);
 
-        simdProcessor->Memcpy(dst, src, static_cast<int>(bytesPerSlice));
+        simdProcessor->Memcpy(dst, src, bytesPerSlice);
     }
 
     return *this;
@@ -296,7 +296,7 @@ void Image::Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int3
     const byte *srcPtr = data;
 
     while (height--) {
-        simdProcessor->Memcpy(dstPtr, srcPtr, static_cast<int>(srcPitch));
+        simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
         dstPtr += dstPitch;
         srcPtr += srcPitch;
     }

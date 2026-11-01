@@ -661,7 +661,7 @@ float BE_FASTCALL SIMD_8::Sum(const float *src, const int count0) {
     return ret;
 }
 
-void SIMD_8::Memcpy64B(void *dst, const void *src, const int count) {
+void SIMD_8::Memcpy64B(void *dst, const void *src, const size_t count) {
     assert_32_byte_aligned(src);
     assert_32_byte_aligned(dst);
 
@@ -669,7 +669,7 @@ void SIMD_8::Memcpy64B(void *dst, const void *src, const int count) {
     byte *dstPtr = (byte *)dst;
     simd8i r0, r1;
 
-    int c64 = count >> 6;
+    size_t c64 = count >> 6;
     while (c64 > 0) {
         if (c64 > 1) {
             // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
@@ -689,7 +689,7 @@ void SIMD_8::Memcpy64B(void *dst, const void *src, const int count) {
     }
 }
 
-void SIMD_8::Memcpy2KB(void *dst, const void *src, const int count) {
+void SIMD_8::Memcpy2KB(void *dst, const void *src, const size_t count) {
     assert_32_byte_aligned(src);
     assert_32_byte_aligned(dst);
 
@@ -698,7 +698,7 @@ void SIMD_8::Memcpy2KB(void *dst, const void *src, const int count) {
     simd8i r0, r1, r2, r3, r4, r5, r6, r7;
 
     int c256;
-    int c2k = count >> 11;
+    size_t c2k = count >> 11;
     while (c2k > 0) {
         c256 = 8;
         while (c256 > 0) {
@@ -736,7 +736,7 @@ void SIMD_8::Memcpy2KB(void *dst, const void *src, const int count) {
     }
 }
 
-void BE_FASTCALL SIMD_8::Memcpy(void *dst, const void *src, const int size) {
+void BE_FASTCALL SIMD_8::Memcpy(void *dst, const void *src, const size_t size) {
 #if 0
     memcpy(dst, src, size);
 #else
@@ -745,7 +745,7 @@ void BE_FASTCALL SIMD_8::Memcpy(void *dst, const void *src, const int size) {
         byte *dstPtr = (byte *)dst;
 
         // Copy up to the first 32 byte aligned boundary.
-        int remainingSize = (32 - (((intptr_t)dstPtr) & 31)) & 31;
+        size_t remainingSize = (32 - (((intptr_t)dstPtr) & 31)) & 31;
         if (remainingSize > 0) {
             memcpy(dstPtr, srcPtr, remainingSize);
             dstPtr += remainingSize;
@@ -779,12 +779,12 @@ void BE_FASTCALL SIMD_8::Memcpy(void *dst, const void *src, const int size) {
 #endif
 }
 
-void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
+void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const size_t count0) {
 #if 0
     memset(dest0, val, count0);
 #else
     byte *dest = (byte *)dest0;
-    int count = count0;
+    size_t count = count0;
 
     while (count > 0 && (((intptr_t)dest) & 31)) {
         *dest = val;
@@ -799,7 +799,7 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
     simd8i data = set1_256epi8((char)val);
 
     if (count >= 512) {
-        int c512 = count >> 9;
+        size_t c512 = count >> 9;
         while (c512 > 0) {
             store_si256(data, (int32_t *)dest);
             store_si256(data, (int32_t *)(dest + 32));
@@ -826,7 +826,7 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
     }
 
     if (count >= 256) {
-        int c256 = count >> 8;
+        size_t c256 = count >> 8;
         while (c256 > 0) {
             store_si256(data, (int32_t *)dest);
             store_si256(data, (int32_t *)(dest + 32));
@@ -845,7 +845,7 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
     }
 
     if (count >= 128) {
-        int c128 = count >> 7;
+        size_t c128 = count >> 7;
         while (c128 > 0) {
             store_si256(data, (int32_t *)dest);
             store_si256(data, (int32_t *)(dest + 32));
@@ -860,7 +860,7 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
     }
 
     if (count >= 64) {
-        int c64 = count >> 6;
+        size_t c64 = count >> 6;
         while (c64 > 0) {
             store_si256(data, (int32_t *)dest);
             store_si256(data, (int32_t *)(dest + 32));
@@ -873,7 +873,7 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
     }
 
     if (count >= 32) {
-        int c16 = count >> 5;
+        size_t c16 = count >> 5;
         while (c16 > 0) {
             store_si256(data, (int32_t *)dest);
 

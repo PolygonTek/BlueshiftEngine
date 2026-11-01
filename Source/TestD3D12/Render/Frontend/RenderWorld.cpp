@@ -543,7 +543,7 @@ bool RenderWorld::SetOceanSurfaceQueries(const OceanSurfaceQueryInput *queries, 
 
     oceanSurface.queries.SetCount(static_cast<int>(queryCount), false);
     if (queryCount > 0) {
-        BE1::simdProcessor->Memcpy(oceanSurface.queries.Ptr(), queries, static_cast<int>(queryCount * sizeof(OceanSurfaceQueryInput)));
+        BE1::simdProcessor->Memcpy(oceanSurface.queries.Ptr(), queries, queryCount * sizeof(OceanSurfaceQueryInput));
     }
     return true;
 }

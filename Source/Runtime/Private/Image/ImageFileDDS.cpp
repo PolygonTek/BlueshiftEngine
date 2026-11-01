@@ -652,7 +652,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
 
     // DDS 와 Image 는 모두 slice-major order 로 데이터를 저장한다.
     // Cubemap face 순서와 방향도 동일하므로 payload 를 그대로 복사한다.
-    simdProcessor->Memcpy(this->pic, ptr, static_cast<int>(bufSize));
+    simdProcessor->Memcpy(this->pic, ptr, bufSize);
 
     return true;
 }

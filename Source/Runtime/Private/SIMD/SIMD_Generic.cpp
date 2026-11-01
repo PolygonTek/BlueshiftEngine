@@ -82,11 +82,11 @@ float BE_FASTCALL SIMD_Generic::Sum(const float *src, const int count) {
     return ret;
 }
 
-void BE_FASTCALL SIMD_Generic::Memcpy(void *dst, const void *src, const int count) {
+void BE_FASTCALL SIMD_Generic::Memcpy(void *dst, const void *src, const size_t count) {
     memcpy(dst, src, count);
 }
 
-void BE_FASTCALL SIMD_Generic::Memset(void *dst, const int val, const int count) {
+void BE_FASTCALL SIMD_Generic::Memset(void *dst, const int val, const size_t count) {
     memset(dst, val, count);
 }
 
