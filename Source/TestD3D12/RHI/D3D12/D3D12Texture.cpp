@@ -623,17 +623,25 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
         ID3D12Resource *textureResource = texture->textureResource;
 #endif
 
-        UINT arraySize = request.resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : request.resourceDesc.DepthOrArraySize;
-        UINT numSubresources = arraySize * request.resourceDesc.MipLevels;
-        D3D12_PLACED_SUBRESOURCE_FOOTPRINT *subresourceFootprints = (D3D12_PLACED_SUBRESOURCE_FOOTPRINT *)_alloca(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * numSubresources);
-        UINT64 size;
+        const UINT arraySize = request.resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : request.resourceDesc.DepthOrArraySize;
+        assert(request.srcImage->GetArraySize() == arraySize);
 
-        // 텍스쳐의 전체 사이즈와 서브 리소스 별 메모리 정보를 얻어온다.
-        device->GetCopyableFootprints(&request.resourceDesc, 0, numSubresources, 0, subresourceFootprints, nullptr, nullptr, &size);
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT *mipFootprints = (D3D12_PLACED_SUBRESOURCE_FOOTPRINT *)_alloca(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * request.mipCount);
+        UINT64 arraySliceSize;
 
-        // NOTE: size 는 텍스쳐 전체를 기준으로 계산된 값이다.
-        // AllocateEmpty / GenerateOnGPU 는 srcImage 의 mipmap level 0 만 사용하기 때문에 업로드 버퍼가 실제로 필요한 데이터보다 더 큰 사이즈가 될 수 있다.
-        // 업로드 버퍼 할당에 약간의 낭비는 있으나 필요한 부분만 사용할 것이므로 문제가 되지는 않는다.
+        // 첫 array slice 에서 업로드할 mip 범위만 조회한다. 다른 slice 도 같은 mip 레이아웃을 사용한다.
+        device->GetCopyableFootprints(&request.resourceDesc, request.dstFirstMip, request.mipCount, 0, mipFootprints, nullptr, nullptr, &arraySliceSize);
+        if (arraySliceSize == 0 || arraySliceSize == UINT64_MAX) {
+            BE_ERRLOG("D3D12Renderer::ExecuteUploadTexture: failed to calculate upload footprints\n");
+            return false;
+        }
+
+        // Array/Cube 의 slice 사이에는 배치 정렬을 적용하고, 마지막 slice 뒤의 패딩은 할당하지 않는다.
+        // 3D 텍스쳐는 arraySize 가 1 이며 각 mip footprint 에 depth 전체가 포함된다.
+        const UINT64 arraySlicePitch = BE1::AlignUp(arraySliceSize, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+        const UINT64 size = arraySlicePitch * (arraySize - 1) + arraySliceSize;
+
+        // AllocateEmpty / GenerateOnGPU 도 실제 업로드하는 mip-0 에 필요한 공간만 할당한다.
         D3D12_RESOURCE_DESC uploadBufferDesc;
         uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
         uploadBufferDesc.Alignment = 0;
@@ -685,10 +693,8 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
                 int srcRows = request.srcImage->IsCompressed() ? ((srcHeight + 3) / 4) : srcHeight;
                 const byte *srcPtr = request.srcImage->GetPixels(srcMipLevel, sliceIndex);
 
-                int dstMipLevel = request.dstFirstMip + srcMipLevel;
-                UINT subresourceIndex = D3D12CalcSubresource(dstMipLevel, sliceIndex, 0, request.resourceDesc.MipLevels, arraySize);
-                const D3D12_PLACED_SUBRESOURCE_FOOTPRINT &footprint = subresourceFootprints[subresourceIndex];
-                byte *dstPtr = mappedPtr + footprint.Offset;
+                const D3D12_PLACED_SUBRESOURCE_FOOTPRINT &footprint = mipFootprints[srcMipLevel];
+                byte *dstPtr = mappedPtr + arraySlicePitch * sliceIndex + footprint.Offset;
 
                 for (int z = 0; z < srcDepth; ++z) {
                     for (int r = 0; r < srcRows; ++r) {
@@ -716,7 +722,8 @@ bool D3D12Renderer::ExecuteUploadTexture(D3D12ResourceCommandContext &commandCon
                 D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
                 srcLocation.pResource = uploadBuffer;
                 srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-                srcLocation.PlacedFootprint = subresourceFootprints[subresourceIndex];
+                srcLocation.PlacedFootprint = mipFootprints[srcMipLevel];
+                srcLocation.PlacedFootprint.Offset += arraySlicePitch * sliceIndex;
 
                 D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
                 dstLocation.pResource = textureResource;
