@@ -349,6 +349,9 @@ void D3D12Renderer::CheckFeatures() {
     HRESULT hr = features.Init(device);
     assert(SUCCEEDED(hr));
 
+    BE_LOG("MaxSamplerDescriptorHeapSize: %u\n", features.MaxSamplerDescriptorHeapSize());
+    BE_LOG("MaxSamplerDescriptorHeapSizeWithStaticSamplers: %u\n", features.MaxSamplerDescriptorHeapSizeWithStaticSamplers());
+
     resourceHeapTier = features.ResourceHeapTier();
 
     //features.ResourceBindingTier();
@@ -625,7 +628,7 @@ void D3D12Renderer::FreeGenMipmapsPSO() {
 }
 
 void D3D12Renderer::Shutdown() {
-    ProcessResourceRequests(nullptr);
+    FlushResourceRequests(nullptr);
 
     DrainReleaseRequestsToRetireList();
 
@@ -1088,6 +1091,10 @@ void D3D12Renderer::ClearUAV(RHI::CommandList *commandList, const RHI::GPUResour
 
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     D3D12DescriptorRangePool *descriptorTablePool = _commandList->resourceDescriptorRangePool;
+    if (!descriptorTablePool) {
+        BE_ERRLOG("D3D12Renderer::ClearUAV: requires a transient resource descriptor pool\n");
+        return;
+    }
 
     D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorTableStart;
     D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTableStart;
@@ -1873,73 +1880,97 @@ void D3D12Renderer::WaitCommandList(RHI::CommandList *waitingCommandList, RHI::C
 
 void D3D12Renderer::Draw(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t startVertexLocation) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
 }
 
 void D3D12Renderer::DrawIndexed(RHI::CommandList *commandList, uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
 void D3D12Renderer::DrawInstanced(RHI::CommandList *commandList, uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 void D3D12Renderer::DrawIndexedInstanced(RHI::CommandList *commandList, uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, uint32_t baseVertexLocation, uint32_t startInstanceLocation) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 void D3D12Renderer::DrawInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 
 void D3D12Renderer::DrawInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
 }
 
 void D3D12Renderer::DrawIndexedInstancedIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawIndexedInstancedIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 
 void D3D12Renderer::DrawIndexedInstancedIndirectCount(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset, const RHI::Buffer *countBuffer, uint32_t countOffset, uint32_t maxCount) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->ExecuteIndirect(drawIndexedInstancedIndirectCommandSignature, maxCount, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, static_cast<const D3D12Buffer *>(countBuffer)->GetResource(), countOffset);
 }
 
 void D3D12Renderer::Dispatch(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void D3D12Renderer::DispatchIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 
 void D3D12Renderer::DispatchMesh(RHI::CommandList *commandList, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->DispatchMesh(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void D3D12Renderer::DispatchMeshIndirect(RHI::CommandList *commandList, const RHI::Buffer *argsBuffer, uint32_t argsOffset) {
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    BindRootParameters(_commandList);
+    if (!BindRootParameters(_commandList)) {
+        return;
+    }
     _commandList->GetGraphicsCommandList()->ExecuteIndirect(dispatchMeshIndirectCommandSignature, 1, static_cast<const D3D12Buffer *>(argsBuffer)->GetResource(), argsOffset, nullptr, 0);
 }
 

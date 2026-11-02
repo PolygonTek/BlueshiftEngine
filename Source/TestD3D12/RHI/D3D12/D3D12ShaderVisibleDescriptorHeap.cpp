@@ -16,10 +16,6 @@
 #include "D3D12ShaderVisibleDescriptorHeap.h"
 
 void D3D12ShaderVisibleDescriptorHeap::Init(ID3D12Device *device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT maxCount) {
-    assert(device);
-    assert(maxCount > 0);
-    assert(!descriptorHeap);
-
     maxDescriptorCount = maxCount;
     handleIncrement = device->GetDescriptorHandleIncrementSize(type);
 
@@ -72,6 +68,7 @@ uint32_t D3D12BindlessDescriptorAllocator::Alloc() {
 void D3D12BindlessDescriptorAllocator::Free(uint32_t index) {
     assert(index != NullIndex);
     assert(index < region.descriptorCount);
+
     if (index == NullIndex) {
         return;
     }
@@ -80,32 +77,91 @@ void D3D12BindlessDescriptorAllocator::Free(uint32_t index) {
     idAllocator.FreeID(index - 1);
 }
 
-void D3D12DescriptorRangePool::Init(const D3D12DescriptorHeapRegion &region) {
+void D3D12DescriptorRangeAllocator::Init(const D3D12DescriptorHeapRegion &region) {
     assert(region.descriptorHeap);
     assert(region.descriptorCount > 0);
 
     this->region = region;
-    usedCount = 0;
+    Reset();
+}
+
+bool D3D12DescriptorRangeAllocator::AllocRange(UINT count, UINT preferredCount, D3D12DescriptorHeapRegion *outSubregion) {
+    assert(outSubregion);
+
+    // 스레드 세이프하게 블럭으로 배정한 디스크립터 수를 증가시킨다.
+    UINT offset = allocatedCount.load(std::memory_order_relaxed);
+    for (;;) {
+        const UINT availableCount = region.descriptorCount - offset;
+        if (count == 0 || count > availableCount) {
+            return false;
+        }
+
+        const UINT newAllocCount = BE1::Min(availableCount, BE1::Max(count, preferredCount));
+        if (allocatedCount.compare_exchange_weak(offset, offset + newAllocCount, std::memory_order_relaxed)) {
+            *outSubregion = { region.descriptorHeap, region.baseDescriptorIndex + offset, newAllocCount };
+            return true;
+        }
+    }
+}
+
+void D3D12DescriptorRangePool::Init(const D3D12DescriptorHeapRegion &region) {
+    assert(region.descriptorHeap);
+    assert(region.descriptorCount > 0);
+
+    this->currentBlock = region;
+    this->currentBlockOffset = 0;
+    this->blockSize = 0;
+    this->blockAllocator = nullptr;
+}
+
+void D3D12DescriptorRangePool::Init(D3D12DescriptorRangeAllocator *blockAllocator, UINT blockSize) {
+    assert(blockAllocator && blockAllocator->GetRegion().descriptorHeap);
+    assert(blockSize > 0);
+
+    this->currentBlock = { blockAllocator->GetRegion().descriptorHeap, 0, 0 };
+    this->currentBlockOffset = 0;
+    this->blockSize = blockSize;
+    this->blockAllocator = blockAllocator;
 }
 
 void D3D12DescriptorRangePool::Shutdown() {
-    region = {};
-    usedCount = 0;
+    currentBlock = {};
+    currentBlockOffset = 0;
+    blockSize = 0;
+    blockAllocator = nullptr;
+}
+
+void D3D12DescriptorRangePool::Reset() {
+    currentBlockOffset = 0;
+
+    if (blockAllocator) {
+        // 이전 블럭 참조를 초기화한다.
+        currentBlock.baseDescriptorIndex = 0;
+        currentBlock.descriptorCount = 0;
+    }
 }
 
 bool D3D12DescriptorRangePool::AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
-    if (usedCount + count > region.descriptorCount) {
-        BE_WARNLOG("D3D12DescriptorRangePool::AllocRange: exceeds the descriptor region count\n");
+    if (count == 0) {
         return false;
     }
 
-    if (outCpuDescriptorHandle) {
-        *outCpuDescriptorHandle = region.GetCPUDescriptorHandleFromOffset(usedCount);
-    }
-    if (outGpuDescriptorHandle) {
-        *outGpuDescriptorHandle = region.GetGPUDescriptorHandleFromOffset(usedCount);
+    if (count > GetRemainingInBlock()) {
+        // 현재 블럭에 남은 슬롯이 부족하면 새 블럭을 확보한다.
+        if (!blockAllocator || !blockAllocator->AllocRange(count, blockSize, &currentBlock)) {
+            BE_WARNLOG("D3D12DescriptorRangePool::AllocRange: out of transient descriptors\n");
+            return false;
+        }
+        currentBlockOffset = 0;
     }
 
-    usedCount += count;
+    if (outCpuDescriptorHandle) {
+        *outCpuDescriptorHandle = currentBlock.GetCPUDescriptorHandleFromOffset(currentBlockOffset);
+    }
+    if (outGpuDescriptorHandle) {
+        *outGpuDescriptorHandle = currentBlock.GetGPUDescriptorHandleFromOffset(currentBlockOffset);
+    }
+
+    currentBlockOffset += count;
     return true;
 }

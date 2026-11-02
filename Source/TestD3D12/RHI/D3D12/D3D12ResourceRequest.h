@@ -86,4 +86,6 @@ struct D3D12ResourceCommandContext {
 
     bool                                IsComputeCommandListUsed() const { return computeCommandList != nullptr; }
     D3D12CommandList *                  GetComputeCommandList();
+
+    void                                CloseAndExecute();
 };

@@ -38,7 +38,7 @@ static constexpr uint32_t   FrameLightChunkCapacity = 1024;
 
 static_assert(std::is_trivially_destructible<FrameOceanSurface>::value, "FrameOceanSurface must not require destruction before the frame arena is reset");
 
-void RenderFrame::Init(int32_t frameIndex, int32_t numFrames) {
+void RenderFrame::Init(int32_t contextIndex, int32_t numContexts, int32_t frameIndex, int32_t numFrames) {
     frameArena.Init(FrameMemoryBlockSize, FrameMemoryAlignment);
 
 #ifdef USE_RENDER_TASK
@@ -49,11 +49,13 @@ void RenderFrame::Init(int32_t frameIndex, int32_t numFrames) {
     numRenderTaskThreads = 1;
 #endif
 
+    frameData = RHI::renderer->CreateFrameData(contextIndex, numContexts, frameIndex, numFrames);
+
     threadData = new RHI::FrameThreadData *[numRenderTaskThreads];
 
     // 필요한 만큼 렌더 태스크 스레드 데이터를 준비한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {
-        threadData[threadIndex] = RHI::renderer->CreateFrameThreadData(frameIndex, numFrames, threadIndex, numRenderTaskThreads);
+        threadData[threadIndex] = RHI::renderer->CreateFrameThreadData(frameData, threadIndex, numRenderTaskThreads);
     }
 
     if (!shaderMaterialTable.Init()) {
@@ -82,6 +84,9 @@ void RenderFrame::Shutdown() {
 
     delete [] threadData;
     threadData = nullptr;
+
+    RHI::renderer->DestroyFrameData(frameData);
+    frameData = nullptr;
 
     FreeFrameLights();
 
@@ -144,6 +149,9 @@ void RenderFrame::BeginFrame(const RenderFrameSettings &renderFrameSettings) {
     maxShaderSurfaceCount = 0;
     numLightCullingZBins = 0;
     numLightCullingWords = 0;
+
+    // 프레임 자원을 초기화한다.
+    frameData->Reset();
 
     // 스레드 별로 사용할 자원을 초기화한다.
     for (int32_t threadIndex = 0; threadIndex < numRenderTaskThreads; ++threadIndex) {

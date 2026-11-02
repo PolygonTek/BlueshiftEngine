@@ -89,7 +89,9 @@ public:
     void                                ShutdownImGuiOverlayRenderer(D3D12ImGuiOverlay *overlay);
     bool                                UpdateImGuiOverlayTextures(D3D12ImGuiOverlay *overlay, ImVector<ImTextureData *> *textures);
 
-    virtual RHI::FrameThreadData *      CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) override;
+    virtual RHI::FrameData *            CreateFrameData(int32_t partitionIndex, int32_t numPartitions, int32_t frameIndex, int32_t numFrames) override;
+    virtual void                        DestroyFrameData(RHI::FrameData *frameData) override;
+    virtual RHI::FrameThreadData *      CreateFrameThreadData(RHI::FrameData *frameData, int32_t threadIndex, int32_t numRenderTaskThreads) override;
     virtual void                        DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) override;
 
     void                                RequestRelease(ID3D12Resource *resource);
@@ -97,12 +99,13 @@ public:
     virtual void                        FreeRetiredResources(bool waitPendings = false) override;
 
     void                                EnqueueResourceRequest(D3D12ResourceRequest&& request);
-    virtual void                        ProcessResourceRequests(RHI::FrameThreadData *frameThreadData) override;
-    virtual void                        FlushResourceRequests() override;
+    bool                                DequeueResourceRequests(BE1::Array<D3D12ResourceRequest> &outRequests);
+    virtual void                        FlushResourceRequests(RHI::FrameThreadData *frameThreadData) override;
+    virtual void                        FinishResourceRequests(RHI::FrameThreadData *frameThreadData) override;
 
     void                                DeleteGPUObject(RHI::GPUObject *object);
 
-    void                                ExecuteResourceRequests(BE1::Array<D3D12ResourceRequest> &requests, D3D12ResourceCommandContext *commandContext);
+    void                                ExecuteResourceRequests(D3D12ResourceRequest *requests, int numRequests, D3D12ResourceCommandContext *commandContext);
     bool                                ExecuteUploadBuffer(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferRequest &request);
     bool                                ExecuteUploadBufferSubData(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferSubDataRequest &request);
     bool                                ExecuteUploadTexture(D3D12ResourceCommandContext &commandContext, D3D12Texture *texture, const D3D12UploadTextureRequest &request);
@@ -259,7 +262,7 @@ public:
     bool                                LoadCompiledShader(const char *name, const uint64_t hash, byte **compiledShaderDataPtr, uint32_t *compiledShaderDataSizePtr);
     void                                WriteCompiledShader(const char *name, const uint64_t hash, const byte *compiledShaderData, uint32_t compiledShaderDataSize, const BE1::Array<RHI::ShaderSourceDependency> &dependencies);
 
-    void                                BindRootParameters(D3D12CommandList *commandList);
+    bool                                BindRootParameters(D3D12CommandList *commandList);
 
     void                                CreateDevice(IDXGIAdapter1 **adapterPtr);
     void                                CreateShaderCompiler();
@@ -294,7 +297,7 @@ public:
     static constexpr uint32_t           MaxPersistentResourceDescriptors = 500000; // 앞부분 절반을 Bindless Resource 에 사용한다.
     static constexpr uint32_t           MaxTransientResourceDescriptors = MaxShaderVisibleResourceDescriptors - MaxPersistentResourceDescriptors;
     static constexpr uint32_t           MaxShaderVisibleSamplerDescriptors = 2048;
-    static constexpr uint32_t           MaxPersistentSamplerDescriptors = 256;
+    static constexpr uint32_t           MaxPersistentSamplerDescriptors = 64;
     static constexpr uint32_t           MaxTransientSamplerDescriptors = MaxShaderVisibleSamplerDescriptors - MaxPersistentSamplerDescriptors;
 
     struct D3D12QueueFence {

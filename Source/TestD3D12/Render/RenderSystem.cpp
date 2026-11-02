@@ -59,8 +59,6 @@ void RenderSystem::Init(void *mainWindowHandle) {
 
     CreateColorGradingLUT();
 
-    UploadEngineTextures();
-
     shaderTemplateManager.Init();
 
     shaderPipelineBootstrap.BeginCollection(128);
@@ -241,7 +239,29 @@ void RenderSystem::UpdateFrame() {
     }
 }
 
+int32_t RenderSystem::FindFreeRenderContextIndex() const {
+    uint32_t usedContextSlots = 0;
+    for (const RenderContext *context : renderContexts) {
+        usedContextSlots |= 1u << context->contextIndex;
+    }
+
+    for (int32_t contextIndex = 0; contextIndex < MaxRenderContexts; ++contextIndex) {
+        if (!(usedContextSlots & (1u << contextIndex))) {
+            return contextIndex;
+        }
+    }
+    return -1;
+}
+
 RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain) {
+    assert(BE1::Engine::IsInMainThread());
+
+    const int32_t contextIndex = FindFreeRenderContextIndex();
+    if (contextIndex < 0) {
+        BE_WARNLOG("RenderSystem::CreateRenderContext: maximum of %i render contexts reached\n", MaxRenderContexts);
+        return nullptr;
+    }
+
     if (isMain && mainRenderContext) {
         BE_FATALERROR("RenderSystem::CreateRenderContext: main render context already exists");
         return nullptr;
@@ -250,17 +270,21 @@ RenderContext *RenderSystem::CreateRenderContext(void *windowHandle, bool isMain
     const BE1::Color4 baseClearColor = BE1::Color4::darkBlue;
 
     RenderContext *renderContext = new RenderContext;
-    renderContext->Init(windowHandle, baseClearColor);
+    renderContext->Init(contextIndex, windowHandle, baseClearColor);
     renderContexts.Append(renderContext);
 
     if (isMain) {
         mainRenderContext = renderContext;
+
+        UploadEngineTextures(renderContext->GetCurrentFrontendFrame()->GetThreadData(0));
     }
 
     return renderContext;
 }
 
 void RenderSystem::DestroyRenderContext(RenderContext *renderContext) {
+    assert(BE1::Engine::IsInMainThread());
+
     if (IsUsingRenderThread()) {
         WaitContextRenderCompleted(renderContext);
     }
@@ -444,9 +468,9 @@ void RenderSystem::InitSTBNTextures() {
     stbnUnitVec3CosineTexture = LoadSTBNTexture("Data/EngineTextures/STBN/STBNUnitVec3Cosine.dds", BE1::Image::Format::R8G8B8A8);
 }
 
-void RenderSystem::UploadEngineTextures() {
-    // 렌더 컨텍스트와 비동기 에셋 로딩을 시작하기 전에 필수 엔진 텍스처를 일괄 업로드한다.
-    RHI::renderer->FlushResourceRequests();
+void RenderSystem::UploadEngineTextures(RHI::FrameThreadData *frameThreadData) {
+    // 메인 렌더 컨텍스트의 첫 프레임 자원으로 렌더링 시작 전에 필수 엔진 텍스처 업로드를 완료한다.
+    RHI::renderer->FinishResourceRequests(frameThreadData);
 
     const Texture *engineTextures[] = {
         textureManager.missingTexture.get(),

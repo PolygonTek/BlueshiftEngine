@@ -1005,6 +1005,7 @@ ID3D12PipelineState *D3D12Renderer::CreatePSOFromLibrary(const D3D12_PIPELINE_ST
 
 void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) {
     assert(pipelineState);
+
     D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
     _commandList->SetPipelineState(pipelineState);
 
@@ -1014,14 +1015,14 @@ void D3D12Renderer::SetPSO(RHI::CommandList *commandList, const RHI::PipelineSta
 }
 
 // Draw 나 Dispatch 직전에 호출된다.
-void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
+bool D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
     bool isGraphicsPSO = commandList->currentPSO->isGraphics;
 
     // NOTE: 64 bit dirty mask 를 이용해서 바뀐 루트 파라미터들만 바인딩한다.
     // 전체 리소스 바인딩 중 일부만 바꾸는 경우 안바뀐 부분의 리소스 바인딩을 생략할 수 있다.
     uint64_t &rootParameterDirtyMask = isGraphicsPSO ? commandList->graphicsRootParametersDirtyMask : commandList->computeRootParametersDirtyMask;
     if (rootParameterDirtyMask == 0) {
-        return;
+        return true;
     }
 
     D3D12RootBindingData *rootBindingData = commandList->GetRootBindingData();
@@ -1039,7 +1040,6 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
         if (!(rootParameterDirtyMask & rootParameterBitMask)) {
             continue;
         }
-        rootParameterDirtyMask ^= rootParameterBitMask;
 
         const D3D12_ROOT_PARAMETER1 *rootParameter = &rootSignatureDesc.pParameters[rootParameterIndex];
 
@@ -1066,7 +1066,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
                     const D3D12_CPU_DESCRIPTOR_HANDLE &srcDescriptorHandle = rootBindingData->tableDescriptorHandles[rootParameterIndex][numTableDescriptors];
                     if (srcDescriptorHandle.ptr == 0) {
                         BE_ERRLOG("D3D12Renderer::BindRootParameters: Descriptor table contains an invalid descriptor handle\n");
-                        return;
+                        return false;
                     }
 
                     srcCpuDescriptorHandles[numTableDescriptors] = srcDescriptorHandle;
@@ -1077,7 +1077,7 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             // 루트 시그니처에 있는 디스크립터 테이블에 디스크립터가 하나도 없다?
             if (numTableDescriptors <= 0) {
                 assert(0);
-                continue;
+                return false;
             }
 
             D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType;
@@ -1095,8 +1095,8 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
             D3D12_GPU_DESCRIPTOR_HANDLE destGpuDescriptorTableBase;
 
             // 유효한 source 디스크립터들을 확인한 뒤, 연속된 디스크립터 슬롯들을 할당한다.
-            if (!descriptorRangePool->AllocRange(numTableDescriptors, &destCpuDescriptorTableBase, &destGpuDescriptorTableBase)) {
-                return;
+            if (!descriptorRangePool || !descriptorRangePool->AllocRange(numTableDescriptors, &destCpuDescriptorTableBase, &destGpuDescriptorTableBase)) {
+                return false;
             }
 
             const UINT destDescriptorRangeSize = numTableDescriptors; // 하나의 destination range 에 포함되는 디스크립터 개수
@@ -1155,5 +1155,8 @@ void D3D12Renderer::BindRootParameters(D3D12CommandList *commandList) {
                 }
             }
         }
+
+        rootParameterDirtyMask &= ~rootParameterBitMask;
     }
+    return true;
 }

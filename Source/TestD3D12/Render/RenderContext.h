@@ -106,7 +106,7 @@ public:
 
     RenderContext() = default;
 
-    void                            Init(void *windowHandle, const BE1::Color4 &baseClearColor = BE1::Color4::black);
+    void                            Init(int32_t contextIndex, void *windowHandle, const BE1::Color4 &baseClearColor = BE1::Color4::black);
     void                            Shutdown();
 
     bool                            BeginFrame(const FrameOptions &options);
@@ -208,6 +208,7 @@ private:
     void                            UpdateGpuTagFrameTimes(const float tagFrameMsec[static_cast<int>(GpuTiming::Tag::Count)], uint64_t measuredTagMask);
     void                            SetStats(const Stats &stats);
 
+    int32_t                         contextIndex = -1;
     void *                          windowHandle = nullptr;
     RHI::SwapChain *                swapChain = nullptr;
     RHI::DisplayInfo                displayInfo;

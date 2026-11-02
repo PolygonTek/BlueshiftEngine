@@ -74,6 +74,8 @@ set(SRC_FILES
     RHI/D3D12/D3D12CommandList.cpp
     RHI/D3D12/D3D12CommandListPool.h
     RHI/D3D12/D3D12CommandListPool.cpp
+    RHI/D3D12/D3D12FrameData.h
+    RHI/D3D12/D3D12FrameData.cpp
     RHI/D3D12/D3D12FrameThreadData.h
     RHI/D3D12/D3D12FrameThreadData.cpp
     RHI/D3D12/D3D12ImGuiRenderer.h

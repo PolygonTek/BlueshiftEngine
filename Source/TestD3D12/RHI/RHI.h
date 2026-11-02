@@ -1033,6 +1033,14 @@ namespace RHI {
         virtual bool                    WantsCaptureKeyboard() const = 0;
     };
 
+    class FrameData {
+    public:
+        virtual ~FrameData() = default;
+
+                                        // 이 프레임의 CPU 기록과 GPU 사용이 끝난 뒤, 모든 FrameThreadData::Reset 보다 먼저 호출한다.
+        virtual void                    Reset() = 0;
+    };
+
     class FrameThreadData {
     public:
         virtual ~FrameThreadData() = default;
@@ -1147,15 +1155,21 @@ namespace RHI {
         virtual void                    RenderImGuiDrawData(FrameThreadData *frameThreadData, CommandList *commandList, ImGuiOverlay *overlay, void *userData) = 0;
         virtual void                    FreeImGuiDrawData(ImGuiOverlay *overlay, void *userData) = 0;
 
-        virtual RHI::FrameThreadData *  CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) = 0;
+        virtual FrameData *             CreateFrameData(int32_t partitionIndex, int32_t numPartitions, int32_t frameIndex, int32_t numFrames) = 0;
+        virtual void                    DestroyFrameData(FrameData *frameData) = 0;
+        virtual FrameThreadData *       CreateFrameThreadData(FrameData *frameData, int32_t threadIndex, int32_t numRenderTaskThreads) = 0;
         virtual void                    DestroyFrameThreadData(FrameThreadData *frameThreadData) = 0;
 
         virtual void                    DrainReleaseRequestsToRetireList() = 0;
         virtual void                    FreeRetiredResources(bool waitPendings = false) = 0;
-        virtual void                    ProcessResourceRequests(FrameThreadData *frameThreadData) = 0;
-                                        // 초기화 중 프레임 렌더링이나 다른 리소스 요청 처리와 겹치지 않게 호출한다.
-                                        // 대기 중인 요청과 처리 중 파생된 요청을 실행하고 GPU 완료 및 임시 리소스 해제까지 기다린다.
-        virtual void                    FlushResourceRequests() = 0;
+
+                                        // 현재 대기 중인 리소스 요청을 처리하고 GPU 에 제출하며, GPU 완료는 기다리지 않는다.
+                                        // frameThreadData 가 nullptr 인 종료 경로에서는 업로드와 밉맵 생성을 생략하고 해제 요청만 처리한다.
+        virtual void                    FlushResourceRequests(FrameThreadData *frameThreadData) = 0;
+
+                                        // 메인 스레드에서 백엔드 실행과 겹치지 않게, 기록 가능한 frameThreadData 를 전달한다.
+                                        // 대기 중인 요청과 파생 요청을 처리하고, 이전 Flush 의 작업을 포함해 GPU 완료까지 기다린다.
+        virtual void                    FinishResourceRequests(FrameThreadData *frameThreadData) = 0;
 
         const RasterizerState *         GetRasterizerState(RasterizerStateType type) const { return &rasterizerStates[to_int(type)]; }
         const DepthStencilState *       GetDepthStencilState(DepthStencilStateType type) const { return &depthStencilStates[to_int(type)]; }

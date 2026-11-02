@@ -24,20 +24,19 @@
 #include "D3D12RootBindingData.h"
 
 class D3D12DescriptorPool;
-class D3D12Renderer;
+class D3D12FrameData;
 
 /*
 ---------------------------------------------------------------------------------------------------
 
     Frame Thread Data
 
-    한 프레임 안에서 필요한 렌더링 태스크 스레드들의 데이터를 관리한다.
-    스레드 간 동기화를 피하기 위해 태스크 스레드 당 하나씩 생성된다.
+    한 프레임에서 한 렌더링 태스크 스레드가 사용하는 데이터를 관리한다.
 
     1. 다이나믹 버퍼 (프런트엔드/백엔드 모두 사용)
     2. 커맨드 리스트 풀 (백엔드에서만 사용)
-        * 0번 스레드 데이터만 프라이머리 커맨드 리스트와 컴퓨트 커맨드 리스트 풀을 갖는다.
-        * 나머지 스레드 데이터들은 세컨더리 커맨드 리스트만 갖는다.
+        * 0번 스레드 데이터 : 프라이머리/세컨더리를 지원하는 그래픽스 풀과 컴퓨트 풀
+        * 그외 스레드 데이터 : 세컨더리만 지원하는 그래픽스 풀
     3. 루트 파라미터들의 바인딩 데이터
 
 ---------------------------------------------------------------------------------------------------
@@ -45,29 +44,29 @@ class D3D12Renderer;
 
 class D3D12FrameThreadData : public RHI::FrameThreadData {
 public:
-    void                            Init(D3D12Renderer *renderer, int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads);
+    void                            Init(D3D12FrameData *frameData, int32_t threadIndex, int32_t numRenderTaskThreads);
     void                            Shutdown();
 
-                                    // 프레임이 초기화 될 때 호출되어야 한다.
+                                    // 이번 프레임의 CPU/GPU 사용 완료 후, 공유 FrameData 를 먼저 리셋한 뒤 호출한다.
     virtual void                    Reset() override;
 
                                     // 정렬 패딩을 포함한 다이나믹 버퍼 사용량을 반환한다.
     virtual uint64_t                GetUsedBytes() const override;
 
                                     // 다이나믹 버퍼의 개별 할당 요청이 블럭 크기 상한을 넘으면 nullptr 을 반환한다.
-                                    // 다이나믹 버텍스 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
+                                    // 다이나믹 버텍스 버퍼를 할당한다. 리턴된 버퍼는 다음 Reset 호출전까지만 유효하다.
     virtual RHI::VertexBuffer *     AllocVertex(uint32_t vertexSize, uint32_t count, const void *data = nullptr) override;
 
-                                    // 다이나믹 인덱스 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
+                                    // 다이나믹 인덱스 버퍼를 할당한다. 리턴된 버퍼는 다음 Reset 호출전까지만 유효하다.
     virtual RHI::IndexBuffer *      AllocIndex(uint32_t indexSize, uint32_t count, const void *data = nullptr) override;
 
-                                    // 다이나믹 컨스턴트 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
+                                    // 다이나믹 컨스턴트 버퍼를 할당한다. 리턴된 버퍼는 다음 Reset 호출전까지만 유효하다.
     virtual RHI::ConstantBuffer *   AllocConstant(uint32_t size, const void *data = nullptr) override;
 
-                                    // 다이나믹 (raw) 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
+                                    // 다이나믹 (raw) 버퍼를 할당한다. 리턴된 버퍼는 다음 Reset 호출전까지만 유효하다.
     virtual RHI::Buffer *           AllocRawBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr) override;
 
-                                    // 다이나믹 (structured) 버퍼를 할당한다. Reset 이 호출되면 할당된 버퍼는 모두 해제된다.
+                                    // 다이나믹 (structured) 버퍼를 할당한다. 리턴된 버퍼는 다음 Reset 호출전까지만 유효하다.
     virtual RHI::Buffer *           AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) override;
 
                                     // 다이나믹 버텍스 버퍼에 데이터를 추가한다.
@@ -110,8 +109,8 @@ private:
     D3D12CommandListPool *          graphicsCommandListPool = nullptr;
     D3D12CommandListPool *          computeCommandListPool = nullptr;
     D3D12RootBindingData            rootBindingData = {}; // 루트 파라미터들에 대한 바인딩 리소스 정보
-    D3D12DescriptorRangePool *      resourceDescriptorRangePool = nullptr; // Common resource (CBV/SRV/UAV) 디스크립터 테이블 풀
-    D3D12DescriptorRangePool *      samplerDescriptorRangePool = nullptr; // Sampler 디스크립터 테이블 풀
+    D3D12DescriptorRangePool        resourceDescriptorRangePool; // 스레드 로컬 Common resource (CBV/SRV/UAV) 디스크립터 테이블 풀
+    D3D12DescriptorRangePool        samplerDescriptorRangePool; // 스레드 로컬 Sampler 디스크립터 테이블 풀
 
 };
 
@@ -119,7 +118,7 @@ BE_INLINE RHI::CommandList *D3D12FrameThreadData::AllocGraphicsCommandList(RHI::
     D3D12CommandList *commandList = graphicsCommandListPool->Alloc(kind);
 
     // 커맨드 리스트에서 사용할 디스크립터 레인지 풀을 지정한다.
-    commandList->SetDescriptorTablePools(resourceDescriptorRangePool, samplerDescriptorRangePool);
+    commandList->SetDescriptorTablePools(&resourceDescriptorRangePool, &samplerDescriptorRangePool);
     return commandList;
 }
 
@@ -127,6 +126,6 @@ BE_INLINE RHI::CommandList *D3D12FrameThreadData::AllocComputeCommandList() {
     D3D12CommandList *commandList = computeCommandListPool->Alloc();
 
     // 커맨드 리스트에서 사용할 디스크립터 레인지 풀을 지정한다.
-    commandList->SetDescriptorTablePools(resourceDescriptorRangePool, samplerDescriptorRangePool);
+    commandList->SetDescriptorTablePools(&resourceDescriptorRangePool, &samplerDescriptorRangePool);
     return commandList;
 }

@@ -15,13 +15,32 @@
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
 #include "D3D12FrameThreadData.h"
+#include "D3D12FrameData.h"
 #include "D3D12DescriptorPool.h"
 #include "D3D12ShaderVisibleDescriptorHeap.h"
+
+RHI::FrameThreadData *D3D12Renderer::CreateFrameThreadData(RHI::FrameData *frameData, int32_t threadIndex, int32_t numRenderTaskThreads) {
+    assert(BE1::Engine::IsInMainThread());
+
+    D3D12FrameThreadData *_frameThreadData = new D3D12FrameThreadData;
+    _frameThreadData->Init(static_cast<D3D12FrameData *>(frameData), threadIndex, numRenderTaskThreads);
+    return _frameThreadData;
+}
+
+void D3D12Renderer::DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) {
+    assert(BE1::Engine::IsInMainThread());
+
+    D3D12FrameThreadData *_frameThreadData = static_cast<D3D12FrameThreadData *>(frameThreadData);
+    _frameThreadData->Shutdown();
+    delete _frameThreadData;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------------
 
 static constexpr uint32_t DynamicBufferBlockMinSize = 1u << 22; // 4MB
 static constexpr uint32_t DynamicBufferBlockMaxSize = (1u << 31) - D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
 static_assert(DynamicBufferBlockMaxSize <= INT_MAX);
-static_assert(DynamicBufferBlockMaxSize % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
+static_assert(DynamicBufferBlockMaxSize %D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
 
 D3D12FrameThreadData::DynamicBufferBlock::DynamicBufferBlock(uint32_t size) {
     assert(size <= DynamicBufferBlockMaxSize);
@@ -29,59 +48,27 @@ D3D12FrameThreadData::DynamicBufferBlock::DynamicBufferBlock(uint32_t size) {
     // 블럭 단위로 관리할 다이나믹 버퍼 (업로드 버퍼) 를 생성한다.
     // CB/VB/IB/SR 용으로 사용할 수 있다.
     buffer = static_cast<D3D12Buffer *>(RHI::renderer->CreateBuffer(RHI::BufferUsage::Upload,
-        RHI::BufferFlag::ConstantBuffer |
-        RHI::BufferFlag::VertexBuffer |
-        RHI::BufferFlag::IndexBuffer |
-        RHI::BufferFlag::ShaderResource,
-        size, nullptr));
+        RHI::BufferFlag::ConstantBuffer | RHI::BufferFlag::VertexBuffer | RHI::BufferFlag::IndexBuffer | RHI::BufferFlag::ShaderResource, size, nullptr));
 }
 
 D3D12FrameThreadData::DynamicBufferBlock::~DynamicBufferBlock() {
     RHI::renderer->DestroyBuffer(buffer);
 }
 
-RHI::FrameThreadData *D3D12Renderer::CreateFrameThreadData(int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numRenderTaskThreads) {
-    D3D12FrameThreadData *_frameThreadData = new D3D12FrameThreadData;
-    _frameThreadData->Init(this, frameIndex, numFrames, threadIndex, numRenderTaskThreads);
-    return _frameThreadData;
-}
-
-void D3D12Renderer::DestroyFrameThreadData(RHI::FrameThreadData *frameThreadData) {
-    D3D12FrameThreadData *_frameThreadData = static_cast<D3D12FrameThreadData *>(frameThreadData);
-    _frameThreadData->Shutdown();
-    delete _frameThreadData;
-}
-
-void D3D12FrameThreadData::Init(D3D12Renderer *renderer, int32_t frameIndex, int32_t numFrames, int32_t threadIndex, int32_t numThreads) {
-    assert(renderer);
-    assert(frameIndex >= 0 && frameIndex < numFrames);
-    assert(numFrames > 0);
-    assert(threadIndex >= 0 && threadIndex < numThreads);
-    assert(numThreads > 0);
+void D3D12FrameThreadData::Init(D3D12FrameData *frameData, int32_t threadIndex, int32_t numThreads) {
+    assert(frameData);
+    assert(numThreads > 0 && threadIndex >= 0 && threadIndex < numThreads);
 
     constexpr uint32_t maxPrimaryCommandLists = 8;
     constexpr uint32_t maxSecondaryCommandLists = 8;
+    constexpr UINT resourceDescriptorBlockSize = 256;
 
-    const uint32_t numResourceDescriptorsPerFrame = D3D12Renderer::MaxTransientResourceDescriptors / numFrames;
-    const uint32_t numSamplerDescriptorsPerFrame = D3D12Renderer::MaxTransientSamplerDescriptors / numFrames;
+    // 프레임의 공유 디스크립터 힙 영역에서 블럭을 공급받는 스레드별 풀을 초기화한다.
+    // 실제 할당 요청이 올 때까지 블럭을 확보하지 않는다.
+    resourceDescriptorRangePool.Init(&frameData->descriptorAllocators[D3D12FrameData::Resource], resourceDescriptorBlockSize);
 
-    const uint32_t numResourceDescriptorsPerThread = numResourceDescriptorsPerFrame / numThreads;
-    assert(numResourceDescriptorsPerThread > 0);
-
-    const uint32_t numSamplerDescriptorsPerThread = numSamplerDescriptorsPerFrame / numThreads;
-    assert(numSamplerDescriptorsPerThread > 0);
-
-    UINT baseResourceDescriptorIndex = D3D12Renderer::MaxPersistentResourceDescriptors + frameIndex * numResourceDescriptorsPerFrame + threadIndex * numResourceDescriptorsPerThread;
-    UINT baseSamplerDescriptorIndex = D3D12Renderer::MaxPersistentSamplerDescriptors + frameIndex * numSamplerDescriptorsPerFrame + threadIndex * numSamplerDescriptorsPerThread;
-
-    // shader-visible 힙의 후반 절반 영역은 엔진 용어로 transient 영역이라고 부른다.
-    // transient 영역은 한 프레임에서만 수명이 보존되는 디스크립터 힙 영역이다.
-    // 프레임/스레드별로 나누어 descriptor range pool 로 관리한다.
-    resourceDescriptorRangePool = new D3D12DescriptorRangePool;
-    resourceDescriptorRangePool->Init({&renderer->resourceShaderVisibleDescriptorHeap, baseResourceDescriptorIndex, numResourceDescriptorsPerThread});
-
-    samplerDescriptorRangePool = new D3D12DescriptorRangePool;
-    samplerDescriptorRangePool->Init({&renderer->samplerShaderVisibleDescriptorHeap, baseSamplerDescriptorIndex, numSamplerDescriptorsPerThread});
+    // Sampler 영역은 작으므로 블럭을 미리 확보하지 않고 필요한 개수만 확보한다. (블럭 크기 = 1)
+    samplerDescriptorRangePool.Init(&frameData->descriptorAllocators[D3D12FrameData::Sampler], 1);
 
     if (threadIndex == 0) {
         // 그래픽스 (Direct) 커맨드 리스트 풀을 생성한다.
@@ -118,8 +105,9 @@ void D3D12FrameThreadData::Shutdown() {
     SAFE_DELETE(dynamicResDescriptorPool);
     SAFE_DELETE(graphicsCommandListPool);
     SAFE_DELETE(computeCommandListPool);
-    SAFE_DELETE(resourceDescriptorRangePool);
-    SAFE_DELETE(samplerDescriptorRangePool);
+
+    resourceDescriptorRangePool.Shutdown();
+    samplerDescriptorRangePool.Shutdown();
 }
 
 void D3D12FrameThreadData::Reset() {
@@ -138,9 +126,9 @@ void D3D12FrameThreadData::Reset() {
     dynamicIndexBuffers.Reset();
     dynamicBuffers.Reset();
 
-    // 디스크립터 테이블 풀을 비운다.
-    resourceDescriptorRangePool->Reset();
-    samplerDescriptorRangePool->Reset();
+    // 디스크립터 풀을 비운다.
+    resourceDescriptorRangePool.Reset();
+    samplerDescriptorRangePool.Reset();
 
     // 커맨드 리스트 풀을 비운다.
     graphicsCommandListPool->Clear();

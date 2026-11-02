@@ -58,7 +58,7 @@ void RenderBackend::Execute(RenderFrame *frame) {
     RHI::renderer->FreeRetiredResources(false);
 
     // 리소스 요청 처리
-    RHI::renderer->ProcessResourceRequests(frame->GetThreadData(0));
+    RHI::renderer->FlushResourceRequests(frame->GetThreadData(0));
 
     ExecuteFrame(frame);
 

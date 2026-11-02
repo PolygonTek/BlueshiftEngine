@@ -180,7 +180,7 @@ public:
         uint32_t                    firstOffset;
     };
 
-    void                            Init(int32_t frameIndex, int32_t numFrames);
+    void                            Init(int32_t contextIndex, int32_t numContexts, int32_t frameIndex, int32_t numFrames);
     void                            Shutdown();
 
                                     // 이번 프레임 동안 사용할 임시 시스템 메모리를 할당한다.
@@ -369,6 +369,7 @@ private:
 
     uint32_t                        maxShaderSurfaceCount = 0;
 
+    RHI::FrameData *                frameData = nullptr;
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
 

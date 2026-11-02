@@ -62,6 +62,8 @@ class RenderSystem {
     friend class ProbeBakeSystem;
 
 public:
+    static constexpr int32_t        MaxRenderContexts = 8;
+
     void                            Init(void *mainWindowHandle);
     void                            Shutdown();
 
@@ -169,10 +171,12 @@ public:
     const ProbeBakeSystem &         GetProbeBakeSystem() const { return probeBakeSystem; }
 
 private:
+    int32_t                         FindFreeRenderContextIndex() const;
+
     void                            InitRenderThread();
     void                            ShutdownRenderThread();
     void                            InitSTBNTextures();
-    void                            UploadEngineTextures();
+    void                            UploadEngineTextures(RHI::FrameThreadData *frameThreadData);
     void                            InitComputePipelines();
     void                            EnsureComputePipelines();
     void                            ReleaseComputePipelines();

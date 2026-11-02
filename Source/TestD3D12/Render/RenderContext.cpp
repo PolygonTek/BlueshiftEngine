@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"
-#include "Render/Backend/RenderBackend.h"
 #include "RenderCvars.h"
 #include "RenderInternal.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
@@ -25,7 +24,10 @@
 
 RenderContext *         RenderContext::activeContext = nullptr;
 
-void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) {
+void RenderContext::Init(int32_t contextIndex, void *windowHandle, const BE1::Color4 &baseClearColor) {
+    assert(contextIndex >= 0 && contextIndex < RenderSystem::MaxRenderContexts);
+
+    this->contextIndex = contextIndex;
     this->windowHandle = windowHandle;
 
     const RenderFrameSettings initialRenderFrameSettings = CaptureRenderFrameSettings();
@@ -33,7 +35,7 @@ void RenderContext::Init(void *windowHandle, const BE1::Color4 &baseClearColor) 
     // 프레임 별로 사용할 프레임 데이터들을 초기화한다.
     // 프레임 데이터: 임시 메모리, 커맨드 리스트 풀, 디스크립터 힙, 다이나믹 버퍼와 그 디스크립터 풀
     for (int32_t frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
-        frames[frameIndex].Init(frameIndex, NumFrames);
+        frames[frameIndex].Init(contextIndex, RenderSystem::MaxRenderContexts, frameIndex, NumFrames);
     }
 
     currentFrontendFrameIndex = 0;
