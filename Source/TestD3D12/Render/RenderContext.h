@@ -134,7 +134,7 @@ public:
     RHI::Texture *                  GetCSMDepthTexture() const { return csmDepthTexture; }
     RHI::ViewID                     GetCSMDepthSRV() const { return csmDepthSRV; }
     RHI::ViewID                     GetCSMDepthSliceDSV(uint32_t cascadeIndex) const { assert(cascadeIndex < CSMCascadeMaxCount); return csmDepthSliceDSVs[cascadeIndex]; }
-    RHI::Format                     GetCSMDepthFormat() const { return RHI::Format::D24_UNORM_S8_UINT; }
+    RHI::Format                     GetCSMDepthFormat() const { return RHI::Format::D16_UNORM; }
     uint32_t                        GetCSMResolution() const { return csmDepthTexture ? csmDepthTexture->GetWidth() : 0; }
 
     GuiMesh &                       GetGuiMesh() { return guiMesh; }

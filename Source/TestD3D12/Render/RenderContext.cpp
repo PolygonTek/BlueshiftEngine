@@ -317,10 +317,11 @@ bool RenderContext::EnsureCSMDepthTexture(uint32_t resolution) {
 }
 
 bool RenderContext::CreateCSMDepthTexture(uint32_t resolution) {
-    assert(resolution > 0);
+    BE1::Image::Format csmDepthImageFormat = BE1::Image::Format::Unknown;
+    RHI::Renderer::RHIFormatToImageFormat(GetCSMDepthFormat(), &csmDepthImageFormat, nullptr);
 
     SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
-    depthImage->Init2DArrayFromMemory(resolution, resolution, CSMCascadeMaxCount, 1, BE1::Image::Format::D24S8, BE1::Image::GammaSpace::Linear, nullptr);
+    depthImage->Init2DArrayFromMemory(resolution, resolution, CSMCascadeMaxCount, 1, csmDepthImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
 
     const RHI::TextureFlag textureFlags = RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless;
     const RHI::ClearValue optimizedClearValue = RHI::ClearValue::DepthStencil(0.0f, 0);

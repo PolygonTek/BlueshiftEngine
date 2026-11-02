@@ -1159,7 +1159,7 @@ void App::BuildImGuiOverlay() {
                                     if (ImGui::DragFloat("##ConstantDepthBias", &constantBias, 1.0f, 0.0f, 0.0f, "%.0f")) {
                                         constantBiasCvars[cascadeIndex]->SetFloat(constantBias);
                                     }
-                                    ImGui::SetItemTooltip("r_csmConstantDepthBias%d\nCtrl+click to enter a value. D24 depth units, rounded to an integer.", cascadeIndex);
+                                    ImGui::SetItemTooltip("r_csmConstantDepthBias%d\nCtrl+click to enter a value. D16 depth units, rounded to an integer.", cascadeIndex);
 
                                     ImGui::TableSetColumnIndex(2);
                                     ImGui::SetNextItemWidth(fontSize * 9.0f);

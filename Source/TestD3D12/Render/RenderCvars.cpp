@@ -73,10 +73,10 @@ CVAR_MINMAX(r_csmSplitLambda, "0.9", BE1::CVar::Flag::Float | BE1::CVar::Flag::A
 CVAR_MINMAX(r_csmMaxDistance, "150", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "maximum CSM distance in world units (0 = disabled)", 0.0f, 10000.0f);
 CVAR_MINMAX(r_csmBlendFraction, "0.05", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "fraction of each CSM map's normalized safe coverage used for cascade blending", 0.0f, 0.16f);
 CVAR_MINMAX(r_csmFadeFraction, "0.1", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "fraction of CSM receiver range used for distance fading", 0.01f, 1.0f);
-CVAR(r_csmConstantDepthBias0, "60000.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 0");
-CVAR(r_csmConstantDepthBias1, "22500.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 1");
-CVAR(r_csmConstantDepthBias2, "7800.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 2");
-CVAR(r_csmConstantDepthBias3, "2100.0", BE1::CVar::Flag::Float, "constant depth bias for CSM cascade 3");
+CVAR(r_csmConstantDepthBias0, "234.0", BE1::CVar::Flag::Float, "constant depth bias in D16 units for CSM cascade 0");
+CVAR(r_csmConstantDepthBias1, "88.0", BE1::CVar::Flag::Float, "constant depth bias in D16 units for CSM cascade 1");
+CVAR(r_csmConstantDepthBias2, "30.0", BE1::CVar::Flag::Float, "constant depth bias in D16 units for CSM cascade 2");
+CVAR(r_csmConstantDepthBias3, "8.0", BE1::CVar::Flag::Float, "constant depth bias in D16 units for CSM cascade 3");
 CVAR(r_csmSlopeScaledDepthBias0, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 0");
 CVAR(r_csmSlopeScaledDepthBias1, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 1");
 CVAR(r_csmSlopeScaledDepthBias2, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 2");
