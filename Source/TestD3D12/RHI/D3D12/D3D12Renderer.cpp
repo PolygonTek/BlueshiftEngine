@@ -113,8 +113,8 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     CreateDevice(&adapter1);
 
     // 어댑터 (그래픽 카드) 정보 얻어오기
-    DXGI_ADAPTER_DESC1 dxgiAdapterDesc;
-    adapter1->GetDesc1(&dxgiAdapterDesc);
+    DXGI_ADAPTER_DESC1 dxgiAdapterDesc = {};
+    const HRESULT adapterDescResult = adapter1->GetDesc1(&dxgiAdapterDesc);
     vendorId = dxgiAdapterDesc.VendorId;
     deviceId = dxgiAdapterDesc.DeviceId;
     dedicatedVideoMemSize = dxgiAdapterDesc.DedicatedVideoMemory;
@@ -123,6 +123,23 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
     char temp[128] = "";
     BE1::PlatformWinUtils::UCS2ToUTF8(dxgiAdapterDesc.Description, temp, COUNT_OF(temp));
     adapterName = temp;
+
+#ifdef USE_CACHED_PSO_BLOB
+    // 네이티브 PSO blob 은 GPU/드라이버에 종속된다. 환경을 식별하지 못하면 디스크 캐시를 사용하지 않는다.
+    LARGE_INTEGER driverVersion = {};
+    psoCacheEnvironmentHashValid = SUCCEEDED(adapterDescResult) && SUCCEEDED(adapter1->CheckInterfaceSupport(__uuidof(IDXGIDevice), &driverVersion)) && driverVersion.QuadPart != 0;
+    if (psoCacheEnvironmentHashValid) {
+        uint64_t environmentHash = hash_combine(0, driverVersion.QuadPart);
+        environmentHash = hash_combine(environmentHash, dxgiAdapterDesc.VendorId);
+        environmentHash = hash_combine(environmentHash, dxgiAdapterDesc.DeviceId);
+        environmentHash = hash_combine(environmentHash, dxgiAdapterDesc.SubSysId);
+        environmentHash = hash_combine(environmentHash, dxgiAdapterDesc.Revision);
+        environmentHash = hash_combine(environmentHash, D3D12SDKVersion);
+        psoCacheEnvironmentHash = environmentHash;
+    } else {
+        BE_WARNLOG("Could not identify the GPU/driver; native PSO disk cache is disabled\n");
+    }
+#endif
 
     rendererInfo.backendName = "DirectX 12";
     BE1::Str::Copynz(rendererInfo.deviceName, adapterName.c_str(), COUNT_OF(rendererInfo.deviceName));

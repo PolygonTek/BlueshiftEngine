@@ -360,6 +360,8 @@ public:
     BE1::SharedLib                      dxcompilerLibrary = nullptr;
     BE1::Str                            shaderCacheDir;
     BE1::Str                            psoCacheDir;
+    uint64_t                            psoCacheEnvironmentHash = 0;
+    bool                                psoCacheEnvironmentHashValid = false;
 
     BE1::Mutex                          psoMapMutex;
     std::atomic_uint32_t                nextGraphicsPipelineStateSortId { 1 };

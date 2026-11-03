@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 #include "D3D12Renderer.h"
 #include "D3D12PipelineState.h"
 #include "D3D12Shader.h"
@@ -20,6 +21,19 @@
 #include "D3D12ShaderVisibleDescriptorHeap.h"
 #include <cmath>
 #include <limits>
+
+static constexpr uint32_t CachedPSOIdent = MAKE_FOURCC('B', 'S', 'P', 'S');
+static constexpr uint32_t CachedPSOVersion = 1;
+
+struct CachedPSOHeader {
+    uint32_t ident;
+    uint32_t version;
+    uint64_t psoHash;
+    uint64_t environmentHash;
+    uint64_t blobSize;
+    uint64_t blobHash;
+};
+static_assert(sizeof(CachedPSOHeader) == 40 && std::has_unique_object_representations_v<CachedPSOHeader>);
 
 static INT ToD3D12DepthBias(float constantDepthBias) {
     const float roundedDepthBias = std::round(constantDepthBias);
@@ -847,46 +861,93 @@ void D3D12Renderer::DestroyPSO(RHI::PipelineState *pipelineState, bool immediate
 
 void D3D12Renderer::GetCachedPSOFilename(const uint64_t hash, BE1::Str &outFilename) const {
     outFilename = psoCacheDir;
-    outFilename.AppendPath(BE1::va("%016llx", hash));
+    outFilename.AppendPath(BE1::va("v%u-%016llx-%016llx", CachedPSOVersion, psoCacheEnvironmentHash, hash));
     outFilename.SetFileExtension(".pso");
 }
 
 bool D3D12Renderer::LoadCachedPSO(const uint64_t hash, ID3DBlob **cachedPSOBlob) {
+    if (!psoCacheEnvironmentHashValid) {
+        return false;
+    }
+
     BE1::Str filename;
     GetCachedPSOFilename(hash, filename);
 
-    BE1::PlatformFileMapping *fileMapping = BE1::PlatformFileMapping::OpenFileRead(filename);
+    UniquePtr<BE1::PlatformFileMapping> fileMapping(BE1::PlatformFileMapping::OpenFileRead(filename));
     if (!fileMapping) {
         return false;
     }
 
-    size_t fileSize = fileMapping->GetSize();
-    if (FAILED(D3DCreateBlob(fileSize, cachedPSOBlob))) {
-        delete fileMapping;
+    const size_t fileSize = fileMapping->GetSize();
+    if (fileSize < sizeof(CachedPSOHeader)) {
+        BE_WARNLOG("Ignoring truncated cached PSO '%s'\n", filename.c_str());
         return false;
     }
 
-    std::memcpy((*cachedPSOBlob)->GetBufferPointer(), (const byte *)fileMapping->GetData(), fileSize);
+    CachedPSOHeader header;
+    std::memcpy(&header, fileMapping->GetData(), sizeof(header));
 
-    delete fileMapping;
+    const size_t blobSize = fileSize - sizeof(header);
+    if (header.ident != CachedPSOIdent || header.version != CachedPSOVersion || header.psoHash != hash || header.environmentHash != psoCacheEnvironmentHash || header.blobSize == 0 || header.blobSize != blobSize) {
+        BE_WARNLOG("Ignoring incompatible or incomplete cached PSO '%s'\n", filename.c_str());
+        return false;
+    }
+
+    const char *blobData = static_cast<const char *>(fileMapping->GetData()) + sizeof(header);
+    if (BE1::CityHash64(blobData, blobSize) != header.blobHash) {
+        BE_WARNLOG("Ignoring corrupt cached PSO '%s'\n", filename.c_str());
+        return false;
+    }
+
+    if (FAILED(D3DCreateBlob(blobSize, cachedPSOBlob))) {
+        return false;
+    }
+    std::memcpy((*cachedPSOBlob)->GetBufferPointer(), blobData, blobSize);
     return true;
 }
 
 void D3D12Renderer::WriteCachedPSO(const uint64_t hash, ID3DBlob *cachedPSOBlob) {
-    if (!cachedPSOBlob || cachedPSOBlob->GetBufferSize() == 0) {
+    if (!psoCacheEnvironmentHashValid || !cachedPSOBlob || cachedPSOBlob->GetBufferSize() == 0) {
         return;
     }
 
     BE1::Str filename;
     GetCachedPSOFilename(hash, filename);
-    BE1::PlatformFile *file = (BE1::PlatformFile *)BE1::PlatformFile::OpenFileWrite(filename);
+
+    // 같은 PSO 를 여러 스레드/프로세스에서 생성해도 쓰기 도중의 파일을 노출하지 않는다.
+    static std::atomic_uint64_t nextTempFileId { 0 };
+    BE1::Str tempFilename = filename;
+    tempFilename += BE1::va(".%lu.%llu.tmp", GetCurrentProcessId(), nextTempFileId.fetch_add(1, std::memory_order_relaxed));
+    BE1::PlatformFile *file = (BE1::PlatformFile *)BE1::PlatformFile::OpenFileWrite(tempFilename);
     if (!file) {
         return;
     }
 
-    file->Write(cachedPSOBlob->GetBufferPointer(), cachedPSOBlob->GetBufferSize());
-
+    CachedPSOHeader header = {};
+    header.ident = CachedPSOIdent;
+    header.version = CachedPSOVersion;
+    header.psoHash = hash;
+    header.environmentHash = psoCacheEnvironmentHash;
+    header.blobSize = cachedPSOBlob->GetBufferSize();
+    header.blobHash = BE1::CityHash64(static_cast<const char *>(cachedPSOBlob->GetBufferPointer()), cachedPSOBlob->GetBufferSize());
+    const bool written = file->Write(&header, sizeof(header)) && file->Write(cachedPSOBlob->GetBufferPointer(), cachedPSOBlob->GetBufferSize());
     delete file;
+
+    if (!written) {
+        BE_WARNLOG("Failed to write cached PSO '%s'\n", filename.c_str());
+        BE1::PlatformFile::RemoveFile(tempFilename);
+        return;
+    }
+
+    // 같은 디렉토리에서 완성된 파일을 rename 한다. 교체 실패 시 기존 캐시는 그대로 보존한다.
+    wchar_t wTempFilename[1024];
+    wchar_t wFilename[1024];
+    BE1::PlatformWinUtils::UTF8ToUCS2(BE1::PlatformFile::NormalizeFilename(tempFilename), wTempFilename, COUNT_OF(wTempFilename));
+    BE1::PlatformWinUtils::UTF8ToUCS2(BE1::PlatformFile::NormalizeFilename(filename), wFilename, COUNT_OF(wFilename));
+    if (!MoveFileExW(wTempFilename, wFilename, MOVEFILE_REPLACE_EXISTING)) {
+        BE_WARNLOG("Failed to replace cached PSO '%s', ERROR: %lu\n", filename.c_str(), GetLastError());
+        BE1::PlatformFile::RemoveFile(tempFilename);
+    }
 }
 
 RHI::PipelineState *D3D12Renderer::CreateBasicPSO(ID3D12RootSignature *rootSignature, const D3D12_SHADER_BYTECODE &byteCodeVS, const D3D12_SHADER_BYTECODE &byteCodePS, const D3D12_INPUT_LAYOUT_DESC &inputLayout) {
