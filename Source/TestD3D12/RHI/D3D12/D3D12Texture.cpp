@@ -598,6 +598,14 @@ bool D3D12Renderer::UploadTextureMipRange(RHI::Texture *texture, SharedPtr<const
         return false;
     }
 
+    if (srcImage->GetFormat() != _texture->srcFormat ||
+        srcImage->GetWidth() != BE1::Max(static_cast<int>(_texture->textureDesc.Width >> firstMip), 1) ||
+        srcImage->GetHeight() != BE1::Max(static_cast<int>(_texture->textureDesc.Height >> firstMip), 1) ||
+        srcImage->GetDepth() != (_texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? BE1::Max(_texture->textureDesc.DepthOrArraySize >> firstMip, 1) : 1)) {
+        BE_ERRLOG("D3D12Renderer::UploadTextureMipRange: source format or dimensions mismatch\n");
+        return false;
+    }
+
     UINT dstArraySize = _texture->textureDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : _texture->textureDesc.DepthOrArraySize;
     if (srcImage->GetArraySize() != dstArraySize) {
         BE_ERRLOG("D3D12Renderer::UploadTextureMipRange: source array size mismatch\n");
@@ -984,6 +992,8 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Texture *texture, RHI::Format typeless
         newSrvEntry.viewDesc.Shader4ComponentMapping = GetComponentSwizzling(texture->srcFormat);
     }
 
+    const UINT planeSlice = (newSrvEntry.viewDesc.Format == DXGI_FORMAT_X24_TYPELESS_G8_UINT || newSrvEntry.viewDesc.Format == DXGI_FORMAT_X32_TYPELESS_G8X24_UINT) ? 1 : 0;
+
     switch (texture->type) {
     case RHI::TextureType::Texture1D:
         newSrvEntry.viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
@@ -1004,6 +1014,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Texture *texture, RHI::Format typeless
             newSrvEntry.viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
             newSrvEntry.viewDesc.Texture2D.MostDetailedMip = firstMipLevel;
             newSrvEntry.viewDesc.Texture2D.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+            newSrvEntry.viewDesc.Texture2D.PlaneSlice = planeSlice;
         }
         break;
     case RHI::TextureType::Texture2DArray:
@@ -1017,6 +1028,7 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Texture *texture, RHI::Format typeless
             newSrvEntry.viewDesc.Texture2DArray.ArraySize = BE1::Min(sliceCount, texture->textureDesc.DepthOrArraySize - firstSlice);
             newSrvEntry.viewDesc.Texture2DArray.MostDetailedMip = firstMipLevel;
             newSrvEntry.viewDesc.Texture2DArray.MipLevels = BE1::Min(mipCount, texture->textureDesc.MipLevels - firstMipLevel);
+            newSrvEntry.viewDesc.Texture2DArray.PlaneSlice = planeSlice;
         }
         break;
     case RHI::TextureType::TextureCube:
@@ -1160,8 +1172,8 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Texture *texture, RHI::Format typeless
     case RHI::TextureType::Texture3D:
         newUavEntry.viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
         newUavEntry.viewDesc.Texture3D.MipSlice = firstMipLevel;
-        newUavEntry.viewDesc.Texture3D.FirstWSlice = 0;
-        newUavEntry.viewDesc.Texture3D.WSize = -1;
+        newUavEntry.viewDesc.Texture3D.FirstWSlice = firstSlice;
+        newUavEntry.viewDesc.Texture3D.WSize = BE1::Min(sliceCount, D3D12TextureMipExtent(texture->textureDesc.DepthOrArraySize, firstMipLevel) - firstSlice);
         break;
     }
 
@@ -1295,8 +1307,8 @@ RHI::ViewID D3D12Renderer::CreateRTV(D3D12Texture *texture, RHI::Format typeless
         // TODO: 정말 가능한지 실험해 볼 것
         newRtvEntry.viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
         newRtvEntry.viewDesc.Texture3D.MipSlice = firstMipLevel;
-        newRtvEntry.viewDesc.Texture3D.FirstWSlice = 0;
-        newRtvEntry.viewDesc.Texture3D.WSize = -1;
+        newRtvEntry.viewDesc.Texture3D.FirstWSlice = firstSlice;
+        newRtvEntry.viewDesc.Texture3D.WSize = BE1::Min(sliceCount, D3D12TextureMipExtent(texture->textureDesc.DepthOrArraySize, firstMipLevel) - firstSlice);
         break;
     }
 
@@ -1539,6 +1551,11 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     D3D12Texture *_texture = static_cast<D3D12Texture *>(texture);
     assert(_texture);
 
+    if (imageFormat != _texture->srcFormat) {
+        BE_WARNLOG("D3D12Renderer::SetTextureSubImage: source format mismatch\n");
+        return false;
+    }
+
     if (BE1::Image::IsCompressed(imageFormat) || BE1::Image::IsCompressed(_texture->srcFormat)) {
         BE_WARNLOG("D3D12Renderer::SetTextureSubImage: compressed sub-image update is not supported\n");
         return false;
@@ -1553,7 +1570,7 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
 
     int srcPitch = static_cast<int>(BE1::Image::MemRequired(width, 1, 1, 1, 1, imageFormat));
     int dstPitch = subresourceFootprint.Footprint.RowPitch;
-    uint64_t uploadBufferSize = dstPitch * height * depth;
+    uint64_t uploadBufferSize = static_cast<uint64_t>(dstPitch) * height * depth;
 
     D3D12_RESOURCE_DESC uploadBufferDesc;
     uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
