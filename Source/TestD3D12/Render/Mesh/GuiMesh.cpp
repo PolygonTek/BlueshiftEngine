@@ -27,7 +27,6 @@ void GuiMesh::Clear() {
 
 void GuiMesh::PrepareNewSurf() {
     Surface &newSurf = surfaces.Alloc();
-    newSurf.material = currentSurf ? currentSurf->material : materialManager.defaultUnlitMaterial.get();
     newSurf.numVerts = 0;
     newSurf.numIndexes = 0;
     newSurf.vertexBuffer = nullptr;
@@ -312,6 +311,7 @@ void GuiMesh::DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect 
     lineOffsets[0] = 0;
 
     while (offset < text.Length()) {
+        int charPrevOffset = offset;
         char32_t unicodeChar = text.UTF8CharAdvance(offset);
         if (!unicodeChar) {
             break;
@@ -336,22 +336,29 @@ void GuiMesh::DrawText2D(RHI::FrameThreadData *frameThreadData, const BE1::Rect 
             currentLineLength = 0;
             currentLineWidth = 0;
 
+            if (numLines == MaxTextLines) {
+                break;
+            }
+
             // Save next line offset
             lineOffsets[numLines] = offset;
         } else {
             int charWidth = GetTextCharAdvanceX(unicodeChar);
 
             if (BE1::HasFlag(flags, DrawTextFlag::WordWrap)) {
-                if (currentLineWidth + charWidth > rect.w - marginX) {
+                if (currentLineLength > 0 && currentLineWidth + charWidth > rect.w - marginX) {
                     // Save current line length
                     lineLen[numLines++] = currentLineLength;
 
                     currentLineLength = 0;
                     currentLineWidth = 0;
 
-                    // Save next line offset
-                    lineOffsets[numLines] = offset;
-                    continue;
+                    if (numLines == MaxTextLines) {
+                        break;
+                    }
+
+                    // Start the next line at the character that overflowed.
+                    lineOffsets[numLines] = charPrevOffset;
                 }
             } else if (currentLineWidth + charWidth > rect.w - marginX) {
                 if (BE1::HasFlag(flags, DrawTextFlag::Truncate)) {
@@ -479,6 +486,10 @@ void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::Te
             currentLineWidth = 0;
             currentLineLength = 0;
 
+            if (numLines == MaxTextLines) {
+                break;
+            }
+
             // Save next line offset.
             lineCharOffsets[numLines] = charOffset;
         } else {
@@ -590,6 +601,10 @@ void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::Te
             }
         }
 
+        if (numLines == MaxTextLines) {
+            return false;
+        }
+
         // Save next line offset.
         lineCharOffsets[numLines] = charOffset;
         return true;
@@ -605,7 +620,7 @@ void GuiMesh::DrawText3D(RHI::FrameThreadData *frameThreadData, RenderObject::Te
         } else {
             float charWidth = GetTextCharAdvanceX(unicodeChar);
 
-            if (horzOverflow == RenderObject::TextHorzOverflow::Wrap && currentLineWidth + charWidth > rect.w) {
+            if (horzOverflow == RenderObject::TextHorzOverflow::Wrap && currentLineLength > 0 && currentLineWidth + charWidth > rect.w) {
                 charOffset = charPrevOffset;
 
                 if (!PrepareNextLine()) {
