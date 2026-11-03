@@ -1243,6 +1243,76 @@ void BE_FASTCALL SIMD_8::AdditiveBlendJoints(JointPose *joints, const JointPose 
     }
 }
 
+void BE_FASTCALL SIMD_8::ConvertJointPosesToJointMats(Mat3x4 *jointMats, const JointPose *jointPoses, const int numJoints) {
+    assert_16_byte_aligned(jointMats);
+    assert_16_byte_aligned(jointPoses);
+    assert(sizeof(JointPose) == sizeof(float) * 12);
+    assert(sizeof(Mat3x4) == sizeof(float) * 12);
+
+    if (numJoints < 2) {
+        SIMD_4::ConvertJointPosesToJointMats(jointMats, jointPoses, numJoints);
+        return;
+    }
+
+    const simd8f firstSignBit = set_256ps(-0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f);
+    const simd8f firstPosHalf = set_256ps(+0.5f, 0.0f, 0.0f, 0.0f, +0.5f, 0.0f, 0.0f, 0.0f);
+    const simd8f firstNegHalf = set_256ps(-0.5f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f);
+    const simd8f quat2matMad1 = set_256ps(-1.0f, -1.0f, +1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f);
+    const simd8f quat2matMad2 = set_256ps(-1.0f, +1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f);
+    const simd8f quat2matMad3 = set_256ps(+1.0f, -1.0f, -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f);
+
+    const float *jointPosePtr = reinterpret_cast<const float *>(jointPoses);
+    float *jointMatPtr = reinterpret_cast<float *>(jointMats);
+    int i = 0;
+    for (; i + 1 < numJoints; i += 2, jointPosePtr += 24, jointMatPtr += 24) {
+        // Each 128-bit lane holds one joint; keep the SIMD_4 arithmetic order for T * R * S.
+        const simd8f q = set2x128_256ps(load_ps(jointPosePtr + 0).m128, load_ps(jointPosePtr + 12).m128);
+        const simd8f d = q + q;
+
+        simd8f sa = shuffle_256ps<1, 0, 0, 1>(q);              //   y,   x,   x,   y
+        const simd8f sb = shuffle_256ps<1, 1, 2, 2>(d);        //  2y,  2y,  2z,  2z
+        const simd8f sc = shuffle_256ps<2, 3, 3, 3>(q);        //   z,   w,   w,   w
+        const simd8f sd = shuffle_256ps<2, 2, 1, 0>(d);        //  2z,  2z,  2y,  2x
+        sa ^= firstSignBit;                                  //  -y,   x,   x,   y
+
+        const simd8f ma = sa * sb + firstPosHalf;             //  0.5 - 2yy, 2xy, 2xz, 2yz
+        const simd8f mb = sc * sd + firstNegHalf;             // -0.5 + 2zz, 2wz, 2wy, 2wx
+        const simd8f mc = firstPosHalf - q * d;               //  0.5 - 2xx, -2yy, -2zz, -2ww
+
+        const simd8f mf = shuffle_256ps<1, 1, 0, 0>(ma, mc);
+        const simd8f md = shuffle_256ps<2, 0, 2, 3>(mf, ma);
+        const simd8f me = shuffle_256ps<0, 1, 2, 3>(ma, mb);
+
+        simd8f ra = mb * quat2matMad1 + ma;                   // 1 - 2yy - 2zz, 2xy - 2wz, 2xz + 2wy, n/a
+        simd8f rb = mb * quat2matMad2 + md;                   // 1 - 2xx - 2zz, 2xy + 2wz, n/a, 2yz - 2wx
+        simd8f rc = me * quat2matMad3 + md;                   // 1 - 2xx - 2yy, n/a, 2xz - 2wy, 2yz + 2wx
+
+        const simd8f t = set2x128_256ps(load_ps(jointPosePtr + 4).m128, load_ps(jointPosePtr + 16).m128);
+        const simd8f ta = shuffle_256ps<2, 2, 0, 0>(ra, t);
+        const simd8f tb = shuffle_256ps<3, 3, 1, 1>(rb, t);
+        const simd8f tc = shuffle_256ps<0, 0, 2, 2>(rc, t);
+        ra = shuffle_256ps<0, 1, 0, 2>(ra, ta);
+        rb = shuffle_256ps<1, 0, 0, 2>(rb, tb);
+        rc = shuffle_256ps<2, 3, 0, 2>(rc, tc);
+
+        simd8f s = set2x128_256ps(load_ps(jointPosePtr + 8).m128, load_ps(jointPosePtr + 20).m128);
+        // Scale padding is unspecified. Replace it with one so translation is preserved.
+        s = _mm256_blend_ps(s, SIMD_8::F8_one, 0x88);
+        ra *= s;
+        rb *= s;
+        rc *= s;
+
+        // Repack paired rows into two contiguous 48-byte matrices; only 16-byte alignment is required.
+        storeu_256ps(shuffle_256ps<0, 2>(ra, rb), jointMatPtr + 0);
+        storeu_256ps(shuffle_256ps<0, 3>(rc, ra), jointMatPtr + 8);
+        storeu_256ps(shuffle_256ps<1, 3>(rb, rc), jointMatPtr + 16);
+    }
+
+    if (i < numJoints) {
+        SIMD_4::ConvertJointPosesToJointMats(jointMats + i, jointPoses + i, 1);
+    }
+}
+
 void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
     assert_16_byte_aligned(jointMats);
 
