@@ -25,12 +25,12 @@
 #define GLYPH_COORD_OFFSET          1
 
 struct GlyphAtlas {
-    SharedPtr<Texture>        texture;
-    stbrp_context                   context;
-    BE1::Array<stbrp_node>          nodes;
+    SharedPtr<Texture>          texture;
+    stbrp_context               context;
+    BE1::Array<stbrp_node>      nodes;
 };
 
-static BE1::Array<GlyphAtlas>       atlasArray;
+static BE1::Array<GlyphAtlas>   atlasArray;
 
 static void Atlas_Add(int textureSize) {
     GlyphAtlas &atlas = atlasArray.Alloc();
@@ -49,19 +49,25 @@ static void Atlas_Add(int textureSize) {
 }
 
 static int Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
+    if (inWidth > GLYPH_CACHE_TEXTURE_SIZE || inHeight > GLYPH_CACHE_TEXTURE_SIZE) {
+        outX = 0;
+        outY = 0;
+        return -1;
+    }
+
     stbrp_rect rect;
     rect.w = (uint16_t)inWidth;
     rect.h = (uint16_t)inHeight;
 
     int atlasIndex = 0;
-    do {
+    for (;; ++atlasIndex) {
         if (atlasIndex == atlasArray.Count()) {
             Atlas_Add(GLYPH_CACHE_TEXTURE_SIZE);
         }
         if (stbrp_pack_rects(&atlasArray[atlasIndex].context, &rect, 1) != 0) {
             break;
         }
-    } while (atlasIndex++);
+    }
 
     outX = rect.x;
     outY = rect.y;
