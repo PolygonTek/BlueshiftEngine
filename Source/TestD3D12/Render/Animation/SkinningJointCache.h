@@ -20,6 +20,16 @@ namespace BE1 { class Mat3x4; }
 
 class Skeleton;
 
+/*
+---------------------------------------------------------------------------------------------------
+
+    Skinning Joint Cache
+
+    GPU 스키닝에 사용할 로컬 행렬을 계산해 보관하고, 이전 joint pose 이력까지 관리하는 CPU 캐시
+
+---------------------------------------------------------------------------------------------------
+*/
+
 class SkinningJointCache {
 public:
     explicit SkinningJointCache(int numJoints);
@@ -34,33 +44,52 @@ public:
                             // 할당된 메모리를 유지한 채 현재 캐시와 이전 포즈 이력을 무효화한다.
     void                    Invalidate();
 
-                            // 이전 joint pose 를 사용할 수 있는지 여부를 확인한다.
-    bool                    HasPreviousPose(uint64_t currentFrameSerial) const { return historyValidFrameSerial == currentFrameSerial; }
+                            // 현재 프레임에서 이전 joint pose 이력을 사용할 수 있는지 여부를 리턴.
+    bool                    HasPreviousPose(uint64_t currentFrameSerial) const { return historyFrameSerial == currentFrameSerial; }
 
-                            // 계산이 완료된 캐시의 joint pose 버전과 skeleton 데이터 버전 및 joint 수가 입력과 일치하면 true 를 반환한다.
+                            // 캐시가 입력 포즈와 스켈레톤 기준으로 최신 상태인지 확인한다.
     bool                    IsUpToDate(const Skeleton *skeleton, uint64_t jointMatsSerial) const;
 
-                            // 메인 스레드에서 joint pose 와 skeleton 버전을 확인하여 필요한 캐시 갱신을 예약한다.
-                            // 업데이트할 버퍼와 이전 포즈의 유효 프레임을 설정하고 Pending 상태로 전환한다.
-                            // 같은 캐시의 중복 갱신을 막기 위해 true 를 반환한 경우에만 Update 를 실행한다.
+                            // 필요한 캐시 갱신을 예약한다. true 를 반환한 경우에만 Update 를 호출해야 한다.
     bool                    PrepareUpdate(const Skeleton *skeleton, uint64_t jointMatsSerial, uint64_t currentFrameSerial);
 
-                            // 예약된 인스턴스별 작업은 CPU 메모리에만 기록한다. GPU 업로드는 작업 완료 후 별도로 수행한다.
+                            // 캐시를 갱신한다.
     bool                    Update(const Skeleton *skeleton, const BE1::Mat3x4 *jointMats);
 
 private:
     enum class State : uint8_t {
-        Invalid,
-        Pending,
-        Ready
+        Invalid,            // 캐시가 유효하지 않은 상태
+        Pending,            // 캐시 갱신이 예약된 상태
+        Ready               // 캐시가 갱신된 상태
     };
 
     int                     numJoints = 0;
-    BE1::Mat3x4 *           skinningJoints = nullptr;
-    uint32_t                currentPoseIndex = 0;
+    BE1::Mat3x4 *           skinningJoints = nullptr;                   // 2 * numJoints 개의 joint pose 를 저장할 수 있는 메모리. current joint pose 와 previous joint pose 를 번갈아 사용한다.
+    uint32_t                currentPoseIndex = 0;                       // 0 또는 1, skinningJoints 의 어느 절반을 현재 joint pose 로 사용할지 결정한다.
 
     uint64_t                jointMatsSerial = UINT64_MAX;
-    uint64_t                historyValidFrameSerial = UINT64_MAX; // 이전 포즈를 사용할 수 있는 프레임. UINT64_MAX 이면 이력이 없다는 의미.
+    uint64_t                historyFrameSerial = UINT64_MAX;            // previous pose 가 유효한 프레임 시리얼.
     uint32_t                skeletonDataSerial = 0;
     State                   state = State::Invalid;
 };
+
+BE_INLINE SkinningJointCache::SkinningJointCache(int numJoints) {
+    assert(numJoints > 0);
+    this->numJoints = numJoints;
+    this->skinningJoints = static_cast<BE1::Mat3x4 *>(Mem_Alloc16(sizeof(BE1::Mat3x4) * numJoints * 2));
+}
+
+BE_INLINE SkinningJointCache::~SkinningJointCache() {
+    Mem_AlignedFree(skinningJoints);
+}
+
+BE_INLINE const BE1::Mat3x4 *SkinningJointCache::GetSkinningJoints() const {
+    assert(state == State::Ready);
+    return skinningJoints + currentPoseIndex * numJoints;
+}
+
+BE_INLINE const BE1::Mat3x4 *SkinningJointCache::GetPrevSkinningJoints() const {
+    assert(state == State::Ready);
+    const uint32_t previousPoseIndex = historyFrameSerial != UINT64_MAX ? currentPoseIndex ^ 1u : currentPoseIndex;
+    return skinningJoints + previousPoseIndex * numJoints;
+}

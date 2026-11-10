@@ -174,11 +174,11 @@ SharedPtr<MeshInstance> Mesh::GetStaticInstance() {
     return meshInstance;
 }
 
-SharedPtr<MeshInstance> Mesh::InstantiateSkinned() {
+SharedPtr<MeshInstance> Mesh::InstantiateSkinned(const SharedPtr<SkinningPose> &skinningPose) {
     assert(IsReady());
 
     SharedPtr<MeshInstance> meshInstance = MakeShared<MeshInstance>();
-    if (!meshInstance->InitSkinned(shared_from_this())) {
+    if (!meshInstance->InitSkinned(shared_from_this(), skinningPose)) {
         return nullptr;
     }
 

@@ -26,6 +26,7 @@ class Material;
 class Mesh;
 class MeshInstance;
 class Skeleton;
+class SkinningPose;
 
 class SceneSkinnedMesh : public Scene {
 public:
@@ -41,12 +42,13 @@ public:
 private:
     static constexpr int            MeshCount = 2;
     static constexpr int            AnimCount = 3;
-    static constexpr int            MaxObjectCountPerAxis = 50;
+    static constexpr int            MaxObjectCountPerAxis = 64;
     static constexpr float          ObjectSpacing = 2.5f;
     static constexpr float          GroundTextureTileSize = BE1::MeterToUnit(10.0f);
 
     struct SkinnedMeshObject {
         GameObject                  gameObject;
+        SharedPtr<SkinningPose>     skinningPose;
         SharedPtr<MeshInstance>     meshInstances[MeshCount];
         int                         renderObjectHandles[MeshCount] = { -1, -1 };
         int                         animIndex = 0;
@@ -55,7 +57,6 @@ private:
     };
 
     struct AnimState {
-        BE1::Array<BE1::Mat3x4>     jointMatrices;
         BE1::Array<BE1::AABB>       frameAABBs[MeshCount];
         BE1::AABB                   aabbs[MeshCount] = { BE1::AABB::empty, BE1::AABB::empty };
     };
@@ -95,10 +96,12 @@ private:
 
     BE1::Array<int>                 jointIndexes;
     BE1::Array<BE1::JointPose>      jointPoses;
+    BE1::Array<BE1::Mat3x4>         jointMatrices;
 
     uint64_t                        previousUpdateUsec = 0;
     float                           playbackSpeed = 1.0f;
     bool                            playing = true;
+    bool                            pendingAnimationPoseUpdate = false;
     bool                            showBounds = false;
     bool                            envLightAdded = false;
 

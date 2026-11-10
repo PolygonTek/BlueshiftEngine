@@ -18,6 +18,7 @@
 
 class Joint;
 class Skeleton;
+class SkinningPose;
 class MeshInstance;
 class MeshManager;
 class LoadingSystem;
@@ -132,7 +133,7 @@ public:
     void                            Write(const char *filename);
 
     SharedPtr<MeshInstance>         GetStaticInstance();
-    SharedPtr<MeshInstance>         InstantiateSkinned();
+    SharedPtr<MeshInstance>         InstantiateSkinned(const SharedPtr<SkinningPose> &skinningPose);
 
                                     /// Returns the volume of the solid mesh.
                                     /// NOTE: For an exact calculation the mesh must form a closed polytope. Otherwise, an approximation based on the AABB is used.

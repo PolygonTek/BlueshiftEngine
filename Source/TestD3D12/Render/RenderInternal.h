@@ -496,8 +496,8 @@ struct FrameObject {
     ALIGN_AS32 BE1::Mat3x4          prevWorldMatrix;                ///< Previous world transform matrix
 
     union {
-        const Material *            baseMaterials[2] = {};          ///< Base materials for the object, used when numMaterials <= 2.
-        const Material **           materials;                      ///< External material array, used when numMaterials > 2.
+        const Material *            baseMaterials[2] = {};          ///< Base materials for the object, used when numMaterials are less than or equal to 2.
+        const Material **           materials;                      ///< External material array, used when numMaterials are greater than 2.
     };
 
     uint16_t                        numMaterials = 0;               ///< Material 개수
@@ -512,7 +512,15 @@ struct FrameObject {
     uint32_t                        firstLocalShadowCasterRef = 0;  ///< 현재 카메라의 surface 를 구성하는 동안만 사용하는 RenderWorld::localShadowCasterRefs 범위.
     uint32_t                        numLocalShadowCasterRefs = 0;   ///< 백엔드는 이 임시 범위 대신 FrameLocalShadowView::shadowSurfs 를 사용한다.
 
-    bool                            IsRenderable() const { return BE1::HasAnyFlag(flags, Flag::CameraVisible | Flag::LocalShadowCaster) || shadowCascadeMask != 0; }
+                                    // 현재 카메라의 가시성 플래그를 확인한다.
+    bool                            IsVisible() const { return BE1::HasFlag(flags, Flag::CameraVisible); }
+
+                                    // 현재 카메라의 그림자 캐스터인지 확인한다.
+    bool                            IsShadowCaster() const { return BE1::HasFlag(flags, Flag::LocalShadowCaster) || shadowCascadeMask != 0; }
+
+                                    // 카메라 또는 그림자 렌더링 대상인지 확인한다.
+    bool                            NeedsRendering() const { return IsVisible() || IsShadowCaster(); }
+
     const Material *const *         GetMaterials() const { return numMaterials <= COUNT_OF(baseMaterials) ? baseMaterials : materials; }
 };
 

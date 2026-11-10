@@ -16,6 +16,7 @@
 #include "App.h"
 #include "Render/Animation/AnimManager.h"
 #include "Render/Animation/SkeletonManager.h"
+#include "Render/Animation/SkinningPose.h"
 #include "Render/Frontend/EnvironmentLight.h"
 #include "Render/Frontend/RenderWorld.h"
 #include "Render/Material/MaterialManager.h"
@@ -124,7 +125,6 @@ void SceneSkinnedMesh::Shutdown() {
     for (int animIndex = 0; animIndex < AnimCount; ++animIndex) {
         anims[animIndex].reset();
         AnimState &animState = animStates[animIndex];
-        animState.jointMatrices.Clear();
         for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
             animState.frameAABBs[meshIndex].Clear();
             animState.aabbs[meshIndex] = BE1::AABB::empty;
@@ -135,8 +135,10 @@ void SceneSkinnedMesh::Shutdown() {
 
     jointIndexes.Clear();
     jointPoses.Clear();
+    jointMatrices.Clear();
 
     previousUpdateUsec = 0;
+    pendingAnimationPoseUpdate = false;
 #ifdef ENABLE_IMGUI
     imguiTrianglesPerObject = 0;
     pendingObjectCountChange = false;
@@ -194,8 +196,13 @@ bool SceneSkinnedMesh::LoadCharacter() {
 #endif
 
     const int numJoints = skeleton->NumJoints();
+    if (numJoints <= 0) {
+        return false;
+    }
+
     jointIndexes.SetCount(numJoints);
     jointPoses.SetCount(numJoints);
+    jointMatrices.SetCount(numJoints);
 
     for (int jointIndex = 0; jointIndex < numJoints; ++jointIndex) {
         jointIndexes[jointIndex] = jointIndex;
@@ -204,13 +211,17 @@ bool SceneSkinnedMesh::LoadCharacter() {
     // Animated bounds are computed once at scene initialization and sampled without per-frame allocation.
     for (int animIndex = 0; animIndex < AnimCount; ++animIndex) {
         AnimState &animState = animStates[animIndex];
-        animState.jointMatrices.SetCount(numJoints);
         for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
             anims[animIndex]->ComputeFrameAABBs(skeleton.get(), meshes[meshIndex].get(), animState.frameAABBs[meshIndex]);
         }
     }
 
-    return EvaluateAnimationPose(0, 0);
+    // Scene placement only needs the initial bounds; joint matrices are evaluated in Update.
+    for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
+        anims[0]->GetAABB(animStates[0].aabbs[meshIndex], animStates[0].frameAABBs[meshIndex], 0);
+    }
+
+    return true;
 }
 
 bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
@@ -237,7 +248,6 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
     desc.materials.SetCount(1);
     desc.materials[0] = characterMaterial;
 
-    bool evaluatedAnims[AnimCount] = {};
     for (int y = 0; y < objectCountY; ++y) {
         for (int x = 0; x < objectCountX; ++x) {
             SkinnedMeshObject &object = gameObjects[y * objectCountX + x];
@@ -247,30 +257,23 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
             object.animationSpeed = BE1::RNG::GetRandom(0.5f, 1.5f);
             object.animationTimeMsec = 0.0;
 
-            // All new characters start at time zero, so their initial poses can still be shared per clip.
-            if (!evaluatedAnims[object.animIndex]) {
-                if (!EvaluateAnimationPose(object.animIndex, 0)) {
-                    ClearGameObjects();
-                    return false;
-                }
-                evaluatedAnims[object.animIndex] = true;
-            }
-            const AnimState &animState = animStates[object.animIndex];
+            // Share one final pose between this character's mesh parts; other characters own separate poses.
+            object.skinningPose = MakeShared<SkinningPose>(skeleton);
 
             const BE1::Vec3 position = characterOffset + BE1::Vec3(startX + ObjectSpacing * x, startY + ObjectSpacing * y, 0.0f);
             object.gameObject.worldMatrix.SetTranslationRotation(position, characterRotation, false);
             desc.worldMatrix = object.gameObject.worldMatrix;
 
             for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
-                object.meshInstances[meshIndex] = meshes[meshIndex]->InstantiateSkinned();
-                if (!object.meshInstances[meshIndex] ||
-                    !object.meshInstances[meshIndex]->SetJointMats(animState.jointMatrices.Ptr(), animState.jointMatrices.Count())) {
+                object.meshInstances[meshIndex] = meshes[meshIndex]->InstantiateSkinned(object.skinningPose);
+                if (!object.meshInstances[meshIndex]) {
                     BE_WARNLOG("SceneSkinnedMesh::InitGameObjects: failed to instantiate YBot mesh %i", meshIndex);
                     ClearGameObjects();
                     return false;
                 }
 
-                desc.aabb = animState.aabbs[meshIndex];
+                // The first Update replaces these source bounds with animated bounds before rendering.
+                desc.aabb = meshes[meshIndex]->GetAABB();
                 desc.meshInstance = object.meshInstances[meshIndex];
                 object.renderObjectHandles[meshIndex] = renderWorld->AddRenderObject(desc);
             }
@@ -278,6 +281,8 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
     }
 
     InitGround();
+    // Characters are created together; evaluate them once even while playback is paused.
+    pendingAnimationPoseUpdate = true;
     return true;
 }
 
@@ -306,6 +311,7 @@ void SceneSkinnedMesh::InitGround() {
 void SceneSkinnedMesh::ClearGameObjects() {
     renderWorld->ClearScene(RenderWorld::ClearFlag::RenderObjects);
     gameObjects.Clear();
+    pendingAnimationPoseUpdate = false;
 }
 
 void SceneSkinnedMesh::ChangeGameObjectCount(int countX, int countY) {
@@ -321,7 +327,7 @@ bool SceneSkinnedMesh::EvaluateAnimationPose(int animIndex, int animationTimeMse
 
     AnimState &animState = animStates[animIndex];
     const int numJoints = skeleton->NumJoints();
-    if (numJoints <= 0 || jointIndexes.Count() != numJoints || jointPoses.Count() != numJoints || animState.jointMatrices.Count() != numJoints) {
+    if (numJoints <= 0 || jointIndexes.Count() != numJoints || jointPoses.Count() != numJoints || jointMatrices.Count() != numJoints) {
         return false;
     }
 
@@ -329,8 +335,8 @@ bool SceneSkinnedMesh::EvaluateAnimationPose(int animIndex, int animationTimeMse
     anim->TimeToFrameInterpolation(animationTimeMsec, frameInterpolation);
     anim->GetInterpolatedFrame(frameInterpolation, numJoints, jointIndexes.Ptr(), jointPoses.Ptr());
 
-    BE1::simdProcessor->ConvertJointPosesToJointMats(animState.jointMatrices.Ptr(), jointPoses.Ptr(), numJoints);
-    BE1::simdProcessor->TransformJoints(animState.jointMatrices.Ptr(), skeleton->GetJointParentIndexes(), 0, numJoints - 1);
+    BE1::simdProcessor->ConvertJointPosesToJointMats(jointMatrices.Ptr(), jointPoses.Ptr(), numJoints);
+    BE1::simdProcessor->TransformJoints(jointMatrices.Ptr(), skeleton->GetJointParentIndexes(), 0, numJoints - 1);
 
     for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
         anim->GetAABB(animState.aabbs[meshIndex], animState.frameAABBs[meshIndex], animationTimeMsec);
@@ -349,22 +355,21 @@ bool SceneSkinnedMesh::UpdateAnimationPoses(double deltaMsec) {
         animationLengths[animIndex] = static_cast<double>(anim->Length());
     }
 
-    // Each character has its own playback time. Reuse the clip's pose buffers and apply to both parts before overwriting them.
+    // Each character has its own playback time. Copy the evaluated pose once for both parts before reusing the scene's buffer.
     for (SkinnedMeshObject &object : gameObjects) {
         const double animationLength = animationLengths[object.animIndex];
-        object.animationTimeMsec = animationLength > 0.0 ?
-            BE1::Mod(object.animationTimeMsec + deltaMsec * static_cast<double>(object.animationSpeed), animationLength) : 0.0;
+        object.animationTimeMsec = animationLength > 0.0 ? BE1::Mod(object.animationTimeMsec + deltaMsec * static_cast<double>(object.animationSpeed), animationLength) : 0.0;
 
         if (!EvaluateAnimationPose(object.animIndex, static_cast<int>(object.animationTimeMsec))) {
             return false;
         }
 
         const AnimState &animState = animStates[object.animIndex];
-        for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
-            if (!object.meshInstances[meshIndex]->SetJointMats(animState.jointMatrices.Ptr(), animState.jointMatrices.Count())) {
-                return false;
-            }
+        if (!object.skinningPose->SetJointMats(jointMatrices.Ptr(), jointMatrices.Count())) {
+            return false;
+        }
 
+        for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
             if (renderWorld && object.renderObjectHandles[meshIndex] >= 0) {
                 renderWorld->UpdateRenderObjectBounds(object.renderObjectHandles[meshIndex], animState.aabbs[meshIndex]);
             }
@@ -391,9 +396,9 @@ void SceneSkinnedMesh::Update(uint64_t elapsedUsec) {
         return;
     }
 
-    if (playing && playbackSpeed != 0.0f && deltaUsec > 0) {
-        const double deltaMsec = static_cast<double>(deltaUsec) * 0.001 * static_cast<double>(playbackSpeed);
-        UpdateAnimationPoses(deltaMsec);
+    const double deltaMsec = playing ? static_cast<double>(deltaUsec) * 0.001 * static_cast<double>(playbackSpeed) : 0.0;
+    if (pendingAnimationPoseUpdate || deltaMsec != 0.0) {
+        pendingAnimationPoseUpdate = !UpdateAnimationPoses(deltaMsec);
     }
 
     if (showBounds) {

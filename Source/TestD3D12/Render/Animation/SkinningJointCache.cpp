@@ -16,41 +16,19 @@
 #include "SkinningJointCache.h"
 #include "Skeleton.h"
 
-SkinningJointCache::SkinningJointCache(int numJoints) {
-    assert(numJoints > 0);
-    this->numJoints = numJoints;
-    this->skinningJoints = static_cast<BE1::Mat3x4 *>(Mem_Alloc16(sizeof(BE1::Mat3x4) * numJoints * 2));
-}
-
-SkinningJointCache::~SkinningJointCache() {
-    Mem_AlignedFree(skinningJoints);
-}
-
-const BE1::Mat3x4 *SkinningJointCache::GetSkinningJoints() const {
-    assert(state == State::Ready);
-    return skinningJoints + currentPoseIndex * numJoints;
-}
-
-const BE1::Mat3x4 *SkinningJointCache::GetPrevSkinningJoints() const {
-    assert(state == State::Ready);
-    const uint32_t previousPoseIndex = historyValidFrameSerial != UINT64_MAX ? currentPoseIndex ^ 1u : currentPoseIndex;
-    return skinningJoints + previousPoseIndex * numJoints;
-}
-
 void SkinningJointCache::Invalidate() {
     jointMatsSerial = UINT64_MAX;
-    historyValidFrameSerial = UINT64_MAX;
+    historyFrameSerial = UINT64_MAX;
     skeletonDataSerial = 0;
     state = State::Invalid;
 }
 
 bool SkinningJointCache::IsUpToDate(const Skeleton *skeleton, uint64_t jointMatsSerial) const {
-    return state == State::Ready && this->jointMatsSerial == jointMatsSerial && skeleton->NumJoints() == numJoints && skeletonDataSerial == skeleton->GetDataSerial();
+    return state == State::Ready && this->jointMatsSerial == jointMatsSerial && skeletonDataSerial == skeleton->GetDataSerial() && skeleton->NumJoints() == numJoints;
 }
 
 bool SkinningJointCache::PrepareUpdate(const Skeleton *skeleton, uint64_t jointMatsSerial, uint64_t currentFrameSerial) {
     if (skeleton->NumJoints() != numJoints) {
-        // MeshInstance 기준으로 생성한 캐시와 skeleton 의 joint 수가 다르면 갱신할 수 없다.
         return false;
     }
 
@@ -66,14 +44,15 @@ bool SkinningJointCache::PrepareUpdate(const Skeleton *skeleton, uint64_t jointM
             // 이미 갱신된 joint pose 이므로 갱신 예약을 하지 않는다.
             return false;
         }
+
+        // previous joint pose 가 갱신된 상태인지 검사
         if (this->jointMatsSerial + 1 == jointMatsSerial) {
-            // 이전 joint pose 가 갱신된 상태이므로 이전 joint pose 를 사용 가능하다.
-            historyValidFrameSerial = currentFrameSerial;
+            historyFrameSerial = currentFrameSerial;
         } else {
-            historyValidFrameSerial = UINT64_MAX;
+            historyFrameSerial = UINT64_MAX;
         }
     } else {
-        historyValidFrameSerial = UINT64_MAX;
+        historyFrameSerial = UINT64_MAX;
     }
 
     this->currentPoseIndex ^= 1u;
@@ -89,7 +68,7 @@ bool SkinningJointCache::Update(const Skeleton *skeleton, const BE1::Mat3x4 *joi
 
     if (state != State::Pending) {
         state = State::Invalid;
-        historyValidFrameSerial = UINT64_MAX;
+        historyFrameSerial = UINT64_MAX;
         return false;
     }
 

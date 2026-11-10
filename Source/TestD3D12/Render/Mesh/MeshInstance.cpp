@@ -14,15 +14,16 @@
 
 #include "Precompiled.h"
 #include "MeshInstance.h"
+#include "Render/Animation/Skeleton.h"
+#include "Render/Animation/SkinningPose.h"
 
 void MeshInstance::Reset() {
     type = Type::Static;
     sourceMesh.reset();
     sourceDataSerial = InvalidDataSerial;
-
-    jointMats.Clear();
-    jointMatsSerial = 0;
-    skinningJointCache.reset();
+    skeletonDataSerial = InvalidDataSerial;
+    hasCompatibleSkinningData = false;
+    skinningPose.reset();
 }
 
 bool MeshInstance::InitStatic(SharedPtr<Mesh> newSourceMesh) {
@@ -38,36 +39,38 @@ bool MeshInstance::InitStatic(SharedPtr<Mesh> newSourceMesh) {
     return IsSourceReady() ? RefreshFromSource() : true;
 }
 
-bool MeshInstance::InitSkinned(SharedPtr<Mesh> newSourceMesh) {
+bool MeshInstance::InitSkinned(SharedPtr<Mesh> newSourceMesh, SharedPtr<SkinningPose> newSkinningPose) {
     Reset();
 
-    if (!newSourceMesh) {
+    if (!newSourceMesh || !newSkinningPose || !newSkinningPose->GetSkeleton()) {
         return false;
     }
 
     type = Type::Skinned;
     sourceMesh = std::move(newSourceMesh);
+    skinningPose = std::move(newSkinningPose);
 
-    return IsSourceReady() ? RefreshFromSource() : true;
-}
-
-bool MeshInstance::IsSourceReady() const {
-    if (!sourceMesh || sourceMesh->GetState() != Mesh::State::Ready) {
-        return false;
-    }
-    return true;
+    return IsSourceReady() && skinningPose->GetSkeleton()->IsReady() ? SyncWithSource() : true;
 }
 
 bool MeshInstance::NeedsRefreshFromSource() const {
-    if (sourceMesh && sourceMesh->GetState() == Mesh::State::Ready && sourceDataSerial != sourceMesh->GetDataSerial()) {
+    if (!IsSourceReady()) {
+        return false;
+    }
+
+    if (sourceDataSerial != sourceMesh->GetDataSerial()) {
         return true;
     }
-    return false;
+
+    const Skeleton *skeleton = skinningPose ? skinningPose->GetSkeleton() : nullptr;
+    return skeleton && skeleton->IsReady() && skeletonDataSerial != skeleton->GetDataSerial();
 }
 
-bool MeshInstance::EnsureCurrent() {
+bool MeshInstance::SyncWithSource() {
     // 원본 메시가 준비가 되었는지 확인
     if (!sourceMesh || sourceMesh->GetState() != Mesh::State::Ready) {
+        hasCompatibleSkinningData = false;
+        sourceDataSerial = InvalidDataSerial;
         return false;
     }
 
@@ -76,33 +79,33 @@ bool MeshInstance::EnsureCurrent() {
         return true;
     }
 
-    // 원본 메시가 수정되었는지 확인
-    if (sourceDataSerial == sourceMesh->GetDataSerial()) {
-        return true;
+    if (!skinningPose || !skinningPose->SyncWithSkeleton()) {
+        hasCompatibleSkinningData = false;
+        skeletonDataSerial = InvalidDataSerial;
+        return false;
     }
 
-    // 원본 메시가 수정되었으면, 인스턴스의 skinning matrix 배열을 갱신하고 포즈 이력을 초기화
-    return RefreshFromSource();
+    // 이름/부모 관계의 전체 검사는 메시 또는 skeleton 데이터가 변경된 경우에만 수행한다.
+    if (sourceDataSerial != sourceMesh->GetDataSerial() || skeletonDataSerial != skinningPose->GetSkeleton()->GetDataSerial()) {
+        return RefreshFromSource();
+    }
+
+    return hasCompatibleSkinningData;
 }
 
 bool MeshInstance::RefreshFromSource() {
     // 호출자는 sourceMesh 가 Ready 상태임을 보장해야 한다.
     assert(sourceMesh);
 
-    // Skinned 메시 인스턴스인 경우에만 인스턴스 데이터들을 갱신한다.
-    if (type == Type::Skinned) {
-        if (!HasSkinningData()) {
-            return false;
-        }
+    sourceDataSerial = sourceMesh->GetDataSerial();
 
-        ResizeJointMats(sourceMesh->NumJoints());
-        InvalidateSkinningJointCache();
-    } else {
-        jointMats.Clear();
-        skinningJointCache.reset();
+    if (type == Type::Skinned) {
+        const Skeleton *skeleton = skinningPose->GetSkeleton();
+        skeletonDataSerial = skeleton->GetDataSerial();
+        hasCompatibleSkinningData = HasSkinningData() && sourceMesh->IsCompatibleSkeleton(skeleton);
+        return hasCompatibleSkinningData;
     }
 
-    sourceDataSerial = sourceMesh->GetDataSerial();
     return true;
 }
 
@@ -159,43 +162,3 @@ bool MeshInstance::HasSkinningData() const {
     return false;
 }
 
-void MeshInstance::ResizeJointMats(int numMatrices) {
-    int oldCount = jointMats.Count();
-    if (oldCount == numMatrices) {
-        return;
-    }
-
-    jointMats.SetCount(numMatrices, false);
-
-    // 추가된 jointMats 는 단위 행렬로 초기화한다.
-    for (int i = oldCount; i < numMatrices; ++i) {
-        jointMats[i].SetIdentity();
-    }
-
-    // SkinningJointCache 를 재생성한다.
-    skinningJointCache = numMatrices > 0 ? MakeUnique<SkinningJointCache>(numMatrices) : nullptr;
-}
-
-bool MeshInstance::SetJointMats(const BE1::Mat3x4 *matrices, int numMatrices) {
-    if (type != Type::Skinned || !matrices || numMatrices != jointMats.Count()) {
-        return false;
-    }
-
-    BE1::simdProcessor->Memcpy(jointMats.Ptr(), matrices, sizeof(BE1::Mat3x4) * numMatrices);
-    jointMatsSerial++;
-    return true;
-}
-
-bool MeshInstance::UpdateSkinningJointCache(const Skeleton *skeleton) {
-    if (type != Type::Skinned || !skinningJointCache) {
-        return false;
-    }
-
-    return skinningJointCache->Update(skeleton, jointMats.Ptr());
-}
-
-void MeshInstance::InvalidateSkinningJointCache() {
-    if (skinningJointCache) {
-        skinningJointCache->Invalidate();
-    }
-}

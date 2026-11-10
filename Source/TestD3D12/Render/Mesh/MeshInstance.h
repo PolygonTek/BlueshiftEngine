@@ -15,7 +15,8 @@
 #pragma once
 
 #include "Mesh.h"
-#include "Render/Animation/SkinningJointCache.h"
+
+class SkinningPose;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -24,8 +25,8 @@
 
     원본 Mesh 에 렌더링 인스턴스별 상태를 덧붙여 관리한다.
     Static MeshInstance 는 원본 Mesh 를 그대로 참조하여 사용한다.
-    Skinned MeshInstance 는 원본 Mesh 에 맞춰 joint matrix 배열과 캐시를 갱신하여 사용한다.
-    SkinningJointCache 는 현재/이전 joint pose 의 CPU skinning 결과를 소유한다.
+    Skinned MeshInstance 는 공유 SkinningPose 와 원본 Mesh 의 호환성을 관리한다.
+    SkinningPose 는 입력 joint matrix 배열과 현재/이전 pose 의 CPU skinning 캐시를 소유한다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -44,7 +45,7 @@ public:
     void                            Reset();
 
     bool                            InitStatic(SharedPtr<Mesh> sourceMesh);
-    bool                            InitSkinned(SharedPtr<Mesh> sourceMesh);
+    bool                            InitSkinned(SharedPtr<Mesh> sourceMesh, SharedPtr<SkinningPose> skinningPose);
 
     Type                            GetType() const { return type; }
     bool                            IsSkinned() const { return type == Type::Skinned; }
@@ -54,13 +55,13 @@ public:
     const SharedPtr<Mesh> &         GetSourceMesh() const { return sourceMesh; }
 
                                     // 원본 메시가 준비되었는지 여부를 리턴한다.
-    bool                            IsSourceReady() const;
+    bool                            IsSourceReady() const { return !sourceMesh || sourceMesh->GetState() != Mesh::State::Ready ? false : true; }
 
                                     // 원본 메시의 변경 사항을 인스턴스에 반영해야 하는지 여부를 리턴한다.
     bool                            NeedsRefreshFromSource() const;
 
-                                    // 원본 메시가 수정되었으면, 인스턴스의 skinning matrix 배열을 갱신하고 포즈 이력을 초기화한다.
-    bool                            EnsureCurrent();
+                                    // 메시/skeleton 이 변경되었으면 호환성을 다시 검사한다.
+    bool                            SyncWithSource();
 
     int                             NumSurfaces() const;
     const Mesh::Surface *           GetSurface(int surfaceIndex) const;
@@ -69,28 +70,20 @@ public:
 
     const BE1::AABB &               GetAABB() const;
 
-    int                             NumJointMats() const { return jointMats.Count(); }
-    const BE1::Mat3x4 *             GetJointMats() const { return jointMats.Ptr(); }
-    uint64_t                        GetJointMatsSerial() const { return jointMatsSerial; }
-    bool                            SetJointMats(const BE1::Mat3x4 *matrices, int numMatrices);
-
-    const SkinningJointCache *      GetSkinningJointCache() const { return skinningJointCache.get(); }
-    SkinningJointCache *            GetSkinningJointCache() { return skinningJointCache.get(); }
-    bool                            UpdateSkinningJointCache(const Skeleton *skeleton);
-    void                            InvalidateSkinningJointCache();
+    SkinningPose *                  GetSkinningPose() { return skinningPose.get(); }
+    const SkinningPose *            GetSkinningPose() const { return skinningPose.get(); }
 
 private:
     bool                            RefreshFromSource();
     bool                            HasSkinningData() const;
-    void                            ResizeJointMats(int numMatrices);
 
     static constexpr uint32_t       InvalidDataSerial = UINT32_MAX;
 
     Type                            type = Type::Static;
     SharedPtr<Mesh>                 sourceMesh;
     uint32_t                        sourceDataSerial = InvalidDataSerial;
+    uint32_t                        skeletonDataSerial = InvalidDataSerial;
+    bool                            hasCompatibleSkinningData = false;
     uint64_t                        retainedFrameSerial = 0;
-    BE1::Array<BE1::Mat3x4>         jointMats = BE1::Array<BE1::Mat3x4>(64);
-    uint64_t                        jointMatsSerial = 0;
-    UniquePtr<SkinningJointCache>   skinningJointCache;
+    SharedPtr<SkinningPose>         skinningPose;
 };

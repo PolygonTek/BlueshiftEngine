@@ -89,6 +89,8 @@ set(SRC_FILES
     Render/Animation/AnimManager.cpp
     Render/Animation/SkinningJointCache.h
     Render/Animation/SkinningJointCache.cpp
+    Render/Animation/SkinningPose.h
+    Render/Animation/SkinningPose.cpp
     Render/Animation/Skeleton.h
     Render/Animation/Skeleton.cpp
     Render/Animation/Skeleton_InternalData.cpp

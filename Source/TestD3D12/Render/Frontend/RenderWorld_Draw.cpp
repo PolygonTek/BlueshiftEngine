@@ -934,7 +934,7 @@ void RenderWorld::FindDirectionalShadowCasters(RenderFrame *frame, const RenderC
 
         // 카메라에 안 보이는 caster 는 shadow 에 현재 world matrix 만 필요하다.
         // 공용 ShaderSurface 가 prevWorldMatrix 도 업로드하므로 현재 행렬로 초기화한다.
-        if (!BE1::HasFlag(frameObject->flags, FrameObject::Flag::CameraVisible)) {
+        if (!frameObject->IsVisible()) {
             frameObject->worldMatrix = renderObject->GetWorldMatrix();
             frameObject->prevWorldMatrix = frameObject->worldMatrix;
 
@@ -1062,7 +1062,7 @@ void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera 
                     }
 
                     // 이미 공유 LOD 가 0 으로 결정되었거나 LOD 를 명시한 경우 추가 계산이 필요 없다.
-                    if (frameObject->meshLOD < 0 && meshLODPixelError > 0.0f && (!frameObject->IsRenderable() || frameObject->squaredLODErrorLimit > 0.0f)) {
+                    if (frameObject->meshLOD < 0 && meshLODPixelError > 0.0f && (!frameObject->NeedsRendering() || frameObject->squaredLODErrorLimit > 0.0f)) {
                         const Mesh *mesh = frameObject->meshInstance->GetSourceMesh().get();
                         calcShadowLOD = mesh && mesh->HasLODs();
                     }
@@ -1098,7 +1098,7 @@ void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera 
         if (calcShadowLOD) {
             // 모든 관련 shadow view 중 가장 정밀한 texel 밀도를 선택한 뒤 world scale 은 객체당 한 번만 적용한다.
             const float squaredShadowLODErrorLimit = useFinestLOD ? 0.0f : CalcLocalLODErrorLimitSqr(frameObject->worldMatrix, finestTexelsPerWorldUnit, meshLODPixelError);
-            const bool hasSharedLOD = BE1::HasFlag(frameObject->flags, FrameObject::Flag::CameraVisible) || frameObject->shadowCascadeMask != 0;
+            const bool hasSharedLOD = frameObject->IsVisible() || frameObject->shadowCascadeMask != 0;
             frameObject->squaredLODErrorLimit = hasSharedLOD ? BE1::Min(frameObject->squaredLODErrorLimit, squaredShadowLODErrorLimit) : squaredShadowLODErrorLimit;
         }
     }
@@ -1417,7 +1417,7 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
     FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
 
     for (FrameObject &frameObject : frame->GetFrameObjects(frameCamera->firstFrameObjectIndex)) {
-        const bool objectCameraVisible = BE1::HasFlag(frameObject.flags, FrameObject::Flag::CameraVisible);
+        const bool objectCameraVisible = frameObject.IsVisible();
         const uint8_t objectShadowCascadeMask = frameCascadedShadow ? frameObject.shadowCascadeMask : 0;
         const uint32_t objectLocalShadowViewCount = frameShadowAtlas && BE1::HasFlag(frameObject.flags, FrameObject::Flag::LocalShadowCaster) ? frameObject.numLocalShadowCasterRefs : 0;
 
@@ -1426,7 +1426,7 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
         }
 
         MeshInstance *meshInstance = frameObject.meshInstance;
-        if (!meshInstance || !meshInstance->EnsureCurrent()) {
+        if (!meshInstance || !meshInstance->IsSourceReady()) {
             continue;
         }
 
@@ -1600,7 +1600,7 @@ void RenderWorld::AddTextMeshes(RenderFrame *frame, const RenderCamera *renderCa
     // 이전 카메라에서 등록한 FrameText 는 제외하고 현재 카메라의 시작 위치부터 순회한다.
     for (FrameText &frameText : frame->GetFrameTexts(frameCamera->firstFrameTextIndex)) {
         FrameObject *frameObject = frameText.space;
-        if (!BE1::HasFlag(frameObject->flags, FrameObject::Flag::CameraVisible)) {
+        if (!frameObject->IsVisible()) {
             continue;
         }
 

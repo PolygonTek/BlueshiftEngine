@@ -133,7 +133,7 @@ void *RenderFrame::ClearedMemAlloc(int size) {
 void RenderFrame::BeginFrame(const RenderFrameSettings &renderFrameSettings) {
     PROFILER_CPU_SCOPED_EVENT("RenderFrame::BeginFrame");
 
-    // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, 백엔드에서의 사용이 완료되야 한다.
+    // 프론트 엔드에서 이번 프레임의 프레임 데이터를 사용하기 위해서는, GPU 의 이전 사용이 완료될 때까지 기다려야 한다.
     WaitFrameFence();
 
     this->renderFrameSettings = renderFrameSettings;
