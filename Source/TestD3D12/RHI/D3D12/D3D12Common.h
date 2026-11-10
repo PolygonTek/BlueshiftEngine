@@ -43,7 +43,7 @@
 
 // D3D12 PSO 캐싱 시, PSO 블롭 (직렬화된 PSO 데이터) 을 파일로 저장하여 다음 실행 시 로드하는 기능 사용 여부
 #ifndef USE_SHADER_DEBUG
-#define USE_CACHED_PSO_BLOB
+//#define USE_CACHED_PSO_BLOB
 #endif
 
 // 스테이트 캐싱 사용 여부
