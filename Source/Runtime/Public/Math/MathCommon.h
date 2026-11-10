@@ -344,12 +344,22 @@ public:
                                 /// Fast approximate natural logarithm, with approximately 4.49e-4 maximum observed absolute error for positive normal inputs; other inputs use Log.
     static float                LogFast(float f);
 
+                                /// Single-precision natural logarithm of 1 + f, accurate near zero.
+    static float                LogOnePlus(float f);
+                                /// Double-precision natural logarithm of 1 + f, accurate near zero.
+    static double               LogOnePlus(double f);
+
                                 /// Single-precision base-2 logarithm.
     static float                Log2(float f);
                                 /// Double-precision base-2 logarithm.
     static double               Log2(double f);
                                 /// Fast approximate base-2 logarithm, with approximately 6.48e-4 maximum observed absolute error for positive normal inputs.
     static float                Log2Fast(float f);
+
+                                /// Single-precision base-2 logarithm of 1 + f, accurate near zero.
+    static float                Log2OnePlus(float f);
+                                /// Double-precision base-2 logarithm of 1 + f, accurate near zero.
+    static double               Log2OnePlus(double f);
 
                                 /// Single-precision base-10 logarithm.
     static float                Log10(float f);
@@ -886,6 +896,14 @@ BE_INLINE float Math::LogFast(float f) {
     return result;
 }
 
+BE_INLINE float Math::LogOnePlus(float f) {
+    return log1pf(f);
+}
+
+BE_INLINE double Math::LogOnePlus(double f) {
+    return log1p(f);
+}
+
 BE_INLINE float Math::Log2(float f) {
     return log2f(f);
 }
@@ -896,6 +914,14 @@ BE_INLINE double Math::Log2(double f) {
 
 BE_INLINE float Math::Log2Fast(float f) {
     return LogFast(f) * 1.44269504088896340f;
+}
+
+BE_INLINE float Math::Log2OnePlus(float f) {
+    return LogOnePlus(f) / Ln2;
+}
+
+BE_INLINE double Math::Log2OnePlus(double f) {
+    return LogOnePlus(f) / DoubleLn2;
 }
 
 BE_INLINE float Math::Log10(float f) {
