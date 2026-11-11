@@ -133,6 +133,16 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
 
 [RootSignature(OCEAN_ROOT_SIGNATURE)]
 OceanMainPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
+#if DEBUG_CASCADED_SHADOW_MAP == 2
+    OceanMainPSOutput debugResult;
+    debugResult.color = float4(EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition), 1.0f);
+#ifdef OUTPUT_VELOCITY
+    debugResult.velocity = CalcVelocity(input.currUnjitteredClipPos, input.prevUnjitteredClipPos);
+    debugResult.taaReactiveMask = 0.0f;
+#endif
+    return debugResult;
+#endif
+
     const OceanSurfaceInput surface = PrepareOceanSurfaceInput(input, isFrontFace);
     const float3 V = surface.viewDir;
     const float viewDistance = surface.viewDistance;

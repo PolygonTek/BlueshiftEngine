@@ -47,7 +47,7 @@ MainPSOutput PSMain(PSInput input) {
     MainPSOutput result;
     result.color = baseColor;
 
-#if DEBUG_CASCADED_SHADOW_MAP == 1
+#if DEBUG_CASCADED_SHADOW_MAP == 1 || DEBUG_CASCADED_SHADOW_MAP == 2
     result.color.rgb = EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition);
     return result;
 #endif

@@ -354,6 +354,7 @@ bool FindShadowMapCascade(ShaderCSMData csm, float3 worldPosition, uint firstCas
 
 #if DEBUG_CASCADED_SHADOW_MAP == 2
 typedef float3 ShadowLighting;
+static const float3 CSMCoverageOutsideColor = float3(1.0f, 0.02f, 0.02f);
 #else
 typedef float ShadowLighting;
 #endif
@@ -361,17 +362,21 @@ typedef float ShadowLighting;
 ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
 #if DEBUG_CASCADED_SHADOW_MAP == 2
     static const float3 cascadeDebugColors[ShaderCSMCascadeMaxCount] = {
-        float3(0.02f, 0.35f, 1.00f),
-        float3(0.02f, 1.00f, 0.08f),
-        float3(1.00f, 0.80f, 0.02f),
-        float3(0.55f, 0.03f, 1.00f)
+        float3(0.00f, 0.75f, 1.00f), // Cyan
+        float3(0.05f, 1.00f, 0.00f), // Green
+        float3(1.00f, 0.85f, 0.00f), // Yellow
+        float3(0.65f, 0.00f, 1.00f)  // Violet
     };
 #endif
 
     uint cascadeIndex;
     float3 shadowCoord;
     if (!FindShadowMapCascade(csm, worldPosition, 0, cascadeIndex, shadowCoord)) {
+#if DEBUG_CASCADED_SHADOW_MAP == 2
+        return CSMCoverageOutsideColor;
+#else
         return 1.0f;
+#endif
     }
 
     Texture2DArray<float> shadowMapArray = GetTexture2DArrayFloat(csm.textureIndex);
@@ -385,7 +390,8 @@ ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingCo
 
     ShadowLighting shadowLighting = shadowFactor;
 #if DEBUG_CASCADED_SHADOW_MAP == 2
-    shadowLighting *= cascadeDebugColors[cascadeIndex];
+    // 그림자 안에서도 cascade 색을 식별할 수 있도록 최소 밝기를 유지한다.
+    shadowLighting = cascadeDebugColors[cascadeIndex] * lerp(0.25f, 1.0f, shadowFactor);
 #endif
 
     const float coverageMargin = CalcShadowMapCoverageMargin(csm.normalizedBorder, shadowCoord);
@@ -407,7 +413,7 @@ ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingCo
             ShadowLighting shadowLighting2 = shadowFactor2;
 
 #if DEBUG_CASCADED_SHADOW_MAP == 2
-            shadowLighting2 *= cascadeDebugColors[cascadeIndex2];
+            shadowLighting2 = cascadeDebugColors[cascadeIndex2] * lerp(0.25f, 1.0f, shadowFactor2);
 #endif
             shadowLighting = lerp(shadowLighting, shadowLighting2, blendBandWeight);
         }
@@ -419,17 +425,27 @@ ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingCo
 ShadowLighting EvaluateDirectionalShadowLighting(inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
     const ShaderCSMData csm = cameraConstants.csm;
     if (csm.enabled == 0) {
+#if DEBUG_CASCADED_SHADOW_MAP == 2
+        return float3(0.25f, 0.25f, 0.25f);
+#else
         return 1.0f;
+#endif
     }
+
+#if DEBUG_CASCADED_SHADOW_MAP == 2
+    const ShadowLighting outsideLighting = CSMCoverageOutsideColor;
+#else
+    const ShadowLighting outsideLighting = 1.0f;
+#endif
 
     const float viewDistance = dot(worldPosition - cameraConstants.cameraOrigin, cameraConstants.cameraForward);
     const float farFade = saturate((viewDistance - csm.farFadeStart) * csm.invFarFadeRange);
     if (farFade >= 1.0f) {
-        return 1.0f;
+        return outsideLighting;
     }
 
     const ShadowLighting shadowLighting = SampleCascadedShadowMap(csm, shadowSampling, worldPosition);
-    return lerp(shadowLighting, 1.0f, farFade);
+    return lerp(shadowLighting, outsideLighting, farFade);
 }
 
 ShadowLighting EvaluateDirectionalShadowLighting(uint2 pixelCoord, float3 worldPosition) {
