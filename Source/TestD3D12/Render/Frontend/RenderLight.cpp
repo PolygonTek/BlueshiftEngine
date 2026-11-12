@@ -56,7 +56,12 @@ void RenderLight::Update(const RenderLight::Desc &src, Desc::UpdateFlag updateFl
 }
 
 void RenderLight::UpdateFlags(Flag flags) {
-    if (desc.flags != flags) {
+    constexpr Flag shadowCacheFlags = Flag::Static | Flag::CastShadows | Flag::StaticShadows;
+    const Flag oldShadowCacheFlags = desc.flags & shadowCacheFlags;
+    const Flag newShadowCacheFlags = flags & shadowCacheFlags;
+
+    // Volumetric shadow sampling does not change the cached shadow depth.
+    if (oldShadowCacheFlags != newShadowCacheFlags) {
         ++shadowRevision;
     }
     desc.flags = flags;
@@ -208,6 +213,19 @@ bool RenderLight::IsIntersectOBB(const BE1::OBB &obb) const {
 
     if (desc.type == Type::Spot) {
         return obb.IsIntersectSphere(worldSphere) && !worldFrustum.CullOBB(obb);
+    }
+
+    assert(0);
+    return false;
+}
+
+bool RenderLight::IsIntersectFrustum(const BE1::Frustum &frustum) const {
+    if (desc.type == Type::Point) {
+        return !frustum.CullSphere(worldSphere);
+    }
+
+    if (desc.type == Type::Spot) {
+        return !frustum.CullSphere(worldSphere) && !frustum.CullFrustum(worldFrustum);
     }
 
     assert(0);

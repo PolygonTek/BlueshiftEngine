@@ -81,6 +81,9 @@ void RenderSystem::Init(void *mainWindowHandle) {
     screenSpaceAO.Init();
     screenSpaceAO.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
+    volumetricFog.Init();
+    volumetricFog.TrackBootstrapPipelines(shaderPipelineBootstrap);
+
     ssrHiZ.Init();
     ssrHiZ.TrackBootstrapPipelines(shaderPipelineBootstrap);
 
@@ -168,6 +171,8 @@ void RenderSystem::Shutdown() {
     ssrHiZ.Shutdown();
 
     screenSpaceAO.Shutdown();
+
+    volumetricFog.Shutdown();
 
     hiZ.Shutdown();
 

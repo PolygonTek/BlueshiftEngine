@@ -152,6 +152,11 @@ set(SRC_FILES
     Render/ScreenSpace/ScreenSpaceAO.cpp
     Render/ScreenSpace/ScreenSpaceAOResources.h
     Render/ScreenSpace/ScreenSpaceAOResources.cpp
+    Render/VolumetricFog/VolumetricFog.h
+    Render/VolumetricFog/VolumetricFog.cpp
+    Render/VolumetricFog/VolumetricFogResources.h
+    Render/VolumetricFog/VolumetricFogResources.cpp
+    Shaders/Fog/FogInterop.h
     Render/ScreenSpace/SSRHiZ.h
     Render/ScreenSpace/SSRHiZ.cpp
     Render/ScreenSpace/SSRHiZResources.h
@@ -249,6 +254,8 @@ set(SRC_FILES
     Render/Backend/RenderBackend_DrawSkySurf.cpp
     Render/Frontend/EnvironmentLight.h
     Render/Frontend/EnvironmentLight.cpp
+    Render/Frontend/HeightFog.h
+    Render/Frontend/HeightFog.cpp
     Render/Frontend/OceanSurface.cpp
     Render/Frontend/OceanSurface.h
     Render/Frontend/RenderLight.h

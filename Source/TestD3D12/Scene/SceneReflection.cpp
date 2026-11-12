@@ -109,7 +109,7 @@ void SceneReflection::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsW
     }
 
     directionalLight.type = RenderLight::Type::Directional;
-    directionalLight.flags = RenderLight::Flag::CastShadows;
+    directionalLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows;
     directionalLight.linearColor = BE1::Color3::white;
     directionalLight.intensity = 3.0f;
     directionalLightEnabled = true;

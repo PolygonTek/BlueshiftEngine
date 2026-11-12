@@ -211,10 +211,10 @@ bool RenderBackend::DispatchSSRTemporal(bool transparent) {
     params.uvJitterDelta = float2((currentFrameCamera->ndcJitter - currentFrameCamera->prevNdcJitter) * BE1::Vec2(0.5f, -0.5f));
     params.historyWeight = frame->GetRenderFrameSettings().ssrTemporalHistoryWeight;
 
-    // 직전 프레임에서 SSR 기록이 있는지 확인한다. (SSR 기록이 없으면 historyValid = 0 으로 설정)
+    // 직전 카메라 렌더링에서 SSR 기록이 있는지 확인한다. (SSR 기록이 없으면 historyValid = 0 으로 설정)
     const SSRHistoryRenderState &historyState = *currentFrameCamera->ssrHistoryRenderState;
     const uint64_t producedSerial = transparent ? historyState.transparentTemporalReflectionSerial : historyState.opaqueTemporalReflectionSerial;
-    const bool previousViewProducedHistory = currentFrameCamera->ssrHistorySerial > 1 && producedSerial == currentFrameCamera->ssrHistorySerial - 1;
+    const bool previousViewProducedHistory = currentFrameCamera->viewSerial > 1 && producedSerial == currentFrameCamera->viewSerial - 1;
     params.historyValid = previousViewProducedHistory && (transparent ? currentFrameCamera->transparentSSRTemporalHistoryValid : currentFrameCamera->ssrTemporalHistoryValid) ? 1u : 0u;
 
     params.transparentReceiver = transparent ? 1u : 0u;

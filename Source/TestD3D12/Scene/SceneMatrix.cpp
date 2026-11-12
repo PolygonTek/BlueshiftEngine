@@ -37,7 +37,7 @@ void SceneMatrix::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld
     renderWorld->SetSkyboxRotation(envLightDesc.axis);
 
     directionalLight.type = RenderLight::Type::Directional;
-    directionalLight.flags = RenderLight::Flag::CastShadows;
+    directionalLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows;
     directionalLight.linearColor = BE1::Color3::white;
     directionalLight.intensity = 5.0f;
     directionalLightEnabled = true;
@@ -194,7 +194,7 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
             for (uint32_t x = 0; x < lightCountX; ++x) {
                 GameLight &gameLight = gameLights.Alloc();
                 gameLight.type = RenderLight::Type::Point;
-                gameLight.flags = pointLightShadows ? RenderLight::Flag::CastShadows : RenderLight::Flag::None;
+                gameLight.flags = pointLightShadows ? (RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows) : RenderLight::Flag::None;
                 gameLight.origin.Set(
                     startX + lightSpacing * x,
                     startY + lightSpacing * y,
@@ -316,9 +316,9 @@ void SceneMatrix::BuildImGui() {
     if (ImGui::Checkbox("Cast Shadows##PointLights", &pointLightShadows)) {
         for (GameLight &gameLight : gameLights) {
             if (pointLightShadows) {
-                gameLight.flags |= RenderLight::Flag::CastShadows;
+                gameLight.flags |= RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows;
             } else {
-                gameLight.flags &= ~RenderLight::Flag::CastShadows;
+                gameLight.flags &= ~(RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows);
             }
             if (gameLight.renderLightHandle >= 0) {
                 renderWorld->UpdateRenderLightFlags(gameLight.renderLightHandle, gameLight.flags);

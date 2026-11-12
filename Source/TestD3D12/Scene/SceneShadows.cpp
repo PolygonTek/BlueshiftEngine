@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "App.h"
 #include "Render/Frontend/EnvironmentLight.h"
+#include "Render/Frontend/HeightFog.h"
 #include "Render/Frontend/RenderWorld.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshInstance.h"
@@ -31,7 +32,7 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     this->renderWorld = renderWorld;
 
     EnvironmentLight::Desc envLightDesc;
-    envLightDesc.intensity = 0.1f;
+    envLightDesc.intensity = 0.025f;
     renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
     renderWorld->SetSkyboxLighting(envLightDesc.linearColor, envLightDesc.intensity);
     renderWorld->SetSkyboxRotation(envLightDesc.axis);
@@ -42,6 +43,12 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     if (renderWorld->AddEnvironmentLight(envLightDesc)) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
     }
+
+    HeightFog::Desc fogDesc;
+    fogDesc.baseHeight = 0.0f;
+    fogDesc.heightFalloff = 0.1f;
+    fogDesc.medium.anisotropy = 0.6f;
+    renderWorld->AddHeightFog(fogDesc);
 
     testMesh = meshManager.GetMesh(meshPath, false);
     if (!testMesh || !testMesh->IsReady() || testMesh == meshManager.missingMesh) {
@@ -79,7 +86,7 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     renderWorld->AddRenderObject(meshDesc);
 
     pointLight.type = RenderLight::Type::Point;
-    pointLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::StaticShadows;
+    pointLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows | RenderLight::Flag::StaticShadows;
     pointLight.origin.Set(0.217f, -0.181f, 0.017f);
     pointLight.range = 3.0f;
     pointLight.shadowOffsetUnits = 500.0f;
@@ -88,20 +95,19 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     pointLight.intensity = 1.0f;
     pointLightEnabled = pointLight.SetEnabled(renderWorld, true);
 
-    spotPitch = 45.0f;
-    spotYaw = -20.0f;
+    spotPitch = 25.0f;
+    spotYaw = -30.0f;
     spotLight.type = RenderLight::Type::Spot;
-    spotLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::StaticShadows;
-    spotLight.origin.Set(-3.5f, 2.0f, 1.5f);
+    spotLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows | RenderLight::Flag::StaticShadows;
+    spotLight.origin.Set(-2.8f, 2.0f, 0.0f);
     spotLight.axis = BE1::Angles(0.0f, spotPitch, spotYaw).ToMat3();
     spotLight.range = 5.0f;
-    spotLight.innerConeAngle = 10.0f;
-    spotLight.outerConeAngle = 20.0f;
-    spotLight.zNear = 1.0f;
+    spotLight.innerConeAngle = 30.0f;
+    spotLight.outerConeAngle = 45.0f;
     spotLight.shadowOffsetUnits = 500.0f;
-    spotLight.shadowOffsetFactor = 3.0f;
+    spotLight.shadowOffsetFactor = 5.0f;
     spotLight.linearColor = BE1::Color3(0.2f, 0.45f, 1.0f);
-    spotLight.intensity = 30.0f;
+    spotLight.intensity = 15.0f;
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
 }
 
@@ -272,6 +278,46 @@ void SceneShadows::BuildImGui() {
                 renderWorld->SetSkyboxLighting(desc.linearColor, desc.intensity);
             }
         }
+    }
+
+    if (const HeightFog *fog = renderWorld ? renderWorld->GetHeightFog() : nullptr) {
+        HeightFog::Desc desc = fog->GetDesc();
+        ImGui::Separator();
+        ImGui::TextUnformatted("Height Fog");
+        ImGui::PushID("HeightFog");
+        ImGui::PushItemWidth(ImGui::GetFontSize() * 17.0f);
+
+        bool changed = ImGui::Checkbox("Enabled", &desc.enabled);
+        ImGui::BeginDisabled(!desc.enabled);
+        changed |= ImGui::DragFloat("Base height", &desc.baseHeight, 0.1f, 0.0f, 0.0f, "%.2f m");
+        ImGui::SetItemTooltip("World Z height at which base extinction and density are defined.");
+        changed |= ImGui::SliderFloat("Height falloff", &desc.heightFalloff, 0.0f, 10.0f, "%.3f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Density halves for every 1 / falloff meters above the base height and increases below it. Zero gives a uniform medium.");
+        changed |= ImGui::SliderFloat("Base extinction", &desc.medium.baseExtinction, 0.0f, 10.0f, "%.4f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Extinction at the base height is base extinction multiplied by density.");
+        changed |= ImGui::SliderFloat("Density", &desc.density, 0.0f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+        changed |= ImGui::DragFloat("Max distance", &desc.maxDistance, 10.0f, 0.01f, 1000000.0f, "%.1f m", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Maximum fog ray distance for surfaces and sky. Independent of the froxel far depth.");
+        changed |= ImGui::ColorEdit3("Scattering albedo", &desc.medium.scatteringAlbedo.x, ImGuiColorEditFlags_Float);
+        changed |= ImGui::SliderFloat("Anisotropy (g)", &desc.medium.anisotropy, -0.9f, 0.9f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("0 is isotropic. Positive values favor forward scattering when looking toward a light.");
+        if (ImGui::ColorEdit3("Base emission", &desc.medium.baseEmission.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
+            desc.medium.baseEmission.x = BE1::Max(desc.medium.baseEmission.x, 0.0f);
+            desc.medium.baseEmission.y = BE1::Max(desc.medium.baseEmission.y, 0.0f);
+            desc.medium.baseEmission.z = BE1::Max(desc.medium.baseEmission.z, 0.0f);
+            changed = true;
+        }
+        ImGui::SetItemTooltip("RGB radiance emitted per meter at unit density. Scales with density and is independent of scattering albedo.");
+        changed |= ImGui::ColorEdit3("Ambient color", desc.ambientColor.Ptr(), ImGuiColorEditFlags_Float);
+        changed |= ImGui::DragFloat("Ambient intensity", &desc.ambientIntensity, 0.05f, 0.0f, 32.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Uniform ambient incident radiance for height fog. Scattering follows its density and albedo.");
+        ImGui::EndDisabled();
+
+        if (changed) {
+            renderWorld->UpdateHeightFog(desc);
+        }
+        ImGui::PopItemWidth();
+        ImGui::PopID();
     }
 }
 #endif

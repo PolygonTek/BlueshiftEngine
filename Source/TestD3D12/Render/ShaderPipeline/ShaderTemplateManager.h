@@ -55,6 +55,8 @@ public:
     SharedPtr<ShaderTemplate>       debugDrawShaderTemplate;
     SharedPtr<ShaderTemplate>       unlitShaderTemplate;
     SharedPtr<ShaderTemplate>       litShaderTemplate;
+    SharedPtr<ShaderTemplate>       fogCompositeShaderTemplate;
+    SharedPtr<ShaderTemplate>       fogCompositeMSAAShaderTemplate;
 
 private:
     void                            InitGlobalDefines();

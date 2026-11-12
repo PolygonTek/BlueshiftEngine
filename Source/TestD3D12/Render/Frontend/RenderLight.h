@@ -37,7 +37,8 @@ public:
         None                        = 0,
         Static                      = BIT(0),
         CastShadows                 = BIT(1),
-        StaticShadows               = BIT(2)  ///< Point/Spot: cache shadows from static casters, independently of camera visibility
+        StaticShadows               = BIT(2), ///< Point/Spot: cache shadows from static casters, independently of camera visibility
+        CastVolumetricShadows       = BIT(3)  ///< Apply shadows to volumetric lighting; only effective when CastShadows is enabled
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
@@ -102,6 +103,9 @@ public:
 
                                     /// Check intersection of OBB and light bounding volume.
     bool                            IsIntersectOBB(const BE1::OBB &obb) const;
+
+                                    /// Check intersection of frustum and light bounding volume using conservative plane tests.
+    bool                            IsIntersectFrustum(const BE1::Frustum &frustum) const;
 
                                     /// Calculates minimum / maximum values by projecting light bounding volume onto the given axis.
     void                            ProjectOnAxis(const BE1::Vec3 &axis, float &min, float &max) const;

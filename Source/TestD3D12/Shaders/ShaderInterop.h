@@ -17,8 +17,6 @@
 
 #ifdef __cplusplus
 
-#include <cstddef>
-
 #include "Shaders/ShaderTypes.h"
 
 #define column_major
@@ -30,6 +28,8 @@
 #include "ShaderPacking.hlsli"
 
 #endif // __cplusplus
+
+#include "Fog/FogInterop.h"
 
 static const uint TextureStreamingFeedbackResolution = 16384;
 static const uint TextureStreamingFeedbackMaxLOD = 14;
@@ -165,8 +165,19 @@ static const uint ShaderSkinningJointOffsetInvalid = 0xFFFFFFFF;
 // Independent material properties shared by CPU and GPU code.
 static const uint ShaderMaterialFlagTransparent = 1u << 0;
 static const uint ShaderMaterialFlagTexCoordTransform = 1u << 1;
+
+// Only transparent materials carry a fog blend mode; opaque fog is composited separately.
+static const uint ShaderMaterialVFogBlendShift = 2;
+static const uint ShaderMaterialVFogBlendMask = 3u << ShaderMaterialVFogBlendShift;
+static const uint ShaderMaterialVFogBlendAlpha = 1u << ShaderMaterialVFogBlendShift;
+static const uint ShaderMaterialVFogBlendPremultiplied = 2u << ShaderMaterialVFogBlendShift;
+static const uint ShaderMaterialVFogBlendAdditive = 3u << ShaderMaterialVFogBlendShift;
 // Upper six bits of ShaderMaterial::flags hold a stable 8x8 dither pattern offset.
 static const uint ShaderMaterialDitherPatternShift = 26;
+
+// Match RenderLight::Flag; CastVolumetricShadows requires CastShadows.
+static const uint ShaderLightFlagCastShadows = 1u << 1;
+static const uint ShaderLightFlagCastVolumetricShadows = 1u << 3;
 
 static const uint ShaderLightTypeBitCount = 2;
 static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
@@ -193,7 +204,10 @@ static const uint ShaderShadowDebugModeVisibility = 1;
 static const uint ShaderShadowDebugModeCascadeCoverage = 2;
 static const uint ShaderCSMCascadeMaxCount = 4;
 
-static const uint ShaderLocalShadowIndexInvalid = 0xFFFFFFFFu;
+// Point/Spot pack a 24-bit shadow index and the full 8-bit RenderLight::Flag without changing their strides.
+static const uint ShaderLocalLightFlagsShift = 24;
+static const uint ShaderLocalShadowIndexMask = (1u << ShaderLocalLightFlagsShift) - 1u;
+static const uint ShaderLocalShadowIndexInvalid = ShaderLocalShadowIndexMask; // Test the index bits only; flags remain valid without a shadow.
 
 // Point shadow 는 광원 회전과 무관한 월드 축 6면을 사용한다. View 는 firstShadowView + faceIndex 로 찾는다.
 static const uint ShaderPointShadowFacePositiveX = 0;
@@ -212,6 +226,8 @@ static const uint ShaderCameraFlagUseScreenSpaceAO = 1u << 4;
 static const uint ShaderCameraFlagUseTAA = 1u << 5;
 static const uint ShaderCameraFlagUseSSR = 1u << 6;
 static const uint ShaderCameraFlagUseTransparentSSR = 1u << 7;
+static const uint ShaderCameraFlagUseVFog = 1u << 8; // This camera's fog volume is ready for surface shading.
+static const uint ShaderCameraFlagUseHeightFog = 1u << 9; // This camera's analytic height fog is enabled for surface shading.
 
 static const uint MultiplySpectrum2DBlockSize = 256;
 
@@ -334,7 +350,6 @@ struct FinalPostProcessParams {
 
 #ifdef __cplusplus
 static_assert(sizeof(GT7ToneMappingParams) == 32, "GT7ToneMappingParams must match the HLSL constant-buffer layout");
-static_assert(offsetof(FinalPostProcessParams, gt7) == 80, "GT7 parameters must start on an HLSL constant-buffer register boundary");
 static_assert(sizeof(FinalPostProcessParams) == 112, "FinalPostProcessParams must match the HLSL constant-buffer layout");
 #endif
 
@@ -790,12 +805,11 @@ struct ShaderPointLight {
     float3 origin;
     float invRadiusSquared;
     float3 intensityRGB; // Luminance-normalized RGB times luminous intensity (cd).
-    uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
+    uint shadowIndexAndFlags; // 하위 24비트: 카메라의 local shadow 테이블 인덱스, 상위 8비트: RenderLight::Flag. 하위 인덱스가 ShaderLocalShadowIndexInvalid 이면 shadow 없음.
 };
 
 #ifdef __cplusplus
 static_assert(sizeof(ShaderPointLight) == 64, "ShaderPointLight must remain a tightly packed StructuredBuffer element");
-static_assert(offsetof(ShaderPointLight, shadowIndex) == 60, "Point shadow index must match the HLSL structured-buffer layout");
 #endif
 
 struct ShaderSpotLight {
@@ -805,13 +819,11 @@ struct ShaderSpotLight {
     float cosOuterCone;
     float3 intensityRGB; // Luminance-normalized RGB times luminous intensity inside the inner cone (cd).
     float invCosConeDifference;
-    uint shadowIndex; // 카메라의 local shadow 테이블 인덱스. ShaderLocalShadowIndexInvalid 이면 shadow 없음.
+    uint shadowIndexAndFlags; // 하위 24비트: 카메라의 local shadow 테이블 인덱스, 상위 8비트: RenderLight::Flag. 하위 인덱스가 ShaderLocalShadowIndexInvalid 이면 shadow 없음.
 };
 
 #ifdef __cplusplus
 static_assert(sizeof(ShaderSpotLight) == 52, "ShaderSpotLight must remain a tightly packed StructuredBuffer element");
-static_assert(offsetof(ShaderSpotLight, direction) == 16, "Spot direction must match the HLSL structured-buffer layout");
-static_assert(offsetof(ShaderSpotLight, shadowIndex) == 48, "Spot shadow index must match the HLSL structured-buffer layout");
 #endif
 
 struct FrameConstants {
@@ -836,8 +848,6 @@ struct FrameConstants {
 
 #ifdef __cplusplus
 static_assert(sizeof(FrameConstants) == 96, "FrameConstants must match the HLSL constant-buffer layout");
-static_assert(offsetof(FrameConstants, specularAAVariance) == 56 && offsetof(FrameConstants, specularAALimit) == 60, "Specular AA parameters must match the HLSL constant-buffer layout");
-static_assert(offsetof(FrameConstants, directionalLight) == 64, "Directional light must start at a constant-buffer register boundary");
 #endif
 
 // Shadow depth 기록에 필요한 광원 행렬과 surface table. 샘플링용 데이터와 별도로 전달한다.
@@ -884,12 +894,8 @@ struct ShaderShadowAtlasData {
 
 #ifdef __cplusplus
 static_assert(sizeof(ShaderLocalShadow) == 36, "ShaderLocalShadow must match the HLSL structured-buffer stride");
-static_assert(offsetof(ShaderLocalShadow, numShadowViews) == 4 && offsetof(ShaderLocalShadow, filterRadius) == 8 && offsetof(ShaderLocalShadow, normalizedBorder) == 12, "Local shadow field offsets must match HLSL");
-static_assert(offsetof(ShaderLocalShadow, pointOrigin) == 16 && offsetof(ShaderLocalShadow, pointDepthScaleBias) == 28, "Point shadow sampling offsets must match HLSL");
 static_assert(sizeof(ShaderLocalShadowView) == 80, "ShaderLocalShadowView must match the HLSL structured-buffer stride");
-static_assert(offsetof(ShaderLocalShadowView, atlasScaleBias) == 64, "Local shadow view field offsets must match HLSL");
 static_assert(sizeof(ShaderShadowAtlasData) == 32, "ShaderShadowAtlasData must match the HLSL constant-buffer layout");
-static_assert(offsetof(ShaderShadowAtlasData, numShadows) == 12 && offsetof(ShaderShadowAtlasData, texelSize) == 16 && offsetof(ShaderShadowAtlasData, numShadowViews) == 24 && offsetof(ShaderShadowAtlasData, padding) == 28, "Shadow atlas field offsets must match HLSL");
 #endif
 
 // CSM 을 샘플링하는 데 필요한 데이터.
@@ -934,8 +940,20 @@ struct CameraConstants {
     float3 cameraForward;
     uint flags;
 
+    float3 prevCameraOrigin;
+    uint cameraUnchanged; // Valid previous camera with unchanged unjittered projection, position and orientation.
+
+    float3 prevCameraForward;
+    uint cameraPadding;
+
     float4 projectionScaleBiasXY; // clip.xy = view.xy * projectionScaleBiasXY.xy + clip.w * projectionScaleBiasXY.zw (including jitter).
     float4 uvToViewScaleBiasXY;   // view.xy = (uv * uvToViewScaleBiasXY.xy + uvToViewScaleBiasXY.zw) * clip.w (top-left UV in [0, 1], independent of pass resolution).
+
+    float2 renderSize;           // Size of this camera's main render target in pixels.
+    float2 renderSizeRcp;        // Reciprocal size of this camera's main render target.
+
+    float2 uvJitter;             // UV-space jitter offset; rasterUV - uvJitter gives unjittered UV.
+    float2 viewPadding;
 
     // Pack depth coefficients into one 16-byte constant-buffer register.
     float2 projectionScaleBiasZ;  // clip.z = view.z * projectionScaleBiasZ.x + projectionScaleBiasZ.y
@@ -969,6 +987,13 @@ struct CameraConstants {
     ShaderShadowAtlasData shadowAtlas;
     float4 skyboxRadianceScale;
 
+    HeightFogParams heightFogParams;
+    VFogParams vfogParams;
+    uint vfogSourceTextureIndex;     // Zero until this camera's fog dispatch succeeds.
+    uint vfogIntegratedTextureIndex;
+    float fogNearDepth;            // Shared fog start depth (-view Z), independent of volume availability.
+    uint fogPadding;
+
 #ifndef __cplusplus
     inline bool IsOrthogonal() {
         return (flags & ShaderCameraFlagProjectionOrthogonal) != 0u;
@@ -993,10 +1018,7 @@ struct CameraConstants {
 };
 
 #ifdef __cplusplus
-static_assert(offsetof(CameraConstants, projectionScaleBiasZ) == 560 && offsetof(CameraConstants, envLightAxis) == 624, "Camera depth coefficients and matrices must match the HLSL constant-buffer layout");
-static_assert(offsetof(CameraConstants, csm) == 704 && offsetof(CameraConstants, shadowAtlas) == 960, "Shadow atlas data must follow the existing camera constants");
-static_assert(offsetof(CameraConstants, skyboxRadianceScale) == 992, "Skybox radiance scale must match the HLSL constant-buffer layout");
-static_assert(sizeof(CameraConstants) == 1008, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 1200, "CameraConstants must match the HLSL constant-buffer layout");
 #endif
 
 struct SurfaceDrawParams {

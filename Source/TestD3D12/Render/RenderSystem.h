@@ -23,6 +23,7 @@
 #include "GpuSphericalHarmonics.h"
 #include "ScreenSpace/HiZ.h"
 #include "ScreenSpace/ScreenSpaceAO.h"
+#include "VolumetricFog/VolumetricFog.h"
 #include "ScreenSpace/SSRHiZ.h"
 #include "ScreenSpace/SSRSceneColorHistory.h"
 #include "PostProcess/Bloom.h"
@@ -158,6 +159,8 @@ public:
     ScreenSpaceAO &                 GetScreenSpaceAO() { return screenSpaceAO; }
     const ScreenSpaceAO &           GetScreenSpaceAO() const { return screenSpaceAO; }
 
+    VolumetricFog &                 GetVolumetricFog() { return volumetricFog; }
+
     SSRHiZ &                        GetSSRHiZ() { return ssrHiZ; }
     const SSRHiZ &                  GetSSRHiZ() const { return ssrHiZ; }
 
@@ -264,6 +267,7 @@ private:
     GpuSphericalHarmonics           gpuSphericalHarmonics;
     HiZ                             hiZ;
     ScreenSpaceAO                   screenSpaceAO;
+    VolumetricFog                   volumetricFog;
     SSRHiZ                          ssrHiZ;
     SSRSceneColorHistory            ssrSceneColorHistory;
     Bloom                           bloom;

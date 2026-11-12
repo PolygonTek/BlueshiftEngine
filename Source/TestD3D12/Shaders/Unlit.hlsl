@@ -1,4 +1,5 @@
 #include "UnlitSurfaceCommon.hlsli"
+#include "Fog/FogSurface.hlsli"
 #if _BASECOLOR != 0
 #include "TextureStreamingFeedback.hlsli"
 #endif
@@ -20,5 +21,12 @@ MainPSOutput PSMain(PSInput input) {
 
     MainPSOutput result;
     result.color = baseColor;
+
+    // transparent surface 에는 표면 깊이까지의 froxel 및 analytic fog 를 result.color 에 직접 합성한다.
+    const uint vfogBlendMode = shaderMaterial.flags & ShaderMaterialVFogBlendMask;
+    [branch]
+    if ((cameraConstants.flags & (ShaderCameraFlagUseHeightFog | ShaderCameraFlagUseVFog)) != 0u && vfogBlendMode != 0u) {
+        result.color = FogApplyToTransparentSurface(result.color, input.position.xyz, vfogBlendMode);
+    }
     return result;
 }

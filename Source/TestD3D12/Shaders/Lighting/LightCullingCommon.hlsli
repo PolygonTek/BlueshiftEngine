@@ -2,7 +2,7 @@
 #define __LIGHT_CULLING_COMMON_HLSLI__
 
 #include "../ShaderInterop.h"
-#include "../SurfaceDrawCommon.hlsli"
+#include "../CommonBindless.hlsli"
 
 #ifndef SHADER_LIGHT_USE_WAVE_OPS
 #define SHADER_LIGHT_USE_WAVE_OPS 0
@@ -46,7 +46,7 @@ uint LoadLightTileWord(uint address, bool waveCoherent) {
     return GetBufferUInt(frameConstants.shaderLightTileWordTableIndex)[address];
 }
 
-ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float depth, bool useZBin, bool waveCoherent) {
+ShaderLightIterator BeginShaderLightIterationLinearDepth(uint2 pixelCoord, float viewZ, bool useZBin, bool waveCoherent) {
     ShaderLightIterator iterator;
     iterator.tileWordBaseIndex = ShaderLightInvalidOffset;
     iterator.nextWordIndex = 0;
@@ -64,7 +64,6 @@ ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float depth, boo
 
     // Z-bin 을 사용할 수 있다면, minLightIndex 와 maxLightIndex 를 현재 픽셀의 linear view Z 와 겹치는 라이트 범위로 제한한다.
     if (useZBin && cameraConstants.lightCullingZBinTableOffset != ShaderLightInvalidOffset) {
-        const float viewZ = cameraConstants.GetLinearDepth(depth);
         const float zBin = viewZ * cameraConstants.lightCullingZBinScale + cameraConstants.lightCullingZBinBias;
         const uint zBinIndex = (uint)clamp(zBin, 0.0f, (float)(ShaderLightZBinCount - 1));
         const uint zBinAddress = cameraConstants.lightCullingZBinTableOffset + zBinIndex;
@@ -94,6 +93,10 @@ ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float depth, boo
     }
 
     return iterator;
+}
+
+ShaderLightIterator BeginShaderLightIteration(uint2 pixelCoord, float depth, bool useZBin, bool waveCoherent) {
+    return BeginShaderLightIterationLinearDepth(pixelCoord, cameraConstants.GetLinearDepth(depth), useZBin, waveCoherent);
 }
 
 uint LoadShaderLightMask(ShaderLightIterator iterator, uint wordIndex, bool waveCoherent) {

@@ -1,6 +1,13 @@
 #ifndef __FULLSCREEN_TRIANGLE_HLSLI__
 #define __FULLSCREEN_TRIANGLE_HLSLI__
 
+inline float4 GetFullscreenTriangleVertex(uint vertexID) {
+    // Creates a full screen CCW triangle from 3 vertices
+    float2 corner = float2(vertexID % 2u, vertexID / 2u);
+
+    return float4(corner * 4.0 - 1.0, 0.0, 1.0);
+}
+
 inline void GetFullscreenTriangleVertex(uint vertexID, out float4 position, out float2 texCoord) {
     // Creates a full screen CCW triangle from 3 vertices
     float2 corner = float2(vertexID % 2u, vertexID / 2u);

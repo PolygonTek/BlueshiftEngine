@@ -232,8 +232,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     assert(frameActive);
 
     const RenderCamera::Desc &cameraDesc = renderCamera->desc;
-    const BE1::Rect &outputRect = cameraDesc.outputRect;
-    if (outputRect.w <= 0 || outputRect.h <= 0) {
+    if (cameraDesc.outputRect.w <= 0 || cameraDesc.outputRect.h <= 0) {
         return;
     }
 
@@ -242,8 +241,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
 
     // 렌더 해상도가 지정되지 않았으면 출력 영역의 크기를 사용한다.
-    const uint32_t renderWidth = cameraDesc.renderWidth != 0 ? cameraDesc.renderWidth : static_cast<uint32_t>(outputRect.w);
-    const uint32_t renderHeight = cameraDesc.renderHeight != 0 ? cameraDesc.renderHeight : static_cast<uint32_t>(outputRect.h);
+    const uint32_t renderWidth = cameraDesc.renderWidth != 0 ? cameraDesc.renderWidth : static_cast<uint32_t>(cameraDesc.outputRect.w);
+    const uint32_t renderHeight = cameraDesc.renderHeight != 0 ? cameraDesc.renderHeight : static_cast<uint32_t>(cameraDesc.outputRect.h);
 
     // FrameLight 는 축당 8 비트 타일 좌표를 저장하므로 최대 256 개 타일까지 지원한다. 즉, MaxRenderDimension x MaxRenderDimension 보다 큰 해상도는 지원하지 않는다.
     if (renderWidth > FrameLight::MaxRenderDimension || renderHeight > FrameLight::MaxRenderDimension) {
@@ -251,7 +250,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         return;
     }
 
-    // 출력 텍스처가 지정되면, 최종 렌더링 결과를 해당 텍스처에 blit 할 PSO 를 준비한다.
+    // 출력 텍스처가 지정되었다면, 최종 렌더링 결과를 해당 텍스처에 blit 할 PSO 를 준비한다.
     RHI::PipelineState *outputBlitPSO = nullptr;
     if (cameraDesc.outputTexture) {
         if (!cameraDesc.outputTexture->HasValidView(RHI::ViewType::RTV, cameraDesc.outputViewID)) {
@@ -269,15 +268,19 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool skipPostProcess = frameSettings.skipPostProcess || BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::SkipPostProcess);
     const bool useAO = frameSettings.aoMode != RenderAOMode::Off;
     const bool debugAO = useAO && frameSettings.gtaoDebug != 0;
+    const bool fogAllowed = frameSettings.shadowDebugMode == ShaderShadowDebugModeNone && frameSettings.lightCullingDebugMode == 0;
+    const bool useHeightFog = fogAllowed && hasHeightFog && heightFog.GetDesc().IsActive() && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableHeightFog);
+    const bool useVFog = fogAllowed && frameSettings.vfogEnabled && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableVolumetricFog);
+    const bool hasVolumetricMedia = useHeightFog; // 현재 주입 가능한 매질은 HeightFog 뿐이다. VFog 옵션과 매질의 존재 여부는 별도로 판단한다.
+    const bool debugVFog = useVFog && hasVolumetricMedia && frameSettings.vfogDebugMode != 0;
     const bool temporalHistoryEnabled = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
     const bool useEnvironmentLight = frameSettings.indirectLighting && hasEnvironmentLight && envLight.GetDesc().enabled;
-    // 간접광이나 환경광을 끄면 SSR 리소스와 히스토리도 기존 비활성화 경로에서 정리한다.
     const bool useSSR = useEnvironmentLight && temporalHistoryEnabled && frameSettings.ssr;
     const bool needsSSRTemporalAccumulation = frameSettings.ssrTemporal && frameSettings.ssrTemporalHistoryWeight > 0.0f && (frameSettings.ssrDebugMode == SSRDebugModeOff || frameSettings.ssrDebugMode == SSRDebugModeUpsampledReflection);
     const bool debugSSR = useSSR && frameSettings.ssrDebugMode != SSRDebugModeOff;
     const bool debugTransparentSSR = debugSSR && frameSettings.ssrTransparent && frameSettings.ssrDebugTransparent;
     const bool useTransparentSSR = useSSR && frameSettings.ssrTransparent && (!debugSSR || debugTransparentSSR);
-    const bool useTAA = temporalHistoryEnabled && frameSettings.taa && !skipPostProcess && !debugAO && frameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility && !debugSSR;
+    const bool useTAA = temporalHistoryEnabled && frameSettings.taa && !skipPostProcess && !debugAO && frameSettings.shadowDebugMode != ShaderShadowDebugModeVisibility && !debugSSR && !debugVFog;
     const bool needNormalRoughnessTexture = useAO || useSSR;
     const bool needVelocityTexture = useTAA || useSSR;
     const bool needColorHistory = useTAA;
@@ -286,16 +289,17 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     const bool needHiZTexture = needHiZCullResources;
     const bool needHiZDebugPreview = needHiZTexture && frameSettings.hiZDebugPreview;
 
-    // 장면 렌더링에 필요한 컬러, 깊이, 노멀, roughness, velocity 텍스처를 준비한다.
+    // 장면 렌더링에 필요한 color, depth, normal, roughness, velocity 텍스처를 준비한다.
     if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, needNormalRoughnessTexture, needVelocityTexture, renderContext->GetBaseClearColor())) {
         return;
     }
 
-    // 이번 프레임에 사용할 카메라 슬롯을 확보한다.
     FrameCamera *frameCamera = frame->AllocFrameCamera();
     if (!frameCamera) {
         return;
     }
+
+    frameCamera->viewSerial = ++renderCamera->viewSerial;
 
     // SSR 에 사용할 SSRHiZ 리소스를 준비한다.
     SSRHiZResources &ssrHiZResources = renderCamera->GetSSRHiZResources();
@@ -372,15 +376,15 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
             frameCamera->envLightDiffuseIrradianceCubeMap = rhiDiffuseIrradianceCubeMap;
         }
 
-        Texture *specularCubeMap = frame->RetainTexture(envLight.GetSpecularPrefilteredCubeMap());
-        RHI::Texture *rhiSpecularCubeMap = specularCubeMap ? specularCubeMap->GetReadyRHITexture() : nullptr;
-        if (rhiSpecularCubeMap && rhiSpecularCubeMap->type == RHI::TextureType::TextureCube) {
-            frameCamera->envLightSpecularCubeMap = rhiSpecularCubeMap;
-            frameCamera->envLightSpecularMipCount = rhiSpecularCubeMap->GetMipLevelCount();
+        Texture *specularPrefilteredCubeMap = frame->RetainTexture(envLight.GetSpecularPrefilteredCubeMap());
+        RHI::Texture *rhiSpecularPrefilteredCubeMap = specularPrefilteredCubeMap ? specularPrefilteredCubeMap->GetReadyRHITexture() : nullptr;
+        if (rhiSpecularPrefilteredCubeMap && rhiSpecularPrefilteredCubeMap->type == RHI::TextureType::TextureCube) {
+            frameCamera->envLightSpecularPrefilteredCubeMap = rhiSpecularPrefilteredCubeMap;
+            frameCamera->envLightSpecularPrefilteredCubeMapMipCount = rhiSpecularPrefilteredCubeMap->GetMipLevelCount();
         }
     }
 
-    frameCamera->outputRect = outputRect;
+    frameCamera->outputRect = cameraDesc.outputRect;
     frameCamera->outputTexture = cameraDesc.outputTexture;
     frameCamera->outputViewID = cameraDesc.outputViewID;
     frameCamera->outputBeforeState = cameraDesc.outputBeforeState;
@@ -473,7 +477,6 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     frameCamera->traceSSR = requestSSRTrace;
     frameCamera->ssrHistoryRenderState = renderCamera->ssrHistoryRenderState; // SSR 히스토리의 유효성을 추적하기 위해 프레임 카메라와 렌더 카메라 간에 SSR 히스토리 렌더 상태를 공유한다.
-    frameCamera->ssrHistorySerial = ++renderCamera->ssrHistorySerial; // 카메라 별로 증가시키는 시리얼 번호를 사용하여 SSR 히스토리의 유효성을 추적한다.
     frameCamera->ssrTraceTexture = renderCamera->GetSSRTraceTexture();
     frameCamera->ssrReceiverSurfaceTexture = renderCamera->GetSSRReceiverSurfaceTexture();
     frameCamera->ssrResolveReflectionTexture = renderCamera->GetSSRResolveReflectionTexture();
@@ -548,10 +551,21 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         frameCamera->prevViewProjMatrix = renderCamera->prevJitteredViewProjMatrix;
         frameCamera->prevInvViewProjMatrix = renderCamera->prevJitteredInvViewProjMatrix;
         frameCamera->prevNdcJitter = renderCamera->prevJitter * jitterToNDCScale;
+        frameCamera->prevOrigin = renderCamera->prevOrigin;
+        frameCamera->prevForward = renderCamera->prevForward;
+
+        // Jitter 를 더했다가 제거할 때의 반올림 오차가 정지 판정에 영향을 주지 않도록 원본 행렬을 비교한다.
+        frameCamera->cameraUnchanged = renderCamera->viewProjMatrix == renderCamera->prevViewProjMatrix && frameCamera->origin == frameCamera->prevOrigin && frameCamera->axis[EngineAxis::Forward] == frameCamera->prevForward;
     } else {
         frameCamera->prevViewProjMatrix = renderCamera->jitteredViewProjMatrix;
         frameCamera->prevInvViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
         frameCamera->prevNdcJitter = frameCamera->ndcJitter;
+        frameCamera->prevOrigin = frameCamera->origin;
+        frameCamera->prevForward = frameCamera->axis[EngineAxis::Forward];
+        frameCamera->cameraUnchanged = false;
+
+        // Fog 재투영도 공용 이전 행렬을 사용하므로, 현재 행렬로 대체되는 프레임에는 history 를 다시 시작한다.
+        renderCamera->volumetricFogHistory.Invalidate();
     }
 
     frameCamera->taaResolve = useTAA;
@@ -561,6 +575,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         renderCamera->hiZCullViewProjMatrix = frameCamera->prevViewProjMatrix;
     }
     frameCamera->hiZCullViewProjMatrix = renderCamera->hiZCullViewProjMatrix;
+
+    PrepareFog(frameCamera, renderCamera, frameSettings, useHeightFog, useVFog, frame->GetFrameCount());
 
     DrawCamera(frame, renderCamera, frameCamera);
 
@@ -575,6 +591,8 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         renderCamera->prevInvViewProjMatrix = renderCamera->invViewProjMatrix;
         renderCamera->prevJitteredViewProjMatrix = renderCamera->jitteredViewProjMatrix;
         renderCamera->prevJitteredInvViewProjMatrix = renderCamera->jitteredInvViewProjMatrix;
+        renderCamera->prevOrigin = frameCamera->origin;
+        renderCamera->prevForward = frameCamera->axis[EngineAxis::Forward];
         renderCamera->prevMatrixValid = true;
         renderCamera->temporalHistoryInvalidated = false;
 
@@ -589,6 +607,182 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     if (!frameSettings.hiZOcclusionCullingFreeze) {
         hiZResources.SetHistoryValid(frameCamera->generateHiZ);
     }
+}
+
+void RenderWorld::PrepareFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, bool useHeightFog, bool useVolumetricFog, uint32_t frameCount) {
+    FrameFog &fog = frameCamera->fog;
+    fog = {};
+
+    const bool hasVolumetricMedia = useHeightFog;
+    const bool prepareVolume = useVolumetricFog && hasVolumetricMedia;
+    const bool validRenderSize = frameCamera->renderWidth != 0 && frameCamera->renderHeight != 0;
+
+    VolumetricFogResources &vfogResources = renderCamera->volumetricFogResources;
+    if (!useVolumetricFog || !validRenderSize) {
+        vfogResources.Destroy();
+        renderCamera->volumetricFogHistory.Reset();
+    } else if (!hasVolumetricMedia) {
+        renderCamera->volumetricFogHistory.Invalidate();
+    }
+
+    if (!validRenderSize) {
+        return;
+    }
+
+    if (!useHeightFog && !prepareVolume) {
+        return;
+    }
+
+    fog.nearDepth = frameSettings.fogNearDepth;
+    fog.heightFogEnabled = useHeightFog;
+
+    // fog compisition 에 사용할 PSO 를 준비한다.
+    GraphicsPipelineDesc pipelineDesc;
+    pipelineDesc.renderDest.renderTargetCount = 1;
+    RHI::TextureViewInfo colorView;
+    if (!frameCamera->colorTexture->GetViewInfo(RHI::ViewType::RTV, RHI::ViewID::PrimaryID, colorView)) {
+        return;
+    }
+    pipelineDesc.renderDest.renderTargetFormats[0] = colorView.format;
+    pipelineDesc.renderDest.sampleCount = frameCamera->colorTexture->GetSampleCount();
+    pipelineDesc.depthStencilStateType = RHI::DepthStencilStateType::Disabled;
+    pipelineDesc.rasterizerStateType = RHI::RasterizerStateType::SolidTwoSided;
+    pipelineDesc.blendStateType = RHI::BlendStateType::PremultipliedAlphaBlend;
+
+    const SharedPtr<ShaderTemplate> &compositeShaderTemplate = pipelineDesc.renderDest.sampleCount > 1 ? shaderTemplateManager.fogCompositeMSAAShaderTemplate : shaderTemplateManager.fogCompositeShaderTemplate;
+    frameCamera->fog.compositePSO = ShaderPipeline::GetReadyPSO(shaderPipelineCache.GetGraphicsPipelinePtr(compositeShaderTemplate, {}, pipelineDesc, !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::DisableAsyncPSOBuild)));
+
+    // HeightFog 의 매개변수를 채운다.
+    if (useHeightFog) {
+        const HeightFog::Desc &fogDesc = heightFog.GetDesc();
+        HeightFogParams &hfogParams = fog.heightFogParams;
+        hfogParams.medium = fogDesc.medium;
+        hfogParams.baseHeight = fogDesc.baseHeight;
+        hfogParams.baseDensity = fogDesc.density;
+        hfogParams.heightFalloff = fogDesc.heightFalloff;
+        hfogParams.maxDistance = fogDesc.maxDistance;
+
+        // 물리적으로 올바르진 않지만 라이트가 없는 경우에도 모든 방향에서 같은 radiance 가 들어온다고 가정한다.
+        hfogParams.ambientRadiance = float3(fogDesc.ambientColor.r * fogDesc.ambientIntensity, fogDesc.ambientColor.g * fogDesc.ambientIntensity, fogDesc.ambientColor.b * fogDesc.ambientIntensity);
+    }
+
+    if (prepareVolume) {
+        PrepareVolumetricFog(frameCamera, renderCamera, frameSettings, frameCount);
+    }
+}
+
+void RenderWorld::PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, uint32_t frameCount) {
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    const HeightFogParams &hfogParams = frameCamera->fog.heightFogParams;
+    FrameVolumetricFog &volumetric = frameCamera->fog.volumetric;
+    VFogParams &vfogParams = volumetric.vfogParams;
+    VFogLightingParams &vfogLightingParams = volumetric.vfogLightingParams;
+    VFogTemporalParams &vfogTemporalParams = volumetric.vfogTemporalParams;
+    VolumetricFogResources &vfogResources = renderCamera->volumetricFogResources;
+
+    const float nearDepth = frameCamera->fog.nearDepth;
+    const float farDepth = BE1::Min(frameSettings.vfogFarDepth, cameraDesc.zFar);
+
+    if (farDepth <= nearDepth || hfogParams.maxDistance <= nearDepth) {
+        vfogResources.Destroy();
+        renderCamera->volumetricFogHistory.Reset();
+        return;
+    }
+
+    vfogParams.nearDepth = nearDepth;
+    vfogParams.farDepth = farDepth;
+    vfogParams.depthScale = frameSettings.vfogDepthDistributionScale;
+
+    // XY 총개수를 baseSize^2 에 가깝게 유지하면서 화면 비율에 맞춰 균등하게 분할한다.
+    const float aspectRatio = static_cast<float>(frameCamera->renderWidth) / frameCamera->renderHeight;
+    const float aspectScale = BE1::Math::Sqrt(aspectRatio);
+    const uint32_t baseSize = frameSettings.vfogTileBaseSize;
+    const uint32_t sliceCount = frameSettings.vfogSliceCount;
+
+    // 극단적인 화면 비율에서도 각 축을 3D 텍스처 크기 제한 이내로 유지한다.
+    const uint32_t maxTileCountPerAxis = 2048;
+    const uint32_t tileCountX = BE1::Clamp(static_cast<uint32_t>(baseSize * aspectScale + 0.5f), 1u, maxTileCountPerAxis);
+    const uint32_t tileCountY = BE1::Clamp(static_cast<uint32_t>(baseSize / aspectScale + 0.5f), 1u, maxTileCountPerAxis);
+
+    if (!vfogResources.Ensure(tileCountX, tileCountY, sliceCount, true)) {
+        renderCamera->volumetricFogHistory.Reset();
+        return;
+    }
+
+    vfogParams.tileCount = uint2(tileCountX, tileCountY);
+    vfogParams.tileCountRcp = float2(1.0f / tileCountX, 1.0f / tileCountY);
+    vfogParams.sliceCount = sliceCount;
+
+    // s(z) = log2(1 + (z - n) / a)
+    const float exponentRange = (float)BE1::Math::Log2OnePlus((double)(farDepth - nearDepth) / vfogParams.depthScale);
+    vfogParams.exponentPerSlice = exponentRange / sliceCount;
+    vfogParams.slicesPerExponent = sliceCount / exponentRange;
+    vfogParams.debugMode = frameSettings.vfogDebugMode;
+    vfogParams.debugSlice = BE1::Min(frameSettings.vfogDebugSlice, sliceCount - 1);
+
+    const float3 &scatteringAlbedo = hfogParams.medium.scatteringAlbedo;
+    const bool hasScattering = hfogParams.medium.baseExtinction > 0.0f && (scatteringAlbedo.x > 0.0f || scatteringAlbedo.y > 0.0f || scatteringAlbedo.z > 0.0f);
+
+    volumetric.hasLightScattering = hasScattering;
+    if (volumetric.hasLightScattering) {
+        vfogLightingParams.lightDistanceBiasScale = frameSettings.vfogLightDistanceBiasScale;
+        vfogLightingParams.flags = frameSettings.vfogShadows ? VFogFlagShadows : 0;
+
+        if (frameSettings.vfogJitter) {
+            vfogLightingParams.flags |= VFogFlagSTBNJitter;
+            vfogLightingParams.stbnVec3TextureIndex = renderSystem->GetSTBNVec3Texture()->GetRHITexture()->GetBindlessIndex(RHI::ViewType::SRV);
+        }
+
+        // volumetric fog 의 near/far depth 를 기준으로 카메라 뷰 볼륨을 잘라서 fog receiver bounding volume 을 구성한다.
+        if (cameraDesc.orthogonal) {
+            const BE1::Vec3 boxCenter = frameCamera->origin + frameCamera->axis[EngineAxis::Forward] * (0.5f * (nearDepth + farDepth));
+            frameCamera->fog.volumetric.receiverBox = BE1::OBB(boxCenter, BE1::Vec3(0.5f * (farDepth - nearDepth), cameraDesc.sizeX, cameraDesc.sizeY), frameCamera->axis);
+        } else {
+            frameCamera->fog.volumetric.receiverFrustum = frameCamera->viewFrustum;
+            frameCamera->fog.volumetric.receiverFrustum.MoveNearDistance(nearDepth);
+            frameCamera->fog.volumetric.receiverFrustum.MoveFarDistance(farDepth);
+        }
+        renderCamera->CalcSlicedViewVolume(BE1::Min(cameraDesc.zNear, nearDepth), cameraDesc.zFar, nullptr, frameCamera->fog.volumetric.lightReceiverViewPlanes);
+    }
+
+    const bool temporal = frameSettings.vfogTemporal && frameSettings.vfogTemporalHistoryWeight > 0.0f && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
+
+    volumetric.sourceTexture = vfogResources.GetSourceTexture();
+    volumetric.historyTexture = temporal ? vfogResources.GetHistoryTexture() : nullptr;
+    volumetric.integratedTexture = vfogResources.GetIntegratedTexture();
+    volumetric.enabled = true;
+
+    RenderCamera::VFogHistoryState &history = renderCamera->volumetricFogHistory;
+    if (!volumetric.historyTexture) {
+        history.Reset();
+        return;
+    }
+
+    const uint64_t resourceGenerationNumber = vfogResources.GetGenerationNumber();
+    if (history.resourceGenerationNumber != resourceGenerationNumber || !history.renderState) {
+        history.Reset();
+        history.resourceGenerationNumber = resourceGenerationNumber;
+        history.renderState = MakeShared<VFogHistoryRenderState>();
+    }
+
+    // Backend 에서 확인하고 갱신하도록 공유 상태를 프레임에 보관한다.
+    volumetric.historyRenderState = history.renderState;
+
+    // history 재사용 가능 여부를 판단한다.
+    const bool compatible = history.valid && history.previousFrameCount + 1u == frameCount &&
+        history.previousMediumParams.baseExtinction == hfogParams.medium.baseExtinction &&
+        history.previousMediumParams.anisotropy == hfogParams.medium.anisotropy &&
+        memcmp(&history.previousMediumParams.scatteringAlbedo, &hfogParams.medium.scatteringAlbedo, sizeof(hfogParams.medium.scatteringAlbedo)) == 0 &&
+        memcmp(&history.previousMediumParams.baseEmission, &hfogParams.medium.baseEmission, sizeof(hfogParams.medium.baseEmission)) == 0;
+
+    vfogTemporalParams.historyWeight = frameSettings.vfogTemporalHistoryWeight;
+    vfogTemporalParams.historyValid = compatible ? 1u : 0u;
+
+    history.previousMediumParams = hfogParams.medium;
+    history.previousFrameCount = frameCount;
+    history.valid = true;
+
+    vfogResources.SwapSourceTextures();
 }
 
 void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {
@@ -615,7 +809,8 @@ void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, Fra
 
     // visibleLights 들로 GPU light culling 데이터를 구성한다.
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
-    LightCullingBuilder::Build(frame, frameCamera, cameraDesc.zNear, cameraDesc.zFar);
+    const float lightNearDepth = frameCamera->fog.volumetric.HasLightScattering() ? BE1::Min(cameraDesc.zNear, frameCamera->fog.volumetric.vfogParams.nearDepth) : cameraDesc.zNear;
+    LightCullingBuilder::Build(frame, frameCamera, lightNearDepth, cameraDesc.zFar);
 
     // frameObjects 중에서 text mesh 를 frameCamera->frameSurfs 에 추가한다.
     AddTextMeshes(frame, renderCamera, frameCamera);
@@ -807,8 +1002,14 @@ void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamer
     // cascade 별 distance 를 계산한다.
     ComputeCSMSplitDistances(cameraDesc.zNear, csmMaxDistance, frameSettings.csmSplitLambda, frameCascadedShadow->cascadeCount, cameraDesc.orthogonal, frameCascadedShadow->splitDistances);
 
+    // 카메라 near plane 앞의 fog 도 그림자를 받도록 CSM 투영 영역과 caster 수집 범위를 확장한다.
+    // near=0 으로 split 을 계산하면 균등 분할로 전환되므로, ComputeCSMSplitDistances 에서는 카메라 zNear 로 분할 분포를 계산하고, 첫 구간의 시작 깊이만 조정한다.
+    if (frameCamera->fog.volumetric.HasLightScattering() && (frameCamera->fog.volumetric.vfogLightingParams.flags & VFogFlagShadows) != 0) {
+        frameCascadedShadow->splitDistances[0] = BE1::Min(cameraDesc.zNear, frameCamera->fog.volumetric.vfogParams.nearDepth);
+    }
+
     // 모든 cascade 의 caster shadow volume 검사에 사용할 전체 CSM 카메라 view planes 를 구한다.
-    renderCamera->CalcSlicedViewVolume(cameraDesc.zNear, csmMaxDistance, nullptr, frameCascadedShadow->viewPlanes);
+    renderCamera->CalcSlicedViewVolume(frameCascadedShadow->splitDistances[0], csmMaxDistance, nullptr, frameCascadedShadow->viewPlanes);
 
     // 각 cascade 의 receiver 범위로 projection 과 caster 컬링 경계를 함께 정한다.
     for (uint32_t cascadeIndex = 0; cascadeIndex < frameCascadedShadow->cascadeCount; cascadeIndex++) {
@@ -992,7 +1193,7 @@ void RenderWorld::FindLocalShadowCasters(RenderFrame *frame, const RenderCamera 
     const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
     const bool renderStaticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
 
-    const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
+    const BE1::Plane *viewPlanes = frameCamera->fog.volumetric.HasLightScattering() ? frameCamera->fog.volumetric.lightReceiverViewPlanes : renderCamera->GetViewPlanes();
     const float meshLODPixelError = frame->GetRenderFrameSettings().meshLODPixelError;
 
     // 전체 render objects 를 순회하면서 shadow caster 가 될 수 있는 오브젝트들은 frame object 로 등록한다.
@@ -1412,7 +1613,7 @@ void RenderWorld::AddMeshes(RenderFrame *frame, const RenderCamera *renderCamera
     skinningJointBufferBuilder.Build(frame, frameCamera);
 
     const bool skipViewCulling = frame->GetRenderFrameSettings().skipViewCulling;
-    const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
+    const BE1::Plane *viewPlanes = frameCamera->fog.volumetric.HasLightScattering() ? frameCamera->fog.volumetric.lightReceiverViewPlanes : renderCamera->GetViewPlanes();
     const FrameCascadedShadow *frameCascadedShadow = frameCamera->frameCascadedShadow;
     FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
 
@@ -1690,7 +1891,10 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera
     } else {
         renderCamera->localShadowResolutionHistory.Reset();
     }
+
     const bool renderStaticOnly = BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::StaticOnly);
+    const bool hasVFogLightScattering = frameCamera->fog.volumetric.HasLightScattering();
+    const float vfogReceiverNearDepth = hasVFogLightScattering ? BE1::Min(cameraDesc.zNear, frameCamera->fog.volumetric.vfogParams.nearDepth) : cameraDesc.zNear;
     const BE1::Vec3 &viewZAxis = cameraDesc.axis[EngineAxis::Forward];
     const float viewZOffset = -viewZAxis.Dot(cameraDesc.origin);
 
@@ -1730,12 +1934,16 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera
                 continue;
             }
         } else {
-            if (!skipViewCulling) {
-                if (renderLight->Cull(*renderCamera)) {
-                    continue;
-                }
+            // 보이는 메시와 겹치지 않아도 포그 영역에 영향을 주는 라이트는 유지한다.
+            bool affectsVFog = false;
+            if (hasVFogLightScattering) {
+                affectsVFog = cameraDesc.orthogonal
+                    ? renderLight->IsIntersectOBB(frameCamera->fog.volumetric.receiverBox)
+                    : renderLight->IsIntersectFrustum(frameCamera->fog.volumetric.receiverFrustum);
+            }
 
-                if (!renderLight->IsIntersectAABB(frameCamera->worldAABB)) {
+            if (!skipViewCulling && !affectsVFog) {
+                if (renderLight->Cull(*renderCamera) || !renderLight->IsIntersectAABB(frameCamera->worldAABB)) {
                     continue;
                 }
             }
@@ -1747,14 +1955,20 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera
             viewZMin += viewZOffset;
             viewZMax += viewZOffset;
 
-            // 라이트가 카메라 [zNear, zFar] 범위 밖에 있으면 제외
-            if (viewZMax < cameraDesc.zNear || viewZMin > cameraDesc.zFar) {
+            // 라이트가 표면과 fog 를 포함하는 수신 깊이 범위 밖에 있으면 제외한다.
+            const float receiverNearDepth = affectsVFog ? vfogReceiverNearDepth : cameraDesc.zNear;
+            if (viewZMax < receiverNearDepth || viewZMin > cameraDesc.zFar) {
                 continue;
             }
 
             // 라이트의 clipRect 를 계산하고, 화면 밖이라면 제외
             BE1::Rect screenClipRect;
-            if (!renderLight->ComputeScreenClipRect(*renderCamera, screenClipRect)) {
+            // 스팟 라이트의 프러스텀 투영은 지오메트리 near plane 에서 잘리므로, 그 앞의 포그 영역이 누락되지 않도록 라이트의 구형 영향 범위로 보수적인 화면 경계를 계산한다.
+            const bool needsFogNearCoverage = affectsVFog && viewZMin < cameraDesc.zNear;
+            const bool hasClipRect = needsFogNearCoverage
+                ? renderCamera->CalcClipRectFromSphere(renderLight->worldSphere, screenClipRect)
+                : renderLight->ComputeScreenClipRect(*renderCamera, screenClipRect);
+            if (!hasClipRect) {
                 continue;
             }
 
@@ -1770,11 +1984,10 @@ void RenderWorld::FindFrameLights(RenderFrame *frame, RenderCamera *renderCamera
             const uint32_t projectedSize = LightCullingBuilder::ComputeTileRange(frameCamera, screenClipRect, frameLight->packedTileMin, frameLight->packedTileMax);
             frameLight->projectedSize = projectedSize;
 
-            if (localShadowsEnabled && BE1::HasFlag(frameLight->flags, RenderLight::Flag::CastShadows)) {
+            if (localShadowsEnabled && BE1::HasFlag(frameLight->flags, RenderLight::Flag::CastShadows) && (frameLight->type == RenderLight::Type::Spot || frameLight->type == RenderLight::Type::Point)) {
                 // 투영 영역의 긴 변이 최소 크기 미만이면 shadow light 후보에서 제외한다.
-                if (projectedSize >= RenderFrameSettings::LocalShadowMinProjectedSize && (frameLight->type == RenderLight::Type::Spot || frameLight->type == RenderLight::Type::Point)) {
-                    const float projectedSizeScale = frameLight->type == RenderLight::Type::Spot
-                        ? frameSettings.shadowMapProjectedSizeScaleSpot : frameSettings.shadowMapProjectedSizeScalePoint;
+                if (projectedSize >= RenderFrameSettings::LocalShadowMinProjectedSize) {
+                    const float projectedSizeScale = frameLight->type == RenderLight::Type::Spot ? frameSettings.shadowMapProjectedSizeScaleSpot : frameSettings.shadowMapProjectedSizeScalePoint;
                     const float scaledProjectedSize = projectedSize * projectedSizeScale;
 
                     if (useShadowResolutionHistory) {
@@ -1818,7 +2031,7 @@ void RenderWorld::SetupFrameShadowAtlas(RenderFrame *frame, RenderCamera *render
 
     FrameShadowAtlas *frameShadowAtlas = frameCamera->frameShadowAtlas;
     frameShadowAtlas->numCandidates = static_cast<uint32_t>(localShadowLightCandidates.Count());
-    const BE1::Plane *viewPlanes = renderCamera->GetViewPlanes();
+    const BE1::Plane *viewPlanes = frameCamera->fog.volumetric.HasLightScattering() ? frameCamera->fog.volumetric.lightReceiverViewPlanes : renderCamera->GetViewPlanes();
     const uint32_t shadowMapQuality = frameSettings.shadowMapQuality;
     const uint32_t frameCount = frame->GetFrameCount();
     const uint32_t casterLayerMask = renderCamera->GetDesc().layerMask;
@@ -2156,6 +2369,8 @@ void RenderWorld::DrawGUICamera(RenderFrame *frame, uint32_t screenWidth, uint32
 
     frameCamera->prevViewProjMatrix = frameCamera->viewProjMatrix;
     frameCamera->prevInvViewProjMatrix = frameCamera->invViewProjMatrix;
+    frameCamera->prevOrigin = frameCamera->origin;
+    frameCamera->prevForward = frameCamera->axis[EngineAxis::Forward];
     frameCamera->ndcJitter = BE1::Vec2::zero;
     frameCamera->prevNdcJitter = BE1::Vec2::zero;
     frameCamera->hiZCullViewProjMatrix = frameCamera->viewProjMatrix;

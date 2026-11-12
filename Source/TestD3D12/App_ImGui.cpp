@@ -812,6 +812,49 @@ void App::BuildImGuiOverlay() {
                 }
             }
 
+            if (roundedCollapsingHeader("Texture Sampling##TextureSamplingHeader")) {
+                int textureFilterIndex = r_textureFilter.GetInteger();
+                const RHI::TextureFilter textureFilter = static_cast<RHI::TextureFilter>(textureFilterIndex);
+
+                ImGui::SetNextItemWidth(fontSize * 14.0f);
+                if (ImGui::BeginCombo("Texture filter", RHI::Renderer::TextureFilterName(textureFilter))) {
+                    for (int index = 0; index < static_cast<int>(RHI::TextureFilter::Count); index++) {
+                        const bool selected = textureFilterIndex == index;
+                        if (ImGui::Selectable(RHI::Renderer::TextureFilterName(static_cast<RHI::TextureFilter>(index)), selected)) {
+                            r_textureFilter.SetInteger(index);
+                        }
+                        if (selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                int maxAnisotropy = r_textureMaxAnisotropy.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 14.0f);
+                if (ImGui::SliderInt("Texture max anisotropy", &maxAnisotropy, static_cast<int>(r_textureMaxAnisotropy.GetMinValue()), static_cast<int>(r_textureMaxAnisotropy.GetMaxValue()))) {
+                    r_textureMaxAnisotropy.SetInteger(maxAnisotropy);
+                }
+            }
+
+            if (roundedCollapsingHeader("Texture Streaming##TextureStreamingHeader")) {
+                int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 6.0f);
+                if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
+                    r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
+                }
+
+                int maxLevelReduction = r_textureStreamingMaxLevelReduction.GetInteger();
+                ImGui::SetNextItemWidth(fontSize * 6.0f);
+                if (ImGui::SliderInt("Texture max level reduction", &maxLevelReduction, static_cast<int>(r_textureStreamingMaxLevelReduction.GetMinValue()), static_cast<int>(r_textureStreamingMaxLevelReduction.GetMaxValue()))) {
+                    r_textureStreamingMaxLevelReduction.SetInteger(maxLevelReduction);
+                }
+            }
+
+            if (roundedCollapsingHeader("Texture Viewer##TextureViewerHeader")) {
+                BuildImGuiTextureViewer();
+            }
+
             if (roundedCollapsingHeader("Lighting##LightingHeader")) {
                 bool indirectLighting = r_indirectLighting.GetBool();
                 if (ImGui::Checkbox("Indirect Lighting", &indirectLighting)) {
@@ -1181,7 +1224,7 @@ void App::BuildImGuiOverlay() {
                         if (ImGui::Combo("Debug view##Shadows", &debugMode, "Off\0Visibility\0Coverage\0")) {
                             r_shadowDebug.SetInteger(debugMode);
                         }
-                        ImGui::SetItemTooltip("Visibility: black = shadow, white = lit.\nCoverage: cascade 0 = sky blue, 1 = green, 2 = yellow, 3 = violet; red = outside, gray = inactive.");
+                        ImGui::SetItemTooltip("Visibility: black = shadow, white = lit.\nCoverage: cascade 0 = cyan, 1 = green, 2 = yellow, 3 = violet; red = outside, gray = inactive.");
 
                         ImGui::SeparatorText("Shadow map depth");
                         const RHI::Texture *shadowTexture = mainRenderContext->GetCSMDepthTexture();
@@ -1385,47 +1428,106 @@ void App::BuildImGuiOverlay() {
                 ImGui::EndDisabled();
             }
 
-            if (roundedCollapsingHeader("Texture Sampling##TextureSamplingHeader")) {
-                int textureFilterIndex = r_textureFilter.GetInteger();
-                const RHI::TextureFilter textureFilter = static_cast<RHI::TextureFilter>(textureFilterIndex);
+            if (roundedCollapsingHeader("Volumetric Fog##VolumetricFogHeader")) {
+                ImGui::PushID("VolumetricFog");
+                bool vfogEnabled = r_vfog.GetBool();
+                if (ImGui::Checkbox("Enabled", &vfogEnabled)) {
+                    r_vfog.SetBool(vfogEnabled);
+                }
+                ImGui::SetItemTooltip("Render fog media with froxel volumes. Height fog remains analytic when disabled.");
 
-                ImGui::SetNextItemWidth(fontSize * 14.0f);
-                if (ImGui::BeginCombo("Texture filter", RHI::Renderer::TextureFilterName(textureFilter))) {
-                    for (int index = 0; index < static_cast<int>(RHI::TextureFilter::Count); index++) {
-                        const bool selected = textureFilterIndex == index;
-                        if (ImGui::Selectable(RHI::Renderer::TextureFilterName(static_cast<RHI::TextureFilter>(index)), selected)) {
-                            r_textureFilter.SetInteger(index);
-                        }
-                        if (selected) {
-                            ImGui::SetItemDefaultFocus();
-                        }
+                ImGui::BeginDisabled(!vfogEnabled);
+                ImGui::PushItemWidth(fontSize * 12.0f);
+
+                int vfogTileBaseSize = r_vfogTileBaseSize.GetInteger();
+                if (ImGui::SliderInt("Tile base size", &vfogTileBaseSize,
+                    static_cast<int>(r_vfogTileBaseSize.GetMinValue()), static_cast<int>(r_vfogTileBaseSize.GetMaxValue()), "%d", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_vfogTileBaseSize.SetInteger(vfogTileBaseSize);
+                }
+                ImGui::SetItemTooltip("Tile count per axis for a square viewport. XY counts follow the viewport aspect ratio while their product stays near this value squared, independent of render resolution. Larger values improve detail and increase GPU cost.");
+
+                int vfogSliceCount = r_vfogSliceCount.GetInteger();
+                if (ImGui::SliderInt("Slice count", &vfogSliceCount,
+                    static_cast<int>(r_vfogSliceCount.GetMinValue()), static_cast<int>(r_vfogSliceCount.GetMaxValue()), "%d", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_vfogSliceCount.SetInteger(vfogSliceCount);
+                    if (r_vfogDebugSlice.GetInteger() >= vfogSliceCount) {
+                        r_vfogDebugSlice.SetInteger(vfogSliceCount - 1);
                     }
-                    ImGui::EndCombo();
                 }
 
-                int maxAnisotropy = r_textureMaxAnisotropy.GetInteger();
-                ImGui::SetNextItemWidth(fontSize * 14.0f);
-                if (ImGui::SliderInt("Texture max anisotropy", &maxAnisotropy, static_cast<int>(r_textureMaxAnisotropy.GetMinValue()), static_cast<int>(r_textureMaxAnisotropy.GetMaxValue()))) {
-                    r_textureMaxAnisotropy.SetInteger(maxAnisotropy);
+                float vfogFarDepth = r_vfogFarDepth.GetFloat();
+                if (ImGui::DragFloat("Far depth", &vfogFarDepth, 0.1f,
+                    r_vfogFarDepth.GetMinValue(), r_vfogFarDepth.GetMaxValue(), "%.2f m", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_vfogFarDepth.SetFloat(vfogFarDepth);
                 }
-            }
+                ImGui::SetItemTooltip("Positive view-space end depth for the froxel volume, limited by the camera's far plane. The volume is disabled when this is not beyond the fog near depth.");
 
-            if (roundedCollapsingHeader("Texture Streaming##TextureStreamingHeader")) {
-                int streamInDelay = r_textureStreamingStreamInDelay.GetInteger();
-                ImGui::SetNextItemWidth(fontSize * 6.0f);
-                if (ImGui::InputInt("Texture stream-in delay", &streamInDelay)) {
-                    r_textureStreamingStreamInDelay.SetInteger(BE1::Max(0, streamInDelay));
+                float vfogDepthScale = r_vfogDepthDistributionScale.GetFloat();
+                if (ImGui::SliderFloat("Depth distribution scale", &vfogDepthScale,
+                    r_vfogDepthDistributionScale.GetMinValue(), r_vfogDepthDistributionScale.GetMaxValue(), "%.2f m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+                    r_vfogDepthDistributionScale.SetFloat(vfogDepthScale);
+                }
+                ImGui::SetItemTooltip("Smaller values concentrate depth slices near the camera. Larger values approach uniform spacing.");
+
+                ImGui::Separator();
+
+                bool vfogShadows = r_vfogShadows.GetBool();
+                if (ImGui::Checkbox("Shadows", &vfogShadows)) {
+                    r_vfogShadows.SetBool(vfogShadows);
+                }
+                ImGui::SetItemTooltip("Apply shadow visibility to fog lighting.");
+
+                float vfogLightDistanceBiasScale = r_vfogLightDistanceBiasScale.GetFloat();
+                if (ImGui::SliderFloat("Light distance bias scale", &vfogLightDistanceBiasScale,
+                    r_vfogLightDistanceBiasScale.GetMinValue(), r_vfogLightDistanceBiasScale.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_vfogLightDistanceBiasScale.SetFloat(vfogLightDistanceBiasScale);
+                }
+                ImGui::SetItemTooltip("Soften point and spot light peaks in fog according to cell size. Higher values reduce flicker but dim the light center. Zero disables the bias.");
+
+                bool vfogJitter = r_vfogJitter.GetBool();
+                if (ImGui::Checkbox("STBN jitter", &vfogJitter)) {
+                    r_vfogJitter.SetBool(vfogJitter);
+                }
+                ImGui::SetItemTooltip("Vary lighting sample positions within fog cells using STBN XYZ noise. The pattern advances with temporal accumulation; otherwise it stays fixed. Disable to sample cell centers.");
+
+                bool vfogTemporal = r_vfogTemporal.GetBool();
+                if (ImGui::Checkbox("Temporal accumulation", &vfogTemporal)) {
+                    r_vfogTemporal.SetBool(vfogTemporal);
+                }
+                ImGui::SetItemTooltip("Accumulate reprojected fog lighting. STBN jitter advances each frame when enabled and history weight is above zero.");
+
+                ImGui::BeginDisabled(!vfogTemporal);
+                float vfogHistoryWeight = r_vfogTemporalHistoryWeight.GetFloat();
+                if (ImGui::SliderFloat("History weight", &vfogHistoryWeight,
+                    r_vfogTemporalHistoryWeight.GetMinValue(), r_vfogTemporalHistoryWeight.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_vfogTemporalHistoryWeight.SetFloat(vfogHistoryWeight);
+                }
+                ImGui::SetItemTooltip("Higher values smooth more but respond more slowly to lighting changes.");
+                ImGui::EndDisabled();
+
+                ImGui::Separator();
+
+                int vfogDebug = r_vfogDebug.GetInteger();
+                if (ImGui::Combo("Debug output", &vfogDebug,
+                    "Composite\0Optical depth\0Depth slices\0Extinction\0Scattering + emission source\0Accumulated radiance\0Transmittance\0")) {
+                    r_vfogDebug.SetInteger(vfogDebug);
+                }
+                if (vfogDebug == 1) {
+                    ImGui::SetItemTooltip("Optical depth = -ln(T), accumulated to the visible surface or fog end depth, whichever is closer.\nSky uses the fog end depth.");
+                    ImGui::TextDisabled("Optical depth: 0 (blue) - 3+ (red)");
                 }
 
-                int maxLevelReduction = r_textureStreamingMaxLevelReduction.GetInteger();
-                ImGui::SetNextItemWidth(fontSize * 6.0f);
-                if (ImGui::SliderInt("Texture max level reduction", &maxLevelReduction, static_cast<int>(r_textureStreamingMaxLevelReduction.GetMinValue()), static_cast<int>(r_textureStreamingMaxLevelReduction.GetMaxValue()))) {
-                    r_textureStreamingMaxLevelReduction.SetInteger(maxLevelReduction);
+                const bool vfogDebugUsesSlice = vfogDebug >= 3 && vfogDebug <= 6;
+                ImGui::BeginDisabled(!vfogDebugUsesSlice);
+                int vfogDebugSlice = BE1::Clamp(r_vfogDebugSlice.GetInteger(), 0, vfogSliceCount - 1);
+                if (ImGui::SliderInt("Debug slice", &vfogDebugSlice, 0, vfogSliceCount - 1, "%d", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_vfogDebugSlice.SetInteger(vfogDebugSlice);
                 }
-            }
+                ImGui::EndDisabled();
 
-            if (roundedCollapsingHeader("Texture Viewer##TextureViewerHeader")) {
-                BuildImGuiTextureViewer();
+                ImGui::PopItemWidth();
+                ImGui::EndDisabled();
+                ImGui::PopID();
             }
 
             if (roundedCollapsingHeader("Post Process##RenderPostProcessHeader")) {

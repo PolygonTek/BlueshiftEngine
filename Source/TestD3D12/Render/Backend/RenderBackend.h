@@ -111,6 +111,11 @@ private:
     void                            DrawScenePass(RHI::ClearFlag clearFlags, const BE1::Color4 &clearColor, bool useExplicitClearColor, RHI::RenderPassImage::LoadAction depthLoadAction);
     void                            CaptureSceneSnapshot();
     bool                            DrawTransparentSSRPrepass();
+
+                                    // After raw opaque snapshots/history, before Transparent.
+                                    // Color/depth enter and leave in RenderTarget/DepthWrite state respectively.
+    void                            CompositeFog(bool useVolumetricFog);
+
                                     // 메인 depth 또는 velocity 를 쓰는 draw 를 기록했는지 반환한다.
     bool                            DrawPostOpaquePass();
 

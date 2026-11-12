@@ -7,6 +7,12 @@ float2 ReadSTBNVec2(Texture2DArray<float4> stbnTexture, uint2 pixelCoord, uint f
     return stbnTexture.Load(coord).rg;
 }
 
+// NVIDIA STBN Vec3: 128x128 픽셀, 64개 시간 슬라이스의 RGBA8_UNORM [0, 1]^3 샘플. A 는 사용하지 않는다.
+float3 ReadSTBNVec3(Texture2DArray<float4> stbnTexture, uint2 pixelCoord, uint frameIndex) {
+    const int4 coord = int4(pixelCoord & 127u, frameIndex & 63u, 0);
+    return stbnTexture.Load(coord).rgb;
+}
+
 // NVIDIA STBNUnitVec2: 128x128 픽셀, 64개 시간 슬라이스의 RG8_UNORM 방향 샘플.
 // 필터링 없이 읽고 8비트 양자화로 생긴 길이 오차를 보정해 (cos, sin) 을 복원한다.
 float2 ReadSTBNUnitVec2(Texture2DArray<float4> stbnTexture, uint2 pixelCoord, uint frameIndex) {

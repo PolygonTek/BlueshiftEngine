@@ -284,7 +284,7 @@ static bool RenderEnvCubeFacesToTexture(RenderContext *renderContext, RenderWorl
         RenderCamera::Desc cameraDesc;
         SetupCameraDesc(cameraDesc, layerMask, staticOnly, colorClear, clearColor, origin, axis, 90.0f, 90.0f, zNear, zFar, faceSize, faceSize, targetRHITexture, faceViewIDs[faceIndex]);
         if (!applySkyboxLighting) {
-            cameraDesc.flags |= RenderCamera::Flag::SkipSkyboxLighting;
+            cameraDesc.flags |= RenderCamera::Flag::SkipSkyboxLighting | RenderCamera::Flag::DisableHeightFog | RenderCamera::Flag::DisableVolumetricFog;
         }
 
         // Cubemap 렌더링과 샘플링 모두 EngineAxis (오른손 좌표계) 를 사용한다.

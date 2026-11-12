@@ -1,4 +1,5 @@
 #include "OceanSurfaceCommon.hlsli"
+#include "../Fog/FogSurface.hlsli"
 #include "../Lighting/ShadowLibrary.hlsli"
 #if defined(INDIRECT_LIGHTING) && USE_SSR
     #include "../SSR/SSRComposite.hlsli"
@@ -135,7 +136,7 @@ float3 SampleOceanRefraction(float2 pixelPosition, float3 worldPosition, float v
 OceanMainPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
 #if DEBUG_CASCADED_SHADOW_MAP == 2
     OceanMainPSOutput debugResult;
-    debugResult.color = float4(EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition), 1.0f);
+    debugResult.color = float4(SampleDirectionalShadowVisibility((uint2)input.position.xy, input.worldPosition), 1.0f);
 #ifdef OUTPUT_VELOCITY
     debugResult.velocity = CalcVelocity(input.currUnjitteredClipPos, input.prevUnjitteredClipPos);
     debugResult.taaReactiveMask = 0.0f;
@@ -175,8 +176,8 @@ OceanMainPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
     if (directionalLightEnabled) {
         L = -frameConstants.directionalLight.direction;
         NdotL = saturate(dot(normal, L));
-        const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting((uint2)input.position.xy, input.worldPosition);
-        lightIntensityRGB = frameConstants.directionalLight.intensityRGB * shadowLighting;
+        const ShadowVisibility shadowVisibility = SampleDirectionalShadowVisibility((uint2)input.position.xy, input.worldPosition);
+        lightIntensityRGB = frameConstants.directionalLight.intensityRGB * shadowVisibility;
     }
     const float3 diffuseLightIntensityRGB = lightIntensityRGB * Fd_Lambert();
 
@@ -249,6 +250,13 @@ OceanMainPSOutput PSMain(PSInput input, bool isFrontFace : SV_IsFrontFace) {
 
     OceanMainPSOutput result;
     result.color = float4(max(color, 0.0f), 1.0f);
+
+    // 굴절 snapshot/SSR 은 fog 적용 전 radiance 를 사용한다. 물 내부 흡수와
+    // 반사/거품 합성을 마친 뒤 카메라에서 수면까지의 fog 를 한 번만 적용한다.
+    [branch]
+    if ((cameraConstants.flags & (ShaderCameraFlagUseHeightFog | ShaderCameraFlagUseVFog)) != 0u) {
+        result.color.rgb = FogApplyToOpaqueSurface(result.color.rgb, input.position.xyz);
+    }
 
 #ifdef OUTPUT_VELOCITY
     // 굴절에도 표면 velocity 를 유지해 jitter 를 누적한다. 이전 굴절 UV 는 없으므로

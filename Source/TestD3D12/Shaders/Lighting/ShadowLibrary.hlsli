@@ -131,7 +131,7 @@ float SampleShadowMap(Texture2D<float> shadowMap, float3 shadowCoord, float2 tex
 }
 #endif
 
-float EvaluateSpotShadowLighting(uint shadowIndex, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
+float SampleSpotShadowVisibility(uint shadowIndex, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
     const ShaderShadowAtlasData atlas = cameraConstants.shadowAtlas;
     // Invalid index 와 비활성 atlas 모두 테이블/texture 에 접근하기 전에 걸러낸다.
     [branch]
@@ -225,7 +225,7 @@ float3 CalcPointShadowFaceCoord(uint faceIndex, float3 lightToReceiver, float no
     return float3(tileUV, depth);
 }
 
-float EvaluatePointShadowLighting(uint shadowIndex, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
+float SamplePointShadowVisibility(uint shadowIndex, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
     const ShaderShadowAtlasData atlas = cameraConstants.shadowAtlas;
     [branch]
     if (shadowIndex >= atlas.numShadows) {
@@ -353,13 +353,13 @@ bool FindShadowMapCascade(ShaderCSMData csm, float3 worldPosition, uint firstCas
 }
 
 #if DEBUG_CASCADED_SHADOW_MAP == 2
-typedef float3 ShadowLighting;
+typedef float3 ShadowVisibility;
 static const float3 CSMCoverageOutsideColor = float3(1.0f, 0.02f, 0.02f);
 #else
-typedef float ShadowLighting;
+typedef float ShadowVisibility;
 #endif
 
-ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
+ShadowVisibility SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
 #if DEBUG_CASCADED_SHADOW_MAP == 2
     static const float3 cascadeDebugColors[ShaderCSMCascadeMaxCount] = {
         float3(0.00f, 0.75f, 1.00f), // Cyan
@@ -388,10 +388,10 @@ ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingCo
     const float shadowFactor = SampleShadowMapArray(shadowMapArray, shadowCoord, cascadeIndex, csm.texelSize);
 #endif
 
-    ShadowLighting shadowLighting = shadowFactor;
+    ShadowVisibility shadowVisibility = shadowFactor;
 #if DEBUG_CASCADED_SHADOW_MAP == 2
     // 그림자 안에서도 cascade 색을 식별할 수 있도록 최소 밝기를 유지한다.
-    shadowLighting = cascadeDebugColors[cascadeIndex] * lerp(0.25f, 1.0f, shadowFactor);
+    shadowVisibility = cascadeDebugColors[cascadeIndex] * lerp(0.25f, 1.0f, shadowFactor);
 #endif
 
     const float coverageMargin = CalcShadowMapCoverageMargin(csm.normalizedBorder, shadowCoord);
@@ -410,19 +410,18 @@ ShadowLighting SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSamplingCo
 #else
             const float shadowFactor2 = SampleShadowMapArray(shadowMapArray, shadowCoord2, cascadeIndex2, csm.texelSize);
 #endif
-            ShadowLighting shadowLighting2 = shadowFactor2;
+            ShadowVisibility shadowVisibility2 = shadowFactor2;
 
 #if DEBUG_CASCADED_SHADOW_MAP == 2
-            shadowLighting2 = cascadeDebugColors[cascadeIndex2] * lerp(0.25f, 1.0f, shadowFactor2);
+            shadowVisibility2 = cascadeDebugColors[cascadeIndex2] * lerp(0.25f, 1.0f, shadowFactor2);
 #endif
-            shadowLighting = lerp(shadowLighting, shadowLighting2, blendBandWeight);
+            shadowVisibility = lerp(shadowVisibility, shadowVisibility2, blendBandWeight);
         }
     }
-
-    return shadowLighting;
+    return shadowVisibility;
 }
 
-ShadowLighting EvaluateDirectionalShadowLighting(inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
+ShadowVisibility SampleDirectionalShadowVisibility(inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
     const ShaderCSMData csm = cameraConstants.csm;
     if (csm.enabled == 0) {
 #if DEBUG_CASCADED_SHADOW_MAP == 2
@@ -433,24 +432,24 @@ ShadowLighting EvaluateDirectionalShadowLighting(inout ShadowSamplingContext sha
     }
 
 #if DEBUG_CASCADED_SHADOW_MAP == 2
-    const ShadowLighting outsideLighting = CSMCoverageOutsideColor;
+    const ShadowVisibility outsideVisibility = CSMCoverageOutsideColor;
 #else
-    const ShadowLighting outsideLighting = 1.0f;
+    const ShadowVisibility outsideVisibility = 1.0f;
 #endif
 
     const float viewDistance = dot(worldPosition - cameraConstants.cameraOrigin, cameraConstants.cameraForward);
     const float farFade = saturate((viewDistance - csm.farFadeStart) * csm.invFarFadeRange);
     if (farFade >= 1.0f) {
-        return outsideLighting;
+        return outsideVisibility;
     }
 
-    const ShadowLighting shadowLighting = SampleCascadedShadowMap(csm, shadowSampling, worldPosition);
-    return lerp(shadowLighting, outsideLighting, farFade);
+    const ShadowVisibility shadowVisibility = SampleCascadedShadowMap(csm, shadowSampling, worldPosition);
+    return lerp(shadowVisibility, outsideVisibility, farFade);
 }
 
-ShadowLighting EvaluateDirectionalShadowLighting(uint2 pixelCoord, float3 worldPosition) {
+ShadowVisibility SampleDirectionalShadowVisibility(uint2 pixelCoord, float3 worldPosition) {
     ShadowSamplingContext shadowSampling = InitShadowSamplingContext(pixelCoord);
-    return EvaluateDirectionalShadowLighting(shadowSampling, worldPosition);
+    return SampleDirectionalShadowVisibility(shadowSampling, worldPosition);
 }
 
 #endif // __SHADOW_LIBRARY_HLSLI__

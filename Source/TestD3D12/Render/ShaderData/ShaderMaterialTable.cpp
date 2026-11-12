@@ -277,15 +277,41 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
     outShaderMaterial.packedTexCoordTransform = ShaderPacking::PackFloat4ToRGBA16F(float4(tcScale.x, tcScale.y, tcTranslation.x, tcTranslation.y));
 
     uint32_t flags = 0;
-    if (material && material->GetRenderingMode() == Material::RenderingMode::Dithered) {
-        // GPU table indices are assigned per frame; use the persistent material ID for a fixed pattern.
-        flags |= (material->GetIndex() & 63u) << ShaderMaterialDitherPatternShift;
+    if (material) {
+        if (material->GetRenderingMode() == Material::RenderingMode::Dithered) {
+            // GPU table indices are assigned per frame; use the persistent material ID for a fixed pattern.
+            flags |= (material->GetIndex() & 63u) << ShaderMaterialDitherPatternShift;
+        }
+
+        if (material->GetRenderingMode() == Material::RenderingMode::Blend) {
+            flags |= ShaderMaterialFlagTransparent;
+            switch (material->GetBlendType()) {
+            case RHI::BlendStateType::AlphaBlend:
+            case RHI::BlendStateType::AlphaBlendRGBA:
+            case RHI::BlendStateType::Min:
+            case RHI::BlendStateType::Max:
+                flags |= ShaderMaterialVFogBlendAlpha;
+                break;
+            case RHI::BlendStateType::PremultipliedAlphaBlend:
+            case RHI::BlendStateType::PremultipliedAlphaBlendRGBA:
+                flags |= ShaderMaterialVFogBlendPremultiplied;
+                break;
+            case RHI::BlendStateType::Add:
+            case RHI::BlendStateType::AddBlend:
+            case RHI::BlendStateType::ReverseSubtract:
+                flags |= ShaderMaterialVFogBlendAdditive;
+                break;
+            default:
+                // Modulate/Screen depend on destination RGB. A source-only fog transform
+                // cannot preserve foreground scattering with these fixed-function blends.
+                break;
+            }
+        }
     }
-    if (material && material->GetRenderingMode() == Material::RenderingMode::Blend) {
-        flags |= ShaderMaterialFlagTransparent;
-    }
+
     if (tcScale.x != 1.0f || tcScale.y != 1.0f || tcTranslation.x != 0.0f || tcTranslation.y != 0.0f) {
         flags |= ShaderMaterialFlagTexCoordTransform;
     }
+
     outShaderMaterial.flags = flags;
 }

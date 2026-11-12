@@ -19,6 +19,7 @@
 #include "Math/OBB.h"
 #include "Math/Plane.h"
 #include "Shaders/ShaderInterop.h"
+#include "Shaders/Fog/FogInterop.h"
 #include "ShaderPipeline/GraphicsPipelineDesc.h"
 #include "ShaderPipeline/VertexInputLayoutFactory.h"
 #include "Material/Material.h"
@@ -316,6 +317,36 @@ struct FrameScreenSpaceAO {
     bool                            temporalNoise = false;
 };
 
+struct VFogHistoryRenderState {
+    uint64_t                        producedSerial = 0; // VolumetricFog::Dispatch 호출 완료 시점에 기록된 카메라의 viewSerial.
+    uint32_t                        nextNoiseFrameIndex = 0;
+};
+
+struct FrameVolumetricFog {
+    bool                            enabled = false;
+    bool                            hasLightScattering = false;
+    RHI::Texture *                  sourceTexture = nullptr;
+    RHI::Texture *                  historyTexture = nullptr;
+    RHI::Texture *                  integratedTexture = nullptr;
+    VFogParams                      vfogParams = {};
+    VFogLightingParams              vfogLightingParams = {};
+    VFogTemporalParams              vfogTemporalParams = {};
+    SharedPtr<VFogHistoryRenderState> historyRenderState;
+    BE1::OBB                        receiverBox;
+    BE1::Frustum                    receiverFrustum;
+    BE1::Plane                      lightReceiverViewPlanes[6];
+
+    bool                            HasLightScattering() const { return hasLightScattering; }
+};
+
+struct FrameFog {
+    RHI::PipelineState *            compositePSO = nullptr;
+    bool                            heightFogEnabled = false;
+    HeightFogParams                 heightFogParams = {};
+    float                           nearDepth = 0.0f;
+    FrameVolumetricFog              volumetric;
+};
+
 // 한 프레임 렌더링에서만 유효한 렌더링 카메라
 // 매 프레임 생성되고, 생성될 때 어떠한 힙 할당도 일어나지 않는다.
 struct FrameCamera {
@@ -332,12 +363,15 @@ struct FrameCamera {
 
     BE1::Vec3                       origin = BE1::Vec3::origin;     // View origin in world space
     BE1::Mat3                       axis = BE1::Mat3::identity;     // View axis [FORWARD, LEFT, UP] in world space
+    BE1::Vec3                       prevOrigin = BE1::Vec3::origin;
+    BE1::Vec3                       prevForward = BE1::Vec3::unitX;
     BE1::Frustum                    viewFrustum;                    // Perspective view culling volume
     BE1::OBB                        viewBox;                        // Orthographic view culling volume
 
     BE1::Vec2                       ndcJitter = BE1::Vec2::zero;
     BE1::Vec2                       prevNdcJitter = BE1::Vec2::zero;
 
+    uint64_t                        viewSerial = 0;
     uint32_t                        index = ~0;
 
     uint32_t                        firstFrameObjectIndex = 0;      // 현재 카메라를 위해 등록된 FrameObject 범위의 시작
@@ -356,8 +390,8 @@ struct FrameCamera {
     BE1::Color3                     envLightColor = BE1::Color3::white;
     float                           envLightIntensity = 0.0f;
     RHI::Texture *                  envLightDiffuseIrradianceCubeMap = nullptr;
-    RHI::Texture *                  envLightSpecularCubeMap = nullptr;
-    uint32_t                        envLightSpecularMipCount = 0;
+    RHI::Texture *                  envLightSpecularPrefilteredCubeMap = nullptr;
+    uint32_t                        envLightSpecularPrefilteredCubeMapMipCount = 0;
 
     uint32_t                        maxFrameLocalLights = 0;
     uint32_t                        numFrameLocalLights = 0;
@@ -426,6 +460,7 @@ struct FrameCamera {
     RHI::Texture *                  depthHistoryTextures[2] = {};
     uint32_t                        currentHistoryTextureIndex = 0;
     bool                            historyValid = false;
+    bool                            cameraUnchanged = false;      // Excludes TAA jitter; requires valid previous camera state.
 
     bool                            generateHiZ = false;
     bool                            hiZOcclusionCulling = false;
@@ -434,6 +469,7 @@ struct FrameCamera {
 
     bool                            applyAO = false;
     FrameScreenSpaceAO              ao;
+    FrameFog                        fog;
 
     bool                            useSSR = false; // SSR 사용 설정. 현재 프레임의 trace 준비 여부와는 별개다.
     bool                            generateSSRHiZ = false;
@@ -444,7 +480,6 @@ struct FrameCamera {
 
     bool                            traceSSR = false;
     SharedPtr<SSRHistoryRenderState> ssrHistoryRenderState;
-    uint64_t                        ssrHistorySerial = 0;
     RHI::Texture *                  ssrTraceTexture = nullptr;              // Trace-resolution history UV, debug iteration count, and trace validity.
     RHI::Texture *                  ssrReceiverSurfaceTexture = nullptr;    // Trace-resolution packed FP16 screen-space ray length, normalized block pixel index, and perceptual roughness.
     RHI::Texture *                  ssrResolveReflectionTexture = nullptr;  // Trace-resolution resolve output.
@@ -596,3 +631,6 @@ struct FrameLight {
     BE1::Vec2                       GetPointShadowDepthRange() const; // X = near, Y = far. Depth 렌더링과 샘플링 계수에 같은 범위를 사용한다.
     BE1::Vec2                       CalcPointShadowProjections(FrameLocalShadowView shadowViews[6]) const; // 6면이 공유하는 depth scale/bias 를 반환한다.
 };
+
+static_assert(static_cast<uint32_t>(RenderLight::Flag::CastShadows) == ShaderLightFlagCastShadows, "CPU/HLSL light flags must match");
+static_assert(static_cast<uint32_t>(RenderLight::Flag::CastVolumetricShadows) == ShaderLightFlagCastVolumetricShadows, "CPU/HLSL light flags must match");

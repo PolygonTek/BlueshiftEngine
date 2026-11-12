@@ -1089,13 +1089,21 @@ namespace RHI {
         Count
     };
 
+    // S: source RGBA, D: destination RGBA.
     enum class BlendStateType : uint8_t {
-        Disabled,
-        AlphaBlend,
-        AddBlend,
-        Add,
-        Modulate,
-        Modulate2X,
+        Disabled,                       // RGB = S.rgb; A = S.a
+        AlphaBlend,                     // RGB = S.rgb * S.a + (1 - S.a) * D.rgb; A = D.a
+        AlphaBlendRGBA,                 // RGB = S.rgb * S.a + (1 - S.a) * D.rgb; A = S.a + (1 - S.a) * D.a
+        PremultipliedAlphaBlend,        // RGB = S.rgb + (1 - S.a) * D.rgb; A = D.a
+        PremultipliedAlphaBlendRGBA,    // RGB = S.rgb + (1 - S.a) * D.rgb; A = S.a + (1 - S.a) * D.a
+        Add,                            // RGB = S.rgb + D.rgb; A = D.a
+        AddBlend,                       // RGB = S.rgb * S.a + D.rgb; A = D.a
+        ReverseSubtract,                // RGB = D.rgb - S.rgb; A = D.a
+        Modulate,                       // RGB = S.rgb * D.rgb; A = D.a
+        Modulate2X,                     // RGB = 2 * S.rgb * D.rgb; A = D.a
+        Screen,                         // RGB = S.rgb + (1 - S.rgb) * D.rgb; A = D.a
+        Min,                            // RGB = min(S.rgb, D.rgb); A = D.a
+        Max,                            // RGB = max(S.rgb, D.rgb); A = D.a
         Count
     };
 

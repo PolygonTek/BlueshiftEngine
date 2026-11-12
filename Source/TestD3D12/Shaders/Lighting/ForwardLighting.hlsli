@@ -3,24 +3,9 @@
 
 #include "../ShaderInterop.h"
 #include "LightCullingCommon.hlsli"
+#include "LightAttenuation.hlsli"
 #include "ShadowLibrary.hlsli"
 #include "../PBR/StandardBRDF.hlsli"
-
-float CalcLightDistanceAttenuation(float lightDistanceSquared, float invRadiusSquared) {
-    // 역제곱 감쇠에 반경 경계에서 부드럽게 0 이 되는 범위 감쇠를 적용한다.
-    const float normalizedDistanceSquared = lightDistanceSquared * invRadiusSquared;
-    const float rangeFade = saturate(1.0f - normalizedDistanceSquared * normalizedDistanceSquared);
-
-    // 1cm 이내의 역제곱 감쇠는 고정하여 발산을 제한한다.
-    const float minDistanceSquared = 0.01f * 0.01f;
-    return (rangeFade * rangeFade) / max(lightDistanceSquared, minDistanceSquared);
-}
-
-float CalcSpotLightAngularAttenuation(float cosTheta, float cosOuterCone, float invCosConeDifference) {
-    // Inner 안쪽은 1, outer 바깥은 0. CPU 에서 준비한 계수로 픽셀당 삼각함수/나눗셈을 피한다.
-    const float coneFade = saturate((cosTheta - cosOuterCone) * invCosConeDifference);
-    return coneFade * coneFade;
-}
 
 float2 CalcPointLightProjectionUV(ShaderPointLight pointLight, float3 worldPosition) {
     const float4 position = float4(worldPosition, 1.0f);
@@ -46,7 +31,7 @@ float3 EvaluatePointLight(ShaderPointLight pointLight, inout ShadowSamplingConte
     if (!any(lighting > 0.0f)) {
         return lighting;
     }
-    return lighting * EvaluatePointShadowLighting(pointLight.shadowIndex, shadowSampling, worldPosition);
+    return lighting * SamplePointShadowVisibility(pointLight.shadowIndexAndFlags & ShaderLocalShadowIndexMask, shadowSampling, worldPosition);
 }
 
 float3 EvaluateSpotLight(ShaderSpotLight spotLight, inout ShadowSamplingContext shadowSampling, float3 worldPosition, in ShadingParams shading) {
@@ -74,7 +59,7 @@ float3 EvaluateSpotLight(ShaderSpotLight spotLight, inout ShadowSamplingContext 
     if (!any(lighting > 0.0f)) {
         return lighting;
     }
-    return lighting * EvaluateSpotShadowLighting(spotLight.shadowIndex, shadowSampling, worldPosition);
+    return lighting * SampleSpotShadowVisibility(spotLight.shadowIndexAndFlags & ShaderLocalShadowIndexMask, shadowSampling, worldPosition);
 }
 
 float3 EvaluateDirectionalLight(ShaderDirectionalLight directionalLight, in ShadingParams shading) {
@@ -121,8 +106,8 @@ float3 EvaluateDirectLighting(uint2 pixelCoord, float depth, float3 worldPositio
     ShadowSamplingContext shadowSampling = InitShadowSamplingContext(pixelCoord);
     float3 directLighting = 0.0f;
     if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0) {
-        const ShadowLighting shadowLighting = EvaluateDirectionalShadowLighting(shadowSampling, worldPosition);
-        directLighting = shadowLighting * EvaluateDirectionalLight(frameConstants.directionalLight, shading);
+        const ShadowVisibility shadowVisibility = SampleDirectionalShadowVisibility(shadowSampling, worldPosition);
+        directLighting = shadowVisibility * EvaluateDirectionalLight(frameConstants.directionalLight, shading);
     }
 
 #if SHADER_LIGHT_USE_WAVE_OPS

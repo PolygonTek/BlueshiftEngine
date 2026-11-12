@@ -326,7 +326,16 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->depthClearValue = currentFrameCamera->projectionPolicy.GetDepthClearValue();
     constants->cameraForward = float3(currentFrameCamera->axis[0]);
     constants->flags = flags;
+    constants->prevCameraOrigin = float3(currentFrameCamera->prevOrigin);
+    constants->prevCameraForward = float3(currentFrameCamera->prevForward);
+    constants->cameraUnchanged = currentFrameCamera->cameraUnchanged ? 1u : 0u;
     constants->projectionScaleBiasZ = float2(currentFrameCamera->projectionScaleBiasZ);
+    constants->renderSize = float2((float)currentFrameCamera->renderWidth, (float)currentFrameCamera->renderHeight);
+    constants->renderSizeRcp = float2(
+        currentFrameCamera->renderWidth > 0 ? 1.0f / currentFrameCamera->renderWidth : 0.0f,
+        currentFrameCamera->renderHeight > 0 ? 1.0f / currentFrameCamera->renderHeight : 0.0f);
+    constants->uvJitter = float2(currentFrameCamera->ndcJitter.x * 0.5f, currentFrameCamera->ndcJitter.y * -0.5f);
+    constants->viewPadding = float2(0.0f, 0.0f);
 
     // prepass 와 동일한 jitter 를 사용해 뷰 공간에서 직접 복원한다.
     BE1::Vec4 projectionScaleBiasXY = currentFrameCamera->projectionScaleBiasXY;
@@ -373,8 +382,8 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->envLightIntensity = currentFrameCamera->envLightIntensity;
 
     constants->envLightDiffuseIrradianceCubeMapIndex = currentFrameCamera->envLightDiffuseIrradianceCubeMap ? currentFrameCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    constants->envLightSpecularCubeMapIndex = currentFrameCamera->envLightSpecularCubeMap ? currentFrameCamera->envLightSpecularCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
-    constants->envLightSpecularMipCount = currentFrameCamera->envLightSpecularMipCount;
+    constants->envLightSpecularCubeMapIndex = currentFrameCamera->envLightSpecularPrefilteredCubeMap ? currentFrameCamera->envLightSpecularPrefilteredCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
+    constants->envLightSpecularMipCount = currentFrameCamera->envLightSpecularPrefilteredCubeMapMipCount;
     constants->aoTextureIndex = currentFrameCamera->applyAO ? currentFrameCamera->ao.textureSet.outputTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->ssrUpsampledReflectionTextureIndex = currentFrameCamera->ssrUpsampledReflectionTexture ? currentFrameCamera->ssrUpsampledReflectionTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->transparentSSRUpsampledReflectionTextureIndex = currentFrameCamera->transparentSSRUpsampledReflectionTexture ? currentFrameCamera->transparentSSRUpsampledReflectionTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
@@ -389,6 +398,12 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->shadowAtlas = shadowAtlasData;
     const BE1::Color3 &skyboxRadianceScale = currentFrameCamera->skyboxRadianceScale;
     constants->skyboxRadianceScale = float4(skyboxRadianceScale.r, skyboxRadianceScale.g, skyboxRadianceScale.b, 1.0f);
+    constants->heightFogParams = currentFrameCamera->fog.heightFogParams;
+    constants->vfogParams = currentFrameCamera->fog.volumetric.vfogParams;
+    constants->vfogSourceTextureIndex = 0;
+    constants->vfogIntegratedTextureIndex = 0;
+    constants->fogNearDepth = currentFrameCamera->fog.nearDepth;
+    constants->fogPadding = 0;
 }
 
 void RenderBackend::UpdateFramePSOs() {
@@ -401,6 +416,7 @@ void RenderBackend::UpdateFramePSOs() {
     frameSSRTemporalPSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrTemporalPipelines[ssrResolutionMode]);
     frameSSRUpsamplePSO = ShaderPipeline::GetReadyPSO(renderSystem->ssrUpsamplePipelines[ssrResolutionMode]);
     renderSystem->GetScreenSpaceAO().UpdateFramePSOs(frame->GetRenderFrameSettings());
+    renderSystem->GetVolumetricFog().UpdateFramePSOs();
     renderSystem->GetBloom().UpdateFramePSOs();
     renderSystem->GetPostLuminance().UpdateFramePSOs();
 
@@ -773,8 +789,8 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
     const bool needsSSRUpsample = ssrDebugMode == SSRDebugModeOff || ssrDebugMode == SSRDebugModeUpsampledReflection;
 
     SSRHistoryRenderState *ssrHistoryState = currentFrameCamera->ssrHistoryRenderState.get();
-    const uint64_t ssrHistorySerial = currentFrameCamera->ssrHistorySerial;
-    const bool sceneColorHistoryReady = ssrHistoryState && ssrHistorySerial > 1 && ssrHistoryState->sceneColorHistorySerial == ssrHistorySerial - 1;
+    const uint64_t viewSerial = currentFrameCamera->viewSerial;
+    const bool sceneColorHistoryReady = ssrHistoryState && viewSerial > 1 && ssrHistoryState->sceneColorHistorySerial == viewSerial - 1;
     bool ssrReady = false;
 
     if (ssrHiZReady && sceneColorHistoryReady && currentFrameCamera->traceSSR) {
@@ -782,7 +798,7 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
 
         if (ssrReady && currentFrameCamera->accumulateSSR) {
             // 불투명 서피스에 대한 SSR 기록이 성공하면 serial 을 갱신한다.
-            ssrHistoryState->opaqueTemporalReflectionSerial = ssrHistorySerial;
+            ssrHistoryState->opaqueTemporalReflectionSerial = viewSerial;
         }
     }
 
@@ -811,7 +827,7 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
 
             if (transparentSSRReady && currentFrameCamera->accumulateTransparentSSR) {
                 // 투명 서피스에 대한 SSR 기록이 성공하면 serial 을 갱신한다.
-                ssrHistoryState->transparentTemporalReflectionSerial = ssrHistorySerial;
+                ssrHistoryState->transparentTemporalReflectionSerial = viewSerial;
             }
         }
     }
@@ -825,7 +841,36 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
 
     if (ssrHiZReady && ssrHistoryState && currentFrameCamera->updateSSRSceneColorHistory) {
         if (DispatchUpdateSSRSceneColorHistory()) {
-            ssrHistoryState->sceneColorHistorySerial = ssrHistorySerial;
+            ssrHistoryState->sceneColorHistorySerial = viewSerial;
+        }
+    }
+
+    bool debugVFog = false;
+    if (currentFrameCamera->fog.compositePSO) {
+        // 프록셀 볼륨에 누적 산란광/발광과 투과율을 계산해 저장한다.
+        const bool vfogVolumeReady = currentFrameCamera->fog.volumetric.enabled && renderSystem->GetVolumetricFog().Dispatch(*this);
+
+        // 볼륨이 준비되었거나 활성화된 Analytic HeightFog 활성화되어 있다면 fog composite 를 수행한다.
+        const bool shouldCompositeFog = vfogVolumeReady || currentFrameCamera->fog.heightFogEnabled;
+        if (shouldCompositeFog) {
+            CompositeFog(vfogVolumeReady);
+
+            RecordDrawStats(1, 1, 0, 0);
+
+            debugVFog = vfogVolumeReady && currentFrameCamera->fog.volumetric.vfogParams.debugMode != 0;
+            if (!debugVFog) {
+                // Ocean/Transparent 에 fog 를 적용하기 위해 camera constants 에 볼륨 텍스처의 bindless index 를 기록한다.
+                CameraConstants *constants = reinterpret_cast<CameraConstants *>(cameraConstantBuffer->mappedPtr);
+                if (vfogVolumeReady) {
+                    constants->vfogSourceTextureIndex = currentFrameCamera->fog.volumetric.sourceTexture->GetBindlessIndex(RHI::ViewType::SRV);
+                    constants->vfogIntegratedTextureIndex = currentFrameCamera->fog.volumetric.integratedTexture->GetBindlessIndex(RHI::ViewType::SRV);
+                    cameraShaderFlags |= ShaderCameraFlagUseVFog;
+                }
+                if (currentFrameCamera->fog.heightFogEnabled) {
+                    cameraShaderFlags |= ShaderCameraFlagUseHeightFog;
+                }
+                constants->flags = cameraShaderFlags;
+            }
         }
     }
 
@@ -858,26 +903,25 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
 
     const bool debugGTAO = currentFrameCamera->ao.mode == RenderAOMode::GTAO && frameSettings.gtaoDebug != 0;
 
-    // Offscreen capture 결과가 전역 화면 디버그 출력으로 대체되면 probe radiance 에 디버그 이미지가 구워진다.
-    if (!BE1::HasFlag(currentFrameCamera->flags, RenderCamera::Flag::SkipPostProcess)) {
-        if (debugGTAO && aoReady) {
-            if (frameSettings.gtaoDebug > 1) {
-                renderSystem->GetScreenSpaceAO().DispatchDebugPreview(*this);
-            }
-            outputOverrideTexture = currentFrameCamera->ao.textureSet.outputTexture;
-        } else if (frameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
-            outputOverrideTexture = useMSAA ? currentFrameCamera->resolvedColorTexture : currentFrameCamera->colorTexture;
-        } else if (currentFrameCamera->useSSR && frameSettings.ssrDebugMode != SSRDebugModeOff) {
-            const bool debugTransparentSSR = frameSettings.ssrTransparent && frameSettings.ssrDebugTransparent;
-            const bool debugSSRReady = debugTransparentSSR ? transparentSSRReady : ssrReady;
-            if (debugSSRReady) {
-                if (frameSettings.ssrDebugMode != SSRDebugModeUpsampledReflection) {
-                    outputOverrideTexture = currentFrameCamera->ssrResolveReflectionTexture;
-                } else if (debugTransparentSSR) {
-                    outputOverrideTexture = currentFrameCamera->transparentSSRUpsampledReflectionTexture;
-                } else {
-                    outputOverrideTexture = currentFrameCamera->ssrUpsampledReflectionTexture;
-                }
+    if (debugGTAO && aoReady) {
+        if (frameSettings.gtaoDebug > 1) {
+            renderSystem->GetScreenSpaceAO().DispatchDebugPreview(*this);
+        }
+        outputOverrideTexture = currentFrameCamera->ao.textureSet.outputTexture;
+    } else if (debugVFog) {
+        outputOverrideTexture = useMSAA ? currentFrameCamera->resolvedColorTexture : currentFrameCamera->colorTexture;
+    } else if (frameSettings.shadowDebugMode == ShaderShadowDebugModeVisibility) {
+        outputOverrideTexture = useMSAA ? currentFrameCamera->resolvedColorTexture : currentFrameCamera->colorTexture;
+    } else if (currentFrameCamera->useSSR && frameSettings.ssrDebugMode != SSRDebugModeOff) {
+        const bool debugTransparentSSR = frameSettings.ssrTransparent && frameSettings.ssrDebugTransparent;
+        const bool debugSSRReady = debugTransparentSSR ? transparentSSRReady : ssrReady;
+        if (debugSSRReady) {
+            if (frameSettings.ssrDebugMode != SSRDebugModeUpsampledReflection) {
+                outputOverrideTexture = currentFrameCamera->ssrResolveReflectionTexture;
+            } else if (debugTransparentSSR) {
+                outputOverrideTexture = currentFrameCamera->transparentSSRUpsampledReflectionTexture;
+            } else {
+                outputOverrideTexture = currentFrameCamera->ssrUpsampledReflectionTexture;
             }
         }
     }
@@ -1403,6 +1447,42 @@ bool RenderBackend::DrawTransparentSSRPrepass() {
 
     RHI::renderer->EndRenderPass(mainCommandList);
     return true;
+}
+
+void RenderBackend::CompositeFog(bool useVolumetricFog) {
+    const FrameCamera &camera = *currentFrameCamera;
+    const FrameFog &fog = camera.fog;
+    const FrameVolumetricFog &data = fog.volumetric;
+    const BE1::Rect viewport(0, 0, camera.renderWidth, camera.renderHeight);
+
+    GpuTiming::ScopedTimer timer(gpuTiming, mainCommandList, GpuTiming::Tag::FogComposite);
+
+    // compositeParams[4] = { sourceTextureIndex, integratedTextureIndex, useVolumetricFog, useAnalyticHeightFog }
+    uint32_t compositeParams[4] = { 0u, 0u, 0u, fog.heightFogEnabled ? 1u : 0u };
+    if (useVolumetricFog) {
+        compositeParams[0] = data.sourceTexture->GetBindlessIndex(RHI::ViewType::SRV);
+        compositeParams[1] = data.integratedTexture->GetBindlessIndex(RHI::ViewType::SRV);
+        compositeParams[2] = 1u;
+    }
+
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(camera.depthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource));
+
+    const RHI::RenderPassImage outputImage = RHI::RenderPassImage::Color(
+        camera.colorTexture, RHI::ViewID::PrimaryID, RHI::RenderPassImage::LoadAction::Load, RHI::RenderPassImage::StoreAction::Store,
+        RHI::GPUResourceState::RenderTarget, RHI::GPUResourceState::RenderTarget);
+    RHI::renderer->BeginRenderPass(mainCommandList, &outputImage, 1);
+
+    RHI::renderer->SetViewport(mainCommandList, viewport);
+    RHI::renderer->SetScissorRect(mainCommandList, viewport);
+    RHI::renderer->SetPSO(mainCommandList, fog.compositePSO);
+    RHI::renderer->SetTexture(mainCommandList, 0, false, camera.depthTexture);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 0, frameConstantBuffer);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
+    RHI::renderer->SetConstants(mainCommandList, 2, compositeParams, sizeof(compositeParams), 0);
+    RHI::renderer->Draw(mainCommandList, 3, 0);
+
+    RHI::renderer->EndRenderPass(mainCommandList);
+    RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(camera.depthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::DepthWrite));
 }
 
 bool RenderBackend::DrawPostOpaquePass() {

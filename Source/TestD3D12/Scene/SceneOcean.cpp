@@ -40,7 +40,7 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     app.SetCameraDistance(80.0f);
 
     directionalLight.type = RenderLight::Type::Directional;
-    directionalLight.flags = RenderLight::Flag::CastShadows;
+    directionalLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows;
     directionalLight.linearColor = BE1::Color3::white;
     directionalLight.intensity = 5.0f;
     directionalLightEnabled = true;

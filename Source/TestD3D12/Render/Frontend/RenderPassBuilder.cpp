@@ -427,7 +427,7 @@ RenderPassBuilder::ScenePasses RenderPassBuilder::CreateScenePasses(FrameCamera 
 void RenderPassBuilder::AddSceneDrawSurfs(const FrameCamera *frameCamera, const ScenePasses &passes) {
     const bool allowAsyncPSOBuild = !BE1::HasFlag(frameCamera->flags, RenderCamera::Flag::DisableAsyncPSOBuild);
     const bool directLighting = frameCamera->directionalLightVisible || frameCamera->numFrameLocalLights > 0;
-    const bool indirectLighting = frameCamera->envLightDiffuseIrradianceCubeMap && frameCamera->envLightSpecularCubeMap;
+    const bool indirectLighting = frameCamera->envLightDiffuseIrradianceCubeMap && frameCamera->envLightSpecularPrefilteredCubeMap;
     RenderPass *skyboxPass = passes.skyboxPass;
     RenderPass *transparentSSRPrepass = passes.transparentSSRPrepass;
     RenderPass *blendPass = passes.blendPass;

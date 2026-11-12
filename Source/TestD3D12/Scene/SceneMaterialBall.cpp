@@ -43,7 +43,7 @@ void SceneMaterialBall::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physic
     directionalLightEnabled = false;
 
     directionalLight.type = RenderLight::Type::Directional;
-    directionalLight.flags = RenderLight::Flag::CastShadows;
+    directionalLight.flags = RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows;
     directionalLight.linearColor = BE1::Color3::white;
     directionalLight.intensity = 2.0f;
     UpdateDirectionalLightDirection();

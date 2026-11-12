@@ -622,14 +622,28 @@ bool Material::ParseBlendType(BE1::Lexer &lexer, const char *materialName, Inter
 
     if (!token.Icmp("alphaBlend")) {
         outInternalData.blendType = RHI::BlendStateType::AlphaBlend;
-    } else if (!token.Icmp("addBlend")) {
-        outInternalData.blendType = RHI::BlendStateType::AddBlend;
+    } else if (!token.Icmp("alphaBlendRGBA")) {
+        outInternalData.blendType = RHI::BlendStateType::AlphaBlendRGBA;
+    } else if (!token.Icmp("premultipliedAlphaBlend")) {
+        outInternalData.blendType = RHI::BlendStateType::PremultipliedAlphaBlend;
+    } else if (!token.Icmp("premultipliedAlphaBlendRGBA")) {
+        outInternalData.blendType = RHI::BlendStateType::PremultipliedAlphaBlendRGBA;
     } else if (!token.Icmp("add")) {
         outInternalData.blendType = RHI::BlendStateType::Add;
+    } else if (!token.Icmp("addBlend")) {
+        outInternalData.blendType = RHI::BlendStateType::AddBlend;
+    } else if (!token.Icmp("reverseSubtract")) {
+        outInternalData.blendType = RHI::BlendStateType::ReverseSubtract;
     } else if (!token.Icmp("filter") || !token.Icmp("modulate")) {
         outInternalData.blendType = RHI::BlendStateType::Modulate;
     } else if (!token.Icmp("modulate2x")) {
         outInternalData.blendType = RHI::BlendStateType::Modulate2X;
+    } else if (!token.Icmp("screen")) {
+        outInternalData.blendType = RHI::BlendStateType::Screen;
+    } else if (!token.Icmp("min")) {
+        outInternalData.blendType = RHI::BlendStateType::Min;
+    } else if (!token.Icmp("max")) {
+        outInternalData.blendType = RHI::BlendStateType::Max;
     } else {
         BE_WARNLOG("Material::ParseBlendType: unknown blendType '%s' in material '%s'\n", token.c_str(), materialName);
         return false;

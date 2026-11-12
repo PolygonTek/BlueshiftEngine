@@ -15,6 +15,7 @@
 #pragma once
 
 #include "EnvironmentLight.h"
+#include "HeightFog.h"
 #include "OceanSurface.h"
 #include "RenderLight.h"
 #include "RenderObject.h"
@@ -78,7 +79,8 @@ public:
         RenderLights            = BIT(1),
         OceanSurface            = BIT(2),
         EnvironmentLight        = BIT(3),
-        All                     = BIT(0) | BIT(1) | BIT(2) | BIT(3)
+        HeightFog               = BIT(4),
+        All                     = BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4)
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(ClearFlag) noexcept { return {}; }
@@ -129,6 +131,11 @@ public:
     bool                        SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap);
     void                        RequestEnvironmentLightCubemapRegeneration(const BE1::Vec3 &captureOrigin = BE1::Vec3::origin);
     void                        RemoveEnvironmentLight();
+
+    const HeightFog *           GetHeightFog() const { return hasHeightFog ? &heightFog : nullptr; }
+    bool                        AddHeightFog(const HeightFog::Desc &desc);
+    bool                        UpdateHeightFog(const HeightFog::Desc &desc);
+    void                        RemoveHeightFog();
 
     const OceanSurface *        GetOceanSurface() const { return hasOceanSurface ? &oceanSurface : nullptr; }
     bool                        AddOceanSurface(const OceanSurface::Desc &desc);
@@ -245,6 +252,9 @@ private:
     void                        PrepareDebugDrawPipelines(FrameCamera *frameCamera);
     void                        PrepareOceanSurfacePipeline(FrameCamera *frameCamera, bool indirectLighting);
 
+    void                        PrepareFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, bool useHeightFog, bool useVolumetricFog, uint32_t frameCount);
+    void                        PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, uint32_t frameCount);
+
     void                        DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        SetupFrameTransparentSSR(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        BuildCameraPasses(RenderFrame *frame, FrameCamera *frameCamera);
@@ -256,6 +266,9 @@ private:
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
     EnvironmentLight            envLight;
     bool                        hasEnvironmentLight = false;
+
+    HeightFog                   heightFog;
+    bool                        hasHeightFog = false;
 
     OceanSurface                oceanSurface;
     bool                        hasOceanSurface = false;

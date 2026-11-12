@@ -173,6 +173,11 @@ void ShaderLightTable::DestroyBuffer(TableBuffer &tableBuffer) {
     tableBuffer.bindlessIndex = 0;
 }
 
+static uint32_t PackShaderLocalShadowIndexAndFlags(const FrameLight &frameLight) {
+    assert(frameLight.localShadowIndex == ~0u || frameLight.localShadowIndex < ShaderLocalShadowIndexInvalid);
+    return (frameLight.localShadowIndex & ShaderLocalShadowIndexMask) | (static_cast<uint32_t>(frameLight.flags) << ShaderLocalLightFlagsShift);
+}
+
 void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &shaderLight) const {
     BE1::simdProcessor->Memcpy(&shaderLight.worldToProjectionU, &frameLight.viewProjScaleBiasMatrix[0], sizeof(shaderLight.worldToProjectionU) * 2);
 
@@ -180,8 +185,7 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderPointLight &sha
     shaderLight.origin = float3(frameLight.origin);
     shaderLight.invRadiusSquared = invRadius * invRadius;
     shaderLight.intensityRGB = float3(frameLight.intensityRGB);
-    // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
-    shaderLight.shadowIndex = frameLight.localShadowIndex;
+    shaderLight.shadowIndexAndFlags = PackShaderLocalShadowIndexAndFlags(frameLight);
 }
 
 void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shaderLight) const {
@@ -194,6 +198,5 @@ void ShaderLightTable::Build(const FrameLight &frameLight, ShaderSpotLight &shad
     shaderLight.cosOuterCone = frameLight.spotCosCone.y;
     shaderLight.intensityRGB = float3(frameLight.intensityRGB);
     shaderLight.invCosConeDifference = frameLight.spotInvCosConeDifference;
-    // FrameLight 는 카메라별 snapshot 이다. 업로드/depth 실패 시 카메라의 shadow count 가 0 으로 유지된다.
-    shaderLight.shadowIndex = frameLight.localShadowIndex;
+    shaderLight.shadowIndexAndFlags = PackShaderLocalShadowIndexAndFlags(frameLight);
 }

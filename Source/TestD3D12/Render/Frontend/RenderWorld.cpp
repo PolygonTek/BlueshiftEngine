@@ -78,6 +78,11 @@ void RenderWorld::ClearScene(ClearFlag clearFlags) {
         oceanSurface = OceanSurface();
         hasOceanSurface = false;
     }
+
+    if (BE1::HasFlag(clearFlags, ClearFlag::HeightFog)) {
+        heightFog = HeightFog();
+        hasHeightFog = false;
+    }
 }
 
 RenderObject *RenderWorld::GetRenderObject(int index) const {
@@ -475,6 +480,51 @@ void RenderWorld::RemoveEnvironmentLight() {
     renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
     envLight.Reset();
     hasEnvironmentLight = false;
+}
+
+bool RenderWorld::AddHeightFog(const HeightFog::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (hasHeightFog) {
+        BE_WARNLOG("RenderWorld::AddHeightFog: only one height fog is supported\n");
+        return false;
+    }
+
+    if (!desc.IsValid()) {
+        BE_WARNLOG("RenderWorld::AddHeightFog: invalid description\n");
+        return false;
+    }
+
+    heightFog.desc = desc;
+    hasHeightFog = true;
+    return true;
+}
+
+bool RenderWorld::UpdateHeightFog(const HeightFog::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!hasHeightFog) {
+        BE_WARNLOG("RenderWorld::UpdateHeightFog: no height fog has been added\n");
+        return false;
+    }
+
+    if (!desc.IsValid()) {
+        BE_WARNLOG("RenderWorld::UpdateHeightFog: invalid description\n");
+        return false;
+    }
+
+    heightFog.desc = desc;
+    return true;
+}
+
+void RenderWorld::RemoveHeightFog() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    heightFog = HeightFog();
+    hasHeightFog = false;
 }
 
 bool RenderWorld::AddOceanSurface(const OceanSurface::Desc &desc) {

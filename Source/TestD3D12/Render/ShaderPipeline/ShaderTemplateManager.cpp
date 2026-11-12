@@ -404,6 +404,16 @@ void ShaderTemplateManager::CreateDefaultShaderTemplates() {
     if (!litShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load lit shader template");
     }
+
+    fogCompositeShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Fog/FogComposite");
+    if (!fogCompositeShaderTemplate) {
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load fog composite shader template");
+    }
+
+    fogCompositeMSAAShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Fog/FogCompositeMSAA");
+    if (!fogCompositeMSAAShaderTemplate) {
+        BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load fog composite MSAA shader template");
+    }
 }
 
 void ShaderTemplateManager::DestroyDefaultShaderTemplates() {
@@ -415,6 +425,12 @@ void ShaderTemplateManager::DestroyDefaultShaderTemplates() {
     }
     if (sceneSnapshotDownsampleShaderTemplate) {
         sceneSnapshotDownsampleShaderTemplate.reset();
+    }
+    if (fogCompositeShaderTemplate) {
+        fogCompositeShaderTemplate.reset();
+    }
+    if (fogCompositeMSAAShaderTemplate) {
+        fogCompositeMSAAShaderTemplate.reset();
     }
     if (hdr10OutputShaderTemplate) {
         hdr10OutputShaderTemplate.reset();

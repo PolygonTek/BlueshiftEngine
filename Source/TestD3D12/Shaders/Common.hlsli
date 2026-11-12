@@ -15,6 +15,7 @@
 #define INV_PI          0.31830988618379067153776752674503
 #define INV_TWO_PI      0.15915494309189533576888376337251
 #define INV_FOUR_PI     0.07957747154594766788444188168626
+#define LN2             0.69314718056
 #define SQRT2           1.41421356237309504880
 #define INV_SQRT2       0.70710678118654752440
 #define GOLDEN_RATIO    1.6180339887
@@ -39,6 +40,11 @@ inline float Pow4(float value) {
 inline float Pow5(float value) {
     const float valueSquared = value * value;
     return valueSquared * valueSquared * value;
+}
+
+// exp(x)-1 loses precision near zero.
+inline float Expm1(float x) {
+    return abs(x) < 0.05f ? x * (1.0f + x * (0.5f + x * (1.0f / 6.0f + x * (1.0f / 24.0f + x / 120.0f)))) : exp(x) - 1.0f;
 }
 
 inline float2 ComplexMul(float2 a, float2 b) {

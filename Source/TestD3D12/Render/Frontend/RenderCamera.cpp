@@ -25,6 +25,7 @@ RenderCamera::~RenderCamera() {
     DestroySSRResources();
     DestroyTransparentSSRResources();
     screenSpaceAOResources.Destroy();
+    volumetricFogResources.Destroy();
     ssrSceneColorHistoryResources.Destroy();
     ssrHiZResources.Destroy();
     hiZResources.Destroy();
@@ -508,15 +509,15 @@ void RenderCamera::CalculateFov(float fromFovX, float fromAspectRatio, float toA
     *toFovY = RAD2DEG(BE1::Math::ATan(tanFovY) * 2.0f);
 }
 
-// needDepthHistory off
+// case 1) needDepthHistory off
 // - depthTexture : MSAA sample count 를 따르는 DSV / SRV
 // - depthHistoryTextures : 없음
 //
-// needDepthHistory on, MSAA off
+// case 2) needDepthHistory on, MSAA off
 // - depthTexture : 없음
 // - depthHistoryTextures : DSV / SRV 두 개를 ping-pong depth attachment 로 사용
 //
-// needDepthHistory on, MSAA on
+// case 3) needDepthHistory on, MSAA on
 // - depthTexture : MSAA DSV / SRV
 // - depthHistoryTextures : SRV / UAV 두 개를 ping-pong 하며 MSAA depthTexture 의 resolve 결과를 저장
 bool RenderCamera::EnsureRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, bool needNormalRoughnessTexture, bool needVelocityTexture, const BE1::Color4 &optimizedClearColor) {
@@ -617,6 +618,7 @@ void RenderCamera::EnsurePostProcessResources(bool skipPostProcess, RHI::Format 
 }
 
 void RenderCamera::InvalidateTemporalHistory() {
+    volumetricFogHistory.Invalidate();
     localShadowResolutionHistory.Reset();
     temporalHistoryInvalidated = true;
     temporalFrameIndex = 0;
@@ -1113,10 +1115,12 @@ bool RenderCamera::EnsureTransparentSSRResources(uint32_t width, uint32_t height
     assert(resolutionMode < RenderFrameSettings::SSRResolutionModeCount);
     const uint32_t traceWidth = BE1::Max((width + (1u << resolutionMode) - 1u) >> resolutionMode, 1u);
     const uint32_t traceHeight = BE1::Max((height + (1u << resolutionMode) - 1u) >> resolutionMode, 1u);
+
     if (transparentSSRResolutionMode != resolutionMode) {
         transparentSSRTemporalHistoryValid = false;
         transparentSSRResolutionMode = resolutionMode;
     }
+
     const bool validDepthTextures = transparentSSRDepthFormat == depthFormat && transparentSSRDepthTextures[0] && transparentSSRDepthTextures[1] &&
         transparentSSRDepthTextures[0]->GetWidth() == width && transparentSSRDepthTextures[0]->GetHeight() == height &&
         transparentSSRDepthTextures[1]->GetWidth() == width && transparentSSRDepthTextures[1]->GetHeight() == height;
@@ -1131,6 +1135,7 @@ bool RenderCamera::EnsureTransparentSSRResources(uint32_t width, uint32_t height
 
     if (!validDepthTextures || !validSurfaceTextures || !validTemporalTextures || !validUpsampledReflectionTexture) {
         DestroyTransparentSSRResources();
+
         if (!CreateTransparentSSRResources(width, height, depthFormat, resolutionMode)) {
             DestroyTransparentSSRResources();
             return false;
@@ -1146,6 +1151,7 @@ bool RenderCamera::CreateTransparentSSRResources(uint32_t width, uint32_t height
     SharedPtr<BE1::Image> depthImage = MakeShared<BE1::Image>();
     depthImage->Init2DFromMemory(width, height, 1, depthImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
     const RHI::ClearValue depthClearValue = RHI::ClearValue::DepthStencil(desc.projectionPolicy.GetDepthClearValue(), 0);
+
     for (uint32_t index = 0; index < COUNT_OF(transparentSSRDepthTextures); ++index) {
         transparentSSRDepthTextures[index] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::DepthStencil | RHI::TextureFlag::ShaderResource | RHI::TextureFlag::Typeless, depthImage, RHI::TextureMipInitMode::FromImage, depthClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (!transparentSSRDepthTextures[index] ||
@@ -1182,6 +1188,7 @@ bool RenderCamera::CreateTransparentSSRResources(uint32_t width, uint32_t height
     const BE1::Image::Format reflectionImageFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16G16B16A16_FLOAT);
     SharedPtr<BE1::Image> historyImage = MakeShared<BE1::Image>();
     historyImage->Init2DFromMemory(traceWidth, traceHeight, 1, reflectionImageFormat, BE1::Image::GammaSpace::Linear, nullptr);
+
     for (uint32_t index = 0; index < COUNT_OF(transparentSSRTemporalReflectionTextures); ++index) {
         transparentSSRTemporalReflectionTextures[index] = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, historyImage, RHI::TextureMipInitMode::AllocateEmpty, {}, 1, RHI::GPUResourceState::ShaderResource);
         if (!transparentSSRTemporalReflectionTextures[index]) {

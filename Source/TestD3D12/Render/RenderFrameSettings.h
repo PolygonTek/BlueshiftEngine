@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cstdint>
+#include "Math/Vector3.h"
 
 enum RenderBloomMode {
     Off = 0,
@@ -32,16 +33,31 @@ enum class RenderAOMode : uint32_t {
 struct RenderFrameSettings {
     static constexpr uint32_t   SSRResolutionModeCount = 3;
     static constexpr uint32_t   CSMCascadeMaxCount = 4;
-    static constexpr uint32_t   ShadowMapReferenceResolution = 1024;       ///< CSM/Point/Spot filter radius 와 border 의 공통 기준 해상도.
+    static constexpr uint32_t   ShadowMapReferenceResolution = 1024;        ///< CSM/Point/Spot filter radius 와 border 의 공통 기준 해상도.
     static constexpr float      ShadowMapReferenceMinRadius = 0.0f;
     static constexpr float      ShadowMapReferenceMaxRadius = 5.0f;
-    static constexpr uint32_t   ShadowMapReferenceBorderTexels = 6;        ///< 최대 샘플 반경 5 texel + bilinear 여유 1 texel.
+    static constexpr uint32_t   ShadowMapReferenceBorderTexels = 6;         ///< 최대 샘플 반경 5 texel + bilinear 여유 1 texel.
 
     static constexpr uint32_t   LocalShadowMinProjectedSize = 32;           ///< Local shadow 후보의 최소 투영 크기 (긴 변). 내부 렌더 해상도 기준 픽셀.
     static constexpr uint32_t   ShadowAtlasMinTileResolution = 64;          ///< Border 를 포함한 local shadow atlas 타일의 최소 해상도.
     static constexpr uint32_t   ShadowAtlasMaxUpdateInterval = 16;          ///< 최대 shadow 갱신 간격 (프레임 수, 2의 거듭제곱).
 
     uint32_t                    mainRTSampleCount;
+
+    float                       fogNearDepth;
+
+    bool                        vfogEnabled;
+    uint32_t                    vfogTileBaseSize; // 정사각형 화면의 한 축 타일 수. XY 총개수는 대략 이 값의 제곱이다.
+    uint32_t                    vfogSliceCount;
+    float                       vfogFarDepth;
+    float                       vfogDepthDistributionScale;
+    bool                        vfogShadows;
+    float                       vfogLightDistanceBiasScale;
+    bool                        vfogJitter;
+    bool                        vfogTemporal;
+    float                       vfogTemporalHistoryWeight;
+    uint32_t                    vfogDebugMode;
+    uint32_t                    vfogDebugSlice;
 
     uint32_t                    shadowDebugMode;
     uint32_t                    shadowMapQuality;
@@ -56,7 +72,7 @@ struct RenderFrameSettings {
     uint32_t                    shadowMapUpdateMinProjectedSize;            ///< 매 프레임 갱신할 광원 투영 영역의 최소 긴 변. 배율 적용 전 내부 렌더 픽셀 기준.
 
     uint32_t                    csmResolution;
-    float                       csmFilterRadius;                             ///< 기준 해상도에서의 Q3 최대 샘플 반경 (texel).
+    float                       csmFilterRadius;                            ///< 기준 해상도에서의 Q3 최대 샘플 반경 (texel).
     uint32_t                    csmCascadeCount;
     float                       csmSplitLambda;
     float                       csmMaxDistance;

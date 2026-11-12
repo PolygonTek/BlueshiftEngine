@@ -81,6 +81,21 @@ extern BE1::CVar    r_csmSlopeScaledDepthBias3;
 
 extern BE1::CVar    r_msaa;
 
+extern BE1::CVar    r_fogNearDepth;
+
+extern BE1::CVar    r_vfog;
+extern BE1::CVar    r_vfogTileBaseSize;
+extern BE1::CVar    r_vfogSliceCount;
+extern BE1::CVar    r_vfogFarDepth;
+extern BE1::CVar    r_vfogDepthDistributionScale;
+extern BE1::CVar    r_vfogShadows;
+extern BE1::CVar    r_vfogLightDistanceBiasScale;
+extern BE1::CVar    r_vfogJitter;
+extern BE1::CVar    r_vfogTemporal;
+extern BE1::CVar    r_vfogTemporalHistoryWeight;
+extern BE1::CVar    r_vfogDebug;
+extern BE1::CVar    r_vfogDebugSlice;
+
 extern BE1::CVar    r_taa;
 extern BE1::CVar    r_taaJitter;
 extern BE1::CVar    r_taaJitterSampleCount;

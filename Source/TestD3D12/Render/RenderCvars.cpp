@@ -69,7 +69,7 @@ CVAR_MINMAX(r_shadowMapFilterRadius, "2.25", BE1::CVar::Flag::Float, "Point/Spot
 CVAR_MINMAX(r_csmResolution, "1024", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "cascade shadow map resolution", 128, 8192);
 CVAR_MINMAX(r_csmFilterRadius, "1.75", BE1::CVar::Flag::Float, "CSM Q3 Poisson maximum sample radius in texels at 1024 resolution; adjusted for resolution and cascade scale (Q0/Q1/Q2 use fixed kernels)", RenderFrameSettings::ShadowMapReferenceMinRadius, RenderFrameSettings::ShadowMapReferenceMaxRadius);
 CVAR_MINMAX(r_csmCount, "4", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "active CSM cascade count", 1, RenderFrameSettings::CSMCascadeMaxCount);
-CVAR_MINMAX(r_csmSplitLambda, "0.9", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "CSM split distribution (0 = uniform, 1 = logarithmic; orthographic cameras use uniform)", 0.0f, 1.0f);
+CVAR_MINMAX(r_csmSplitLambda, "0.88", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "CSM split distribution (0 = uniform, 1 = logarithmic; orthographic cameras use uniform)", 0.0f, 1.0f);
 CVAR_MINMAX(r_csmMaxDistance, "150", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "maximum CSM distance in world units (0 = disabled)", 0.0f, 10000.0f);
 CVAR_MINMAX(r_csmBlendFraction, "0.05", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "fraction of each CSM map's normalized safe coverage used for cascade blending", 0.0f, 0.16f);
 CVAR_MINMAX(r_csmFadeFraction, "0.1", BE1::CVar::Flag::Float | BE1::CVar::Flag::Archive, "fraction of CSM receiver range used for distance fading", 0.01f, 1.0f);
@@ -81,6 +81,23 @@ CVAR(r_csmSlopeScaledDepthBias0, "1.0", BE1::CVar::Flag::Float, "slope-scaled de
 CVAR(r_csmSlopeScaledDepthBias1, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 1");
 CVAR(r_csmSlopeScaledDepthBias2, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 2");
 CVAR(r_csmSlopeScaledDepthBias3, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 3");
+
+// Fog (Common)
+CVAR_MINMAX(r_fogNearDepth, "0", BE1::CVar::Flag::Float, "start depth for analytic height fog and volumetric fog (-view Z, meters)", 0.0f, 10000.0f);
+
+// Volumetric fog
+CVAR(r_vfog, "1", BE1::CVar::Flag::Bool, "enable volumetric fog on opaque surfaces and sky");
+CVAR_MINMAX(r_vfogTileBaseSize, "144", BE1::CVar::Flag::Integer, "volumetric fog XY tile count per axis for a square viewport; total tile count is approximately this value squared, independent of render resolution", 16, 256);
+CVAR_MINMAX(r_vfogSliceCount, "64", BE1::CVar::Flag::Integer, "volumetric fog depth slice count", 8, 256);
+CVAR_MINMAX(r_vfogFarDepth, "64", BE1::CVar::Flag::Float, "volumetric fog end depth (-view Z, meters)", 0.01f, 10000.0f);
+CVAR_MINMAX(r_vfogDepthDistributionScale, "4", BE1::CVar::Flag::Float, "volumetric fog exponential depth distribution scale (meters); smaller values concentrate slices near the camera", 0.01f, 10000.0f);
+CVAR(r_vfogShadows, "1", BE1::CVar::Flag::Bool, "apply shadow visibility to volumetric fog lighting");
+CVAR_MINMAX(r_vfogLightDistanceBiasScale, "1.5", BE1::CVar::Flag::Float, "volumetric fog local light distance bias relative to froxel size; 0 disables the bias", 0.0f, 4.0f);
+CVAR(r_vfogJitter, "1", BE1::CVar::Flag::Bool, "use STBN XYZ jitter for volumetric fog lighting samples; animate with temporal accumulation");
+CVAR(r_vfogTemporal, "1", BE1::CVar::Flag::Bool, "accumulate reprojected volumetric fog source history");
+CVAR_MINMAX(r_vfogTemporalHistoryWeight, "0.9", BE1::CVar::Flag::Float, "volumetric fog history weight before view-direction attenuation", 0.0f, 0.99f);
+CVAR_MINMAX(r_vfogDebug, "0", BE1::CVar::Flag::Integer, "volumetric fog debug output: 0 composite, 1 optical depth to the surface or fog end depth (0-3, blue to red), 2 depth slices, 3 extinction coefficient, 4 scattering source, 5 accumulated scattering, 6 transmittance", 0, 6);
+CVAR_MINMAX(r_vfogDebugSlice, "32", BE1::CVar::Flag::Integer, "volumetric fog debug slice index (zero-based); modes 3-4 sample the slice, modes 5-6 sample its far boundary", 0, 255);
 
 // MSAA
 CVAR_MINMAX(r_msaa, "1", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "MSAA sample count (1 = off, 2/4/8 = enabled)", 0, 8);
@@ -216,6 +233,20 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     RenderFrameSettings settings;
 
     settings.mainRTSampleCount = NormalizeMainRTSampleCount(r_msaa.GetInteger());
+
+    settings.fogNearDepth = r_fogNearDepth.GetFloat();
+    settings.vfogEnabled = r_vfog.GetBool();
+    settings.vfogTileBaseSize = static_cast<uint32_t>(BE1::Clamp(r_vfogTileBaseSize.GetInteger(), 16, 256));
+    settings.vfogSliceCount = static_cast<uint32_t>(BE1::Clamp(r_vfogSliceCount.GetInteger(), 8, 256));
+    settings.vfogFarDepth = r_vfogFarDepth.GetFloat();
+    settings.vfogDepthDistributionScale = r_vfogDepthDistributionScale.GetFloat();
+    settings.vfogShadows = r_vfogShadows.GetBool();
+    settings.vfogLightDistanceBiasScale = r_vfogLightDistanceBiasScale.GetFloat();
+    settings.vfogJitter = r_vfogJitter.GetBool();
+    settings.vfogTemporal = r_vfogTemporal.GetBool();
+    settings.vfogTemporalHistoryWeight = r_vfogTemporalHistoryWeight.GetFloat();
+    settings.vfogDebugMode = static_cast<uint32_t>(r_vfogDebug.GetInteger());
+    settings.vfogDebugSlice = static_cast<uint32_t>(r_vfogDebugSlice.GetInteger());
 
     settings.shadows = r_shadows2.GetBool();
     settings.shadowDebugMode = static_cast<uint32_t>(r_shadowDebug.GetInteger());
