@@ -52,6 +52,14 @@
 #define USE_NEAREST_DEPTH_VELOCITY 1
 #endif
 
+#ifndef TAA_NEAREST_DEPTH_SAMPLE_COUNT
+#define TAA_NEAREST_DEPTH_SAMPLE_COUNT 5
+#endif
+
+#if TAA_NEAREST_DEPTH_SAMPLE_COUNT != 5 && TAA_NEAREST_DEPTH_SAMPLE_COUNT != 9
+#error Invalid TAA_NEAREST_DEPTH_SAMPLE_COUNT.
+#endif
+
 #ifndef USE_SUBPIXEL_CORRECTION
 #define USE_SUBPIXEL_CORRECTION 0
 #endif
@@ -232,7 +240,7 @@ float LoadPrevDepth(float2 prevUV) {
 }
 
 #if USE_NEAREST_DEPTH_VELOCITY
-// pixelCoord 주변 3x3 box 영역에서 가장 가까운 depth 픽셀 좌표를 찾는다.
+// pixelCoord 중심의 5-tap 십자 또는 9-tap 3x3 box 영역에서 가장 가까운 depth 픽셀 좌표를 찾는다.
 int2 FindClosestDepthPixelCoord(uint2 pixelCoord, out float centerDepth) {
     const int2 baseCoord = int2(pixelCoord);
     const int2 maxPixelCoord = int2(taaResolveParams.outputSize.x, taaResolveParams.outputSize.y) - 1;
@@ -246,7 +254,11 @@ int2 FindClosestDepthPixelCoord(uint2 pixelCoord, out float centerDepth) {
     for (int sampleY = -1; sampleY <= 1; ++sampleY) {
         [unroll]
         for (int sampleX = -1; sampleX <= 1; ++sampleX) {
+#if TAA_NEAREST_DEPTH_SAMPLE_COUNT == 5
+            if (abs(sampleX) + abs(sampleY) == 1) {
+#else
             if (sampleX != 0 || sampleY != 0) {
+#endif
                 const int2 sampleCoord = clamp(baseCoord + int2(sampleX, sampleY), int2(0, 0), maxPixelCoord);
                 const float sampleDepth = LoadDepth(sampleCoord, maxPixelCoord);
 
