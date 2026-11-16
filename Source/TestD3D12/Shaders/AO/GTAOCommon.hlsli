@@ -76,9 +76,10 @@ float GTAOPackEdges(float4 edgesLRTB) {
     return dot(quantized, float4(64.0f, 16.0f, 4.0f, 1.0f) / 255.0f);
 }
 
-float4 GTAOUnpackEdges(float packedValue) {
+half4 GTAOUnpackEdges(float packedValue) {
+    // Decode the packed byte in float before using half for bounded edge weights.
     const uint packed = uint(packedValue * 255.5f);
-    return saturate(float4((packed >> 6u) & 3u, (packed >> 4u) & 3u, (packed >> 2u) & 3u, packed & 3u) / 3.0f);
+    return saturate(half4((packed >> 6u) & 3u, (packed >> 4u) & 3u, (packed >> 2u) & 3u, packed & 3u) / half(3.0));
 }
 
 // Match the nearest surface selected by the GTAO depth prefilter at half resolution.
@@ -277,7 +278,7 @@ void GTAODenoisePixelPair(uint2 basePixelCoord, GTAODenoiseParams params, Textur
     GTAODecodeGather(sourceAOTexture.GatherRed(pointClampSampler, gatherCenter, int2(2, 2)), aoQ3);
 
     const float blurAmount = params.finalPass != 0u ? params.blurBeta : params.blurBeta / 5.0f;
-    const float diagonalWeight = 0.425f;
+    const half diagonalWeight = half(0.425);
 
     [unroll]
     for (uint side = 0u; side < 2u; ++side) {
@@ -286,22 +287,22 @@ void GTAODenoisePixelPair(uint2 basePixelCoord, GTAODenoiseParams params, Textur
             continue;
         }
 
-        const float4 edgesLeft = GTAOUnpackEdges(side == 0u ? edgesQ0.x : edgesQ0.y);
-        const float4 edgesTop = GTAOUnpackEdges(side == 0u ? edgesQ0.z : edgesQ1.w);
-        const float4 edgesRight = GTAOUnpackEdges(side == 0u ? edgesQ1.x : edgesQ1.y);
-        const float4 edgesBottom = GTAOUnpackEdges(side == 0u ? edgesQ2.w : edgesQ2.z);
-        float4 centerEdges = GTAOUnpackEdges(side == 0u ? edgesQ0.y : edgesQ1.x);
+        const half4 edgesLeft = GTAOUnpackEdges(side == 0u ? edgesQ0.x : edgesQ0.y);
+        const half4 edgesTop = GTAOUnpackEdges(side == 0u ? edgesQ0.z : edgesQ1.w);
+        const half4 edgesRight = GTAOUnpackEdges(side == 0u ? edgesQ1.x : edgesQ1.y);
+        const half4 edgesBottom = GTAOUnpackEdges(side == 0u ? edgesQ2.w : edgesQ2.z);
+        half4 centerEdges = GTAOUnpackEdges(side == 0u ? edgesQ0.y : edgesQ1.x);
 
         // Enforce symmetric edges, then allow a controlled amount of leakage at highly disconnected pixels.
-        centerEdges *= float4(edgesLeft.y, edgesRight.x, edgesTop.w, edgesBottom.z);
-        const float edgeSum = centerEdges.x + centerEdges.y + centerEdges.z + centerEdges.w;
-        const float edgeLeak = saturate(1.5f - edgeSum) / 1.5f * 0.5f;
+        centerEdges *= half4(edgesLeft.y, edgesRight.x, edgesTop.w, edgesBottom.z);
+        const half edgeSum = centerEdges.x + centerEdges.y + centerEdges.z + centerEdges.w;
+        const half edgeLeak = saturate(half(1.5) - edgeSum) / half(1.5) * half(0.5);
         centerEdges = saturate(centerEdges + edgeLeak);
 
-        const float weightTL = diagonalWeight * (centerEdges.x * edgesLeft.z + centerEdges.z * edgesTop.x);
-        const float weightTR = diagonalWeight * (centerEdges.z * edgesTop.y + centerEdges.y * edgesRight.z);
-        const float weightBL = diagonalWeight * (centerEdges.w * edgesBottom.x + centerEdges.x * edgesLeft.w);
-        const float weightBR = diagonalWeight * (centerEdges.y * edgesRight.w + centerEdges.w * edgesBottom.y);
+        const half weightTL = diagonalWeight * (centerEdges.x * edgesLeft.z + centerEdges.z * edgesTop.x);
+        const half weightTR = diagonalWeight * (centerEdges.z * edgesTop.y + centerEdges.y * edgesRight.z);
+        const half weightBL = diagonalWeight * (centerEdges.w * edgesBottom.x + centerEdges.x * edgesLeft.w);
+        const half weightBR = diagonalWeight * (centerEdges.y * edgesRight.w + centerEdges.w * edgesBottom.y);
 
         const float center = side == 0u ? aoQ0[1] : aoQ1[0];
         const float left = side == 0u ? aoQ0[0] : aoQ0[1];
@@ -313,6 +314,7 @@ void GTAODenoisePixelPair(uint2 basePixelCoord, GTAODenoiseParams params, Textur
         const float bottomLeft = side == 0u ? aoQ2[3] : aoQ2[2];
         const float bottomRight = side == 0u ? aoQ3[3] : aoQ3[2];
 
+        // Keep accumulation in float: blurBeta is 10000 when denoising is disabled.
         float weightSum = blurAmount;
         float sum = center * weightSum;
         GTAOAddDenoiseSample(left, centerEdges.x, sum, weightSum);
