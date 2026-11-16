@@ -6,19 +6,20 @@
 #endif
 
 // Equal-weight 4-tap box sampling pattern.
-half3 SampleBox4Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
+// Accumulate HDR samples in float; the unnormalized sum can exceed the FP16 range.
+float3 SampleBox4Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
     float4 d = offset.xyxy * float4(-0.5, -0.5, 0.5, 0.5);
 
-    half3 color = half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.xy, 0).rgb);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.zy, 0).rgb);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.xw, 0).rgb);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.zw, 0).rgb);
+    float3 color = float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.xy, 0).rgb);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.zy, 0).rgb);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.xw, 0).rgb);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.zw, 0).rgb);
 
-    return color * half(0.25);
+    return color * float(0.25);
 }
 
 // Equal-weight Kawase 4-tap diagonal filter.
-half3 SampleKawase4Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
+float3 SampleKawase4Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
     return SampleBox4Tap(texture, uv, offset * 2.0);
 }
 
@@ -74,20 +75,21 @@ half3 SampleJimenez13Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
 
 // 3x3 tent filter.
 // Uses weights [1 2 1; 2 4 2; 1 2 1] normalized by 16.
-half3 SampleTent9Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
+// Accumulate HDR samples in float; the unnormalized sum can exceed the FP16 range.
+float3 SampleTent9Tap(Texture2D<float4> texture, float2 uv, float2 offset) {
     float4 d = offset.xyxy * float4(1.0, 1.0, -1.0, 0.0);
 
-    half3 color = half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv - d.xy, 0).rgb);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv - d.wy, 0).rgb) * half(2.0);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv - d.zy, 0).rgb);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv - d.xw, 0).rgb) * half(2.0);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv, 0).rgb) * half(4.0);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.xw, 0).rgb) * half(2.0);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.zy, 0).rgb);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.wy, 0).rgb) * half(2.0);
-    color += half3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.xy, 0).rgb);
+    float3 color = float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv - d.xy, 0).rgb);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv - d.wy, 0).rgb) * float(2.0);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv - d.zy, 0).rgb);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv - d.xw, 0).rgb) * float(2.0);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv, 0).rgb) * float(4.0);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.xw, 0).rgb) * float(2.0);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.zy, 0).rgb);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.wy, 0).rgb) * float(2.0);
+    color += float3(texture.SampleLevel(SAMPLING_LINEAR_CLAMP_SAMPLER, uv + d.xy, 0).rgb);
 
-    return color * half(1.0 / 16.0);
+    return color * float(1.0 / 16.0);
 }
 
 #endif // __SAMPLING_HLSLI__

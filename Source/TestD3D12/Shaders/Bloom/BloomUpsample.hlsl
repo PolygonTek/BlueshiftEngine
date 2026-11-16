@@ -28,8 +28,8 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     float2 uv = (float2(pixelCoord) + 0.5) * bloomParams.outputTexelSize;
     float2 offset = bloomParams.inputTexelSize * max(BP_BLOOM_RADIUS, 0.0);
 
-    half3 upsampled = SampleTent9Tap(lowerMipTexture, uv, offset);
-    half3 current = half3(currentMipTexture.SampleLevel(linearClampSampler, uv, 0).rgb);
-    half3 color = max(current + upsampled * half(BP_BLOOM_WEIGHT), half3(0.0, 0.0, 0.0));
+    float3 upsampled = SampleTent9Tap(lowerMipTexture, uv, offset);
+    float3 current = float3(currentMipTexture.SampleLevel(linearClampSampler, uv, 0).rgb);
+    float3 color = max(current + upsampled * float(BP_BLOOM_WEIGHT), float3(0.0, 0.0, 0.0));
     outputTexture[pixelCoord] = float4(float3(color), 1.0);
 }
