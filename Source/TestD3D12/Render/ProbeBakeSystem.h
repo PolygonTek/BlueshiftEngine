@@ -27,7 +27,7 @@ class ProbeBakeRenderWork;
 
     프로브 베이크 요청을 스케줄링한다. 디스플레이 프레임 전에는 필요한 radiance cubemap 을
     캡처하고, mip 생성과 필터링은 RenderWorkQueue 에 제출한다. RenderWorld 객체는 지속적인
-    프로브 상태와 생성된 cubemap 을 보관한다.
+    프로브 상태와 생성된 cubemap 및 원본 radiance SH 계수를 보관한다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -50,8 +50,8 @@ private:
         BE1::Vec3                   captureOrigin = BE1::Vec3::origin;
     };
 
-    void                            CompleteBake(uint64_t bakeSerial, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap);
-    void                            ApplyEnvironmentLightBakeResult(RenderWorld *renderWorld, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap);
+    void                            CompleteBake(uint64_t bakeSerial, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap, const SharedPtr<RHI::Buffer> &radianceSHCoefficients);
+    void                            ApplyEnvironmentLightBakeResult(RenderWorld *renderWorld, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap, const SharedPtr<RHI::Buffer> &radianceSHCoefficients);
 
     BE1::Array<EnvironmentLightBakeRequest> envLightRequests;
     EnvironmentLightBakeRequest     activeEnvironmentLightRequest;

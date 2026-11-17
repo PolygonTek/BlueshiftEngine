@@ -110,16 +110,68 @@ static void WriteDebugSphere(DebugDrawVertex *&vertexPtr, const BE1::Vec3 &origi
     WriteDebugCircle(vertexPtr, origin, BE1::Mat3::identity[0], BE1::Mat3::identity[1], radius, numSegments, color);
 }
 
-static void WriteDebugBox(DebugDrawVertex *&vertexPtr, const FrameLocalFogVolume &volume, uint32_t color) {
+static void WriteDebugBox(DebugDrawVertex *&vertexPtr, const FrameLocalFogVolume &volume, const BE1::Vec3 &halfExtents, uint32_t color) {
     static constexpr uint8_t edgeIndices[24] = {
         0, 1, 1, 2, 2, 3, 3, 0,
         4, 5, 5, 6, 6, 7, 7, 4,
         0, 4, 1, 5, 2, 6, 3, 7
     };
     BE1::Vec3 points[8];
-    BE1::OBB(volume.origin, volume.halfExtents, volume.axis).ToPoints(points);
+    BE1::OBB(volume.origin, halfExtents, volume.axis).ToPoints(points);
     for (uint8_t index : edgeIndices) {
         WriteDebugDrawVertex(vertexPtr, points[index], color);
+    }
+}
+
+// 안쪽 경계가 한 점으로 줄어들면 볼륨 크기에 비례하는 작은 십자선으로 위치를 표시한다.
+static void WriteDebugCross(DebugDrawVertex *&vertexPtr, const BE1::Vec3 &origin, const BE1::Mat3 &axis, float size, uint32_t color) {
+    for (uint32_t i = 0; i < 3; ++i) {
+        const BE1::Vec3 offset = axis[i] * size;
+        WriteDebugDrawVertex(vertexPtr, origin - offset, color);
+        WriteDebugDrawVertex(vertexPtr, origin + offset, color);
+    }
+}
+
+static BE1::Vec3 GetDebugFogInnerBoxHalfExtents(const FrameLocalFogVolume &volume) {
+    // 셰이더의 min(distanceToFaces) 와 같은 등거리 경계다. 축별 비율로 축소하지 않는다.
+    const float fadeDistance = volume.boundaryFade * BE1::Min3(volume.halfExtents.x, volume.halfExtents.y, volume.halfExtents.z);
+    return volume.halfExtents - BE1::Vec3(fadeDistance);
+}
+
+static uint32_t GetDebugFogInnerBoxVertexCount(const BE1::Vec3 &halfExtents) {
+    const uint32_t dimensions = (halfExtents.x > 0.0f) + (halfExtents.y > 0.0f) + (halfExtents.z > 0.0f);
+    // 박스 12변, 사각형 4변, 선 1개, 점 위치의 십자선 3개.
+    return dimensions > 0 ? dimensions * (1u << dimensions) : 6u;
+}
+
+static void WriteDebugFogInnerBox(DebugDrawVertex *&vertexPtr, const FrameLocalFogVolume &volume, const BE1::Vec3 &halfExtents, uint32_t color) {
+    if (halfExtents.x > 0.0f && halfExtents.y > 0.0f && halfExtents.z > 0.0f) {
+        WriteDebugBox(vertexPtr, volume, halfExtents, color);
+        return;
+    }
+
+    // Fade 1 에서 같은 모서리를 중복하거나 길이 0 인 선을 기록하지 않는다.
+    BE1::Vec3 halfAxes[2];
+    uint32_t dimensions = 0;
+    for (uint32_t i = 0; i < 3; ++i) {
+        if (halfExtents[i] > 0.0f) {
+            halfAxes[dimensions++] = volume.axis[i] * halfExtents[i];
+        }
+    }
+    if (dimensions == 2) {
+        const BE1::Vec3 points[4] = {
+            volume.origin - halfAxes[0] - halfAxes[1], volume.origin + halfAxes[0] - halfAxes[1],
+            volume.origin + halfAxes[0] + halfAxes[1], volume.origin - halfAxes[0] + halfAxes[1]
+        };
+        for (uint32_t i = 0; i < 4; ++i) {
+            WriteDebugDrawVertex(vertexPtr, points[i], color);
+            WriteDebugDrawVertex(vertexPtr, points[(i + 1) & 3], color);
+        }
+    } else if (dimensions == 1) {
+        WriteDebugDrawVertex(vertexPtr, volume.origin - halfAxes[0], color);
+        WriteDebugDrawVertex(vertexPtr, volume.origin + halfAxes[0], color);
+    } else {
+        WriteDebugCross(vertexPtr, volume.origin, volume.axis, volume.halfExtents.x * 0.025f, color);
     }
 }
 
@@ -288,9 +340,17 @@ void RenderBackend::DrawDebugLocalFogVolumes() {
                 unitRadiusToPixelsScale = GetUnitRadiusToPixelsScale(currentFrameCamera);
                 hasSpheres = true;
             }
-            numVerts += 6u * GetDebugSphereCircleSegments(currentFrameCamera, volume->origin, volume->radius, unitRadiusToPixelsScale);
+            const uint32_t numSegments = GetDebugSphereCircleSegments(currentFrameCamera, volume->origin, volume->radius, unitRadiusToPixelsScale);
+            numVerts += 6u * numSegments;
+            if (numSegments > 0 && volume->boundaryFade > 0.0f) {
+                const float innerRadius = volume->radius - volume->radius * volume->boundaryFade;
+                numVerts += innerRadius > 0.0f ? 6u * GetDebugSphereCircleSegments(currentFrameCamera, volume->origin, innerRadius, unitRadiusToPixelsScale) : 6u;
+            }
         } else {
             numVerts += 24u;
+            if (volume->boundaryFade > 0.0f) {
+                numVerts += GetDebugFogInnerBoxVertexCount(GetDebugFogInnerBoxHalfExtents(*volume));
+            }
         }
     }
 
@@ -312,6 +372,7 @@ void RenderBackend::DrawDebugLocalFogVolumes() {
 
     const uint32_t sphereColor = BE1::Color4(0.1f, 0.85f, 1.0f, 1.0f).ToUInt32();
     const uint32_t boxColor = BE1::Color4(1.0f, 0.55f, 0.1f, 1.0f).ToUInt32();
+    const uint32_t innerColor = BE1::Color4::white.ToUInt32();
     DebugDrawVertex *vertexPtr = static_cast<DebugDrawVertex *>(vertexBuffer->mappedPtr);
     DebugDrawVertex *const firstVertexPtr = vertexPtr;
     volume = volumes.begin();
@@ -320,9 +381,23 @@ void RenderBackend::DrawDebugLocalFogVolumes() {
             const uint32_t numSegments = GetDebugSphereCircleSegments(currentFrameCamera, volume->origin, volume->radius, unitRadiusToPixelsScale);
             if (numSegments > 0) {
                 WriteDebugSphere(vertexPtr, volume->origin, volume->radius, numSegments, sphereColor);
+                if (volume->boundaryFade > 0.0f) {
+                    const float innerRadius = volume->radius - volume->radius * volume->boundaryFade;
+                    if (innerRadius > 0.0f) {
+                        const uint32_t innerSegments = GetDebugSphereCircleSegments(currentFrameCamera, volume->origin, innerRadius, unitRadiusToPixelsScale);
+                        if (innerSegments > 0) {
+                            WriteDebugSphere(vertexPtr, volume->origin, innerRadius, innerSegments, innerColor);
+                        }
+                    } else {
+                        WriteDebugCross(vertexPtr, volume->origin, BE1::Mat3::identity, volume->radius * 0.025f, innerColor);
+                    }
+                }
             }
         } else {
-            WriteDebugBox(vertexPtr, *volume, boxColor);
+            WriteDebugBox(vertexPtr, *volume, volume->halfExtents, boxColor);
+            if (volume->boundaryFade > 0.0f) {
+                WriteDebugFogInnerBox(vertexPtr, *volume, GetDebugFogInnerBoxHalfExtents(*volume), innerColor);
+            }
         }
     }
     assert(static_cast<uint32_t>(vertexPtr - firstVertexPtr) == vertexCount);

@@ -1006,7 +1006,7 @@ struct CameraConstants {
     uint vfogSourceTextureIndex;     // Zero until this camera's fog dispatch succeeds.
     uint vfogIntegratedTextureIndex;
     float fogNearDepth;            // Shared fog start depth (-view Z), independent of volume availability.
-    uint fogPadding;
+    uint envLightRadianceSHBufferIndex; // Bindless Buffer<float4>, 9 RGB SH coefficients. Zero when environment lighting or SH is unavailable.
 
 #ifndef __cplusplus
     inline bool IsOrthogonal() {

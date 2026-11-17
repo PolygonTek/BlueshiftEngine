@@ -41,7 +41,7 @@ private:
     bool                        pointLightEnabled = false;
     bool                        spotLightEnabled = false;
 
-    int                         sphereFogHandle = -1;
+    int                         boxFogHandle = -1;
 
 #ifdef ENABLE_IMGUI
     float                       envLightRotation = 0.0f;

@@ -153,7 +153,7 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
     envLightRequests.RemoveIndex(requestIndex);
 
     if (!radiancePrepared) {
-        ApplyEnvironmentLightBakeResult(request.renderWorld, false, nullptr, nullptr);
+        ApplyEnvironmentLightBakeResult(request.renderWorld, false, nullptr, nullptr, nullptr);
         BE_WARNLOG("ProbeBakeSystem::Prepare: environment light radiance capture failed\n");
         return;
     }
@@ -172,7 +172,7 @@ void ProbeBakeSystem::Prepare(RenderContext *renderContext) {
     renderSystem->EnqueueRenderWork(std::move(renderWork));
 }
 
-void ProbeBakeSystem::CompleteBake(uint64_t bakeSerial, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap) {
+void ProbeBakeSystem::CompleteBake(uint64_t bakeSerial, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap, const SharedPtr<RHI::Buffer> &radianceSHCoefficients) {
     assert(BE1::Engine::IsInMainThread());
 
     // 이미 새로운 bake 요청이 있었다면 bake 결과를 폐기한다.
@@ -191,16 +191,16 @@ void ProbeBakeSystem::CompleteBake(uint64_t bakeSerial, bool succeeded, const Sh
         }
     }
 
-    ApplyEnvironmentLightBakeResult(renderWorld, succeeded, diffuseCubeMap, specularCubeMap);
+    ApplyEnvironmentLightBakeResult(renderWorld, succeeded, diffuseCubeMap, specularCubeMap, radianceSHCoefficients);
     if (!succeeded) {
         BE_WARNLOG("ProbeBakeSystem::CompleteBake: environment light cubemap regeneration failed\n");
     }
 }
 
-void ProbeBakeSystem::ApplyEnvironmentLightBakeResult(RenderWorld *renderWorld, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap) {
+void ProbeBakeSystem::ApplyEnvironmentLightBakeResult(RenderWorld *renderWorld, bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap, const SharedPtr<RHI::Buffer> &radianceSHCoefficients) {
     if (!renderWorld || !renderWorld->hasEnvironmentLight) {
         return;
     }
 
-    renderWorld->envLight.ApplyBakeResult(succeeded, diffuseCubeMap, specularCubeMap);
+    renderWorld->envLight.ApplyBakeResult(succeeded, diffuseCubeMap, specularCubeMap, radianceSHCoefficients);
 }

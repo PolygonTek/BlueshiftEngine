@@ -442,7 +442,10 @@ void RenderWorld::UpdateEnvironmentLight(const EnvironmentLight::Desc &desc) {
     }
 }
 
-bool RenderWorld::SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap) {
+// SH 는 두 cubemap 과 같은 원본 radiance 의 3-band RGB 계수 9개 (float4) 이며, 환경광 회전/색상/강도를 포함하지 않는다.
+// SH 버퍼의 Primary SRV 는 Buffer<float4> 이고, 사용 시 ShaderResource 상태여야 한다.
+// SH 를 생략하면 환경광의 이전 SH 참조를 비워 fog 환경광 산란을 비활성화한다.
+bool RenderWorld::SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap, const SharedPtr<RHI::Buffer> &radianceSHCoefficients) {
     assert(BE1::Engine::IsInMainThread());
     assert(!frameActive);
 
@@ -451,7 +454,7 @@ bool RenderWorld::SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &dif
         return false;
     }
 
-    envLight.SetBakedCubeMaps(diffuseIrradianceCubeMap, specularPrefilteredCubeMap);
+    envLight.SetBakedCubeMaps(diffuseIrradianceCubeMap, specularPrefilteredCubeMap, radianceSHCoefficients);
     renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
     return true;
 }

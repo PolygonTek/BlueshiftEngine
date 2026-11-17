@@ -41,7 +41,7 @@ static bool CreateProbeOutputCubemapTexture(int32_t size, bool useHDR, bool allo
     return true;
 }
 
-static bool BakeProbeRadianceSH(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, SharedPtr<RHI::Buffer> &outCoefficients) {
+static bool BakeProbeRadianceSH(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, SharedPtr<RHI::Buffer> &outCoefficients, RHI::ViewID &outBakeSRV) {
     constexpr uint32_t bufferSize = GpuSphericalHarmonics::SH3CoefficientBufferSize;
     constexpr uint32_t stride = GpuSphericalHarmonics::SHCoefficientStride;
     RHI::Buffer *buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, bufferSize, nullptr);
@@ -52,9 +52,11 @@ static bool BakeProbeRadianceSH(RHI::CommandList *commandList, const RHI::Textur
     SharedPtr<RHI::Buffer> coefficients(buffer, [](RHI::Buffer *buffer) { RHI::renderer->DestroyBuffer(buffer); });
     RHI::renderer->SetName(buffer, "ProbeBakeJob::RadianceSHCoefficients");
 
-    const RHI::ViewID srv = RHI::renderer->CreateView(buffer, RHI::ViewType::SRV, RHI::Format::Unknown, stride, 0, bufferSize);
+    // 기본 SRV 는 셰이딩의 bindless Buffer<float4> 접근에 사용하고, 베이크용 structured SRV 는 별도로 만든다.
+    const RHI::ViewID shaderSRV = RHI::renderer->CreateView(buffer, RHI::ViewType::SRV, RHI::Format::R32G32B32A32_FLOAT, 0, 0, bufferSize);
+    const RHI::ViewID bakeSRV = RHI::renderer->CreateView(buffer, RHI::ViewType::SRV, RHI::Format::Unknown, stride, 0, bufferSize);
     const RHI::ViewID uav = RHI::renderer->CreateView(buffer, RHI::ViewType::UAV, RHI::Format::Unknown, stride, 0, bufferSize);
-    if (!srv.IsValid() || !uav.IsValid()) {
+    if (!shaderSRV.IsPrimary() || !bakeSRV.IsValid() || !uav.IsValid()) {
         return false;
     }
 
@@ -77,6 +79,7 @@ static bool BakeProbeRadianceSH(RHI::CommandList *commandList, const RHI::Textur
 
     // Lambert convolution 전의 원본 계수를 보관하고, diffuse 재구성에서도 같은 버퍼를 읽는다.
     outCoefficients = std::move(coefficients);
+    outBakeSRV = bakeSRV;
     return true;
 }
 
@@ -108,8 +111,9 @@ bool ProbeBakeJob::Execute(RHI::CommandList *commandList) {
     }
 
     SharedPtr<RHI::Buffer> radianceSH;
+    RHI::ViewID radianceSHBakeSRV = RHI::ViewID::InvalidID;
     if (bakeRadianceSH) {
-        if (!BakeProbeRadianceSH(commandList, radianceRHITexture, radianceSH)) {
+        if (!BakeProbeRadianceSH(commandList, radianceRHITexture, radianceSH, radianceSHBakeSRV)) {
             BE_WARNLOG("ProbeBakeJob::Execute: failed to generate the radiance SH coefficients\n");
             return false;
         }
@@ -130,7 +134,7 @@ bool ProbeBakeJob::Execute(RHI::CommandList *commandList) {
 
         // SH 출력이 있으면 이미 투영한 계수를 재사용하여 cubemap 을 다시 투영하지 않는다.
         const bool generated = radianceSH ?
-            renderSystem->GetIBLBaker().GenerateDiffuseIrradianceFromSH(commandList, radianceSH.get(), diffuseRHITexture) :
+            renderSystem->GetIBLBaker().GenerateDiffuseIrradianceFromSH(commandList, radianceSH.get(), diffuseRHITexture, radianceSHBakeSRV) :
             renderSystem->GetIBLBaker().GenerateDiffuseIrradianceSH(commandList, radianceRHITexture, diffuseRHITexture);
         if (!generated) {
             BE_WARNLOG("ProbeBakeJob::Execute: failed to generate the diffuse irradiance cubemap\n");

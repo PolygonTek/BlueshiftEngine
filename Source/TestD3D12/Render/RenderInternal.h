@@ -412,6 +412,7 @@ struct FrameCamera {
     RHI::Texture *                  envLightDiffuseIrradianceCubeMap = nullptr;
     RHI::Texture *                  envLightSpecularPrefilteredCubeMap = nullptr;
     uint32_t                        envLightSpecularPrefilteredCubeMapMipCount = 0;
+    SharedPtr<RHI::Buffer>          envLightRadianceSHCoefficients; // GPU fence 대기 후 FrameCamera 가 소멸될 때까지 베이크 결과를 유지한다.
 
     uint32_t                        maxFrameLocalLights = 0;
     uint32_t                        numFrameLocalLights = 0;

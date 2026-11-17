@@ -130,7 +130,7 @@ public:
     const EnvironmentLight *    GetEnvironmentLight() const { return hasEnvironmentLight ? &envLight : nullptr; }
     bool                        AddEnvironmentLight(const EnvironmentLight::Desc &desc);
     void                        UpdateEnvironmentLight(const EnvironmentLight::Desc &desc);
-    bool                        SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap);
+    bool                        SetEnvironmentLightBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap, const SharedPtr<RHI::Buffer> &radianceSHCoefficients = nullptr);
     void                        RequestEnvironmentLightCubemapRegeneration(const BE1::Vec3 &captureOrigin = BE1::Vec3::origin);
     void                        RemoveEnvironmentLight();
 

@@ -376,6 +376,7 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         frameCamera->envLightAxis = envLightDesc.axis;
         frameCamera->envLightColor = envLightDesc.linearColor;
         frameCamera->envLightIntensity = envLightDesc.intensity;
+        frameCamera->envLightRadianceSHCoefficients = envLight.GetRadianceSHCoefficients();
 
         Texture *diffuseIrradianceCubeMap = frame->RetainTexture(envLight.GetDiffuseIrradianceCubeMap());
         RHI::Texture *rhiDiffuseIrradianceCubeMap = diffuseIrradianceCubeMap ? diffuseIrradianceCubeMap->GetReadyRHITexture() : nullptr;

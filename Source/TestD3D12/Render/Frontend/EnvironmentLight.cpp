@@ -19,6 +19,7 @@ void EnvironmentLight::Reset() {
     desc = Desc();
     diffuseIrradianceCubeMap.reset();
     specularPrefilteredCubeMap.reset();
+    radianceSHCoefficients.reset();
     needsRegeneration = true;
 }
 
@@ -35,15 +36,17 @@ void EnvironmentLight::Update(const Desc &src) {
     desc = src;
 }
 
-void EnvironmentLight::SetBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap) {
+void EnvironmentLight::SetBakedCubeMaps(const SharedPtr<Texture> &diffuseIrradianceCubeMap, const SharedPtr<Texture> &specularPrefilteredCubeMap, const SharedPtr<RHI::Buffer> &radianceSHCoefficients) {
     this->diffuseIrradianceCubeMap = diffuseIrradianceCubeMap;
     this->specularPrefilteredCubeMap = specularPrefilteredCubeMap;
+    this->radianceSHCoefficients = radianceSHCoefficients;
     needsRegeneration = !diffuseIrradianceCubeMap || !specularPrefilteredCubeMap;
 }
 
-void EnvironmentLight::ApplyBakeResult(bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap) {
-    if (succeeded && diffuseCubeMap && specularCubeMap) {
-        SetBakedCubeMaps(diffuseCubeMap, specularCubeMap);
+void EnvironmentLight::ApplyBakeResult(bool succeeded, const SharedPtr<Texture> &diffuseCubeMap, const SharedPtr<Texture> &specularCubeMap, const SharedPtr<RHI::Buffer> &radianceSHCoefficients) {
+    // 베이크 결과가 모두 준비된 경우에만 함께 교체한다. 실패하면 기존 조명 자원을 유지한다.
+    if (succeeded && diffuseCubeMap && specularCubeMap && radianceSHCoefficients) {
+        SetBakedCubeMaps(diffuseCubeMap, specularCubeMap, radianceSHCoefficients);
     } else {
         MarkRegenerationNeeded();
     }

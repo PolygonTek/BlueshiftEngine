@@ -28,7 +28,7 @@ float4 FogSampleScene(float2 rasterUV, float depth, bool useVolumetricFog, bool 
 
         if (endDepth > startDepth) {
             const float3 directionalRadiance = (cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) ? frameConstants.directionalLight.intensityRGB : float3(0, 0, 0);
-            const float4 farFog = HeightFogIntegrate(ray, startDepth, endDepth, hfogParams, directionalRadiance, frameConstants.directionalLight.direction);
+            const float4 farFog = HeightFogIntegrate(ray, startDepth, endDepth, cameraConstants, directionalRadiance, frameConstants.directionalLight.direction);
             scatteringTransmittance = float4(scatteringTransmittance.rgb + scatteringTransmittance.a * farFog.rgb, scatteringTransmittance.a * farFog.a);
         }
     }

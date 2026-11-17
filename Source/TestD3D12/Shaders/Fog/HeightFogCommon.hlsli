@@ -3,6 +3,7 @@
 
 #include "../ShaderInterop.h"
 #include "FogMedium.hlsli"
+#include "FogEnvironment.hlsli"
 
 // Height fog 의 상대 밀도는 월드 공간 높이에 따라 지수적으로 변한다.
 float HeightFogSampleDensity(float height, HeightFogParams hfogParams) {
@@ -64,13 +65,9 @@ float HeightFogIntegratedDensity(float startHeight, float heightDelta, float dis
 
 // 뷰 공간 깊이 구간 [startDepth, endDepth] 에 대해 HeightFog 적분을 수행한다.
 // RGB: 누적 산란광과 발광, A: 누적 투과율
-float4 HeightFogIntegrate(HeightFogRay ray, float startDepth, float endDepth, HeightFogParams hfogParams, float3 directionalRadiance, float3 directionalDirection) {
-    // phase-weighted incident radiance 를 구한다.
-    float3 incidentRadiance = hfogParams.ambientRadiance;
-    if (hfogParams.medium.baseExtinction > 0.0f && any(hfogParams.medium.scatteringAlbedo > 0.0f)) {
-        incidentRadiance += directionalRadiance * HenyeyGreensteinPhase(dot(directionalDirection, -ray.direction), hfogParams.medium.anisotropy); // Q
-    }
-    
+float4 HeightFogIntegrate(HeightFogRay ray, float startDepth, float endDepth, CameraConstants camera, float3 directionalRadiance, float3 directionalDirection) {
+    const HeightFogParams hfogParams = camera.heightFogParams;
+
     // 뷰 공간 깊이 구간 [startDepth, endDepth] 에 대해 상대 밀도를 적분한다.
     const float depthLength = max(endDepth - startDepth, 0.0f);
     const float startHeight = ray.originHeight + startDepth * ray.heightPerViewDepth;
@@ -78,6 +75,19 @@ float4 HeightFogIntegrate(HeightFogRay ray, float startDepth, float endDepth, He
 
     // exp(-80) 이하의 투과율은 화면에 기여하지 않는다.
     const float opticalDepth = min(hfogParams.medium.baseExtinction * integratedDensity, 80.0f);
+
+    // phase-weighted incident radiance 를 구한다. 광선 구간 전체에 같은 Q 를 적용한다.
+    float3 incidentRadiance = hfogParams.ambientRadiance;
+    [branch]
+    if (opticalDepth > 0.0f && any(hfogParams.medium.scatteringAlbedo > 0.0f)) {
+        incidentRadiance += directionalRadiance * HenyeyGreensteinPhase(dot(directionalDirection, -ray.direction), hfogParams.medium.anisotropy); // Q
+
+        [branch]
+        if (camera.envLightRadianceSHBufferIndex != 0 && camera.envLightIntensity > 0.0f && any(camera.envLightColor > 0.0f)) {
+            const FogEnvironmentSHBands environmentSHBands = FogSampleEnvironmentSHBands(-ray.direction, camera);
+            incidentRadiance += FogEvaluateEnvironmentScatteringRadiance(environmentSHBands, hfogParams.medium.anisotropy);
+        }
+    }
 
     // radiance_camera = alpha * Q * (1 - exp(-tau))
     const float scatteringIntegral = -Expm1(-opticalDepth);

@@ -18,6 +18,7 @@
 #include "Physics/Physics.h"
 #include "Render/RenderSystem.h"
 #include "Render/Frontend/EnvironmentLight.h"
+#include "Render/Frontend/HeightFog.h"
 #include "Render/Frontend/RenderWorld.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/Mesh/MeshInstance.h"
@@ -168,6 +169,14 @@ void SceneOcean::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld)
     if (envLightAdded) {
         renderWorld->RequestEnvironmentLightCubemapRegeneration(BE1::Vec3::origin);
     }
+
+    HeightFog::Desc fogDesc;
+    fogDesc.baseHeight = oceanDesc.surface.height;
+    fogDesc.heightFalloff = 0.05f;
+    fogDesc.medium.baseExtinction = 0.002f;
+    fogDesc.medium.anisotropy = 0.6f;
+    fogDesc.medium.scatteringAlbedo = float3(0.5f, 0.5f, 0.5f);
+    renderWorld->AddHeightFog(fogDesc);
 }
 
 void SceneOcean::Shutdown() {
@@ -747,6 +756,46 @@ void SceneOcean::BuildImGui() {
                 renderWorld->SetSkyboxLighting(desc.linearColor, desc.intensity);
             }
         }
+    }
+
+    if (const HeightFog *fog = renderWorld->GetHeightFog()) {
+        HeightFog::Desc desc = fog->GetDesc();
+        ImGui::Separator();
+        ImGui::TextUnformatted("Height Fog");
+        ImGui::PushID("HeightFog");
+        ImGui::PushItemWidth(fontSize * 17.0f);
+
+        bool changed = ImGui::Checkbox("Enabled", &desc.enabled);
+        ImGui::BeginDisabled(!desc.enabled);
+        changed |= ImGui::DragFloat("Base height", &desc.baseHeight, 0.1f, 0.0f, 0.0f, "%.2f m");
+        ImGui::SetItemTooltip("World Z height at which base extinction and density are defined.");
+        changed |= ImGui::SliderFloat("Height falloff", &desc.heightFalloff, 0.0f, 10.0f, "%.3f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Density halves for every 1 / falloff meters above the base height and increases below it. Zero gives a uniform medium.");
+        changed |= ImGui::SliderFloat("Base extinction", &desc.medium.baseExtinction, 0.0f, 10.0f, "%.4f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Extinction at the base height is base extinction multiplied by density.");
+        changed |= ImGui::SliderFloat("Density", &desc.density, 0.0f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+        changed |= ImGui::DragFloat("Max distance", &desc.maxDistance, 10.0f, 0.01f, 1000000.0f, "%.1f m", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Maximum fog ray distance for surfaces and sky. Independent of the froxel far depth.");
+        changed |= ImGui::ColorEdit3("Scattering albedo", &desc.medium.scatteringAlbedo.x, ImGuiColorEditFlags_Float);
+        changed |= ImGui::SliderFloat("Anisotropy (g)", &desc.medium.anisotropy, -0.9f, 0.9f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("0 is isotropic. Positive values favor forward scattering when looking toward a light.");
+        if (ImGui::ColorEdit3("Base emission", &desc.medium.baseEmission.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
+            desc.medium.baseEmission.x = BE1::Max(desc.medium.baseEmission.x, 0.0f);
+            desc.medium.baseEmission.y = BE1::Max(desc.medium.baseEmission.y, 0.0f);
+            desc.medium.baseEmission.z = BE1::Max(desc.medium.baseEmission.z, 0.0f);
+            changed = true;
+        }
+        ImGui::SetItemTooltip("RGB radiance emitted per meter at unit density. Scales with density and is independent of scattering albedo.");
+        changed |= ImGui::ColorEdit3("Ambient color", desc.ambientColor.Ptr(), ImGuiColorEditFlags_Float);
+        changed |= ImGui::DragFloat("Ambient intensity", &desc.ambientIntensity, 0.05f, 0.0f, 32.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Uniform ambient incident radiance for height fog. Scattering follows its density and albedo.");
+        ImGui::EndDisabled();
+
+        if (changed) {
+            renderWorld->UpdateHeightFog(desc);
+        }
+        ImGui::PopItemWidth();
+        ImGui::PopID();
     }
 }
 #endif

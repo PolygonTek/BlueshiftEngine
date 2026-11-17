@@ -61,5 +61,5 @@ bool ProbeBakeRenderWork::RecordCommands(RHI::FrameThreadData *frameThreadData, 
 }
 
 void ProbeBakeRenderWork::OnCompleted(bool commandListSubmitted) {
-    renderSystem->GetProbeBakeSystem().CompleteBake(bakeSerial, commandListSubmitted, bakeJob.GetDiffuseIrradianceCubeMap(), bakeJob.GetSpecularPrefilteredCubeMap());
+    renderSystem->GetProbeBakeSystem().CompleteBake(bakeSerial, commandListSubmitted, bakeJob.GetDiffuseIrradianceCubeMap(), bakeJob.GetSpecularPrefilteredCubeMap(), bakeJob.GetRadianceSHCoefficients());
 }

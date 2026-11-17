@@ -65,7 +65,8 @@ public:
     const SharedPtr<Texture> &      GetSpecularPrefilteredCubeMap() const { return specularPrefilteredCubeMap; }
 
                                     // 원본 radiance 의 3-band RGB SH 계수 9개를 float4 로 저장한 버퍼를 리턴한다.
-                                    // Primary SRV/UAV 는 structured view 이며, 성공한 Execute 이후 버퍼 상태는 ShaderResource 이다.
+                                    // Primary SRV 는 셰이딩용 Buffer<float4>, Primary UAV 는 베이크용 structured view 이다.
+                                    // 성공한 Execute 이후 버퍼 상태는 ShaderResource 이다.
     const SharedPtr<RHI::Buffer> &  GetRadianceSHCoefficients() const { return radianceSHCoefficients; }
 
 private:

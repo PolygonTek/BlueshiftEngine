@@ -389,6 +389,7 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->envLightDiffuseIrradianceCubeMapIndex = currentFrameCamera->envLightDiffuseIrradianceCubeMap ? currentFrameCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularCubeMapIndex = currentFrameCamera->envLightSpecularPrefilteredCubeMap ? currentFrameCamera->envLightSpecularPrefilteredCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularMipCount = currentFrameCamera->envLightSpecularPrefilteredCubeMapMipCount;
+    constants->envLightRadianceSHBufferIndex = currentFrameCamera->envLightRadianceSHCoefficients ? currentFrameCamera->envLightRadianceSHCoefficients->GetBindlessIndex(RHI::ViewType::SRV) : 0;
 
     constants->aoTextureIndex = currentFrameCamera->applyAO ? currentFrameCamera->ao.textureSet.outputTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->ssrUpsampledReflectionTextureIndex = currentFrameCamera->ssrUpsampledReflectionTexture ? currentFrameCamera->ssrUpsampledReflectionTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
@@ -409,7 +410,6 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->vfogSourceTextureIndex = 0;
     constants->vfogIntegratedTextureIndex = 0;
     constants->fogNearDepth = currentFrameCamera->fog.nearDepth;
-    constants->fogPadding = 0;
 }
 
 void RenderBackend::UpdateFramePSOs() {

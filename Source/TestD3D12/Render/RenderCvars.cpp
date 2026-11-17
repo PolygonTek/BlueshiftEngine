@@ -28,10 +28,10 @@ CVAR(r_debugDrawMaxPrimitives, "16384", BE1::CVar::Flag::Integer, "maximum numbe
 CVAR(r_debugDrawMaxVertices, "262144", BE1::CVar::Flag::Integer, "maximum number of debug draw vertices");
 
 CVAR(r_showLights2, "0", BE1::CVar::Flag::Bool, "show visible light bounding volumes");
-CVAR(r_showLocalFogVolumes, "0", BE1::CVar::Flag::Bool, "show active local fog volume boundaries in the camera fog range");
+CVAR(r_showLocalFogVolumes, "0", BE1::CVar::Flag::Bool, "show active local fog volume outer and inner fade boundaries in the camera fog range");
 CVAR(r_lightCullingZBin, "1", BE1::CVar::Flag::Bool, "enable light Z-bin culling in forward lighting");
 CVAR_MINMAX(r_lightCullingDebug, "0", BE1::CVar::Flag::Integer, "light culling debug view (0 = off, 1 = tile mask, 2 = tile mask and Z-bin)", 0, 2);
-CVAR(r_indirectLighting, "1", BE1::CVar::Flag::Bool, "enable indirect lighting and screen-space reflections for surfaces");
+CVAR(r_indirectLighting, "1", BE1::CVar::Flag::Bool, "enable environment lighting on surfaces and fog, and screen-space reflections on surfaces");
 
 CVAR(r_vsync, "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "synchronize presentation to the vertical refresh rate");
 CVAR(r_hdrOutput, "1", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "enable HDR output when supported");

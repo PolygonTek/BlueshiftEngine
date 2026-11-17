@@ -738,7 +738,7 @@ void App::BuildImGuiOverlay() {
             if (ImGui::Checkbox("Show local fog volumes", &showLocalFogVolumes)) {
                 r_showLocalFogVolumes.SetBool(showLocalFogVolumes);
             }
-            ImGui::SetItemTooltip("Active volumes in the fog range: cyan spheres and orange boxes. Also shown when Volumetric Fog is off.");
+            ImGui::SetItemTooltip("Active volumes in the fog range: cyan spheres and orange boxes. White lines mark the inner fade boundary (a cross when collapsed to a point). The band between the boundaries fades toward the outside. Also shown when Volumetric Fog is off.");
 
             if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Frame Timing" : "Show Frame Timing")) {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
@@ -866,7 +866,7 @@ void App::BuildImGuiOverlay() {
                 if (ImGui::Checkbox("Indirect Lighting", &indirectLighting)) {
                     r_indirectLighting.SetBool(indirectLighting);
                 }
-                ImGui::SetItemTooltip("Enable environment lighting and screen-space reflections on surfaces.");
+                ImGui::SetItemTooltip("Enable environment lighting on surfaces and fog, and screen-space reflections on surfaces.");
 
                 bool specularEnergyCompensation = r_specularEnergyCompensation2.GetBool();
                 if (ImGui::Checkbox("Specular energy compensation", &specularEnergyCompensation)) {
