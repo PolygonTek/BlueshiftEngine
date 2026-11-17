@@ -3,14 +3,28 @@
 
 #include "../ShaderTypes.h"
 
-static const uint VFogFlagShadows = 2u;
-static const uint VFogFlagSTBNJitter = 4u;
-
 struct MediumParams {
     float baseExtinction;           // Extinction coefficient at unit relative density (1/m).
     float3 scatteringAlbedo;        // RGB fraction of baseExtinction due to scattering, [0, 1].
     float anisotropy;               // HenyeyGreensteinPhase's g parameter.
     float3 baseEmission;            // RGB radiance emitted per meter at unit relative density.
+};
+
+static const uint ShaderLocalFogVolumeShapeSphere = 0u;
+static const uint ShaderLocalFogVolumeShapeBox = 1u;
+
+struct ShaderLocalFogVolume {
+    MediumParams medium;
+    float3 origin;
+    uint shape;
+    float3 halfExtents;             // Box half extents, or sphere radius in all components (m).
+    float heightFogFalloff;         // exp2 height falloff above the reference plane along world Z (1/m); zero disables it.
+    float3 axisX;                   // World-space local axes; dot(worldPosition - origin, axis) gives local meters.
+    float density;
+    float3 axisY;
+    float boundaryFadeDistanceRcp;  // CPU converts the fade ratio to reciprocal world distance (1/m). Zero means no fade.
+    float3 axisZ;
+    float heightFogOffset;          // Height where falloff starts, relative to origin.z (m). Density stays constant below it.
 };
 
 struct HeightFogParams {
@@ -22,6 +36,9 @@ struct HeightFogParams {
     float3 ambientRadiance;         // Spatially constant, isotropic incident radiance for height fog.
     float padding;
 };
+
+static const uint VFogFlagShadows = 2u;
+static const uint VFogFlagSTBNJitter = 4u;
 
 struct VFogLightingParams {
     float lightDistanceBiasScale;
@@ -54,6 +71,7 @@ struct VFogParams {
 
 #ifdef __cplusplus
 static_assert(sizeof(MediumParams) == 32, "Medium constants must match HLSL");
+static_assert(sizeof(ShaderLocalFogVolume) == 112, "Local fog volumes must match the HLSL StructuredBuffer layout");
 static_assert(sizeof(HeightFogParams) == 64, "Height fog constants must match HLSL");
 static_assert(sizeof(VFogLightingParams) == 16, "VFog lighting root constants must match HLSL");
 static_assert(sizeof(VFogTemporalParams) == 16, "VFog temporal constant buffer must match HLSL");

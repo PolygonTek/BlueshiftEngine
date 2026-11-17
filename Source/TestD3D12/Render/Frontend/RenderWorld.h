@@ -16,6 +16,7 @@
 
 #include "EnvironmentLight.h"
 #include "HeightFog.h"
+#include "LocalFogVolume.h"
 #include "OceanSurface.h"
 #include "RenderLight.h"
 #include "RenderObject.h"
@@ -80,7 +81,8 @@ public:
         OceanSurface            = BIT(2),
         EnvironmentLight        = BIT(3),
         HeightFog               = BIT(4),
-        All                     = BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4)
+        LocalFogVolumes         = BIT(5),
+        All                     = BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5)
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(ClearFlag) noexcept { return {}; }
@@ -136,6 +138,11 @@ public:
     bool                        AddHeightFog(const HeightFog::Desc &desc);
     bool                        UpdateHeightFog(const HeightFog::Desc &desc);
     void                        RemoveHeightFog();
+
+    const LocalFogVolume *      GetLocalFogVolume(int index) const;
+    int                         AddLocalFogVolume(const LocalFogVolume::Desc &desc);
+    bool                        UpdateLocalFogVolume(int index, const LocalFogVolume::Desc &desc);
+    void                        RemoveLocalFogVolume(int index);
 
     const OceanSurface *        GetOceanSurface() const { return hasOceanSurface ? &oceanSurface : nullptr; }
     bool                        AddOceanSurface(const OceanSurface::Desc &desc);
@@ -252,6 +259,7 @@ private:
     void                        PrepareDebugDrawPipelines(FrameCamera *frameCamera);
     void                        PrepareOceanSurfacePipeline(FrameCamera *frameCamera, bool indirectLighting);
 
+    void                        FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera, bool collectVolumes);
     void                        PrepareFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, bool useHeightFog, bool useVolumetricFog, uint32_t frameCount);
     void                        PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, uint32_t frameCount);
 
@@ -266,10 +274,9 @@ private:
     BE1::Array<RenderLight *>   renderLights;       /// The array of pointers to all render lights managed by the world.
     EnvironmentLight            envLight;
     bool                        hasEnvironmentLight = false;
-
     HeightFog                   heightFog;
     bool                        hasHeightFog = false;
-
+    BE1::Array<LocalFogVolume *> localFogVolumes;
     OceanSurface                oceanSurface;
     bool                        hasOceanSurface = false;
 

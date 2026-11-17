@@ -39,7 +39,7 @@ public:
 
                                     // The caller transitions Hi-Z to ShaderResourceCompute and output buffers to UnorderedAccess.
                                     // Resource states remain unchanged between batches.
-    bool                            DispatchCullInstances(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::ConstantBuffer *cameraConstantBuffer, uint32_t surfaceTableIndex, const RHI::ProjectionPolicy &projectionPolicy, const FrameHiZ &data, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) const;
+    bool                            DispatchCullInstances(RHI::CommandList *commandList, const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const RHI::ProjectionPolicy &projectionPolicy, const FrameHiZ &data, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) const;
 
 private:
     SharedPtr<ShaderTemplate>       firstBatchShaderTemplate;

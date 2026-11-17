@@ -6,7 +6,7 @@
 #include "VFogCommon.hlsli"
 
 // rasterUV includes projection jitter; depth is positive linear view depth.
-float4 FogSampleScene(float2 rasterUV, float depth, bool useVolumetricFog, bool useAnalyticHeightFog, uint sourceTextureIndex, uint integratedTextureIndex) {
+float4 FogSampleScene(float2 rasterUV, float depth, bool useVolumetricFog, bool useAnalyticHeightFog, uint integratedTextureIndex) {
     float4 scatteringTransmittance = float4(0, 0, 0, 1);
     float startDepth = cameraConstants.fogNearDepth;
 
@@ -14,9 +14,8 @@ float4 FogSampleScene(float2 rasterUV, float depth, bool useVolumetricFog, bool 
     if (useVolumetricFog) {
         const VFogParams vfogParams = cameraConstants.vfogParams;
         const float2 volumeUV = rasterUV - cameraConstants.uvJitter;
-        const Texture3D<float4> sourceTexture = GetTexture3D(sourceTextureIndex);
         const Texture3D<float4> integratedTexture = GetTexture3D(integratedTextureIndex);
-        scatteringTransmittance = VFogSample(sourceTexture, integratedTexture, linearClampSampler, volumeUV, depth, cameraConstants);
+        scatteringTransmittance = VFogSample(integratedTexture, linearClampSampler, volumeUV, depth, cameraConstants);
         startDepth = vfogParams.farDepth;
     }
 
@@ -42,7 +41,7 @@ float4 FogSampleSurface(float3 screenPosition) {
     const float depth = cameraConstants.GetLinearDepth(screenPosition.z);
     const bool useVFog = (cameraConstants.flags & ShaderCameraFlagUseVFog) != 0;
     const bool useHFog = (cameraConstants.flags & ShaderCameraFlagUseHeightFog) != 0;
-    return FogSampleScene(uv, depth, useVFog, useHFog, cameraConstants.vfogSourceTextureIndex, cameraConstants.vfogIntegratedTextureIndex);
+    return FogSampleScene(uv, depth, useVFog, useHFog, cameraConstants.vfogIntegratedTextureIndex);
 }
 
 float3 FogApplyToOpaqueSurface(float3 surfaceColor, float3 screenPosition) {

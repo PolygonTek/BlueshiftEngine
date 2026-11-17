@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShaderSurfaceTable.h"
+#include "Render/RenderFrame.h"
 #include "Render/RenderInternal.h"
 
 bool ShaderSurfaceTable::Init(uint32_t initialCapacity) {
@@ -28,13 +29,18 @@ void ShaderSurfaceTable::Clear() {
 }
 
 bool ShaderSurfaceTable::EnsureBufferCapacity(uint32_t count) {
+    constexpr uint32_t maxCapacity = UINT32_MAX / sizeof(ShaderSurface);
+    if (count > maxCapacity) {
+        return false;
+    }
+
     if (count <= tableBuffer.capacity) {
         return true;
     }
 
     uint32_t newCapacity = tableBuffer.capacity > 0 ? tableBuffer.capacity : 1024;
     while (newCapacity < count) {
-        newCapacity <<= 1;
+        newCapacity = BE1::Min(newCapacity << 1, maxCapacity);
     }
 
     DestroyBuffer();
@@ -62,23 +68,17 @@ bool ShaderSurfaceTable::EnsureBufferCapacity(uint32_t count) {
     return true;
 }
 
-bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameCamera *frameCamera, bool allowResize) {
+bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame) {
     PROFILER_CPU_SCOPED_EVENT("ShaderSurfaceTable::Upload");
 
-    if (frameCamera->numFrameSurfs == 0) {
+    const uint32_t surfaceCount = frame->NumFrameSurfaces();
+    if (surfaceCount == 0) {
         Clear();
         return true;
     }
 
-    const uint32_t surfaceCount = frameCamera->numFrameSurfs;
-    if (surfaceCount > tableBuffer.capacity) {
-        assert(allowResize);
-        if (!allowResize) {
-            return false;
-        }
-        if (!EnsureBufferCapacity(surfaceCount)) {
-            return false;
-        }
+    if (!EnsureBufferCapacity(surfaceCount)) {
+        return false;
     }
 
     RHI::Buffer *uploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderSurface), surfaceCount, nullptr);
@@ -87,11 +87,27 @@ bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::Comm
     }
 
     ShaderSurface *shaderSurfaces = reinterpret_cast<ShaderSurface *>(uploadBuffer->mappedPtr);
-    for (uint32_t surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex) {
-        const FrameSurf *frameSurf = frameCamera->frameSurfs[surfaceIndex];
-        assert(frameSurf);
-        assert(frameSurf->index == surfaceIndex);
-        Build(frameSurf, shaderSurfaces[surfaceIndex]);
+    const FrameCamera *frameCameras = frame->GetFrameCameras();
+    for (uint32_t cameraIndex = 0; cameraIndex < frame->NumFrameCameras(); ++cameraIndex) {
+        const FrameCamera &frameCamera = frameCameras[cameraIndex];
+        if (frameCamera.firstFrameSurface == UINT32_MAX) {
+            continue;
+        }
+
+        if (frameCamera.firstFrameSurface > surfaceCount || frameCamera.numFrameSurfs > surfaceCount - frameCamera.firstFrameSurface) {
+            assert(0);
+            return false;
+        }
+
+        // 프런트엔드에서 확정한 연속 구간에 기록한다. Instance 매핑도 같은 시작 인덱스를 사용한다.
+        ShaderSurface *cameraSurfaces = shaderSurfaces + frameCamera.firstFrameSurface;
+
+        for (uint32_t surfaceIndex = 0; surfaceIndex < frameCamera.numFrameSurfs; ++surfaceIndex) {
+            const FrameSurf *frameSurf = frameCamera.frameSurfs[surfaceIndex];
+            assert(frameSurf);
+            assert(frameSurf->index == surfaceIndex);
+            Build(frameSurf, cameraSurfaces[surfaceIndex]);
+        }
     }
 
     const uint32_t uploadSize = surfaceCount * sizeof(ShaderSurface);

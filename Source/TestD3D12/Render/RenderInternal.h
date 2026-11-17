@@ -29,6 +29,7 @@
 #include "Frontend/RenderObject.h"
 #include "Frontend/RenderCamera.h"
 #include "Frontend/RenderLight.h"
+#include "Frontend/LocalFogVolume.h"
 #include "RenderFrameSettings.h"
 #include "RenderUtils.h"
 #include "Shadow/ShadowAtlas.h"
@@ -138,7 +139,7 @@ struct FrameLocalShadow {
     SharedPtr<ShadowAtlas::RenderState> renderState;                // 프레임이 공유 렌더링 상태의 수명을 보장한다.
     bool                            hasValidDepth = false;          // 이 프레임에서 depth 를 사용할 수 있는지 여부. 갱신/재사용 결과는 백엔드에서 확정한다.
     bool                            updateDepth = false;            // 이번 프레임에 depth 를 갱신할 지 여부
-    BE1::Vec3                       pointOrigin = BE1::Vec3::zero;   // Point depth 기록 당시의 위치. 현재 조명 위치와 별도로 유지한다.
+    BE1::Vec3                       pointOrigin = BE1::Vec3::zero;  // Point depth 기록 당시의 위치. 현재 조명 위치와 별도로 유지한다.
     BE1::Vec2                       pointDepthScaleBias = BE1::Vec2::zero; // Point depth = X + Y / 면의 전방 거리.
     float                           squaredRadius = 0.0f;           // 포인트 라이트의 반경 제곱
     float                           viewPlaneToOriginDistances[6];  // 각 view volume 평면에서 광원까지 거리
@@ -168,6 +169,8 @@ struct FrameShadowAtlas {
     RHI::ViewID                     shadowDSV = RHI::ViewID::InvalidID;
     RHI::ViewID                     shadowSRV = RHI::ViewID::InvalidID;
     uint32_t                        size = 0;
+    uint32_t                        firstFrameLocalShadow = UINT32_MAX;     // 프레임 공용 shadow 테이블의 첫 요소. DrawCamera 등록 전에는 무효.
+    uint32_t                        firstFrameLocalShadowView = UINT32_MAX; // 프레임 공용 shadow view 테이블의 첫 요소. DrawCamera 등록 전에는 무효.
     uint32_t                        numShadows = 0;                 // 아틀라스에서 사용 중인 모든 shadow 개수
     FrameLocalShadow *              shadows = nullptr;
     uint32_t                        maxShadowViews = 0;             // 아틀라스에서 사용할 수 있는 최대 shadow view 개수
@@ -322,6 +325,22 @@ struct VFogHistoryRenderState {
     uint32_t                        nextNoiseFrameIndex = 0;
 };
 
+struct FrameLocalFogVolume {
+    BE1::Vec3                       origin;
+    BE1::Mat3                       axis;
+    BE1::Vec3                       halfExtents;
+    MediumParams                    medium;
+    float                           radius;
+    float                           density;
+    float                           boundaryFade; // [0, 1], relative to sphere radius or minimum box half extent.
+    float                           heightFogFalloff;
+    float                           heightFogOffset;
+    LocalFogVolume::Shape           shape;
+};
+
+static_assert(static_cast<uint32_t>(LocalFogVolume::Shape::Sphere) == ShaderLocalFogVolumeShapeSphere);
+static_assert(static_cast<uint32_t>(LocalFogVolume::Shape::Box) == ShaderLocalFogVolumeShapeBox);
+
 struct FrameVolumetricFog {
     bool                            enabled = false;
     bool                            hasLightScattering = false;
@@ -380,6 +399,7 @@ struct FrameCamera {
 
     uint32_t                        maxFrameSurfs = 0;
     uint32_t                        numFrameSurfs = 0;
+    uint32_t                        firstFrameSurface = UINT32_MAX; // 프레임 공용 surface 테이블에서 이 카메라의 첫 요소. DrawCamera 등록 전에는 무효.
     const FrameSurf **              frameSurfs = nullptr;           // 카메라에 보이는 모든 surfaces 와 shadow surfaces
 
     RHI::Buffer *                   skinningJointBuffer = nullptr;
@@ -397,12 +417,17 @@ struct FrameCamera {
     uint32_t                        numFrameLocalLights = 0;
     const FrameLight **             frameLocalLights = nullptr;     // 카메라에 보이는 local light 포인터 배열
 
+    uint32_t                        firstFrameLocalFogVolume = 0;   // 프레임 공용 local fog 테이블에서 이 카메라의 연속 구간.
+    uint32_t                        numFrameLocalFogVolumes = 0;
+    bool                            hasLocalFogLightScattering = false;
+
     FrameCascadedShadow *           frameCascadedShadow = nullptr;
     FrameShadowAtlas *              frameShadowAtlas = nullptr;
 
     const DebugDrawData *           debugDrawData = nullptr;
     RHI::PipelineState *            debugDrawPSOs[DebugDrawData::MaxBatches] = {};
     bool                            showDebugLights = false;
+    bool                            showDebugLocalFogVolumes = false;
     RHI::PipelineState *            oceanSurfacePSO = nullptr;
     RHI::PipelineState *            oceanSurfaceSSRPrepassPSO = nullptr;
     RHI::PipelineState *            sceneSnapshotDownsamplePSO = nullptr;
@@ -439,7 +464,7 @@ struct FrameCamera {
     RenderCamera::Flag              flags = RenderCamera::Flag::None;
     bool                            directionalLightVisible = false;
 
-    bool                            needNormalOutput = false; // View-space shading normals consumed by AO and SSR before opaque shading.
+    bool                            needNormalOutput = false;       // View-space shading normals consumed by AO and SSR before opaque shading.
     bool                            needVelocityOutput = false;
     bool                            needRoughnessOutput = false;
 

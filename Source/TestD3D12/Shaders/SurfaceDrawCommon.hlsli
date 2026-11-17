@@ -27,12 +27,12 @@ cbuffer SurfaceDrawCB : register(b2) {
     SurfaceDrawParams surfaceDrawParams;
 };
 
-ShaderSurface GetShaderSurface(uint shaderSurfaceIndex, uint surfaceTableIndex) {
-    return GetShaderSurfaceTable(surfaceTableIndex)[shaderSurfaceIndex];
+ShaderSurface GetShaderSurface(uint shaderSurfaceIndex) {
+    return GetShaderSurfaceTable(frameConstants.shaderSurfaceTableIndex)[shaderSurfaceIndex];
 }
 
-ShaderSurface GetShaderSurfaceByInstanceID(uint instanceID, uint surfaceTableIndex) {
-    return GetShaderSurface(instanceToShaderSurfaceTable[surfaceDrawParams.instanceBaseOffset + instanceID], surfaceTableIndex);
+ShaderSurface GetShaderSurfaceByInstanceID(uint instanceID) {
+    return GetShaderSurface(instanceToShaderSurfaceTable[surfaceDrawParams.instanceBaseOffset + instanceID]);
 }
 
 ShaderMaterial GetShaderMaterial(uint shaderMaterialIndex) {

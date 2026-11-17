@@ -176,7 +176,7 @@ bool RenderBackend::PrepareHiZCulling() {
             // Hi-Z culling input table upload 도 instance table 통계에 포함한다.
             RecordDrawStats(0, 0, 1, sizeof(uint32_t) * batch.instanceCount);
 
-            batch.valid = DispatchHiZCullInstances(frameThreadData, mainCommandList, batch.instanceCount, inputInstanceToShaderSurfaceTable, batch.instanceBaseOffset, batch.indirectArgsOffset);
+            batch.valid = DispatchHiZCullInstances(mainCommandList, batch.instanceCount, inputInstanceToShaderSurfaceTable, batch.instanceBaseOffset, batch.indirectArgsOffset);
         }
     }
 
@@ -190,9 +190,9 @@ bool RenderBackend::PrepareHiZCulling() {
     return true;
 }
 
-bool RenderBackend::DispatchHiZCullInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) {
+bool RenderBackend::DispatchHiZCullInstances(RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) {
     return renderSystem->GetHiZ().DispatchCullInstances(
-        commandList, frameThreadData, cameraConstantBuffer, frame->GetShaderSurfaceTableBindlessIndex(),
+        commandList, frameConstantBuffer, cameraConstantBuffer,
         currentFrameCamera->projectionPolicy, currentFrameCamera->hiZ,
         instanceCount, inputInstanceToShaderSurfaceTable, instanceBaseOffset, indirectArgsOffset);
 }

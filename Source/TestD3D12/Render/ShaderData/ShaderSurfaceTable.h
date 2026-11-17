@@ -17,7 +17,7 @@
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
-struct FrameCamera;
+class RenderFrame;
 struct FrameSurf;
 
 /*
@@ -25,7 +25,7 @@ struct FrameSurf;
 
     Shader Surface Table
 
-    현재 카메라의 visible surface 데이터를 ShaderSurface 테이블로 구성해 GPU 에 업로드한다.
+    이번 프레임의 카메라별 surface 데이터를 하나의 ShaderSurface 테이블로 구성해 GPU 에 업로드한다.
     테이블은 bindless SRV 로 셰이더에 제공한다.
 
 ---------------------------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ public:
 
     bool                            EnsureBufferCapacity(uint32_t count);
 
-    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameCamera *frameCamera, bool allowResize);
+    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame);
 
     uint32_t                        GetBindlessIndex() const { return tableBuffer.bindlessIndex; }
 

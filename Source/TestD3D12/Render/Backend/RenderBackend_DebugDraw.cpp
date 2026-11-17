@@ -56,10 +56,9 @@ static float GetUnitRadiusToPixelsScale(const FrameCamera *frameCamera) {
     return BE1::Max(radiusToPixelsX, radiusToPixelsY);
 }
 
-static uint32_t GetDebugPointLightCircleSegments(const FrameCamera *frameCamera, const FrameLight *frameLight, float unitRadiusToPixelsScale) {
-    const BE1::Vec4 centerClip = frameCamera->viewProjMatrix * BE1::Vec4(frameLight->origin, 1.0f);
+static uint32_t GetDebugSphereCircleSegments(const FrameCamera *frameCamera, const BE1::Vec3 &origin, float radius, float unitRadiusToPixelsScale) {
+    const BE1::Vec4 centerClip = frameCamera->viewProjMatrix * BE1::Vec4(origin, 1.0f);
     if (centerClip.w > std::numeric_limits<float>::min()) {
-        const float radius = BE1::Max(frameLight->range, MinDebugLightSize);
         const float radiusPixels = radius * unitRadiusToPixelsScale / centerClip.w;
 
         if (radiusPixels < MinDebugLightRadiusPixels) {
@@ -105,12 +104,23 @@ static void WriteDebugCircle(DebugDrawVertex *&vertexPtr, const BE1::Vec3 &origi
     }
 }
 
-static void WriteDebugPointLight(DebugDrawVertex *&vertexPtr, const FrameLight *frameLight, uint32_t numSegments, uint32_t color) {
-    const float radius = BE1::Max(frameLight->range, MinDebugLightSize);
+static void WriteDebugSphere(DebugDrawVertex *&vertexPtr, const BE1::Vec3 &origin, float radius, uint32_t numSegments, uint32_t color) {
+    WriteDebugCircle(vertexPtr, origin, BE1::Mat3::identity[1], BE1::Mat3::identity[2], radius, numSegments, color);
+    WriteDebugCircle(vertexPtr, origin, BE1::Mat3::identity[2], BE1::Mat3::identity[0], radius, numSegments, color);
+    WriteDebugCircle(vertexPtr, origin, BE1::Mat3::identity[0], BE1::Mat3::identity[1], radius, numSegments, color);
+}
 
-    WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[1], BE1::Mat3::identity[2], radius, numSegments, color);
-    WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[2], BE1::Mat3::identity[0], radius, numSegments, color);
-    WriteDebugCircle(vertexPtr, frameLight->origin, BE1::Mat3::identity[0], BE1::Mat3::identity[1], radius, numSegments, color);
+static void WriteDebugBox(DebugDrawVertex *&vertexPtr, const FrameLocalFogVolume &volume, uint32_t color) {
+    static constexpr uint8_t edgeIndices[24] = {
+        0, 1, 1, 2, 2, 3, 3, 0,
+        4, 5, 5, 6, 6, 7, 7, 4,
+        0, 4, 1, 5, 2, 6, 3, 7
+    };
+    BE1::Vec3 points[8];
+    BE1::OBB(volume.origin, volume.halfExtents, volume.axis).ToPoints(points);
+    for (uint8_t index : edgeIndices) {
+        WriteDebugDrawVertex(vertexPtr, points[index], color);
+    }
 }
 
 // 방사형 range 구면과 콘이 만나는 원, 원점에서 원으로 향하는 네 모서리, 구면 끝의 직교하는 두 arc 를 LineList 로 기록한다.
@@ -200,7 +210,7 @@ void RenderBackend::DrawDebugLights() {
             }
 
             // 너무 작으면 0 을 리턴한다.
-            const uint32_t numCircleSegments = GetDebugPointLightCircleSegments(currentFrameCamera, frameLight, unitRadiusToPixelsScale);
+            const uint32_t numCircleSegments = GetDebugSphereCircleSegments(currentFrameCamera, frameLight->origin, BE1::Max(frameLight->range, MinDebugLightSize), unitRadiusToPixelsScale);
             numVerts += 3 * numCircleSegments * 2;
             break;
         }
@@ -235,9 +245,10 @@ void RenderBackend::DrawDebugLights() {
         const uint32_t color = BE1::Color4(frameLight->intensityRGB, 1.0f).ToUInt32();
         switch (frameLight->type) {
         case RenderLight::Type::Point: {
-            const uint32_t numCircleSegments = GetDebugPointLightCircleSegments(currentFrameCamera, frameLight, unitRadiusToPixelsScale);
+            const float radius = BE1::Max(frameLight->range, MinDebugLightSize);
+            const uint32_t numCircleSegments = GetDebugSphereCircleSegments(currentFrameCamera, frameLight->origin, radius, unitRadiusToPixelsScale);
             if (numCircleSegments > 0) {
-                WriteDebugPointLight(vertexPtr, frameLight, numCircleSegments, color);
+                WriteDebugSphere(vertexPtr, frameLight->origin, radius, numCircleSegments, color);
             }
             break;
         }
@@ -257,11 +268,77 @@ void RenderBackend::DrawDebugLights() {
     RHI::renderer->Draw(mainCommandList, numVerts, 0);
 }
 
+void RenderBackend::DrawDebugLocalFogVolumes() {
+    PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawDebugLocalFogVolumes");
+
+    RHI::PipelineState *pipelineState = currentFrameCamera->debugDrawPSOs[static_cast<int>(DebugDrawPipelineId::DepthTestedLines)];
+    const uint32_t numVolumes = currentFrameCamera->numFrameLocalFogVolumes;
+    if (!currentFrameCamera->showDebugLocalFogVolumes || numVolumes == 0 || !pipelineState) {
+        return;
+    }
+
+    const auto volumes = frame->GetFrameLocalFogVolumes(currentFrameCamera->firstFrameLocalFogVolume);
+    bool hasSpheres = false;
+    float unitRadiusToPixelsScale = 0.0f;
+    uint64_t numVerts = 0;
+    auto volume = volumes.begin();
+    for (uint32_t i = 0; i < numVolumes; ++i, ++volume) {
+        if (volume->shape == LocalFogVolume::Shape::Sphere) {
+            if (!hasSpheres) {
+                unitRadiusToPixelsScale = GetUnitRadiusToPixelsScale(currentFrameCamera);
+                hasSpheres = true;
+            }
+            numVerts += 6u * GetDebugSphereCircleSegments(currentFrameCamera, volume->origin, volume->radius, unitRadiusToPixelsScale);
+        } else {
+            numVerts += 24u;
+        }
+    }
+
+    if (numVerts == 0) {
+        return;
+    }
+
+    if (numVerts > UINT32_MAX / sizeof(DebugDrawVertex)) {
+        BE_WARNLOG("RenderBackend::DrawDebugLocalFogVolumes: volume bounds vertex buffer is too large\n");
+        return;
+    }
+
+    const uint32_t vertexCount = static_cast<uint32_t>(numVerts);
+    RHI::VertexBuffer *vertexBuffer = frame->GetThreadData(0)->AllocVertex(sizeof(DebugDrawVertex), vertexCount);
+    if (!vertexBuffer || !vertexBuffer->mappedPtr) {
+        BE_WARNLOG("RenderBackend::DrawDebugLocalFogVolumes: failed to allocate volume bounds vertex buffer\n");
+        return;
+    }
+
+    const uint32_t sphereColor = BE1::Color4(0.1f, 0.85f, 1.0f, 1.0f).ToUInt32();
+    const uint32_t boxColor = BE1::Color4(1.0f, 0.55f, 0.1f, 1.0f).ToUInt32();
+    DebugDrawVertex *vertexPtr = static_cast<DebugDrawVertex *>(vertexBuffer->mappedPtr);
+    DebugDrawVertex *const firstVertexPtr = vertexPtr;
+    volume = volumes.begin();
+    for (uint32_t i = 0; i < numVolumes; ++i, ++volume) {
+        if (volume->shape == LocalFogVolume::Shape::Sphere) {
+            const uint32_t numSegments = GetDebugSphereCircleSegments(currentFrameCamera, volume->origin, volume->radius, unitRadiusToPixelsScale);
+            if (numSegments > 0) {
+                WriteDebugSphere(vertexPtr, volume->origin, volume->radius, numSegments, sphereColor);
+            }
+        } else {
+            WriteDebugBox(vertexPtr, *volume, boxColor);
+        }
+    }
+    assert(static_cast<uint32_t>(vertexPtr - firstVertexPtr) == vertexCount);
+
+    RHI::renderer->SetVertexBuffer(mainCommandList, 0, vertexBuffer);
+    RHI::renderer->SetPSO(mainCommandList, pipelineState);
+    RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
+    RHI::renderer->Draw(mainCommandList, vertexCount, 0);
+}
+
 void RenderBackend::DrawDebugPrimitives() {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DrawDebugPrimitives");
     assert(cameraConstantBuffer);
 
     DrawDebugLights();
+    DrawDebugLocalFogVolumes();
 
     const DebugDrawData *debugDrawData = currentFrameCamera->debugDrawData;
     if (!debugDrawData || !debugDrawData->vertexBuffer || debugDrawData->numBatches == 0) {

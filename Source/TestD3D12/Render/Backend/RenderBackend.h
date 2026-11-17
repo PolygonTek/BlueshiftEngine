@@ -131,6 +131,7 @@ private:
     bool                            DrawGpuOcean(const RHI::PipelineState *pipelineState, bool countInstanceUpload);
     void                            DrawGuiPass(const RenderPass *renderPass);
     void                            DrawDebugLights();
+    void                            DrawDebugLocalFogVolumes();
     void                            DrawDebugPrimitives();
 
     void                            SetPassVertexBuffers(RHI::CommandList *commandList, const DrawSurf2 *drawSurf) const;
@@ -144,7 +145,7 @@ private:
     static void                     DrawGenericSurfacesByTaskFunction(void *data);
 
     bool                            PrepareHiZCulling();
-    bool                            DispatchHiZCullInstances(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset);
+    bool                            DispatchHiZCullInstances(RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset);
     void                            FinishHiZCulling();
     bool                            DispatchGenHiZ();
     bool                            DispatchHiZDebugPreview();

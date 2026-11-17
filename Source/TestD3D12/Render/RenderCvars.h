@@ -30,6 +30,7 @@ extern BE1::CVar    r_skipPostProcess;
 extern BE1::CVar    r_debugDrawMaxPrimitives;
 extern BE1::CVar    r_debugDrawMaxVertices;
 extern BE1::CVar    r_showLights2;
+extern BE1::CVar    r_showLocalFogVolumes;
 extern BE1::CVar    r_lightCullingZBin;
 extern BE1::CVar    r_lightCullingDebug;
 extern BE1::CVar    r_indirectLighting;

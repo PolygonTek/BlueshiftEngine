@@ -28,6 +28,7 @@ CVAR(r_debugDrawMaxPrimitives, "16384", BE1::CVar::Flag::Integer, "maximum numbe
 CVAR(r_debugDrawMaxVertices, "262144", BE1::CVar::Flag::Integer, "maximum number of debug draw vertices");
 
 CVAR(r_showLights2, "0", BE1::CVar::Flag::Bool, "show visible light bounding volumes");
+CVAR(r_showLocalFogVolumes, "0", BE1::CVar::Flag::Bool, "show active local fog volume boundaries in the camera fog range");
 CVAR(r_lightCullingZBin, "1", BE1::CVar::Flag::Bool, "enable light Z-bin culling in forward lighting");
 CVAR_MINMAX(r_lightCullingDebug, "0", BE1::CVar::Flag::Integer, "light culling debug view (0 = off, 1 = tile mask, 2 = tile mask and Z-bin)", 0, 2);
 CVAR(r_indirectLighting, "1", BE1::CVar::Flag::Bool, "enable indirect lighting and screen-space reflections for surfaces");
@@ -83,14 +84,14 @@ CVAR(r_csmSlopeScaledDepthBias2, "1.0", BE1::CVar::Flag::Float, "slope-scaled de
 CVAR(r_csmSlopeScaledDepthBias3, "1.0", BE1::CVar::Flag::Float, "slope-scaled depth bias for CSM cascade 3");
 
 // Fog (Common)
-CVAR_MINMAX(r_fogNearDepth, "0", BE1::CVar::Flag::Float, "start depth for analytic height fog and volumetric fog (-view Z, meters)", 0.0f, 10000.0f);
+CVAR_MINMAX(r_fogNearDepth, "0.0", BE1::CVar::Flag::Float, "start depth for analytic height fog and volumetric fog (-view Z, meters)", 0.0f, 10000.0f);
 
 // Volumetric fog
 CVAR(r_vfog, "1", BE1::CVar::Flag::Bool, "enable volumetric fog on opaque surfaces and sky");
 CVAR_MINMAX(r_vfogTileBaseSize, "144", BE1::CVar::Flag::Integer, "volumetric fog XY tile count per axis for a square viewport; total tile count is approximately this value squared, independent of render resolution", 16, 256);
-CVAR_MINMAX(r_vfogSliceCount, "64", BE1::CVar::Flag::Integer, "volumetric fog depth slice count", 8, 256);
-CVAR_MINMAX(r_vfogFarDepth, "64", BE1::CVar::Flag::Float, "volumetric fog end depth (-view Z, meters)", 0.01f, 10000.0f);
-CVAR_MINMAX(r_vfogDepthDistributionScale, "4", BE1::CVar::Flag::Float, "volumetric fog exponential depth distribution scale (meters); smaller values concentrate slices near the camera", 0.01f, 10000.0f);
+CVAR_MINMAX(r_vfogSliceCount, "128", BE1::CVar::Flag::Integer, "volumetric fog depth slice count", 8, 256);
+CVAR_MINMAX(r_vfogFarDepth, "32", BE1::CVar::Flag::Float, "volumetric fog end depth (-view Z, meters)", 0.01f, 10000.0f);
+CVAR_MINMAX(r_vfogDepthDistributionScale, "4.4", BE1::CVar::Flag::Float, "volumetric fog exponential depth distribution scale (meters); smaller values concentrate slices near the camera", 0.01f, 10000.0f);
 CVAR(r_vfogShadows, "1", BE1::CVar::Flag::Bool, "apply shadow visibility to volumetric fog lighting");
 CVAR_MINMAX(r_vfogLightDistanceBiasScale, "1.5", BE1::CVar::Flag::Float, "volumetric fog local light distance bias relative to froxel size; 0 disables the bias", 0.0f, 4.0f);
 CVAR(r_vfogJitter, "1", BE1::CVar::Flag::Bool, "use STBN XYZ jitter for volumetric fog lighting samples; animate with temporal accumulation");
@@ -336,6 +337,7 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.skipPostProcess = r_skipPostProcess.GetBool();
 
     settings.showDebugLights = r_showLights2.GetBool();
+    settings.showDebugLocalFogVolumes = r_showLocalFogVolumes.GetBool();
     settings.lightCullingZBin = r_lightCullingZBin.GetBool();
     settings.indirectLighting = r_indirectLighting.GetBool();
     settings.specularAA = r_specularAA.GetBool();

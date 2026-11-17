@@ -65,7 +65,7 @@ float4 VFogIntegrateSegment(float4 accumulated, float4 sourceExtinction, float s
 }
 
 // nearDepth 부터 depth 까지의 누적 산란/발광 radiance 와 투과율을 샘플링한다.
-float4 VFogSample(Texture3D<float4> sourceTexture, Texture3D<float4> integratedTexture, SamplerState linearClamp, float2 unjitteredUV, float depth, CameraConstants camera) {
+float4 VFogSample(Texture3D<float4> integratedTexture, SamplerState linearClamp, float2 unjitteredUV, float depth, CameraConstants camera) {
     const VFogParams vfogParams = camera.vfogParams;
     if (depth <= vfogParams.nearDepth) {
         return float4(0, 0, 0, 1);
@@ -80,19 +80,19 @@ float4 VFogSample(Texture3D<float4> sourceTexture, Texture3D<float4> integratedT
         --slice;
     }
 
-    // clampedDepth 가 속한 프록셀의 시작 경계 깊이
-    const float boundary = VFogSliceToDepth(slice, vfogParams);
+    // clampedDepth 가 속한 froxel 깊이 구간 내 가까운 경계까지의 비율을 구한다.
+    const float nearBoundary = VFogSliceToDepth(slice, vfogParams);
+    const float farBoundary = VFogSliceToDepth(slice + 1u, vfogParams);
+    const float depthRange = max(farBoundary - nearBoundary, FLT_MIN);
+    const float depthFraction = saturate((clampedDepth - nearBoundary) / depthRange);
 
-    // 속한 프록셀 내부의 광선 길이
-    const float internalLength = max(clampedDepth - boundary, 0.0f) * VFogRayLengthPerViewDepth(unjitteredUV, camera);
-
-    // 프록셀 시작 경계까지의 누적값을 읽고,
-    // 경계부터 clampedDepth 까지의 광선 구간을 추가로 적분한다.
-    const float sourceW = (slice + 0.5f) / vfogParams.sliceCount;
-    const float integratedW = (slice + 0.5f) / (vfogParams.sliceCount + 1.0f);
-    const float4 source = sourceTexture.SampleLevel(linearClamp, float3(unjitteredUV, sourceW), 0);
-    const float4 integrated = integratedTexture.SampleLevel(linearClamp, float3(unjitteredUV, integratedW), 0);
-    return VFogIntegrateSegment(integrated, source, internalLength);
+    // 두 froxel 의 누적값을 선형 보간한다.
+    const float boundaryCountRcp = 1.0f / (vfogParams.sliceCount + 1.0f);
+    const float nearW = (slice + 0.5f) * boundaryCountRcp;
+    const float farW = (slice + 1.5f) * boundaryCountRcp;
+    const float4 nearIntegrated = integratedTexture.SampleLevel(linearClamp, float3(unjitteredUV, nearW), 0);
+    const float4 farIntegrated = integratedTexture.SampleLevel(linearClamp, float3(unjitteredUV, farW), 0);
+    return lerp(nearIntegrated, farIntegrated, depthFraction);
 }
 
 #endif // __VFOG_COMMON_HLSLI__

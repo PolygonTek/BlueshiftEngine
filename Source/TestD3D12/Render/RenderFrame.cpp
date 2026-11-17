@@ -35,6 +35,7 @@ static constexpr uint32_t   FrameObjectChunkCapacity = 8192;
 static constexpr uint32_t   FrameSkinnedMeshChunkCapacity = 256;
 static constexpr uint32_t   FrameTextChunkCapacity = 256;
 static constexpr uint32_t   FrameLightChunkCapacity = 1024;
+static constexpr uint32_t   FrameLocalFogVolumeChunkCapacity = 64;
 
 static_assert(std::is_trivially_destructible<FrameOceanSurface>::value, "FrameOceanSurface must not require destruction before the frame arena is reset");
 
@@ -90,6 +91,8 @@ void RenderFrame::Shutdown() {
 
     FreeFrameLights();
 
+    FreeFrameLocalFogVolumes();
+
     FreeFrameTexts();
 
     FreeFrameSkinnedMeshes();
@@ -110,6 +113,7 @@ void RenderFrame::Shutdown() {
 
     shaderMaterialTable.Shutdown();
     shaderLightTable.Shutdown();
+    shaderLocalFogVolumeTable.Shutdown();
     shaderLightCullingTable.Shutdown();
     shaderSurfaceTable.Shutdown();
     shaderShadowTable.Shutdown();
@@ -146,7 +150,6 @@ void RenderFrame::BeginFrame(const RenderFrameSettings &renderFrameSettings) {
     elapsedPrevTime = 0.0f;
     frameCount = 0;
     statEnabled = false;
-    maxShaderSurfaceCount = 0;
     numLightCullingZBins = 0;
     numLightCullingWords = 0;
 
@@ -176,8 +179,13 @@ void RenderFrame::EndFrame() {
 
 void RenderFrame::ResetFrameData() {
     FreeFrameCameras();
+    numFrameSurfaces = 0;
+    numFrameLocalShadows = 0;
+    numFrameLocalShadowViews = 0;
 
     FreeFrameLights();
+
+    FreeFrameLocalFogVolumes();
 
     FreeFrameTexts();
 
@@ -214,6 +222,9 @@ void RenderFrame::InitFrameCameras(uint32_t maxFrameCameras) {
 }
 
 void RenderFrame::FreeFrameCameras() {
+    static_assert(std::is_trivially_destructible<FrameLocalShadowView>::value, "FrameLocalShadowView must not require destruction");
+    static_assert(std::is_trivially_destructible<FrameShadowAtlas>::value, "FrameShadowAtlas must not require destruction");
+
     if (!frameCameras) {
         return;
     }
@@ -222,13 +233,9 @@ void RenderFrame::FreeFrameCameras() {
     for (int i = 0; i < numFrameCameras; ++i) {
         FrameShadowAtlas *shadowAtlas = frameCameras[i].frameShadowAtlas;
         if (shadowAtlas) {
-            for (uint32_t viewIndex = 0; viewIndex < shadowAtlas->numShadowViews; ++viewIndex) {
-                shadowAtlas->shadowViews[viewIndex].~FrameLocalShadowView();
-            }
             for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas->numShadows; ++shadowIndex) {
                 shadowAtlas->shadows[shadowIndex].~FrameLocalShadow();
             }
-            shadowAtlas->~FrameShadowAtlas();
         }
         (frameCameras + i)->~FrameCamera();
     }
@@ -238,20 +245,13 @@ void RenderFrame::FreeFrameCameras() {
 }
 
 void RenderFrame::FreeFrameObjects() {
-    for (Chunk *chunk = firstFrameObjectChunk; chunk; chunk = chunk->next) {
-        FrameObject *frameObjects = static_cast<FrameObject *>(chunk->elements);
-        for (uint32_t i = 0; i < chunk->count; ++i) {
-            frameObjects[i].~FrameObject();
-        }
-    }
-
+    static_assert(std::is_trivially_destructible<FrameObject>::value, "FrameObject must not require destruction");
     firstFrameObjectChunk = nullptr;
     lastFrameObjectChunk = nullptr;
     numFrameObjects = 0;
 }
 
 void RenderFrame::FreeFrameSkinnedMeshes() {
-    // 공유 자원의 수명은 retained 배열이 관리하므로 개별 소멸자 호출 없이 청크를 초기화한다.
     static_assert(std::is_trivially_destructible<FrameSkinnedMesh>::value, "FrameSkinnedMesh must not require destruction");
     firstFrameSkinnedMeshChunk = nullptr;
     lastFrameSkinnedMeshChunk = nullptr;
@@ -259,26 +259,14 @@ void RenderFrame::FreeFrameSkinnedMeshes() {
 }
 
 void RenderFrame::FreeFrameTexts() {
-    for (Chunk *chunk = firstFrameTextChunk; chunk; chunk = chunk->next) {
-        FrameText *frameTexts = static_cast<FrameText *>(chunk->elements);
-        for (uint32_t i = 0; i < chunk->count; ++i) {
-            frameTexts[i].~FrameText();
-        }
-    }
-
+    static_assert(std::is_trivially_destructible<FrameText>::value, "FrameText must not require destruction");
     firstFrameTextChunk = nullptr;
     lastFrameTextChunk = nullptr;
     numFrameTexts = 0;
 }
 
 void RenderFrame::FreeFrameLights() {
-    for (Chunk *chunk = firstFrameLightChunk; chunk; chunk = chunk->next) {
-        FrameLight *frameLights = static_cast<FrameLight *>(chunk->elements);
-        for (uint32_t i = 0; i < chunk->count; ++i) {
-            frameLights[i].~FrameLight();
-        }
-    }
-
+    static_assert(std::is_trivially_destructible<FrameLight>::value, "FrameLight must not require destruction");
     firstFrameLightChunk = nullptr;
     lastFrameLightChunk = nullptr;
     numFrameLights = 0;
@@ -286,6 +274,13 @@ void RenderFrame::FreeFrameLights() {
     numFramePointLights = 0;
     numFrameSpotLights = 0;
     primaryDirectionalLight = nullptr;
+}
+
+void RenderFrame::FreeFrameLocalFogVolumes() {
+    static_assert(std::is_trivially_destructible<FrameLocalFogVolume>::value, "Local fog snapshots must not require destruction");
+    firstFrameLocalFogVolumeChunk = nullptr;
+    lastFrameLocalFogVolumeChunk = nullptr;
+    numFrameLocalFogVolumes = 0;
 }
 
 RenderFrame::Chunk *RenderFrame::AllocChunk(uint32_t elementSize, uint32_t elementCount) {
@@ -589,6 +584,21 @@ RenderFrame::ChunkRange<FrameLight> RenderFrame::GetFrameLights(uint32_t firstIn
     return ChunkRange<FrameLight>(firstChunk, firstIndex);
 }
 
+RenderFrame::ChunkRange<FrameLocalFogVolume> RenderFrame::GetFrameLocalFogVolumes(uint32_t firstIndex) const {
+    assert(firstIndex <= numFrameLocalFogVolumes);
+    if (firstIndex >= numFrameLocalFogVolumes) {
+        return ChunkRange<FrameLocalFogVolume>(nullptr);
+    }
+
+    // 앞선 카메라의 볼륨을 개별 순회하지 않고 chunk 단위로 건너뛴다.
+    Chunk *firstChunk = firstFrameLocalFogVolumeChunk;
+    while (firstIndex >= firstChunk->count) {
+        firstIndex -= firstChunk->count;
+        firstChunk = firstChunk->next;
+    }
+    return ChunkRange<FrameLocalFogVolume>(firstChunk, firstIndex);
+}
+
 FrameOceanSurface *RenderFrame::AllocFrameOceanSurface(const GpuOcean::SimulationSettings &simulationSettings, const GpuOceanSurface::Settings &surfaceSettings) {
     if (frameOceanSurface) {
         assert(0);
@@ -719,6 +729,27 @@ FrameLight *RenderFrame::AllocFrameLight(RenderLight::Type type) {
     return newFrameLight;
 }
 
+FrameLocalFogVolume *RenderFrame::AllocFrameLocalFogVolume() {
+    if (numFrameLocalFogVolumes >= UINT32_MAX / sizeof(ShaderLocalFogVolume)) {
+        return nullptr;
+    }
+
+    if (!lastFrameLocalFogVolumeChunk || lastFrameLocalFogVolumeChunk->count >= FrameLocalFogVolumeChunkCapacity) {
+        Chunk *newChunk = AllocChunk(sizeof(FrameLocalFogVolume), FrameLocalFogVolumeChunkCapacity);
+        if (lastFrameLocalFogVolumeChunk) {
+            lastFrameLocalFogVolumeChunk->next = newChunk;
+        } else {
+            firstFrameLocalFogVolumeChunk = newChunk;
+        }
+        lastFrameLocalFogVolumeChunk = newChunk;
+    }
+
+    FrameLocalFogVolume *volumes = static_cast<FrameLocalFogVolume *>(lastFrameLocalFogVolumeChunk->elements);
+    FrameLocalFogVolume *volume = new (&volumes[lastFrameLocalFogVolumeChunk->count++]) FrameLocalFogVolume;
+    numFrameLocalFogVolumes++;
+    return volume;
+}
+
 uint32_t RenderFrame::ReserveLightCullingZBins() {
     assert(ShaderLightZBinCount <= UINT32_MAX - numLightCullingZBins);
 
@@ -781,18 +812,46 @@ void RenderFrame::CmdBeginContext(RenderContext *context, bool useGpuTiming, boo
     cmd->useSwapChainOutput = useSwapChainOutput;
 }
 
-void RenderFrame::CmdDrawCamera(const FrameCamera *camera) {
+void RenderFrame::CmdDrawCamera(FrameCamera *camera) {
+    assert(camera);
+
+    const bool reserveSurfaces = camera->firstFrameSurface == UINT32_MAX;
+    if (reserveSurfaces) {
+        if (camera->numFrameSurfs > UINT32_MAX / sizeof(ShaderSurface) - numFrameSurfaces) {
+            BE_WARNLOG("RenderFrame::CmdDrawCamera: too many frame surfaces\n");
+            return;
+        }
+    }
+
+    FrameShadowAtlas *shadowAtlas = camera->frameShadowAtlas;
+    const bool reserveShadows = shadowAtlas && shadowAtlas->firstFrameLocalShadow == UINT32_MAX;
+    if (reserveShadows &&
+        (shadowAtlas->numShadows > UINT32_MAX / sizeof(ShaderLocalShadow) - numFrameLocalShadows ||
+         shadowAtlas->numShadowViews > UINT32_MAX / sizeof(ShaderLocalShadowView) - numFrameLocalShadowViews)) {
+        BE_WARNLOG("RenderFrame::CmdDrawCamera: too many frame local shadows or views\n");
+        return;
+    }
+
     DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)GetCommandBuffer(sizeof(DrawCameraRenderCommand));
     if (!cmd) {
         return;
     }
 
+    // 3D/GUI 카메라 모두 수집을 마친 surface/shadow 구간을 한 번만 예약한다.
+    if (reserveSurfaces) {
+        camera->firstFrameSurface = numFrameSurfaces;
+        numFrameSurfaces += camera->numFrameSurfs;
+    }
+
+    if (reserveShadows) {
+        shadowAtlas->firstFrameLocalShadow = numFrameLocalShadows;
+        shadowAtlas->firstFrameLocalShadowView = numFrameLocalShadowViews;
+        numFrameLocalShadows += shadowAtlas->numShadows;
+        numFrameLocalShadowViews += shadowAtlas->numShadowViews;
+    }
+
     cmd->commandId = RenderCommandId::DrawCamera;
     cmd->frameCamera = camera;
-
-    if (camera) {
-        maxShaderSurfaceCount = BE1::Max(maxShaderSurfaceCount, camera->numFrameSurfs);
-    }
 }
 
 void RenderFrame::CmdFinalizeFrame(bool renderImGuiOverlay) {

@@ -17,6 +17,7 @@
 
 #ifdef __cplusplus
 
+#include <cstddef>
 #include "Shaders/ShaderTypes.h"
 
 #define column_major
@@ -610,7 +611,6 @@ static_assert(sizeof(HiZDebugPreviewParams) == 32, "HiZDebugPreviewParams must m
 
 struct HiZCullInstancesParams {
     uint inputInstanceCount;
-    uint surfaceTableIndex;
     uint hiZWidth;
     uint hiZHeight;
     uint hiZMipCount;
@@ -618,6 +618,10 @@ struct HiZCullInstancesParams {
     uint instanceBaseOffset;
     uint indirectArgOffset;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(HiZCullInstancesParams) == 28, "Hi-Z culling parameters must match the seven HLSL root constants");
+#endif
 
 struct MultiplySpectrum2DParams {
     uint fftSize;
@@ -832,39 +836,44 @@ struct FrameConstants {
     float elapsedPrevTime;
     uint frameCount;
     uint shaderMaterialTableIndex;
+    uint shaderSurfaceTableIndex;
     uint shaderPointLightTableIndex;
     uint shaderSpotLightTableIndex;
     uint shaderLightRefTableIndex;
     uint shaderLightZBinTableIndex;
     uint shaderLightTileWordTableIndex;
+    uint shaderLocalFogVolumeTableIndex;
     uint feedbackBufferIndex;
     uint dfgSumGGXTextureIndex;
     uint stbnUnitVec2TextureIndex;
     uint stbnVec2TextureIndex;
     float specularAAVariance;
     float specularAALimit; // Maximum additive squared perceptual roughness.
+    uint shaderLocalShadowTableIndex;
+    uint shaderLocalShadowViewTableIndex;
     ShaderDirectionalLight directionalLight;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(FrameConstants) == 96, "FrameConstants must match the HLSL constant-buffer layout");
+static_assert(sizeof(FrameConstants) == 112, "FrameConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(FrameConstants, shaderLocalShadowTableIndex) == 72, "Shadow table indices must occupy the former frame padding");
+static_assert(offsetof(FrameConstants, shaderLocalShadowViewTableIndex) == 76, "Shadow view table index must match the HLSL offset");
+static_assert(offsetof(FrameConstants, directionalLight) == 80, "Directional light constants must remain register-aligned");
 #endif
 
-// Shadow depth 기록에 필요한 광원 행렬과 surface table. 샘플링용 데이터와 별도로 전달한다.
+// Shadow depth 기록에 필요한 광원 행렬. Surface table 은 프레임 상수를 참조하고, 샘플링용 데이터는 별도로 전달한다.
 struct ShadowViewConstants {
     row_major float4x4 viewProjMatrix;
-    uint surfaceTableIndex;
-    uint3 padding;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShadowViewConstants) == 80, "ShadowViewConstants must match the HLSL constant-buffer layout");
+static_assert(sizeof(ShadowViewConstants) == 64, "ShadowViewConstants must match the HLSL constant-buffer layout");
 #endif
 
 // 광원 하나의 샘플링 정보. 광원 타입은 ShaderPointLight/ShaderSpotLight 에서 이미 결정된다.
-// 인덱스는 현재 카메라의 GPU 테이블 기준이며 CPU allocator handle 이나 영속 광원 ID 가 아니다.
+// 인덱스는 프레임 공용 테이블 내 현재 카메라 구간 기준이며 CPU allocator handle 이나 영속 광원 ID 가 아니다.
 struct ShaderLocalShadow {
-    uint firstShadowView;       // View 테이블에서 이 광원의 첫 요소. Point 6면도 연속된 요소를 사용한다.
+    uint firstShadowView;       // 카메라의 view 구간에서 이 광원의 첫 요소. Point 6면도 연속된 요소를 사용한다.
     uint numShadowViews;        // Spot: 1, Point: 6. 0 이면 유효한 view 가 없다.
     float filterRadius;         // Atlas texel 단위의 PCF 반경. 업로드 시 border 안에 들어가도록 제한한다.
     float normalizedBorder;     // borderTexels / 할당된 타일 해상도. Point 는 모든 면이 같은 해상도/border 를 사용한다.
@@ -881,11 +890,11 @@ struct ShaderLocalShadowView {
     float4 atlasScaleBias;      // XY = tileSize / atlasSize, ZW = tileOrigin / atlasSize. atlasUV = tileUV * XY + ZW.
 };
 
-// 현재 카메라의 atlas 와 두 StructuredBuffer 를 참조하는 샘플링 데이터.
+// 현재 카메라의 atlas 와 프레임 공용 shadow/view 테이블 내 구간을 참조하는 샘플링 데이터.
 struct ShaderShadowAtlasData {
     uint textureIndex;          // Texture2D<float> 의 bindless SRV index.
-    uint shadowTableIndex;      // StructuredBuffer<ShaderLocalShadow> 의 bindless SRV index.
-    uint shadowViewTableIndex;  // StructuredBuffer<ShaderLocalShadowView> 의 bindless SRV index.
+    uint shadowTableOffset;     // 프레임 공용 ShaderLocalShadow 테이블에서 이 카메라의 첫 요소.
+    uint shadowViewTableOffset; // 프레임 공용 ShaderLocalShadowView 테이블에서 이 카메라의 첫 요소.
     uint numShadows;            // 0 이면 atlas/테이블에 접근하지 않는다. 업로드와 depth 기록을 마친 뒤에만 활성화한다.
     float2 texelSize;           // 1 / atlas 크기. 모든 타일의 PCF offset 에 공유한다.
     uint numShadowViews;
@@ -896,6 +905,8 @@ struct ShaderShadowAtlasData {
 static_assert(sizeof(ShaderLocalShadow) == 36, "ShaderLocalShadow must match the HLSL structured-buffer stride");
 static_assert(sizeof(ShaderLocalShadowView) == 80, "ShaderLocalShadowView must match the HLSL structured-buffer stride");
 static_assert(sizeof(ShaderShadowAtlasData) == 32, "ShaderShadowAtlasData must match the HLSL constant-buffer layout");
+static_assert(offsetof(ShaderShadowAtlasData, shadowTableOffset) == 4, "Shadow table offset must match the HLSL layout");
+static_assert(offsetof(ShaderShadowAtlasData, shadowViewTableOffset) == 8, "Shadow view table offset must match the HLSL layout");
 #endif
 
 // CSM 을 샘플링하는 데 필요한 데이터.
@@ -953,14 +964,16 @@ struct CameraConstants {
     float2 renderSizeRcp;        // Reciprocal size of this camera's main render target.
 
     float2 uvJitter;             // UV-space jitter offset; rasterUV - uvJitter gives unjittered UV.
-    float2 viewPadding;
+
+    // Use the remaining two scalars in this register for the camera's range in the shared local fog table.
+    uint localFogVolumeTableOffset;
+    uint numLocalFogVolumes;
 
     // Pack depth coefficients into one 16-byte constant-buffer register.
     float2 projectionScaleBiasZ;  // clip.z = view.z * projectionScaleBiasZ.x + projectionScaleBiasZ.y
     float lightCullingZBinScale;
     float lightCullingZBinBias;
 
-    uint surfaceTableIndex;
     uint numLocalLights;
     uint lightCullingLightRefTableOffset;
     uint lightCullingZBinTableOffset;
@@ -969,6 +982,7 @@ struct CameraConstants {
     uint lightCullingTileCountY;
     uint lightCullingWordsPerTile;
     uint lightCullingDebugMode;
+    uint lightCullingPadding;
 
     uint ssrUpsampledReflectionTextureIndex;
     uint transparentSSRUpsampledReflectionTextureIndex;

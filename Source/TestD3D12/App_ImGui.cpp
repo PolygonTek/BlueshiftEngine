@@ -734,6 +734,12 @@ void App::BuildImGuiOverlay() {
                 r_showLights2.SetBool(showLights);
             }
 
+            bool showLocalFogVolumes = r_showLocalFogVolumes.GetBool();
+            if (ImGui::Checkbox("Show local fog volumes", &showLocalFogVolumes)) {
+                r_showLocalFogVolumes.SetBool(showLocalFogVolumes);
+            }
+            ImGui::SetItemTooltip("Active volumes in the fog range: cyan spheres and orange boxes. Also shown when Volumetric Fog is off.");
+
             if (ImGui::Button(imguiShowStatsPlotWindow ? "Hide Frame Timing" : "Show Frame Timing")) {
                 imguiShowStatsPlotWindow = !imguiShowStatsPlotWindow;
             }

@@ -161,6 +161,7 @@ struct RenderFrameSettings {
     bool                        skipPostProcess;
 
     bool                        showDebugLights;
+    bool                        showDebugLocalFogVolumes;
 
     bool                        meshLOD;
 

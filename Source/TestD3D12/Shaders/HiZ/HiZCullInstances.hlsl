@@ -11,14 +11,19 @@
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
     "DescriptorTable(SRV(t0), SRV(t1), UAV(u0), UAV(u1)), " \
     "CBV(b0), " \
-    "CBV(b1)"
+    "CBV(b1), " \
+    "RootConstants(num32BitConstants=7, b2)"
 
-cbuffer HiZCullInstancesCB : register(b0) {
-    HiZCullInstancesParams hiZCullParams;
+cbuffer FrameCB : register(b0) {
+    FrameConstants frameConstants;
 }
 
 cbuffer CameraCB : register(b1) {
     CameraConstants cameraConstants;
+}
+
+cbuffer HiZCullInstancesCB : register(b2) {
+    HiZCullInstancesParams hiZCullParams;
 }
 
 StructuredBuffer<uint> candidateInstanceBuffer : register(t0);
@@ -113,7 +118,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     const uint shaderSurfaceIndex = candidateInstanceBuffer[instanceIndex];
-    const ShaderSurface shaderSurface = GetShaderSurfaceTable(hiZCullParams.surfaceTableIndex)[shaderSurfaceIndex];
+    const ShaderSurface shaderSurface = GetShaderSurfaceTable(frameConstants.shaderSurfaceTableIndex)[shaderSurfaceIndex];
 
     bool visible = true;
     const float worldRadius = GetWorldSphereRadius(shaderSurface.localBoundingSphere.w, shaderSurface.worldMatrix);

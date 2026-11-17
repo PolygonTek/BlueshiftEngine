@@ -170,6 +170,8 @@ set(SRC_FILES
     Render/ShaderData/ShaderMaterialTable.cpp
     Render/ShaderData/ShaderLightTable.h
     Render/ShaderData/ShaderLightTable.cpp
+    Render/ShaderData/ShaderLocalFogVolumeTable.h
+    Render/ShaderData/ShaderLocalFogVolumeTable.cpp
     Render/ShaderData/ShaderLightCullingTable.h
     Render/ShaderData/ShaderLightCullingTable.cpp
     Render/ShaderData/ShaderSurfaceTable.h
@@ -256,6 +258,8 @@ set(SRC_FILES
     Render/Frontend/EnvironmentLight.cpp
     Render/Frontend/HeightFog.h
     Render/Frontend/HeightFog.cpp
+    Render/Frontend/LocalFogVolume.h
+    Render/Frontend/LocalFogVolume.cpp
     Render/Frontend/OceanSurface.cpp
     Render/Frontend/OceanSurface.h
     Render/Frontend/RenderLight.h

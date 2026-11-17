@@ -265,13 +265,25 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
         }
     }
 
+    FrameCamera *frameCamera = frame->AllocFrameCamera();
+    if (!frameCamera) {
+        return;
+    }
+
     const bool skipPostProcess = frameSettings.skipPostProcess || BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::SkipPostProcess);
     const bool useAO = frameSettings.aoMode != RenderAOMode::Off;
     const bool debugAO = useAO && frameSettings.gtaoDebug != 0;
     const bool fogAllowed = frameSettings.shadowDebugMode == ShaderShadowDebugModeNone && frameSettings.lightCullingDebugMode == 0;
     const bool useHeightFog = fogAllowed && hasHeightFog && heightFog.GetDesc().IsActive() && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableHeightFog);
     const bool useVFog = fogAllowed && frameSettings.vfogEnabled && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableVolumetricFog);
-    const bool hasVolumetricMedia = useHeightFog; // 현재 주입 가능한 매질은 HeightFog 뿐이다. VFog 옵션과 매질의 존재 여부는 별도로 판단한다.
+
+    // 로컬 매질을 한 번 수집하고, 그 결과로 fog 디버그와 TAA/렌더 텍스처 구성을 결정한다.
+    // 경계 표시는 fog 렌더링을 꺼도 사용할 수 있지만 SkipDebugDraw 카메라에서는 수집을 추가하지 않는다.
+    const bool showLocalFogVolumes = frameSettings.showDebugLocalFogVolumes && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::SkipDebugDraw);
+    FindFrameLocalFogVolumes(frame, renderCamera, frameCamera, useVFog || showLocalFogVolumes);
+
+    // VFog 옵션과 매질의 존재 여부는 별도로 판단한다.
+    const bool hasVolumetricMedia = useHeightFog || frameCamera->numFrameLocalFogVolumes > 0;
     const bool debugVFog = useVFog && hasVolumetricMedia && frameSettings.vfogDebugMode != 0;
     const bool temporalHistoryEnabled = !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
     const bool useEnvironmentLight = frameSettings.indirectLighting && hasEnvironmentLight && envLight.GetDesc().enabled;
@@ -291,11 +303,6 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     // 장면 렌더링에 필요한 color, depth, normal, roughness, velocity 텍스처를 준비한다.
     if (!renderCamera->EnsureRenderTextures(renderWidth, renderHeight, renderContext->GetMainRTColorFormat(), renderContext->GetMainRTDepthFormat(), renderContext->GetMainRTSampleCount(), needDepthHistory, needNormalRoughnessTexture, needVelocityTexture, renderContext->GetBaseClearColor())) {
-        return;
-    }
-
-    FrameCamera *frameCamera = frame->AllocFrameCamera();
-    if (!frameCamera) {
         return;
     }
 
@@ -609,11 +616,81 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
     }
 }
 
+void RenderWorld::FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera, bool collectVolumes) {
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::FindFrameLocalFogVolumes");
+
+    frameCamera->firstFrameLocalFogVolume = frame->NumFrameLocalFogVolumes();
+    frameCamera->numFrameLocalFogVolumes = 0;
+    frameCamera->hasLocalFogLightScattering = false;
+
+    if (!collectVolumes || localFogVolumes.Count() == 0) {
+        return;
+    }
+
+    const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
+    const float nearDepth = frameSettings.fogNearDepth;
+    const float farDepth = BE1::Min(frameSettings.vfogFarDepth, renderCamera->GetDesc().zFar);
+    if (farDepth <= nearDepth) {
+        return;
+    }
+
+    // vfog 범위에 맞는 view planes 를 계산한다.
+    const bool skipViewCulling = frameSettings.skipViewCulling;
+    BE1::Plane viewPlanes[6];
+    if (!skipViewCulling) {
+        renderCamera->CalcSlicedViewVolume(nearDepth, farDepth, nullptr, viewPlanes);
+    }
+
+    for (const LocalFogVolume *localVolume : localFogVolumes) {
+        if (!localVolume || !localVolume->desc.IsActive()) {
+            continue;
+        }
+
+        if (!skipViewCulling) {
+            const BE1::Vec3 center = localVolume->worldAABB.Center();
+            const BE1::Vec3 extents = localVolume->worldAABB.Extents();
+            bool culled = false;
+            for (const BE1::Plane &plane : viewPlanes) {
+                if (plane.Distance(center) > extents.AbsDot(plane.normal) + ON_EPSILON) {
+                    culled = true;
+                    break;
+                }
+            }
+            if (culled) {
+                continue;
+            }
+        }
+
+        FrameLocalFogVolume *frameVolume = frame->AllocFrameLocalFogVolume();
+        if (!frameVolume) {
+            BE_WARNLOG("RenderWorld::FindFrameLocalFogVolumes: local fog volume table is full\n");
+            break;
+        }
+
+        const LocalFogVolume::Desc &desc = localVolume->desc;
+        frameVolume->origin = desc.origin;
+        frameVolume->axis = desc.axis;
+        frameVolume->halfExtents = desc.halfExtents;
+        frameVolume->medium = desc.medium;
+        frameVolume->radius = desc.radius;
+        frameVolume->density = desc.density;
+        frameVolume->boundaryFade = desc.boundaryFade;
+        frameVolume->heightFogFalloff = desc.heightFogFalloff;
+        frameVolume->heightFogOffset = desc.heightFogOffset;
+        frameVolume->shape = desc.shape;
+
+        frameCamera->numFrameLocalFogVolumes++;
+
+        const float3 &scatteringAlbedo = desc.medium.scatteringAlbedo;
+        frameCamera->hasLocalFogLightScattering |= desc.medium.baseExtinction > 0.0f && (scatteringAlbedo.x > 0.0f || scatteringAlbedo.y > 0.0f || scatteringAlbedo.z > 0.0f);
+    }
+}
+
 void RenderWorld::PrepareFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, bool useHeightFog, bool useVolumetricFog, uint32_t frameCount) {
     FrameFog &fog = frameCamera->fog;
     fog = {};
 
-    const bool hasVolumetricMedia = useHeightFog;
+    const bool hasVolumetricMedia = useHeightFog || frameCamera->numFrameLocalFogVolumes > 0;
     const bool prepareVolume = useVolumetricFog && hasVolumetricMedia;
     const bool validRenderSize = frameCamera->renderWidth != 0 && frameCamera->renderHeight != 0;
 
@@ -683,7 +760,8 @@ void RenderWorld::PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *r
     const float nearDepth = frameCamera->fog.nearDepth;
     const float farDepth = BE1::Min(frameSettings.vfogFarDepth, cameraDesc.zFar);
 
-    if (farDepth <= nearDepth || hfogParams.maxDistance <= nearDepth) {
+    // Height fog 의 거리 제한은 독립적인 로컬 매질의 주입을 막지 않는다.
+    if (farDepth <= nearDepth || (frameCamera->numFrameLocalFogVolumes == 0 && hfogParams.maxDistance <= nearDepth)) {
         vfogResources.Destroy();
         renderCamera->volumetricFogHistory.Reset();
         return;
@@ -723,15 +801,10 @@ void RenderWorld::PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *r
     const float3 &scatteringAlbedo = hfogParams.medium.scatteringAlbedo;
     const bool hasScattering = hfogParams.medium.baseExtinction > 0.0f && (scatteringAlbedo.x > 0.0f || scatteringAlbedo.y > 0.0f || scatteringAlbedo.z > 0.0f);
 
-    volumetric.hasLightScattering = hasScattering;
+    volumetric.hasLightScattering = hasScattering || frameCamera->hasLocalFogLightScattering;
     if (volumetric.hasLightScattering) {
         vfogLightingParams.lightDistanceBiasScale = frameSettings.vfogLightDistanceBiasScale;
         vfogLightingParams.flags = frameSettings.vfogShadows ? VFogFlagShadows : 0;
-
-        if (frameSettings.vfogJitter) {
-            vfogLightingParams.flags |= VFogFlagSTBNJitter;
-            vfogLightingParams.stbnVec3TextureIndex = renderSystem->GetSTBNVec3Texture()->GetRHITexture()->GetBindlessIndex(RHI::ViewType::SRV);
-        }
 
         // volumetric fog 의 near/far depth 를 기준으로 카메라 뷰 볼륨을 잘라서 fog receiver bounding volume 을 구성한다.
         if (cameraDesc.orthogonal) {
@@ -743,6 +816,12 @@ void RenderWorld::PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *r
             frameCamera->fog.volumetric.receiverFrustum.MoveFarDistance(farDepth);
         }
         renderCamera->CalcSlicedViewVolume(BE1::Min(cameraDesc.zNear, nearDepth), cameraDesc.zFar, nullptr, frameCamera->fog.volumetric.lightReceiverViewPlanes);
+    }
+
+    // 밀도 샘플링에도 jitter 를 적용하므로 광원 산란이 없는 흡수/발광 매질에도 STBN 을 전달한다.
+    if (frameSettings.vfogJitter) {
+        vfogLightingParams.flags |= VFogFlagSTBNJitter;
+        vfogLightingParams.stbnVec3TextureIndex = renderSystem->GetSTBNVec3Texture()->GetRHITexture()->GetBindlessIndex(RHI::ViewType::SRV);
     }
 
     const bool temporal = frameSettings.vfogTemporal && frameSettings.vfogTemporalHistoryWeight > 0.0f && !BE1::HasFlag(cameraDesc.flags, RenderCamera::Flag::DisableTemporalHistory);
@@ -768,15 +847,8 @@ void RenderWorld::PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *r
     // Backend 에서 확인하고 갱신하도록 공유 상태를 프레임에 보관한다.
     volumetric.historyRenderState = history.renderState;
 
-    // history 재사용 가능 여부를 판단한다.
-    const bool compatible = history.valid && history.previousFrameCount + 1u == frameCount &&
-        history.previousMediumParams.baseExtinction == hfogParams.medium.baseExtinction &&
-        history.previousMediumParams.anisotropy == hfogParams.medium.anisotropy &&
-        memcmp(&history.previousMediumParams.scatteringAlbedo, &hfogParams.medium.scatteringAlbedo, sizeof(hfogParams.medium.scatteringAlbedo)) == 0 &&
-        memcmp(&history.previousMediumParams.baseEmission, &hfogParams.medium.baseEmission, sizeof(hfogParams.medium.baseEmission)) == 0;
-
     vfogTemporalParams.historyWeight = frameSettings.vfogTemporalHistoryWeight;
-    vfogTemporalParams.historyValid = compatible ? 1u : 0u;
+    vfogTemporalParams.historyValid = history.valid && history.previousFrameCount + 1u == frameCount ? 1u : 0u;
 
     history.previousMediumParams = hfogParams.medium;
     history.previousFrameCount = frameCount;
@@ -2203,6 +2275,7 @@ void RenderWorld::BuildDebugDraw(RenderFrame *frame, FrameCamera *frameCamera) {
     }
 
     frameCamera->showDebugLights = frame->GetRenderFrameSettings().showDebugLights && frameCamera->numFrameLocalLights > 0;
+    frameCamera->showDebugLocalFogVolumes = frame->GetRenderFrameSettings().showDebugLocalFogVolumes && frameCamera->numFrameLocalFogVolumes > 0;
 
     // 현재 debug primitive 저장소의 프레임 snapshot 을 카메라에 연결한다.
     frameCamera->debugDrawData = BuildDebugDrawData(frame);
@@ -2255,7 +2328,7 @@ const DebugDrawData *RenderWorld::BuildDebugDrawData(RenderFrame *frame) {
 
 void RenderWorld::PrepareDebugDrawPipelines(FrameCamera *frameCamera) {
     const DebugDrawData *drawData = frameCamera->debugDrawData;
-    if (!drawData && !frameCamera->showDebugLights) {
+    if (!drawData && !frameCamera->showDebugLights && !frameCamera->showDebugLocalFogVolumes) {
         return;
     }
 
@@ -2285,7 +2358,7 @@ void RenderWorld::PrepareDebugDrawPipelines(FrameCamera *frameCamera) {
         }
     }
 
-    if (frameCamera->showDebugLights) {
+    if (frameCamera->showDebugLights || frameCamera->showDebugLocalFogVolumes) {
         requiredPipelines[static_cast<int>(DebugDrawPipelineId::DepthTestedLines)] = true;
     }
 

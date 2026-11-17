@@ -56,7 +56,7 @@ float4 PSMain(float4 position : SV_POSITION) : SV_TARGET {
     const float2 uv = position.xy * cameraConstants.renderSizeRcp;
 
     // depth 까지의 누적 산란/발광 radiance 와 투과율을 샘플링한다.
-    const float4 scatteringTransmittance = FogSampleScene(uv, depth, useVolumetricFog, useAnalyticHeightFog, sourceTextureIndex, integratedTextureIndex);
+    const float4 scatteringTransmittance = FogSampleScene(uv, depth, useVolumetricFog, useAnalyticHeightFog, integratedTextureIndex);
 
     // 컬러 렌더 타겟에 산란/발광 RGB 를 PremultipliedAlphaBlend 로 블렌딩한다.
     // S + (1 - (1 - T)) * Dest.RGB = S + T * Dest.RGB
@@ -82,8 +82,8 @@ float4 PSMain(float4 position : SV_POSITION) : SV_TARGET {
 
     // Depth slices
     if (vfogParams.debugMode == 2) {
-        const float slicePosition = VFogDepthToSlice(min(depth, vfogParams.farDepth), vfogParams);
-        return float4(floor(slicePosition) / vfogParams.sliceCount, frac(slicePosition), 0, 1);
+        const float slicePos = VFogDepthToSlice(min(depth, vfogParams.farDepth), vfogParams);
+        return float4(floor(slicePos) / vfogParams.sliceCount, frac(slicePos), 0, 1);
     }
 
     const uint slice = min(vfogParams.debugSlice, vfogParams.sliceCount - 1u);

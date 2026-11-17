@@ -17,16 +17,15 @@
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
 
-struct FrameShadowAtlas;
-struct RenderFrameSettings;
+class RenderFrame;
 
 /*
 ---------------------------------------------------------------------------------------------------
 
     Shader Shadow Table
 
-    현재 카메라의 local shadow/view 테이블을 GPU default buffer 에 갱신한다.
-    버퍼는 첫 사용 시 할당하고 카메라/프레임 사이에 재사용한다. Shadow depth 캐싱과는 별개다.
+    이번 프레임의 카메라별 local shadow/view 데이터를 GPU default buffer 에 한 번에 업로드한다.
+    버퍼는 첫 사용 시 할당하고 프레임 사이에 재사용한다. Shadow depth 캐싱과는 별개다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -35,7 +34,10 @@ class ShaderShadowTable {
 public:
     void                            Shutdown();
 
-    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameShadowAtlas &shadowAtlas, const RenderFrameSettings &settings, ShaderShadowAtlasData &outData);
+    bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame);
+
+    uint32_t                        GetShadowBindlessIndex() const { return shadowBuffer.bindlessIndex; }
+    uint32_t                        GetShadowViewBindlessIndex() const { return shadowViewBuffer.bindlessIndex; }
 
 private:
     struct TableBuffer {

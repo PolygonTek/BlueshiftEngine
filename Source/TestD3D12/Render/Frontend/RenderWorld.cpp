@@ -28,9 +28,7 @@ RenderWorld::RenderWorld() {
 }
 
 RenderWorld::~RenderWorld() {
-    if (renderSystem) {
-        renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
-    }
+    ClearScene();
 }
 
 void RenderWorld::BeginFrame() {
@@ -54,24 +52,23 @@ void RenderWorld::ClearScene(ClearFlag clearFlags) {
     assert(BE1::Engine::IsInMainThread());
     assert(!frameActive);
 
-    if (BE1::HasFlag(clearFlags, ClearFlag::RenderObjects)) {
-        for (RenderObject *renderObject : renderObjects) {
-            SAFE_DELETE(renderObject);
+    if (BE1::HasFlag(clearFlags, ClearFlag::EnvironmentLight)) {
+        if (renderSystem) {
+            renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
         }
-        renderObjects.Clear();
+
+        if (hasEnvironmentLight) {
+            envLight.Reset();
+            hasEnvironmentLight = false;
+        }
+    }
+
+    if (BE1::HasFlag(clearFlags, ClearFlag::RenderObjects)) {
+        renderObjects.DeleteContents(true);
     }
 
     if (BE1::HasFlag(clearFlags, ClearFlag::RenderLights)) {
-        for (RenderLight *renderLight : renderLights) {
-            SAFE_DELETE(renderLight);
-        }
-        renderLights.Clear();
-    }
-
-    if (BE1::HasFlag(clearFlags, ClearFlag::EnvironmentLight) && hasEnvironmentLight) {
-        renderSystem->GetProbeBakeSystem().CancelEnvironmentLightProbeBake(this);
-        envLight.Reset();
-        hasEnvironmentLight = false;
+        renderLights.DeleteContents(true);
     }
 
     if (BE1::HasFlag(clearFlags, ClearFlag::OceanSurface) && hasOceanSurface) {
@@ -82,6 +79,10 @@ void RenderWorld::ClearScene(ClearFlag clearFlags) {
     if (BE1::HasFlag(clearFlags, ClearFlag::HeightFog)) {
         heightFog = HeightFog();
         hasHeightFog = false;
+    }
+
+    if (BE1::HasFlag(clearFlags, ClearFlag::LocalFogVolumes)) {
+        localFogVolumes.DeleteContents(true);
     }
 }
 
@@ -525,6 +526,74 @@ void RenderWorld::RemoveHeightFog() {
 
     heightFog = HeightFog();
     hasHeightFog = false;
+}
+
+const LocalFogVolume *RenderWorld::GetLocalFogVolume(int index) const {
+    if (!localFogVolumes.IsValidIndex(index)) {
+        BE_WARNLOG("RenderWorld::GetLocalFogVolume: invalid index %i\n", index);
+        return nullptr;
+    }
+
+    return localFogVolumes[index];
+}
+
+int RenderWorld::AddLocalFogVolume(const LocalFogVolume::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!desc.IsValid()) {
+        BE_WARNLOG("RenderWorld::AddLocalFogVolume: invalid description\n");
+        return -1;
+    }
+
+    LocalFogVolume *volume = new LocalFogVolume;
+    if (!volume->Update(desc)) {
+        BE_WARNLOG("RenderWorld::AddLocalFogVolume: invalid world bounds\n");
+        delete volume;
+        return -1;
+    }
+
+    int index = localFogVolumes.FindNull();
+    if (index == -1) {
+        index = localFogVolumes.Append(nullptr);
+    }
+    volume->index = index;
+    localFogVolumes[index] = volume;
+    return index;
+}
+
+bool RenderWorld::UpdateLocalFogVolume(int index, const LocalFogVolume::Desc &desc) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!localFogVolumes.IsValidIndex(index) || !localFogVolumes[index]) {
+        BE_WARNLOG("RenderWorld::UpdateLocalFogVolume: invalid index %i\n", index);
+        return false;
+    }
+
+    if (!desc.IsValid()) {
+        BE_WARNLOG("RenderWorld::UpdateLocalFogVolume: invalid description\n");
+        return false;
+    }
+
+    if (!localFogVolumes[index]->Update(desc)) {
+        BE_WARNLOG("RenderWorld::UpdateLocalFogVolume: invalid world bounds\n");
+        return false;
+    }
+    return true;
+}
+
+void RenderWorld::RemoveLocalFogVolume(int index) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(!frameActive);
+
+    if (!localFogVolumes.IsValidIndex(index) || !localFogVolumes[index]) {
+        BE_WARNLOG("RenderWorld::RemoveLocalFogVolume: invalid index %i\n", index);
+        return;
+    }
+
+    delete localFogVolumes[index];
+    localFogVolumes[index] = nullptr;
 }
 
 bool RenderWorld::AddOceanSurface(const OceanSurface::Desc &desc) {

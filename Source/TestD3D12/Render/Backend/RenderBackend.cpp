@@ -215,11 +215,15 @@ bool RenderBackend::UploadFrameConstants() {
     constants->frameCount = frame->GetFrameCount();
 
     constants->shaderMaterialTableIndex = frame->GetShaderMaterialTableBindlessIndex();
+    constants->shaderSurfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
     constants->shaderPointLightTableIndex = frame->GetShaderPointLightTableBindlessIndex();
     constants->shaderSpotLightTableIndex = frame->GetShaderSpotLightTableBindlessIndex();
     constants->shaderLightRefTableIndex = frame->GetShaderLightRefTableBindlessIndex();
     constants->shaderLightZBinTableIndex = frame->GetShaderLightZBinTableBindlessIndex();
     constants->shaderLightTileWordTableIndex = frame->GetShaderLightTileWordTableBindlessIndex();
+    constants->shaderLocalFogVolumeTableIndex = frame->GetShaderLocalFogVolumeTableBindlessIndex();
+    constants->shaderLocalShadowTableIndex = frame->GetShaderLocalShadowTableBindlessIndex();
+    constants->shaderLocalShadowViewTableIndex = frame->GetShaderLocalShadowViewTableBindlessIndex();
 
     constants->feedbackBufferIndex = useTextureStreamingFeedback ? currentContext->textureStreamingFeedback.GetBindlessIndex() : 0;
 
@@ -335,7 +339,8 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
         currentFrameCamera->renderWidth > 0 ? 1.0f / currentFrameCamera->renderWidth : 0.0f,
         currentFrameCamera->renderHeight > 0 ? 1.0f / currentFrameCamera->renderHeight : 0.0f);
     constants->uvJitter = float2(currentFrameCamera->ndcJitter.x * 0.5f, currentFrameCamera->ndcJitter.y * -0.5f);
-    constants->viewPadding = float2(0.0f, 0.0f);
+    constants->localFogVolumeTableOffset = currentFrameCamera->firstFrameLocalFogVolume;
+    constants->numLocalFogVolumes = currentFrameCamera->numFrameLocalFogVolumes;
 
     // prepass 와 동일한 jitter 를 사용해 뷰 공간에서 직접 복원한다.
     BE1::Vec4 projectionScaleBiasXY = currentFrameCamera->projectionScaleBiasXY;
@@ -361,7 +366,6 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
         (-1.0f - projectionScaleBiasXY.z) * invProjectionScaleX,
         (+1.0f - projectionScaleBiasXY.w) * invProjectionScaleY);
 
-    constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
     constants->numLocalLights = currentFrameCamera->numFrameLocalLights;
     constants->lightCullingLightRefTableOffset = currentFrameCamera->lightCulling.lightRefTableOffset;
     constants->lightCullingZBinTableOffset = currentFrameCamera->lightCulling.zBinTableOffset;
@@ -372,6 +376,7 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->lightCullingTileCountY = currentFrameCamera->lightCulling.tileCountY;
     constants->lightCullingWordsPerTile = currentFrameCamera->lightCulling.wordsPerTile;
     constants->lightCullingDebugMode = frameSettings.lightCullingDebugMode;
+    constants->lightCullingPadding = 0;
 
     const BE1::Mat3 &envLightAxis = currentFrameCamera->envLightAxis;
     constants->envLightAxis = float3x4(
@@ -384,6 +389,7 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->envLightDiffuseIrradianceCubeMapIndex = currentFrameCamera->envLightDiffuseIrradianceCubeMap ? currentFrameCamera->envLightDiffuseIrradianceCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularCubeMapIndex = currentFrameCamera->envLightSpecularPrefilteredCubeMap ? currentFrameCamera->envLightSpecularPrefilteredCubeMap->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->envLightSpecularMipCount = currentFrameCamera->envLightSpecularPrefilteredCubeMapMipCount;
+
     constants->aoTextureIndex = currentFrameCamera->applyAO ? currentFrameCamera->ao.textureSet.outputTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->ssrUpsampledReflectionTextureIndex = currentFrameCamera->ssrUpsampledReflectionTexture ? currentFrameCamera->ssrUpsampledReflectionTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
     constants->transparentSSRUpsampledReflectionTextureIndex = currentFrameCamera->transparentSSRUpsampledReflectionTexture ? currentFrameCamera->transparentSSRUpsampledReflectionTexture->GetBindlessIndex(RHI::ViewType::SRV) : 0;
@@ -512,21 +518,36 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
     }
 #endif
 
-    // 이번 프레임의 카메라들이 참조할 ShaderSurface 테이블 용량을 미리 확보한다.
-    if (!frame->EnsureShaderSurfaceTableCapacity()) {
-        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to ensure shader surface table capacity\n");
+    // 각 카메라 별로 참조할 ShaderSurface 테이블을 GPU 에 업로드한다.
+    if (!frame->UploadShaderSurfaceTable(frame->GetThreadData(0), mainCommandList)) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader surface table\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
 
-    // 등록된 ShaderMaterial 테이블을 GPU 에 업로드한다.
+    // 각 카메라 별로 참조할 local shadow/view 테이블을 GPU 에 업로드한다.
+    if (!frame->UploadShaderShadowTable(frame->GetThreadData(0), mainCommandList)) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader shadow tables\n");
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+
+    // 각 카메라 별로 참조할 ShaderMaterial 테이블을 GPU 에 업로드한다.
     if (!frame->UploadShaderMaterialTable(frame->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader material table\n");
         mainCommandList->CloseAndExecute();
         return (const void *)(cmd + 1);
     }
 
-    // 각 카메라 별로 참조할 local ShaderLight 테이블을 GPU 에 업로드한다.
+    // 각 카메라 별로 참조할 ShaderLocalFogVolume 테이블을 GPU 에 업로드한다.
+    if (!frame->UploadShaderLocalFogVolumeTable(frame->GetThreadData(0), mainCommandList)) {
+        BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader local fog volume table\n");
+        // 업로드 실패 시 이전 프레임의 테이블을 참조하지 않도록 컨텍스트 준비를 중단한다.
+        mainCommandList->CloseAndExecute();
+        return (const void *)(cmd + 1);
+    }
+
+    // 각 카메라 별로 참조할 local light (ShaderPointLight/ShaderSpotLight) 테이블을 GPU 에 업로드한다.
     if (!frame->UploadShaderLightTable(frame->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader light table\n");
         mainCommandList->CloseAndExecute();
@@ -599,14 +620,6 @@ const void *RenderBackend::ExecuteDrawCamera(const void *data) {
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     mainCommandList = frame->GetThreadData(0)->BeginCommandList(RHI::CommandQueueType::Graphics);
-
-    // 현재 카메라에서 참조할 ShaderSurface 테이블을 GPU 에 업로드한다.
-    if (!frame->UploadShaderSurfaceTable(frame->GetThreadData(0), mainCommandList, currentFrameCamera)) {
-        BE_WARNLOG("RenderBackend::ExecuteDrawCamera: failed to upload shader surface table\n");
-        InvalidateShadowAtlasUpdates(currentFrameCamera);
-        mainCommandList->CloseAndExecute();
-        return (const void *)(cmd + 1);
-    }
 
     // Shadow 패스 전에 카메라 CB 할당 성공을 확인하고, 데이터는 shadow 준비 후에 기록한다.
     cameraConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(CameraConstants));
@@ -956,8 +969,6 @@ const ShaderCSMData *RenderBackend::DrawCSMPass() {
         // 모든 상수를 resource transition 전에 준비하여 cascade 중간 실패를 방지한다.
         ShadowViewConstants *constants = reinterpret_cast<ShadowViewConstants *>(shadowViewConstantBuffer->mappedPtr);
         BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &cascade.viewProjMatrix, sizeof(constants->viewProjMatrix));
-        constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
-        constants->padding = uint3(0, 0, 0);
 
         shadowViewConstantBuffers[cascadeIndex] = shadowViewConstantBuffer;
     }
@@ -1051,10 +1062,16 @@ void RenderBackend::DrawShadowAtlasPass(ShaderShadowAtlasData &outData) {
     }
 
     if (allShadowsValid) {
-        // 갱신이 없는 프레임도 유지 중인 그림자를 조명에서 사용하도록 전체 shadow 테이블을 연결한다.
-        if (!frame->UploadShaderShadowTable(frameThreadData, mainCommandList, *shadowAtlas, outData)) {
-            BE_WARNLOG("RenderBackend::DrawShadowAtlasPass: failed to upload shadow tables\n");
-        }
+        // depth 기록/재사용이 성공한 뒤 프레임 시작에 업로드한 이 카메라의 구간을 활성화한다.
+        // 갱신이 없는 프레임도 유지 중인 모든 그림자를 조명에서 사용한다.
+        outData = {};
+        outData.textureIndex = shadowAtlas->shadowTexture->GetBindlessIndex(RHI::ViewType::SRV, shadowAtlas->shadowSRV);
+        outData.shadowTableOffset = shadowAtlas->firstFrameLocalShadow;
+        outData.shadowViewTableOffset = shadowAtlas->firstFrameLocalShadowView;
+        outData.numShadows = shadowAtlas->numShadows;
+        const float invAtlasSize = 1.0f / shadowAtlas->size;
+        outData.texelSize = float2(invAtlasSize, invAtlasSize);
+        outData.numShadowViews = shadowAtlas->numShadowViews;
     } else {
         outData = {};
     }
@@ -1121,8 +1138,6 @@ bool RenderBackend::DrawShadowAtlasViews(FrameShadowAtlas &shadowAtlas, RHI::Fra
 
             ShadowViewConstants *constants = reinterpret_cast<ShadowViewConstants *>(shadowViewConstantBuffer->mappedPtr);
             BE1::simdProcessor->Memcpy(&constants->viewProjMatrix, &shadowView.viewProjMatrix, sizeof(constants->viewProjMatrix));
-            constants->surfaceTableIndex = frame->GetShaderSurfaceTableBindlessIndex();
-            constants->padding = uint3(0, 0, 0);
 
             const BE1::Rect &tileRect = shadowView.tileRect;
             RHI::renderer->SetViewport(mainCommandList, tileRect);
@@ -2040,8 +2055,10 @@ RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadDa
     }
 
     uint32_t *shaderSurfaceIndices = reinterpret_cast<uint32_t *>(buffer->mappedPtr);
+    // 일반 draw, shadow, Hi-Z 입력 모두 프레임 공용 surface 테이블의 절대 인덱스를 사용한다.
+    const uint32_t firstFrameSurface = currentFrameCamera->firstFrameSurface;
     for (uint32_t instanceIndex = 0; instanceIndex < instanceCount; ++instanceIndex) {
-        shaderSurfaceIndices[instanceIndex] = drawSurfs[instanceIndex]->frameSurf->index;
+        shaderSurfaceIndices[instanceIndex] = firstFrameSurface + drawSurfs[instanceIndex]->frameSurf->index;
     }
 
     return buffer;

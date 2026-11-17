@@ -22,6 +22,7 @@
 #include "Frontend/RenderLight.h"
 #include "ShaderData/ShaderLightCullingTable.h"
 #include "ShaderData/ShaderLightTable.h"
+#include "ShaderData/ShaderLocalFogVolumeTable.h"
 #include "ShaderData/ShaderMaterialTable.h"
 #include "ShaderData/ShaderSurfaceTable.h"
 #include "ShaderData/ShaderShadowTable.h"
@@ -39,6 +40,7 @@ struct FrameObject;
 struct FrameSkinnedMesh;
 struct FrameText;
 struct FrameLight;
+struct FrameLocalFogVolume;
 struct FrameLocalShadow;
 struct FrameShadowAtlas;
 struct FrameOceanSurface;
@@ -194,6 +196,8 @@ public:
     FrameCamera *                   GetFrameCameras() const { return frameCameras; }
     FrameCamera *                   AllocFrameCamera();
 
+    uint32_t                        NumFrameSurfaces() const { return numFrameSurfaces; }
+
     uint32_t                        NumFrameObjects() const { return numFrameObjects; }
     ChunkRange<FrameObject>         GetFrameObjects() const { return ChunkRange<FrameObject>(firstFrameObjectChunk); }
     ChunkRange<FrameObject>         GetFrameObjects(uint32_t firstIndex) const;
@@ -217,6 +221,13 @@ public:
     ChunkRange<FrameLight>          GetFrameLights(uint32_t firstIndex) const;
     FrameLight *                    AllocFrameLight(RenderLight::Type type);
 
+    uint32_t                        NumFrameLocalFogVolumes() const { return numFrameLocalFogVolumes; }
+    ChunkRange<FrameLocalFogVolume> GetFrameLocalFogVolumes() const { return ChunkRange<FrameLocalFogVolume>(firstFrameLocalFogVolumeChunk); }
+    ChunkRange<FrameLocalFogVolume> GetFrameLocalFogVolumes(uint32_t firstIndex) const;
+    FrameLocalFogVolume *           AllocFrameLocalFogVolume();
+
+    uint32_t                        NumFrameLocalShadows() const { return numFrameLocalShadows; }
+    uint32_t                        NumFrameLocalShadowViews() const { return numFrameLocalShadowViews; }
     FrameShadowAtlas *              AllocFrameShadowAtlas(const ShadowAtlas &shadowAtlas);
     FrameLocalShadow *              AllocFrameLocalShadow(FrameShadowAtlas *frameShadowAtlas, FrameLight *shadowLight);
 
@@ -237,7 +248,7 @@ public:
                                     // 렌더 커맨드들
     bool                            CmdRenderWork(RenderWork *renderWork);
     void                            CmdBeginContext(RenderContext *context, bool useGpuTiming, bool useTextureStreamingFeedback, bool useSwapChainOutput);
-    void                            CmdDrawCamera(const FrameCamera *camera);
+    void                            CmdDrawCamera(FrameCamera *camera);
     void                            CmdFinalizeFrame(bool renderImGuiOverlay);
     void                            CmdSwapBuffers();
     void                            CmdScreenshot(int x, int y, int width, int height, const char *filename);
@@ -274,8 +285,11 @@ public:
 
     uint32_t                        GetShaderMaterialTableBindlessIndex() const { return shaderMaterialTable.GetBindlessIndex(); }
     uint32_t                        GetShaderSurfaceTableBindlessIndex() const { return shaderSurfaceTable.GetBindlessIndex(); }
+    uint32_t                        GetShaderLocalShadowTableBindlessIndex() const { return shaderShadowTable.GetShadowBindlessIndex(); }
+    uint32_t                        GetShaderLocalShadowViewTableBindlessIndex() const { return shaderShadowTable.GetShadowViewBindlessIndex(); }
     uint32_t                        GetShaderPointLightTableBindlessIndex() const { return shaderLightTable.GetPointLightBindlessIndex(); }
     uint32_t                        GetShaderSpotLightTableBindlessIndex() const { return shaderLightTable.GetSpotLightBindlessIndex(); }
+    uint32_t                        GetShaderLocalFogVolumeTableBindlessIndex() const { return shaderLocalFogVolumeTable.GetBindlessIndex(); }
     uint32_t                        GetShaderLightRefTableBindlessIndex() const { return shaderLightCullingTable.GetLightRefBindlessIndex(); }
     uint32_t                        GetShaderLightZBinTableBindlessIndex() const { return shaderLightCullingTable.GetLightZBinBindlessIndex(); }
     uint32_t                        GetShaderLightTileWordTableBindlessIndex() const { return shaderLightCullingTable.GetLightTileWordBindlessIndex(); }
@@ -285,11 +299,11 @@ public:
 
     bool                            UploadShaderMaterialTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderMaterialTable.Upload(frameThreadData, commandList, true); }
     bool                            UploadShaderLightTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightTable.Upload(frameThreadData, commandList, this, true); }
+    bool                            UploadShaderLocalFogVolumeTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLocalFogVolumeTable.Upload(frameThreadData, commandList, this); }
     bool                            UploadShaderLightCullingTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightCullingTable.Upload(frameThreadData, commandList, this, true); }
     bool                            DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState) { return shaderLightCullingTable.DispatchLightCulling(frameThreadData, commandList, pipelineState, this); }
-    bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameCamera *frameCamera) { return shaderSurfaceTable.Upload(frameThreadData, commandList, frameCamera, false); }
-    bool                            EnsureShaderSurfaceTableCapacity() { return shaderSurfaceTable.EnsureBufferCapacity(maxShaderSurfaceCount); }
-    bool                            UploadShaderShadowTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameShadowAtlas &shadowAtlas, ShaderShadowAtlasData &outData) { return shaderShadowTable.Upload(frameThreadData, commandList, shadowAtlas, renderFrameSettings, outData); }
+    bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderSurfaceTable.Upload(frameThreadData, commandList, this); }
+    bool                            UploadShaderShadowTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderShadowTable.Upload(frameThreadData, commandList, this); }
 
                                     // 프론트 엔드에서 프레임 데이터의 사용을 시작
     void                            BeginFrame(const RenderFrameSettings &renderFrameSettings);
@@ -310,6 +324,7 @@ private:
     void                            FreeFrameSkinnedMeshes();
     void                            FreeFrameTexts();
     void                            FreeFrameLights();
+    void                            FreeFrameLocalFogVolumes();
 
     [[nodiscard]] Chunk *           AllocChunk(uint32_t elementSize, uint32_t elementCount);
 
@@ -326,6 +341,9 @@ private:
     uint32_t                        maxFrameCameras = 0;
     uint32_t                        numFrameCameras = 0;
     FrameCamera *                   frameCameras = nullptr;
+    uint32_t                        numFrameSurfaces = 0;
+    uint32_t                        numFrameLocalShadows = 0;
+    uint32_t                        numFrameLocalShadowViews = 0;
 
     uint32_t                        numFrameObjects = 0;
     Chunk *                         firstFrameObjectChunk = nullptr;
@@ -347,6 +365,10 @@ private:
     Chunk *                         firstFrameLightChunk = nullptr;
     Chunk *                         lastFrameLightChunk = nullptr;
 
+    uint32_t                        numFrameLocalFogVolumes = 0;
+    Chunk *                         firstFrameLocalFogVolumeChunk = nullptr;
+    Chunk *                         lastFrameLocalFogVolumeChunk = nullptr;
+
     uint32_t                        numLightCullingZBins = 0;
     uint32_t                        numLightCullingWords = 0;
 
@@ -367,14 +389,13 @@ private:
 
     bool                            statEnabled = false;
 
-    uint32_t                        maxShaderSurfaceCount = 0;
-
     RHI::FrameData *                frameData = nullptr;
     RHI::FrameThreadData **         threadData = nullptr;
     int                             numRenderTaskThreads = 0;
 
     ShaderMaterialTable             shaderMaterialTable;
     ShaderLightTable                shaderLightTable;
+    ShaderLocalFogVolumeTable       shaderLocalFogVolumeTable;
     ShaderLightCullingTable         shaderLightCullingTable;
     ShaderSurfaceTable              shaderSurfaceTable;
     ShaderShadowTable               shaderShadowTable;

@@ -42,7 +42,7 @@ struct PSInput {
 PSInput VSMain(VSInput input) {
     PSInput result;
 
-    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID, shadowViewConstants.surfaceTableIndex);
+    ShaderSurface shaderSurface = GetShaderSurfaceByInstanceID(input.instanceID);
 
     float4 localPosition = input.position;
 #if GPU_SKINNING

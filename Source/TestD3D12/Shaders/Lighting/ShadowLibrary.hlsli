@@ -139,13 +139,13 @@ float SampleSpotShadowVisibility(uint shadowIndex, inout ShadowSamplingContext s
         return 1.0f;
     }
 
-    const ShaderLocalShadow shadow = GetShaderLocalShadowTable(atlas.shadowTableIndex)[shadowIndex];
+    const ShaderLocalShadow shadow = GetShaderLocalShadowTable(frameConstants.shaderLocalShadowTableIndex)[atlas.shadowTableOffset + shadowIndex];
     [branch]
     if (shadow.numShadowViews != 1 || shadow.firstShadowView >= atlas.numShadowViews) {
         return 1.0f;
     }
 
-    const ShaderLocalShadowView view = GetShaderLocalShadowViewTable(atlas.shadowViewTableIndex)[shadow.firstShadowView];
+    const ShaderLocalShadowView view = GetShaderLocalShadowViewTable(frameConstants.shaderLocalShadowViewTableIndex)[atlas.shadowViewTableOffset + shadow.firstShadowView];
     const float4 projectedPosition = mul(view.worldToShadowCoordMatrix, float4(worldPosition, 1.0f));
     if (projectedPosition.w <= 0.0f) {
         return 1.0f;
@@ -232,7 +232,7 @@ float SamplePointShadowVisibility(uint shadowIndex, inout ShadowSamplingContext 
         return 1.0f;
     }
 
-    const ShaderLocalShadow shadow = GetShaderLocalShadowTable(atlas.shadowTableIndex)[shadowIndex];
+    const ShaderLocalShadow shadow = GetShaderLocalShadowTable(frameConstants.shaderLocalShadowTableIndex)[atlas.shadowTableOffset + shadowIndex];
     // 6면 전체가 등록된 경우에만 view 테이블에 접근한다.
     [branch]
     if (shadow.numShadowViews != 6 || shadow.firstShadowView >= atlas.numShadowViews || atlas.numShadowViews - shadow.firstShadowView < 6) {
@@ -254,7 +254,7 @@ float SamplePointShadowVisibility(uint shadowIndex, inout ShadowSamplingContext 
     }
 
     // Point 는 월드 축 좌표에서 UV/depth 를 직접 계산하므로 view 행렬은 읽지 않는다.
-    const float4 atlasScaleBias = GetShaderLocalShadowViewTable(atlas.shadowViewTableIndex)[shadow.firstShadowView + faceIndex].atlasScaleBias;
+    const float4 atlasScaleBias = GetShaderLocalShadowViewTable(frameConstants.shaderLocalShadowViewTableIndex)[atlas.shadowViewTableOffset + shadow.firstShadowView + faceIndex].atlasScaleBias;
     const float3 atlasCoord = float3(shadowCoord.xy * atlasScaleBias.xy + atlasScaleBias.zw, shadowCoord.z);
     Texture2D<float> shadowMap = GetTexture2DFloat(atlas.textureIndex);
 #if SHADOW_MAP_QUALITY == 3

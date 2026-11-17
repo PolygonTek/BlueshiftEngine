@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "ShaderShadowTable.h"
+#include "Render/RenderFrame.h"
 #include "Render/RenderInternal.h"
 
 static void BuildShaderLocalShadow(const FrameLocalShadow &shadow, const FrameLocalShadowView &firstView, const RenderFrameSettings &settings, ShaderLocalShadow &outShadow) {
@@ -71,72 +72,90 @@ void ShaderShadowTable::Shutdown() {
     DestroyBuffer(shadowViewBuffer);
 }
 
-bool ShaderShadowTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameShadowAtlas &shadowAtlas, const RenderFrameSettings &settings, ShaderShadowAtlasData &outData) {
+bool ShaderShadowTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame) {
     PROFILER_CPU_SCOPED_EVENT("ShaderShadowTable::Upload");
 
-    // 실패/빈 카메라에서는 이전 카메라의 테이블에 접근할 수 없도록 count 를 0 으로 유지한다.
-    outData = {};
-    if (shadowAtlas.numShadows == 0) {
+    const uint32_t shadowCount = frame->NumFrameLocalShadows();
+    const uint32_t shadowViewCount = frame->NumFrameLocalShadowViews();
+    if (shadowCount == 0) {
         return true;
     }
 
-    if (!shadowAtlas.shadowTexture || !shadowAtlas.shadowSRV.IsValid() || shadowAtlas.size == 0 ||
-        !shadowAtlas.shadows || !shadowAtlas.shadowViews || shadowAtlas.numShadowViews == 0) {
+    if (!EnsureBufferCapacity(shadowBuffer, shadowCount, sizeof(ShaderLocalShadow), "shaderLocalShadowTableBuffer") ||
+        !EnsureBufferCapacity(shadowViewBuffer, shadowViewCount, sizeof(ShaderLocalShadowView), "shaderLocalShadowViewTableBuffer")) {
         return false;
     }
 
-    if (!EnsureBufferCapacity(shadowBuffer, shadowAtlas.numShadows, sizeof(ShaderLocalShadow), "shaderLocalShadowTableBuffer") ||
-        !EnsureBufferCapacity(shadowViewBuffer, shadowAtlas.numShadowViews, sizeof(ShaderLocalShadowView), "shaderLocalShadowViewTableBuffer")) {
-        return false;
-    }
-
-    RHI::Buffer *shadowUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderLocalShadow), shadowAtlas.numShadows, nullptr);
+    RHI::Buffer *shadowUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderLocalShadow), shadowCount, nullptr);
     if (!shadowUploadBuffer || !shadowUploadBuffer->mappedPtr) {
         return false;
     }
 
-    RHI::Buffer *viewUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderLocalShadowView), shadowAtlas.numShadowViews, nullptr);
+    RHI::Buffer *viewUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderLocalShadowView), shadowViewCount, nullptr);
     if (!viewUploadBuffer || !viewUploadBuffer->mappedPtr) {
         return false;
     }
 
     ShaderLocalShadow *shadows = reinterpret_cast<ShaderLocalShadow *>(shadowUploadBuffer->mappedPtr);
-    for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas.numShadows; ++shadowIndex) {
-        const FrameLocalShadow &shadow = shadowAtlas.shadows[shadowIndex];
-        assert(shadow.firstShadowView < shadowAtlas.numShadowViews);
-        assert(shadow.numShadowViews <= shadowAtlas.numShadowViews - shadow.firstShadowView);
-        BuildShaderLocalShadow(shadow, shadowAtlas.shadowViews[shadow.firstShadowView], settings, shadows[shadowIndex]);
-    }
-
-    const float invAtlasSize = 1.0f / shadowAtlas.size;
     ShaderLocalShadowView *views = reinterpret_cast<ShaderLocalShadowView *>(viewUploadBuffer->mappedPtr);
-    for (uint32_t viewIndex = 0; viewIndex < shadowAtlas.numShadowViews; ++viewIndex) {
-        const FrameLocalShadowView &view = shadowAtlas.shadowViews[viewIndex];
-        const bool point = shadowAtlas.shadows[view.shadowIndex].numShadowViews == 6;
-        BuildShaderLocalShadowView(view, point, invAtlasSize, views[viewIndex]);
+    const RenderFrameSettings &settings = frame->GetRenderFrameSettings();
+    const FrameCamera *frameCameras = frame->GetFrameCameras();
+    for (uint32_t cameraIndex = 0; cameraIndex < frame->NumFrameCameras(); ++cameraIndex) {
+        const FrameShadowAtlas *shadowAtlas = frameCameras[cameraIndex].frameShadowAtlas;
+        if (!shadowAtlas || shadowAtlas->firstFrameLocalShadow == UINT32_MAX || shadowAtlas->numShadows == 0) {
+            continue;
+        }
+
+        if (shadowAtlas->firstFrameLocalShadow > shadowCount || shadowAtlas->numShadows > shadowCount - shadowAtlas->firstFrameLocalShadow ||
+            shadowAtlas->firstFrameLocalShadowView > shadowViewCount || shadowAtlas->numShadowViews > shadowViewCount - shadowAtlas->firstFrameLocalShadowView) {
+            assert(0);
+            return false;
+        }
+
+        if (!shadowAtlas->shadowTexture || !shadowAtlas->shadowSRV.IsValid() || shadowAtlas->size == 0 ||
+            !shadowAtlas->shadows || !shadowAtlas->shadowViews || shadowAtlas->numShadowViews == 0) {
+            return false;
+        }
+
+        // 프런트엔드에서 확정한 두 테이블의 카메라별 연속 구간에 기록한다.
+        ShaderLocalShadow *cameraShadows = shadows + shadowAtlas->firstFrameLocalShadow;
+        for (uint32_t shadowIndex = 0; shadowIndex < shadowAtlas->numShadows; ++shadowIndex) {
+            const FrameLocalShadow &shadow = shadowAtlas->shadows[shadowIndex];
+            assert(shadow.firstShadowView < shadowAtlas->numShadowViews);
+            assert(shadow.numShadowViews <= shadowAtlas->numShadowViews - shadow.firstShadowView);
+            BuildShaderLocalShadow(shadow, shadowAtlas->shadowViews[shadow.firstShadowView], settings, cameraShadows[shadowIndex]);
+        }
+
+        const float invAtlasSize = 1.0f / shadowAtlas->size;
+        ShaderLocalShadowView *cameraViews = views + shadowAtlas->firstFrameLocalShadowView;
+        for (uint32_t viewIndex = 0; viewIndex < shadowAtlas->numShadowViews; ++viewIndex) {
+            const FrameLocalShadowView &view = shadowAtlas->shadowViews[viewIndex];
+            assert(view.shadowIndex < shadowAtlas->numShadows);
+            const bool point = shadowAtlas->shadows[view.shadowIndex].numShadowViews == 6;
+            BuildShaderLocalShadowView(view, point, invAtlasSize, cameraViews[viewIndex]);
+        }
     }
 
-    // 두 테이블의 CPU 데이터를 준비한 뒤 copy 를 기록한다. 카메라 draw 와 같은 graphics queue 순서로 갱신된다.
-    UploadBuffer(commandList, shadowBuffer, shadowUploadBuffer, shadowAtlas.numShadows * sizeof(ShaderLocalShadow));
-    UploadBuffer(commandList, shadowViewBuffer, viewUploadBuffer, shadowAtlas.numShadowViews * sizeof(ShaderLocalShadowView));
-
-    outData.textureIndex = shadowAtlas.shadowTexture->GetBindlessIndex(RHI::ViewType::SRV, shadowAtlas.shadowSRV);
-    outData.shadowTableIndex = shadowBuffer.bindlessIndex;
-    outData.shadowViewTableIndex = shadowViewBuffer.bindlessIndex;
-    outData.numShadows = shadowAtlas.numShadows;
-    outData.texelSize = float2(invAtlasSize, invAtlasSize);
-    outData.numShadowViews = shadowAtlas.numShadowViews;
+    // 모든 카메라의 CPU 데이터를 준비한 뒤 테이블마다 한 번만 copy 한다. 같은 graphics queue 의 camera draw 보다 먼저 실행된다.
+    // 실패/빈 카메라에서는 테이블에 접근하지 않도록, 샘플링 count 는 각 카메라의 depth 기록을 마친 뒤에만 활성화한다.
+    UploadBuffer(commandList, shadowBuffer, shadowUploadBuffer, shadowCount * sizeof(ShaderLocalShadow));
+    UploadBuffer(commandList, shadowViewBuffer, viewUploadBuffer, shadowViewCount * sizeof(ShaderLocalShadowView));
     return true;
 }
 
 bool ShaderShadowTable::EnsureBufferCapacity(TableBuffer &tableBuffer, uint32_t count, uint32_t elementSize, const char *name) {
+    const uint32_t maxCapacity = UINT32_MAX / elementSize;
+    if (count > maxCapacity) {
+        return false;
+    }
+
     if (count <= tableBuffer.capacity) {
         return true;
     }
 
     uint32_t newCapacity = tableBuffer.capacity > 0 ? tableBuffer.capacity : 1;
     while (newCapacity < count) {
-        newCapacity <<= 1;
+        newCapacity = BE1::Min(newCapacity << 1, maxCapacity);
     }
 
     const uint32_t bufferSize = newCapacity * elementSize;
@@ -152,7 +171,7 @@ bool ShaderShadowTable::EnsureBufferCapacity(TableBuffer &tableBuffer, uint32_t 
         return false;
     }
 
-    // 생성 실패 시 기존 버퍼를 보존한다. 성공하면 이전 카메라가 참조할 수 있는 버퍼는 RHI 의 지연 해제로 넘긴다.
+    // 생성 실패 시 기존 버퍼를 보존한다. 성공하면 이전 버퍼는 RHI 의 지연 해제로 넘긴다.
     DestroyBuffer(tableBuffer);
     tableBuffer.buffer = newBuffer;
     tableBuffer.view = newView;
