@@ -41,6 +41,45 @@ static bool CreateProbeOutputCubemapTexture(int32_t size, bool useHDR, bool allo
     return true;
 }
 
+static bool BakeProbeRadianceSH(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, SharedPtr<RHI::Buffer> &outCoefficients) {
+    constexpr uint32_t bufferSize = GpuSphericalHarmonics::SH3CoefficientBufferSize;
+    constexpr uint32_t stride = GpuSphericalHarmonics::SHCoefficientStride;
+    RHI::Buffer *buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource | RHI::BufferFlag::UnorderedAccess, bufferSize, nullptr);
+    if (!buffer) {
+        return false;
+    }
+
+    SharedPtr<RHI::Buffer> coefficients(buffer, [](RHI::Buffer *buffer) { RHI::renderer->DestroyBuffer(buffer); });
+    RHI::renderer->SetName(buffer, "ProbeBakeJob::RadianceSHCoefficients");
+
+    const RHI::ViewID srv = RHI::renderer->CreateView(buffer, RHI::ViewType::SRV, RHI::Format::Unknown, stride, 0, bufferSize);
+    const RHI::ViewID uav = RHI::renderer->CreateView(buffer, RHI::ViewType::UAV, RHI::Format::Unknown, stride, 0, bufferSize);
+    if (!srv.IsValid() || !uav.IsValid()) {
+        return false;
+    }
+
+    const RHI::GPUBarrier startBarriers[] = {
+        RHI::Renderer::MakeTextureBarrier(radianceCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
+        RHI::Renderer::MakeBufferBarrier(buffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
+    };
+    RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
+
+    const bool projected = renderSystem->GetGpuSphericalHarmonics().ProjectCubemapSH3(commandList, radianceCubeMap, buffer, uav);
+
+    const RHI::GPUBarrier endBarriers[] = {
+        RHI::Renderer::MakeTextureBarrier(radianceCubeMap, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource),
+        RHI::Renderer::MakeBufferBarrier(buffer, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute)
+    };
+    RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+    if (!projected) {
+        return false;
+    }
+
+    // Lambert convolution 전의 원본 계수를 보관하고, diffuse 재구성에서도 같은 버퍼를 읽는다.
+    outCoefficients = std::move(coefficients);
+    return true;
+}
+
 bool ProbeBakeJob::Execute(RHI::CommandList *commandList) {
     PROFILER_CPU_SCOPED_EVENT("ProbeBakeJob::Execute");
 
@@ -48,12 +87,14 @@ bool ProbeBakeJob::Execute(RHI::CommandList *commandList) {
 
     diffuseIrradianceCubeMap.reset();
     specularPrefilteredCubeMap.reset();
+    radianceSHCoefficients.reset();
 
     const bool bakeDiffuseIrradiance = BE1::HasFlag(desc.outputFlags, OutputFlag::DiffuseIrradiance);
     const bool bakeSpecularPrefiltered = BE1::HasFlag(desc.outputFlags, OutputFlag::SpecularPrefiltered);
+    const bool bakeRadianceSH = BE1::HasFlag(desc.outputFlags, OutputFlag::RadianceSH);
 
     if (!desc.radianceCubeMap ||
-        (!bakeDiffuseIrradiance && !bakeSpecularPrefiltered) ||
+        (!bakeDiffuseIrradiance && !bakeSpecularPrefiltered && !bakeRadianceSH) ||
         (bakeDiffuseIrradiance && desc.diffuseIrradianceCubemapSize <= 0) ||
         (bakeSpecularPrefiltered && desc.specularPrefilteredSize <= 0)) {
         BE_WARNLOG("ProbeBakeJob::Execute: invalid bake parameters\n");
@@ -64,6 +105,14 @@ bool ProbeBakeJob::Execute(RHI::CommandList *commandList) {
     if (!radianceRHITexture || radianceRHITexture->GetStatus() != RHI::GPUResourceStatus::Ready) {
         BE_WARNLOG("ProbeBakeJob::Execute: radiance cubemap resource is not ready\n");
         return false;
+    }
+
+    SharedPtr<RHI::Buffer> radianceSH;
+    if (bakeRadianceSH) {
+        if (!BakeProbeRadianceSH(commandList, radianceRHITexture, radianceSH)) {
+            BE_WARNLOG("ProbeBakeJob::Execute: failed to generate the radiance SH coefficients\n");
+            return false;
+        }
     }
 
     SharedPtr<Texture> diffuseCubeMap;
@@ -79,11 +128,11 @@ bool ProbeBakeJob::Execute(RHI::CommandList *commandList) {
             return false;
         }
 
-#if 0
-        if (!renderSystem->GetIBLBaker().GenerateDiffuseIrradiance(commandList, radianceRHITexture, diffuseRHITexture)) {
-#else
-        if (!renderSystem->GetIBLBaker().GenerateDiffuseIrradianceSH(commandList, radianceRHITexture, diffuseRHITexture)) {
-#endif
+        // SH 출력이 있으면 이미 투영한 계수를 재사용하여 cubemap 을 다시 투영하지 않는다.
+        const bool generated = radianceSH ?
+            renderSystem->GetIBLBaker().GenerateDiffuseIrradianceFromSH(commandList, radianceSH.get(), diffuseRHITexture) :
+            renderSystem->GetIBLBaker().GenerateDiffuseIrradianceSH(commandList, radianceRHITexture, diffuseRHITexture);
+        if (!generated) {
             BE_WARNLOG("ProbeBakeJob::Execute: failed to generate the diffuse irradiance cubemap\n");
             return false;
         }
@@ -118,7 +167,12 @@ bool ProbeBakeJob::Execute(RHI::CommandList *commandList) {
         }
     }
 
+    if (radianceSH) {
+        RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(radianceSH.get(), RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
+    }
+
     diffuseIrradianceCubeMap = std::move(diffuseCubeMap);
     specularPrefilteredCubeMap = std::move(specularCubeMap);
+    radianceSHCoefficients = std::move(radianceSH);
     return true;
 }

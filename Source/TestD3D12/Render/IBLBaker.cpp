@@ -166,6 +166,38 @@ bool IBLBaker::GenerateDiffuseIrradianceSH(RHI::CommandList *commandList, const 
     return filtered;
 }
 
+bool IBLBaker::GenerateDiffuseIrradianceFromSH(RHI::CommandList *commandList, const RHI::Buffer *inputCoefficients, RHI::Texture *outputCubeMap, RHI::ViewID inputSRV, RHI::ViewID outputUAV) {
+    PROFILER_CPU_SCOPED_EVENT("IBLBaker::GenerateDiffuseIrradianceFromSH");
+
+    if (!inputCoefficients || !outputCubeMap || outputCubeMap->type != RHI::TextureType::TextureCube ||
+        outputCubeMap->GetArraySize() != 6 || outputCubeMap->GetSampleCount() != 1) {
+        return false;
+    }
+
+    RHI::TextureViewInfo outputViewInfo;
+    if (!GetOutputMipViewInfo(outputCubeMap, outputUAV, 0, 6, outputViewInfo) ||
+        outputViewInfo.width != outputCubeMap->GetWidth() || outputViewInfo.height != outputCubeMap->GetHeight()) {
+        return false;
+    }
+
+    RHI::GPUBarrier startBarriers[6];
+    for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++) {
+        startBarriers[faceIndex] = RHI::Renderer::MakeTextureBarrier(outputCubeMap, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, faceIndex, 0);
+    }
+    RHI::renderer->Barrier(commandList, startBarriers, COUNT_OF(startBarriers));
+
+    // 원본 계수는 유지하고 재구성할 때만 clamped cosine / PI 커널의 band factor 를 적용한다.
+    const BE1::Vec3 lambertBandFactors(1.0f, 2.0f / 3.0f, 1.0f / 4.0f);
+    const bool reconstructed = renderSystem->GetGpuSphericalHarmonics().ReconstructCubemapSH3(commandList, inputCoefficients, inputSRV, outputCubeMap, outputUAV, lambertBandFactors);
+
+    RHI::GPUBarrier endBarriers[6];
+    for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++) {
+        endBarriers[faceIndex] = RHI::Renderer::MakeTextureBarrier(outputCubeMap, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, faceIndex, 0);
+    }
+    RHI::renderer->Barrier(commandList, endBarriers, COUNT_OF(endBarriers));
+    return reconstructed;
+}
+
 bool IBLBaker::GenerateLDSumPhongSpecular(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, int32_t maxSpecularPower, RHI::Texture *outputCubeMap, const RHI::ViewID *outputMipUAVs) {
     if (!outputCubeMap || !outputMipUAVs || maxSpecularPower <= 0) {
         return false;

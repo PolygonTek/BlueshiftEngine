@@ -16,12 +16,16 @@
 
 class Texture;
 
+namespace RHI {
+    class Buffer;
+}
+
 /*
 ---------------------------------------------------------------------------------------------------
 
     Probe Bake Job
 
-    입력 radiance cubemap 을 필터링해서 probe cubemap 을 생성한다.
+    입력 radiance cubemap 에서 probe cubemap 과 원본 radiance SH 계수를 생성한다.
 
 ---------------------------------------------------------------------------------------------------
 */
@@ -32,7 +36,8 @@ public:
         None                        = 0,
         DiffuseIrradiance           = BIT(0),
         SpecularPrefiltered         = BIT(1),
-        All                         = DiffuseIrradiance | SpecularPrefiltered
+        RadianceSH                  = BIT(2),
+        All                         = DiffuseIrradiance | SpecularPrefiltered | RadianceSH
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(OutputFlag) noexcept { return {}; }
@@ -59,8 +64,13 @@ public:
                                     // 생성된 specular prefiltered cubemap 을 리턴
     const SharedPtr<Texture> &      GetSpecularPrefilteredCubeMap() const { return specularPrefilteredCubeMap; }
 
+                                    // 원본 radiance 의 3-band RGB SH 계수 9개를 float4 로 저장한 버퍼를 리턴한다.
+                                    // Primary SRV/UAV 는 structured view 이며, 성공한 Execute 이후 버퍼 상태는 ShaderResource 이다.
+    const SharedPtr<RHI::Buffer> &  GetRadianceSHCoefficients() const { return radianceSHCoefficients; }
+
 private:
     Desc                            desc;
     SharedPtr<Texture>              diffuseIrradianceCubeMap;
     SharedPtr<Texture>              specularPrefilteredCubeMap;
+    SharedPtr<RHI::Buffer>          radianceSHCoefficients;
 };

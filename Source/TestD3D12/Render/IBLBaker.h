@@ -61,6 +61,10 @@ public:
                                     /// 출력에는 Lambert BRDF 의 1/PI 가 포함된다.
     bool                            GenerateDiffuseIrradianceSH(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, RHI::Texture *outputCubeMap, RHI::ViewID outputUAV = RHI::ViewID::PrimaryID);
 
+                                    /// 원본 radiance 의 3-band SH 계수에 Lambert convolution 을 적용하여 diffuse irradiance cubemap 을 생성한다.
+                                    /// inputCoefficients 는 ShaderResourceCompute 상태여야 하며 변경하지 않는다. 출력에는 Lambert BRDF 의 1/PI 가 포함된다.
+    bool                            GenerateDiffuseIrradianceFromSH(RHI::CommandList *commandList, const RHI::Buffer *inputCoefficients, RHI::Texture *outputCubeMap, RHI::ViewID inputSRV = RHI::ViewID::PrimaryID, RHI::ViewID outputUAV = RHI::ViewID::PrimaryID);
+
                                     /// GGX split-sum 과 별개인 Phong specular LD cubemap 의 전체 mip chain 을 생성한다.
                                     /// specular power 는 mip 에 따라 낮아진다.
     bool                            GenerateLDSumPhongSpecular(RHI::CommandList *commandList, const RHI::Texture *radianceCubeMap, int32_t maxSpecularPower, RHI::Texture *outputCubeMap, const RHI::ViewID *outputMipUAVs);
