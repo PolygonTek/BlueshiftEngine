@@ -29,7 +29,7 @@
 #endif
 
 static constexpr const char *meshPath = "Data/Test/House/House_scene_01.bmesh ";
-static constexpr const char *fogDensityNoisePath = "Data/Test/FogDensityNoise.dds";
+static constexpr const char *fogDensityNoisePath = "Data/Test/Volume/3DTexture_CheckerPride.btex";
 
 void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
@@ -113,7 +113,7 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     spotLight.intensity = 15.0f;
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
 
-    fogDensityNoiseTexture = textureManager.GetTexture(fogDensityNoisePath, Texture::Flag::NoScaleDown | Texture::Flag::LinearColorSpace, false);
+    fogDensityNoiseTexture = textureManager.GetTexture(fogDensityNoisePath, Texture::Flag::HighQuality, false);
     if (!fogDensityNoiseTexture || fogDensityNoiseTexture == textureManager.missingTexture ||
         !fogDensityNoiseTexture->IsReady() || fogDensityNoiseTexture->GetType() != RHI::TextureType::Texture3D) {
         BE_WARNLOG("SceneShadows::Init: failed to load 3D density mask '%s'\n", fogDensityNoisePath);
@@ -122,14 +122,14 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
 
     LocalFogVolume::Desc boxFogDesc;
     boxFogDesc.shape = LocalFogVolume::Shape::Box;
-    boxFogDesc.origin = BE1::Vec3(-1.25f, -0.25f, -0.25f);
+    boxFogDesc.origin = BE1::Vec3(-1.0f, -0.25f, 0.0f);
     boxFogDesc.halfExtents = BE1::Vec3(0.5f, 0.5f, 0.5f);
     boxFogDesc.boundaryFade = 0.1f;
-    boxFogDesc.medium.baseExtinction = 3.0f;
-    boxFogDesc.medium.scatteringAlbedo = float3(1.0f, 0.7f, 0.0f);
+    boxFogDesc.medium.baseExtinction = 10.0f;
+    boxFogDesc.medium.scatteringAlbedo = float3(1.0f, 1.0f, 1.0f);
     boxFogDesc.medium.anisotropy = 0.15f;
     boxFogDesc.maskTexture = fogDensityNoiseTexture;
-    boxFogDesc.maskScrollSpeed = BE1::Vec3(0.2f, 0.1f, 1.0f);
+    boxFogDesc.maskScrollSpeed = BE1::Vec3(0.4f, 0.1f, 0.0f);
     boxFogDesc.heightFogFalloff = 0.0f;
     boxFogDesc.heightFogOffset = 0.0f;
     boxFogHandle = renderWorld->AddLocalFogVolume(boxFogDesc);
