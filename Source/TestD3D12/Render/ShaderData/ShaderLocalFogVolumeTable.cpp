@@ -72,16 +72,31 @@ void ShaderLocalFogVolumeTable::Build(const FrameLocalFogVolume &frameVolume, Sh
     shaderVolume.heightFogFalloff = frameVolume.heightFogFalloff;
     shaderVolume.heightFogOffset = frameVolume.heightFogOffset;
 
+    shaderVolume.axisX = float3(frameVolume.axis[0]);
+    shaderVolume.axisY = float3(frameVolume.axis[1]);
+    shaderVolume.axisZ = float3(frameVolume.axis[2]);
+
     if (frameVolume.shape == LocalFogVolume::Shape::Box) {
         shaderVolume.halfExtents = float3(frameVolume.halfExtents);
-        shaderVolume.axisX = float3(frameVolume.axis[0]);
-        shaderVolume.axisY = float3(frameVolume.axis[1]);
-        shaderVolume.axisZ = float3(frameVolume.axis[2]);
     } else {
         shaderVolume.halfExtents = float3(frameVolume.radius, frameVolume.radius, frameVolume.radius);
-        shaderVolume.axisX = float3(1, 0, 0);
-        shaderVolume.axisY = float3(0, 1, 0);
-        shaderVolume.axisZ = float3(0, 0, 1);
+    }
+
+    const RHI::Texture *maskTexture = frameVolume.maskTexture;
+    if (maskTexture) {
+        const BE1::Vec3 &uvwScale = frameVolume.maskUVWScale;
+        shaderVolume.maskUVWScale = float3(uvwScale);
+        shaderVolume.maskTextureIndex = maskTexture->GetBindlessIndex(RHI::ViewType::SRV);
+        shaderVolume.maskUVWBias = float3(frameVolume.maskUVWBias);
+        shaderVolume.maskTexelsPerMeter = BE1::Max3(
+            BE1::Math::Abs(uvwScale.x) * static_cast<float>(maskTexture->GetWidth()),
+            BE1::Math::Abs(uvwScale.y) * static_cast<float>(maskTexture->GetHeight()),
+            BE1::Math::Abs(uvwScale.z) * static_cast<float>(maskTexture->GetDepth()));
+    } else {
+        shaderVolume.maskUVWScale = float3(0, 0, 0);
+        shaderVolume.maskTextureIndex = 0;
+        shaderVolume.maskUVWBias = float3(0, 0, 0);
+        shaderVolume.maskTexelsPerMeter = 0.0f;
     }
 }
 

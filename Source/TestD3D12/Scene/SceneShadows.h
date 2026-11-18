@@ -18,6 +18,7 @@
 #include "Scene/GameLight.h"
 
 class Mesh;
+class Texture;
 
 class SceneShadows : public Scene {
 public:
@@ -42,6 +43,7 @@ private:
     bool                        spotLightEnabled = false;
 
     int                         boxFogHandle = -1;
+    SharedPtr<Texture>          fogDensityNoiseTexture;
 
 #ifdef ENABLE_IMGUI
     float                       envLightRotation = 0.0f;

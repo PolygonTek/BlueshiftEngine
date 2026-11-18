@@ -17,6 +17,7 @@
 #include "Shaders/Fog/FogInterop.h"
 
 class RenderWorld;
+class Texture;
 
 class LocalFogVolume {
     friend class RenderWorld;
@@ -30,12 +31,15 @@ public:
     struct Desc {
         bool                        enabled = true;
         Shape                       shape = Shape::Sphere;
-        BE1::Vec3                   origin = BE1::Vec3::origin;         ///< 월드 공간 중심 (m).
-        BE1::Mat3                   axis = BE1::Mat3::identity;         ///< 박스의 회전. 스케일과 반사를 포함하지 않는 직교 행렬.
+        BE1::Vec3                   origin = BE1::Vec3::origin;
+        BE1::Mat3                   axis = BE1::Mat3::identity;
         float                       radius = 1.0f;                      ///< 구의 반지름 (m).
         BE1::Vec3                   halfExtents = BE1::Vec3(1.0f);      ///< 박스의 로컬 축별 반길이 (m).
+        float                       boundaryFade = 0.1f;                ///< 경계 감쇠 폭의 비율 [0, 1]. 구의 반지름 또는 박스의 최소 반길이 기준.
         float                       density = 1.0f;                     ///< 높이 기준면 이하에서 경계 감쇠 적용 전의 상대 밀도.
-        float                       boundaryFade = 0.1f;                ///< 경계 감쇠 폭의 비율 [0, 1]. 구의 반지름 또는 박스의 최소 반길이 기준. 0 이면 즉시 전환한다.
+        SharedPtr<Texture>          maskTexture;                        ///< 선형 3D 마스크 [0, 1]: RGB 는 산란 albedo 배율, A 는 밀도 배율.
+        BE1::Vec3                   maskTiling = BE1::Vec3(1.0f);       ///< 볼륨 전체 길이 (구는 지름) 에 들어가는 로컬 축별 반복 횟수.
+        BE1::Vec3                   maskScrollSpeed = BE1::Vec3::origin;///< 로컬 축별 스크롤 속도 (UVW/s).
         float                       heightFogFalloff = 0.0f;            ///< 기준면 위쪽에 적용하는 월드 Z 방향의 exp2 높이 감쇠율 (1/m). 0 이면 높이에 따른 변화가 없다.
         float                       heightFogOffset = 0.0f;             ///< 볼륨 중심에서 높이 감쇠가 시작되는 기준면까지의 월드 Z 오프셋 (m).
         MediumParams                medium = { 0.02f, float3(0.9f, 0.9f, 0.9f), 0.6f, {} }; ///< 상대 밀도 1 에서의 광학적 매질 속성.
@@ -59,7 +63,12 @@ private:
                                     // 검증된 설정을 반영한다. bounds 를 표현할 수 없으면 기존 상태를 유지한다.
     bool                            Update(const Desc &desc);
 
+                                    // frame 당 한 번 스크롤을 진행한다.
+    void                            AdvanceMaskScroll(float frameTime, uint64_t frameIndex);
+
     Desc                            desc;
     BE1::AABB                       worldAABB = BE1::AABB::empty;
+    double                          maskScrollOffset[3] = {};           // 누적 UVW 이동량 [0, 1)
+    uint64_t                        maskScrollFrameIndex = 0;
     int                             index = -1;
 };

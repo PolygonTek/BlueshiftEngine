@@ -47,7 +47,8 @@ RWTexture3D<float4> outputSourceTexture : register(u0);
 struct VFogMedia {
     float3 heightFogScatteringCoeff;
     float heightFogAnisotropy;
-    float3 densityWorldPos; // local fog volume 의 density 를 샘플링할 월드 위치
+    float3 densityWorldPos; // local fog volume 의 색상과 density 를 샘플링할 월드 위치
+    float froxelDiagonalSquared; // 지터와 무관한 프록셀 크기 (m^2). 밀도 LOD 와 광원 거리 보정에 공유한다.
     uint localFogScatteringBegin; // 실제로 평가할 local fog volume 의 시작 인덱스
     uint localFogScatteringEnd; // 실제로 평가할 local fog volume 의 끝 인덱스
     float4 sourceExtinction; // RGB: 누적 산란/발광 source, A: 합산 소멸계수
@@ -65,9 +66,10 @@ float3 VFogGetOutgoingDirection(float2 rayXY) {
 
 // 월드 위치에서 매질을 샘플링하고 ambient/emissive/environment source 와 소멸계수를 한 번 합산한다.
 // 밀도나 anisotropy 를 먼저 평균내지 않고 매질별 계수를 누적한다.
-VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, HeightFogParams heightFogParams, out float3 wo) {
+VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, float froxelDiagonalSquared, HeightFogParams heightFogParams, out float3 wo) {
     VFogMedia media = (VFogMedia)0;
     media.densityWorldPos = worldPos;
+    media.froxelDiagonalSquared = froxelDiagonalSquared;
     wo = 0.0f;
 
     const bool useEnvironmentLight = cameraConstants.envLightRadianceSHBufferIndex != 0 && cameraConstants.envLightIntensity > 0.0f && any(cameraConstants.envLightColor > 0.0f);
@@ -99,12 +101,13 @@ VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, HeightFogParams hei
         [loop]
         for (uint i = 0; i < cameraConstants.numLocalFogVolumes; ++i) {
             const ShaderLocalFogVolume localFog = volumes[cameraConstants.localFogVolumeTableOffset + i];
-            const float localFogDensity = LocalFogSampleDensity(worldPos, localFog);
-            if (localFogDensity <= 0.0f) {
+            const float4 localFogColorDensity = LocalFogSampleColorDensity(worldPos, media.froxelDiagonalSquared, localFog, linearWrapSampler);
+            if (localFogColorDensity.a <= 0.0f) {
                 continue;
             }
 
-            const FogMedium localFogMedium = FogSampleMedium(localFogDensity, localFog.medium);
+            FogMedium localFogMedium = FogSampleMedium(localFogColorDensity.a, localFog.medium);
+            localFogMedium.scatteringCoeff *= localFogColorDensity.rgb;
 
             media.sourceExtinction.rgb += localFogMedium.emission;
             media.sourceExtinction.a += localFogMedium.extinctionCoeff;
@@ -152,12 +155,13 @@ void VFogAccumulateScatteringSource(float3 incidentRadiance, float lightWeight, 
                 continue;
             }
 
-            const float localFogDensity = LocalFogSampleDensity(media.densityWorldPos, localFog);
-            if (localFogDensity <= 0.0f) {
+            const float4 localFogColorDensity = LocalFogSampleColorDensity(media.densityWorldPos, media.froxelDiagonalSquared, localFog, linearWrapSampler);
+            if (localFogColorDensity.a <= 0.0f) {
                 continue;
             }
 
-            const FogMedium localFogMedium = FogSampleMedium(localFogDensity, localFog.medium);
+            FogMedium localFogMedium = FogSampleMedium(localFogColorDensity.a, localFog.medium);
+            localFogMedium.scatteringCoeff *= localFogColorDensity.rgb;
             phaseWeightedScattering += localFogMedium.scatteringCoeff * HenyeyGreensteinPhase(cosTheta, localFogMedium.anisotropy);
         }
     }
@@ -302,6 +306,7 @@ struct VFogFroxelSample {
     float sliceFarDepth;
 };
 
+// 지터 설정을 반영해 프록셀 내부의 샘플 위치와 깊이를 계산한다.
 VFogFroxelSample VFogGetFroxelSample(uint3 id) {
     const VFogParams vfogParams = cameraConstants.vfogParams;
     const bool isOrthographic = cameraConstants.IsOrthogonal();
@@ -365,10 +370,15 @@ void AccumulateVFogSceneLighting(VFogFroxelSample sample, float2 centerRayXY, fl
         float distanceBiasSquared = 0.0f;
         if (vfogLightingParams.lightDistanceBiasScale > 0.0f) {
             // 프록셀 최소 AABB 대각선 기반의 보수적인 바이어스로 광원 근처의 역제곱 감쇠 피크를 완화한다.
-            // 지터와 무관한 경계로 바이어스를 안정화하고, 기존 슬라이스 경계를 재사용해 추가 위치 재구성을 피한다.
+            // 로컬 fog 가 있으면 밀도 LOD 용 계산을 재사용하고, 없으면 여기서 지터와 무관한 슬라이스 경계로 계산한다.
+            float froxelDiagonalSquared = media.froxelDiagonalSquared;
+            [branch]
+            if (cameraConstants.numLocalFogVolumes == 0) {
+                froxelDiagonalSquared = VFogFroxelDiagonalSquared(centerRayXY, sample.sliceNearDepth, sample.sliceFarDepth);
+            }
             // distanceBiasSquared 에 제곱이 필요하므로 scale 도 제곱한다.
             const float scale = vfogLightingParams.lightDistanceBiasScale;
-            distanceBiasSquared = VFogFroxelDiagonalSquared(centerRayXY, sample.sliceNearDepth, sample.sliceFarDepth) * scale * scale;
+            distanceBiasSquared = froxelDiagonalSquared * scale * scale;
         }
         [loop]
         do {
@@ -387,7 +397,7 @@ void CSMain(uint3 id : SV_DispatchThreadID) {
 
     const bool isOrthographic = cameraConstants.IsOrthogonal();
 
-    // History 재투영은 jitter 없는 프록셀 중심을 기준으로 한다.
+    // 프록셀 중심 월드 위치를 구한다.
     const float2 centerUV = VFogTileCenterUV(id.xy, vfogParams);
     const float centerDepth = VFogSliceToDepth(id.z + 0.5f, vfogParams);
     const float2 centerRayXY = VFogGetRayXY(centerUV, cameraConstants);
@@ -397,8 +407,14 @@ void CSMain(uint3 id : SV_DispatchThreadID) {
 
     // 흡수/발광 전용 매질도 같은 jitter 샘플에서 밀도와 경계 감쇠를 평가한다.
     const VFogFroxelSample sample = VFogGetFroxelSample(id);
+    float froxelDiagonalSquared = 0.0f;
+    [branch]
+    if (cameraConstants.numLocalFogVolumes > 0) {
+        // 모든 볼륨과 광원에 같은 footprint 를 사용하며, STBN jitter 로 mip 이 흔들리지 않게 한다.
+        froxelDiagonalSquared = VFogFroxelDiagonalSquared(centerRayXY, sample.sliceNearDepth, sample.sliceFarDepth);
+    }
     float3 wo;
-    VFogMedia media = VFogInitializeMedia(sample.worldPos, sample.rayXY, cameraConstants.heightFogParams, wo);
+    VFogMedia media = VFogInitializeMedia(sample.worldPos, sample.rayXY, froxelDiagonalSquared, cameraConstants.heightFogParams, wo);
     [branch]
     if (VFogHasScattering(media)) {
         AccumulateVFogSceneLighting(sample, centerRayXY, wo, media);

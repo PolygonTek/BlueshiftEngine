@@ -2,6 +2,11 @@
 #define __LOCAL_FOG_COMMON_HLSLI__
 
 #include "FogInterop.h"
+#include "../CommonBindless.hlsli"
+
+float3 LocalFogWorldOffsetToLocal(float3 worldOffset, ShaderLocalFogVolume volume) {
+    return float3(dot(worldOffset, volume.axisX), dot(worldOffset, volume.axisY), dot(worldOffset, volume.axisZ));
+}
 
 float LocalFogSphereSampleDensity(float3 localPos, float radius, float density, float boundaryFadeDistanceRcp) {
     const float distanceSquared = dot(localPos, localPos);
@@ -32,13 +37,14 @@ float LocalFogBoxSampleDensity(float3 localPos, float3 halfExtents, float densit
     return density * smoothstep(0.0f, 1.0f, distanceToBoundary * boundaryFadeDistanceRcp);
 }
 
-float LocalFogSampleDensity(float3 worldPos, ShaderLocalFogVolume volume) {
+float4 LocalFogSampleColorDensity(float3 worldPos, float froxelDiagonalSquared, ShaderLocalFogVolume volume, SamplerState linearWrap) {
     const float3 offset = worldPos - volume.origin;
+    float3 localPos = 0.0f;
     float density;
     if (volume.shape == ShaderLocalFogVolumeShapeSphere) {
         density = LocalFogSphereSampleDensity(offset, volume.halfExtents.x, volume.density, volume.boundaryFadeDistanceRcp);
     } else {
-        const float3 localPos = float3(dot(offset, volume.axisX), dot(offset, volume.axisY), dot(offset, volume.axisZ));
+        localPos = LocalFogWorldOffsetToLocal(offset, volume);
         density = LocalFogBoxSampleDensity(localPos, volume.halfExtents, volume.density, volume.boundaryFadeDistanceRcp);
     }
 
@@ -48,7 +54,26 @@ float LocalFogSampleDensity(float3 worldPos, ShaderLocalFogVolume volume) {
         const float exponent = max(-volume.heightFogFalloff * heightDelta, -80.0f);
         density *= exp2(exponent);
     }
-    return density;
+
+    float4 colorDensity = float4(1.0f, 1.0f, 1.0f, density);
+    [branch]
+    if (volume.maskTextureIndex != 0 && density > 0.0f) {
+        if (volume.shape == ShaderLocalFogVolumeShapeSphere) {
+            localPos = LocalFogWorldOffsetToLocal(offset, volume);
+        }
+
+        const float3 uvw = localPos * volume.maskUVWScale + volume.maskUVWBias;
+
+        // 프록셀 대각선과 최대 texel 밀도로 회전에 무관한 보수적 footprint 를 구한다.
+        // 제곱 길이를 유지해 sqrt 를 생략하고, 1 texel 이하의 footprint 는 mip 0 을 사용한다.
+        const float footprintTexelsSquared = froxelDiagonalSquared * volume.maskTexelsPerMeter * volume.maskTexelsPerMeter;
+        const float mipLevel = 0.5f * log2(max(footprintTexelsSquared, 1.0f));
+
+        // NOTE: 텍스처 인덱스가 wave 내에서 다를 수 있으므로, NonUniformResourceIndex 를 붙여준다.
+        const Texture3D<float4> maskTexture = GetTexture3D(NonUniformResourceIndex(volume.maskTextureIndex));
+        colorDensity *= saturate(maskTexture.SampleLevel(linearWrap, uvw, mipLevel));
+    }
+    return colorDensity;
 }
 
 #endif // __LOCAL_FOG_COMMON_HLSLI__

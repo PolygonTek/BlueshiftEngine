@@ -61,3 +61,28 @@ bool LocalFogVolume::Update(const Desc &desc) {
     this->desc = desc;
     return true;
 }
+
+void LocalFogVolume::AdvanceMaskScroll(float frameTime, uint64_t frameIndex) {
+    assert(frameIndex > 0);
+
+    if (maskScrollFrameIndex == frameIndex) {
+        return;
+    }
+    maskScrollFrameIndex = frameIndex;
+
+    if (!desc.maskTexture || frameTime <= 0.0f) {
+        return;
+    }
+
+    for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+        const float speed = desc.maskScrollSpeed[axisIndex];
+        if (speed == 0.0f) {
+            continue;
+        }
+
+        const double scrollOffset = maskScrollOffset[axisIndex] + static_cast<double>(speed) * static_cast<double>(frameTime);
+        const double wrappedOffset = scrollOffset - BE1::Math::Floor(scrollOffset);
+
+        maskScrollOffset[axisIndex] = wrappedOffset < 1.0 ? wrappedOffset : 0.0;
+    }
+}

@@ -409,12 +409,20 @@ public:
 
                                 /// Returns the largest integer that is less than or equal to the given value.
     static float                Floor(float f);
+                                /// Double-precision floor.
+    static double               Floor(double d);
                                 /// Returns the smallest integer that is greater than or equal to the given value.
     static float                Ceil(float f);
-                                /// Returns the nearest integer.
+                                /// Double-precision ceiling.
+    static double               Ceil(double d);
+                                /// Returns the nearest integer; halfway cases round toward positive infinity.
     static float                Round(float f);
-                                /// Returns the fraction component (part after the decimal).
+                                /// Double-precision nearest integer; halfway cases round toward positive infinity.
+    static double               Round(double d);
+                                /// Returns f - floor(f).
     static float                Fract(float f);
+                                /// Returns d - floor(d).
+    static double               Fract(double d);
 
                                 /// Float to int conversion, truncated toward zero and clamped to the representable range. NaN maps to the minimum value.
     static int                  Ftoi(float f);
@@ -1030,16 +1038,34 @@ BE_INLINE float Math::Floor(float f) {
     return floorf(f);
 }
 
+BE_INLINE double Math::Floor(double d) {
+    return std::floor(d);
+}
+
 BE_INLINE float Math::Ceil(float f) {
     return ceilf(f);
+}
+
+BE_INLINE double Math::Ceil(double d) {
+    return std::ceil(d);
 }
 
 BE_INLINE float Math::Fract(float f) {
     return f - floorf(f);
 }
 
+BE_INLINE double Math::Fract(double d) {
+    return d - std::floor(d);
+}
+
 BE_INLINE float Math::Round(float f) {
     return floorf(f + 0.5f);
+}
+
+BE_INLINE double Math::Round(double d) {
+    // Compare the fractional part to avoid rounding d + 0.5 across an integer or halfway boundary.
+    const double integral = std::floor(d);
+    return integral + (d - integral >= 0.5 ? 1.0 : 0.0);
 }
 
 BE_INLINE int Math::Ftoi(float f) {

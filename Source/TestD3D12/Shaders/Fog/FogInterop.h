@@ -19,12 +19,16 @@ struct ShaderLocalFogVolume {
     uint shape;
     float3 halfExtents;             // Box half extents, or sphere radius in all components (m).
     float heightFogFalloff;         // exp2 height falloff above the reference plane along world Z (1/m); zero disables it.
-    float3 axisX;                   // World-space local axes; dot(worldPosition - origin, axis) gives local meters.
+    float3 axisX;                   // World-space local axes for both shapes; dot(worldPosition - origin, axis) gives local meters.
     float density;
     float3 axisY;
     float boundaryFadeDistanceRcp;  // CPU converts the fade ratio to reciprocal world distance (1/m). Zero means no fade.
     float3 axisZ;
     float heightFogOffset;          // Height where falloff starts, relative to origin.z (m). Density stays constant below it.
+    float3 maskUVWScale;
+    uint maskTextureIndex;
+    float3 maskUVWBias;
+    float maskTexelsPerMeter;        // max(abs(UVW scale) * mip-0 dimensions), for conservative mip selection.
 };
 
 struct HeightFogParams {
@@ -70,8 +74,14 @@ struct VFogParams {
 };
 
 #ifdef __cplusplus
+#include <cstddef>
+
 static_assert(sizeof(MediumParams) == 32, "Medium constants must match HLSL");
-static_assert(sizeof(ShaderLocalFogVolume) == 112, "Local fog volumes must match the HLSL StructuredBuffer layout");
+static_assert(sizeof(ShaderLocalFogVolume) == 144, "Local fog volumes must match the HLSL StructuredBuffer layout");
+static_assert(offsetof(ShaderLocalFogVolume, maskUVWScale) == 112, "Mask UVW scale must match HLSL");
+static_assert(offsetof(ShaderLocalFogVolume, maskTextureIndex) == 124, "Mask texture index must match HLSL");
+static_assert(offsetof(ShaderLocalFogVolume, maskUVWBias) == 128, "Mask UVW bias must match HLSL");
+static_assert(offsetof(ShaderLocalFogVolume, maskTexelsPerMeter) == 140, "Mask texel density must match HLSL");
 static_assert(sizeof(HeightFogParams) == 64, "Height fog constants must match HLSL");
 static_assert(sizeof(VFogLightingParams) == 16, "VFog lighting root constants must match HLSL");
 static_assert(sizeof(VFogTemporalParams) == 16, "VFog temporal constant buffer must match HLSL");

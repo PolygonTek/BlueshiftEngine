@@ -624,30 +624,38 @@ void RenderWorld::FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamer
     frameCamera->numFrameLocalFogVolumes = 0;
     frameCamera->hasLocalFogLightScattering = false;
 
-    if (!collectVolumes || localFogVolumes.Count() == 0) {
+    if (localFogVolumes.Count() == 0) {
         return;
     }
 
     const RenderFrameSettings &frameSettings = frame->GetRenderFrameSettings();
     const float nearDepth = frameSettings.fogNearDepth;
     const float farDepth = BE1::Min(frameSettings.vfogFarDepth, renderCamera->GetDesc().zFar);
-    if (farDepth <= nearDepth) {
-        return;
-    }
+    collectVolumes = collectVolumes && farDepth > nearDepth;
 
-    // vfog 범위에 맞는 view planes 를 계산한다.
-    const bool skipViewCulling = frameSettings.skipViewCulling;
+    // 볼륨을 수집할 때만 vfog 범위에 맞는 view planes 를 계산한다.
+    const bool cullVolumes = collectVolumes && !frameSettings.skipViewCulling;
     BE1::Plane viewPlanes[6];
-    if (!skipViewCulling) {
+    if (cullVolumes) {
         renderCamera->CalcSlicedViewVolume(nearDepth, farDepth, nullptr, viewPlanes);
     }
 
-    for (const LocalFogVolume *localVolume : localFogVolumes) {
-        if (!localVolume || !localVolume->desc.IsActive()) {
+    const float frameTime = frame->GetFrameTime();
+
+    for (LocalFogVolume *localVolume : localFogVolumes) {
+        if (!localVolume) {
             continue;
         }
 
-        if (!skipViewCulling) {
+        // 컬링, 활성 상태, 카메라별 fog 수집 여부와 무관하게 스크롤을 진행한다.
+        // frameIndex 로 다른 카메라에서 여러번 스크롤이 실행되는 걸 방지한다.
+        localVolume->AdvanceMaskScroll(frameTime, frameIndex);
+
+        if (!collectVolumes || !localVolume->desc.IsActive()) {
+            continue;
+        }
+
+        if (cullVolumes) {
             const BE1::Vec3 center = localVolume->worldAABB.Center();
             const BE1::Vec3 extents = localVolume->worldAABB.Extents();
             bool culled = false;
@@ -662,13 +670,22 @@ void RenderWorld::FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamer
             }
         }
 
+        const LocalFogVolume::Desc &desc = localVolume->desc;
+        RHI::Texture *maskTexture = nullptr;
+        if (desc.maskTexture) {
+            maskTexture = desc.maskTexture->GetReadyRHITexture();
+            if (!maskTexture || maskTexture->type != RHI::TextureType::Texture3D || !maskTexture->HasValidView(RHI::ViewType::SRV)) {
+                continue;
+            }
+        }
+
         FrameLocalFogVolume *frameVolume = frame->AllocFrameLocalFogVolume();
         if (!frameVolume) {
             BE_WARNLOG("RenderWorld::FindFrameLocalFogVolumes: local fog volume table is full\n");
-            break;
+            collectVolumes = false;
+            continue;
         }
 
-        const LocalFogVolume::Desc &desc = localVolume->desc;
         frameVolume->origin = desc.origin;
         frameVolume->axis = desc.axis;
         frameVolume->halfExtents = desc.halfExtents;
@@ -679,6 +696,21 @@ void RenderWorld::FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamer
         frameVolume->heightFogFalloff = desc.heightFogFalloff;
         frameVolume->heightFogOffset = desc.heightFogOffset;
         frameVolume->shape = desc.shape;
+
+        frameVolume->maskTexture = maskTexture;
+        if (maskTexture) {
+            frame->RetainTexture(desc.maskTexture);
+
+            // shader 에서 localPos * scale + bias 형태로 계산할 수 있게 준비한다.
+            const BE1::Vec3 maskHalfExtents = desc.shape == LocalFogVolume::Shape::Box ? desc.halfExtents : BE1::Vec3(desc.radius);
+            for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+                frameVolume->maskUVWScale[axisIndex] = (0.5f * desc.maskTiling[axisIndex]) / maskHalfExtents[axisIndex];
+                frameVolume->maskUVWBias[axisIndex] = static_cast<float>(0.5 * desc.maskTiling[axisIndex] - localVolume->maskScrollOffset[axisIndex]);
+            }
+        } else {
+            frameVolume->maskUVWScale = BE1::Vec3::origin;
+            frameVolume->maskUVWBias = BE1::Vec3::origin;
+        }
 
         frameCamera->numFrameLocalFogVolumes++;
 
