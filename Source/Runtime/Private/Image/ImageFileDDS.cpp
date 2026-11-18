@@ -512,6 +512,7 @@ static bool ParseDDSFormat(const DdsFileHeader &ddsHeader, Image::Format &format
 static bool ParseDX10Format(const DdsFileHeaderDX10 &dx10Header, Image::Format &format, Image::GammaSpace &gammaSpace) {
     switch (dx10Header.dxgiFormat) {
     case DX10_FORMAT_R8_UNORM: format = Image::Format::R8; break;
+    case DX10_FORMAT_A8_UNORM: format = Image::Format::A8; break;
     case DX10_FORMAT_R8_SNORM: format = Image::Format::R8_SNORM; break;
     case DX10_FORMAT_R8_UINT: format = Image::Format::R8_UINT; break;
     case DX10_FORMAT_R8_SINT: format = Image::Format::R8_SINT; break;
@@ -573,6 +574,7 @@ static bool ParseDX10Format(const DdsFileHeaderDX10 &dx10Header, Image::Format &
         gammaSpace = Image::GammaSpace::Linear;
     } else if (
         dx10Header.dxgiFormat == DX10_FORMAT_R8_UNORM ||
+        dx10Header.dxgiFormat == DX10_FORMAT_A8_UNORM ||
         dx10Header.dxgiFormat == DX10_FORMAT_R8G8_UNORM ||
         dx10Header.dxgiFormat == DX10_FORMAT_R8G8B8A8_UNORM ||
         dx10Header.dxgiFormat == DX10_FORMAT_B8G8R8A8_UNORM ||
@@ -630,7 +632,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     }
 
     if (this->gammaSpace == Image::GammaSpace::DontCare) {
-        if (Image::NeedFloatConversion(format) || format == Format::BC4 || format == Format::BC5) {
+        if (Image::NeedFloatConversion(format) || format == Format::A8 || format == Format::BC4 || format == Format::BC5) {
             this->gammaSpace = Image::GammaSpace::Linear;
         } else {
             this->gammaSpace = Image::GammaSpace::sRGB;
@@ -705,7 +707,7 @@ static bool LoadDDSInfo(File *fp, DdsFileHeader &header, Image::Format &format, 
     }
 
     if (gammaSpace == Image::GammaSpace::DontCare) {
-        if (Image::NeedFloatConversion(format) || format == Image::Format::BC4 || format == Image::Format::BC5) {
+        if (Image::NeedFloatConversion(format) || format == Image::Format::A8 || format == Image::Format::BC4 || format == Image::Format::BC5) {
             gammaSpace = Image::GammaSpace::Linear;
         } else {
             gammaSpace = Image::GammaSpace::sRGB;
