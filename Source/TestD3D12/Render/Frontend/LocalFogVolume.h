@@ -36,13 +36,12 @@ public:
         float                       radius = 1.0f;                      ///< 구의 반지름 (m).
         BE1::Vec3                   halfExtents = BE1::Vec3(1.0f);      ///< 박스의 로컬 축별 반길이 (m).
         float                       boundaryFade = 0.1f;                ///< 경계 감쇠 폭의 비율 [0, 1]. 구의 반지름 또는 박스의 최소 반길이 기준.
-        float                       density = 1.0f;                     ///< 높이 기준면 이하에서 경계 감쇠 적용 전의 상대 밀도.
+        MediumParams                medium = { 0.02f, float3(0.9f, 0.9f, 0.9f), 0.6f, {} }; ///< 경계, 높이 감쇠, 마스크를 적용하기 전의 광학적 매질 속성.
         SharedPtr<Texture>          maskTexture;                        ///< 선형 3D 마스크 [0, 1]: RGB 는 산란 albedo 배율, A 는 밀도 배율.
         BE1::Vec3                   maskTiling = BE1::Vec3(1.0f);       ///< 볼륨 전체 길이 (구는 지름) 에 들어가는 로컬 축별 반복 횟수.
         BE1::Vec3                   maskScrollSpeed = BE1::Vec3::origin;///< 로컬 축별 스크롤 속도 (UVW/s).
         float                       heightFogFalloff = 0.0f;            ///< 기준면 위쪽에 적용하는 월드 Z 방향의 exp2 높이 감쇠율 (1/m). 0 이면 높이에 따른 변화가 없다.
         float                       heightFogOffset = 0.0f;             ///< 볼륨 중심에서 높이 감쇠가 시작되는 기준면까지의 월드 Z 오프셋 (m).
-        MediumParams                medium = { 0.02f, float3(0.9f, 0.9f, 0.9f), 0.6f, {} }; ///< 상대 밀도 1 에서의 광학적 매질 속성.
 
                                     // 현재 형상에서 사용하는 설정값을 검사한다. 월드 bounds 의 유한성은 등록/갱신 시 추가 검사한다.
         bool                        IsValid() const;

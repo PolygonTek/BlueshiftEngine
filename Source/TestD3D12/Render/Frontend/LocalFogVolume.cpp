@@ -19,8 +19,7 @@ bool LocalFogVolume::Desc::IsValid() const {
     assert(boundaryFade >= 0.0f && boundaryFade <= 1.0f);
     assert(heightFogFalloff >= 0.0f && heightFogFalloff <= 200.0f);
 
-    if (!(density >= 0.0f && density <= 100.0f) ||
-        !(medium.baseExtinction >= 0.0f && medium.baseExtinction <= 10.0f) ||
+    if (!(medium.baseExtinction >= 0.0f && medium.baseExtinction <= 1000.0f) ||
         !(medium.scatteringAlbedo.x >= 0.0f && medium.scatteringAlbedo.x <= 1.0f) ||
         !(medium.scatteringAlbedo.y >= 0.0f && medium.scatteringAlbedo.y <= 1.0f) ||
         !(medium.scatteringAlbedo.z >= 0.0f && medium.scatteringAlbedo.z <= 1.0f) ||
@@ -39,8 +38,7 @@ bool LocalFogVolume::Desc::IsValid() const {
 }
 
 bool LocalFogVolume::Desc::IsActive() const {
-    return enabled && density > 0.0f &&
-        (medium.baseExtinction > 0.0f || medium.baseEmission.x > 0.0f || medium.baseEmission.y > 0.0f || medium.baseEmission.z > 0.0f);
+    return enabled && (medium.baseExtinction > 0.0f || medium.baseEmission.x > 0.0f || medium.baseEmission.y > 0.0f || medium.baseEmission.z > 0.0f);
 }
 
 bool LocalFogVolume::Update(const Desc &desc) {

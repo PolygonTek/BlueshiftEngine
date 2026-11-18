@@ -66,7 +66,7 @@ void ShaderLocalFogVolumeTable::Build(const FrameLocalFogVolume &frameVolume, Sh
     shaderVolume.medium = frameVolume.medium;
     shaderVolume.origin = float3(frameVolume.origin);
     shaderVolume.shape = static_cast<uint32_t>(frameVolume.shape);
-    shaderVolume.density = frameVolume.density;
+    shaderVolume.padding = 0.0f;
     shaderVolume.boundaryFadeDistanceRcp = frameVolume.boundaryFade > 0.0f ? 1.0f / BE1::Max(boundaryFadeDistance, FLT_MIN) : 0.0f;
 
     shaderVolume.heightFogFalloff = frameVolume.heightFogFalloff;

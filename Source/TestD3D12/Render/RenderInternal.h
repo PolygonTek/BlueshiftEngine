@@ -331,7 +331,6 @@ struct FrameLocalFogVolume {
     BE1::Vec3                       halfExtents;
     MediumParams                    medium;
     float                           radius;
-    float                           density;
     float                           boundaryFade; // [0, 1], relative to sphere radius or minimum box half extent.
     float                           heightFogFalloff;
     float                           heightFogOffset;

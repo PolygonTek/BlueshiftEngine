@@ -4,10 +4,10 @@
 #include "../ShaderTypes.h"
 
 struct MediumParams {
-    float baseExtinction;           // Extinction coefficient at unit relative density (1/m).
+    float baseExtinction;           // Extinction coefficient before spatial weighting (1/m).
     float3 scatteringAlbedo;        // RGB fraction of baseExtinction due to scattering, [0, 1].
     float anisotropy;               // HenyeyGreensteinPhase's g parameter.
-    float3 baseEmission;            // RGB radiance emitted per meter at unit relative density.
+    float3 baseEmission;            // RGB radiance emitted per meter before spatial weighting.
 };
 
 static const uint ShaderLocalFogVolumeShapeSphere = 0u;
@@ -20,7 +20,7 @@ struct ShaderLocalFogVolume {
     float3 halfExtents;             // Box half extents, or sphere radius in all components (m).
     float heightFogFalloff;         // exp2 height falloff above the reference plane along world Z (1/m); zero disables it.
     float3 axisX;                   // World-space local axes for both shapes; dot(worldPosition - origin, axis) gives local meters.
-    float density;
+    float padding;
     float3 axisY;
     float boundaryFadeDistanceRcp;  // CPU converts the fade ratio to reciprocal world distance (1/m). Zero means no fade.
     float3 axisZ;
@@ -34,11 +34,11 @@ struct ShaderLocalFogVolume {
 struct HeightFogParams {
     MediumParams medium;
     float baseHeight;
-    float baseDensity;              // Relative density at baseHeight.
+    float padding0;
     float heightFalloff;            // exp2 height falloff (1/m); zero is a homogeneous medium.
     float maxDistance;              // World-space ray distance.
     float3 ambientRadiance;         // Spatially constant, isotropic incident radiance for height fog.
-    float padding;
+    float padding1;
 };
 
 static const uint VFogFlagShadows = 2u;

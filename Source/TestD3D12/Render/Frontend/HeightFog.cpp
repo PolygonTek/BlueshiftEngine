@@ -19,8 +19,7 @@ bool HeightFog::Desc::IsValid() const {
     return std::isfinite(baseHeight) &&
         heightFalloff >= 0.0f && heightFalloff <= 10.0f &&
         maxDistance > 0.0f && maxDistance <= 1000000.0f &&
-        density >= 0.0f && density <= 100.0f &&
-        medium.baseExtinction >= 0.0f && medium.baseExtinction <= 10.0f &&
+        medium.baseExtinction >= 0.0f && medium.baseExtinction <= 1000.0f &&
         medium.scatteringAlbedo.x >= 0.0f && medium.scatteringAlbedo.x <= 1.0f &&
         medium.scatteringAlbedo.y >= 0.0f && medium.scatteringAlbedo.y <= 1.0f &&
         medium.scatteringAlbedo.z >= 0.0f && medium.scatteringAlbedo.z <= 1.0f &&
@@ -35,6 +34,5 @@ bool HeightFog::Desc::IsValid() const {
 }
 
 bool HeightFog::Desc::IsActive() const {
-    return enabled && density > 0.0f &&
-        (medium.baseExtinction > 0.0f || medium.baseEmission.x > 0.0f || medium.baseEmission.y > 0.0f || medium.baseEmission.z > 0.0f);
+    return enabled && (medium.baseExtinction > 0.0f || medium.baseEmission.x > 0.0f || medium.baseEmission.y > 0.0f || medium.baseEmission.z > 0.0f);
 }

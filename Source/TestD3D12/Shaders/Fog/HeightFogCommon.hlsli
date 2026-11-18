@@ -5,16 +5,15 @@
 #include "FogMedium.hlsli"
 #include "FogEnvironment.hlsli"
 
-// Height fog 의 상대 밀도는 월드 공간 높이에 따라 지수적으로 변한다.
+// 기준 높이에서 1 인 상대 밀도는 월드 공간 높이에 따라 지수적으로 변한다.
 float HeightFogSampleDensity(float height, HeightFogParams hfogParams) {
-    float density = hfogParams.baseDensity;
     [branch]
-    if (hfogParams.heightFalloff > 0.0f && density > 0.0f) {
-        // density = baseDensity * 2^{-falloff * (h - h0)}
+    if (hfogParams.heightFalloff > 0.0f) {
+        // density = 2^{-falloff * (h - h0)}
         const float exponent = clamp(-hfogParams.heightFalloff * (height - hfogParams.baseHeight), -80.0f, 80.0f);
-        density *= exp2(exponent);
+        return exp2(exponent);
     }
-    return density;
+    return 1.0f;
 }
 
 struct HeightFogRay {
@@ -44,7 +43,7 @@ HeightFogRay HeightFogGetRay(float2 rasterUV, CameraConstants camera) {
 
 // 광선 구간의 상대 밀도를 적분한다.
 float HeightFogIntegratedDensity(float startHeight, float heightDelta, float distance, HeightFogParams hfogParams) {
-    if (distance <= 0.0f || hfogParams.baseDensity <= 0.0f) {
+    if (distance <= 0.0f) {
         return 0.0f;
     }
 

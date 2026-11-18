@@ -8,7 +8,7 @@ float3 LocalFogWorldOffsetToLocal(float3 worldOffset, ShaderLocalFogVolume volum
     return float3(dot(worldOffset, volume.axisX), dot(worldOffset, volume.axisY), dot(worldOffset, volume.axisZ));
 }
 
-float LocalFogSphereSampleDensity(float3 localPos, float radius, float density, float boundaryFadeDistanceRcp) {
+float LocalFogSphereSampleDensity(float3 localPos, float radius, float boundaryFadeDistanceRcp) {
     const float distanceSquared = dot(localPos, localPos);
     if (distanceSquared > radius * radius) {
         return 0.0f;
@@ -16,14 +16,14 @@ float LocalFogSphereSampleDensity(float3 localPos, float radius, float density, 
 
     [branch]
     if (boundaryFadeDistanceRcp == 0.0f) {
-        return density;
+        return 1.0f;
     }
 
     const float distanceToBoundary = radius - sqrt(distanceSquared);
-    return density * smoothstep(0.0f, 1.0f, distanceToBoundary * boundaryFadeDistanceRcp);
+    return smoothstep(0.0f, 1.0f, distanceToBoundary * boundaryFadeDistanceRcp);
 }
 
-float LocalFogBoxSampleDensity(float3 localPos, float3 halfExtents, float density, float boundaryFadeDistanceRcp) {
+float LocalFogBoxSampleDensity(float3 localPos, float3 halfExtents, float boundaryFadeDistanceRcp) {
     const float3 distancesToFaces = halfExtents - abs(localPos);
     const float distanceToBoundary = min(distancesToFaces.x, min(distancesToFaces.y, distancesToFaces.z));
     if (distanceToBoundary < 0.0f) {
@@ -31,10 +31,10 @@ float LocalFogBoxSampleDensity(float3 localPos, float3 halfExtents, float densit
     }
 
     if (boundaryFadeDistanceRcp == 0.0f) {
-        return density;
+        return 1.0f;
     }
 
-    return density * smoothstep(0.0f, 1.0f, distanceToBoundary * boundaryFadeDistanceRcp);
+    return smoothstep(0.0f, 1.0f, distanceToBoundary * boundaryFadeDistanceRcp);
 }
 
 float4 LocalFogSampleColorDensity(float3 worldPos, float froxelDiagonalSquared, ShaderLocalFogVolume volume, SamplerState linearWrap) {
@@ -42,10 +42,10 @@ float4 LocalFogSampleColorDensity(float3 worldPos, float froxelDiagonalSquared, 
     float3 localPos = 0.0f;
     float density;
     if (volume.shape == ShaderLocalFogVolumeShapeSphere) {
-        density = LocalFogSphereSampleDensity(offset, volume.halfExtents.x, volume.density, volume.boundaryFadeDistanceRcp);
+        density = LocalFogSphereSampleDensity(offset, volume.halfExtents.x, volume.boundaryFadeDistanceRcp);
     } else {
         localPos = LocalFogWorldOffsetToLocal(offset, volume);
-        density = LocalFogBoxSampleDensity(localPos, volume.halfExtents, volume.density, volume.boundaryFadeDistanceRcp);
+        density = LocalFogBoxSampleDensity(localPos, volume.halfExtents, volume.boundaryFadeDistanceRcp);
     }
 
     [branch]

@@ -19,13 +19,13 @@ struct FogMedium {
     float3 emission;
 };
 
-// density 와 매질 설정 파라미터로 매질 속성 (소멸계수, 산란계수, 단위 거리당 발광량) 을 계산한다.
-FogMedium FogSampleMedium(float density, MediumParams params) {
+// 공간 배율과 기준 매질 파라미터로 매질 속성 (소멸계수, 산란계수, 단위 거리당 발광량) 을 계산한다.
+FogMedium FogSampleMedium(float weight, MediumParams params) {
     FogMedium medium;
-    medium.extinctionCoeff = min(density * params.baseExtinction, 65504.0f); // 상대 밀도에 기준 소멸계수를 곱한다. 기존 FP16 범위를 유지한다.
+    medium.extinctionCoeff = min(weight * params.baseExtinction, 65504.0f); // 공간 배율에 기준 소멸계수를 곱한다. 기존 FP16 범위를 유지한다.
     medium.scatteringCoeff = medium.extinctionCoeff * params.scatteringAlbedo;
     medium.anisotropy = params.anisotropy;
-    medium.emission = density * params.baseEmission;
+    medium.emission = weight * params.baseEmission;
     return medium;
 }
 

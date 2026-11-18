@@ -691,7 +691,6 @@ void RenderWorld::FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamer
         frameVolume->halfExtents = desc.halfExtents;
         frameVolume->medium = desc.medium;
         frameVolume->radius = desc.radius;
-        frameVolume->density = desc.density;
         frameVolume->boundaryFade = desc.boundaryFade;
         frameVolume->heightFogFalloff = desc.heightFogFalloff;
         frameVolume->heightFogOffset = desc.heightFogOffset;
@@ -768,7 +767,6 @@ void RenderWorld::PrepareFog(FrameCamera *frameCamera, RenderCamera *renderCamer
         HeightFogParams &hfogParams = fog.heightFogParams;
         hfogParams.medium = fogDesc.medium;
         hfogParams.baseHeight = fogDesc.baseHeight;
-        hfogParams.baseDensity = fogDesc.density;
         hfogParams.heightFalloff = fogDesc.heightFalloff;
         hfogParams.maxDistance = fogDesc.maxDistance;
 

@@ -124,15 +124,14 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     boxFogDesc.shape = LocalFogVolume::Shape::Box;
     boxFogDesc.origin = BE1::Vec3(-1.25f, -0.25f, -0.25f);
     boxFogDesc.halfExtents = BE1::Vec3(0.5f, 0.5f, 0.5f);
-    boxFogDesc.density = 1.0f;
     boxFogDesc.boundaryFade = 0.1f;
-    boxFogDesc.heightFogFalloff = 0.0f;
-    boxFogDesc.heightFogOffset = 0.0f;
     boxFogDesc.medium.baseExtinction = 3.0f;
-    boxFogDesc.medium.scatteringAlbedo = float3(0.0f, 1.0f, 0.5f);
+    boxFogDesc.medium.scatteringAlbedo = float3(1.0f, 0.7f, 0.0f);
     boxFogDesc.medium.anisotropy = 0.15f;
     boxFogDesc.maskTexture = fogDensityNoiseTexture;
     boxFogDesc.maskScrollSpeed = BE1::Vec3(0.2f, 0.1f, 0.05f);
+    boxFogDesc.heightFogFalloff = 0.0f;
+    boxFogDesc.heightFogOffset = 0.0f;
     boxFogHandle = renderWorld->AddLocalFogVolume(boxFogDesc);
 }
 
@@ -264,12 +263,20 @@ static void BuildBoxFogControls(RenderWorld *renderWorld, int handle, const char
     changed |= ImGui::DragFloat3("Half extents", desc.halfExtents.Ptr(), 0.01f, 0.01f, 100.0f, "%.3f m", ImGuiSliderFlags_AlwaysClamp);
     changed |= ImGui::SliderFloat("Boundary fade", &desc.boundaryFade, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::SetItemTooltip("Fraction of the minimum half extent that fades inward from each face. 0 gives a hard edge; 1 uses the full minimum half extent as the fade distance.");
-    changed |= ImGui::SliderFloat("Density", &desc.density, 0.0f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SetItemTooltip("Relative density at and below the height reference plane, before boundary fade and the density mask.");
-    changed |= ImGui::SliderFloat("Height fog falloff", &desc.heightFogFalloff, 0.0f, 200.0f, "%.3f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SetItemTooltip("Above the reference plane, density halves every 1 / falloff meters upward along world Z. Density stays constant below it. 0 disables height falloff.");
-    changed |= ImGui::DragFloat("Height fog offset", &desc.heightFogOffset, 0.01f, 0.0f, 0.0f, "%.3f m");
-    ImGui::SetItemTooltip("Height where density starts decreasing, relative to the volume center along world Z. Positive values raise the reference plane.");
+
+    changed |= ImGui::SliderFloat("Base extinction", &desc.medium.baseExtinction, 0.0f, 1000.0f, "%.4f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SetItemTooltip("Extinction before boundary fade, height falloff, and mask alpha are applied.");
+    changed |= ImGui::ColorEdit3("Scattering albedo", &desc.medium.scatteringAlbedo.x, ImGuiColorEditFlags_Float);
+    ImGui::SetItemTooltip("Multiplied by the fog mask RGB. A8 masks keep this color unchanged.");
+    changed |= ImGui::SliderFloat("Anisotropy (g)", &desc.medium.anisotropy, -0.9f, 0.9f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SetItemTooltip("0 is isotropic. Positive values favor forward scattering when looking toward a light.");
+    if (ImGui::ColorEdit3("Base emission", &desc.medium.baseEmission.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
+        desc.medium.baseEmission.x = BE1::Max(desc.medium.baseEmission.x, 0.0f);
+        desc.medium.baseEmission.y = BE1::Max(desc.medium.baseEmission.y, 0.0f);
+        desc.medium.baseEmission.z = BE1::Max(desc.medium.baseEmission.z, 0.0f);
+        changed = true;
+    }
+    ImGui::SetItemTooltip("RGB radiance emitted per meter before boundary fade, height falloff, and mask alpha are applied. Independent of scattering albedo and mask RGB.");
 
     const int maskIndex = desc.maskTexture ? 1 : 0;
     static constexpr const char *maskNames[] = { "None", "Noise" };
@@ -298,19 +305,10 @@ static void BuildBoxFogControls(RenderWorld *renderWorld, int handle, const char
     ImGui::SetItemTooltip("Texture cycles per second along local X, Y, Z. With positive tiling, positive speed moves the pattern along the positive local axis. Zero pauses that axis.");
     ImGui::EndDisabled();
 
-    changed |= ImGui::SliderFloat("Base extinction", &desc.medium.baseExtinction, 0.0f, 10.0f, "%.4f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SetItemTooltip("Extinction at unit density. Scales with density, boundary fade, height falloff, and the density mask.");
-    changed |= ImGui::ColorEdit3("Scattering albedo", &desc.medium.scatteringAlbedo.x, ImGuiColorEditFlags_Float);
-    ImGui::SetItemTooltip("Multiplied by the fog mask RGB. A8 masks keep this color unchanged.");
-    changed |= ImGui::SliderFloat("Anisotropy (g)", &desc.medium.anisotropy, -0.9f, 0.9f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SetItemTooltip("0 is isotropic. Positive values favor forward scattering when looking toward a light.");
-    if (ImGui::ColorEdit3("Base emission", &desc.medium.baseEmission.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
-        desc.medium.baseEmission.x = BE1::Max(desc.medium.baseEmission.x, 0.0f);
-        desc.medium.baseEmission.y = BE1::Max(desc.medium.baseEmission.y, 0.0f);
-        desc.medium.baseEmission.z = BE1::Max(desc.medium.baseEmission.z, 0.0f);
-        changed = true;
-    }
-    ImGui::SetItemTooltip("RGB radiance emitted per meter at unit density. Scales with density, boundary fade, height falloff, and the density mask.");
+    changed |= ImGui::SliderFloat("Height fog falloff", &desc.heightFogFalloff, 0.0f, 200.0f, "%.3f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SetItemTooltip("Above the reference plane, density halves every 1 / falloff meters upward along world Z. Density stays constant below it. 0 disables height falloff.");
+    changed |= ImGui::DragFloat("Height fog offset", &desc.heightFogOffset, 0.01f, 0.0f, 0.0f, "%.3f m");
+    ImGui::SetItemTooltip("Height where density starts decreasing, relative to the volume center along world Z. Positive values raise the reference plane.");
     ImGui::EndDisabled();
 
     if (changed) {
@@ -394,12 +392,11 @@ void SceneShadows::BuildImGui() {
         bool changed = ImGui::Checkbox("Enabled", &desc.enabled);
         ImGui::BeginDisabled(!desc.enabled);
         changed |= ImGui::DragFloat("Base height", &desc.baseHeight, 0.1f, 0.0f, 0.0f, "%.2f m");
-        ImGui::SetItemTooltip("World Z height at which base extinction and density are defined.");
+        ImGui::SetItemTooltip("World Z height at which base extinction and base emission are defined.");
         changed |= ImGui::SliderFloat("Height falloff", &desc.heightFalloff, 0.0f, 10.0f, "%.3f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
         ImGui::SetItemTooltip("Density halves for every 1 / falloff meters above the base height and increases below it. Zero gives a uniform medium.");
-        changed |= ImGui::SliderFloat("Base extinction", &desc.medium.baseExtinction, 0.0f, 10.0f, "%.4f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
-        ImGui::SetItemTooltip("Extinction at the base height is base extinction multiplied by density.");
-        changed |= ImGui::SliderFloat("Density", &desc.density, 0.0f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+        changed |= ImGui::SliderFloat("Base extinction", &desc.medium.baseExtinction, 0.0f, 1000.0f, "%.4f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Extinction at the base height, before height falloff.");
         changed |= ImGui::DragFloat("Max distance", &desc.maxDistance, 10.0f, 0.01f, 1000000.0f, "%.1f m", ImGuiSliderFlags_AlwaysClamp);
         ImGui::SetItemTooltip("Maximum fog ray distance for surfaces and sky. Independent of the froxel far depth.");
         changed |= ImGui::ColorEdit3("Scattering albedo", &desc.medium.scatteringAlbedo.x, ImGuiColorEditFlags_Float);
@@ -411,10 +408,10 @@ void SceneShadows::BuildImGui() {
             desc.medium.baseEmission.z = BE1::Max(desc.medium.baseEmission.z, 0.0f);
             changed = true;
         }
-        ImGui::SetItemTooltip("RGB radiance emitted per meter at unit density. Scales with density and is independent of scattering albedo.");
+        ImGui::SetItemTooltip("RGB radiance emitted per meter at the base height. Scales with height falloff and is independent of scattering albedo.");
         changed |= ImGui::ColorEdit3("Ambient color", desc.ambientColor.Ptr(), ImGuiColorEditFlags_Float);
         changed |= ImGui::DragFloat("Ambient intensity", &desc.ambientIntensity, 0.05f, 0.0f, 32.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-        ImGui::SetItemTooltip("Uniform ambient incident radiance for height fog. Scattering follows its density and albedo.");
+        ImGui::SetItemTooltip("Uniform ambient incident radiance for height fog. Scattering follows extinction, height falloff, and albedo.");
         ImGui::EndDisabled();
 
         if (changed) {
