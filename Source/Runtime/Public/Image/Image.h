@@ -214,10 +214,10 @@ public:
 
     /// Orientation of atlas tiles and their stacking direction in engine space.
     enum class SliceLayout {
-        FrontToBack = 0,     ///< Tile right: +Y, tile down: -Z, slices: -X.
-        BackToFront = 1,     ///< Tile right: +Y, tile down: -Z, slices: +X.
-        TopToBottom = 2,     ///< Tile right: +Y, tile down: +X, slices: -Z.
-        BottomToTop = 3      ///< Tile right: +Y, tile down: +X, slices: +Z.
+        FrontToBack = 0,    ///< Tile right: +Y, tile down: -Z, slices: -X.
+        BackToFront = 1,    ///< Tile right: +Y, tile down: -Z, slices: +X.
+        TopToBottom = 2,    ///< Tile right: +Y, tile down: +X, slices: -Z.
+        BottomToTop = 3     ///< Tile right: +Y, tile down: +X, slices: +Z.
     };
 
     /// Cube map face in engine axis order. The numeric order matches serialized DDS face slices.

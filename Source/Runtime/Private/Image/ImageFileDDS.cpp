@@ -957,13 +957,10 @@ bool Image::WriteDDS(File *fp) const {
         header.ddsPixelFormat.ABitMask = 0xFF000000;
         break;
     case Format::R8G8B8A8:
-        header.ddsPixelFormat.flags = DDSPF_RGBA;
-        header.ddsPixelFormat.fourCC = 0;
-        header.ddsPixelFormat.RGBBitCount = 32;
-        header.ddsPixelFormat.RBitMask = 0x000000FF;
-        header.ddsPixelFormat.GBitMask = 0x0000FF00;
-        header.ddsPixelFormat.BBitMask = 0x00FF0000;
-        header.ddsPixelFormat.ABitMask = 0xFF000000;
+        // Retain color space with DX10 metadata for every texture dimension.
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = gammaSpace == GammaSpace::sRGB ? DX10_FORMAT_R8G8B8A8_UNORM_SRGB : DX10_FORMAT_R8G8B8A8_UNORM;
         break;
     case Format::B8G8R8X8:
         header.ddsPixelFormat.flags = DDSPF_RGB;
@@ -1156,15 +1153,18 @@ bool Image::WriteDDS(File *fp) const {
         break;
     case Format::BC1:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
-        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '1');
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = gammaSpace == GammaSpace::sRGB ? DX10_FORMAT_BC1_UNORM_SRGB : DX10_FORMAT_BC1_UNORM;
         break;
     case Format::BC2:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
-        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '3');
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = gammaSpace == GammaSpace::sRGB ? DX10_FORMAT_BC2_UNORM_SRGB : DX10_FORMAT_BC2_UNORM;
         break;
     case Format::BC3:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
-        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '5');
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = gammaSpace == GammaSpace::sRGB ? DX10_FORMAT_BC3_UNORM_SRGB : DX10_FORMAT_BC3_UNORM;
         break;
     case Format::BC3XGBR:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
@@ -1173,11 +1173,13 @@ bool Image::WriteDDS(File *fp) const {
         break;
     case Format::BC4:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
-        header.ddsPixelFormat.fourCC = MAKE_FOURCC('A', 'T', 'I', '1');
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DX10_FORMAT_BC4_UNORM;
         break;
     case Format::BC5:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
-        header.ddsPixelFormat.fourCC = MAKE_FOURCC('A', 'T', 'I', '2'); // ATI 3DTc
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        dx10Header.dxgiFormat = DX10_FORMAT_BC5_UNORM;
         break;
     case Format::R8:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
@@ -1237,15 +1239,6 @@ bool Image::WriteDDS(File *fp) const {
     default:
         BE_WARNLOG("Image::WriteDDS: invalid format '%s' for DDS\n", Image::FormatName(format));
         return false;
-    }
-
-    // Volume assets use DX10 metadata to retain their color space as well as their dimension.
-    if (Is3D() && format == Format::R8G8B8A8) {
-        header.ddsPixelFormat.flags = DDSPF_FOURCC;
-        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
-        header.ddsPixelFormat.RGBBitCount = 0;
-        header.ddsPixelFormat.RBitMask = header.ddsPixelFormat.GBitMask = header.ddsPixelFormat.BBitMask = header.ddsPixelFormat.ABitMask = 0;
-        dx10Header.dxgiFormat = gammaSpace == GammaSpace::sRGB ? DX10_FORMAT_R8G8B8A8_UNORM_SRGB : DX10_FORMAT_R8G8B8A8_UNORM;
     }
 
     fp->Write(&header, sizeof(header));
