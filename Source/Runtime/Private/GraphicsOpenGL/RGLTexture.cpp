@@ -423,10 +423,17 @@ void GraphicsOpenGL::SetTextureImage(TextureType::Enum textureType, const Image 
 
             if (srcImage->IsPacked() || (srcImage->IsCompressed() && OpenGL::SupportsCompressedGenMipmaps())) {
                 generateMipmaps = true;
-            } else {
+            } else if (!srcImage->IsEmpty()) {
                 mipmapedImage.Create(w, h, d, srcImage->GetArraySize(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
-                mipmapedImage.CopyFrom(*srcImage, 0, 1);
-                mipmapedImage.GenerateMipmaps();
+                if (!mipmapedImage.CopyFrom(*srcImage, 0, 1)) {
+                    BE_WARNLOG("GraphicsOpenGL::SetTextureImage: couldn't copy image for mipmap generation\n");
+                    return;
+                }
+
+                if (!mipmapedImage.GenerateMipmaps()) {
+                    return;
+                }
+
                 srcImage = &mipmapedImage;
             }
 

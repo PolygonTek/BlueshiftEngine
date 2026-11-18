@@ -317,6 +317,8 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
         const char *textureTypeString = textureTypeValue.asCString();
         if (!Str::Icmp(textureTypeString, "Sprite")) {
             flags |= Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
+        } else if (!Str::Icmp(textureTypeString, "3D")) {
+            flags |= Texture::Flag::NoCompression | Texture::Flag::NonPowerOfTwo | Texture::Flag::NoScaleDown;
         }
 
         const Json::Value normalMapValue = node.get("normalMap", "false");

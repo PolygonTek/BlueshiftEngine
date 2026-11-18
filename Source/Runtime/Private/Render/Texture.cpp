@@ -652,7 +652,10 @@ bool Texture::Load(const char *filename, int flags) {
         }
 
         Image cubeImage;
-        cubeImage.CreateCubeFrom6Faces(images);
+        if (!cubeImage.CreateCubeFrom6Faces(images)) {
+            BE_WARNLOG("Couldn't create cubemap '%s' from its face images\n", filename);
+            return false;
+        }
         Create(Graphics::TextureType::TextureCubeMap, cubeImage, flags | Flag::LoadedFromFile);
     } else {
         BE_LOG("Loading texture '%s'...\n", filename);
@@ -667,7 +670,7 @@ bool Texture::Load(const char *filename, int flags) {
 
         Graphics::TextureType::Enum textureType;
 
-        if (image.GetDepth() > 1) {
+        if (image.Is3D()) {
             textureType = Graphics::TextureType::Texture3D;
         } else if (image.IsCubeMap()) {
             textureType = Graphics::TextureType::TextureCubeMap;
@@ -719,7 +722,9 @@ void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMip
         }
     }
 
-    cubeImage.CreateCubeFrom6Faces(faceImages);
+    if (!cubeImage.CreateCubeFrom6Faces(faceImages)) {
+        BE_WARNLOG("Texture::GetCubeImageFromCubeTexture: couldn't assemble cubemap faces\n");
+    }
 }
 
 //--------------------------------------------------------------------------------------------------

@@ -252,7 +252,10 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
         }
 
         if (mipmapRegenerationMode != MipmapGenerationMode::NoMipmaps) {
-            unpackedSrcImage.GenerateMipmaps(mipmapRegenerationMode == MipmapGenerationMode::MipmapsWithAlphaCoverage);
+            if (!unpackedSrcImage.GenerateMipmaps(mipmapRegenerationMode == MipmapGenerationMode::MipmapsWithAlphaCoverage)) {
+                dstImage.Clear();
+                return false;
+            }
         }
 
         srcImage = &unpackedSrcImage;
@@ -261,7 +264,10 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
             unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps, srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
 
             // Copy only the first level of the source image for mipmap generation.
-            unpackedSrcImage.CopyFrom(*srcImage, 0, 1);
+            if (!unpackedSrcImage.CopyFrom(*srcImage, 0, 1)) {
+                dstImage.Clear();
+                return false;
+            }
         } else {
             // Packed format can't generate mipmaps directly, so we need to unpack it.
             if (!srcImage->ConvertFormat(srcImage->NeedFloatConversion() ? Format::R32G32B32A32_FLOAT : Format::R8G8B8A8, convertedSrcImage, dstGammaSpace)) {
@@ -269,10 +275,16 @@ bool Image::ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGamma
                 return false;
             }
             unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->arraySize, numDstMipmaps, convertedSrcImage.format, convertedSrcImage.gammaSpace, nullptr, srcImage->flags);
-            unpackedSrcImage.CopyFrom(convertedSrcImage, 0, 1);
+            if (!unpackedSrcImage.CopyFrom(convertedSrcImage, 0, 1)) {
+                dstImage.Clear();
+                return false;
+            }
         }
 
-        unpackedSrcImage.GenerateMipmaps(mipmapRegenerationMode == MipmapGenerationMode::MipmapsWithAlphaCoverage);
+        if (!unpackedSrcImage.GenerateMipmaps(mipmapRegenerationMode == MipmapGenerationMode::MipmapsWithAlphaCoverage)) {
+            dstImage.Clear();
+            return false;
+        }
 
         srcImage = &unpackedSrcImage;
     }

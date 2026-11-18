@@ -113,7 +113,7 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     spotLight.intensity = 15.0f;
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
 
-    fogDensityNoiseTexture = textureManager.GetTexture(fogDensityNoisePath, Texture::Flag::HighQuality | Texture::Flag::LinearColorSpace, false);
+    fogDensityNoiseTexture = textureManager.GetTexture(fogDensityNoisePath, Texture::Flag::NoScaleDown | Texture::Flag::LinearColorSpace, false);
     if (!fogDensityNoiseTexture || fogDensityNoiseTexture == textureManager.missingTexture ||
         !fogDensityNoiseTexture->IsReady() || fogDensityNoiseTexture->GetType() != RHI::TextureType::Texture3D) {
         BE_WARNLOG("SceneShadows::Init: failed to load 3D density mask '%s'\n", fogDensityNoisePath);
@@ -129,7 +129,7 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     boxFogDesc.medium.scatteringAlbedo = float3(1.0f, 0.7f, 0.0f);
     boxFogDesc.medium.anisotropy = 0.15f;
     boxFogDesc.maskTexture = fogDensityNoiseTexture;
-    boxFogDesc.maskScrollSpeed = BE1::Vec3(0.2f, 0.1f, 0.05f);
+    boxFogDesc.maskScrollSpeed = BE1::Vec3(0.2f, 0.1f, 1.0f);
     boxFogDesc.heightFogFalloff = 0.0f;
     boxFogDesc.heightFogOffset = 0.0f;
     boxFogHandle = renderWorld->AddLocalFogVolume(boxFogDesc);
@@ -301,7 +301,7 @@ static void BuildBoxFogControls(RenderWorld *renderWorld, int handle, const char
     ImGui::BeginDisabled(!desc.maskTexture);
     changed |= ImGui::DragFloat3("Mask tiling", desc.maskTiling.Ptr(), 0.05f, -16.0f, 16.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::SetItemTooltip("Repetitions across the full volume along local X, Y, Z. Negative values mirror an axis; zero removes variation along that axis.");
-    changed |= ImGui::DragFloat3("Mask scroll speed", desc.maskScrollSpeed.Ptr(), 0.005f, -10.0f, 10.0f, "%.3f UVW/s", ImGuiSliderFlags_AlwaysClamp);
+    changed |= ImGui::DragFloat3("Mask scroll speed", desc.maskScrollSpeed.Ptr(), 0.005f, -10.0f, 10.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::SetItemTooltip("Texture cycles per second along local X, Y, Z. With positive tiling, positive speed moves the pattern along the positive local axis. Zero pauses that axis.");
     ImGui::EndDisabled();
 

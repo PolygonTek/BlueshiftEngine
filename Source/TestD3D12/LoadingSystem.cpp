@@ -498,7 +498,7 @@ bool LoadingSystem::ProcessTextureLoadRequest(LoadRequest &&request) {
     int textureDepth = useMipRange ? mipRange.originalDepth : image->GetDepth();
 
     RHI::TextureType textureType;
-    if (textureDepth > 1) {
+    if (image->Is3D() || textureDepth > 1) {
         textureType = RHI::TextureType::Texture3D;
     } else if (image->IsCubeMap()) {
         textureType = RHI::TextureType::TextureCube;
@@ -561,7 +561,7 @@ bool LoadingSystem::ProcessTextureStreamingReplacementRequest(LoadRequest &&requ
     int textureDepth = mipRange.originalDepth;
 
     RHI::TextureType textureType;
-    if (textureDepth > 1) {
+    if (image->Is3D() || textureDepth > 1) {
         textureType = RHI::TextureType::Texture3D;
     } else if (image->IsCubeMap()) {
         textureType = RHI::TextureType::TextureCube;

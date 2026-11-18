@@ -206,6 +206,7 @@ public:
         NoMipmaps           = BIT(2),
         NoCompression       = BIT(3),
         NoStreaming         = BIT(4),
+        Volume              = BIT(5),
         TextureHintsMask    = NormalMap | NoMipmaps | NoCompression | NoStreaming
     };
 
@@ -326,6 +327,9 @@ public:
                         /// Returns true if image is cube map.
     bool                IsCubeMap() const { return HasFlag(flags, Flag::CubeMap); }
 
+                        /// Returns true for a volume, including a single-depth volume or its smallest mip.
+    bool                Is3D() const { return depth > 1 || HasFlag(flags, Flag::Volume); }
+
                         /// Returns image width.
     int32_t             GetWidth() const { return width; }
                         /// Returns image width with the given mip level.
@@ -401,23 +405,33 @@ public:
     Image &             CreateCube(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags = Flag::None);
     Image &             Create2DArray(int32_t width, int32_t height, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags = Flag::None);
 
+                        /// Creates a volume from an uncompressed 2D tile atlas, left to right, then top to bottom.
+                        /// Only the base mip is unpacked; optional mipmaps are generated in 3D.
+                        /// Invalid atlas input leaves this image unchanged; mip generation failure clears it.
+    bool                Create3DFromAtlas(const Image &atlas, int32_t columns, int32_t rows, bool generateMipmaps = false);
+
                         /// Creates a cubic image from six square images.
-    Image &             CreateCubeFrom6Faces(const Image *faceImages);
+                        /// Returns false if faces are empty or their dimensions, format or mip counts differ.
+    bool                CreateCubeFrom6Faces(const Image *faceImages);
                         /// Creates a cubic image from single equirectangular spherical image.
-    Image &             CreateCubeFromEquirectangular(const Image &equirectangularImage, int32_t faceSize);
+                        /// Returns false for empty input, unsupported pixel conversion or a nonpositive face size.
+    bool                CreateCubeFromEquirectangular(const Image &equirectangularImage, int32_t faceSize);
                         /// Creates an equirectangular spherical image from cubic image.
-    Image &             CreateEquirectangularFromCube(const Image &cubeImage);
+                        /// Returns false for empty/non-cubemap input or unsupported pixel conversion.
+    bool                CreateEquirectangularFromCube(const Image &cubeImage);
 
                         /// Copies raw image data from another.
-                        /// Nothing happens if source dimensions or mip storage sizes do not match this image.
-    Image &             CopyFrom(const Image &srcImage, int32_t firstMipLevel = 0, int32_t mipCount = 1);
+                        /// Returns false without modifying this image if either image is empty, dimensions or mip storage sizes differ, or the mip range is invalid.
+    bool                CopyFrom(const Image &srcImage, int32_t firstMipLevel = 0, int32_t mipCount = 1);
 
                         /// Updates sub region.
-    void                Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int32_t height, const byte *data);
+                        /// Returns false without modifying this image if it is empty/compressed, data is null or the mip/region is invalid.
+    bool                Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int32_t height, const byte *data);
     
                         /// Generates all mipmaps this image has.
                         /// If preserveAlphaCoverage is true, colors are alpha-weighted and alpha uses the maximum source sample.
-    Image &             GenerateMipmaps(bool preserveAlphaCoverage = false);
+                        /// Returns false for empty images or unsupported mip generation; a nonempty single-level image returns true.
+    bool                GenerateMipmaps(bool preserveAlphaCoverage = false);
 
                         /// Converts this image to the given target image.
     bool                ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal) const;
@@ -540,7 +554,7 @@ private:
     bool                LoadDDSMipRange(File *fp, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
     bool                LoadDDSMipRangeForMaxDimension(const char *filename, int32_t maxDimension, MipRange *outInfo);
     bool                LoadDDSMipRangeForMaxDimension(File *fp, int32_t maxDimension, MipRange *outInfo);
-    bool                LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t originalHeight, int32_t originalDepth, int32_t ddsArraySize, int32_t originalMipLevels, bool isCubemap, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
+    bool                LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t originalHeight, int32_t originalDepth, int32_t ddsArraySize, int32_t originalMipLevels, Flag imageFlags, int32_t firstMip, int32_t mipCount, MipRange *outInfo);
 
     int32_t             WrapCoord(int32_t coord, int32_t size, SampleWrapMode wrapMode) const;
 
@@ -650,7 +664,7 @@ BE_INLINE Image &Image::Init2DFromMemory(int32_t width, int32_t height, int32_t 
 }
 
 BE_INLINE Image &Image::Init3DFromMemory(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
-    return InitFromMemory(width, height, depth, 1, numMipLevels, format, gammaSpace, data, flags);
+    return InitFromMemory(width, height, depth, 1, numMipLevels, format, gammaSpace, data, flags | Flag::Volume);
 }
 
 BE_INLINE Image &Image::InitCubeFromMemory(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
@@ -666,7 +680,7 @@ BE_INLINE Image &Image::Create2D(int32_t width, int32_t height, int32_t numMipLe
 }
 
 BE_INLINE Image &Image::Create3D(int32_t width, int32_t height, int32_t depth, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {
-    return Create(width, height, depth, 1, numMipLevels, format, gammaSpace, data, flags);
+    return Create(width, height, depth, 1, numMipLevels, format, gammaSpace, data, flags | Flag::Volume);
 }
 
 BE_INLINE Image &Image::CreateCube(int32_t size, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags) {

@@ -133,7 +133,57 @@ Image &Image::Create(int32_t width, int32_t height, int32_t depth, int32_t numSl
     return *this;
 }
 
-Image &Image::CreateCubeFrom6Faces(const Image *images) {
+bool Image::Create3DFromAtlas(const Image &atlas, int32_t columns, int32_t rows, bool generateMipmaps) {
+    if (atlas.IsEmpty() || atlas.IsCompressed() ||
+        columns <= 0 || rows <= 0 || atlas.width % columns != 0 || atlas.height % rows != 0) {
+        return false;
+    }
+
+    const int32_t sliceWidth = atlas.width / columns;
+    const int32_t sliceHeight = atlas.height / rows;
+    const int32_t sliceCount = columns * rows;
+    const int32_t mipCount = generateMipmaps ? MaxMipLevels(sliceWidth, sliceHeight, sliceCount) : 1;
+    Flag volumeHints = atlas.GetTextureHints() & ~Flag::NoMipmaps;
+    if (!generateMipmaps) {
+        volumeHints |= Flag::NoMipmaps;
+    }
+    Create3D(sliceWidth, sliceHeight, sliceCount, mipCount, atlas.format, atlas.gammaSpace, nullptr, volumeHints);
+
+    const size_t rowBytes = static_cast<size_t>(sliceWidth) * BytesPerPixel();
+    const size_t sourcePitch = static_cast<size_t>(atlas.width) * BytesPerPixel();
+    byte *dst = GetPixels();
+
+    // Allocate the complete volume once and copy each tile row directly to its Z slice.
+    for (int32_t tileY = 0; tileY < rows; tileY++) {
+        for (int32_t tileX = 0; tileX < columns; tileX++) {
+            const byte *src = atlas.GetPixels() + static_cast<size_t>(tileY) * sliceHeight * sourcePitch + static_cast<size_t>(tileX) * rowBytes;
+            for (int32_t y = 0; y < sliceHeight; y++) {
+                memcpy(dst, src, rowBytes);
+                dst += rowBytes;
+                src += sourcePitch;
+            }
+        }
+    }
+
+    if (generateMipmaps && !GenerateMipmaps()) {
+        Clear();
+        return false;
+    }
+    return true;
+}
+
+bool Image::CreateCubeFrom6Faces(const Image *images) {
+    if (!images) {
+        return false;
+    }
+
+    for (int i = 0; i < 6; i++) {
+        if (images[i].IsEmpty() || images[i].width != images[i].height || images[i].width != images[0].width ||
+            images[i].format != images[0].format || images[i].numMipLevels != images[0].numMipLevels) {
+            return false;
+        }
+    }
+
     Clear();
 
     this->width = images[0].width;
@@ -152,19 +202,23 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     byte *dst = this->pic;
     
     for (int i = 0; i < 6; i++) {
-        assert(images[i].width == images[i].height);
-        assert(images[i].width == images[0].width);
-        assert(images[i].format == images[0].format);
-        assert(images[i].numMipLevels == images[0].numMipLevels);
-
         simdProcessor->Memcpy(dst, images[i].pic, bytesForFace);
         dst += bytesForFace;
     }
 
-    return *this;
+    return true;
 }
 
-Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, int32_t faceSize) {
+bool Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, int32_t faceSize) {
+    if (equirectangularImage.IsEmpty() || faceSize <= 0) {
+        return false;
+    }
+
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(equirectangularImage.format);
+    if (!formatInfo->unpackRGBA32F || !formatInfo->packRGBA32F) {
+        return false;
+    }
+
     Clear();
 
     this->width = faceSize;
@@ -179,8 +233,6 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     size_t bytesForFace = SizeInBytesForSlice(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bytesForFace * 6);
     this->alloced = true;
-
-    const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
 
     const float invSize = 1.0f / faceSize;
 
@@ -203,10 +255,19 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
         }
     }
 
-    return *this;
+    return true;
 }
 
-Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
+bool Image::CreateEquirectangularFromCube(const Image &cubeImage) {
+    if (cubeImage.IsEmpty() || !cubeImage.IsCubeMap()) {
+        return false;
+    }
+
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(cubeImage.format);
+    if (!formatInfo->unpackRGBA32F || !formatInfo->packRGBA32F) {
+        return false;
+    }
+
     Clear();
 
     this->width = cubeImage.width * 2;
@@ -222,17 +283,14 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
 
-    const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
-
     byte *dst = GetPixels(0);
 
     for (int dstY = 0; dstY < height; dstY++) {
+        const float dstV = height > 1 ? (float)dstY / (height - 1) : 0.5f;
+
         for (int dstX = 0; dstX < width; dstX++) {
             const float dstU = (float)dstX / (width - 1);
-            const float dstV = (float)dstY / (height - 1);
-
             const Vec3 direction = EquirectangularUVToDirection(dstU, dstV);
-
             const Color4 color = cubeImage.SampleCube(direction, Image::SampleFilter::Bilinear);
 
             // Convert color from float format to destination format.
@@ -240,26 +298,26 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
         }
     }
 
-    return *this;
+    return true;
 }
 
-Image &Image::CopyFrom(const Image &srcImage, int32_t firstMipLevel, int32_t mipCount) {
+bool Image::CopyFrom(const Image &srcImage, int32_t firstMipLevel, int32_t mipCount) {
     if (IsEmpty() || srcImage.IsEmpty()) {
-        return *this;
+        return false;
     }
 
     if (srcImage.GetWidth() != width || srcImage.GetHeight() != height || srcImage.GetDepth() != depth || srcImage.IsCubeMap() != IsCubeMap() || srcImage.GetArraySize() != arraySize) {
-        return *this;
+        return false;
     }
 
     if (firstMipLevel < 0 || mipCount <= 0 || firstMipLevel >= numMipLevels || firstMipLevel >= srcImage.numMipLevels || mipCount > srcImage.numMipLevels - firstMipLevel || mipCount > numMipLevels - firstMipLevel) {
-        return *this;
+        return false;
     }
 
     // Formats may differ, but each mip must occupy the same number of bytes for a safe raw copy.
     for (int32_t mipLevel = firstMipLevel; mipLevel < firstMipLevel + mipCount; mipLevel++) {
         if (srcImage.SizeInBytesForSlice(mipLevel, 1) != SizeInBytesForSlice(mipLevel, 1)) {
-            return *this;
+            return false;
         }
     }
 
@@ -272,20 +330,18 @@ Image &Image::CopyFrom(const Image &srcImage, int32_t firstMipLevel, int32_t mip
         simdProcessor->Memcpy(dst, src, bytesPerSlice);
     }
 
-    return *this;
+    return true;
 }
 
-void Image::Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int32_t height, const byte *data) {
-    if (!data || IsCompressed() || mipLevel < 0 || mipLevel >= numMipLevels || x < 0 || y < 0 || width <= 0 || height <= 0) {
-        assert(0);
-        return;
+bool Image::Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int32_t height, const byte *data) {
+    if (IsEmpty() || !data || IsCompressed() || mipLevel < 0 || mipLevel >= numMipLevels || x < 0 || y < 0 || width <= 0 || height <= 0) {
+        return false;
     }
 
     const int32_t mipWidth = GetWidth(mipLevel);
     const int32_t mipHeight = GetHeight(mipLevel);
     if (width > mipWidth - x || height > mipHeight - y) {
-        assert(0);
-        return;
+        return false;
     }
 
     const int bpp = BytesPerPixel();
@@ -300,6 +356,8 @@ void Image::Update2D(int32_t mipLevel, int32_t x, int32_t y, int32_t width, int3
         dstPtr += dstPitch;
         srcPtr += srcPitch;
     }
+
+    return true;
 }
 
 Image &Image::operator=(const Image &rhs) {

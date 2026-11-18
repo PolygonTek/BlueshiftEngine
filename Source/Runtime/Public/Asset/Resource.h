@@ -92,6 +92,14 @@ public:
     ~Texture2DResource();
 };
 
+class Texture3DResource : public TextureResource {
+public:
+    OBJECT_PROTOTYPE(Texture3DResource);
+
+    Texture3DResource();
+    ~Texture3DResource();
+};
+
 class TextureCubeMapResource : public TextureResource {
 public:
     OBJECT_PROTOTYPE(TextureCubeMapResource);

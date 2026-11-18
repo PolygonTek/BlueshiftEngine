@@ -421,6 +421,8 @@ bool Shader::ShaderPropertyDesc::Parse(Lexer &lexer) {
 
         if (!Str::Icmp(textureTypeStr, "2D")) {
             metaObject = &Texture2DResource::metaObject;
+        } else if (!Str::Icmp(textureTypeStr, "3D")) {
+            metaObject = &Texture3DResource::metaObject;
         } else if (!Str::Icmp(textureTypeStr, "CUBE")) {
             metaObject = &TextureCubeMapResource::metaObject;
         } else if (!Str::Icmp(textureTypeStr, "SPRITE")) {

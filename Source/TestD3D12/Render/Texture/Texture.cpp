@@ -246,8 +246,15 @@ RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::Textu
                 // CPU 에서 밉맵을 직접 생성한다.
                 SharedPtr<BE1::Image> mipmappedImage = MakeShared<BE1::Image>();
                 mipmappedImage->Create(w, h, d, srcImage->GetArraySize(), maxMipLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
-                mipmappedImage->CopyFrom(*srcImage, 0, 1);
-                mipmappedImage->GenerateMipmaps();
+                if (!mipmappedImage->CopyFrom(*srcImage, 0, 1)) {
+                    BE_WARNLOG("Texture::CreateRHITexture: couldn't copy image for mipmap generation\n");
+                    return nullptr;
+                }
+
+                if (!mipmappedImage->GenerateMipmaps()) {
+                    return nullptr;
+                }
+
                 srcImage = std::move(mipmappedImage);
             }
         }
@@ -288,8 +295,8 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
 
     bool useUAV = BE1::HasFlag(flags, Texture::Flag::UnorderedAccess);
     bool useNormalMap = BE1::HasFlag(flags, Texture::Flag::NormalMap);
-    bool useCompression = !BE1::HasFlag(flags, Texture::Flag::NoCompression);
-    bool useNPOT = BE1::HasFlag(flags, Texture::Flag::NonPowerOfTwo);
+    bool useCompression = !BE1::HasAnyFlag(flags, Texture::Flag::NoCompression | Texture::Flag::RenderTarget);
+    bool useNPOT = textureType == RHI::TextureType::Texture3D || BE1::HasFlag(flags, Texture::Flag::NonPowerOfTwo);
     bool allocateEmptyMipmaps = BE1::HasFlag(flags, Texture::Flag::AllocateEmptyMipmaps);
     bool generateMipmaps = !allocateEmptyMipmaps && !BE1::HasFlag(flags, Texture::Flag::NoMipmaps);
 
@@ -421,7 +428,7 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
 
     RHI::TextureType textureType;
 
-    if (image->GetDepth() > 1) {
+    if (image->Is3D()) {
         textureType = RHI::TextureType::Texture3D;
     } else if (image->IsCubeMap()) {
         textureType = RHI::TextureType::TextureCube;
@@ -604,6 +611,5 @@ bool Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMip
         }
     }
 
-    outCubeImage.CreateCubeFrom6Faces(faceImages);
-    return true;
+    return outCubeImage.CreateCubeFrom6Faces(faceImages);
 }

@@ -456,6 +456,7 @@ set(COMMON_ENGINE_FILES
     Private/Asset/GltfResource.cpp
     Private/Asset/TextureResource.cpp
     Private/Asset/Texture2DResource.cpp
+    Private/Asset/Texture3DResource.cpp
     Private/Asset/TextureCubeMapResource.cpp
     Private/Asset/TextureSpriteResource.cpp
     Private/Asset/ShaderResource.cpp

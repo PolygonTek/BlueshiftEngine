@@ -81,7 +81,7 @@ static void TestImageOddMipGeneration() {
 
     BE1::Image image;
     image.Init2DFromMemory(3, 3, 2, BE1::Image::Format::R8, BE1::Image::GammaSpace::Linear, guardedPixels + 1);
-    image.GenerateMipmaps();
+    VERIFY_IMAGE(image.GenerateMipmaps());
 
     VERIFY_IMAGE(guardedPixels[0] == 0xCD);
     VERIFY_IMAGE(guardedPixels[10] == 20);

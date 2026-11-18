@@ -483,24 +483,28 @@ static int GetAlphaComponentIndex(Image::Format format) {
     }
 }
 
-Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
-    if (IsEmpty() || numMipLevels <= 1) {
-        return *this;
+bool Image::GenerateMipmaps(bool preserveAlphaCoverage) {
+    if (IsEmpty()) {
+        return false;
+    }
+
+    if (numMipLevels <= 1) {
+        return true;
     }
 
     if (IsCompressed()) {
         BE_WARNLOG("Image::GenerateMipmaps: Couldn't generate mipmaps for a compressed image.\n");
-        return *this;
+        return false;
     }
 
     if (IsPacked()) {
         BE_WARNLOG("Image::GenerateMipmaps: Couldn't generate mipmaps for a packed format image.\n");
-        return *this;
+        return false;
     }
 
     if (IsDepthFormat() || IsDepthStencilFormat()) {
         BE_WARNLOG("Image::GenerateMipmaps: Couldn't generate mipmaps for a depth/stencil image.\n");
-        return *this;
+        return false;
     }
 
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
@@ -508,7 +512,7 @@ Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
     const int bytesPerPixel = BytesPerPixel();
     if (numComponents <= 0 || bytesPerPixel <= 0 || bytesPerPixel % numComponents != 0) {
         BE_WARNLOG("Image::GenerateMipmaps: Unsupported format %s.\n", FormatName());
-        return *this;
+        return false;
     }
 
     const int bytesPerComponent = bytesPerPixel / numComponents;
@@ -516,7 +520,7 @@ Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
     const bool useGammaLut = bytesPerComponent == 1 && HasFlag(formatInfo->type, FormatType::UNorm) && (gammaSpace == GammaSpace::sRGB || gammaSpace == GammaSpace::Pow22);
     if (!IsFloatFormat() && bytesPerComponent != 1 && bytesPerComponent != 2 && bytesPerComponent != 4) {
         BE_WARNLOG("Image::GenerateMipmaps: Unsupported component size for format %s.\n", FormatName());
-        return *this;
+        return false;
     }
 
     preserveAlphaCoverage = preserveAlphaCoverage && HasAlpha();
@@ -567,7 +571,7 @@ Image &Image::GenerateMipmaps(bool preserveAlphaCoverage) {
             }
         }
     }
-    return *this;
+    return true;
 }
 
 BE_NAMESPACE_END

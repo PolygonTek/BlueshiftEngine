@@ -928,14 +928,18 @@ BE_INLINE void BCEncoder::ExtractBlock(const byte *src, int srcPitch, int blockW
 void BCEncoder::CompressImageBC1Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
     
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC1BlockFast(colorBlock, &dstPtr);
             }
@@ -946,14 +950,18 @@ void BCEncoder::CompressImageBC1Fast(const byte *src, const int width, const int
 void BCEncoder::CompressImageBC1HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC1BlockHQ(colorBlock, &dstPtr);
             }
@@ -964,14 +972,18 @@ void BCEncoder::CompressImageBC1HQ(const byte *src, const int width, const int h
 void BCEncoder::CompressImageBC2Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC2BlockFast(colorBlock, &dstPtr);
             }
@@ -982,14 +994,18 @@ void BCEncoder::CompressImageBC2Fast(const byte *src, const int width, const int
 void BCEncoder::CompressImageBC2HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC2BlockHQ(colorBlock, &dstPtr);
             }
@@ -1000,14 +1016,18 @@ void BCEncoder::CompressImageBC2HQ(const byte *src, const int width, const int h
 void BCEncoder::CompressImageBC3Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC3BlockFast(colorBlock, &dstPtr);
             }
@@ -1018,14 +1038,18 @@ void BCEncoder::CompressImageBC3Fast(const byte *src, const int width, const int
 void BCEncoder::CompressImageBC3HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC3BlockHQ(colorBlock, &dstPtr);
             }
@@ -1036,14 +1060,18 @@ void BCEncoder::CompressImageBC3HQ(const byte *src, const int width, const int h
 void BCEncoder::CompressImageBC4Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC4BlockFast(colorBlock, &dstPtr);
             }
@@ -1054,14 +1082,18 @@ void BCEncoder::CompressImageBC4Fast(const byte *src, const int width, const int
 void BCEncoder::CompressImageBC4HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC4BlockHQ(colorBlock, &dstPtr);
             }
@@ -1072,14 +1104,18 @@ void BCEncoder::CompressImageBC4HQ(const byte *src, const int width, const int h
 void BCEncoder::CompressImageBC5Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC5BlockFast(colorBlock, &dstPtr);
             }
@@ -1090,14 +1126,18 @@ void BCEncoder::CompressImageBC5Fast(const byte *src, const int width, const int
 void BCEncoder::CompressImageBC5HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
     ALIGN_AS32 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
+    const int srcPitch = width * 4;
+    const size_t srcSlicePitch = static_cast<size_t>(srcPitch) * height;
 
-    for (int z = 0; z < depth; z++) {
-        for (int y = 0; y < height; y += 4, src += width * 4 * 4) {
+    for (int z = 0; z < depth; z++, src += srcSlicePitch) {
+        for (int y = 0; y < height; y += 4) {
+            const byte *srcRow = src + static_cast<size_t>(y) * srcPitch;
+
             for (int x = 0; x < width; x += 4) {
                 int bw = Min(4, width - x);
                 int bh = Min(4, height - y);
 
-                ExtractBlock(src + 4 * x, 4 * width, bw, bh, colorBlock);
+                ExtractBlock(srcRow + 4 * x, srcPitch, bw, bh, colorBlock);
 
                 EncodeBC5BlockHQ(colorBlock, &dstPtr);
             }

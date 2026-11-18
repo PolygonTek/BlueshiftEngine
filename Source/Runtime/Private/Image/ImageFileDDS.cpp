@@ -608,6 +608,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     gammaSpace = Image::GammaSpace::DontCare;
 
     int ddsArraySize = 1;
+    bool isVolume = (header->ddsCaps.caps2 & DDSCAPS2_VOLUME) != 0 || header->depth > 1;
 
     if (header->ddsPixelFormat.fourCC == MAKE_FOURCC('D', 'X', '1', '0')) {
         DdsFileHeaderDX10 *dx10Header = (DdsFileHeaderDX10 *)ptr;
@@ -616,6 +617,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         // NOTE: arraySize is independent of the cubemap face count.
         // each cubemap always has 6 faces. dx10Header->arraySize specifies the number of cubemaps in the array.
         ddsArraySize = dx10Header->arraySize;
+        isVolume = isVolume || dx10Header->resourceDimension == DX10_RESOURCE_DIMENSION_TEXTURE3D;
 
         ParseDX10Format(*dx10Header, format, gammaSpace);
     } else {
@@ -645,6 +647,9 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->numMipLevels = BE1::Max((int)header->mipmapCount, 1);
     this->arraySize = ddsArraySize * (isCube ? 6 : 1);
     this->flags = isCube ? Flag::CubeMap : Flag::None;
+    if (isVolume) {
+        this->flags |= Flag::Volume;
+    }
 
     size_t bufSize = SizeInBytes(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bufSize);
@@ -685,6 +690,9 @@ static bool LoadDDSInfo(File *fp, DdsFileHeader &header, Image::Format &format, 
         // NOTE: arraySize is independent of the cubemap face count.
         // each cubemap always has 6 faces. dx10Header->arraySize specifies the number of cubemaps in the array.
         arraySize = dx10Header.arraySize;
+        if (dx10Header.resourceDimension == DX10_RESOURCE_DIMENSION_TEXTURE3D) {
+            header.ddsCaps.caps2 |= DDSCAPS2_VOLUME;
+        }
 
         ParseDX10Format(dx10Header, format, gammaSpace);
     } else {
@@ -707,7 +715,7 @@ static bool LoadDDSInfo(File *fp, DdsFileHeader &header, Image::Format &format, 
     return true;
 }
 
-bool Image::LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t originalHeight, int32_t originalDepth, int32_t ddsArraySize, int32_t originalMipLevels, bool isCubemap, int32_t firstMip, int32_t mipCount, MipRange *outInfo) {
+bool Image::LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t originalHeight, int32_t originalDepth, int32_t ddsArraySize, int32_t originalMipLevels, Flag imageFlags, int32_t firstMip, int32_t mipCount, MipRange *outInfo) {
     // DDS depth 와 mip count 값은 0 일 수 있기 때문에 여기서 최소 1 로 변경해준다.
     originalDepth = Max(1, originalDepth);
     originalMipLevels = Max(1, originalMipLevels);
@@ -721,8 +729,8 @@ bool Image::LoadDDSMipRangeData(File *fp, int32_t originalWidth, int32_t origina
     this->height = BE1::Max(1, originalHeight >> firstMip);
     this->depth = BE1::Max(1, originalDepth >> firstMip);
     this->numMipLevels = mipCount;
-    this->arraySize = ddsArraySize * (isCubemap ? 6 : 1);
-    this->flags = isCubemap ? Flag::CubeMap : Flag::None;
+    this->arraySize = ddsArraySize * (HasFlag(imageFlags, Flag::CubeMap) ? 6 : 1);
+    this->flags = imageFlags;
 
     size_t bufSize = SizeInBytes(0, numMipLevels);
     this->pic = (byte *)Mem_Alloc256(bufSize);
@@ -787,9 +795,12 @@ bool Image::LoadDDSMipRange(File *fp, int32_t firstMip, int32_t mipCount, MipRan
         return false;
     }
 
-    bool isCubemap = (header.ddsCaps.caps2 & DDSCAPS2_CUBEMAP) ? true : false;
+    Flag imageFlags = (header.ddsCaps.caps2 & DDSCAPS2_CUBEMAP) ? Flag::CubeMap : Flag::None;
+    if ((header.ddsCaps.caps2 & DDSCAPS2_VOLUME) || header.depth > 1) {
+        imageFlags |= Flag::Volume;
+    }
 
-    if (!LoadDDSMipRangeData(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, isCubemap, firstMip, mipCount, outInfo)) {
+    if (!LoadDDSMipRangeData(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, imageFlags, firstMip, mipCount, outInfo)) {
         return false;
     }
 
@@ -843,12 +854,15 @@ bool Image::LoadDDSMipRangeForMaxDimension(File *fp, int32_t maxDimension, MipRa
         return false;
     }
 
-    bool isCubemap = (header.ddsCaps.caps2 & DDSCAPS2_CUBEMAP) ? true : false;
+    Flag imageFlags = (header.ddsCaps.caps2 & DDSCAPS2_CUBEMAP) ? Flag::CubeMap : Flag::None;
+    if ((header.ddsCaps.caps2 & DDSCAPS2_VOLUME) || header.depth > 1) {
+        imageFlags |= Flag::Volume;
+    }
 
     int32_t firstMip = Image::ComputeFirstMipForMaxDimension(header.width, header.height, header.depth, header.mipmapCount, maxDimension);
     int32_t mipCount = header.mipmapCount - firstMip;
 
-    if (!LoadDDSMipRangeData(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, isCubemap, firstMip, mipCount, outInfo)) {
+    if (!LoadDDSMipRangeData(fp, header.width, header.height, header.depth, ddsArraySize, header.mipmapCount, imageFlags, firstMip, mipCount, outInfo)) {
         return false;
     }
 
@@ -883,8 +897,9 @@ bool Image::WriteDDS(File *fp) const {
         header.mipmapCount = numMipLevels;
     }
 
-    if (depth > 1) {
+    if (Is3D()) {
         header.flags |= DDSD_DEPTH;
+        header.ddsCaps.caps1 |= DDSCAPS_COMPLEX;
         header.ddsCaps.caps2 |= DDSCAPS2_VOLUME;
         header.depth = depth;
     }
@@ -906,7 +921,7 @@ bool Image::WriteDDS(File *fp) const {
 
     DdsFileHeaderDX10 dx10Header;
     memset(&dx10Header, 0, sizeof(dx10Header));
-    dx10Header.resourceDimension = depth > 1 ? DX10_RESOURCE_DIMENSION_TEXTURE3D : DX10_RESOURCE_DIMENSION_TEXTURE2D;
+    dx10Header.resourceDimension = Is3D() ? DX10_RESOURCE_DIMENSION_TEXTURE3D : DX10_RESOURCE_DIMENSION_TEXTURE2D;
     dx10Header.miscFlag = isCubemap ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
     dx10Header.arraySize = arraySize / (isCubemap ? 6 : 1);
     dx10Header.miscFlag2 = DX10_RESOURCE_MISC2_UNKNOWN;
@@ -1220,6 +1235,15 @@ bool Image::WriteDDS(File *fp) const {
     default:
         BE_WARNLOG("Image::WriteDDS: invalid format '%s' for DDS\n", Image::FormatName(format));
         return false;
+    }
+
+    // Volume assets use DX10 metadata to retain their color space as well as their dimension.
+    if (Is3D() && format == Format::R8G8B8A8) {
+        header.ddsPixelFormat.flags = DDSPF_FOURCC;
+        header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', '1', '0');
+        header.ddsPixelFormat.RGBBitCount = 0;
+        header.ddsPixelFormat.RBitMask = header.ddsPixelFormat.GBitMask = header.ddsPixelFormat.BBitMask = header.ddsPixelFormat.ABitMask = 0;
+        dx10Header.dxgiFormat = gammaSpace == GammaSpace::sRGB ? DX10_FORMAT_R8G8B8A8_UNORM_SRGB : DX10_FORMAT_R8G8B8A8_UNORM;
     }
 
     fp->Write(&header, sizeof(header));
