@@ -438,6 +438,10 @@ public:
                         /// Converts this image in-place.
     bool                ConvertFormatSelf(Format dstFormat, GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal);
 
+                        /// Converts stored RGB values to linear A8 using 0.299 R + 0.587 G + 0.114 B, ignoring input alpha and gamma.
+                        /// Preserves existing mips unless generateMipmaps is true. Supports an aliased destination.
+    bool                ConvertLuminanceToAlpha(Image &dstImage, bool generateMipmaps = false) const;
+
                         /// Resizes this image to the given target image.
     bool                Resize(int32_t width, int32_t height, ResampleFilter resampleFilter, Image &dstImage) const;
                         /// Resizes this image in-places.

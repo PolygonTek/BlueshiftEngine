@@ -394,4 +394,24 @@ bool Image::ConvertFormatSelf(Format dstFormat, GammaSpace dstGammaSpace, Mipmap
     return ret;
 }
 
+bool Image::ConvertLuminanceToAlpha(Image &dstImage, bool generateMipmaps) const {
+    if (IsEmpty() || IsDepthFormat() || IsDepthStencilFormat()) {
+        return false;
+    }
+
+    Image source;
+    source.InitFromMemory(width, height, depth, arraySize, numMipLevels, format, GammaSpace::Linear, pic, flags);
+    Image converted;
+    if (!source.ConvertFormat(Format::L8, converted, GammaSpace::Linear,
+        generateMipmaps ? MipmapGenerationMode::Mipmaps : MipmapGenerationMode::NoMipmaps)) {
+        return false;
+    }
+
+    // L8 and A8 have identical storage; keep the luminance bytes and change only their channel meaning.
+    // Use a temporary so an aliased destination cannot free source pixels before conversion completes.
+    converted.format = Format::A8;
+    dstImage = std::move(converted);
+    return true;
+}
+
 BE_NAMESPACE_END
