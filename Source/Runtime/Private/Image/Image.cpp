@@ -133,41 +133,87 @@ Image &Image::Create(int32_t width, int32_t height, int32_t depth, int32_t numSl
     return *this;
 }
 
-bool Image::Create3DFromAtlas(const Image &atlas, int32_t columns, int32_t rows, bool generateMipmaps) {
+bool Image::Create3DFromAtlas(const Image &atlas, int32_t columns, int32_t rows, bool generateMipmaps, SliceLayout sliceLayout) {
     if (atlas.IsEmpty() || atlas.IsCompressed() ||
-        columns <= 0 || rows <= 0 || atlas.width % columns != 0 || atlas.height % rows != 0) {
+        columns <= 0 || rows <= 0 || columns > INT32_MAX / rows || atlas.width % columns != 0 || atlas.height % rows != 0) {
+        return false;
+    }
+
+    bool frontView;
+    bool reverseSlices;
+    switch (sliceLayout) {
+    case SliceLayout::FrontToBack:
+        frontView = true;
+        reverseSlices = true;
+        break;
+    case SliceLayout::BackToFront:
+        frontView = true;
+        reverseSlices = false;
+        break;
+    case SliceLayout::TopToBottom:
+        frontView = false;
+        reverseSlices = true;
+        break;
+    case SliceLayout::BottomToTop:
+        frontView = false;
+        reverseSlices = false;
+        break;
+    default:
         return false;
     }
 
     const int32_t sliceWidth = atlas.width / columns;
     const int32_t sliceHeight = atlas.height / rows;
     const int32_t sliceCount = columns * rows;
+    const int32_t outputWidth = frontView ? sliceCount : sliceHeight;
+    const int32_t outputHeight = sliceWidth;
+    const int32_t outputDepth = frontView ? sliceHeight : sliceCount;
     const int32_t mipCount = generateMipmaps ? MaxMipLevels(sliceWidth, sliceHeight, sliceCount) : 1;
     Flag volumeHints = atlas.GetTextureHints() & ~Flag::NoMipmaps;
     if (!generateMipmaps) {
         volumeHints |= Flag::NoMipmaps;
     }
-    Create3D(sliceWidth, sliceHeight, sliceCount, mipCount, atlas.format, atlas.gammaSpace, nullptr, volumeHints);
 
-    const size_t rowBytes = static_cast<size_t>(sliceWidth) * BytesPerPixel();
-    const size_t sourcePitch = static_cast<size_t>(atlas.width) * BytesPerPixel();
-    byte *dst = GetPixels();
+    Create3D(outputWidth, outputHeight, outputDepth, mipCount, atlas.format, atlas.gammaSpace, nullptr, volumeHints);
 
-    // Allocate the complete volume once and copy each tile row directly to its Z slice.
+    const int bytesPerPixel = BytesPerPixel();
+    const size_t rowBytes = static_cast<size_t>(sliceWidth) * bytesPerPixel;
+    const size_t sourcePitch = static_cast<size_t>(atlas.width) * bytesPerPixel;
+
+    const ptrdiff_t outputRowBytes = static_cast<ptrdiff_t>(outputWidth) * bytesPerPixel;
+    const ptrdiff_t outputPlaneBytes = outputRowBytes * outputHeight;
+
+    // Tile right is always +Y. Tile down is -Z in front views and +X in top views.
+    const ptrdiff_t tileXStep = outputRowBytes;
+    const ptrdiff_t tileYStep = frontView ? -outputPlaneBytes : bytesPerPixel;
+    const ptrdiff_t sliceStride = frontView ? bytesPerPixel : outputPlaneBytes;
+    const ptrdiff_t sliceStep = reverseSlices ? -sliceStride : sliceStride;
+    const ptrdiff_t firstOffset = (frontView ? (sliceHeight - 1) * outputPlaneBytes : 0) + (reverseSlices ? (sliceCount - 1) * sliceStride : 0);
+
+    // Allocate the complete volume once and copy directly from the atlas to its final orientation.
+    // Signed strides encode the layout once, avoiding per-voxel axis decisions or a temporary volume.
     for (int32_t tileY = 0; tileY < rows; tileY++) {
         for (int32_t tileX = 0; tileX < columns; tileX++) {
-            const byte *src = atlas.GetPixels() + static_cast<size_t>(tileY) * sliceHeight * sourcePitch + static_cast<size_t>(tileX) * rowBytes;
+            const int32_t sliceIndex = tileY * columns + tileX;
+            const byte *tile = atlas.GetPixels() + static_cast<size_t>(tileY) * sliceHeight * sourcePitch + static_cast<size_t>(tileX) * rowBytes;
+            byte *slice = GetPixels() + firstOffset + sliceIndex * sliceStep;
+
             for (int32_t y = 0; y < sliceHeight; y++) {
-                memcpy(dst, src, rowBytes);
-                dst += rowBytes;
-                src += sourcePitch;
+                const byte *src = tile + static_cast<size_t>(y) * sourcePitch;
+                byte *dst = slice + y * tileYStep;
+
+                for (int32_t x = 0; x < sliceWidth; x++) {
+                    memcpy(dst + x * tileXStep, src + static_cast<size_t>(x) * bytesPerPixel, bytesPerPixel);
+                }
             }
         }
     }
 
-    if (generateMipmaps && !GenerateMipmaps()) {
-        Clear();
-        return false;
+    if (generateMipmaps) {
+        if (!GenerateMipmaps()) {
+            Clear();
+            return false;
+        }
     }
     return true;
 }

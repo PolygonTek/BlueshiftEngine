@@ -212,6 +212,14 @@ public:
 
     friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
 
+    /// Orientation of atlas tiles and their stacking direction in engine space.
+    enum class SliceLayout {
+        FrontToBack = 0,     ///< Tile right: +Y, tile down: -Z, slices: -X.
+        BackToFront = 1,     ///< Tile right: +Y, tile down: -Z, slices: +X.
+        TopToBottom = 2,     ///< Tile right: +Y, tile down: +X, slices: -Z.
+        BottomToTop = 3      ///< Tile right: +Y, tile down: +X, slices: +Z.
+    };
+
     /// Cube map face in engine axis order. The numeric order matches serialized DDS face slices.
     enum class CubeMapFace : uint8_t {
         PositiveX = 0,      ///< Face centered on the engine +X axis.
@@ -359,13 +367,16 @@ public:
 
                         /// Returns pixel data pointer.
     byte *              GetPixels() const { return pic; }
+
                         /// Returns pixel data pointer with the given mip level.
     byte *              GetPixels(int32_t mipLevel) const;
+
                         /// Returns pixel data pointer with the given mip level and slice index.
     byte *              GetPixels(int32_t mipLevel, int32_t sliceIndex) const;
 
                         /// Returns linearly interpolated Color4 sample with the given 2D coordinates.
     Color4              Sample2D(const Vec2 &uv, SampleWrapMode wrapModeU = SampleWrapMode::Clamp, SampleWrapMode wrapModeV = SampleWrapMode::Clamp, SampleFilter filter = SampleFilter::Bilinear, int32_t mipLevel = 0) const;
+
                         /// Returns linearly interpolated Color4 sample with the given cubemap coordinates.
     Color4              SampleCube(const Vec3 &direction, SampleFilter filter = SampleFilter::Bilinear, int32_t mipLevel = 0) const;
 
@@ -374,15 +385,19 @@ public:
 
                         /// Returns RGB sum in linear space for the given mip level and slice.
     Color3              ComputeRGBSum(int32_t mipLevel = 0, int32_t sliceIndex = 0, bool ignoreNegativeValues = false) const;
+
                         /// Returns luminance sum in linear space for the given mip level and slice.
     float               ComputeLuminanceSum(int32_t mipLevel = 0, int32_t sliceIndex = 0, bool ignoreNegativeValues = false) const;
+
                         /// Returns luminance bounds in linear space for the given mip level and slice.
     bool                ComputeLuminanceBounds(int32_t mipLevel, int32_t sliceIndex, float luminanceThreshold, bool ignoreNegativeValues, Rect &outBounds) const;
+
                         /// Returns centered luminance bounds that retain at least the given fraction of total luminance in linear space.
     bool                ComputeLuminanceEnergyBounds(int32_t mipLevel, int32_t sliceIndex, float retainedEnergyFraction, bool ignoreNegativeValues, Rect &outBounds, float &outLuminanceSum) const;
 
                         /// Returns number of bytes with the given mipmap levels.
     size_t              SizeInBytes(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
+
                         /// Returns number of bytes of single cubemap face with the given mipmap levels.
     size_t              SizeInBytesForSlice(int32_t firstMipLevel = 0, int32_t numMipLevels = 1) const;
                         
@@ -406,16 +421,19 @@ public:
     Image &             Create2DArray(int32_t width, int32_t height, int32_t numSlices, int32_t numMipLevels, Format format, GammaSpace gammaSpace, const byte *data, Flag flags = Flag::None);
 
                         /// Creates a volume from an uncompressed 2D tile atlas, left to right, then top to bottom.
-                        /// Only the base mip is unpacked; optional mipmaps are generated in 3D.
-                        /// Invalid atlas input leaves this image unchanged; mip generation failure clears it.
-    bool                Create3DFromAtlas(const Image &atlas, int32_t columns, int32_t rows, bool generateMipmaps = false);
+                        /// Front/back output dimensions are (slices, tile width, tile height); top/bottom are (tile height, tile width, slices).
+                        /// Only the base mip is unpacked into the selected layout; optional mipmaps are then generated in 3D.
+                        /// Invalid atlas or slice layout leaves this image unchanged; mip generation failure clears it.
+    bool                Create3DFromAtlas(const Image &atlas, int32_t columns, int32_t rows, bool generateMipmaps = false, SliceLayout sliceLayout = SliceLayout::FrontToBack);
 
                         /// Creates a cubic image from six square images.
                         /// Returns false if faces are empty or their dimensions, format or mip counts differ.
     bool                CreateCubeFrom6Faces(const Image *faceImages);
+
                         /// Creates a cubic image from single equirectangular spherical image.
                         /// Returns false for empty input, unsupported pixel conversion or a nonpositive face size.
     bool                CreateCubeFromEquirectangular(const Image &equirectangularImage, int32_t faceSize);
+
                         /// Creates an equirectangular spherical image from cubic image.
                         /// Returns false for empty/non-cubemap input or unsupported pixel conversion.
     bool                CreateEquirectangularFromCube(const Image &cubeImage);
@@ -435,6 +453,7 @@ public:
 
                         /// Converts this image to the given target image.
     bool                ConvertFormat(Format dstFormat, Image &dstImage, GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal) const;
+
                         /// Converts this image in-place.
     bool                ConvertFormatSelf(Format dstFormat, GammaSpace dstGammaSpace = GammaSpace::DontCare, MipmapGenerationMode regenerateMipmaps = MipmapGenerationMode::NoMipmaps, CompressionQuality compressionQuality = CompressionQuality::Normal);
 
@@ -444,6 +463,7 @@ public:
 
                         /// Resizes this image to the given target image.
     bool                Resize(int32_t width, int32_t height, ResampleFilter resampleFilter, Image &dstImage) const;
+
                         /// Resizes this image in-places.
     bool                ResizeSelf(int32_t width, int32_t height, ResampleFilter resampleFilter);
 
