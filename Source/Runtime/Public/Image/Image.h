@@ -196,46 +196,32 @@ public:
         PNG
     };
 
-    /// Image flags
+    /// Image flags. Bit values are persisted in BTEX.
     enum class Flag : uint8_t {
         None                = 0,
         CubeMap             = BIT(0),
-
-        // Texture hints
-        NormalMap           = BIT(1),
-        NoMipmaps           = BIT(2),
-        NoCompression       = BIT(3),
-        NoStreaming         = BIT(4),
-        Volume              = BIT(5),
-        TextureHintsMask    = NormalMap | NoMipmaps | NoCompression | NoStreaming
+        Volume              = BIT(5)
     };
 
     friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
 
     /// Orientation of atlas tiles and their stacking direction in engine space.
     enum class SliceLayout {
-        FrontToBack = 0,    ///< Tile right: +Y, tile down: -Z, slices: -X.
-        BackToFront = 1,    ///< Tile right: +Y, tile down: -Z, slices: +X.
-        TopToBottom = 2,    ///< Tile right: +Y, tile down: +X, slices: -Z.
-        BottomToTop = 3     ///< Tile right: +Y, tile down: +X, slices: +Z.
+        FrontToBack,        ///< Tile right: +Y, tile down: -Z, slices: -X.
+        BackToFront,        ///< Tile right: +Y, tile down: -Z, slices: +X.
+        TopToBottom,        ///< Tile right: +Y, tile down: +X, slices: -Z.
+        BottomToTop         ///< Tile right: +Y, tile down: +X, slices: +Z.
     };
 
     /// Cube map face in engine axis order. The numeric order matches serialized DDS face slices.
     enum class CubeMapFace : uint8_t {
-        PositiveX = 0,      ///< Face centered on the engine +X axis.
-        NegativeX = 1,      ///< Face centered on the engine -X axis.
-        PositiveY = 2,      ///< Face centered on the engine +Y axis.
-        NegativeY = 3,      ///< Face centered on the engine -Y axis.
-        PositiveZ = 4,      ///< Face centered on the engine +Z axis.
-        NegativeZ = 5       ///< Face centered on the engine -Z axis.
+        PositiveX,          ///< Face centered on the engine +X axis.
+        NegativeX,          ///< Face centered on the engine -X axis.
+        PositiveY,          ///< Face centered on the engine +Y axis.
+        NegativeY,          ///< Face centered on the engine -Y axis.
+        PositiveZ,          ///< Face centered on the engine +Z axis.
+        NegativeZ           ///< Face centered on the engine -Z axis.
     };
-
-    static_assert(static_cast<uint8_t>(CubeMapFace::PositiveX) == 0 &&
-        static_cast<uint8_t>(CubeMapFace::NegativeX) == 1 &&
-        static_cast<uint8_t>(CubeMapFace::PositiveY) == 2 &&
-        static_cast<uint8_t>(CubeMapFace::NegativeY) == 3 &&
-        static_cast<uint8_t>(CubeMapFace::PositiveZ) == 4 &&
-        static_cast<uint8_t>(CubeMapFace::NegativeZ) == 5, "Unexpected cube map face order");
 
     /// Sample wrap mode
     enum class SampleWrapMode : uint8_t {
@@ -356,8 +342,6 @@ public:
     int32_t             NumMipmaps() const { return numMipLevels; }
                         /// Returns image flags.
     Flag                GetFlags() const { return flags; }
-                        /// Returns texture hint flags.
-    Flag                GetTextureHints() const;
                         /// Returns image format.
     Format              GetFormat() const { return format; }
                         /// Returns gamma space of this image.
@@ -462,9 +446,13 @@ public:
     bool                ConvertLuminanceToAlpha(Image &dstImage, bool generateMipmaps = false) const;
 
                         /// Resizes this image to the given target image.
+                        /// If dimensions change, resizes only mip 0 and outputs a single mip level; lower mips are neither preserved nor regenerated.
+                        /// If dimensions are unchanged, preserves all existing mip levels.
     bool                Resize(int32_t width, int32_t height, ResampleFilter resampleFilter, Image &dstImage) const;
 
-                        /// Resizes this image in-places.
+                        /// Resizes this image in place.
+                        /// If dimensions change, replaces this image with the resized mip 0 and discards all lower mip levels without regenerating them.
+                        /// If dimensions are unchanged, preserves all existing mip levels.
     bool                ResizeSelf(int32_t width, int32_t height, ResampleFilter resampleFilter);
 
                         /// Flips vertically.
@@ -617,10 +605,6 @@ private:
     Flag                flags = Flag::None;             ///< Image flags
     bool                alloced = false;                ///< Is memory allocated ?
 };
-
-BE_INLINE Image::Flag Image::GetTextureHints() const {
-    return flags & Flag::TextureHintsMask;
-}
 
 BE_INLINE Image::Image(int32_t width, int32_t height, int32_t depth, int32_t numSlices, int32_t numMipmaps, Format format, GammaSpace gammaSpace, byte *data, Flag flags) {
     alloced = false;

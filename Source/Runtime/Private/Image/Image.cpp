@@ -169,12 +169,8 @@ bool Image::Create3DFromAtlas(const Image &atlas, int32_t columns, int32_t rows,
     const int32_t outputHeight = sliceWidth;
     const int32_t outputDepth = frontView ? sliceHeight : sliceCount;
     const int32_t mipCount = generateMipmaps ? MaxMipLevels(sliceWidth, sliceHeight, sliceCount) : 1;
-    Flag volumeHints = atlas.GetTextureHints() & ~Flag::NoMipmaps;
-    if (!generateMipmaps) {
-        volumeHints |= Flag::NoMipmaps;
-    }
 
-    Create3D(outputWidth, outputHeight, outputDepth, mipCount, atlas.format, atlas.gammaSpace, nullptr, volumeHints);
+    Create3D(outputWidth, outputHeight, outputDepth, mipCount, atlas.format, atlas.gammaSpace, nullptr);
 
     const int bytesPerPixel = BytesPerPixel();
     const size_t rowBytes = static_cast<size_t>(sliceWidth) * bytesPerPixel;

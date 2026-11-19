@@ -23,6 +23,8 @@ BE_NAMESPACE_BEGIN
 
 static constexpr uint32_t BTEX_MAGIC = MAKE_FOURCC('B', 'T', 'E', 'X');
 static constexpr uint16_t BTEX_VERSION = 1;
+// Retired v1 flag bits must not be restored or written back to the file.
+static constexpr uint32_t BTEX_IMAGE_FLAGS_MASK = static_cast<uint32_t>(Image::Flag::CubeMap | Image::Flag::Volume);
 
 #pragma pack(push, 1)
 struct BTEXHeader {
@@ -99,7 +101,7 @@ static bool LoadBTEXInfoFromHeader(const char *name, const BTEXHeader &header, s
 
     BTEXInfo info;
     info.payloadFormat = static_cast<Image::PayloadFormat>(header.payloadFormat);
-    info.flags = static_cast<Image::Flag>(header.imageFlags);
+    info.flags = static_cast<Image::Flag>(header.imageFlags & BTEX_IMAGE_FLAGS_MASK);
     info.payloadOffset = static_cast<size_t>(header.payloadOffset);
     info.payloadSize = static_cast<size_t>(header.payloadSize);
     *outInfo = info;
@@ -256,7 +258,7 @@ bool Image::WriteBTEX(const char *filename, PayloadFormat payloadFormat) const {
     header.version = BTEX_VERSION;
     header.headerSize = static_cast<uint16_t>(sizeof(BTEXHeader));
     header.payloadFormat = static_cast<uint32_t>(payloadFormat);
-    header.imageFlags = static_cast<uint32_t>(flags);
+    header.imageFlags = static_cast<uint32_t>(flags) & BTEX_IMAGE_FLAGS_MASK;
     header.payloadOffset = static_cast<uint64_t>(sizeof(BTEXHeader));
 
     if (!fp->Write(&header, sizeof(header))) {

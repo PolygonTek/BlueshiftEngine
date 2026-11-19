@@ -40,7 +40,7 @@ public:
         NoCompression               = BIT(0),   ///< Do not use compression (ineffective if the source format is already compressed)
         NoScaleDown                 = BIT(1),   ///< Do not scale down
         HighQuality                 = NoCompression | NoScaleDown, ///< High quality settings (disable compression and scaling down)
-        NoMipmaps                   = BIT(2),   ///< Do not use mipmaps
+        NoMipmaps                   = BIT(2),   ///< Do not generate missing mipmaps
         AllocateEmptyMipmaps        = BIT(3),   ///< Allocate mipmap levels without initial data
         NormalMap                   = BIT(4),   ///< Normal map
         LinearColorSpace            = BIT(5),   ///< Treat source file texels as linear data
@@ -136,7 +136,7 @@ public:
 
     void                            Reset();
 
-    bool                            Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags);
+    bool                            Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags);
     bool                            Create1D(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::Texture1D, std::move(srcImage), flags); }
     bool                            Create2D(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::Texture2D, std::move(srcImage), flags); }
     bool                            Create2DArray(SharedPtr<const BE1::Image> srcImage, Flag flags) { return Create(RHI::TextureType::Texture2DArray, std::move(srcImage), flags); }
@@ -158,7 +158,6 @@ public:
 
     void                            RequestStreamingMaxDimension(uint32_t requestedMaxDimension);
 
-    static Flag                     ApplyTextureHints(Flag baseFlags, BE1::Image::Flag textureHints);
     static bool                     GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, BE1::Image &outCubeImage);
 
 private:
@@ -176,26 +175,31 @@ private:
         RHI::TextureType            rhiTextureType = RHI::TextureType::Unknown;
         RHI::Texture *              rhiTexture = nullptr;
         BE1::Image::Format          format = BE1::Image::Format::Unknown;
-        Texture::Flag               flags = Texture::Flag::None;
+        Flag                        flags = Flag::None;
     };
 
     void                            Purge();
 
-                                    /// Prepares a texture from an image, applying the renderer's normal texture processing such as size adjustment, format conversion, and mipmap generation.
-    static bool                     Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
+    bool                            Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, bool preserveSourceData);
+
+                                    /// Prepares a texture, optionally preserving stored dimensions and mip levels and disabling additional compression.
+                                    /// Format conversions required by device support or resource usage are still allowed.
+    static bool                     Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData, bool preserveSourceData);
+
                                     /// Prepares a texture directly from an already-final image without resizing, format conversion, or mip generation.
-    static bool                     PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags, InternalData &outInternalData);
+    static bool                     PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData);
+
     void                            ApplyPrepared(InternalData &newInternalData);
 
-    bool                            Load(const char *filename, Texture::Flag flags);
-    bool                            LoadAsync(const char *filename, Texture::Flag flags);
+    bool                            Load(const char *filename, Flag flags);
+    bool                            LoadAsync(const char *filename, Flag flags);
 
     static RHI::Texture *           CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState);
 
-    void                            CreateMissingTexture(int size, Texture::Flag flags = Texture::Flag::None);
-    void                            CreateColorTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);
-    void                            CreateColor3DTexture(int size, const BE1::Color4 &color, Texture::Flag flags = Texture::Flag::None);
-    void                            CreateFlatNormalTexture(int size, Texture::Flag flags = Texture::Flag::None);
+    void                            CreateMissingTexture(int size, Flag flags = Flag::None);
+    void                            CreateColorTexture(int size, const BE1::Color4 &color, Flag flags = Flag::None);
+    void                            CreateColor3DTexture(int size, const BE1::Color4 &color, Flag flags = Flag::None);
+    void                            CreateFlatNormalTexture(int size, Flag flags = Flag::None);
 
     BE1::Str                        hashName;
     BE1::Str                        name;

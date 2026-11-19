@@ -32,6 +32,10 @@ int Texture::MemRequired(bool includingMipmaps) const {
 }
 
 void Texture::Create(Graphics::TextureType::Enum type, const Image &srcImage, int flags) {
+    Create(type, srcImage, flags, false);
+}
+
+void Texture::Create(Graphics::TextureType::Enum type, const Image &srcImage, int flags, bool preserveSourceData) {
     Purge();
 
     this->type = type;
@@ -44,7 +48,7 @@ void Texture::Create(Graphics::TextureType::Enum type, const Image &srcImage, in
         graphics.PrioritizeTexture(texture, 0.0f);
     }*/
 
-    Upload(&srcImage);
+    Upload(&srcImage, preserveSourceData);
 }
 
 void Texture::CreateEmpty(Graphics::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags) {
@@ -492,6 +496,10 @@ static Graphics::AddressMode::Enum TextureFlagsToAddressMode(int flags) {
 }
 
 void Texture::Upload(const Image *srcImage) {
+    Upload(srcImage, false);
+}
+
+void Texture::Upload(const Image *srcImage, bool preserveSourceData) {
     Image::Format srcFormat = srcImage->GetFormat();
     Image::Format forceFormat = Image::Format::Unknown;
     Image tmpImage;
@@ -510,7 +518,7 @@ void Texture::Upload(const Image *srcImage) {
     }
 
     bool useNormalMap = (flags & Flag::NormalMap) ? true : false;
-    bool useCompression = !(flags & Flag::NoCompression) ? TextureManager::texture_useCompression.GetBool() : false;
+    bool useCompression = !preserveSourceData && !(flags & Flag::NoCompression) && TextureManager::texture_useCompression.GetBool();
     bool useNPOT = (flags & Flag::NonPowerOfTwo) ? true : false;
     bool sRGB = ((flags & Flag::SRGBColorSpace) && r_sRGB.GetBool()) ? true : false;
 
@@ -526,15 +534,20 @@ void Texture::Upload(const Image *srcImage) {
     this->srcDepth = srcImage->GetDepth();
     this->numSlices = srcImage->GetArraySize();
 
-    int dstWidth, dstHeight, dstDepth;
-    graphics.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
+    int dstWidth = srcWidth;
+    int dstHeight = srcHeight;
+    int dstDepth = srcDepth;
+    // Resize keeps only the base mip. Keep the stored BTEX dimensions and mip chain together.
+    if (!preserveSourceData) {
+        graphics.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
 
-    // Apply scale down mip level
-    int mipLevel = !(flags & Flag::NoScaleDown) ? TextureManager::texture_mipLevel.GetInteger() : 0;
-    if (mipLevel > 0) {
-        dstWidth = Max(dstWidth >> mipLevel, 1);
-        dstHeight = Max(dstHeight >> mipLevel, 1);
-        dstDepth = Max(dstDepth >> mipLevel, 1);
+        // Apply scale down mip level
+        int mipLevel = !(flags & Flag::NoScaleDown) ? TextureManager::texture_mipLevel.GetInteger() : 0;
+        if (mipLevel > 0) {
+            dstWidth = Max(dstWidth >> mipLevel, 1);
+            dstHeight = Max(dstHeight >> mipLevel, 1);
+            dstDepth = Max(dstDepth >> mipLevel, 1);
+        }
     }
 
     // Can't upload texels for depth texture
@@ -556,7 +569,7 @@ void Texture::Upload(const Image *srcImage) {
     this->height = dstHeight;
     this->depth = dstDepth;
 
-    this->hasMipmaps = !(flags & Flag::NoMipmaps);
+    this->hasMipmaps = !(flags & Flag::NoMipmaps) && (!preserveSourceData || srcImage->NumMipmaps() > 1);
     this->permanence = !!(flags & Flag::Permanence);
     this->addressMode = TextureFlagsToAddressMode(flags);
 
@@ -571,7 +584,8 @@ void Texture::Upload(const Image *srcImage) {
         graphics.SetTextureShadowFunc(true);
     }
 
-    graphics.SetTextureImage(type, srcImage, dstFormat, hasMipmaps, sRGB);
+    // Existing mip levels are always uploaded; the backend's useMipmaps argument enables generation.
+    graphics.SetTextureImage(type, srcImage, dstFormat, hasMipmaps && !preserveSourceData, sRGB);
 
     graphics.SetTextureAddressMode(addressMode);
 
@@ -678,7 +692,10 @@ bool Texture::Load(const char *filename, int flags) {
             textureType = Graphics::TextureType::Texture2D;
         }
 
-        Create(textureType, image, flags | Flag::LoadedFromFile);
+        // .btex 파일은 압축이나 밉맵 생성없이 있는 원본 그대로의 데이터를 사용한다.
+        const bool preserveSourceData = Str::CheckExtension(filename, ".btex");
+
+        Create(textureType, image, flags | Flag::LoadedFromFile, preserveSourceData);
     }
 
     return true;

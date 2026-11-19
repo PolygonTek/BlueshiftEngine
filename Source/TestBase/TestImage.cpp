@@ -160,6 +160,67 @@ static void TestImageGammaConversionAndMipRegeneration() {
     VERIFY_IMAGE(mipmapped.GetPixels(1)[0] == 80 && mipmapped.GetPixels(2)[0] == 80);
 }
 
+static void TestImageBTEXMipChain() {
+    using Image = BE1::Image;
+    BE1::Str filename = BE1::fileSystem.GetBaseDir();
+    filename.AppendPath(BE1::Str("btex_mip_chain_test_") + BE1::Guid::CreateGuid().ToString() + ".btex");
+
+    // A single mip and a partial chain are both final BTEX data, just like a complete chain.
+    for (int mipCount = 1; mipCount <= 3; mipCount++) {
+        Image source;
+        const Image::Flag retainedFlags = Image::Flag::Volume;
+        const uint32_t retiredBits = BIT(1) | BIT(2) | BIT(3) | BIT(4);
+        source.Create3D(3, 5, 2, mipCount, Image::Format::R8G8B8A8, Image::GammaSpace::Linear, nullptr, retainedFlags | static_cast<Image::Flag>(retiredBits));
+        for (int mip = 0; mip < mipCount; mip++) {
+            memset(source.GetPixels(mip), 41 + mip, source.SizeInBytes(mip, 1));
+        }
+        VERIFY_IMAGE(source.WriteBTEX(filename));
+
+        byte *data = nullptr;
+        const size_t size = BE1::fileSystem.LoadFile(filename, true, reinterpret_cast<void **>(&data));
+        VERIFY_IMAGE(data != nullptr && size > 32);
+        uint32_t diskFlags;
+        memcpy(&diskFlags, data + 12, sizeof(diskFlags));
+        BE1::ByteOrder::LittleEndianToSystem(diskFlags);
+        VERIFY_IMAGE(diskFlags == static_cast<uint32_t>(retainedFlags));
+
+        // Emulate an existing v1 asset carrying retired texture hints without changing its payload.
+        diskFlags |= retiredBits;
+        BE1::ByteOrder::SystemToLittleEndian(diskFlags);
+        memcpy(data + 12, &diskFlags, sizeof(diskFlags));
+        BE1::File *fp = BE1::fileSystem.OpenFile(filename, BE1::File::Mode::Write);
+        VERIFY_IMAGE(fp != nullptr);
+        VERIFY_IMAGE(fp->Write(data, size));
+        BE1::fileSystem.CloseFile(fp);
+        BE1::fileSystem.FreeFile(data);
+
+        Image loaded;
+        VERIFY_IMAGE(loaded.Load(filename));
+        VERIFY_IMAGE(loaded.GetFlags() == retainedFlags);
+        VERIFY_IMAGE(loaded.GetFormat() == source.GetFormat());
+        VERIFY_IMAGE(loaded.NumMipmaps() == mipCount);
+        VERIFY_IMAGE(loaded.GetWidth() == 3 && loaded.GetHeight() == 5 && loaded.GetDepth() == 2);
+        VERIFY_IMAGE(loaded.SizeInBytes(0, mipCount) == source.SizeInBytes(0, mipCount));
+        VERIFY_IMAGE(memcmp(loaded.GetPixels(), source.GetPixels(), source.SizeInBytes(0, mipCount)) == 0);
+
+        Image::MipRange range;
+        VERIFY_IMAGE(loaded.LoadMipRange(filename, 0, mipCount, &range));
+        VERIFY_IMAGE(loaded.GetFlags() == retainedFlags && loaded.NumMipmaps() == mipCount);
+        VERIFY_IMAGE(range.originalMipLevels == mipCount && range.firstMip == 0);
+
+        VERIFY_IMAGE(loaded.LoadMipRange(filename, mipCount - 1, 1, &range));
+        VERIFY_IMAGE(loaded.GetFlags() == retainedFlags && loaded.NumMipmaps() == 1);
+        VERIFY_IMAGE(range.firstMip == mipCount - 1 && range.originalMipLevels == mipCount);
+        VERIFY_IMAGE(loaded.SizeInBytes() == source.SizeInBytes(mipCount - 1, 1));
+        VERIFY_IMAGE(memcmp(loaded.GetPixels(), source.GetPixels(mipCount - 1), loaded.SizeInBytes()) == 0);
+
+        VERIFY_IMAGE(loaded.LoadMipRangeForMaxDimension(filename, 1, &range));
+        VERIFY_IMAGE(loaded.GetFlags() == retainedFlags && loaded.Is3D());
+        VERIFY_IMAGE(range.firstMip == mipCount - 1 && loaded.NumMipmaps() == 1);
+    }
+    VERIFY_IMAGE(BE1::fileSystem.RemoveFile(filename, false));
+}
+
 #undef VERIFY_IMAGE
 
 void Test::TestImage() {
@@ -171,4 +232,5 @@ void Test::TestImage() {
     TestImageArrayFlip();
     TestImageResize();
     TestImageGammaConversionAndMipRegeneration();
+    TestImageBTEXMipChain();
 }

@@ -136,6 +136,10 @@ public:
     static void             GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage);
 
 private:
+                            /// Optionally preserves imported dimensions and mip levels and disables additional compression.
+    void                    Create(Graphics::TextureType::Enum type, const Image &srcImage, int flags, bool preserveSourceData);
+    void                    Upload(const Image *srcImage, bool preserveSourceData);
+
     Str                     hashName;                   // texture filename including path
     Str                     name;
     mutable int             refCount = 0;               // reference count

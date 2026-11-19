@@ -512,7 +512,10 @@ bool LoadingSystem::ProcessTextureLoadRequest(LoadRequest &&request) {
         completion.mipRange = mipRange;
         completion.success = Texture::PrepareDirect(textureType, std::move(image), request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
     } else {
-        completion.success = Texture::Prepare(textureType, std::move(image), request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData);
+        // .btex 파일은 압축이나 밉맵 생성없이 있는 원본 그대로의 데이터를 사용한다.
+        const bool preserveSourceData = request.filename.CheckExtension(".btex");
+
+        completion.success = Texture::Prepare(textureType, std::move(image), request.textureFlags | Texture::Flag::LoadedFromFile, completion.textureData, preserveSourceData);
     }
 
     if (completion.textureData.rhiTexture) {

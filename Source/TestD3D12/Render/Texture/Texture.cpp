@@ -56,25 +56,6 @@ RHI::Texture *Texture::GetReadyRHITexture() const {
     return texture;
 }
 
-Texture::Flag Texture::ApplyTextureHints(Flag baseFlags, BE1::Image::Flag textureHints) {
-    Flag flags = baseFlags;
-
-    if (BE1::HasFlag(textureHints, BE1::Image::Flag::NormalMap)) {
-        flags |= Flag::NormalMap;
-    }
-    if (BE1::HasFlag(textureHints, BE1::Image::Flag::NoMipmaps)) {
-        flags |= Flag::NoMipmaps;
-    }
-    if (BE1::HasFlag(textureHints, BE1::Image::Flag::NoCompression)) {
-        flags |= Flag::NoCompression;
-    }
-    if (BE1::HasFlag(textureHints, BE1::Image::Flag::NoStreaming)) {
-        flags = static_cast<Flag>(static_cast<uint16_t>(flags) & ~static_cast<uint16_t>(Flag::Streaming));
-    }
-
-    return flags;
-}
-
 uint64_t Texture::MemRequired(bool includingMipmaps) const {
     assert(IsReady());
 
@@ -122,9 +103,13 @@ void Texture::Reset() {
     Purge();
 }
 
-bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Texture::Flag flags) {
+bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags) {
+    return Create(textureType, std::move(srcImage), flags, false);
+}
+
+bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, bool preserveSourceData) {
     InternalData newInternalData;
-    if (!Texture::Prepare(textureType, std::move(srcImage), flags, newInternalData)) {
+    if (!Texture::Prepare(textureType, std::move(srcImage), flags, newInternalData, preserveSourceData)) {
         return false;
     }
 
@@ -137,7 +122,7 @@ bool Texture::Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> s
     return true;
 }
 
-void Texture::CreateMissingTexture(int size, Texture::Flag flags) {
+void Texture::CreateMissingTexture(int size, Flag flags) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8A8, BE1::Image::GammaSpace::sRGB, nullptr);
     byte *dstPtr = image->GetPixels();
@@ -192,7 +177,7 @@ void Texture::CreateColor3DTexture(int size, const BE1::Color4 &color, Flag flag
     Create3D(std::move(image), flags | Texture::Flag::HighQuality);
 }
 
-void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
+void Texture::CreateFlatNormalTexture(int size, Flag flags) {
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Create2D(size, size, 1, BE1::Image::Format::R8G8B8, BE1::Image::GammaSpace::Linear, nullptr);
     byte *dstPtr = image->GetPixels();
@@ -206,7 +191,7 @@ void Texture::CreateFlatNormalTexture(int size, Texture::Flag flags) {
         }
     }
 
-    Create2D(std::move(image), flags | Texture::Flag::NormalMap | Texture::Flag::HighQuality);
+    Create2D(std::move(image), flags | Flag::NormalMap | Flag::HighQuality);
 }
 
 RHI::Texture *Texture::CreateRHITexture(RHI::TextureType textureType, RHI::TextureFlag flags, SharedPtr<const BE1::Image> srcImage, BE1::Image::Format dstFormat, bool generateMipmapsOnCPU, RHI::TextureMipInitMode mipInitMode, RHI::GPUResourceState initialState) {
@@ -283,22 +268,19 @@ static bool ShouldGenerateMipmapsOnGPU(RHI::TextureType textureType, const BE1::
     return RHI::renderer->CanGenerateMipmapsOnGPU(textureType, dstFormat, srcImage.GetArraySize());
 }
 
-bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData) {
+bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, InternalData &outInternalData, bool preserveSourceData) {
     outInternalData.Purge();
 
     if (!srcImage) {
         return false;
     }
 
-    // image 에 있는 texture hints 적용
-    flags = Texture::ApplyTextureHints(flags, srcImage->GetTextureHints());
-
-    bool useUAV = BE1::HasFlag(flags, Texture::Flag::UnorderedAccess);
-    bool useNormalMap = BE1::HasFlag(flags, Texture::Flag::NormalMap);
-    bool useCompression = !BE1::HasAnyFlag(flags, Texture::Flag::NoCompression | Texture::Flag::RenderTarget);
-    bool useNPOT = textureType == RHI::TextureType::Texture3D || BE1::HasFlag(flags, Texture::Flag::NonPowerOfTwo);
-    bool allocateEmptyMipmaps = BE1::HasFlag(flags, Texture::Flag::AllocateEmptyMipmaps);
-    bool generateMipmaps = !allocateEmptyMipmaps && !BE1::HasFlag(flags, Texture::Flag::NoMipmaps);
+    bool useUAV = BE1::HasFlag(flags, Flag::UnorderedAccess);
+    bool useNormalMap = BE1::HasFlag(flags, Flag::NormalMap);
+    bool useCompression = !preserveSourceData && !BE1::HasAnyFlag(flags, Flag::NoCompression | Flag::RenderTarget);
+    bool useNPOT = textureType == RHI::TextureType::Texture3D || BE1::HasFlag(flags, Flag::NonPowerOfTwo);
+    bool allocateEmptyMipmaps = !preserveSourceData && BE1::HasFlag(flags, Flag::AllocateEmptyMipmaps);
+    bool generateMipmaps = !preserveSourceData && !allocateEmptyMipmaps && !BE1::HasFlag(flags, Flag::NoMipmaps);
 
     BE1::Image::Format forceFormat = BE1::Image::Format::Unknown;
     BE1::Image::Format dstFormat;
@@ -308,8 +290,16 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
         RHI::renderer->AdjustTextureFormat(useCompression, useNormalMap, useUAV, srcImage->GetFormat(), &dstFormat);
     }
 
-    uint32_t dstWidth, dstHeight, dstDepth;
-    RHI::renderer->AdjustTextureSize(textureType, useNPOT, srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth(), &dstWidth, &dstHeight, &dstDepth);
+    uint32_t dstWidth = srcImage->GetWidth();
+    uint32_t dstHeight = srcImage->GetHeight();
+    uint32_t dstDepth = srcImage->GetDepth();
+
+    // 이미지 리사이징은 mip-0 에 대해서만 수행한다.
+    if (!preserveSourceData) {
+        RHI::renderer->AdjustTextureSize(textureType, useNPOT, srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth(), &dstWidth, &dstHeight, &dstDepth);
+    }
+
+    // depth dimension 은 리사이징 대상이 아니다.
     assert(srcImage->GetDepth() == dstDepth);
 
     if (!srcImage->IsEmpty()) {
@@ -321,9 +311,10 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
     }
 
     RHI::TextureFlag resourceFlags = RHI::TextureFlag::ShaderResource;
-    if (BE1::HasFlag(flags, Texture::Flag::RenderTarget)) {
+    if (BE1::HasFlag(flags, Flag::RenderTarget)) {
         resourceFlags |= RHI::TextureFlag::RenderTarget;
     }
+
     if (useUAV) {
         resourceFlags |= RHI::TextureFlag::UnorderedAccess;
 
@@ -339,7 +330,7 @@ bool Texture::Prepare(RHI::TextureType textureType, SharedPtr<const BE1::Image> 
         resourceFlags |= RHI::TextureFlag::Typeless;
     }
 
-    RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
+    RHI::GPUResourceState initialState = BE1::HasFlag(flags, Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
 
     bool generateMipmapsOnGPU = false;
     bool generateMipmapsOnCPU = false;
@@ -366,14 +357,11 @@ bool Texture::PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::I
         return false;
     }
 
-    // image 에 있는 texture hints 적용
-    flags = Texture::ApplyTextureHints(flags, srcImage->GetTextureHints());
-
     RHI::TextureFlag resourceFlags = RHI::TextureFlag::ShaderResource;
-    if (BE1::HasFlag(flags, Texture::Flag::RenderTarget)) {
+    if (BE1::HasFlag(flags, Flag::RenderTarget)) {
         resourceFlags |= RHI::TextureFlag::RenderTarget;
     }
-    if (BE1::HasFlag(flags, Texture::Flag::UnorderedAccess)) {
+    if (BE1::HasFlag(flags, Flag::UnorderedAccess)) {
         resourceFlags |= RHI::TextureFlag::UnorderedAccess;
 
         // UAV 가 필요하다면, sRGB 포맷은 UAV 로 만들 수 없기 때문에 Typeless 텍스쳐로 만든다.
@@ -388,7 +376,7 @@ bool Texture::PrepareDirect(RHI::TextureType textureType, SharedPtr<const BE1::I
         resourceFlags |= RHI::TextureFlag::Typeless;
     }
 
-    const RHI::GPUResourceState initialState = BE1::HasFlag(flags, Texture::Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
+    const RHI::GPUResourceState initialState = BE1::HasFlag(flags, Flag::Compute) ? RHI::GPUResourceState::ShaderResourceCompute : RHI::GPUResourceState::ShaderResource;
     const BE1::Image::Format imageFormat = srcImage->GetFormat();
 
     RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, resourceFlags, std::move(srcImage), RHI::TextureMipInitMode::FromImage, {}, 1, initialState);
@@ -413,7 +401,7 @@ void Texture::ApplyPrepared(InternalData &newInternalData) {
     internalData.Swap(newInternalData);
 }
 
-bool Texture::Load(const char *filename, Texture::Flag flags) {
+bool Texture::Load(const char *filename, Flag flags) {
     BE_LOG("Loading texture '%s'...\n", filename);
 
     SharedPtr<BE1::Image> image = BE1::Image::SharedImageFromFile(filename);
@@ -422,7 +410,7 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
         return false;
     }
 
-    if (BE1::HasFlag(flags, Texture::Flag::LinearColorSpace)) {
+    if (BE1::HasFlag(flags, Flag::LinearColorSpace)) {
         image->SetGammaSpace(BE1::Image::GammaSpace::Linear);
     }
 
@@ -438,7 +426,10 @@ bool Texture::Load(const char *filename, Texture::Flag flags) {
         textureType = RHI::TextureType::Texture2D;
     }
 
-    return Create(textureType, std::move(image), flags | Texture::Flag::LoadedFromFile);
+    // .btex 파일은 압축이나 밉맵 생성없이 있는 원본 그대로의 데이터를 사용한다.
+    const bool preserveSourceData = BE1::Str::CheckExtension(filename, ".btex");
+
+    return Create(textureType, std::move(image), flags | Flag::LoadedFromFile, preserveSourceData);
 }
 
 bool Texture::LoadAsync(const char *filename, Flag flags) {
