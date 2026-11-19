@@ -69,7 +69,7 @@ public:
     bool                            IsReady() const { State s = GetState(); return s == State::Ready || s == State::Rebuilding; }
     bool                            IsBuilding() const { State s = GetState(); return s == State::Building || s == State::Rebuilding; }
 
-                                    // 빌드 요청 했던 시리얼 번호.
+                                    // 빌드 요청했던 시리얼 번호.
     uint32_t                        GetBuildSerial() const { return buildSerial.load(); }
 
                                     // 이미 진행 중인 빌딩 completion 무효화
