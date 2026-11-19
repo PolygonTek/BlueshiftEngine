@@ -410,6 +410,7 @@ void RenderBackend::UploadCameraConstants(const ShaderCSMData *csmData, const Sh
     constants->vfogSourceTextureIndex = 0;
     constants->vfogIntegratedTextureIndex = 0;
     constants->fogNearDepth = currentFrameCamera->fog.nearDepth;
+    constants->fogAnisotropy = currentFrameCamera->fog.anisotropy;
 }
 
 void RenderBackend::UpdateFramePSOs() {

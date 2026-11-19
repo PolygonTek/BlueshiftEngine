@@ -955,7 +955,7 @@ struct CameraConstants {
     uint cameraUnchanged; // Valid previous camera with unchanged unjittered projection, position and orientation.
 
     float3 prevCameraForward;
-    uint cameraPadding;
+    float fogAnisotropy; // Shared Henyey-Greenstein g for height fog and local fog volumes.
 
     float4 projectionScaleBiasXY; // clip.xy = view.xy * projectionScaleBiasXY.xy + clip.w * projectionScaleBiasXY.zw (including jitter).
     float4 uvToViewScaleBiasXY;   // view.xy = (uv * uvToViewScaleBiasXY.xy + uvToViewScaleBiasXY.zw) * clip.w (top-left UV in [0, 1], independent of pass resolution).
@@ -1033,6 +1033,7 @@ struct CameraConstants {
 
 #ifdef __cplusplus
 static_assert(sizeof(CameraConstants) == 1200, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(offsetof(CameraConstants, fogAnisotropy) == 556, "Shared fog anisotropy must match HLSL");
 #endif
 
 struct SurfaceDrawParams {

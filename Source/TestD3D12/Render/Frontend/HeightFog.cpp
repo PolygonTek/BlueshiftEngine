@@ -23,7 +23,6 @@ bool HeightFog::Desc::IsValid() const {
         medium.scatteringAlbedo.x >= 0.0f && medium.scatteringAlbedo.x <= 1.0f &&
         medium.scatteringAlbedo.y >= 0.0f && medium.scatteringAlbedo.y <= 1.0f &&
         medium.scatteringAlbedo.z >= 0.0f && medium.scatteringAlbedo.z <= 1.0f &&
-        medium.anisotropy >= -0.9f && medium.anisotropy <= 0.9f &&
         std::isfinite(medium.baseEmission.x) && medium.baseEmission.x >= 0.0f &&
         std::isfinite(medium.baseEmission.y) && medium.baseEmission.y >= 0.0f &&
         std::isfinite(medium.baseEmission.z) && medium.baseEmission.z >= 0.0f &&

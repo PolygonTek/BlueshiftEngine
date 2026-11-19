@@ -253,7 +253,6 @@ private:
         uint32_t                    previousFrameCount = 0;
         uint64_t                    resourceGenerationNumber = 0;
         SharedPtr<VFogHistoryRenderState> renderState;
-        MediumParams                previousMediumParams = {};
     };
 
     bool                            CreateRenderTextures(uint32_t width, uint32_t height, RHI::Format colorFormat, RHI::Format depthFormat, uint32_t sampleCount, bool needDepthHistory, bool needNormalRoughnessTexture, bool needVelocityTexture, const BE1::Color4 &optimizedClearColor);

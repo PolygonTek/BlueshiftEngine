@@ -67,7 +67,7 @@ float4 LocalFogSampleColorDensity(float3 worldPos, float froxelDiagonalSquared, 
         // 프록셀 대각선과 최대 texel 밀도로 회전에 무관한 보수적 footprint 를 구한다.
         // 제곱 길이를 유지해 sqrt 를 생략하고, 1 texel 이하의 footprint 는 mip 0 을 사용한다.
         const float footprintTexelsSquared = froxelDiagonalSquared * volume.maskTexelsPerMeter * volume.maskTexelsPerMeter;
-        const float mipLevel = 0.5f * log2(max(footprintTexelsSquared, 1.0f));
+        const float mipLevel = 0.25f * log2(max(footprintTexelsSquared, 1.0f));
 
         // NOTE: 텍스처 인덱스가 wave 내에서 다를 수 있으므로, NonUniformResourceIndex 를 붙여준다.
         const Texture3D<float4> maskTexture = GetTexture3D(NonUniformResourceIndex(volume.maskTextureIndex));

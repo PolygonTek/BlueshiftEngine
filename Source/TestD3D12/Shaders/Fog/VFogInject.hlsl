@@ -43,20 +43,16 @@ RWTexture3D<float4> outputSourceTexture : register(u0);
 #include "../Lighting/LightAttenuation.hlsli"
 #include "../Lighting/ShadowLibrary.hlsli"
 
-// Height fog 와 로컬 볼륨의 계수를 합산하되, 광원 산란에는 매질별 anisotropy 를 적용한다.
+// Height fog 와 로컬 볼륨의 계수를 먼저 합산하고, 공통 anisotropy 로 lighting 을 평가한다.
 struct VFogMedia {
-    float3 heightFogScatteringCoeff;
-    float heightFogAnisotropy;
-    float3 densityWorldPos; // local fog volume 의 색상과 density 를 샘플링할 월드 위치
+    float3 scatteringCoeff; // 모든 매질의 RGB 산란계수 합
     float froxelDiagonalSquared; // 지터와 무관한 프록셀 크기 (m^2). 밀도 LOD 와 광원 거리 보정에 공유한다.
-    uint localFogScatteringBegin; // 실제로 평가할 local fog volume 의 시작 인덱스
-    uint localFogScatteringEnd; // 실제로 평가할 local fog volume 의 끝 인덱스
     float4 sourceExtinction; // RGB: 누적 산란/발광 source, A: 합산 소멸계수
 };
 
 // 산란 가능한 매질이 있는지 확인한다.
 bool VFogHasScattering(VFogMedia media) {
-    return any(media.heightFogScatteringCoeff > 0.0f) || media.localFogScatteringBegin < media.localFogScatteringEnd;
+    return any(media.scatteringCoeff > 0.0f);
 }
 
 // 프록셀 샘플 위치에서 카메라 쪽으로 향하는 월드 공간 단위 방향
@@ -64,37 +60,25 @@ float3 VFogGetOutgoingDirection(float2 rayXY) {
     return cameraConstants.IsOrthogonal() ? -cameraConstants.cameraForward : -mul(normalize(float3(rayXY, -1.0f)), (float3x3)cameraConstants.viewRotation);
 }
 
-// 월드 위치에서 매질을 샘플링하고 ambient/emissive/environment source 와 소멸계수를 한 번 합산한다.
-// 밀도나 anisotropy 를 먼저 평균내지 않고 매질별 계수를 누적한다.
-VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, float froxelDiagonalSquared, HeightFogParams heightFogParams, out float3 wo) {
+// 월드 위치에서 Height Fog 와 Local Fog Volume 의 밀도/마스크를 샘플링해 extinction/scattering 계수와 ambient/emissive source 를 합산한다.
+VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, float depth, float froxelDiagonalSquared, HeightFogParams heightFogParams) {
     VFogMedia media = (VFogMedia)0;
-    media.densityWorldPos = worldPos;
     media.froxelDiagonalSquared = froxelDiagonalSquared;
-    wo = 0.0f;
 
-    const bool useEnvironmentLight = cameraConstants.envLightRadianceSHBufferIndex != 0 && cameraConstants.envLightIntensity > 0.0f && any(cameraConstants.envLightColor > 0.0f);
-    FogEnvironmentSHBands environmentSHBands = (FogEnvironmentSHBands)0;
-
-    // Height fog 의 밀도를 샘플링하고 매질 속성을 계산한다.
-    const float density = HeightFogSampleDensity(worldPos.z, heightFogParams);
-    const FogMedium heightFogMedium = FogSampleMedium(density, heightFogParams.medium);
-
-    // ambient/emissive source 와 소멸계수를 누적하고, 광원 산란에 필요한 속성을 보관한다.
-    FogAccumulateAmbientEmissionAndExtinction(heightFogMedium, heightFogParams.ambientRadiance, media.sourceExtinction);
-    media.heightFogScatteringCoeff = heightFogMedium.scatteringCoeff;
-    media.heightFogAnisotropy = heightFogMedium.anisotropy;
-    media.localFogScatteringBegin = cameraConstants.numLocalFogVolumes;
-
+    const float rayLengthSquared = cameraConstants.IsOrthogonal() ? 1.0f : 1.0f + dot(rayXY, rayXY);
+    const float distanceSquared = depth * depth * rayLengthSquared;
     [branch]
-    if (any(heightFogMedium.scatteringCoeff > 0.0f)) {
-        wo = VFogGetOutgoingDirection(rayXY);
-        [branch]
-        if (useEnvironmentLight) {
-            environmentSHBands = FogSampleEnvironmentSHBands(wo, cameraConstants);
-            media.sourceExtinction.rgb += heightFogMedium.scatteringCoeff * FogEvaluateEnvironmentScatteringRadiance(environmentSHBands, heightFogMedium.anisotropy);
-        }
+    if (distanceSquared < heightFogParams.maxDistance * heightFogParams.maxDistance) {
+        // Height fog 의 밀도를 샘플링하고 매질 속성을 계산한다.
+        const float density = HeightFogSampleDensity(worldPos.z, heightFogParams);
+        const FogMedium heightFogMedium = FogSampleMedium(density, heightFogParams.medium);
+
+        // Height fog 전용 ambient/emissive source 와 extinction/scattering 계수를 누적한다.
+        FogAccumulateAmbientEmissionAndExtinction(heightFogMedium, heightFogParams.ambientRadiance, media.sourceExtinction);
+        media.scatteringCoeff = heightFogMedium.scatteringCoeff;
     }
 
+    // 로컬 fog 볼륨의 밀도를 샘플링하고 emissive source 와 extinction/scattering 계수를 누적한다.
     [branch]
     if (cameraConstants.numLocalFogVolumes > 0) {
         const StructuredBuffer<ShaderLocalFogVolume> volumes = GetShaderLocalFogVolumeTable(frameConstants.shaderLocalFogVolumeTableIndex);
@@ -106,31 +90,17 @@ VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, float froxelDiagona
                 continue;
             }
 
+            // 밀도로 extinction/scattering 계수와 emission 을 계산한다.
             FogMedium localFogMedium = FogSampleMedium(localFogColorDensity.a, localFog.medium);
             localFogMedium.scatteringCoeff *= localFogColorDensity.rgb;
 
+            // emission 에 의한 source 누적, extinction 계수 누적, scattering rgb 계수 누적.
             media.sourceExtinction.rgb += localFogMedium.emission;
             media.sourceExtinction.a += localFogMedium.extinctionCoeff;
-            
-            if (any(localFogMedium.scatteringCoeff > 0.0f)) {
-                // 첫 산란 매질에서 방향과 SH bands 를 계산해 이후 매질 및 직접광 평가에 공유한다.
-                [branch]
-                if (!VFogHasScattering(media)) {
-                    wo = VFogGetOutgoingDirection(rayXY);
-                    [branch]
-                    if (useEnvironmentLight) {
-                        environmentSHBands = FogSampleEnvironmentSHBands(wo, cameraConstants);
-                    }
-                }
-                [branch]
-                if (useEnvironmentLight) {
-                    media.sourceExtinction.rgb += localFogMedium.scatteringCoeff * FogEvaluateEnvironmentScatteringRadiance(environmentSHBands, localFogMedium.anisotropy);
-                }
-                media.localFogScatteringBegin = min(media.localFogScatteringBegin, i);
-                media.localFogScatteringEnd = i + 1;
-            }
+            media.scatteringCoeff += localFogMedium.scatteringCoeff;
         }
     }
+
     return media;
 }
 
@@ -140,31 +110,7 @@ void VFogAccumulateScatteringSource(float3 incidentRadiance, float lightWeight, 
         return;
     }
 
-    float3 phaseWeightedScattering = 0.0f;
-    if (any(media.heightFogScatteringCoeff > 0.0f)) {
-        phaseWeightedScattering = media.heightFogScatteringCoeff * HenyeyGreensteinPhase(cosTheta, media.heightFogAnisotropy);
-    }
-
-    [branch]
-    if (media.localFogScatteringBegin < media.localFogScatteringEnd) {
-        const StructuredBuffer<ShaderLocalFogVolume> volumes = GetShaderLocalFogVolumeTable(frameConstants.shaderLocalFogVolumeTableIndex);
-        [loop]
-        for (uint i = media.localFogScatteringBegin; i < media.localFogScatteringEnd; ++i) {
-            const ShaderLocalFogVolume localFog = volumes[cameraConstants.localFogVolumeTableOffset + i];
-            if (localFog.medium.baseExtinction <= 0.0f || !any(localFog.medium.scatteringAlbedo > 0.0f)) {
-                continue;
-            }
-
-            const float4 localFogColorDensity = LocalFogSampleColorDensity(media.densityWorldPos, media.froxelDiagonalSquared, localFog, linearWrapSampler, linearClampSampler);
-            if (localFogColorDensity.a <= 0.0f) {
-                continue;
-            }
-
-            FogMedium localFogMedium = FogSampleMedium(localFogColorDensity.a, localFog.medium);
-            localFogMedium.scatteringCoeff *= localFogColorDensity.rgb;
-            phaseWeightedScattering += localFogMedium.scatteringCoeff * HenyeyGreensteinPhase(cosTheta, localFogMedium.anisotropy);
-        }
-    }
+    const float3 phaseWeightedScattering = media.scatteringCoeff * HenyeyGreensteinPhase(cosTheta, cameraConstants.fogAnisotropy);
     media.sourceExtinction.rgb += phaseWeightedScattering * incidentRadiance * lightWeight;
 }
 
@@ -180,7 +126,7 @@ float VFogFroxelDiagonalSquared(float2 centerRayXY, float sliceNearDepth, float 
     return dot(froxelSizeXY, froxelSizeXY) + froxelDepth * froxelDepth;
 }
 
-// Sample point/spot incident radiance once, then accumulate each medium's scattering source for outgoing direction wo.
+// Sample point/spot incident radiance once, then apply the shared phase and combined scattering coefficient for outgoing direction wo.
 void AccumulateVFogLocalLight(uint packedLightRef, float3 worldPos, float3 wo, float distanceBiasSquared, bool useShadows, inout ShadowSamplingContext shadowSampling, inout VFogMedia media) {
     const uint lightType = packedLightRef & ShaderLightTypeMask;
     const uint lightIndex = packedLightRef >> ShaderLightTypeBitCount;
@@ -228,9 +174,7 @@ void AccumulateVFogLocalLight(uint packedLightRef, float3 worldPos, float3 wo, f
     const uint requiredShadowFlags = ShaderLightFlagCastShadows | ShaderLightFlagCastVolumetricShadows;
     float shadow = 1.0f;
     if (useShadows && shadowIndex != ShaderLocalShadowIndexInvalid && (lightFlags & requiredShadowFlags) == requiredShadowFlags) {
-        shadow = lightType == ShaderLightTypePoint ?
-            SamplePointShadowVisibility(shadowIndex, shadowSampling, worldPos) :
-            SampleSpotShadowVisibility(shadowIndex, shadowSampling, worldPos);
+        shadow = lightType == ShaderLightTypePoint ? SamplePointShadowVisibility(shadowIndex, shadowSampling, worldPos) : SampleSpotShadowVisibility(shadowIndex, shadowSampling, worldPos);
     }
     VFogAccumulateScatteringSource(lightIntensity, shadow * attenuation, dot(wi, wo), media);
 }
@@ -267,7 +211,7 @@ float4 AccumulateVFogHistory(uint3 id, float4 currentSourceExtinction, float3 ce
     const float2 historyUV = prevNDC * float2(0.5f, -0.5f) + 0.5f;
     const float3 historyUVW = float3(historyUV, VFogDepthToSlice(prevDepth, vfogParams) / vfogParams.sliceCount);
 
-    // 재투영한 UVW 를 볼륨 텍스쳐의 반 텍셀 안쪽으로 범위로 제한한다.
+    // 재투영한 UVW 가 반 텍셀 여백을 둔 볼륨 범위를 벗어나면 history 를 버린다.
     const float3 halfTexel = 0.5f * float3(vfogParams.tileCountRcp, 1.0f / vfogParams.sliceCount);
     if (any(historyUVW < halfTexel) || any(historyUVW > 1.0f - halfTexel)) {
         return currentSourceExtinction;
@@ -296,17 +240,16 @@ float4 AccumulateVFogHistory(uint3 id, float4 currentSourceExtinction, float3 ce
     return lerp(currentSourceExtinction, historySourceExtinction, vfogTemporalParams.historyWeight * viewWeight);
 }
 
-// 밀도, 경계 감쇠와 광원/그림자가 공유할 프록셀 샘플이다.
 struct VFogFroxelSample {
-    float3 worldPos;
-    float2 rayXY;
-    uint2 pixelCoord;
-    float depth;
-    float sliceNearDepth;
-    float sliceFarDepth;
+    float3 worldPos;        // 프록셀 대표 샘플 월드 위치
+    float2 rayXY;           // Perspective: 뷰 공간 z = -1 평면과 광선의 교점 XY, Orthographic: 뷰 공간 XY 위치
+    uint2 pixelCoord;       // 렌더 해상도 기준의 샘플 픽셀 좌표
+    float depth;            // 샘플의 선형 깊이
+    float sliceNearDepth;   // 슬라이스 앞쪽 경계의 뷰 깊이
+    float sliceFarDepth;    // 슬라이스 뒤쪽 경계의 뷰 깊이
 };
 
-// 지터 설정을 반영해 프록셀 내부의 샘플 위치와 깊이를 계산한다.
+// 지터 설정을 반영해 프록셀 내부의 대표 샘플 위치와 깊이 정보 등을 계산한다.
 VFogFroxelSample VFogGetFroxelSample(uint3 id) {
     const VFogParams vfogParams = cameraConstants.vfogParams;
     const bool isOrthographic = cameraConstants.IsOrthogonal();
@@ -348,13 +291,24 @@ VFogFroxelSample VFogGetFroxelSample(uint3 id) {
     return sample;
 }
 
-// 밀도와 같은 위치에서 광원/그림자를 한 번 샘플링하고, 매질별 phase 와 산란계수를 적용한다.
-void AccumulateVFogSceneLighting(VFogFroxelSample sample, float2 centerRayXY, float3 wo, inout VFogMedia media) {
+// 산란 가능한 매질에 대해 밀도와 같은 위치에서 광원/그림자를 한 번 샘플링하고, 공통 phase 와 합산 산란계수를 적용한다.
+void AccumulateVFogSceneLighting(VFogFroxelSample sample, float2 centerRayXY, inout VFogMedia media) {
+    const float3 wo = VFogGetOutgoingDirection(sample.rayXY);
+
+    // 합산한 산란계수와 공통 anisotropy 로 환경광 산란 source 를 추가 누적한다.
+    [branch]
+    if (cameraConstants.envLightRadianceSHBufferIndex != 0 && cameraConstants.envLightIntensity > 0.0f && any(cameraConstants.envLightColor > 0.0f)) {
+        const FogEnvironmentSHBands environmentSHBands = FogSampleEnvironmentSHBands(wo, cameraConstants);
+        media.sourceExtinction.rgb += media.scatteringCoeff * FogEvaluateEnvironmentScatteringRadiance(environmentSHBands, cameraConstants.fogAnisotropy);
+    }
+
+    const bool useDirectionalLight = (cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0;
     const bool useShadows = (vfogLightingParams.flags & VFogFlagShadows) != 0;
+
     ShadowSamplingContext shadowSampling = InitShadowSamplingContext(sample.pixelCoord);
 
     // Directional 라이트의 산란 source 누적
-    if ((cameraConstants.flags & ShaderCameraFlagUseDirectionalLight) != 0 && any(frameConstants.directionalLight.intensityRGB > 0.0f)) {
+    if (useDirectionalLight && any(frameConstants.directionalLight.intensityRGB > 0.0f)) {
         const uint requiredShadowFlags = ShaderLightFlagCastShadows | ShaderLightFlagCastVolumetricShadows;
         const bool castVolumetricShadows = (frameConstants.directionalLight.flags & requiredShadowFlags) == requiredShadowFlags;
         const float shadow = useShadows && castVolumetricShadows ? SampleDirectionalShadowVisibility(shadowSampling, sample.worldPos) : 1.0f;
@@ -397,7 +351,7 @@ void CSMain(uint3 id : SV_DispatchThreadID) {
 
     const bool isOrthographic = cameraConstants.IsOrthogonal();
 
-    // 프록셀 중심 월드 위치를 구한다.
+    // 프록셀의 중심 월드 위치를 구한다.
     const float2 centerUV = VFogTileCenterUV(id.xy, vfogParams);
     const float centerDepth = VFogSliceToDepth(id.z + 0.5f, vfogParams);
     const float2 centerRayXY = VFogGetRayXY(centerUV, cameraConstants);
@@ -405,24 +359,27 @@ void CSMain(uint3 id : SV_DispatchThreadID) {
     const float3 centerWorldOffset = mul(centerViewPos, (float3x3)cameraConstants.viewRotation);
     const float3 centerWorldPos = cameraConstants.cameraOrigin + centerWorldOffset;
 
-    // 흡수/발광 전용 매질도 같은 jitter 샘플에서 밀도와 경계 감쇠를 평가한다.
     const VFogFroxelSample sample = VFogGetFroxelSample(id);
+
+    // 프록셀의 대각선 제곱 길이를 계산한다.
     float froxelDiagonalSquared = 0.0f;
     [branch]
     if (cameraConstants.numLocalFogVolumes > 0) {
         // 모든 볼륨과 광원에 같은 footprint 를 사용하며, STBN jitter 로 mip 이 흔들리지 않게 한다.
         froxelDiagonalSquared = VFogFroxelDiagonalSquared(centerRayXY, sample.sliceNearDepth, sample.sliceFarDepth);
     }
-    float3 wo;
-    VFogMedia media = VFogInitializeMedia(sample.worldPos, sample.rayXY, froxelDiagonalSquared, cameraConstants.heightFogParams, wo);
+
+    // 프록셀의 매질 속성과 ambient/emissive source 를 초기화한다.
+    VFogMedia media = VFogInitializeMedia(sample.worldPos, sample.rayXY, sample.depth, froxelDiagonalSquared, cameraConstants.heightFogParams);
+
+    // 산란 가능한 매질이 있으면 환경광과 씬 광원의 산란 기여를 누적한다.
     [branch]
     if (VFogHasScattering(media)) {
-        AccumulateVFogSceneLighting(sample, centerRayXY, wo, media);
+        AccumulateVFogSceneLighting(sample, centerRayXY, media);
     }
 
-    // 매질별 ambient/발광과 광원별 산란을 누적한 source 를 저장한다.
-    // 각 프록셀에 대해 RGB = 산란/발광 source, A = extinction 계수를 저장한다.
+    // 프록셀별 scattering + emissive source (RGB) 와 extinction 계수 (A) 를 temporal 누적해 저장한다.
     // 밝은 광원이나 겹치는 매질의 합이 FP16 의 최대 유한값 (65504) 을 넘지 않도록 제한한다.
-    const float4 sourceExtinction = min(media.sourceExtinction, 65504.0f);
+    const float4 sourceExtinction = min(media.sourceExtinction, HALF_MAX);
     outputSourceTexture[id] = AccumulateVFogHistory(id, sourceExtinction, centerWorldPos, centerWorldOffset);
 }

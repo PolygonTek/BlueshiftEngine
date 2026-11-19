@@ -1434,10 +1434,18 @@ void App::BuildImGuiOverlay() {
                 ImGui::EndDisabled();
             }
 
-            if (roundedCollapsingHeader("Volumetric Fog##VolumetricFogHeader")) {
+            if (roundedCollapsingHeader("Fog##VolumetricFogHeader")) {
                 ImGui::PushID("VolumetricFog");
+                float fogAnisotropy = r_fogAnisotropy.GetFloat();
+                ImGui::SetNextItemWidth(fontSize * 12.0f);
+                if (ImGui::SliderFloat("Anisotropy (g)", &fogAnisotropy,
+                    r_fogAnisotropy.GetMinValue(), r_fogAnisotropy.GetMaxValue(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+                    r_fogAnisotropy.SetFloat(fogAnisotropy);
+                }
+                ImGui::SetItemTooltip("Shared by height fog and all local fog volumes, including analytic height fog. 0 is isotropic; positive values favor forward scattering when looking toward a light.");
+
                 bool vfogEnabled = r_vfog.GetBool();
-                if (ImGui::Checkbox("Enabled", &vfogEnabled)) {
+                if (ImGui::Checkbox("Volumetric fog", &vfogEnabled)) {
                     r_vfog.SetBool(vfogEnabled);
                 }
                 ImGui::SetItemTooltip("Render fog media with froxel volumes. Height fog remains analytic when disabled.");

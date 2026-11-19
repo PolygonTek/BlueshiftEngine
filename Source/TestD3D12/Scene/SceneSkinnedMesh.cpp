@@ -110,7 +110,6 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     fogDesc.baseHeight = 0.0f;
     fogDesc.heightFalloff = 0.2f;
     fogDesc.medium.baseExtinction = 0.02f;
-    fogDesc.medium.anisotropy = 0.2f;
     fogDesc.medium.scatteringAlbedo = float3(1.0f, 1.0f, 1.0f);
     renderWorld->AddHeightFog(fogDesc);
 }
@@ -593,8 +592,6 @@ void SceneSkinnedMesh::BuildImGui() {
         changed |= ImGui::DragFloat("Max distance", &desc.maxDistance, 10.0f, 0.01f, 1000000.0f, "%.1f m", ImGuiSliderFlags_AlwaysClamp);
         ImGui::SetItemTooltip("Maximum fog ray distance for surfaces and sky. Independent of the froxel far depth.");
         changed |= ImGui::ColorEdit3("Scattering albedo", &desc.medium.scatteringAlbedo.x, ImGuiColorEditFlags_Float);
-        changed |= ImGui::SliderFloat("Anisotropy (g)", &desc.medium.anisotropy, -0.9f, 0.9f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-        ImGui::SetItemTooltip("0 is isotropic. Positive values favor forward scattering when looking toward a light.");
         if (ImGui::ColorEdit3("Base emission", &desc.medium.baseEmission.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
             desc.medium.baseEmission.x = BE1::Max(desc.medium.baseEmission.x, 0.0f);
             desc.medium.baseEmission.y = BE1::Max(desc.medium.baseEmission.y, 0.0f);

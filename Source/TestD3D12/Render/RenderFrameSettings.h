@@ -45,6 +45,7 @@ struct RenderFrameSettings {
     uint32_t                    mainRTSampleCount;
 
     float                       fogNearDepth;
+    float                       fogAnisotropy;
 
     bool                        vfogEnabled;
     uint32_t                    vfogTileBaseSize; // 정사각형 화면의 한 축 타일 수. XY 총개수는 대략 이 값의 제곱이다.

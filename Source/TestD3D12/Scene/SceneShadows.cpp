@@ -60,7 +60,7 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     HeightFog::Desc fogDesc;
     fogDesc.baseHeight = 0.0f;
     fogDesc.heightFalloff = 0.1f;
-    fogDesc.medium.anisotropy = 0.6f;
+    fogDesc.medium.baseExtinction = 0.04f;
     renderWorld->AddHeightFog(fogDesc);
 
     testMesh = meshManager.GetMesh(meshPath, false);
@@ -141,14 +141,13 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
 
     LocalFogVolume::Desc boxFogDesc;
     boxFogDesc.shape = LocalFogVolume::Shape::Box;
-    boxFogDesc.origin = BE1::Vec3(-1.0f, -0.25f, 0.0f);
+    boxFogDesc.origin = BE1::Vec3(-1.5f, -0.25f, -0.25f);
     boxFogDesc.halfExtents = BE1::Vec3(0.5f, 0.5f, 0.5f);
-    boxFogDesc.boundaryFade = 0.1f;
+    boxFogDesc.boundaryFade = 0.2f;
     boxFogDesc.medium.baseExtinction = 10.0f;
     boxFogDesc.medium.scatteringAlbedo = float3(1.0f, 1.0f, 1.0f);
-    boxFogDesc.medium.anisotropy = 0.15f;
-    boxFogDesc.maskTexture = fogMaskTextures.IsEmpty() ? nullptr : LoadFogMaskTexture(fogMaskTextures[0].filename);
-    boxFogDesc.maskScrollSpeed = BE1::Vec3(0.04f, 0.02f, 0.1f);
+    boxFogDesc.maskTexture = fogMaskTextures.IsEmpty() ? nullptr : LoadFogMaskTexture(fogMaskTextures[5].filename);
+    boxFogDesc.maskScrollSpeed = BE1::Vec3(0.0f, 0.5f, 0.0f);
     boxFogDesc.heightFogFalloff = 0.0f;
     boxFogDesc.heightFogOffset = 0.0f;
     boxFogHandle = renderWorld->AddLocalFogVolume(boxFogDesc);
@@ -287,8 +286,6 @@ void SceneShadows::BuildBoxFogControls(int handle, const char *label) {
     ImGui::SetItemTooltip("Extinction before boundary fade, height falloff, and mask alpha are applied.");
     changed |= ImGui::ColorEdit3("Scattering albedo", &desc.medium.scatteringAlbedo.x, ImGuiColorEditFlags_Float);
     ImGui::SetItemTooltip("Multiplied by the fog mask RGB. A8 masks keep this color unchanged.");
-    changed |= ImGui::SliderFloat("Anisotropy (g)", &desc.medium.anisotropy, -0.9f, 0.9f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SetItemTooltip("0 is isotropic. Positive values favor forward scattering when looking toward a light.");
     if (ImGui::ColorEdit3("Base emission", &desc.medium.baseEmission.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
         desc.medium.baseEmission.x = BE1::Max(desc.medium.baseEmission.x, 0.0f);
         desc.medium.baseEmission.y = BE1::Max(desc.medium.baseEmission.y, 0.0f);
@@ -448,8 +445,6 @@ void SceneShadows::BuildImGui() {
         changed |= ImGui::DragFloat("Max distance", &desc.maxDistance, 10.0f, 0.01f, 1000000.0f, "%.1f m", ImGuiSliderFlags_AlwaysClamp);
         ImGui::SetItemTooltip("Maximum fog ray distance for surfaces and sky. Independent of the froxel far depth.");
         changed |= ImGui::ColorEdit3("Scattering albedo", &desc.medium.scatteringAlbedo.x, ImGuiColorEditFlags_Float);
-        changed |= ImGui::SliderFloat("Anisotropy (g)", &desc.medium.anisotropy, -0.9f, 0.9f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-        ImGui::SetItemTooltip("0 is isotropic. Positive values favor forward scattering when looking toward a light.");
         if (ImGui::ColorEdit3("Base emission", &desc.medium.baseEmission.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR)) {
             desc.medium.baseEmission.x = BE1::Max(desc.medium.baseEmission.x, 0.0f);
             desc.medium.baseEmission.y = BE1::Max(desc.medium.baseEmission.y, 0.0f);

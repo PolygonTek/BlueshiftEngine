@@ -367,6 +367,7 @@ struct FrameFog {
     RHI::PipelineState *            compositePSO = nullptr;
     bool                            heightFogEnabled = false;
     HeightFogParams                 heightFogParams = {};
+    float                           anisotropy = 0.0f;
     float                           nearDepth = 0.0f;
     FrameVolumetricFog              volumetric;
 };

@@ -22,8 +22,7 @@ bool LocalFogVolume::Desc::IsValid() const {
     if (!(medium.baseExtinction >= 0.0f && medium.baseExtinction <= 1000.0f) ||
         !(medium.scatteringAlbedo.x >= 0.0f && medium.scatteringAlbedo.x <= 1.0f) ||
         !(medium.scatteringAlbedo.y >= 0.0f && medium.scatteringAlbedo.y <= 1.0f) ||
-        !(medium.scatteringAlbedo.z >= 0.0f && medium.scatteringAlbedo.z <= 1.0f) ||
-        !(medium.anisotropy >= -0.9f && medium.anisotropy <= 0.9f)) {
+        !(medium.scatteringAlbedo.z >= 0.0f && medium.scatteringAlbedo.z <= 1.0f)) {
         return false;
     }
 

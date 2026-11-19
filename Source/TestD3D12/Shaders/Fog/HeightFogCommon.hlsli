@@ -17,7 +17,7 @@ float HeightFogSampleDensity(float height, HeightFogParams hfogParams) {
 }
 
 struct HeightFogRay {
-    float originHeight;         // 뷰 공간에서 ray 의 시작점 높이
+    float originHeight;         // 월드 공간에서 ray 의 시작점 높이
     float heightPerViewDepth;   // 뷰 공간 깊이당 ray 의 높이 변화량
     float lengthPerViewDepth;   // 뷰 공간 깊이당 ray 의 길이 변화량
     float3 direction;           // ray 방향
@@ -79,12 +79,12 @@ float4 HeightFogIntegrate(HeightFogRay ray, float startDepth, float endDepth, Ca
     float3 incidentRadiance = hfogParams.ambientRadiance;
     [branch]
     if (opticalDepth > 0.0f && any(hfogParams.medium.scatteringAlbedo > 0.0f)) {
-        incidentRadiance += directionalRadiance * HenyeyGreensteinPhase(dot(directionalDirection, -ray.direction), hfogParams.medium.anisotropy); // Q
+        incidentRadiance += directionalRadiance * HenyeyGreensteinPhase(dot(directionalDirection, -ray.direction), camera.fogAnisotropy); // Q
 
         [branch]
         if (camera.envLightRadianceSHBufferIndex != 0 && camera.envLightIntensity > 0.0f && any(camera.envLightColor > 0.0f)) {
             const FogEnvironmentSHBands environmentSHBands = FogSampleEnvironmentSHBands(-ray.direction, camera);
-            incidentRadiance += FogEvaluateEnvironmentScatteringRadiance(environmentSHBands, hfogParams.medium.anisotropy);
+            incidentRadiance += FogEvaluateEnvironmentScatteringRadiance(environmentSHBands, camera.fogAnisotropy);
         }
     }
 

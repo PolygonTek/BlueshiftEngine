@@ -6,7 +6,7 @@
 struct MediumParams {
     float baseExtinction;           // Extinction coefficient before spatial weighting (1/m).
     float3 scatteringAlbedo;        // RGB fraction of baseExtinction due to scattering, [0, 1].
-    float anisotropy;               // HenyeyGreensteinPhase's g parameter.
+    float padding;
     float3 baseEmission;            // RGB radiance emitted per meter before spatial weighting.
 };
 

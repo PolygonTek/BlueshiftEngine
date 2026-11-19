@@ -85,6 +85,7 @@ CVAR(r_csmSlopeScaledDepthBias3, "1.0", BE1::CVar::Flag::Float, "slope-scaled de
 
 // Fog (Common)
 CVAR_MINMAX(r_fogNearDepth, "0.0", BE1::CVar::Flag::Float, "start depth for analytic height fog and volumetric fog (-view Z, meters)", 0.0f, 10000.0f);
+CVAR_MINMAX(r_fogAnisotropy, "0.2", BE1::CVar::Flag::Float, "shared Henyey-Greenstein anisotropy for height fog and local fog volumes", -0.9f, 0.9f);
 
 // Volumetric fog
 CVAR(r_vfog, "1", BE1::CVar::Flag::Bool, "enable volumetric fog on opaque surfaces and sky");
@@ -236,6 +237,7 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.mainRTSampleCount = NormalizeMainRTSampleCount(r_msaa.GetInteger());
 
     settings.fogNearDepth = r_fogNearDepth.GetFloat();
+    settings.fogAnisotropy = r_fogAnisotropy.GetFloat();
     settings.vfogEnabled = r_vfog.GetBool();
     settings.vfogTileBaseSize = static_cast<uint32_t>(BE1::Clamp(r_vfogTileBaseSize.GetInteger(), 16, 256));
     settings.vfogSliceCount = static_cast<uint32_t>(BE1::Clamp(r_vfogSliceCount.GetInteger(), 8, 256));

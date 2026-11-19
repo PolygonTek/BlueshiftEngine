@@ -41,7 +41,7 @@ public:
         float                       radius = 1.0f;                      ///< 구의 반지름 (m).
         BE1::Vec3                   halfExtents = BE1::Vec3(1.0f);      ///< 박스의 로컬 축별 반길이 (m).
         float                       boundaryFade = 0.1f;                ///< 경계 감쇠 폭의 비율 [0, 1]. 구의 반지름 또는 박스의 최소 반길이 기준.
-        MediumParams                medium = { 0.02f, float3(0.9f, 0.9f, 0.9f), 0.6f, {} }; ///< 경계, 높이 감쇠, 마스크를 적용하기 전의 광학적 매질 속성.
+        MediumParams                medium = { 0.02f, float3(0.9f, 0.9f, 0.9f), 0.0f, {} }; ///< 경계, 높이 감쇠, 마스크를 적용하기 전의 광학적 매질 속성.
         SharedPtr<Texture>          maskTexture;                        ///< 선형 3D 마스크 [0, 1]: RGB 는 산란 albedo 배율, A 는 밀도 배율.
         MaskAddressMode             maskAddressMode = MaskAddressMode::Repeat; ///< U/V/W 공통 addressing. Clamp 는 텍스처 경계 texel 을 유지한다.
         BE1::Vec3                   maskTiling = BE1::Vec3(1.0f);       ///< 볼륨 전체 길이 (구는 지름) 의 로컬 축별 UV 범위. Repeat 에서는 반복 횟수이며, 음수는 축을 반전한다.

@@ -746,6 +746,7 @@ void RenderWorld::PrepareFog(FrameCamera *frameCamera, RenderCamera *renderCamer
     }
 
     fog.nearDepth = frameSettings.fogNearDepth;
+    fog.anisotropy = frameSettings.fogAnisotropy;
     fog.heightFogEnabled = useHeightFog;
 
     // fog compisition 에 사용할 PSO 를 준비한다.
@@ -884,7 +885,6 @@ void RenderWorld::PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *r
     vfogTemporalParams.historyWeight = frameSettings.vfogTemporalHistoryWeight;
     vfogTemporalParams.historyValid = history.valid && history.previousFrameCount + 1u == frameCount ? 1u : 0u;
 
-    history.previousMediumParams = hfogParams.medium;
     history.previousFrameCount = frameCount;
     history.valid = true;
 

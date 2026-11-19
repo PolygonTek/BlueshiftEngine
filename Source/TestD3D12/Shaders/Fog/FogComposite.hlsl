@@ -93,7 +93,7 @@ float4 PSMain(float4 position : SV_POSITION) : SV_TARGET {
     const float4 boundary = integratedVolumeTexture.SampleLevel(linearClampSampler, float3(volumeUV, (slice + 1.5f) / (vfogParams.sliceCount + 1.0f)), 0);
 
     float3 color = 0;
-    // Extinction Coeffcient
+    // Extinction Coefficient
     if (vfogParams.debugMode == 3) {
         color = froxelValue.aaa;
     }
@@ -105,7 +105,7 @@ float4 PSMain(float4 position : SV_POSITION) : SV_TARGET {
     if (vfogParams.debugMode == 5) {
         color = boundary.rgb;
     }
-    // Accumulated Trasmittance
+    // Accumulated Transmittance
     if (vfogParams.debugMode == 6) {
         color = boundary.aaa;
     }

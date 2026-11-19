@@ -3,7 +3,7 @@
 
 #include "../ShaderInterop.h"
 
-// 슬라이스 좌표 [0, sliceCount] -> 뷰 공간 깊이
+// 슬라이스 경계 좌표 [0, sliceCount] -> 뷰 공간 깊이
 float VFogSliceToDepth(float slice, VFogParams vfogParams) {
     if (slice <= 0.0f) {
         return vfogParams.nearDepth;
@@ -49,22 +49,22 @@ float4 VFogIntegrateSegment(float4 accumulated, float4 sourceExtinction, float s
     const float tau = sourceExtinction.a * stepLength;
 
     // Beer-Lambert law: T = exp(-tau)
-    const float stepTransmittance = exp(-tau);
+    const float stepT = exp(-tau);
 
     // tau 가 충분히 작으면 유효 자릿수 손실과 0/0 을 피하기 위해
     // (1 - exp(-tau)) / tau 를 테일러 전개로 근사한다.
-    const float factor = tau < 1e-3f ? 1.0f - tau * (0.5f - tau / 6.0f) : (1.0f - stepTransmittance) / tau;
+    const float factor = tau < 1e-3f ? 1.0f - tau * (0.5f - tau / 6.0f) : (1.0f - stepT) / tau;
     const float3 stepL = sourceExtinction.rgb * (stepLength * factor);
 
-    // Lacc_new = Lacc + Tacc * Lsegment(i)
+    // Lacc_new = Lacc + Tacc * stepL(i)
     accumulated.rgb += accumulated.a * stepL;
 
-    // Tacc_new = Tacc * stepTransmittance(i)
-    accumulated.a *= stepTransmittance;
+    // Tacc_new = Tacc * stepT(i)
+    accumulated.a *= stepT;
     return accumulated;
 }
 
-// nearDepth 부터 depth 까지의 누적 산란/발광 radiance 와 투과율을 샘플링한다.
+// fog 시작 깊이 nearDepth 부터 min(depth, farDepth) 까지의 누적 산란/발광 radiance 와 투과율을 샘플링한다.
 float4 VFogSample(Texture3D<float4> integratedTexture, SamplerState linearClamp, float2 unjitteredUV, float depth, CameraConstants camera) {
     const VFogParams vfogParams = camera.vfogParams;
     if (depth <= vfogParams.nearDepth) {
@@ -80,19 +80,16 @@ float4 VFogSample(Texture3D<float4> integratedTexture, SamplerState linearClamp,
         --slice;
     }
 
-    // clampedDepth 가 속한 froxel 깊이 구간 내 가까운 경계까지의 비율을 구한다.
+    // 프록셀의 가까운 경계에서 clampedDepth 까지의 상대 깊이 (0~1) 를 구한다.
     const float nearBoundary = VFogSliceToDepth(slice, vfogParams);
     const float farBoundary = VFogSliceToDepth(slice + 1u, vfogParams);
     const float depthRange = max(farBoundary - nearBoundary, FLT_MIN);
     const float depthFraction = saturate((clampedDepth - nearBoundary) / depthRange);
 
-    // 두 froxel 의 누적값을 선형 보간한다.
+    // 프록셀 앞뒤 경계의 누적값을 실제 깊이 비율에 따라 한 번의 선형 샘플링으로 보간한다.
     const float boundaryCountRcp = 1.0f / (vfogParams.sliceCount + 1.0f);
-    const float nearW = (slice + 0.5f) * boundaryCountRcp;
-    const float farW = (slice + 1.5f) * boundaryCountRcp;
-    const float4 nearIntegrated = integratedTexture.SampleLevel(linearClamp, float3(unjitteredUV, nearW), 0);
-    const float4 farIntegrated = integratedTexture.SampleLevel(linearClamp, float3(unjitteredUV, farW), 0);
-    return lerp(nearIntegrated, farIntegrated, depthFraction);
+    const float sampleW = (slice + 0.5f + depthFraction) * boundaryCountRcp;
+    return integratedTexture.SampleLevel(linearClamp, float3(unjitteredUV, sampleW), 0);
 }
 
 #endif // __VFOG_COMMON_HLSLI__

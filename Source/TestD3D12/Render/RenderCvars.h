@@ -83,6 +83,7 @@ extern BE1::CVar    r_csmSlopeScaledDepthBias3;
 extern BE1::CVar    r_msaa;
 
 extern BE1::CVar    r_fogNearDepth;
+extern BE1::CVar    r_fogAnisotropy;
 
 extern BE1::CVar    r_vfog;
 extern BE1::CVar    r_vfogTileBaseSize;

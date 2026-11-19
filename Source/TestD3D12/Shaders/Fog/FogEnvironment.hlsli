@@ -28,7 +28,7 @@ FogEnvironmentSHBands FogSampleEnvironmentSHBands(float3 wo, CameraConstants cam
     return bands;
 }
 
-// 매질의 anisotropy 에 따른 Henyey-Greenstein 가중치로 SH band 를 합산해 환경광의 산란 radiance 를 구한다.
+// 공통 anisotropy 에 따른 Henyey-Greenstein 가중치로 SH band 를 합산해 환경광의 산란 radiance 를 구한다.
 float3 FogEvaluateEnvironmentScatteringRadiance(FogEnvironmentSHBands bands, float anisotropy) {
     // 환경광 SH 와 HG phase 를 구면 적분하면 SH 의 직교성에 의해 band l 의 가중치는 g^l 이 된다.
     // 정규화된 HG 의 band 가중치는 (1, g, g^2).

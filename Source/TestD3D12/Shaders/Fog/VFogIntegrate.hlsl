@@ -38,8 +38,13 @@ void CSMain(uint3 id : SV_DispatchThreadID) {
         const float nextDepth = VFogSliceToDepth(slice + 1u, vfogParams);
         const float stepLength = max(nextDepth - previousDepth, 0.0f) * rayScale;
         const float4 sourceExtinction = inputSourceTexture.Load(int4(id.xy, slice, 0));
+
+        // [0, slice] 까지 누적한 radiance, transmittance 값을 outputIntegratedTexture 에 slice 별로 저장한다.
         accumulated = VFogIntegrateSegment(accumulated, sourceExtinction, stepLength);
-        outputIntegratedTexture[uint3(id.xy, slice + 1u)] = accumulated;
+
+        // 저장할 RGB 는 FP16 의 최대 유한값으로 제한한다.
+        outputIntegratedTexture[uint3(id.xy, slice + 1u)] = float4(min(accumulated.rgb, HALF_MAX), accumulated.a);
+
         previousDepth = nextDepth;
     }
 }
