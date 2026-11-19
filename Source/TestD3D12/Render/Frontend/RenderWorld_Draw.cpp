@@ -695,6 +695,7 @@ void RenderWorld::FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamer
         frameVolume->heightFogFalloff = desc.heightFogFalloff;
         frameVolume->heightFogOffset = desc.heightFogOffset;
         frameVolume->shape = desc.shape;
+        frameVolume->maskAddressMode = desc.maskAddressMode;
 
         frameVolume->maskTexture = maskTexture;
         if (maskTexture) {
@@ -704,7 +705,9 @@ void RenderWorld::FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamer
             const BE1::Vec3 maskHalfExtents = desc.shape == LocalFogVolume::Shape::Box ? desc.halfExtents : BE1::Vec3(desc.radius);
             for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
                 frameVolume->maskUVWScale[axisIndex] = (0.5f * desc.maskTiling[axisIndex]) / maskHalfExtents[axisIndex];
-                frameVolume->maskUVWBias[axisIndex] = static_cast<float>(0.5 * desc.maskTiling[axisIndex] - localVolume->maskScrollOffset[axisIndex]);
+                // Clamp 에서 음수 tiling 도 [abs(tiling), 0] 을 훑도록 한다. Repeat 의 기존 위상은 유지한다.
+                const float biasTiling = desc.maskAddressMode == LocalFogVolume::MaskAddressMode::Clamp ? BE1::Math::Abs(desc.maskTiling[axisIndex]) : desc.maskTiling[axisIndex];
+                frameVolume->maskUVWBias[axisIndex] = 0.5f * biasTiling - localVolume->maskScrollOffset[axisIndex];
             }
         } else {
             frameVolume->maskUVWScale = BE1::Vec3::origin;

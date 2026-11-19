@@ -56,6 +56,12 @@ bool LocalFogVolume::Update(const Desc &desc) {
         worldAABB = bounds;
     }
 
+    if (this->desc.maskAddressMode != desc.maskAddressMode) {
+        maskScrollOffset[0] = 0.0f;
+        maskScrollOffset[1] = 0.0f;
+        maskScrollOffset[2] = 0.0f;
+    }
+
     this->desc = desc;
     return true;
 }
@@ -68,7 +74,7 @@ void LocalFogVolume::AdvanceMaskScroll(float frameTime, uint64_t frameIndex) {
     }
     maskScrollFrameIndex = frameIndex;
 
-    if (!desc.maskTexture || frameTime <= 0.0f) {
+    if (desc.maskAddressMode != MaskAddressMode::Repeat || !desc.maskTexture || frameTime <= 0.0f) {
         return;
     }
 
@@ -78,9 +84,8 @@ void LocalFogVolume::AdvanceMaskScroll(float frameTime, uint64_t frameIndex) {
             continue;
         }
 
-        const double scrollOffset = maskScrollOffset[axisIndex] + static_cast<double>(speed) * static_cast<double>(frameTime);
-        const double wrappedOffset = scrollOffset - BE1::Math::Floor(scrollOffset);
-
-        maskScrollOffset[axisIndex] = wrappedOffset < 1.0 ? wrappedOffset : 0.0;
+        const float scrollOffset = maskScrollOffset[axisIndex] + speed * frameTime;
+        const float wrappedOffset = scrollOffset - BE1::Math::Floor(scrollOffset);
+        maskScrollOffset[axisIndex] = wrappedOffset < 1.0f ? wrappedOffset : 0.0f;
     }
 }

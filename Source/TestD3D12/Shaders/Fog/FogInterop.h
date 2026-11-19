@@ -13,6 +13,9 @@ struct MediumParams {
 static const uint ShaderLocalFogVolumeShapeSphere = 0u;
 static const uint ShaderLocalFogVolumeShapeBox = 1u;
 
+static const uint ShaderLocalFogVolumeMaskAddressRepeat = 0u;
+static const uint ShaderLocalFogVolumeMaskAddressClamp = 1u;
+
 struct ShaderLocalFogVolume {
     MediumParams medium;
     float3 origin;
@@ -20,7 +23,7 @@ struct ShaderLocalFogVolume {
     float3 halfExtents;             // Box half extents, or sphere radius in all components (m).
     float heightFogFalloff;         // exp2 height falloff above the reference plane along world Z (1/m); zero disables it.
     float3 axisX;                   // World-space local axes for both shapes; dot(worldPosition - origin, axis) gives local meters.
-    float padding;
+    uint maskAddressMode;           // Common U/V/W addressing for the volume mask.
     float3 axisY;
     float boundaryFadeDistanceRcp;  // CPU converts the fade ratio to reciprocal world distance (1/m). Zero means no fade.
     float3 axisZ;
@@ -78,6 +81,7 @@ struct VFogParams {
 
 static_assert(sizeof(MediumParams) == 32, "Medium constants must match HLSL");
 static_assert(sizeof(ShaderLocalFogVolume) == 144, "Local fog volumes must match the HLSL StructuredBuffer layout");
+static_assert(offsetof(ShaderLocalFogVolume, maskAddressMode) == 76, "Mask addressing must match HLSL");
 static_assert(offsetof(ShaderLocalFogVolume, maskUVWScale) == 112, "Mask UVW scale must match HLSL");
 static_assert(offsetof(ShaderLocalFogVolume, maskTextureIndex) == 124, "Mask texture index must match HLSL");
 static_assert(offsetof(ShaderLocalFogVolume, maskUVWBias) == 128, "Mask UVW bias must match HLSL");

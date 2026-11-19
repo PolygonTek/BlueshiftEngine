@@ -29,7 +29,17 @@
 #endif
 
 static constexpr const char *meshPath = "Data/Test/House/House_scene_01.bmesh ";
-static constexpr const char *fogDensityNoisePath = "Data/Test/Volume/3DTexture_CheckerPride.btex";
+static constexpr const char *fogMaskDirectory = "Data/Test/Volume";
+
+static SharedPtr<Texture> LoadFogMaskTexture(const char *filename) {
+    SharedPtr<Texture> texture = textureManager.GetTexture(filename, Texture::Flag::HighQuality, false);
+    if (!texture || texture == textureManager.missingTexture ||
+        !texture->IsReady() || texture->GetType() != RHI::TextureType::Texture3D) {
+        BE_WARNLOG("SceneShadows: failed to load 3D fog mask '%s'\n", filename);
+        return nullptr;
+    }
+    return texture;
+}
 
 void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
@@ -113,11 +123,20 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     spotLight.intensity = 15.0f;
     spotLightEnabled = spotLight.SetEnabled(renderWorld, true);
 
-    fogDensityNoiseTexture = textureManager.GetTexture(fogDensityNoisePath, Texture::Flag::HighQuality, false);
-    if (!fogDensityNoiseTexture || fogDensityNoiseTexture == textureManager.missingTexture ||
-        !fogDensityNoiseTexture->IsReady() || fogDensityNoiseTexture->GetType() != RHI::TextureType::Texture3D) {
-        BE_WARNLOG("SceneShadows::Init: failed to load 3D density mask '%s'\n", fogDensityNoisePath);
-        fogDensityNoiseTexture.reset();
+    // Build the sorted picker once; load texture data only when selected.
+    BE1::FileArray maskFiles;
+    BE1::fileSystem.ListFiles(fogMaskDirectory, "*.btex", maskFiles, false, false, true, false);
+    fogMaskTextures.SetCount(maskFiles.NumFiles());
+    for (int i = 0; i < maskFiles.NumFiles(); ++i) {
+        FogMaskTextureEntry &entry = fogMaskTextures[i];
+        entry.filename = maskFiles.GetFullFileName(i);
+
+        const char *displayName = maskFiles.GetFileName(i);
+        if (BE1::Str::StartsWith(displayName, "3DTexture_")) {
+            displayName += sizeof("3DTexture_") - 1;
+        }
+        entry.displayName = displayName;
+        entry.displayName.StripFileExtension();
     }
 
     LocalFogVolume::Desc boxFogDesc;
@@ -128,8 +147,8 @@ void SceneShadows::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorl
     boxFogDesc.medium.baseExtinction = 10.0f;
     boxFogDesc.medium.scatteringAlbedo = float3(1.0f, 1.0f, 1.0f);
     boxFogDesc.medium.anisotropy = 0.15f;
-    boxFogDesc.maskTexture = fogDensityNoiseTexture;
-    boxFogDesc.maskScrollSpeed = BE1::Vec3(0.4f, 0.1f, 0.0f);
+    boxFogDesc.maskTexture = fogMaskTextures.IsEmpty() ? nullptr : LoadFogMaskTexture(fogMaskTextures[0].filename);
+    boxFogDesc.maskScrollSpeed = BE1::Vec3(0.04f, 0.02f, 0.1f);
     boxFogDesc.heightFogFalloff = 0.0f;
     boxFogDesc.heightFogOffset = 0.0f;
     boxFogHandle = renderWorld->AddLocalFogVolume(boxFogDesc);
@@ -144,7 +163,7 @@ void SceneShadows::Shutdown() {
     spotLight.renderLightHandle = -1;
     spotLightEnabled = false;
     boxFogHandle = -1;
-    fogDensityNoiseTexture.reset();
+    fogMaskTextures.Clear();
     testMesh.reset();
     renderWorld = nullptr;
 }
@@ -242,7 +261,7 @@ static void BuildLightControls(RenderWorld *renderWorld, GameLight &light, bool 
     ImGui::EndDisabled();
 }
 
-static void BuildBoxFogControls(RenderWorld *renderWorld, int handle, const char *label, const SharedPtr<Texture> &noiseTexture) {
+void SceneShadows::BuildBoxFogControls(int handle, const char *label) {
     if (!renderWorld || handle < 0) {
         return;
     }
@@ -278,31 +297,60 @@ static void BuildBoxFogControls(RenderWorld *renderWorld, int handle, const char
     }
     ImGui::SetItemTooltip("RGB radiance emitted per meter before boundary fade, height falloff, and mask alpha are applied. Independent of scattering albedo and mask RGB.");
 
-    const int maskIndex = desc.maskTexture ? 1 : 0;
-    static constexpr const char *maskNames[] = { "None", "Noise" };
-    if (ImGui::BeginCombo("Fog mask", maskNames[maskIndex])) {
-        for (int i = 0; i < COUNT_OF(maskNames); ++i) {
-            ImGui::BeginDisabled(i == 1 && !noiseTexture);
-            if (ImGui::Selectable(maskNames[i], maskIndex == i)) {
-                desc.maskTexture = i == 0 ? nullptr : noiseTexture;
-                changed = true;
+    int maskIndex = -1;
+    if (desc.maskTexture) {
+        for (int i = 0; i < fogMaskTextures.Count(); ++i) {
+            if (!fogMaskTextures[i].filename.Icmp(desc.maskTexture->GetHashName())) {
+                maskIndex = i;
+                break;
             }
-            ImGui::EndDisabled();
-            if (maskIndex == i) {
+        }
+    }
+    const char *maskName = maskIndex >= 0 ? fogMaskTextures[maskIndex].displayName.c_str() : (desc.maskTexture ? desc.maskTexture->GetName() : "None");
+    if (ImGui::BeginCombo("Fog mask", maskName)) {
+        if (ImGui::Selectable("None", !desc.maskTexture) && desc.maskTexture) {
+            desc.maskTexture.reset();
+            changed = true;
+        }
+        if (!desc.maskTexture) {
+            ImGui::SetItemDefaultFocus();
+        }
+        for (int i = 0; i < fogMaskTextures.Count(); ++i) {
+            const FogMaskTextureEntry &entry = fogMaskTextures[i];
+            const bool selected = maskIndex == i;
+            ImGui::PushID(i);
+            if (ImGui::Selectable(entry.displayName.c_str(), selected) && !selected) {
+                SharedPtr<Texture> texture = LoadFogMaskTexture(entry.filename);
+                if (texture) {
+                    desc.maskTexture = std::move(texture);
+                    changed = true;
+                }
+            }
+            if (selected) {
                 ImGui::SetItemDefaultFocus();
             }
+            ImGui::PopID();
         }
         ImGui::EndCombo();
     }
-    ImGui::SetItemTooltip("Linear 3D mask: RGB multiplies scattering albedo; alpha multiplies density. A8 changes density only. None disables masking. Noise uses a tileable A8 density pattern.");
-    if (!noiseTexture) {
-        ImGui::TextDisabled("Noise texture is unavailable.");
+    ImGui::SetItemTooltip("Linear 3D mask: RGB multiplies scattering albedo; alpha multiplies density. A8 changes density only. None disables masking.");
+    if (fogMaskTextures.IsEmpty()) {
+        ImGui::TextDisabled("No volume textures are available.");
     }
     ImGui::BeginDisabled(!desc.maskTexture);
+    int maskAddressMode = static_cast<int>(desc.maskAddressMode);
+    static constexpr const char *maskAddressModeNames[] = { "Repeat", "Clamp" };
+    if (ImGui::Combo("Mask address mode", &maskAddressMode, maskAddressModeNames, COUNT_OF(maskAddressModeNames))) {
+        desc.maskAddressMode = static_cast<LocalFogVolume::MaskAddressMode>(maskAddressMode);
+        changed = true;
+    }
+    ImGui::SetItemTooltip("Addressing on U, V and W. Repeat tiles the mask; Clamp holds edge texels outside [0, 1] and disables scrolling.");
     changed |= ImGui::DragFloat3("Mask tiling", desc.maskTiling.Ptr(), 0.05f, -16.0f, 16.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SetItemTooltip("Repetitions across the full volume along local X, Y, Z. Negative values mirror an axis; zero removes variation along that axis.");
+    ImGui::SetItemTooltip("UV range across the full volume along local X, Y, Z. In Repeat mode, the magnitude is the repetition count. Negative values reverse an axis; zero removes variation along that axis.");
+    ImGui::BeginDisabled(desc.maskAddressMode != LocalFogVolume::MaskAddressMode::Repeat);
     changed |= ImGui::DragFloat3("Mask scroll speed", desc.maskScrollSpeed.Ptr(), 0.005f, -10.0f, 10.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SetItemTooltip("Texture cycles per second along local X, Y, Z. With positive tiling, positive speed moves the pattern along the positive local axis. Zero pauses that axis.");
+    ImGui::SetItemTooltip("Repeat only. Texture-coordinate units per second along local X, Y, Z. With positive tiling, positive speed moves the pattern along the positive local axis. The pattern loops; zero pauses that axis.");
+    ImGui::EndDisabled();
     ImGui::EndDisabled();
 
     changed |= ImGui::SliderFloat("Height fog falloff", &desc.heightFogFalloff, 0.0f, 200.0f, "%.3f /m", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
@@ -422,6 +470,6 @@ void SceneShadows::BuildImGui() {
     }
 
     ImGui::Separator();
-    BuildBoxFogControls(renderWorld, boxFogHandle, "Box Fog Volume", fogDensityNoiseTexture);
+    BuildBoxFogControls(boxFogHandle, "Box Fog Volume");
 }
 #endif

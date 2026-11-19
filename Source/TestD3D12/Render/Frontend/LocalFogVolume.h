@@ -28,6 +28,11 @@ public:
         Box
     };
 
+    enum class MaskAddressMode : uint8_t {
+        Repeat,
+        Clamp
+    };
+
     struct Desc {
         bool                        enabled = true;
         Shape                       shape = Shape::Sphere;
@@ -38,8 +43,9 @@ public:
         float                       boundaryFade = 0.1f;                ///< 경계 감쇠 폭의 비율 [0, 1]. 구의 반지름 또는 박스의 최소 반길이 기준.
         MediumParams                medium = { 0.02f, float3(0.9f, 0.9f, 0.9f), 0.6f, {} }; ///< 경계, 높이 감쇠, 마스크를 적용하기 전의 광학적 매질 속성.
         SharedPtr<Texture>          maskTexture;                        ///< 선형 3D 마스크 [0, 1]: RGB 는 산란 albedo 배율, A 는 밀도 배율.
-        BE1::Vec3                   maskTiling = BE1::Vec3(1.0f);       ///< 볼륨 전체 길이 (구는 지름) 에 들어가는 로컬 축별 반복 횟수.
-        BE1::Vec3                   maskScrollSpeed = BE1::Vec3::origin;///< 로컬 축별 스크롤 속도 (UVW/s).
+        MaskAddressMode             maskAddressMode = MaskAddressMode::Repeat; ///< U/V/W 공통 addressing. Clamp 는 텍스처 경계 texel 을 유지한다.
+        BE1::Vec3                   maskTiling = BE1::Vec3(1.0f);       ///< 볼륨 전체 길이 (구는 지름) 의 로컬 축별 UV 범위. Repeat 에서는 반복 횟수이며, 음수는 축을 반전한다.
+        BE1::Vec3                   maskScrollSpeed = BE1::Vec3::origin;///< Repeat 전용 로컬 축별 스크롤 속도 (UVW/s). Clamp 에서는 무시한다.
         float                       heightFogFalloff = 0.0f;            ///< 기준면 위쪽에 적용하는 월드 Z 방향의 exp2 높이 감쇠율 (1/m). 0 이면 높이에 따른 변화가 없다.
         float                       heightFogOffset = 0.0f;             ///< 볼륨 중심에서 높이 감쇠가 시작되는 기준면까지의 월드 Z 오프셋 (m).
 
@@ -67,7 +73,7 @@ private:
 
     Desc                            desc;
     BE1::AABB                       worldAABB = BE1::AABB::empty;
-    double                          maskScrollOffset[3] = {};           // 누적 UVW 이동량 [0, 1)
+    float                           maskScrollOffset[3] = {};           // Repeat 에서는 [0, 1) 로 정규화한 누적 UVW 이동량. Clamp 에서는 0 을 유지한다.
     uint64_t                        maskScrollFrameIndex = 0;
     int                             index = -1;
 };

@@ -335,6 +335,7 @@ struct FrameLocalFogVolume {
     float                           heightFogFalloff;
     float                           heightFogOffset;
     LocalFogVolume::Shape           shape;
+    LocalFogVolume::MaskAddressMode maskAddressMode;
     RHI::Texture *                  maskTexture;
     BE1::Vec3                       maskUVWScale;
     BE1::Vec3                       maskUVWBias;
@@ -342,6 +343,8 @@ struct FrameLocalFogVolume {
 
 static_assert(static_cast<uint32_t>(LocalFogVolume::Shape::Sphere) == ShaderLocalFogVolumeShapeSphere);
 static_assert(static_cast<uint32_t>(LocalFogVolume::Shape::Box) == ShaderLocalFogVolumeShapeBox);
+static_assert(static_cast<uint32_t>(LocalFogVolume::MaskAddressMode::Repeat) == ShaderLocalFogVolumeMaskAddressRepeat);
+static_assert(static_cast<uint32_t>(LocalFogVolume::MaskAddressMode::Clamp) == ShaderLocalFogVolumeMaskAddressClamp);
 
 struct FrameVolumetricFog {
     bool                            enabled = false;

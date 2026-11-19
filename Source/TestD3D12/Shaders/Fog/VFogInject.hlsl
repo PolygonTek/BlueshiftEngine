@@ -101,7 +101,7 @@ VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, float froxelDiagona
         [loop]
         for (uint i = 0; i < cameraConstants.numLocalFogVolumes; ++i) {
             const ShaderLocalFogVolume localFog = volumes[cameraConstants.localFogVolumeTableOffset + i];
-            const float4 localFogColorDensity = LocalFogSampleColorDensity(worldPos, media.froxelDiagonalSquared, localFog, linearWrapSampler);
+            const float4 localFogColorDensity = LocalFogSampleColorDensity(worldPos, media.froxelDiagonalSquared, localFog, linearWrapSampler, linearClampSampler);
             if (localFogColorDensity.a <= 0.0f) {
                 continue;
             }
@@ -155,7 +155,7 @@ void VFogAccumulateScatteringSource(float3 incidentRadiance, float lightWeight, 
                 continue;
             }
 
-            const float4 localFogColorDensity = LocalFogSampleColorDensity(media.densityWorldPos, media.froxelDiagonalSquared, localFog, linearWrapSampler);
+            const float4 localFogColorDensity = LocalFogSampleColorDensity(media.densityWorldPos, media.froxelDiagonalSquared, localFog, linearWrapSampler, linearClampSampler);
             if (localFogColorDensity.a <= 0.0f) {
                 continue;
             }

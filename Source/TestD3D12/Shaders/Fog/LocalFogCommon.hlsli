@@ -37,7 +37,7 @@ float LocalFogBoxSampleDensity(float3 localPos, float3 halfExtents, float bounda
     return smoothstep(0.0f, 1.0f, distanceToBoundary * boundaryFadeDistanceRcp);
 }
 
-float4 LocalFogSampleColorDensity(float3 worldPos, float froxelDiagonalSquared, ShaderLocalFogVolume volume, SamplerState linearWrap) {
+float4 LocalFogSampleColorDensity(float3 worldPos, float froxelDiagonalSquared, ShaderLocalFogVolume volume, SamplerState linearWrap, SamplerState linearClamp) {
     const float3 offset = worldPos - volume.origin;
     float3 localPos = 0.0f;
     float density;
@@ -71,7 +71,14 @@ float4 LocalFogSampleColorDensity(float3 worldPos, float froxelDiagonalSquared, 
 
         // NOTE: 텍스처 인덱스가 wave 내에서 다를 수 있으므로, NonUniformResourceIndex 를 붙여준다.
         const Texture3D<float4> maskTexture = GetTexture3D(NonUniformResourceIndex(volume.maskTextureIndex));
-        colorDensity *= saturate(maskTexture.SampleLevel(linearWrap, uvw, mipLevel));
+        float4 maskColorDensity;
+        [branch]
+        if (volume.maskAddressMode == ShaderLocalFogVolumeMaskAddressClamp) {
+            maskColorDensity = maskTexture.SampleLevel(linearClamp, uvw, mipLevel);
+        } else {
+            maskColorDensity = maskTexture.SampleLevel(linearWrap, uvw, mipLevel);
+        }
+        colorDensity *= saturate(maskColorDensity);
     }
     return colorDensity;
 }

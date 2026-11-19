@@ -18,7 +18,6 @@
 #include "Scene/GameLight.h"
 
 class Mesh;
-class Texture;
 
 class SceneShadows : public Scene {
 public:
@@ -32,6 +31,11 @@ public:
 #endif
 
 private:
+    struct FogMaskTextureEntry {
+        BE1::Str                filename;
+        BE1::Str                displayName;
+    };
+
     RenderWorld *               renderWorld = nullptr;
     SharedPtr<Mesh>             testMesh;
     GameLight                   pointLight;
@@ -43,9 +47,11 @@ private:
     bool                        spotLightEnabled = false;
 
     int                         boxFogHandle = -1;
-    SharedPtr<Texture>          fogDensityNoiseTexture;
+    BE1::Array<FogMaskTextureEntry> fogMaskTextures;
 
 #ifdef ENABLE_IMGUI
+    void                        BuildBoxFogControls(int handle, const char *label);
+
     float                       envLightRotation = 0.0f;
 #endif
 };
