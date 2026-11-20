@@ -55,7 +55,7 @@ void VolumetricFog::Shutdown() {
     frameIntegratePSO = nullptr;
 }
 
-bool VolumetricFog::Dispatch(RenderBackend &backend) const {
+bool VolumetricFog::Dispatch(RenderBackend &backend, uint32_t localVolumeBoundsBufferIndex) const {
     PROFILER_CPU_SCOPED_EVENT("VolumetricFog::Dispatch");
 
     const FrameCamera &frameCamera = *backend.GetFrameCamera();
@@ -73,7 +73,7 @@ bool VolumetricFog::Dispatch(RenderBackend &backend) const {
     const uint32_t groupsY = BE1::DivCeil(params.tileCount.y, 8u);
 
     // Inject scattering, emission and extinction into the fog volume.
-    const uint32_t noiseFrameIndex = DispatchInject(backend, groupsX, groupsY);
+    const uint32_t noiseFrameIndex = DispatchInject(backend, groupsX, groupsY, localVolumeBoundsBufferIndex);
 
     // Integrate scattering, emission and transmittance along each view ray.
     DispatchIntegrate(backend, groupsX, groupsY);
@@ -88,13 +88,19 @@ bool VolumetricFog::Dispatch(RenderBackend &backend) const {
     return true;
 }
 
-uint32_t VolumetricFog::DispatchInject(RenderBackend &backend, uint32_t groupsX, uint32_t groupsY) const {
+uint32_t VolumetricFog::DispatchInject(RenderBackend &backend, uint32_t groupsX, uint32_t groupsY, uint32_t localVolumeBoundsBufferIndex) const {
     const FrameCamera &frameCamera = *backend.GetFrameCamera();
     const FrameVolumetricFog &data = frameCamera.fog.volumetric;
+    VFogLightingParams lighting = data.vfogLightingParams;
     VFogTemporalParams temporal = data.vfogTemporalParams;
     RHI::CommandList *cmd = backend.GetCommandList();
 
     GpuTiming::ScopedTimer timer(backend.GetGpuTiming(), cmd, GpuTiming::Tag::VFogInject);
+
+    lighting.localVolumeBoundsBufferIndex = frameCamera.numFrameLocalFogVolumes > 0 && (lighting.flags & VFogFlagLocalVolumeFroxelCulling) != 0 ? localVolumeBoundsBufferIndex : 0;
+    if (lighting.localVolumeBoundsBufferIndex == 0) {
+        lighting.flags &= ~VFogFlagLocalVolumeFroxelCulling;
+    }
 
     const bool historyProduced = data.historyRenderState && frameCamera.viewSerial > 1 && data.historyRenderState->producedSerial == frameCamera.viewSerial - 1; // 직전 카메라 렌더링에서 history 가 생성됐는지 확인한다.
     const bool historyTextureReady = data.historyTexture && data.historyTexture->GetStatus() == RHI::GPUResourceStatus::Ready && data.historyTexture->HasValidView(RHI::ViewType::SRV);
@@ -114,7 +120,7 @@ uint32_t VolumetricFog::DispatchInject(RenderBackend &backend, uint32_t groupsX,
     RHI::renderer->SetTexture(cmd, 0, true, data.sourceTexture);
     RHI::renderer->SetConstantBuffer(cmd, 0, backend.GetFrameConstantBuffer());
     RHI::renderer->SetConstantBuffer(cmd, 1, backend.GetCameraConstantBuffer());
-    RHI::renderer->SetConstants(cmd, 3, &data.vfogLightingParams, sizeof(data.vfogLightingParams), 0);
+    RHI::renderer->SetConstants(cmd, 3, &lighting, sizeof(lighting), 0);
     RHI::renderer->SetConstantBuffer(cmd, 4, temporalConstantBuffer);
     RHI::renderer->Dispatch(cmd, groupsX, groupsY, data.vfogParams.sliceCount);
 

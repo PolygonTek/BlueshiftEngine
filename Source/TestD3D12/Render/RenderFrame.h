@@ -289,7 +289,8 @@ public:
     uint32_t                        GetShaderLocalShadowViewTableBindlessIndex() const { return shaderShadowTable.GetShadowViewBindlessIndex(); }
     uint32_t                        GetShaderPointLightTableBindlessIndex() const { return shaderLightTable.GetPointLightBindlessIndex(); }
     uint32_t                        GetShaderSpotLightTableBindlessIndex() const { return shaderLightTable.GetSpotLightBindlessIndex(); }
-    uint32_t                        GetShaderLocalFogVolumeTableBindlessIndex() const { return shaderLocalFogVolumeTable.GetBindlessIndex(); }
+    uint32_t                        GetShaderLocalFogVolumeTableBindlessIndex() const { return shaderLocalFogVolumeTable.GetVolumeBindlessIndex(); }
+    uint32_t                        GetShaderLocalFogVolumeBoundsTableBindlessIndex() const { return shaderLocalFogVolumeTable.GetVolumeBoundsBindlessIndex(); }
     uint32_t                        GetShaderLightRefTableBindlessIndex() const { return shaderLightCullingTable.GetLightRefBindlessIndex(); }
     uint32_t                        GetShaderLightZBinTableBindlessIndex() const { return shaderLightCullingTable.GetLightZBinBindlessIndex(); }
     uint32_t                        GetShaderLightTileWordTableBindlessIndex() const { return shaderLightCullingTable.GetLightTileWordBindlessIndex(); }

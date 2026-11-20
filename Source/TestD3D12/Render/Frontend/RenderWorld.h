@@ -262,6 +262,7 @@ private:
     void                        FindFrameLocalFogVolumes(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera, bool collectVolumes);
     void                        PrepareFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, bool useHeightFog, bool useVolumetricFog, uint32_t frameCount);
     void                        PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *renderCamera, const RenderFrameSettings &frameSettings, uint32_t frameCount);
+    void                        PrepareLocalFogVolumeBounds(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera);
 
     void                        DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);
     void                        SetupFrameTransparentSSR(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera);

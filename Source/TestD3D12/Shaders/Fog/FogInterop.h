@@ -34,6 +34,10 @@ struct ShaderLocalFogVolume {
     float maskTexelsPerMeter;        // max(abs(UVW scale) * mip-0 dimensions), for conservative mip selection.
 };
 
+struct ShaderLocalFogVolumeBounds {
+    uint3 froxelMinMax;             // 축별 [min, max) 범위: 하위 16비트 min, 상위 16비트 max.
+};
+
 struct HeightFogParams {
     MediumParams medium;
     float baseHeight;
@@ -46,12 +50,13 @@ struct HeightFogParams {
 
 static const uint VFogFlagShadows = 2u;
 static const uint VFogFlagSTBNJitter = 4u;
+static const uint VFogFlagLocalVolumeFroxelCulling = 8u;
 
 struct VFogLightingParams {
     float lightDistanceBiasScale;
     uint flags;
     uint stbnVec3TextureIndex;
-    float padding;
+    uint localVolumeBoundsBufferIndex;
 };
 
 struct VFogTemporalParams {
@@ -81,6 +86,7 @@ struct VFogParams {
 
 static_assert(sizeof(MediumParams) == 32, "Medium constants must match HLSL");
 static_assert(sizeof(ShaderLocalFogVolume) == 144, "Local fog volumes must match the HLSL StructuredBuffer layout");
+static_assert(sizeof(ShaderLocalFogVolumeBounds) == 12, "Local fog bounds must pack XYZ ranges into three uints");
 static_assert(offsetof(ShaderLocalFogVolume, maskAddressMode) == 76, "Mask addressing must match HLSL");
 static_assert(offsetof(ShaderLocalFogVolume, maskUVWScale) == 112, "Mask UVW scale must match HLSL");
 static_assert(offsetof(ShaderLocalFogVolume, maskTextureIndex) == 124, "Mask texture index must match HLSL");
@@ -88,6 +94,7 @@ static_assert(offsetof(ShaderLocalFogVolume, maskUVWBias) == 128, "Mask UVW bias
 static_assert(offsetof(ShaderLocalFogVolume, maskTexelsPerMeter) == 140, "Mask texel density must match HLSL");
 static_assert(sizeof(HeightFogParams) == 64, "Height fog constants must match HLSL");
 static_assert(sizeof(VFogLightingParams) == 16, "VFog lighting root constants must match HLSL");
+static_assert(offsetof(VFogLightingParams, localVolumeBoundsBufferIndex) == 12, "Local fog bounds index must use the fourth root constant");
 static_assert(sizeof(VFogTemporalParams) == 16, "VFog temporal constant buffer must match HLSL");
 static_assert(sizeof(VFogParams) == 48, "VFog constants must match HLSL");
 #endif

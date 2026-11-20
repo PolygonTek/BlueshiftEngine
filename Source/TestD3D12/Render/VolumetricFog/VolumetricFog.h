@@ -30,10 +30,10 @@ public:
 
     void                            UpdateFramePSOs();
 
-    bool                            Dispatch(RenderBackend &backend) const;
+    bool                            Dispatch(RenderBackend &backend, uint32_t localVolumeBoundsBufferIndex) const;
 
 private:
-    uint32_t                        DispatchInject(RenderBackend &backend, uint32_t groupsX, uint32_t groupsY) const;
+    uint32_t                        DispatchInject(RenderBackend &backend, uint32_t groupsX, uint32_t groupsY, uint32_t localVolumeBoundsBufferIndex) const;
     void                            DispatchIntegrate(RenderBackend &backend, uint32_t groupsX, uint32_t groupsY) const;
 
     SharedPtr<ShaderTemplate>       injectShaderTemplate;

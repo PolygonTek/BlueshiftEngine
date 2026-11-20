@@ -93,6 +93,7 @@ CVAR_MINMAX(r_vfogTileBaseSize, "144", BE1::CVar::Flag::Integer, "volumetric fog
 CVAR_MINMAX(r_vfogSliceCount, "128", BE1::CVar::Flag::Integer, "volumetric fog depth slice count", 8, 256);
 CVAR_MINMAX(r_vfogFarDepth, "32", BE1::CVar::Flag::Float, "volumetric fog end depth (-view Z, meters)", 0.01f, 10000.0f);
 CVAR_MINMAX(r_vfogDepthDistributionScale, "4.4", BE1::CVar::Flag::Float, "volumetric fog exponential depth distribution scale (meters); smaller values concentrate slices near the camera", 0.01f, 10000.0f);
+CVAR(r_vfogLocalVolumeFroxelCulling, "1", BE1::CVar::Flag::Bool, "enable per-froxel local fog volume bounds culling");
 CVAR(r_vfogShadows, "1", BE1::CVar::Flag::Bool, "apply shadow visibility to volumetric fog lighting");
 CVAR_MINMAX(r_vfogLightDistanceBiasScale, "1.5", BE1::CVar::Flag::Float, "volumetric fog local light distance bias relative to froxel size; 0 disables the bias", 0.0f, 4.0f);
 CVAR(r_vfogJitter, "1", BE1::CVar::Flag::Bool, "use STBN XYZ jitter for volumetric fog lighting samples; animate with temporal accumulation");
@@ -243,6 +244,7 @@ RenderFrameSettings CaptureRenderFrameSettings() {
     settings.vfogSliceCount = static_cast<uint32_t>(BE1::Clamp(r_vfogSliceCount.GetInteger(), 8, 256));
     settings.vfogFarDepth = r_vfogFarDepth.GetFloat();
     settings.vfogDepthDistributionScale = r_vfogDepthDistributionScale.GetFloat();
+    settings.vfogLocalVolumeFroxelCulling = r_vfogLocalVolumeFroxelCulling.GetBool();
     settings.vfogShadows = r_vfogShadows.GetBool();
     settings.vfogLightDistanceBiasScale = r_vfogLightDistanceBiasScale.GetFloat();
     settings.vfogJitter = r_vfogJitter.GetBool();

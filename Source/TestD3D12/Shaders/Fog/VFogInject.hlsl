@@ -61,7 +61,7 @@ float3 VFogGetOutgoingDirection(float2 rayXY) {
 }
 
 // 월드 위치에서 Height Fog 와 Local Fog Volume 의 밀도/마스크를 샘플링해 extinction/scattering 계수와 ambient/emissive source 를 합산한다.
-VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, float depth, float froxelDiagonalSquared, HeightFogParams heightFogParams) {
+VFogMedia VFogInitializeMedia(uint3 froxelID, float3 worldPos, float2 rayXY, float depth, float froxelDiagonalSquared, HeightFogParams heightFogParams) {
     VFogMedia media = (VFogMedia)0;
     media.froxelDiagonalSquared = froxelDiagonalSquared;
 
@@ -82,9 +82,26 @@ VFogMedia VFogInitializeMedia(float3 worldPos, float2 rayXY, float depth, float 
     [branch]
     if (cameraConstants.numLocalFogVolumes > 0) {
         const StructuredBuffer<ShaderLocalFogVolume> volumes = GetShaderLocalFogVolumeTable(frameConstants.shaderLocalFogVolumeTableIndex);
+        const bool useLocalVolumeFroxelCulling = (vfogLightingParams.flags & VFogFlagLocalVolumeFroxelCulling) != 0;
         [loop]
         for (uint i = 0; i < cameraConstants.numLocalFogVolumes; ++i) {
-            const ShaderLocalFogVolume localFog = volumes[cameraConstants.localFogVolumeTableOffset + i];
+            const uint volumeIndex = cameraConstants.localFogVolumeTableOffset + i;
+            [branch]
+            if (useLocalVolumeFroxelCulling) {
+                const Buffer<uint> volumeBounds = GetBufferUInt(vfogLightingParams.localVolumeBoundsBufferIndex);
+                const uint boundsOffset = volumeIndex * 3u;
+                const uint3 packedBounds = uint3(volumeBounds[boundsOffset], volumeBounds[boundsOffset + 1u], volumeBounds[boundsOffset + 2u]);
+                const uint3 froxelMin = packedBounds & 0xffffu;
+                const uint3 froxelMax = packedBounds >> 16;
+
+                // 매질 데이터를 읽기 전에 프록셀이 볼륨의 [min, max) 범위 안에 있는지 검사한다.
+                [branch]
+                if (any(froxelID < froxelMin) || any(froxelID >= froxelMax)) {
+                    continue;
+                }
+            }
+
+            const ShaderLocalFogVolume localFog = volumes[volumeIndex];
             const float4 localFogColorDensity = LocalFogSampleColorDensity(worldPos, media.froxelDiagonalSquared, localFog, linearWrapSampler, linearClampSampler);
             if (localFogColorDensity.a <= 0.0f) {
                 continue;
@@ -370,7 +387,7 @@ void CSMain(uint3 id : SV_DispatchThreadID) {
     }
 
     // 프록셀의 매질 속성과 ambient/emissive source 를 초기화한다.
-    VFogMedia media = VFogInitializeMedia(sample.worldPos, sample.rayXY, sample.depth, froxelDiagonalSquared, cameraConstants.heightFogParams);
+    VFogMedia media = VFogInitializeMedia(id, sample.worldPos, sample.rayXY, sample.depth, froxelDiagonalSquared, cameraConstants.heightFogParams);
 
     // 산란 가능한 매질이 있으면 환경광과 씬 광원의 산란 기여를 누적한다.
     [branch]

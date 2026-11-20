@@ -586,6 +586,10 @@ void RenderWorld::RenderScene(RenderCamera *renderCamera) {
 
     PrepareFog(frameCamera, renderCamera, frameSettings, useHeightFog, useVFog, frame->GetFrameCount());
 
+    if (frameSettings.vfogLocalVolumeFroxelCulling && frameCamera->fog.volumetric.enabled) {
+        PrepareLocalFogVolumeBounds(frame, renderCamera, frameCamera);
+    }
+
     DrawCamera(frame, renderCamera, frameCamera);
 
     // Reserve the next history slots here; the backend additionally validates the producing
@@ -853,6 +857,10 @@ void RenderWorld::PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *r
         renderCamera->CalcSlicedViewVolume(BE1::Min(cameraDesc.zNear, nearDepth), cameraDesc.zFar, nullptr, frameCamera->fog.volumetric.lightReceiverViewPlanes);
     }
 
+    if (frameSettings.vfogLocalVolumeFroxelCulling) {
+        vfogLightingParams.flags |= VFogFlagLocalVolumeFroxelCulling;
+    }
+
     // 밀도 샘플링에도 jitter 를 적용하므로 광원 산란이 없는 흡수/발광 매질에도 STBN 을 전달한다.
     if (frameSettings.vfogJitter) {
         vfogLightingParams.flags |= VFogFlagSTBNJitter;
@@ -889,6 +897,105 @@ void RenderWorld::PrepareVolumetricFog(FrameCamera *frameCamera, RenderCamera *r
     history.valid = true;
 
     vfogResources.SwapSourceTextures();
+}
+
+// 경계의 부동소수점 오차를 포함하도록 바깥쪽으로 반올림해 [min, max) 를 패킹한다.
+static uint32_t PackVFogFroxelRange(float minCoord, float maxCoord, uint32_t count) {
+    constexpr float roundingMargin = 1e-3f;
+    const uint32_t minIndex = static_cast<uint32_t>(BE1::Math::Floor(BE1::Clamp(minCoord - roundingMargin, 0.0f, static_cast<float>(count))));
+    const uint32_t maxIndex = static_cast<uint32_t>(BE1::Math::Ceil(BE1::Clamp(maxCoord + roundingMargin, 0.0f, static_cast<float>(count))));
+    return minIndex | (maxIndex << 16);
+}
+
+// 뷰 공간 AABB 를 지터 없는 투영과 깊이 분포로 변환해 볼륨의 보수적인 프록셀 범위를 구한다.
+static ShaderLocalFogVolumeBounds ComputeLocalFogVolumeBounds(const FrameLocalFogVolume &volume, const BE1::Mat4 &viewMatrix, const BE1::Mat4 &projMatrix, bool orthogonal, float cameraNearDepth, const VFogParams &params) {
+    ShaderLocalFogVolumeBounds bounds = { uint3(params.tileCount.x << 16, params.tileCount.y << 16, params.sliceCount << 16) };
+
+    const BE1::Vec3 viewCenter = viewMatrix.TransformPos(volume.origin);
+    BE1::Vec3 viewExtents(volume.radius);
+    if (volume.shape == LocalFogVolume::Shape::Box) {
+        viewExtents = viewMatrix.TransformDir(volume.axis[0]).Abs() * volume.halfExtents.x + viewMatrix.TransformDir(volume.axis[1]).Abs() * volume.halfExtents.y + viewMatrix.TransformDir(volume.axis[2]).Abs() * volume.halfExtents.z;
+    }
+
+    // 큰 월드 좌표의 뷰 변환과 GPU 샘플 위치 복원 오차도 경계에 포함한다.
+    const float positionScale = volume.origin.Abs().MaxComponent() + viewCenter.Abs().MaxComponent() + viewExtents.MaxComponent();
+    const float positionMargin = 8.0f * FLT_EPSILON * BE1::Max(1.0f, positionScale);
+    viewExtents += BE1::Vec3(positionMargin);
+    const BE1::Vec3 viewMin = viewCenter - viewExtents;
+    const BE1::Vec3 viewMax = viewCenter + viewExtents;
+    if (!viewMin.IsFinite() || !viewMax.IsFinite()) {
+        return bounds;
+    }
+
+    const float minDepth = -viewMax.z;
+    const float maxDepth = -viewMin.z;
+    if (maxDepth < params.nearDepth || minDepth > params.farDepth) {
+        return {};
+    }
+
+    const float clippedMinDepth = BE1::Max(minDepth, params.nearDepth);
+    const float clippedMaxDepth = BE1::Min(maxDepth, params.farDepth);
+    const float minSlice = static_cast<float>(BE1::Math::Log2OnePlus((static_cast<double>(clippedMinDepth) - params.nearDepth) / params.depthScale) * params.slicesPerExponent);
+    const float maxSlice = static_cast<float>(BE1::Math::Log2OnePlus((static_cast<double>(clippedMaxDepth) - params.nearDepth) / params.depthScale) * params.slicesPerExponent);
+    bounds.froxelMinMax.z = PackVFogFroxelRange(minSlice, maxSlice, params.sliceCount);
+
+    // 원근 투영의 near plane 을 걸치면 XY 는 전체 범위를 유지하고 Z 만 제한한다.
+    if (!orthogonal && minDepth <= cameraNearDepth) {
+        return bounds;
+    }
+
+    BE1::Vec2 uvMin(FLT_MAX, FLT_MAX);
+    BE1::Vec2 uvMax(-FLT_MAX, -FLT_MAX);
+    const uint32_t depthCount = orthogonal ? 1u : 2u;
+    for (uint32_t depthIndex = 0; depthIndex < depthCount; ++depthIndex) {
+        const float depth = depthIndex == 0 ? clippedMinDepth : clippedMaxDepth;
+
+        // 현재 카메라 투영은 XY 축을 섞지 않으므로 각 깊이의 대각 두 점으로 범위를 구한다.
+        for (uint32_t cornerIndex = 0; cornerIndex < 2; ++cornerIndex) {
+            const BE1::Vec3 &corner = cornerIndex == 0 ? viewMin : viewMax;
+            const BE1::Vec4 clip = projMatrix * BE1::Vec4(corner.x, corner.y, -depth, 1.0f);
+
+            if (!clip.IsFinite() || clip.w <= 0.0f) {
+                return bounds;
+            }
+
+            const float invW = 1.0f / clip.w;
+            const BE1::Vec2 uv(clip.x * invW * 0.5f + 0.5f, 0.5f - clip.y * invW * 0.5f);
+            uvMin.x = BE1::Min(uvMin.x, uv.x);
+            uvMin.y = BE1::Min(uvMin.y, uv.y);
+            uvMax.x = BE1::Max(uvMax.x, uv.x);
+            uvMax.y = BE1::Max(uvMax.y, uv.y);
+        }
+    }
+
+    if (uvMax.x < 0.0f || uvMin.x > 1.0f || uvMax.y < 0.0f || uvMin.y > 1.0f) {
+        return {};
+    }
+
+    bounds.froxelMinMax.x = PackVFogFroxelRange(uvMin.x * params.tileCount.x, uvMax.x * params.tileCount.x, params.tileCount.x);
+    bounds.froxelMinMax.y = PackVFogFroxelRange(uvMin.y * params.tileCount.y, uvMax.y * params.tileCount.y, params.tileCount.y);
+    return bounds;
+}
+
+void RenderWorld::PrepareLocalFogVolumeBounds(RenderFrame *frame, const RenderCamera *renderCamera, FrameCamera *frameCamera) {
+    uint32_t remaining = frameCamera->numFrameLocalFogVolumes;
+    if (remaining == 0) {
+        return;
+    }
+
+    PROFILER_CPU_SCOPED_EVENT("RenderWorld::PrepareLocalFogVolumeBounds");
+
+    const RenderCamera::Desc &cameraDesc = renderCamera->GetDesc();
+    const BE1::Mat4 &viewMatrix = renderCamera->GetViewMatrix();
+    const BE1::Mat4 &projMatrix = renderCamera->GetProjMatrix();
+    const VFogParams &params = frameCamera->fog.volumetric.vfogParams;
+
+    for (FrameLocalFogVolume &volume : frame->GetFrameLocalFogVolumes(frameCamera->firstFrameLocalFogVolume)) {
+        volume.froxelBounds = ComputeLocalFogVolumeBounds(volume, viewMatrix, projMatrix, cameraDesc.orthogonal, cameraDesc.zNear, params);
+        if (--remaining == 0) {
+            break;
+        }
+    }
 }
 
 void RenderWorld::DrawCamera(RenderFrame *frame, RenderCamera *renderCamera, FrameCamera *frameCamera) {

@@ -540,7 +540,7 @@ const void *RenderBackend::ExecuteBeginContext(const void *data) {
         return (const void *)(cmd + 1);
     }
 
-    // 각 카메라 별로 참조할 ShaderLocalFogVolume 테이블을 GPU 에 업로드한다.
+    // 각 카메라가 참조할 로컬 매질과 프록셀 범위 테이블을 GPU 에 업로드한다.
     if (!frame->UploadShaderLocalFogVolumeTable(frame->GetThreadData(0), mainCommandList)) {
         BE_WARNLOG("RenderBackend::ExecuteBeginContext: failed to upload shader local fog volume table\n");
         // 업로드 실패 시 이전 프레임의 테이블을 참조하지 않도록 컨텍스트 준비를 중단한다.
@@ -862,7 +862,7 @@ void RenderBackend::DrawCamera3D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
     bool debugVFog = false;
     if (currentFrameCamera->fog.compositePSO) {
         // 프록셀 볼륨에 누적 산란광/발광과 투과율을 계산해 저장한다.
-        const bool vfogVolumeReady = currentFrameCamera->fog.volumetric.enabled && renderSystem->GetVolumetricFog().Dispatch(*this);
+        const bool vfogVolumeReady = currentFrameCamera->fog.volumetric.enabled && renderSystem->GetVolumetricFog().Dispatch(*this, frame->GetShaderLocalFogVolumeBoundsTableBindlessIndex());
 
         // 볼륨이 준비되었거나 활성화된 Analytic HeightFog 활성화되어 있다면 fog composite 를 수행한다.
         const bool shouldCompositeFog = vfogVolumeReady || currentFrameCamera->fog.heightFogEnabled;

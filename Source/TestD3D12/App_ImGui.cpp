@@ -1485,6 +1485,12 @@ void App::BuildImGuiOverlay() {
 
                 ImGui::Separator();
 
+                bool vfogLocalVolumeFroxelCulling = r_vfogLocalVolumeFroxelCulling.GetBool();
+                if (ImGui::Checkbox("Local fog volume froxel culling", &vfogLocalVolumeFroxelCulling)) {
+                    r_vfogLocalVolumeFroxelCulling.SetBool(vfogLocalVolumeFroxelCulling);
+                }
+                ImGui::SetItemTooltip("Skip local fog volumes that do not overlap the current fog cell.");
+
                 bool vfogShadows = r_vfogShadows.GetBool();
                 if (ImGui::Checkbox("Shadows", &vfogShadows)) {
                     r_vfogShadows.SetBool(vfogShadows);

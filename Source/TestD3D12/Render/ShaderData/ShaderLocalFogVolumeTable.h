@@ -26,7 +26,8 @@ public:
 
     bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame);
 
-    uint32_t                        GetBindlessIndex() const { return tableBuffer.bindlessIndex; }
+    uint32_t                        GetVolumeBindlessIndex() const { return volumeBuffer.bindlessIndex; }
+    uint32_t                        GetVolumeBoundsBindlessIndex() const { return boundsUploaded ? volumeBoundsBuffer.bindlessIndex : 0; }
 
 private:
     struct TableBuffer {
@@ -36,9 +37,13 @@ private:
         uint32_t                    bindlessIndex = 0;
     };
 
-    bool                            EnsureBufferCapacity(uint32_t count);
-    void                            DestroyBuffer();
+    bool                            EnsureBufferCapacity(TableBuffer &buffer, uint32_t count, uint32_t elementSize, RHI::Format format, uint32_t stride, const char *name);
+    void                            UploadBuffer(RHI::CommandList *commandList, TableBuffer &buffer, RHI::Buffer *uploadBuffer, uint32_t uploadSize);
+    void                            DestroyBuffer(TableBuffer &buffer);
+
     static void                     Build(const FrameLocalFogVolume &frameVolume, ShaderLocalFogVolume &shaderVolume);
 
-    TableBuffer                     tableBuffer;
+    TableBuffer                     volumeBuffer;
+    TableBuffer                     volumeBoundsBuffer;
+    bool                            boundsUploaded = false;
 };

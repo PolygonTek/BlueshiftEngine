@@ -339,6 +339,7 @@ struct FrameLocalFogVolume {
     RHI::Texture *                  maskTexture;
     BE1::Vec3                       maskUVWScale;
     BE1::Vec3                       maskUVWBias;
+    ShaderLocalFogVolumeBounds      froxelBounds = {};
 };
 
 static_assert(static_cast<uint32_t>(LocalFogVolume::Shape::Sphere) == ShaderLocalFogVolumeShapeSphere);

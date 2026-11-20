@@ -52,6 +52,7 @@ struct RenderFrameSettings {
     uint32_t                    vfogSliceCount;
     float                       vfogFarDepth;
     float                       vfogDepthDistributionScale;
+    bool                        vfogLocalVolumeFroxelCulling;
     bool                        vfogShadows;
     float                       vfogLightDistanceBiasScale;
     bool                        vfogJitter;

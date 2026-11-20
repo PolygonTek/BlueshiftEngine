@@ -90,6 +90,7 @@ extern BE1::CVar    r_vfogTileBaseSize;
 extern BE1::CVar    r_vfogSliceCount;
 extern BE1::CVar    r_vfogFarDepth;
 extern BE1::CVar    r_vfogDepthDistributionScale;
+extern BE1::CVar    r_vfogLocalVolumeFroxelCulling;
 extern BE1::CVar    r_vfogShadows;
 extern BE1::CVar    r_vfogLightDistanceBiasScale;
 extern BE1::CVar    r_vfogJitter;

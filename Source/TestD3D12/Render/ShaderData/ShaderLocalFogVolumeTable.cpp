@@ -18,45 +18,58 @@
 #include "Render/RenderInternal.h"
 
 void ShaderLocalFogVolumeTable::Shutdown() {
-    DestroyBuffer();
+    DestroyBuffer(volumeBuffer);
+    DestroyBuffer(volumeBoundsBuffer);
+    boundsUploaded = false;
 }
 
-bool ShaderLocalFogVolumeTable::EnsureBufferCapacity(uint32_t count) {
-    if (count <= tableBuffer.capacity) {
+bool ShaderLocalFogVolumeTable::EnsureBufferCapacity(TableBuffer &buffer, uint32_t count, uint32_t elementSize, RHI::Format format, uint32_t stride, const char *name) {
+    if (count <= buffer.capacity) {
         return true;
     }
 
-    const uint32_t newCapacity = BE1::Max(count, BE1::Max(tableBuffer.capacity * 2u, 16u));
-    const uint64_t bufferSize = static_cast<uint64_t>(newCapacity) * sizeof(ShaderLocalFogVolume);
-
-    DestroyBuffer();
-
-    tableBuffer.buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
-    if (!tableBuffer.buffer) {
+    const uint32_t maxCapacity = UINT32_MAX / elementSize;
+    if (count > maxCapacity) {
         return false;
     }
-    RHI::renderer->SetName(tableBuffer.buffer, "shaderLocalFogVolumeTableBuffer");
+    const uint32_t newCapacity = BE1::Max(count, BE1::Min(BE1::Max(buffer.capacity * 2u, 16u), maxCapacity));
+    const uint32_t bufferSize = newCapacity * elementSize;
 
-    const RHI::ViewID view = RHI::renderer->CreateView(tableBuffer.buffer, RHI::ViewType::SRV, RHI::Format::Unknown, sizeof(ShaderLocalFogVolume), 0, bufferSize);
+    DestroyBuffer(buffer);
+
+    buffer.buffer = RHI::renderer->CreateBuffer(RHI::BufferUsage::Default, RHI::BufferFlag::ShaderResource, bufferSize, nullptr);
+    if (!buffer.buffer) {
+        return false;
+    }
+    RHI::renderer->SetName(buffer.buffer, name);
+
+    const RHI::ViewID view = RHI::renderer->CreateView(buffer.buffer, RHI::ViewType::SRV, format, stride, 0, bufferSize);
     if (!view.IsValid()) {
-        DestroyBuffer();
+        DestroyBuffer(buffer);
         return false;
     }
 
-    tableBuffer.capacity = newCapacity;
-    tableBuffer.bindlessIndex = tableBuffer.buffer->GetBindlessIndex(RHI::ViewType::SRV, view);
+    buffer.capacity = newCapacity;
+    buffer.bindlessIndex = buffer.buffer->GetBindlessIndex(RHI::ViewType::SRV, view);
     return true;
 }
 
-void ShaderLocalFogVolumeTable::DestroyBuffer() {
-    if (tableBuffer.buffer) {
-        RHI::renderer->DestroyBuffer(tableBuffer.buffer);
-        tableBuffer.buffer = nullptr;
+void ShaderLocalFogVolumeTable::UploadBuffer(RHI::CommandList *commandList, TableBuffer &buffer, RHI::Buffer *uploadBuffer, uint32_t uploadSize) {
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer.buffer, buffer.state, RHI::GPUResourceState::CopyDst));
+    RHI::renderer->CopyBuffer(commandList, buffer.buffer, 0, uploadBuffer, 0, uploadSize);
+    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(buffer.buffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource));
+    buffer.state = RHI::GPUResourceState::ShaderResource;
+}
+
+void ShaderLocalFogVolumeTable::DestroyBuffer(TableBuffer &buffer) {
+    if (buffer.buffer) {
+        RHI::renderer->DestroyBuffer(buffer.buffer);
+        buffer.buffer = nullptr;
     }
 
-    tableBuffer.state = RHI::GPUResourceState::Undefined;
-    tableBuffer.capacity = 0;
-    tableBuffer.bindlessIndex = 0;
+    buffer.state = RHI::GPUResourceState::Undefined;
+    buffer.capacity = 0;
+    buffer.bindlessIndex = 0;
 }
 
 void ShaderLocalFogVolumeTable::Build(const FrameLocalFogVolume &frameVolume, ShaderLocalFogVolume &shaderVolume) {
@@ -103,28 +116,62 @@ void ShaderLocalFogVolumeTable::Build(const FrameLocalFogVolume &frameVolume, Sh
 bool ShaderLocalFogVolumeTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame) {
     PROFILER_CPU_SCOPED_EVENT("ShaderLocalFogVolumeTable::Upload");
 
+    // 비활성/빈 프레임이나 업로드 실패 시 이전 프레임의 범위를 참조하지 않는다.
+    boundsUploaded = false;
+
     const uint32_t count = frame->NumFrameLocalFogVolumes();
     if (count == 0) {
         // 빈 프레임은 카메라별 numLocalFogVolumes 가 0 이므로 테이블을 참조하지 않는다.
         return true;
     }
 
-    RHI::Buffer *uploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderLocalFogVolume), count, nullptr);
-    if (!uploadBuffer || !uploadBuffer->mappedPtr || !EnsureBufferCapacity(count)) {
+    RHI::Buffer *volumeUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderLocalFogVolume), count, nullptr);
+    if (!volumeUploadBuffer || !volumeUploadBuffer->mappedPtr ||
+        !EnsureBufferCapacity(volumeBuffer, count, sizeof(ShaderLocalFogVolume), RHI::Format::Unknown, sizeof(ShaderLocalFogVolume), "shaderLocalFogVolumeTableBuffer")) {
         return false;
     }
 
-    ShaderLocalFogVolume *shaderVolumes = reinterpret_cast<ShaderLocalFogVolume *>(uploadBuffer->mappedPtr);
+    bool needsBounds = false;
+    if (frame->GetRenderFrameSettings().vfogLocalVolumeFroxelCulling) {
+        const FrameCamera *cameras = frame->GetFrameCameras();
+        for (uint32_t i = 0; i < frame->NumFrameCameras(); ++i) {
+            if (cameras[i].numFrameLocalFogVolumes > 0 && cameras[i].fog.volumetric.enabled && (cameras[i].fog.volumetric.vfogLightingParams.flags & VFogFlagLocalVolumeFroxelCulling) != 0) {
+                needsBounds = true;
+                break;
+            }
+        }
+    }
+
+    RHI::Buffer *volumeBoundsUploadBuffer = nullptr;
+    ShaderLocalFogVolumeBounds *shaderBounds = nullptr;
+    if (needsBounds) {
+        volumeBoundsUploadBuffer = frameThreadData->AllocStructuredBuffer(sizeof(ShaderLocalFogVolumeBounds), count, nullptr);
+        if (volumeBoundsUploadBuffer && volumeBoundsUploadBuffer->mappedPtr && EnsureBufferCapacity(volumeBoundsBuffer, count, sizeof(ShaderLocalFogVolumeBounds), RHI::Format::R32_UINT, 0, "shaderLocalFogVolumeBoundsBuffer")) {
+            shaderBounds = reinterpret_cast<ShaderLocalFogVolumeBounds *>(volumeBoundsUploadBuffer->mappedPtr);
+        } else {
+            // 컬링 데이터만 실패하면 매질 업로드는 계속하고 기존 전체 순회로 폴백한다.
+            BE_WARNLOG("ShaderLocalFogVolumeTable::Upload: failed to upload local fog bounds; culling disabled\n");
+        }
+    }
+
+    ShaderLocalFogVolume *shaderVolumes = reinterpret_cast<ShaderLocalFogVolume *>(volumeUploadBuffer->mappedPtr);
     uint32_t index = 0;
     for (const FrameLocalFogVolume &frameVolume : frame->GetFrameLocalFogVolumes()) {
-        Build(frameVolume, shaderVolumes[index++]);
+        Build(frameVolume, shaderVolumes[index]);
+
+        if (shaderBounds) {
+            shaderBounds[index] = frameVolume.froxelBounds;
+        }
+        ++index;
     }
     assert(index == count);
 
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(tableBuffer.buffer, tableBuffer.state, RHI::GPUResourceState::CopyDst));
-    RHI::renderer->CopyBuffer(commandList, tableBuffer.buffer, 0, uploadBuffer, 0, count * static_cast<uint32_t>(sizeof(ShaderLocalFogVolume)));
-    RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(tableBuffer.buffer, RHI::GPUResourceState::CopyDst, RHI::GPUResourceState::ShaderResource));
-    tableBuffer.state = RHI::GPUResourceState::ShaderResource;
+    UploadBuffer(commandList, volumeBuffer, volumeUploadBuffer, count * static_cast<uint32_t>(sizeof(ShaderLocalFogVolume)));
+
+    if (shaderBounds) {
+        UploadBuffer(commandList, volumeBoundsBuffer, volumeBoundsUploadBuffer, count * static_cast<uint32_t>(sizeof(ShaderLocalFogVolumeBounds)));
+        boundsUploaded = true;
+    }
 
     return true;
 }
