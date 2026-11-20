@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "GpuFFT.h"
 #include "ShaderPipeline/ShaderPipelineBootstrap.h"
 #include "ShaderPipeline/ShaderPipeline.h"

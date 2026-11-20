@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "GpuOceanSurface.h"
 #include "Render/ShaderPipeline/ShaderPipelineBootstrap.h"
 #include "Render/ShaderPipeline/ShaderPipeline.h"

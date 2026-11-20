@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "SkinningJointBufferBuilder.h"
 #include "Render/Animation/Skeleton.h"
 #include "Render/Animation/SkinningJointCache.h"

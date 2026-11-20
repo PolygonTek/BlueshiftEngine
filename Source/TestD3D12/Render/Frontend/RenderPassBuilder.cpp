@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "RenderPassBuilder.h"
 #include "Render/RenderContext.h"
 #include "Render/RenderFrame.h"

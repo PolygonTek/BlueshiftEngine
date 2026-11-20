@@ -18,6 +18,7 @@ class Texture;
 
 namespace RHI {
     class Buffer;
+    class CommandList;
 }
 
 /*

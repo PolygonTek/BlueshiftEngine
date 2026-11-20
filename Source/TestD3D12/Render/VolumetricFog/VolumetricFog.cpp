@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "VolumetricFog.h"
 #include "Render/Backend/RenderBackend.h"
 #include "Render/RenderInternal.h"

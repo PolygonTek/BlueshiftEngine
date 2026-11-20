@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "App.h"
 #include "Math/OBB.h"
 #include "Physics/Physics.h"

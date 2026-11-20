@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "ShaderMaterialTable.h"
 #include "Render/RenderInternal.h"
 #include "ShaderPacking.h"

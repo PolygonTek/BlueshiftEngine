@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "GeometryClipmap.h"
+#include "RHI/RHI.h"
 #include "Math/AABB.h"
 #include "Math/OBB.h"
 #include "Math/Frustum.h"

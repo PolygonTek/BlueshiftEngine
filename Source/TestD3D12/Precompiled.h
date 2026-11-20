@@ -55,5 +55,3 @@ template <typename T, typename... Args>
 BE_INLINE UniquePtr<T> MakeUnique(Args &&...args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
-
-#include "Profiler.h"

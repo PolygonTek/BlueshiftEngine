@@ -18,6 +18,10 @@ class RenderContext;
 class RenderWorld;
 class Texture;
 
+namespace RHI {
+    enum class CubemapFace : uint8_t;
+}
+
 /*
 ---------------------------------------------------------------------------------------------------
 

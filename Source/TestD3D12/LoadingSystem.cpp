@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "LoadingSystem.h"
 #include "Core/CVars.h"
 #include "Platform/PlatformProcess.h"

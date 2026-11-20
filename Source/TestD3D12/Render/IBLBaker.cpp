@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "IBLBaker.h"
 #include "ShaderPipeline/ShaderPipelineBootstrap.h"
 #include "RenderSystem.h"

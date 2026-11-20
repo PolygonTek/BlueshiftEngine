@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "RenderWorld.h"
 #include "LightCullingBuilder.h"
 #include "Render/RenderContext.h"

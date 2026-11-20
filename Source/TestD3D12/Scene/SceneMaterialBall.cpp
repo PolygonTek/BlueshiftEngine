@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "App.h"
 #include "Asset/GuidMapper.h"
 #include "Render/Frontend/EnvironmentLight.h"

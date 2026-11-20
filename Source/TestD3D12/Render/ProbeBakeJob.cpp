@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "ProbeBakeJob.h"
 #include "RenderSystem.h"
 #include "Texture/Texture.h"

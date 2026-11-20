@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "Core/Event.h"
 #include "Core/Object.h"
 #include "Core/Signal.h"

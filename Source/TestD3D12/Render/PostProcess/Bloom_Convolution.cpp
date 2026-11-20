@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "Bloom.h"
 #include "Render/RenderSystem.h"
 #include "Render/Backend/RenderBackend.h"

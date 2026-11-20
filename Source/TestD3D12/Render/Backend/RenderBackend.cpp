@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "RenderBackend.h"
 #include "Image/BayerMatrix.h"
 #include "Render/RenderWork/RenderWork.h"

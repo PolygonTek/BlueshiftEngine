@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "HiZ.h"
 #include "Render/RenderInternal.h"
 #include "Render/GpuTiming.h"

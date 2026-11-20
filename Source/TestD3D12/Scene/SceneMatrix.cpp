@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Profiler.h"
 #include "Render/Frontend/RenderWorld.h"
 #include "Render/Frontend/EnvironmentLight.h"
 #include "Render/Material/MaterialManager.h"
