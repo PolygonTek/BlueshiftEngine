@@ -165,7 +165,7 @@ CVAR(r_textureStreamingMinResidentMaxDimension, "64", BE1::CVar::Flag::Integer, 
 
 // Tone Mapping
 CVAR(r_toneMapping, "1", BE1::CVar::Flag::Bool, "enable compute tone mapping");
-CVAR_MINMAX(r_toneMapOp, "11", BE1::CVar::Flag::Integer, "tone mapping operator", 0, 14);
+CVAR_MINMAX(r_toneMapOp, "11", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "tone mapping operator", 0, 14);
 CVAR(r_toneMapLuminanceLogMin, "-10", BE1::CVar::Flag::Float, "tone mapping luminance histogram minimum log2 luminance");
 CVAR(r_toneMapLuminanceLogMax, "2", BE1::CVar::Flag::Float, "tone mapping luminance histogram maximum log2 luminance");
 CVAR_MINMAX(r_toneMapLuminanceAdaptationRate, "1.1", BE1::CVar::Flag::Float, "tone mapping luminance adaptation rate", 0.0f, 100.0f);

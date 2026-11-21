@@ -339,6 +339,7 @@ bool RenderBackend::DispatchFinalPostProcess(bool useToneMapping, bool useBloom)
     finalPostProcessParams.outputSize = uint2(outputW, outputH);
     finalPostProcessParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
     finalPostProcessParams.flags = useToneMapping ? FinalPostProcessFlagToneMapping : 0u;
+    finalPostProcessParams.toneMappingOperator = frameSettings.toneMappingOperator;
     const RenderContext::DisplayOutputSettings &displayOutputSettings = currentContext->GetDisplayOutputSettings();
     const bool hdrOutput = RHI::SwapChain::IsHDRColorSpace(currentContext->GetSwapChain()->GetColorSpace());
     finalPostProcessParams.paperWhiteNits = displayOutputSettings.paperWhiteNits;

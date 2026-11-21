@@ -834,8 +834,7 @@ void App::RegenerateConvolutionBloomKernel() {
         return;
     }
 
-    const uint64_t requestSerial = renderSystem->RequestConvolutionBloomKernelGeneration(convolutionBloomApertureTexture,
-        r_convolutionBloomApertureScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
+    const uint64_t requestSerial = renderSystem->RequestConvolutionBloomKernelGeneration(convolutionBloomApertureTexture, r_convolutionBloomApertureScale.GetFloat(), r_convolutionBloomDispersionAmount.GetFloat());
     if (requestSerial == 0) {
         return;
     }
