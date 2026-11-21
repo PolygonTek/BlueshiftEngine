@@ -341,12 +341,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
             buffer->SetStatus(RHI::GPUResourceStatus::Pending);
 
             // 업로드 요청을 등록한다.
-            D3D12ResourceRequest request;
-            request.type = D3D12ResourceRequest::Type::UploadBuffer;
-            request.object = buffer;
-            request.uploadBufferRequest.uploadBuffer = uploadBuffer;
-            request.uploadBufferRequest.dataSize = size;
-            EnqueueResourceRequest(std::move(request));
+            EnqueueResourceRequest(D3D12ResourceRequest(buffer, D3D12UploadBufferRequest{ uploadBuffer, size }));
         }
     } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
         bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&buffer->mappedPtr));
@@ -690,15 +685,7 @@ bool D3D12Renderer::SetBufferSubData(RHI::Buffer *buffer, uint64_t offset, uint6
     D3D12_RANGE writtenRange = { 0, size };
     uploadBuffer->Unmap(0, &writtenRange);
 
-    D3D12ResourceRequest request;
-    request.type = D3D12ResourceRequest::Type::UploadBufferSubData;
-    request.object = buffer;
-    request.uploadBufferSubDataRequest.uploadBuffer = uploadBuffer;
-    request.uploadBufferSubDataRequest.dstOffset = offset;
-    request.uploadBufferSubDataRequest.size = size;
-    request.uploadBufferSubDataRequest.stateBefore = stateBefore;
-    request.uploadBufferSubDataRequest.stateAfter = stateAfter;
-    EnqueueResourceRequest(std::move(request));
+    EnqueueResourceRequest(D3D12ResourceRequest(buffer, D3D12UploadBufferSubDataRequest{ uploadBuffer, offset, size, stateBefore, stateAfter }));
     return true;
 }
 

@@ -57,11 +57,7 @@ bool D3D12Renderer::DequeueResourceRequests(BE1::Array<D3D12ResourceRequest> &ou
 }
 
 void D3D12Renderer::DeleteGPUObject(RHI::GPUObject *object) {
-    D3D12ResourceRequest request;
-    request.type = D3D12ResourceRequest::Type::DeleteGPUObject;
-    request.object = object;
-
-    EnqueueResourceRequest(std::move(request));
+    EnqueueResourceRequest(D3D12ResourceRequest(object, D3D12DeleteGPUObjectRequest{}));
 }
 
 void D3D12Renderer::FlushResourceRequests(RHI::FrameThreadData *frameThreadData) {
@@ -101,7 +97,7 @@ void D3D12Renderer::FinishResourceRequests(RHI::FrameThreadData *frameThreadData
 void D3D12Renderer::ExecuteResourceRequests(D3D12ResourceRequest *requests, int numRequests, D3D12ResourceCommandContext *commandContext) {
     for (int requestIndex = 0; requestIndex < numRequests; ++requestIndex) {
         D3D12ResourceRequest &request = requests[requestIndex];
-        switch (request.type) {
+        switch (request.GetType()) {
         case D3D12ResourceRequest::Type::DeleteGPUObject:
         {
             BE1::ScopedLock lock(releaseRequestMutex);

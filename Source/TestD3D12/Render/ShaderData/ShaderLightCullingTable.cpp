@@ -280,13 +280,6 @@ void ShaderLightCullingTable::DestroyBuffer(TableBuffer &tableBuffer) {
     tableBuffer.bindlessIndex = 0;
 }
 
-static BE_INLINE uint32_t PackShaderLightTileCoord(uint16_t packedTileCoord) {
-    // Expand FrameLight's 8-bit X/Y coordinates to the shader's 16-bit X/Y layout.
-    const uint32_t x = packedTileCoord & FrameLight::TileCoordMask;
-    const uint32_t y = packedTileCoord >> FrameLight::TileCoordBitCount;
-    return x | (y << ShaderLightTileCoordBitCount);
-}
-
 void ShaderLightCullingTable::BuildLightRef(const FrameLight *frameLight, ShaderLightRef &outShaderLightRef) const {
     const uint32_t lightType = static_cast<uint32_t>(frameLight->type);
     assert(lightType == ShaderLightTypePoint || lightType == ShaderLightTypeSpot);
@@ -294,6 +287,7 @@ void ShaderLightCullingTable::BuildLightRef(const FrameLight *frameLight, Shader
     // 하위 비트: 라이트 타입
     // 상위 비트: 라이트 타입 별 인덱스
     outShaderLightRef.packedLightRef = (static_cast<uint32_t>(frameLight->typeIndex) << ShaderLightTypeBitCount) | lightType;
-    outShaderLightRef.packedTileMin = PackShaderLightTileCoord(frameLight->packedTileMin);
-    outShaderLightRef.packedTileMax = PackShaderLightTileCoord(frameLight->packedTileMax);
+
+    // Preserve FrameLight's packed X/Y coordinates in the low/high 16-bit halves.
+    outShaderLightRef.packedTileBounds = static_cast<uint32_t>(frameLight->packedTileMin) | (static_cast<uint32_t>(frameLight->packedTileMax) << (2 * ShaderLightTileCoordBitCount));
 }

@@ -111,7 +111,7 @@ const FrameSurf *RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *fram
     drawSurf->subMesh = subMesh;
     drawSurf->indexBuffer = indexBuffer;
     drawSurf->numIndexes = subMesh->NumIndexes(lodLevel);
-    drawSurf->lodLevel = lodLevel;
+    drawSurf->lodLevel = static_cast<uint8_t>(lodLevel);
     drawSurf->viewZ = viewZ;
     drawSurf->material = material;
     drawSurf->baseFeatureSet = BuildBaseFeatureSet(material, subMesh, frameSkinnedMesh && frameSkinnedMesh->skinningJointOffset != ShaderSkinningJointOffsetInvalid, frameObject->fadeOpacity);

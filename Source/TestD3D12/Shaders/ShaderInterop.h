@@ -185,7 +185,7 @@ static const uint ShaderLightTypeMask = (1u << ShaderLightTypeBitCount) - 1u;
 static const uint ShaderLightTypePoint = 0;
 static const uint ShaderLightTypeSpot = 1;
 static const uint ShaderLightTileSize = 32;
-static const uint ShaderLightTileCoordBitCount = 16;
+static const uint ShaderLightTileCoordBitCount = 8;
 static const uint ShaderLightTileCoordMask = (1u << ShaderLightTileCoordBitCount) - 1u;
 static const uint ShaderLightWordBits = 32;
 static const uint ShaderLightWordShift = 5;
@@ -1105,13 +1105,12 @@ static_assert(sizeof(ShaderMaterial) == 92, "ShaderMaterial must remain a tightl
 #endif
 
 struct ShaderLightRef {
-    uint packedLightRef; // low 2 bits: light type, remaining bits: type-local light index
-    uint packedTileMin;  // low 16 bits: tile X, high 16 bits: tile Y
-    uint packedTileMax;  // low 16 bits: tile X, high 16 bits: tile Y
+    uint packedLightRef;   // low 2 bits: light type, remaining bits: type-local light index
+    uint packedTileBounds; // 8 bits each, low to high: min X, min Y, max X, max Y
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderLightRef) == 12, "ShaderLightRef must remain a tightly packed StructuredBuffer element");
+static_assert(sizeof(ShaderLightRef) == 8, "ShaderLightRef must remain a tightly packed StructuredBuffer element");
 #endif
 
 #endif // SHADERINTEROP_H

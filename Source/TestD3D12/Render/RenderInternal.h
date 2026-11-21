@@ -66,19 +66,24 @@ struct FrameSkinnedMesh;
 struct FrameSurf {
     using Flag = FrameSurfFlag;
 
-    uint32_t                        index;
     const FrameObject *             space;
+    uint32_t                        index;
+    float                           viewZ = 0.0f;           ///< 소팅용 카메라 뷰 공간 깊이 (카메라 전방은 음수)
+
+    const Material *                material;
+    uint32_t                        shaderMaterialIndex;
+    ShaderFeatureSet                baseFeatureSet;
+
     const SubMesh *                 subMesh;
     const RHI::IndexBuffer *        indexBuffer;            ///< 선택된 LOD 의 index buffer.
     uint32_t                        numIndexes;
-    int32_t                         lodLevel;
-    float                           viewZ = 0.0f;           ///< 소팅용 카메라 뷰 공간 깊이 (카메라 전방은 음수)
-    const Material *                material;
-    ShaderFeatureSet                baseFeatureSet;
-    uint32_t                        shaderMaterialIndex;
+    uint8_t                         lodLevel;
+
     Flag                            flags;
     uint8_t                         shadowCascadeMask;      ///< 이 surface 를 그릴 directional shadow cascade bit mask.
 };
+
+static_assert(SubMesh::MaxLODLevel <= UINT8_MAX, "FrameSurf lodLevel must represent every LOD level");
 
 struct DrawSurf2 {
     const FrameSurf *               frameSurf;
@@ -627,7 +632,7 @@ struct FrameText {
 // 하나의 RenderLight 가 여러 카메라에 보이면 각 카메라 (view) 마다 별도의 FrameLight 로 등록된다.
 // RenderLight 의 렌더링 데이터를 프레임 메모리에 복사하여 생성하므로 별도의 힙 할당은 발생하지 않는다.
 struct FrameLight {
-    static constexpr uint32_t       TileCoordBitCount = 8;
+    static constexpr uint32_t       TileCoordBitCount = ShaderLightTileCoordBitCount;
     static constexpr uint32_t       TileCoordMask = (1u << TileCoordBitCount) - 1;
     static constexpr uint32_t       MaxRenderDimension = (TileCoordMask + 1) * ShaderLightTileSize;
 

@@ -581,21 +581,13 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
     if (!srcImage->IsEmpty()) {
         texture->SetStatus(RHI::GPUResourceStatus::Pending);
 
-        D3D12ResourceRequest request;
-        request.object = texture;
-
         if (mipInitMode == RHI::TextureMipInitMode::GenerateOnGPU) {
-            request.type = D3D12ResourceRequest::Type::BuildMipChain;
-            request.buildMipChainRequest.srcImage = std::move(srcImage);
+            EnqueueResourceRequest(D3D12ResourceRequest(texture, D3D12BuildMipChainRequest{ std::move(srcImage) }));
         } else {
-            request.type = D3D12ResourceRequest::Type::UploadTexture;
-            request.uploadTextureRequest.srcImage = std::move(srcImage);
-            request.uploadTextureRequest.resourceDesc = textureDesc;
-            request.uploadTextureRequest.dstFirstMip = 0;
             // AllocateEmpty 라면, srcImage 의 mipmap level 0 만 사용하고, 나머지 서브 mipmap levels 는 빈 공간으로 채운다.
-            request.uploadTextureRequest.mipCount = mipInitMode == RHI::TextureMipInitMode::AllocateEmpty ? 1 : request.uploadTextureRequest.srcImage->NumMipmaps();
+            const int mipCount = mipInitMode == RHI::TextureMipInitMode::AllocateEmpty ? 1 : srcImage->NumMipmaps();
+            EnqueueResourceRequest(D3D12ResourceRequest(texture, D3D12UploadTextureRequest{ std::move(srcImage), textureDesc, 0, mipCount }));
         }
-        EnqueueResourceRequest(std::move(request));
     }
 
     return texture;
@@ -634,14 +626,8 @@ bool D3D12Renderer::UploadTextureMipRange(RHI::Texture *texture, SharedPtr<const
         return false;
     }
 
-    D3D12ResourceRequest request;
-    request.type = D3D12ResourceRequest::Type::UploadTexture;
-    request.object = texture;
-    request.uploadTextureRequest.srcImage = std::move(srcImage);
-    request.uploadTextureRequest.resourceDesc = _texture->textureDesc;
-    request.uploadTextureRequest.dstFirstMip = firstMip;
-    request.uploadTextureRequest.mipCount = request.uploadTextureRequest.srcImage->NumMipmaps();
-    EnqueueResourceRequest(std::move(request));
+    const int mipCount = srcImage->NumMipmaps();
+    EnqueueResourceRequest(D3D12ResourceRequest(texture, D3D12UploadTextureRequest{ std::move(srcImage), _texture->textureDesc, firstMip, mipCount }));
     return true;
 }
 
@@ -1643,18 +1629,7 @@ bool D3D12Renderer::SetTextureSubImage(RHI::Texture *texture, int mipLevel, int 
     D3D12_RANGE writtenRange = { 0, uploadBufferSize };
     uploadBuffer->Unmap(0, &writtenRange);
 
-    D3D12ResourceRequest request;
-    request.type = D3D12ResourceRequest::Type::UploadTextureSubImage;
-    request.object = texture;
-    request.uploadTextureSubImageRequest.uploadBuffer = uploadBuffer;
-    request.uploadTextureSubImageRequest.subresourceIndex = subresourceIndex;
-    request.uploadTextureSubImageRequest.x = x;
-    request.uploadTextureSubImageRequest.y = y;
-    request.uploadTextureSubImageRequest.z = z;
-    request.uploadTextureSubImageRequest.width = width;
-    request.uploadTextureSubImageRequest.height = height;
-    request.uploadTextureSubImageRequest.depth = depth;
-    EnqueueResourceRequest(std::move(request));
+    EnqueueResourceRequest(D3D12ResourceRequest(texture, D3D12UploadTextureSubImageRequest{ uploadBuffer, subresourceIndex, x, y, z, width, height, depth }));
 
     return true;
 }

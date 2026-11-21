@@ -39,8 +39,10 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
         // 현재 라이트의 타일 범위를 구한다.
         const ShaderLightRef lightRef = lightRefs[lightCullingParams.lightRefTableOffset + lightIndex];
-        const uint2 tileMin = uint2(lightRef.packedTileMin & ShaderLightTileCoordMask, lightRef.packedTileMin >> ShaderLightTileCoordBitCount);
-        const uint2 tileMax = uint2(lightRef.packedTileMax & ShaderLightTileCoordMask, lightRef.packedTileMax >> ShaderLightTileCoordBitCount);
+        const uint packedTileMin = lightRef.packedTileBounds;
+        const uint packedTileMax = lightRef.packedTileBounds >> (2 * ShaderLightTileCoordBitCount);
+        const uint2 tileMin = uint2(packedTileMin, packedTileMin >> ShaderLightTileCoordBitCount) & ShaderLightTileCoordMask;
+        const uint2 tileMax = uint2(packedTileMax, packedTileMax >> ShaderLightTileCoordBitCount) & ShaderLightTileCoordMask;
 
         // 현재 타일 안에 라이트가 들어와 있다면, bitmask word 에 비트를 추가한다.
         if (tileCoord.x >= tileMin.x && tileCoord.y >= tileMin.y && tileCoord.x <= tileMax.x && tileCoord.y <= tileMax.y) {

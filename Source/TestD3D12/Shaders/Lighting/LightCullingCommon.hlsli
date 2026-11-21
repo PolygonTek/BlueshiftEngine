@@ -158,8 +158,7 @@ bool NextShaderLight(inout ShaderLightIterator iterator, out ShaderLightRef shad
     uint lightIndex;
     if (!NextShaderLightIndex(iterator, lightIndex)) {
         shaderLightRef.packedLightRef = 0;
-        shaderLightRef.packedTileMin = 0;
-        shaderLightRef.packedTileMax = 0;
+        shaderLightRef.packedTileBounds = 0;
         return false;
     }
 

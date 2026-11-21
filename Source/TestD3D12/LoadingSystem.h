@@ -82,7 +82,6 @@ private:
         ShaderCompileData           shaderCompileData;
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
-        SharedPtr<BE1::Image>       image;
         uint32_t                    streamingMinResidentMaxDimension = 1;
         int32_t                     originalMipLevels = 0;
         int32_t                     firstMip = -1;
