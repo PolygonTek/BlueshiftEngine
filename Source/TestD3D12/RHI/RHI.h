@@ -185,26 +185,26 @@ namespace RHI {
         Readback
     };
 
-    enum class BufferFlag : uint32_t {
+    enum class BufferFlag : uint8_t {
         None = 0,
         ConstantBuffer                  = BIT(0),
         VertexBuffer                    = BIT(1),
         IndexBuffer                     = BIT(2),
         IndirectBuffer                  = BIT(3),
-        ShaderResource                  = BIT(10),
-        UnorderedAccess                 = BIT(11)
+        ShaderResource                  = BIT(4),
+        UnorderedAccess                 = BIT(5)
     };
 
     constexpr std::true_type EnableBitmaskEnum(BufferFlag) noexcept { return {}; }
 
-    enum class TextureFlag : uint32_t {
+    enum class TextureFlag : uint8_t {
         None = 0,
         RenderTarget                    = BIT(0),
         DepthStencil                    = BIT(1),
         Typeless                        = BIT(2),
-        ShaderResource                  = BIT(10),
-        UnorderedAccess                 = BIT(11),
-        SkipDefaultViews                = BIT(12)
+        ShaderResource                  = BIT(4),
+        UnorderedAccess                 = BIT(5),
+        SkipDefaultViews                = BIT(6)
     };
 
     constexpr std::true_type EnableBitmaskEnum(TextureFlag) noexcept { return {}; }

@@ -51,6 +51,9 @@ public:
     ID3D12Resource *                GetResource() const;
 
 private:
+    void                            ReserveSRVs(int additionalCount);
+    void                            ReserveUAVs(int additionalCount);
+
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocation *           textureAllocation = nullptr;
 #else
@@ -61,14 +64,10 @@ private:
     D3D12_RESOURCE_DESC             textureDesc;
     D3D12_CLEAR_VALUE               optimizedClearValue;
     RHI::GPUResourceState           defaultState = RHI::GPUResourceState::Undefined;
-    BE1::Array<D3D12SRVEntry>       srvEntries = (16);
-    BE1::Array<D3D12UAVEntry>       uavEntries = (16);
-    BE1::Array<D3D12RTVEntry>       rtvEntries = (16);
-    BE1::Array<D3D12DSVEntry>       dsvEntries = (16);
-    bool                            hasDefaultSRV = false;
-    bool                            hasDefaultUAV = false;
-    bool                            hasDefaultRTV = false;
-    bool                            hasDefaultDSV = false;
+    BE1::Array<D3D12SRVEntry>       srvEntries = (4);
+    BE1::Array<D3D12UAVEntry>       uavEntries = (4);
+    BE1::Array<D3D12RTVEntry>       rtvEntries = (4);
+    BE1::Array<D3D12DSVEntry>       dsvEntries = (4);
 };
 
 BE_INLINE ID3D12Resource *D3D12Texture::GetResource() const {

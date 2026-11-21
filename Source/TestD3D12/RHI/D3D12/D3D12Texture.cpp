@@ -62,6 +62,32 @@ void D3D12Texture::Release() {
 #endif
 }
 
+template <typename Entry>
+static void ReserveViewEntries(BE1::Array<Entry> &entries, int additionalCount) {
+    const int capacity = entries.Capacity();
+    int requiredCapacity = entries.Count() + additionalCount;
+    if (requiredCapacity <= capacity) {
+        return;
+    }
+
+    for (const Entry &entry : entries) {
+        if (entry.cpuDescriptorHandle.ptr == 0) {
+            if (--requiredCapacity <= capacity) {
+                return;
+            }
+        }
+    }
+    entries.Reserve(requiredCapacity);
+}
+
+void D3D12Texture::ReserveSRVs(int additionalCount) {
+    ReserveViewEntries(srvEntries, additionalCount);
+}
+
+void D3D12Texture::ReserveUAVs(int additionalCount) {
+    ReserveViewEntries(uavEntries, additionalCount);
+}
+
 bool D3D12Texture::HasValidView(RHI::ViewType viewType, RHI::ViewID viewID) const {
     if (viewID.IsValid()) {
         if (viewType == RHI::ViewType::SRV) {
@@ -524,7 +550,6 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
                 delete texture;
                 return nullptr;
             }
-            texture->hasDefaultSRV = true;
         }
         // 전체 텍스쳐 리소스에 대한 UAV 생성
         if (BE1::HasFlag(texture->flags, RHI::TextureFlag::UnorderedAccess)) {
@@ -533,7 +558,6 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
                 delete texture;
                 return nullptr;
             }
-            texture->hasDefaultUAV = true;
         }
         // 전체 텍스쳐 리소스에 대한 RTV 생성
         if (BE1::HasFlag(texture->flags, RHI::TextureFlag::RenderTarget)) {
@@ -542,7 +566,6 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
                 delete texture;
                 return nullptr;
             }
-            texture->hasDefaultRTV = true;
         }
         // 전체 텍스쳐 리소스에 대한 DSV 생성
         if (BE1::HasFlag(texture->flags, RHI::TextureFlag::DepthStencil)) {
@@ -551,7 +574,6 @@ RHI::Texture *D3D12Renderer::CreateTexture(RHI::TextureType textureType, RHI::Te
                 delete texture;
                 return nullptr;
             }
-            texture->hasDefaultDSV = true;
         }
     }
 
@@ -1689,25 +1711,32 @@ bool D3D12Renderer::GenerateMipChain(RHI::CommandList *commandList, D3D12Texture
         return false;
     }
 
-    if (texture->GetMipLevelCount() <= 1) {
+    const int mipLevelCount = texture->GetMipLevelCount();
+    if (mipLevelCount <= 1) {
         BE_WARNLOG("D3D12Renderer::GenerateMipChain: texture has no mipmap allocations\n");
         return false;
     }
 
+    const bool needsDefaultSRV = !texture->HasValidView(RHI::ViewType::SRV, RHI::ViewID::PrimaryID);
+    const bool needsDefaultUAV = !texture->HasValidView(RHI::ViewType::UAV, RHI::ViewID::PrimaryID);
+
+    // 기본 뷰와 밉별 임시 뷰의 용량을 확보하되, 삭제된 뷰의 빈 슬롯은 재사용한다.
+    texture->ReserveSRVs(mipLevelCount + (needsDefaultSRV ? 1 : 0));
+    texture->ReserveUAVs(mipLevelCount + (needsDefaultUAV ? 1 : 0));
+
     // 전체 텍스쳐 리소스에 대한 SRV 가 없다면 생성
-    if (!texture->HasValidView(RHI::ViewType::SRV, RHI::ViewID::PrimaryID)) {
+    if (needsDefaultSRV) {
         CreateView(texture, RHI::ViewType::SRV);
     }
     // 전체 텍스쳐 리소스에 대한 UAV 가 없다면 생성
-    if (!texture->HasValidView(RHI::ViewType::UAV, RHI::ViewID::PrimaryID)) {
+    if (needsDefaultUAV) {
         CreateView(texture, RHI::ViewType::UAV);
     }
 
-    RHI::ViewID *srvMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount());
-    RHI::ViewID *uavMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * texture->GetMipLevelCount());
+    RHI::ViewID *srvMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * mipLevelCount);
+    RHI::ViewID *uavMipSubresourceIDs = (RHI::ViewID *)_alloca(sizeof(RHI::ViewID) * mipLevelCount);
 
     // Mip Level 별로 필요한 임시 SRV/UAV 를 생성
-    const int mipLevelCount = texture->GetMipLevelCount();
     for (int mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel) {
         srvMipSubresourceIDs[mipLevel] = CreateView(texture, RHI::ViewType::SRV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
         uavMipSubresourceIDs[mipLevel] = CreateView(texture, RHI::ViewType::UAV, RHI::Format::Auto, 0, texture->GetArraySize(), mipLevel, 1);
