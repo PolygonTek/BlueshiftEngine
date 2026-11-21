@@ -14,8 +14,12 @@
 
 #pragma once
 
+#include "Containers/Array.h"
 #include "Containers/HashMap.h"
-#include "Mesh.h"
+#include "Math/Matrix3x4.h"
+
+class Mesh;
+class SubMesh;
 
 struct BatchSubMesh {
     SubMesh *                       subMesh = nullptr;

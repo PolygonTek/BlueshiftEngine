@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "RHI/RHI.h"
-
 #if defined(USE_RHI_PROFILER) && defined(USE_TRACY_PROFILER)
 #error USE_RHI_PROFILER and USE_TRACY_PROFILER are mutually exclusive for PROFILER_* aliases.
 #endif
@@ -26,6 +24,7 @@
 #define PROFILER_JOIN(a, b) PROFILER_JOIN_IMPL(a, b)
 
 #if defined(USE_RHI_PROFILER)
+#include "RHI/RHI.h"
 #define RHI_PROFILER_STRING_TO_COLOR_INDEX(str) (fnv1a_hash(str) % 8)
 #define RHI_PROFILER_CPU_BEGIN_EVENT(str) RHI::renderer->BeginEvent(nullptr, str, RHI_PROFILER_STRING_TO_COLOR_INDEX(str))
 #define RHI_PROFILER_CPU_END_EVENT() RHI::renderer->EndEvent(nullptr)

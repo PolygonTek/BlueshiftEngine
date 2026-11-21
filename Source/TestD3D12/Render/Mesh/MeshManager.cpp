@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "MeshManager.h"
+#include "Mesh.h"
 #include "LoadingSystem.h"
 
 MeshManager     meshManager;

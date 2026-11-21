@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "RenderInternal.h"
+#include "RenderUtils.h"
 
 uint8_t FrameCascadedShadow::CullCascades(const BE1::AABB &worldBounds, uint8_t cascadeMask) const {
     for (uint32_t cascadeIndex = 0; cascadeIndex < cascadeCount; ++cascadeIndex) {

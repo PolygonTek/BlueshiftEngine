@@ -21,6 +21,7 @@
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/Material/MaterialManager.h"
+#include "Render/Font/Font.h"
 #include "Render/Font/FontManager.h"
 
 RenderContext *         RenderContext::activeContext = nullptr;

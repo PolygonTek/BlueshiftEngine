@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Profiler.h"
 #include "ShaderLocalFogVolumeTable.h"
+#include "Shaders/Fog/FogInterop.h"
 #include "Render/RenderFrame.h"
 #include "Render/RenderInternal.h"
 

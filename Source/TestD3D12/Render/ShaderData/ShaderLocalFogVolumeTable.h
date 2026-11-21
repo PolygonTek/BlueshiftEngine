@@ -15,10 +15,10 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "Shaders/Fog/FogInterop.h"
 
 class RenderFrame;
 struct FrameLocalFogVolume;
+struct ShaderLocalFogVolume;
 
 class ShaderLocalFogVolumeTable {
 public:

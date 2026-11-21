@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "AnimManager.h"
+#include "Anim.h"
 #include "LoadingSystem.h"
 #include "Core/Cmds.h"
 

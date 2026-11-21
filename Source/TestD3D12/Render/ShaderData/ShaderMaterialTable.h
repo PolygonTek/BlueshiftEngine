@@ -16,9 +16,9 @@
 
 #include "Containers/HashIndex.h"
 #include "RHI/RHI.h"
-#include "Shaders/ShaderInterop.h"
 
 class Material;
+struct ShaderMaterial;
 
 /*
 ---------------------------------------------------------------------------------------------------

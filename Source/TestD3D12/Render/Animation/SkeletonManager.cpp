@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "SkeletonManager.h"
+#include "Skeleton.h"
 #include "LoadingSystem.h"
 #include "Core/Cmds.h"
 

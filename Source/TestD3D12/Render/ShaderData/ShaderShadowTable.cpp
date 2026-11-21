@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Profiler.h"
 #include "ShaderShadowTable.h"
+#include "Shaders/ShaderInterop.h"
 #include "Render/RenderFrame.h"
 #include "Render/RenderInternal.h"
 

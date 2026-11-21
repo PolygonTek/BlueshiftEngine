@@ -15,10 +15,10 @@
 #pragma once
 
 #include "RHI/RHI.h"
-#include "Shaders/ShaderInterop.h"
 
 class RenderFrame;
 struct FrameSurf;
+struct ShaderSurface;
 
 /*
 ---------------------------------------------------------------------------------------------------

@@ -17,6 +17,7 @@
 #include "RenderBackend.h"
 #include "Render/DebugDrawVertex.h"
 #include "Render/RenderInternal.h"
+#include "Render/RenderUtils.h"
 #include "Render/RenderFrame.h"
 
 static constexpr uint32_t DebugLightCircleLowSegments = 12;

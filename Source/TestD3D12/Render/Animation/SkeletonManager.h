@@ -15,7 +15,8 @@
 #pragma once
 
 #include "Containers/HashMap.h"
-#include "Skeleton.h"
+
+class Skeleton;
 
 namespace BE1 {
 class CmdArgs;

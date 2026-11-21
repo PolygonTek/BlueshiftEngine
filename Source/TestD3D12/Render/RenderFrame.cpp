@@ -19,7 +19,9 @@
 #include "RenderInternal.h"
 #include "Shadow/ShadowAtlas.h"
 #include "Animation/Skeleton.h"
+#include "Font/Font.h"
 #include "Material/Material.h"
+#include "Mesh/MeshInstance.h"
 #include "ShaderPipeline/ShaderPipeline.h"
 #include "Texture/Texture.h"
 

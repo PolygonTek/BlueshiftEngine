@@ -15,8 +15,10 @@
 #include "Precompiled.h"
 #include "Profiler.h"
 #include "ShaderLightTable.h"
+#include "Shaders/ShaderInterop.h"
 #include "Render/RenderFrame.h"
 #include "Render/RenderInternal.h"
+#include "Render/RenderUtils.h"
 
 bool ShaderLightTable::Init(uint32_t initialPointLightCapacity, uint32_t initialSpotLightCapacity) {
     if (!EnsureBufferCapacity(initialPointLightCapacity, initialSpotLightCapacity)) {

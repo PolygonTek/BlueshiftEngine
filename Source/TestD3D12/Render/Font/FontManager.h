@@ -15,7 +15,8 @@
 #pragma once
 
 #include "Containers/HashMap.h"
-#include "Font.h"
+
+class Font;
 
 /*
 ---------------------------------------------------------------------------------------------------

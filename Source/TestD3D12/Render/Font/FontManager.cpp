@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "FontManager.h"
+#include "Font.h"
 #include "TrueTypeFont.h"
 #include "FontFace.h"
 

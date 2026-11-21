@@ -16,12 +16,11 @@
 
 #include "../RHI.h"
 #include "D3D12Common.h"
+#include "D3D12Renderer.h"
 
 #ifdef USE_D3D12_MEMALLOC
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
-
-class D3D12Renderer;
 
 class D3D12Texture : public RHI::Texture {
     friend class D3D12Renderer;

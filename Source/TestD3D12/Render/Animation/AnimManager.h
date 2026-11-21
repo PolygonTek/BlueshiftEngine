@@ -17,7 +17,9 @@
 #include "Containers/HashIndex.h"
 #include "Containers/HashMap.h"
 #include "Containers/StrArray.h"
-#include "Anim.h"
+
+class Anim;
+class Skeleton;
 
 /*
 ---------------------------------------------------------------------------------------------------

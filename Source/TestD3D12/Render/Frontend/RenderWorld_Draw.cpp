@@ -23,6 +23,8 @@
 #include "Render/RenderUtils.h"
 #include "LocalShadowCasterCuller.h"
 #include "Render/Material/MaterialManager.h"
+#include "Render/Mesh/Mesh.h"
+#include "Render/Mesh/MeshInstance.h"
 #include "Render/Mesh/MeshManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
