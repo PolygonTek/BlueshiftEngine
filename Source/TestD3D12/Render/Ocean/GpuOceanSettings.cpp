@@ -16,39 +16,30 @@
 #include "GpuOcean.h"
 
 GpuOcean::SimulationSettings::SimulationSettings() {
-    // 가장 짧은 파장 cascade 는 기본적으로 새 foam 을 만들지 않고 기존 history 만 감쇠시킨다.
-    if constexpr (CascadeCount == 2) {
-        cascadeSettings[0] = { 60.0f, 0.7f, 4.0f, 0.8f };
-        cascadeSettings[1] = { 30.0f, 0.75f, 4.0f, 0.5f };
-    } else if constexpr (CascadeCount == 3) {
-        cascadeSettings[0] = { 60.0f, 0.64f, 2.5f, 0.9f };
-        cascadeSettings[1] = { 45.0f, 0.65f, 2.6f, 1.1f };
-        cascadeSettings[2] = { 30.0f, 0.72f, 3.1f, 1.3f };
-    } else {
-        cascadeSettings[0] = { 60.0f, 0.7f, 4.0f, 0.8f };
-        cascadeSettings[1] = { 50.0f, 0.75f, 3.0f, 0.6f };
-        cascadeSettings[2] = { 40.0f, 0.8f, 2.0f, 0.5f };
-        cascadeSettings[3] = { 30.0f, 0.82f, 0.0f, 0.2f };
-    }
+    cascadeSettings[0] = { 60.0f, 0.64f, 2.5f, 1.0f };
+    cascadeSettings[1] = { 60.0f, 0.65f, 2.6f, 2.0f };
+    cascadeSettings[2] = { 45.0f, 0.72f, 3.1f, 3.0f };
+    cascadeSettings[3] = { 30.0f, 0.82f, 0.0f, 4.0f };
 
-    for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < MaxCascadeCount; ++cascadeIndex) {
         cascades[cascadeIndex].randomSeed = 123 * (cascadeIndex + 1);
     }
     InitCascades(512.0f, 0.5f);
 }
 
 void GpuOcean::SimulationSettings::InitCascades(float largestPatchSize, float beta) {
+    assert(cascadeCount >= 1 && cascadeCount <= MaxCascadeCount);
     cascadeBeta = beta;
 
     const float highFrequencyBoundaryBin = beta * 0.5f * static_cast<float>(GpuFFT::GetGpuFFTSizeValue(fftSize));
-    const float patchSizeRatio = BE1::Math::Pow(highFrequencyBoundaryBin, 1.0f / static_cast<float>(CascadeCount - 1));
+    const float patchSizeRatio = cascadeCount > 1 ? BE1::Math::Pow(highFrequencyBoundaryBin, 1.0f / static_cast<float>(cascadeCount - 1)) : 1.0f;
     const float inversePatchSizeRatio = 1.0f / patchSizeRatio;
 
     float patchSize = largestPatchSize;
     float minWaveNumber = BE1::Math::TwoPi / patchSize;
 
-    for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
-        const bool isLastCascade = cascadeIndex == CascadeCount - 1;
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadeCount; ++cascadeIndex) {
+        const bool isLastCascade = cascadeIndex == cascadeCount - 1;
         const float maxWaveNumber = isLastCascade ? BE1::Math::BigNumber : highFrequencyBoundaryBin * BE1::Math::TwoPi / patchSize;
 
         // Patch 분할을 다시 계산할 때 사용자가 지정한 cascade 별 random seed 는 보존한다.
@@ -81,13 +72,13 @@ bool GpuOcean::SimulationSettings::HasSameSpectrumModelParameters(const Simulati
 GpuOcean::SimulationSettings::ChangeFlag GpuOcean::SimulationSettings::ClassifyChanges(const SimulationSettings &rhs) const {
     ChangeFlag changes = ChangeFlag::None;
 
-    // FFT 크기 변경 : GPU 리소스 재생성 및 전체 상태 초기화
-    if (fftSize != rhs.fftSize) {
+    // FFT 크기 또는 cascade 개수 변경 : GPU 리소스 재생성 및 전체 상태 초기화
+    if (fftSize != rhs.fftSize || cascadeCount != rhs.cascadeCount) {
         changes |= ChangeFlag::RecreateResources | ChangeFlag::RegenInitialSpectrum | ChangeFlag::ResetFoamHistory;
     }
 
     // cascade descriptor 변경 : 스펙트럼 재생성 및 foam 초기화
-    for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < rhs.cascadeCount; ++cascadeIndex) {
         if (cascades[cascadeIndex] != rhs.cascades[cascadeIndex]) {
             changes |= ChangeFlag::RegenInitialSpectrum | ChangeFlag::ResetFoamHistory;
             break;
@@ -113,6 +104,10 @@ GpuOcean::SimulationSettings::ChangeFlag GpuOcean::SimulationSettings::ClassifyC
 }
 
 bool GpuOcean::SimulationSettings::IsValid() const {
+    if (cascadeCount < 1 || cascadeCount > MaxCascadeCount) {
+        return false;
+    }
+
     if (displacementScale < 0.0f || timeScale < 0.0f || windDirection.LengthSqr() <= 0.0f ||
         windSpeed <= 0.0f || gravity <= 0.0f || depth <= 0.0f || smallWaveDamping < 0.0f || choppiness < 0.0f) {
         return false;
@@ -144,13 +139,15 @@ bool GpuOcean::SimulationSettings::IsValid() const {
         return false;
     }
 
-    for (const CascadeDesc &cascadeDesc : cascades) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadeCount; ++cascadeIndex) {
+        const CascadeDesc &cascadeDesc = cascades[cascadeIndex];
         if (cascadeDesc.patchSize <= 0.0f || cascadeDesc.minWaveNumber < 0.0f || cascadeDesc.maxWaveNumber <= cascadeDesc.minWaveNumber) {
             return false;
         }
     }
 
-    for (const CascadeSettings &cascade : cascadeSettings) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadeCount; ++cascadeIndex) {
+        const CascadeSettings &cascade = cascadeSettings[cascadeIndex];
         if (cascade.updateRate <= 0.0f || cascade.foamGenerationRate < 0.0f || cascade.foamHalfLife <= 0.0f) {
             return false;
         }

@@ -242,7 +242,7 @@ static const uint OceanSurfaceQueryBlockSize = 64;
 static const uint OceanSurfaceQueryFixedPointIterationCount = 3;
 
 static const uint OceanSpectrumComplexPlaneCount = 4;
-static const uint OceanCascadeCount = 3;
+static const uint OceanMaxCascadeCount = 4;
 static const uint OceanTimeSpectrumOptionBitCrossDerivative = 1u << 0;
 static const uint OceanFoamOptionBitEnabled = 1u << 0;
 static const uint OceanFoamOptionBitResetHistory = 1u << 1;
@@ -250,7 +250,7 @@ static const uint OceanSurfaceOptionBitFoamEnabled = 1u << 0;
 static const uint OceanSurfaceOptionBitRefractionEnabled = 1u << 1;
 
 #ifdef __cplusplus
-static_assert(OceanCascadeCount >= 2 && OceanCascadeCount <= 4, "GPU ocean supports between two and four cascades");
+static_assert(OceanMaxCascadeCount == 4, "Ocean cascade parameters use float4 packing");
 #endif
 
 static const uint FFTRadix2_256StageCount = 8;
@@ -656,11 +656,11 @@ struct OceanPhillipsInitialSpectrumParams {
     float smallWaveDamping;
     float oppositeWaveDamping;
     float padding0;
-    OceanInitialSpectrumCascadeParams cascadeParams[OceanCascadeCount];
+    OceanInitialSpectrumCascadeParams cascadeParams[OceanMaxCascadeCount];
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanPhillipsInitialSpectrumParams) == 32 + sizeof(OceanInitialSpectrumCascadeParams) * OceanCascadeCount,
+static_assert(sizeof(OceanPhillipsInitialSpectrumParams) == 32 + sizeof(OceanInitialSpectrumCascadeParams) * OceanMaxCascadeCount,
     "OceanPhillipsInitialSpectrumParams must match the HLSL constant-buffer layout");
 #endif
 
@@ -676,11 +676,11 @@ struct OceanTMAInitialSpectrumParams {
     float swell;
     float spread;
     float gamma;
-    OceanInitialSpectrumCascadeParams cascadeParams[OceanCascadeCount];
+    OceanInitialSpectrumCascadeParams cascadeParams[OceanMaxCascadeCount];
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanTMAInitialSpectrumParams) == 48 + sizeof(OceanInitialSpectrumCascadeParams) * OceanCascadeCount,
+static_assert(sizeof(OceanTMAInitialSpectrumParams) == 48 + sizeof(OceanInitialSpectrumCascadeParams) * OceanMaxCascadeCount,
     "OceanTMAInitialSpectrumParams must match the HLSL constant-buffer layout");
 #endif
 
@@ -741,10 +741,12 @@ struct OceanSurfaceQueryParams {
     float displacementScale;
     float sampleTime;
     uint queryCount;
+    uint cascadeCount;
+    float3 padding;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanSurfaceQueryParams) == 32, "OceanSurfaceQueryParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanSurfaceQueryParams) == 48, "OceanSurfaceQueryParams must match the HLSL constant-buffer layout");
 #endif
 
 struct OceanSurfaceParams {
@@ -770,7 +772,8 @@ struct OceanSurfaceParams {
     float2 sceneSizeRcp;
     float2 sceneSnapshotSize;
     float2 sceneSnapshotSizeRcp;
-    float2 padding;
+    uint cascadeCount;
+    float padding;
 };
 
 #ifdef __cplusplus

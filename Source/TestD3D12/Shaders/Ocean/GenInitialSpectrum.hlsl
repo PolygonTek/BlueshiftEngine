@@ -104,7 +104,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
     uint2 pq = dispatchThreadId.xy;
     uint cascadeIndex = dispatchThreadId.z;
-    if (cascadeIndex >= min(spectrumSliceCount, OceanCascadeCount) || any(pq >= uint2(spectrumWidth, spectrumHeight))) {
+    if (cascadeIndex >= min(spectrumSliceCount, OceanMaxCascadeCount) || any(pq >= uint2(spectrumWidth, spectrumHeight))) {
         return;
     }
 

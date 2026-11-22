@@ -397,6 +397,14 @@ void SceneOcean::BuildImGui() {
     }
 
     if (roundedCollapsingHeader("Cascades##OceanCascadesHeader")) {
+        int cascadeCount = static_cast<int>(simulationSettings.cascadeCount);
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::SliderInt("Cascade count", &cascadeCount, 1, static_cast<int>(GpuOcean::MaxCascadeCount), "%d", ImGuiSliderFlags_AlwaysClamp)) {
+            simulationSettings.cascadeCount = static_cast<uint32_t>(cascadeCount);
+            oceanCascadeSettingsChanged = true;
+        }
+        ImGui::SetItemTooltip("Changing the count redistributes wavelength bands and resets foam history.");
+
         float largestCascadePatchSize = simulationSettings.cascades[0].patchSize;
         ImGui::SetNextItemWidth(itemWidth);
         if (ImGui::DragFloat("Largest cascade patch size", &largestCascadePatchSize, 1.0f, 0.01f, 100000.0f, "%.2f m")) {
@@ -404,10 +412,12 @@ void SceneOcean::BuildImGui() {
             oceanCascadeSettingsChanged = true;
         }
 
+        ImGui::BeginDisabled(simulationSettings.cascadeCount == 1);
         ImGui::SetNextItemWidth(itemWidth);
         if (ImGui::SliderFloat("Cascade beta", &simulationSettings.cascadeBeta, 0.01f, 1.0f, "%.3f")) {
             oceanCascadeSettingsChanged = true;
         }
+        ImGui::EndDisabled();
 
         if (oceanCascadeSettingsChanged) {
             simulationSettings.InitCascades(largestCascadePatchSize, simulationSettings.cascadeBeta);
@@ -422,7 +432,7 @@ void SceneOcean::BuildImGui() {
 
         const uint32_t seedStep = 1u;
         const uint32_t seedFastStep = 100u;
-        for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+        for (uint32_t cascadeIndex = 0; cascadeIndex < simulationSettings.cascadeCount; ++cascadeIndex) {
             ImGui::PushID(static_cast<int>(cascadeIndex));
             GpuOcean::CascadeDesc &cascadeDesc = simulationSettings.cascades[cascadeIndex];
             if (ImGui::TreeNodeEx("CascadeSettings", ImGuiTreeNodeFlags_DefaultOpen, "Cascade %u (%.2f m)", cascadeIndex, cascadeDesc.patchSize)) {
@@ -546,7 +556,7 @@ void SceneOcean::BuildImGui() {
             oceanSettingsChanged = true;
         }
 
-        for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+        for (uint32_t cascadeIndex = 0; cascadeIndex < simulationSettings.cascadeCount; ++cascadeIndex) {
             ImGui::PushID(static_cast<int>(cascadeIndex));
             const GpuOcean::CascadeDesc &cascadeDesc = simulationSettings.cascades[cascadeIndex];
             GpuOcean::CascadeSettings &cascadeSettings = simulationSettings.cascadeSettings[cascadeIndex];
@@ -604,9 +614,9 @@ void SceneOcean::BuildImGui() {
         ImGui::SetNextItemWidth(itemWidth);
         ImGui::Combo("Texture##OceanDebugTexture", &selectedDebugTexture, debugTextureNames, COUNT_OF(debugTextureNames));
 
-        selectedDebugCascade = BE1::Clamp(selectedDebugCascade, 0, static_cast<int>(GpuOcean::CascadeCount) - 1);
+        selectedDebugCascade = BE1::Clamp(selectedDebugCascade, 0, static_cast<int>(simulationSettings.cascadeCount) - 1);
         ImGui::SetNextItemWidth(itemWidth);
-        ImGui::SliderInt("Cascade##OceanDebugCascade", &selectedDebugCascade, 0, static_cast<int>(GpuOcean::CascadeCount) - 1);
+        ImGui::SliderInt("Cascade##OceanDebugCascade", &selectedDebugCascade, 0, static_cast<int>(simulationSettings.cascadeCount) - 1, "%d", ImGuiSliderFlags_AlwaysClamp);
 
         const DebugTexture debugTextureType = static_cast<DebugTexture>(selectedDebugTexture);
         if (debugTextureType == DebugTexture::Fields) {

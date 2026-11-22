@@ -25,8 +25,6 @@
 
 static constexpr float MinOceanSurfaceShaderDivisor = 1.0e-4f;
 
-static_assert(GpuOcean::CascadeCount == OceanCascadeCount);
-
 bool GpuOceanSurface::Settings::IsValid() const {
     return clipmap.IsValid() && std::isfinite(height) && std::isfinite(maxDisplacement) && maxDisplacement >= 0.0f;
 }
@@ -116,8 +114,8 @@ GpuOceanSurface::QueryReadbackFrame *GpuOceanSurface::DispatchQueries(RHI::Comma
     }
 
     float cascadePatchSizes[4] = {};
-    static_assert(GpuOcean::CascadeCount <= COUNT_OF(cascadePatchSizes));
-    for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+    static_assert(GpuOcean::MaxCascadeCount <= COUNT_OF(cascadePatchSizes));
+    for (uint32_t cascadeIndex = 0; cascadeIndex < gpuOcean->GetCascadeCount(); ++cascadeIndex) {
         cascadePatchSizes[cascadeIndex] = gpuOcean->GetCascadePatchSize(cascadeIndex);
     }
 
@@ -127,6 +125,7 @@ GpuOceanSurface::QueryReadbackFrame *GpuOceanSurface::DispatchQueries(RHI::Comma
     params.displacementScale = gpuOcean->GetDisplacementScale();
     params.sampleTime = gpuOcean->GetSimulationTime();
     params.queryCount = queryCount;
+    params.cascadeCount = gpuOcean->GetCascadeCount();
 
     RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
     if (!constantBuffer) {
@@ -327,10 +326,11 @@ bool GpuOceanSurface::PrepareDraw(RHI::FrameThreadData *frameThreadData, const S
     }
 
     // 캐스케이드 별 patch size 와 기본 간격의 mip LOD. level offset 을 더한 후 sampler 가 clamp 한다.
-    float cascadePatchSizes[4] = {};
+    // 비활성 성분도 vectorized fade 계산에서 0 으로 나누지 않도록 양수로 채운다.
+    float cascadePatchSizes[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
     float cascadeVertexMipLevels[4] = {};
     const float fieldTextureResolution = static_cast<float>(fieldTextureArray->GetWidth());
-    for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < gpuOcean->GetCascadeCount(); ++cascadeIndex) {
         const float patchSize = gpuOcean->GetCascadePatchSize(cascadeIndex);
         cascadePatchSizes[cascadeIndex] = patchSize;
         cascadeVertexMipLevels[cascadeIndex] = BE1::Math::Log2(settings.clipmap.baseSpacing * fieldTextureResolution / patchSize);
@@ -339,6 +339,7 @@ bool GpuOceanSurface::PrepareDraw(RHI::FrameThreadData *frameThreadData, const S
     OceanSurfaceParams params = {};
     params.cascadePatchSizes = float4(cascadePatchSizes);
     params.cascadeVertexMipLevels = float4(cascadeVertexMipLevels);
+    params.cascadeCount = gpuOcean->GetCascadeCount();
     params.surfaceHeight = settings.height;
     params.roughness = settings.roughness;
     const BE1::Color3 linearWaterColor = settings.waterColor.SRGBToLinear();

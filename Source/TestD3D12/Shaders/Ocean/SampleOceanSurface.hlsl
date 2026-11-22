@@ -30,7 +30,11 @@ float2 SampleOceanHorizontalDisplacement(float2 parameterPositionXY, float sampl
     float2 horizontalDisplacement = 0.0f;
 
     [unroll]
-    for (uint cascadeIndex = 0; cascadeIndex < OceanCascadeCount; ++cascadeIndex) {
+    for (uint cascadeIndex = 0; cascadeIndex < OceanMaxCascadeCount; ++cascadeIndex) {
+        [branch]
+        if (cascadeIndex >= queryParams.cascadeCount) {
+            break;
+        }
         const float patchSize = queryParams.cascadePatchSizes[cascadeIndex];
         const float mipLevel = GetQueryMipLevel(patchSize, sampleDiameter, fieldWidth);
         // 샘플링할 mip level 의 해상도가 너무 낮으면 해당 cascade 를 생략한다.
@@ -51,7 +55,11 @@ void SampleOceanFields(float2 parameterPositionXY, float sampleDiameter, uint fi
     derivativeField = 0.0f;
 
     [unroll]
-    for (uint cascadeIndex = 0; cascadeIndex < OceanCascadeCount; ++cascadeIndex) {
+    for (uint cascadeIndex = 0; cascadeIndex < OceanMaxCascadeCount; ++cascadeIndex) {
+        [branch]
+        if (cascadeIndex >= queryParams.cascadeCount) {
+            break;
+        }
         const float patchSize = queryParams.cascadePatchSizes[cascadeIndex];
         const float mipLevel = GetQueryMipLevel(patchSize, sampleDiameter, fieldWidth);
         // 샘플링할 mip level 의 해상도가 너무 낮으면 해당 cascade 를 생략한다.

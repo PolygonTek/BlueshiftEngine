@@ -23,8 +23,6 @@
 #include "Render/Texture/Texture.h"
 #include "Shaders/ShaderInterop.h"
 
-static_assert(GpuOcean::CascadeCount == OceanCascadeCount);
-
 void GpuOcean::Init() {
     simulationTime = 0.0f;
     ResetCascadeUpdateSchedule();
@@ -232,8 +230,8 @@ static RHI::Texture *CreateOceanTexture(const char *debugName, uint32_t size, BE
     SharedPtr<BE1::Image> image = MakeShared<BE1::Image>();
     image->Init2DArrayFromMemory(size, size, arraySize, 1, format, BE1::Image::GammaSpace::Linear, nullptr);
 
-    const RHI::TextureType textureType = arraySize > 1 ? RHI::TextureType::Texture2DArray : RHI::TextureType::Texture2D;
-    RHI::Texture *texture = RHI::renderer->CreateTexture(textureType, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), mipInitMode, {}, 1, initialState);
+    // 단일 cascade 도 HLSL 의 Texture2DArray/RWTexture2DArray 와 같은 view 차원을 사용한다.
+    RHI::Texture *texture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2DArray, RHI::TextureFlag::ShaderResource | RHI::TextureFlag::UnorderedAccess, std::move(image), mipInitMode, {}, 1, initialState);
     if (!texture) {
         BE_WARNLOG("GpuOcean::EnsureResources: failed to create %s\n", debugName);
         return nullptr;
@@ -264,18 +262,25 @@ bool GpuOcean::EnsureResources() {
         return true;
     }
 
-    DestroyResources();
-    cascadeResourcesDirty = true;
-
     const uint32_t spectrumSize = GpuFFT::GetGpuFFTSizeValue(simulationSettings.fftSize);
     if (spectrumSize == 0) {
         return false;
     }
 
-    const uint64_t complexElementCount = uint64_t(spectrumSize) * uint64_t(spectrumSize) * OceanSpectrumComplexPlaneCount;
-    timeSpectrumBuffer = CreateOceanStructuredBuffer("GpuOcean::timeSpectrumBuffer", complexElementCount);
-    ifftWorkBuffer = CreateOceanStructuredBuffer("GpuOcean::ifftWorkBuffer", complexElementCount);
-    spatialFieldsBuffer = CreateOceanStructuredBuffer("GpuOcean::spatialFieldsBuffer", complexElementCount);
+    // Cascade 개수만 바뀌면 모든 cascade 가 공유하는 FFT 작업 버퍼는 재사용한다.
+    if (HasResources() && initialSpectrumTextureArray->GetWidth() == spectrumSize) {
+        DestroyCascadeTextures();
+    } else {
+        DestroyResources();
+    }
+    cascadeResourcesDirty = true;
+
+    if (!timeSpectrumBuffer) {
+        const uint64_t complexElementCount = uint64_t(spectrumSize) * uint64_t(spectrumSize) * OceanSpectrumComplexPlaneCount;
+        timeSpectrumBuffer = CreateOceanStructuredBuffer("GpuOcean::timeSpectrumBuffer", complexElementCount);
+        ifftWorkBuffer = CreateOceanStructuredBuffer("GpuOcean::ifftWorkBuffer", complexElementCount);
+        spatialFieldsBuffer = CreateOceanStructuredBuffer("GpuOcean::spatialFieldsBuffer", complexElementCount);
+    }
     if (!timeSpectrumBuffer || !ifftWorkBuffer || !spatialFieldsBuffer) {
         DestroyResources();
         return false;
@@ -287,21 +292,21 @@ bool GpuOcean::EnsureResources() {
     const BE1::Image::Format foamHistoryFormat = RHI::renderer->ToUAVImageFormat(BE1::Image::Format::R16_FLOAT, RHI::UAVAccessFlag::Load | RHI::UAVAccessFlag::Store);
 
     // 각 cascade 의 initial spectrum 을 동일한 index 의 slice 에 저장하며 graphics/compute SRV 상태로 유지한다.
-    initialSpectrumTextureArray = CreateOceanTexture("GpuOcean::initialSpectrumTextureArray", spectrumSize, initialSpectrumFormat, CascadeCount, RHI::TextureMipInitMode::FromImage, RHI::GPUResourceState::ShaderResource);
+    initialSpectrumTextureArray = CreateOceanTexture("GpuOcean::initialSpectrumTextureArray", spectrumSize, initialSpectrumFormat, simulationSettings.cascadeCount, RHI::TextureMipInitMode::FromImage, RHI::GPUResourceState::ShaderResource);
     if (!initialSpectrumTextureArray) {
         DestroyResources();
         return false;
     }
 
     // 각 cascade 의 displacement 와 derivative 를 연속한 두 slice 에 저장한다.
-    fieldTextureArray = CreateOceanTexture("GpuOcean::fieldTextureArray", spectrumSize, outputFieldFormat, FieldTextureSliceCount, RHI::TextureMipInitMode::AllocateEmpty, RHI::GPUResourceState::ShaderResource);
+    fieldTextureArray = CreateOceanTexture("GpuOcean::fieldTextureArray", spectrumSize, outputFieldFormat, 2 * simulationSettings.cascadeCount, RHI::TextureMipInitMode::AllocateEmpty, RHI::GPUResourceState::ShaderResource);
     if (!fieldTextureArray) {
         DestroyResources();
         return false;
     }
 
     // 각 cascade 의 foam history 를 동일한 index 의 slice 에 저장한다.
-    foamHistoryTextureArray = CreateOceanTexture("GpuOcean::foamHistoryTextureArray", spectrumSize, foamHistoryFormat, CascadeCount, RHI::TextureMipInitMode::AllocateEmpty, RHI::GPUResourceState::ShaderResource);
+    foamHistoryTextureArray = CreateOceanTexture("GpuOcean::foamHistoryTextureArray", spectrumSize, foamHistoryFormat, simulationSettings.cascadeCount, RHI::TextureMipInitMode::AllocateEmpty, RHI::GPUResourceState::ShaderResource);
     if (!foamHistoryTextureArray) {
         DestroyResources();
         return false;
@@ -319,6 +324,23 @@ bool GpuOcean::EnsureResources() {
 }
 
 void GpuOcean::DestroyResources() {
+    DestroyCascadeTextures();
+
+    if (timeSpectrumBuffer) {
+        RHI::renderer->DestroyBuffer(timeSpectrumBuffer);
+        timeSpectrumBuffer = nullptr;
+    }
+    if (ifftWorkBuffer) {
+        RHI::renderer->DestroyBuffer(ifftWorkBuffer);
+        ifftWorkBuffer = nullptr;
+    }
+    if (spatialFieldsBuffer) {
+        RHI::renderer->DestroyBuffer(spatialFieldsBuffer);
+        spatialFieldsBuffer = nullptr;
+    }
+}
+
+void GpuOcean::DestroyCascadeTextures() {
     if (initialSpectrumTextureArray) {
         RHI::renderer->DestroyTexture(initialSpectrumTextureArray);
         initialSpectrumTextureArray = nullptr;
@@ -337,19 +359,6 @@ void GpuOcean::DestroyResources() {
     foamMipSRVs.Clear();
     foamMipUAVs.Clear();
 
-    if (timeSpectrumBuffer) {
-        RHI::renderer->DestroyBuffer(timeSpectrumBuffer);
-        timeSpectrumBuffer = nullptr;
-    }
-    if (ifftWorkBuffer) {
-        RHI::renderer->DestroyBuffer(ifftWorkBuffer);
-        ifftWorkBuffer = nullptr;
-    }
-    if (spatialFieldsBuffer) {
-        RHI::renderer->DestroyBuffer(spatialFieldsBuffer);
-        spatialFieldsBuffer = nullptr;
-    }
-
     initialSpectraReady = false;
     cascadeOutputsReady = false;
     foamHistoryResetPending = true;
@@ -358,7 +367,7 @@ void GpuOcean::DestroyResources() {
 }
 
 void GpuOcean::ResetCascadeUpdateSchedule() {
-    for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < MaxCascadeCount; ++cascadeIndex) {
         cascadeLastUpdateTimes[cascadeIndex] = 0.0f;
         cascadeNextUpdateTimes[cascadeIndex] = 0.0f;
         cascadeScheduledUpdateRates[cascadeIndex] = 0.0f;
@@ -378,10 +387,8 @@ static bool NormalizeWindDirection(float2 &windDirection) {
     return true;
 }
 
-static void CopyInitialSpectrumCascadeParams(const GpuOcean::CascadeDesc (&cascadeDescs)[GpuOcean::CascadeCount], OceanInitialSpectrumCascadeParams (&cascadeParams)[OceanCascadeCount]) {
-    static_assert(GpuOcean::CascadeCount == OceanCascadeCount);
-
-    for (uint32_t cascadeIndex = 0; cascadeIndex < GpuOcean::CascadeCount; ++cascadeIndex) {
+static void CopyInitialSpectrumCascadeParams(const GpuOcean::CascadeDesc (&cascadeDescs)[GpuOcean::MaxCascadeCount], uint32_t cascadeCount, OceanInitialSpectrumCascadeParams (&cascadeParams)[OceanMaxCascadeCount]) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < cascadeCount; ++cascadeIndex) {
         const GpuOcean::CascadeDesc &cascadeDesc = cascadeDescs[cascadeIndex];
         OceanInitialSpectrumCascadeParams &params = cascadeParams[cascadeIndex];
 
@@ -394,7 +401,6 @@ static void CopyInitialSpectrumCascadeParams(const GpuOcean::CascadeDesc (&casca
 
 template <typename Params>
 static bool DispatchGenerateInitialSpectra(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const SharedPtr<ShaderPipeline> &pipeline, const Params &params, RHI::Texture *outputTextureArray, RHI::ViewID outputUAV) {
-    static_assert(GpuOcean::CascadeCount == OceanCascadeCount);
     static_assert((sizeof(Params) & 15u) == 0, "Initial spectrum parameters must match the HLSL constant-buffer layout");
 
     if (!outputTextureArray || outputTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready || !outputUAV.IsValid()) {
@@ -407,9 +413,14 @@ static bool DispatchGenerateInitialSpectra(RHI::CommandList *commandList, RHI::F
         return false;
     }
 
+    const uint32_t cascadeCount = outputTextureArray->GetArraySize();
+    if (cascadeCount < 1 || cascadeCount > GpuOcean::MaxCascadeCount) {
+        return false;
+    }
+
     RHI::TextureViewInfo outputViewInfo;
     if (!outputTextureArray->GetViewInfo(RHI::ViewType::UAV, outputUAV, outputViewInfo) ||
-        outputViewInfo.firstSlice != 0 || outputViewInfo.sliceCount != OceanCascadeCount || outputViewInfo.firstMipLevel != 0) {
+        outputViewInfo.firstSlice != 0 || outputViewInfo.sliceCount != cascadeCount || outputViewInfo.firstMipLevel != 0) {
         return false;
     }
 
@@ -431,7 +442,7 @@ static bool DispatchGenerateInitialSpectra(RHI::CommandList *commandList, RHI::F
 
     const uint32_t threadGroupCountX = BE1::DivCeil(spectrumWidth, OceanInitialSpectrumBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(spectrumHeight, OceanInitialSpectrumBlockSizeY);
-    RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, GpuOcean::CascadeCount);
+    RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, cascadeCount);
 
     RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(outputTextureArray, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource));
     return true;
@@ -452,7 +463,7 @@ bool GpuOcean::GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI
         return false;
     }
 
-    CopyInitialSpectrumCascadeParams(simulationSettings.cascades, params.cascadeParams);
+    CopyInitialSpectrumCascadeParams(simulationSettings.cascades, simulationSettings.cascadeCount, params.cascadeParams);
 
     if (!DispatchGenerateInitialSpectra(commandList, frameThreadData, generatePhillipsInitialSpectrumPipeline, params, initialSpectrumTextureArray, RHI::ViewID::PrimaryID)) {
         return false;
@@ -477,7 +488,7 @@ bool GpuOcean::GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::Fra
         return false;
     }
 
-    CopyInitialSpectrumCascadeParams(simulationSettings.cascades, params.cascadeParams);
+    CopyInitialSpectrumCascadeParams(simulationSettings.cascades, simulationSettings.cascadeCount, params.cascadeParams);
 
     const SharedPtr<ShaderPipeline> *pipeline;
     switch (simulationSettings.tma.directionalSpreadModel) {
@@ -521,7 +532,7 @@ bool GpuOcean::GenerateTimeSpectrum(RHI::CommandList *commandList, RHI::FrameThr
 
     RHI::TextureViewInfo initialSpectrumViewInfo;
     if (!initialSpectrumTextureArray->GetViewInfo(RHI::ViewType::SRV, RHI::ViewID::PrimaryID, initialSpectrumViewInfo) ||
-        initialSpectrumViewInfo.firstSlice != 0 || initialSpectrumViewInfo.sliceCount != CascadeCount || initialSpectrumViewInfo.firstMipLevel != 0) {
+        initialSpectrumViewInfo.firstSlice != 0 || initialSpectrumViewInfo.sliceCount != simulationSettings.cascadeCount || initialSpectrumViewInfo.firstMipLevel != 0) {
         return false;
     }
 
@@ -568,13 +579,13 @@ bool GpuOcean::ResolveOceanFields(RHI::CommandList *commandList, const RHI::Cons
 
     RHI::TextureViewInfo outputFieldViewInfo;
     if (!fieldTextureArray->GetViewInfo(RHI::ViewType::UAV, RHI::ViewID::PrimaryID, outputFieldViewInfo) ||
-        outputFieldViewInfo.firstSlice != 0 || outputFieldViewInfo.sliceCount != FieldTextureSliceCount || outputFieldViewInfo.firstMipLevel != 0) {
+        outputFieldViewInfo.firstSlice != 0 || outputFieldViewInfo.sliceCount != 2 * simulationSettings.cascadeCount || outputFieldViewInfo.firstMipLevel != 0) {
         return false;
     }
 
     RHI::TextureViewInfo foamHistoryViewInfo;
     if (!foamHistoryTextureArray->GetViewInfo(RHI::ViewType::UAV, RHI::ViewID::PrimaryID, foamHistoryViewInfo) ||
-        foamHistoryViewInfo.firstSlice != 0 || foamHistoryViewInfo.sliceCount != CascadeCount || foamHistoryViewInfo.firstMipLevel != 0) {
+        foamHistoryViewInfo.firstSlice != 0 || foamHistoryViewInfo.sliceCount != simulationSettings.cascadeCount || foamHistoryViewInfo.firstMipLevel != 0) {
         return false;
     }
 
@@ -610,8 +621,9 @@ bool GpuOcean::ResolveOceanFields(RHI::CommandList *commandList, const RHI::Cons
 }
 
 static void GenerateOceanCascadeMipRanges(RHI::CommandList *commandList, RHI::Texture *texture, const RHI::ViewID *mipSRVs, const RHI::ViewID *mipUAVs, uint32_t cascadeMask, uint32_t slicesPerCascade) {
+    const uint32_t cascadeCount = texture->GetArraySize() / slicesPerCascade;
     uint32_t cascadeIndex = 0;
-    while (cascadeIndex < GpuOcean::CascadeCount) {
+    while (cascadeIndex < cascadeCount) {
         if ((cascadeMask & (1u << cascadeIndex)) == 0u) {
             ++cascadeIndex;
             continue;
@@ -620,7 +632,7 @@ static void GenerateOceanCascadeMipRanges(RHI::CommandList *commandList, RHI::Te
         const uint32_t firstCascade = cascadeIndex;
         do {
             ++cascadeIndex;
-        } while (cascadeIndex < GpuOcean::CascadeCount && (cascadeMask & (1u << cascadeIndex)) != 0u);
+        } while (cascadeIndex < cascadeCount && (cascadeMask & (1u << cascadeIndex)) != 0u);
 
         const uint32_t cascadeRangeCount = cascadeIndex - firstCascade;
         RHI::renderer->GenerateMipChain(commandList, texture, mipSRVs, mipUAVs, false, slicesPerCascade * firstCascade, slicesPerCascade * cascadeRangeCount);
@@ -645,7 +657,7 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
         foamHistoryMayContainFoamMask = 0u;
     }
 
-    for (uint32_t cascadeIndex = 0; cascadeIndex < CascadeCount; ++cascadeIndex) {
+    for (uint32_t cascadeIndex = 0; cascadeIndex < simulationSettings.cascadeCount; ++cascadeIndex) {
         const CascadeSettings &cascadeSettings = simulationSettings.cascadeSettings[cascadeIndex];
         const float updatePeriod = 1.0f / cascadeSettings.updateRate;
         const bool updateRateChanged = cascadeScheduledUpdateRates[cascadeIndex] != cascadeSettings.updateRate;

@@ -80,7 +80,11 @@ float3 SampleOceanDisplacement(float2 worldPositionXY, float4 cascadeLodWeights,
     float3 displacement = 0.0f;
 
     [unroll]
-    for (uint cascadeIndex = 0; cascadeIndex < OceanCascadeCount; ++cascadeIndex) {
+    for (uint cascadeIndex = 0; cascadeIndex < OceanMaxCascadeCount; ++cascadeIndex) {
+        [branch]
+        if (cascadeIndex >= oceanSurfaceParams.cascadeCount) {
+            break;
+        }
         const float cascadeLodWeight = cascadeLodWeights[cascadeIndex];
 
         if (cascadeLodWeight > OceanCascadeLodThreshold) {
@@ -162,7 +166,11 @@ OceanSurfaceInput PrepareOceanSurfaceInput(PSInput input, bool isFrontFace) {
 
     // 활성 cascade 의 displacement derivative 와 foam history 를 pixel 단위로 합성한다.
     [unroll]
-    for (uint cascadeIndex = 0; cascadeIndex < OceanCascadeCount; ++cascadeIndex) {
+    for (uint cascadeIndex = 0; cascadeIndex < OceanMaxCascadeCount; ++cascadeIndex) {
+        [branch]
+        if (cascadeIndex >= oceanSurfaceParams.cascadeCount) {
+            break;
+        }
         const float cascadeLodWeight = cascadeLodWeights[cascadeIndex];
         if (cascadeLodWeight > OceanCascadeLodThreshold) {
             const float2 uv = input.samplePositionXY / GetCascadePatchSize(cascadeIndex);

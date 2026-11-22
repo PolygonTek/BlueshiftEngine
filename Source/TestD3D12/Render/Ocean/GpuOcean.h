@@ -32,10 +32,7 @@ class ShaderPipelineBootstrap;
 
 class GpuOcean {
 public:
-    static constexpr uint32_t       CascadeCount = 3;
-    static_assert(CascadeCount >= 2 && CascadeCount <= 4, "GpuOcean supports between two and four cascades");
-
-    static constexpr uint32_t       FieldTextureSliceCount = 2 * CascadeCount;
+    static constexpr uint32_t       MaxCascadeCount = OceanMaxCascadeCount;
 
     enum class SpectrumModel : uint8_t {
         Phillips,                   ///< Phillips spectrum
@@ -112,15 +109,16 @@ public:
         float                       depth = 20.0f;                  ///< 유한 수심 분산 관계와 TMA 수심 보정에 사용하는 수심 (m)
         float                       smallWaveDamping = 0.02f;       ///< 짧은 파장을 exp(-k^2 * damping^2) 로 감쇠하는 길이 척도
 
-        CascadeDesc                 cascades[CascadeCount];
-        CascadeSettings             cascadeSettings[CascadeCount];  ///< cascades 와 같은 index 를 사용하는 spectrum 재생성 비의존 설정
+        uint32_t                    cascadeCount = 3;               ///< 활성 cascade 개수 [1, MaxCascadeCount]
+        CascadeDesc                 cascades[MaxCascadeCount];
+        CascadeSettings             cascadeSettings[MaxCascadeCount]; ///< cascades 와 같은 index 를 사용하는 spectrum 재생성 비의존 설정
         float                       cascadeBeta = 0.5f;             ///< high frequency boundary ratio
 
         bool                        foamEnabled = true;             ///< foam 생성, history 갱신 및 surface 합성을 활성화한다.
 
         SimulationSettings();
 
-                                    /// 가장 큰 patch size 와 고주파 경계 비율로 각 cascade 의 patch size 와 파수 범위를 자동 초기화한다.
+                                    /// 가장 큰 patch size 와 고주파 경계 비율로 활성 cascade 의 patch size 와 파수 범위를 자동 초기화한다.
         void                        InitCascades(float largestPatchSize, float beta);
 
                                     /// spectrum model parameter 가 같은지 검사한다.
@@ -140,7 +138,8 @@ public:
                                     /// 현재 모든 cascade 의 출력 field (displacement/derivative textures) 가 준비되었는지 여부를 리턴한다.
     bool                            AreCascadeOutputsReady() const { return cascadeOutputsReady; }
 
-    float                           GetCascadePatchSize(uint32_t cascadeIndex) const { assert(cascadeIndex < CascadeCount); return simulationSettings.cascades[cascadeIndex].patchSize; }
+    uint32_t                        GetCascadeCount() const { return simulationSettings.cascadeCount; }
+    float                           GetCascadePatchSize(uint32_t cascadeIndex) const { assert(cascadeIndex < simulationSettings.cascadeCount); return simulationSettings.cascades[cascadeIndex].patchSize; }
     float                           GetDisplacementScale() const { return simulationSettings.displacementScale; }
     float                           GetSimulationTime() const { return simulationTime; }
     bool                            IsFoamEnabled() const { return simulationSettings.foamEnabled; }
@@ -164,6 +163,7 @@ private:
     bool                            HasResources() const;
     bool                            EnsureResources();
     void                            DestroyResources();
+    void                            DestroyCascadeTextures();
     void                            ResetCascadeUpdateSchedule();
 
                                     /// 각 cascade 별로 displacement, derivative, foam history texture 를 업데이트한다.
@@ -184,7 +184,7 @@ private:
 
                                     /// transposed complex IFFT 결과를 displacement/derivative map 으로 변환하고 foam history 를 갱신한다.
                                     /// 멤버 spatialFieldsBuffer 는 N * N * OceanSpectrumComplexPlaneCount 개의 float2 를 저장하는 structured buffer 여야 한다.
-                                    /// fieldTextureArray 는 RGBA16F/RGBA32F 의 2 * CascadeCount slice, foamHistoryTextureArray 는 R16F/R32F 의 CascadeCount slice 여야 한다.
+                                    /// fieldTextureArray 는 RGBA16F/RGBA32F 의 2 * cascadeCount slice, foamHistoryTextureArray 는 R16F/R32F 의 cascadeCount slice 여야 한다.
                                     /// 세 리소스의 primary view 를 사용하며 호출 전후 spatialFieldsBuffer 는 Undefined(Common), texture 들은 ShaderResource 상태이다.
     bool                            ResolveOceanFields(RHI::CommandList *commandList, const RHI::ConstantBuffer *resolveConstantBuffer);
 
@@ -221,9 +221,9 @@ private:
     BE1::Array<RHI::ViewID>         foamMipUAVs;
 
     float                           simulationTime = 0.0f;
-    float                           cascadeLastUpdateTimes[CascadeCount] = {};
-    float                           cascadeNextUpdateTimes[CascadeCount] = {};
-    float                           cascadeScheduledUpdateRates[CascadeCount] = {};
+    float                           cascadeLastUpdateTimes[MaxCascadeCount] = {};
+    float                           cascadeNextUpdateTimes[MaxCascadeCount] = {};
+    float                           cascadeScheduledUpdateRates[MaxCascadeCount] = {};
     uint32_t                        cascadeUpdateInitializedMask = 0u;
     uint32_t                        foamHistoryMayContainFoamMask = 0u; ///< reset 이후 foam source 가 생성될 수 있었던 cascade mask
 
