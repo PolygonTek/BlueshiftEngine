@@ -244,7 +244,8 @@ public:
     template <typename CompatibleT>
     bool            RemoveFast(CompatibleT &&value);
 
-                    /// Removes all elements that compare equal to 'value' from the array.
+                    /// Removes all elements that compare equal to 'value' from the array in linear time.
+                    /// Preserves the relative order of retained elements and the array capacity.
                     /// Returns the number of elements removed.
     template <typename CompatibleT>
     int             RemoveAll(CompatibleT &&value);
@@ -789,16 +790,20 @@ BE_INLINE bool Array<T>::RemoveFast(CompatibleT &&value) {
 template <typename T>
 template <typename CompatibleT>
 BE_INLINE int Array<T>::RemoveAll(CompatibleT &&value) {
-    int removed = 0;
-    int index = FindIndex(value, 0);
-
-    while (index >= 0) {
-        RemoveIndex(index);
-        removed++;
-
-        index = FindIndex(value, index);
+    int writeIndex = FindIndex(value);
+    if (writeIndex < 0) {
+        return 0;
     }
 
+    // Starting at the first gap leaves the prefix untouched and avoids self-moves.
+    for (int readIndex = writeIndex + 1; readIndex < count; readIndex++) {
+        if (!(elements[readIndex] == value)) {
+            elements[writeIndex++] = std::move(elements[readIndex]);
+        }
+    }
+
+    const int removed = count - writeIndex;
+    count = writeIndex;
     return removed;
 }
 
