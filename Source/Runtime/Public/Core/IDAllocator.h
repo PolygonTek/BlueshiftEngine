@@ -52,6 +52,7 @@ private:
     void                SetBits(size_t blockIndex, size_t startBitIndex, size_t count);
 
     size_t              maxId = 0;              // Maximum number of IDs
+    size_t              searchStartBlock = 0;   // All blocks before this index are full
     Array<uint64_t>     bitmap;                 // Bitmap (64 bits per block)
     Array<size_t>       maxFreeBitsPerBlock;    // Maximum consecutive free bits per block
 };

@@ -41,6 +41,8 @@ void IDAllocator::Init(size_t maxIdCount) {
 }
 
 void IDAllocator::Clear() {
+    searchStartBlock = 0;
+
     // Initialize in blocks of 64 bits
     bitmap.Fill(0);
 
@@ -76,7 +78,7 @@ bool IDAllocator::IsIDAllocated(uint32_t id) const {
 
 bool IDAllocator::AllocateID(uint32_t &id) {
     const size_t count = bitmap.Count();
-    for (size_t blockIndex = 0; blockIndex < count; ++blockIndex) {
+    for (size_t blockIndex = searchStartBlock; blockIndex < count; ++blockIndex) {
         // If the block is not fully occupied
         if (bitmap[blockIndex] != ~0ULL) {
             int bitIndex = FindFirstZeroBit(bitmap[blockIndex]);
@@ -85,12 +87,15 @@ bool IDAllocator::AllocateID(uint32_t &id) {
                 bitmap[blockIndex] |= (1ULL << bitIndex);
                 // Decrease the count of consecutive free bits
                 maxFreeBitsPerBlock[blockIndex]--;
+                // Defer scanning subsequent full blocks until the next allocation.
+                searchStartBlock = bitmap[blockIndex] == ~0ULL ? blockIndex + 1 : blockIndex;
                 id = static_cast<uint32_t>(64 * blockIndex + bitIndex);
                 return true;
             }
         }
     }
     // No available ID
+    searchStartBlock = count;
     return false;
 }
 
@@ -104,9 +109,16 @@ bool IDAllocator::AllocateRange(uint32_t &startID, size_t count) {
         return false;
     }
 
-    size_t blocksNeeded = (count + 63) / 64;
+    const size_t blockCount = bitmap.Count();
+    for (size_t blockIndex = searchStartBlock; blockIndex < blockCount; ++blockIndex) {
+        if (maxFreeBitsPerBlock[blockIndex] == 0) {
+            // Only skip the full prefix: smaller holes must remain available to AllocateID().
+            if (blockIndex == searchStartBlock) {
+                searchStartBlock++;
+            }
+            continue;
+        }
 
-    for (size_t blockIndex = 0; blockIndex <= bitmap.Count() - blocksNeeded; ++blockIndex) {
         if (maxFreeBitsPerBlock[blockIndex] >= count) {
             // Check if there are enough consecutive free bits
             size_t startBitIndex = FindConsecutiveZeroBits(blockIndex, count);
@@ -135,6 +147,7 @@ bool IDAllocator::FreeID(uint32_t id) {
     bitmap[blockIndex] &= ~(1ULL << bitIndex);
     // Increase the count of consecutive free bits
     maxFreeBitsPerBlock[blockIndex]++;
+    searchStartBlock = Min(searchStartBlock, blockIndex);
     return true;
 }
 
@@ -200,6 +213,9 @@ void IDAllocator::SetBits(size_t blockIndex, size_t startBitIndex, size_t count)
     bitmap[blockIndex] |= mask;
     // Decrease the count of consecutive free bits
     maxFreeBitsPerBlock[blockIndex] -= count;
+    if (blockIndex == searchStartBlock && bitmap[blockIndex] == ~0ULL) {
+        searchStartBlock++;
+    }
 }
 
 BE_NAMESPACE_END
