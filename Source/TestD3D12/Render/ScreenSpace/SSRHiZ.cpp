@@ -106,7 +106,7 @@ bool SSRHiZ::Dispatch(RenderBackend &backend) const {
     }
 
     if (mipCount > 1) {
-        DispatchMips(commandList, ssrHiZ, params);
+        DispatchMips(commandList, ssrHiZ);
     }
 
     return true;
@@ -170,24 +170,38 @@ void SSRHiZ::DispatchFirstMipMSAA(RHI::CommandList *commandList, const FrameCame
     RHI::renderer->Barrier(commandList, firstMipEndBarriers, COUNT_OF(firstMipEndBarriers));
 }
 
-void SSRHiZ::DispatchMips(RHI::CommandList *commandList, const FrameSSRHiZ &ssrHiZ, SSRHiZMipParams &params) const {
+void SSRHiZ::DispatchMips(RHI::CommandList *commandList, const FrameSSRHiZ &ssrHiZ) const {
+    static constexpr uint32_t MaxMipCountPerDispatch = 4;
+
     RHI::Texture *ssrHiZTexture = ssrHiZ.texture;
     const uint32_t mipCount = ssrHiZ.mipCount;
 
     RHI::renderer->SetPSO(commandList, frameGenMipPSO);
 
-    // 나머지 hi-Z mip 을 생성한다.
-    for (uint32_t dstMipLevel = 1; dstMipLevel < mipCount; ++dstMipLevel) {
+    // 나머지 hi-Z mip 을 최대 4개씩 생성한다. 배치 내부의 reduction 은 그룹 내에서 처리한다.
+    for (uint32_t dstMipLevel = 1; dstMipLevel < mipCount;) {
         const uint32_t srcMipLevel = dstMipLevel - 1;
 
+        SSRHiZMipBatchParams params = {};
         params.inputSize = uint2(ssrHiZ.mipWidths[srcMipLevel], ssrHiZ.mipHeights[srcMipLevel]);
         params.outputSize = uint2(ssrHiZ.mipWidths[dstMipLevel], ssrHiZ.mipHeights[dstMipLevel]);
-        params.validOutputSize = params.outputSize;
+        params.outputMipCount = BE1::Min(MaxMipCountPerDispatch, mipCount - dstMipLevel);
 
-        RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(ssrHiZTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, dstMipLevel));
+        RHI::GPUBarrier startBarriers[MaxMipCountPerDispatch];
+        RHI::GPUBarrier endBarriers[MaxMipCountPerDispatch];
+        for (uint32_t outputIndex = 0; outputIndex < params.outputMipCount; ++outputIndex) {
+            const uint32_t mipLevel = dstMipLevel + outputIndex;
+            startBarriers[outputIndex] = RHI::Renderer::MakeTextureBarrier(ssrHiZTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, mipLevel);
+            endBarriers[outputIndex] = RHI::Renderer::MakeTextureBarrier(ssrHiZTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, mipLevel);
+        }
+        RHI::renderer->Barrier(commandList, startBarriers, params.outputMipCount);
 
         RHI::renderer->SetTexture(commandList, 0, false, ssrHiZTexture, ssrHiZ.mipSRVs[srcMipLevel]);
-        RHI::renderer->SetTexture(commandList, 0, true, ssrHiZTexture, ssrHiZ.mipUAVs[dstMipLevel]);
+        for (uint32_t outputIndex = 0; outputIndex < MaxMipCountPerDispatch; ++outputIndex) {
+            // 마지막 배치의 미사용 슬롯도 유효한 UAV 로 채운다. 셰이더는 outputMipCount 만큼만 기록한다.
+            const uint32_t mipLevel = outputIndex < params.outputMipCount ? dstMipLevel + outputIndex : dstMipLevel;
+            RHI::renderer->SetTexture(commandList, outputIndex, true, ssrHiZTexture, ssrHiZ.mipUAVs[mipLevel]);
+        }
         RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
 
         const uint32_t threadGroupCountX = BE1::DivCeil(params.outputSize.x, SSRHiZBlockSizeX);
@@ -195,6 +209,8 @@ void SSRHiZ::DispatchMips(RHI::CommandList *commandList, const FrameSSRHiZ &ssrH
         RHI::renderer->Dispatch(commandList, threadGroupCountX, threadGroupCountY, 1);
 
         // 다음 dispatch 가 방금 생성한 hi-Z mip 을 바로 읽을 수 있게 한다.
-        RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(ssrHiZTexture, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResource, 0, dstMipLevel));
+        RHI::renderer->Barrier(commandList, endBarriers, params.outputMipCount);
+
+        dstMipLevel += params.outputMipCount;
     }
 }

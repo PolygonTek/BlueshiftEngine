@@ -38,7 +38,7 @@ public:
 private:
     void                            DispatchFirstMip(RHI::CommandList *commandList, const FrameCamera &frameCamera, const SSRHiZMipParams &params) const;
     void                            DispatchFirstMipMSAA(RHI::CommandList *commandList, const FrameCamera &frameCamera, const SSRHiZMipParams &params) const;
-    void                            DispatchMips(RHI::CommandList *commandList, const FrameSSRHiZ &ssrHiZ, SSRHiZMipParams &params) const;
+    void                            DispatchMips(RHI::CommandList *commandList, const FrameSSRHiZ &ssrHiZ) const;
 
     SharedPtr<ShaderTemplate>       genFirstMipShaderTemplate;
     SharedPtr<ShaderTemplate>       genFirstMipMSAAShaderTemplate;

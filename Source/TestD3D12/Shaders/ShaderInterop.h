@@ -534,6 +534,16 @@ struct SSRHiZMipParams {
 static_assert(sizeof(SSRHiZMipParams) == 32, "SSRHiZMipParams must match the HLSL root constants");
 #endif
 
+struct SSRHiZMipBatchParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    uint outputMipCount;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(SSRHiZMipBatchParams) == 20, "SSRHiZMipBatchParams must match the five HLSL root constants");
+#endif
+
 struct SSRSceneColorHistoryMipParams {
     uint2 inputSize;
     uint2 outputSize;
