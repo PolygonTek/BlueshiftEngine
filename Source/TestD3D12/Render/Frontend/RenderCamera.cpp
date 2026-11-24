@@ -954,7 +954,9 @@ bool RenderCamera::CreateVelocityTextures(uint32_t width, uint32_t height, uint3
     RHI::renderer->SetName(taaReactiveMaskTexture, "RenderCamera::taaReactiveMaskTexture");
 
     if (useMSAA) {
-        resolvedTAAReactiveMaskTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, reactiveMaskFlags, reactiveMaskImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
+        // Resolve 결과를 SRV 로만 읽으므로 RenderTarget 플래그는 필요 없다.
+        // D3D12 placed RT 리소스는 첫 resolve 전에 별도 Clear/Discard/Copy 초기화가 필요하다.
+        resolvedTAAReactiveMaskTexture = RHI::renderer->CreateTexture(RHI::TextureType::Texture2D, RHI::TextureFlag::ShaderResource, reactiveMaskImage, RHI::TextureMipInitMode::FromImage, optimizedClearValue, 1, RHI::GPUResourceState::ShaderResource);
         if (!resolvedTAAReactiveMaskTexture) {
             BE_WARNLOG("RenderCamera::CreateVelocityTextures: failed to create resolved TAA reactive mask texture\n");
             DestroyRenderTextures();
