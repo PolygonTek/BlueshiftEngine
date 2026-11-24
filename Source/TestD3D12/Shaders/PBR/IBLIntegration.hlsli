@@ -201,7 +201,7 @@ float2 IntegrateDFG(float NdotV, float roughness) {
     for (uint y = 0u; y < IntegrateDFGSampleGridSize; ++y) {
         [loop]
         for (uint x = 0u; x < IntegrateDFGSampleGridSize; ++x) {
-            const float2 xi = float2(x, y) * sampleGridSizeRcp;
+            const float2 xi = (float2(x, y) + 0.5f) * sampleGridSizeRcp;
             const float3 H = mul(ImportanceSampleGGX(xi, linearRoughness), tangentToWorld);
             const float3 L = normalize(2.0f * dot(V, H) * H - V);
 
