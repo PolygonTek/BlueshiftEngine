@@ -183,7 +183,7 @@ void MaterialManager::DestroyMaterial(Material *material) {
 }
 
 Material *MaterialManager::FindMaterial(const char *hashName) const {
-    const auto *entry = materialHashMap.Get(Str(hashName));
+    const auto *entry = materialHashMap.Get(hashName);
     if (entry) {
         return entry->second;
     }

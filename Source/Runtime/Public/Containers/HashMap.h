@@ -29,6 +29,7 @@
 -------------------------------------------------------------------------------
 */
 
+#include <type_traits>
 #include "Core/Str.h"
 #include "Containers/Pair.h"
 #include "Containers/Array.h"
@@ -51,22 +52,22 @@ struct HashGeneratorIHash {
 };
 
 struct HashCompareDefault {
-    template <typename Type>
-    static bool Compare(const Type &lhs, const Type &rhs) {
+    template <typename LhsT, typename RhsT>
+    static bool Compare(const LhsT &lhs, const RhsT &rhs) {
         return lhs == rhs;
     }
 };
 
 struct HashCompareStrCmp {
-    template <typename Type>
-    static bool Compare(const Type &lhs, const Type &rhs) {
+    template <typename LhsT, typename RhsT>
+    static bool Compare(const LhsT &lhs, const RhsT &rhs) {
         return Str::Cmp(lhs, rhs) == 0;
     }
 };
 
 struct HashCompareStrIcmp {
-    template <typename Type>
-    static bool Compare(const Type &lhs, const Type &rhs) {
+    template <typename LhsT, typename RhsT>
+    static bool Compare(const LhsT &lhs, const RhsT &rhs) {
         return Str::Icmp(lhs, rhs) == 0;
     }
 };
@@ -76,6 +77,13 @@ struct HashCompareStrIcmp {
 /// Hash map
 template <typename KeyT, typename ValueT, typename HashCompareT = HashCompareDefault, typename HashGeneratorT = HashGeneratorDefault>
 class HashMap {
+    // Direct string lookup is opt-in for known, matching policies. Custom policies
+    // retain their existing KeyT conversion before hashing and comparison.
+    static constexpr bool SupportsStringLookup =
+        std::is_same_v<HashMap, HashMap<Str, ValueT>> ||
+        std::is_same_v<HashMap, HashMap<Str, ValueT, HashCompareStrCmp>> ||
+        std::is_same_v<HashMap, HashMap<Str, ValueT, HashCompareStrIcmp, HashGeneratorIHash>>;
+
 public:
     using KV = Pair<KeyT, ValueT>;
     using KVArray = Array<KV>;
@@ -118,6 +126,13 @@ public:
     KV *                    Get(const KeyT &key);
     const KV *              Get(const KeyT &key) const;
 
+                            /// Looks up a string without constructing a temporary Str. nullptr denotes an empty string.
+    template <bool Enabled = SupportsStringLookup, std::enable_if_t<Enabled, int> = 0>
+    KV *                    Get(const char *key);
+
+    template <bool Enabled = SupportsStringLookup, std::enable_if_t<Enabled, int> = 0>
+    const KV *              Get(const char *key) const;
+
     KV *                    begin() { return pairs.begin(); }
     const KV *              begin() const { return pairs.begin(); }
     KV *                    end() { return pairs.end(); }
@@ -158,6 +173,11 @@ public:
     void                    Swap(HashMap &other);
 
 private:
+    template <typename LookupT>
+    int                     FindIndex(const LookupT &key) const;
+    template <typename LookupT>
+    int                     FindIndex(const LookupT &key, int hash) const;
+
     KVArray                 pairs;      ///< bucket list (key-value pairs)
     HashIndex               hashIndex;  ///< hash index for pairs
 };
@@ -226,33 +246,54 @@ BE_INLINE const typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::GetByIndex(in
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
-BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Get(const KeyT &key) {
-    int hash = HashGeneratorT::Hash(hashIndex, key);
+template <typename LookupT>
+BE_INLINE int HASH_MAP_TEMPLATE::FindIndex(const LookupT &key) const {
+    return FindIndex(key, HashGeneratorT::Hash(hashIndex, key));
+}
 
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+template <typename LookupT>
+BE_INLINE int HASH_MAP_TEMPLATE::FindIndex(const LookupT &key, int hash) const {
     for (int index = hashIndex.First(hash); index != -1; index = hashIndex.Next(index)) {
-        if (HashCompareT::Compare(pairs[index].first, key) == true) {
-            return &pairs[index];
+        if (HashCompareT::Compare(pairs[index].first, key)) {
+            return index;
         }
     }
-    return nullptr;
+    return -1;
+}
+
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Get(const KeyT &key) {
+    const int index = FindIndex(key);
+    return index != -1 ? &pairs[index] : nullptr;
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
 BE_INLINE const typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Get(const KeyT &key) const {
-    int hash = HashGeneratorT::Hash(hashIndex, key);
+    const int index = FindIndex(key);
+    return index != -1 ? &pairs[index] : nullptr;
+}
 
-    for (int index = hashIndex.First(hash); index != -1; index = hashIndex.Next(index)) {
-        if (HashCompareT::Compare(pairs[index].first, key) == true) {
-            return &pairs[index];
-        }
-    }
-    return nullptr;
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+template <bool Enabled, std::enable_if_t<Enabled, int>>
+BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Get(const char *key) {
+    const int index = FindIndex(key ? key : "");
+    return index != -1 ? &pairs[index] : nullptr;
+}
+
+template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
+template <bool Enabled, std::enable_if_t<Enabled, int>>
+BE_INLINE const typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Get(const char *key) const {
+    const int index = FindIndex(key ? key : "");
+    return index != -1 ? &pairs[index] : nullptr;
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
 BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Set(const KeyT &key, const ValueT &value) {
-    KV *existingEntry = Get(key);
-    if (existingEntry) {
+    const int hash = HashGeneratorT::Hash(hashIndex, key);
+    const int index = FindIndex(key, hash);
+    if (index != -1) {
+        KV *existingEntry = &pairs[index];
         existingEntry->second = value;
         return existingEntry;
     }
@@ -260,14 +301,16 @@ BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Set(const KeyT &key
     Pair<KeyT, ValueT> &pair = pairs.Alloc();
     pair.first = key;
     pair.second = value;
-    hashIndex.Add(HashGeneratorT::Hash(hashIndex, key), pairs.Count() - 1);
+    hashIndex.Add(hash, pairs.Count() - 1);
     return &pair;
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
 BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Set(const KeyT &key, ValueT &&value) {
-    KV *existingEntry = Get(key);
-    if (existingEntry) {
+    const int hash = HashGeneratorT::Hash(hashIndex, key);
+    const int index = FindIndex(key, hash);
+    if (index != -1) {
+        KV *existingEntry = &pairs[index];
         existingEntry->second = std::move(value);
         return existingEntry;
     }
@@ -275,20 +318,21 @@ BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Set(const KeyT &key
     Pair<KeyT, ValueT> &pair = pairs.Alloc();
     pair.first = key;
     pair.second = std::move(value);
-    hashIndex.Add(HashGeneratorT::Hash(hashIndex, key), pairs.Count() - 1);
+    hashIndex.Add(hash, pairs.Count() - 1);
     return &pair;
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
 BE_INLINE ValueT &HASH_MAP_TEMPLATE::operator[](const KeyT &key) {
-    KV *existingEntry;
-    if ((existingEntry = Get(key))) {
-        return existingEntry->second;
+    const int hash = HashGeneratorT::Hash(hashIndex, key);
+    const int index = FindIndex(key, hash);
+    if (index != -1) {
+        return pairs[index].second;
     }
     
     Pair<KeyT, ValueT> &pair = pairs.Alloc();
     pair.first = key;
-    hashIndex.Add(HashGeneratorT::Hash(hashIndex, key), pairs.Count() - 1);
+    hashIndex.Add(hash, pairs.Count() - 1);
     return pair.second;
 }
 

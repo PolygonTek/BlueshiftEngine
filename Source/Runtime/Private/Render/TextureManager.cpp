@@ -233,7 +233,7 @@ void TextureManager::DestroyTexture(Texture *texture) {
 }
 
 Texture *TextureManager::FindTexture(const char *hashName) const {
-    const auto *entry = textureHashMap.Get(Str(hashName));
+    const auto *entry = textureHashMap.Get(hashName);
     if (entry) {
         return entry->second;
     }

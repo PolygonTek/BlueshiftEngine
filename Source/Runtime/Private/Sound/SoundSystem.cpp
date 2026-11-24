@@ -247,7 +247,7 @@ void SoundSystem::ReleaseSound(Sound *sound, bool immediateDestroy) {
 }
 
 Sound *SoundSystem::FindSound(const char *hashName) const {
-    const auto *entry = soundHashMap.Get(Str(hashName));
+    const auto *entry = soundHashMap.Get(hashName);
     if (entry) {
         return entry->second;
     }

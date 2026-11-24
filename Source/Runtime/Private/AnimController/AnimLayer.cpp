@@ -190,7 +190,7 @@ AnimClip *AnimLayer::GetNodeAnimClip(int32_t nodeNum) const {
 }
 
 AnimState *AnimLayer::FindState(const char *name) const {
-    const auto *entry = stateHashMap.Get(Str(name));
+    const auto *entry = stateHashMap.Get(name);
     if (entry) {
         return entry->second;
     }

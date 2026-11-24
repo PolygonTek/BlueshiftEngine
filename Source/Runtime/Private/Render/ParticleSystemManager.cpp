@@ -104,7 +104,7 @@ void ParticleSystemManager::DestroyUnusedParticleSystems() {
 }
 
 ParticleSystem *ParticleSystemManager::FindParticleSystem(const char *hashName) const {
-    const auto *entry = particleSystemHashMap.Get(Str(hashName));
+    const auto *entry = particleSystemHashMap.Get(hashName);
     if (entry) {
         return entry->second;
     }

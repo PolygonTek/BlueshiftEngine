@@ -216,7 +216,7 @@ void MeshManager::RenameMesh(Mesh *mesh, const Str &newName) {
 }
 
 Mesh *MeshManager::FindMesh(const char *hashName) const {
-    const auto *entry = meshHashMap.Get(Str(hashName));
+    const auto *entry = meshHashMap.Get(hashName);
     if (entry) {
         return entry->second;
     }

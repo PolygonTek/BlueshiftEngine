@@ -115,7 +115,7 @@ void SkeletonManager::PrecacheSkeleton(const char *filename) {
 }
 
 Skeleton *SkeletonManager::FindSkeleton(const char *hashName) const {
-    const auto *entry = skeletonHashMap.Get(Str(hashName));
+    const auto *entry = skeletonHashMap.Get(hashName);
     if (entry) {
         return entry->second;
     }

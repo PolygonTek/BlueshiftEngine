@@ -68,7 +68,7 @@ SharedPtr<Anim> AnimManager::FindAnim(const char *hashName) const {
         return nullptr;
     }
 
-    const auto *entry = animHashMap.Get(BE1::Str(hashName));
+    const auto *entry = animHashMap.Get(hashName);
     if (!entry) {
         return nullptr;
     }

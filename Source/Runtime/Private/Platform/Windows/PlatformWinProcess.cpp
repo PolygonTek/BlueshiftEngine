@@ -262,7 +262,7 @@ bool PlatformWinProcess::AddDllDirectory(const char *directory) {
 }
 
 bool PlatformWinProcess::RemoveDllDirectory(const char *directory) {
-    auto *entry = dllDirHandleMap.Get(Str(directory));
+    auto *entry = dllDirHandleMap.Get(directory);
     if (!entry) {
         return false;
     }

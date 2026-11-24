@@ -78,7 +78,7 @@ void SkinManager::DestroyUnusedSkins() {
 }
 
 Skin *SkinManager::FindSkin(const char *name) const {
-    const auto *entry = skinHashMap.Get(Str(name));
+    const auto *entry = skinHashMap.Get(name);
     if (entry) {
         return entry->second;
     }

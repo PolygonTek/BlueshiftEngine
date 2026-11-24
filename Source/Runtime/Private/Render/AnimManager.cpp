@@ -124,7 +124,7 @@ const char *AnimManager::JointNameByIndex(int index) const {
 }
 
 Anim *AnimManager::FindAnim(const char *hashName) const {
-    const auto *entry = animHashMap.Get(Str(hashName));
+    const auto *entry = animHashMap.Get(hashName);
     if (entry) {
         return entry->second;
     }

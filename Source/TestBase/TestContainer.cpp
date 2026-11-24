@@ -17,59 +17,211 @@
 #include <deque>
 #include <random>
 
-class Bucket {
-public:
-    int a, b, c;
-    BE1::LinkList<Bucket> node;
-    Bucket(int a, int b, int c);
-};
-
-BE_INLINE Bucket::Bucket(int a, int b, int c) {
-    this->a = a;
-    this->b = b;
-    this->c = c;
-    node.SetOwner(this);
-}
-
-typedef BE1::HashMap<BE1::Str, BE1::LinkList<Bucket>*, BE1::HashCompareStrIcmp, BE1::HashGeneratorIHash> testHashMap_t;
-
-static void TestHashLinkMap() {
-    testHashMap_t testHashMap;
-
-    Bucket aa(1, 1, 1);
-    Bucket bb(1, 2, 3);
-    Bucket cc(3, 1, 2);
-    Bucket dd(2, 1, 1);
-
-    testHashMap.Set("aa", &aa.node);
-    testHashMap.Set("bb", &bb.node);
-    testHashMap.Set("cc", &cc.node);
-
-    testHashMap_t::KV *kv = testHashMap.Get("cc");
-    if (kv) {
-        dd.node.AddToEnd(*kv->second);
-    }
-
-    for (int i = 0; i < testHashMap.Count(); i++) {
-        const auto *entry = testHashMap.GetByIndex(i);
-        const BE1::LinkList<Bucket> *node = entry->second;
-        for (Bucket *bucket = node->Owner(); bucket; bucket = bucket->node.Next()) {
-            BE_LOG("%d %d %d\n", bucket->a, bucket->b, bucket->c);
-        }
-    }
-
-    kv = testHashMap.Get("cc");
-    for (Bucket *bucket = kv->second->Owner(); bucket; bucket = bucket->node.Next()) {
-        if (bucket->a == 2) {
-            BE_LOG("Found %d %d %d\n", bucket->a, bucket->b, bucket->c);
-        }
-    }
-}
-
 #define CHECK(expression) do { if (!(expression)) { \
     std::fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, #expression); \
     std::abort(); \
 } } while (false)
+
+static void TestLinkList() {
+    struct Item {
+        Item() { node.SetOwner(this); }
+        BE1::LinkList<Item> node;
+    };
+    BE1::LinkList<Item> list;
+    Item first, second, third;
+    CHECK(list.IsListEmpty() && list.Count() == 0);
+    CHECK(list.Next() == nullptr && list.Prev() == nullptr);
+    first.node.AddToEnd(list);
+    second.node.AddToEnd(list);
+    third.node.AddToFront(list);
+    CHECK(list.Count() == 3 && list.Next() == &third);
+    CHECK(third.node.Next() == &first && first.node.Prev() == &third);
+    CHECK(first.node.Next() == &second && second.node.Prev() == &first);
+    CHECK(third.node.Prev() == nullptr && second.node.Next() == nullptr);
+    first.node.Remove();
+    CHECK(!first.node.InList() && list.Count() == 2);
+    CHECK(third.node.Next() == &second && second.node.Prev() == &third);
+    list.Clear();
+    CHECK(list.IsListEmpty() && list.Count() == 0);
+    CHECK(!second.node.InList() && !third.node.InList());
+    std::puts("LinkList tests passed");
+}
+
+template <typename Map>
+static void TestStringHashLookup(bool caseSensitive, int hashSize) {
+    Map map;
+    const Map &view = map;
+    static_assert(std::is_same<decltype(map.Get("key")), typename Map::KV *>::value, "Mutable lookup must return mutable entries");
+    static_assert(std::is_same<decltype(view.Get("key")), const typename Map::KV *>::value, "Const lookup must return const entries");
+    CHECK(map.Get("missing") == nullptr);
+    CHECK(view.Get(nullptr) == nullptr);
+
+    // Test both a forced collision chain and normal multi-bucket hash selection.
+    map.Init(hashSize, 16, 16);
+    const char *longKey = "Textures/Characters/VeryLongCharacterName/Body_Diffuse.texture";
+    const char *otherCase = "textures/characters/verylongcharactername/body_diffuse.texture";
+    const char *missingKey = "Textures/Characters/VeryLongCharacterName/Body_Normal.texture";
+    map.Set(longKey, 10);
+    map.Set("", 20);
+    map.Set("short", 30);
+
+    const BE1::Str storedKey(longKey);
+    const auto *expected = view.Get(storedKey);
+    CHECK(expected && expected->second == 10);
+    CHECK(map.Get(longKey) == expected);
+    CHECK(view.Get(longKey) == expected);
+    CHECK(map.Get(otherCase) == (caseSensitive ? nullptr : expected));
+    CHECK(view.Get(otherCase) == (caseSensitive ? nullptr : expected));
+    CHECK(map.Get(missingKey) == nullptr);
+    CHECK(view.Get(missingKey) == nullptr);
+    CHECK(map.Get("")->second == 20);
+    CHECK(view.Get(nullptr) == view.Get(""));
+    CHECK(map.Get(nullptr) == map.Get(""));
+    const char *nullKey = nullptr;
+    char *mutableNullKey = nullptr;
+    CHECK(map.Get(nullKey) == map.Get(""));
+    CHECK(view.Get(mutableNullKey) == view.Get(""));
+
+    char mutableKey[] = "Textures/Characters/VeryLongCharacterName/Body_Diffuse.texture";
+    CHECK(map.Get(mutableKey) == expected);
+    CHECK(view.Get(mutableKey) == expected);
+    map.Get(mutableKey)->second = 11;
+    mutableKey[0] = 'X';
+    CHECK(map.Get(mutableKey) == nullptr);
+    CHECK(view.Get(storedKey)->second == 11);
+    CHECK(view.Get(longKey)->first == storedKey);
+    CHECK(map.Count() == 3);
+
+    map.Clear();
+    CHECK(map.Get(longKey) == nullptr);
+    CHECK(view.Get("") == nullptr);
+}
+
+struct StringLengthHash {
+    static int Hash(const BE1::HashIndex &hasher, const BE1::Str &key) {
+        return hasher.GenerateHash(key.Length());
+    }
+};
+
+struct CaseInsensitiveStringCompare {
+    static bool Compare(const BE1::Str &lhs, const BE1::Str &rhs) {
+        return lhs.Icmp(rhs) == 0;
+    }
+};
+
+static void TestHashMapKeyTypes() {
+    BE1::HashMap<int, int> integers;
+    integers.Set(7, 70);
+    CHECK(integers.Get(7)->second == 70);
+    CHECK(integers.Get(8) == nullptr);
+
+    BE1::HashMap<int64_t, int> wideIntegers;
+    wideIntegers.Set(INT64_C(0x100000001), 42);
+    CHECK(wideIntegers.Get(INT64_C(0x100000001))->second == 42);
+    CHECK(wideIntegers.Get(1) == nullptr);
+
+    int key = 0;
+    BE1::HashMap<int *, int> pointers;
+    pointers.Set(&key, 12);
+    CHECK(pointers.Get(&key)->second == 12);
+    CHECK(pointers.Get(nullptr) == nullptr);
+
+    // Custom policies must agree on equality, including when distinct keys collide.
+    BE1::HashMap<BE1::Str, int, CaseInsensitiveStringCompare, StringLengthHash> custom;
+    custom.Set("Alpha", 10);
+    custom.Set("Bravo", 20);
+    custom.Set("BRAVO", 30);
+    const auto &view = custom;
+    CHECK(custom.Count() == 2);
+    CHECK(view.Get("ALPHA")->second == 10);
+    CHECK(view.Get("bravo")->second == 30);
+    CHECK(view.Get("Gamma") == nullptr);
+}
+
+static void TestHashMapStringLookup() {
+    for (int hashSize : { 1, 32 }) {
+        TestStringHashLookup<BE1::StrHashMap<int>>(true, hashSize);
+        TestStringHashLookup<BE1::HashMap<BE1::Str, int, BE1::HashCompareStrCmp>>(true, hashSize);
+        TestStringHashLookup<BE1::StrIHashMap<int>>(false, hashSize);
+    }
+    TestHashMapKeyTypes();
+    std::puts("HashMap lookup tests passed");
+}
+
+template <typename Map>
+static void TestHashMapInsertionAndUpdate(int hashSize, bool caseSensitive) {
+    Map map;
+    // Start unallocated and grow on each new key, with and without hash collisions.
+    map.Init(hashSize, 0, 1);
+    const BE1::Str firstKey("Textures/Characters/CharacterA/Body_Diffuse.texture");
+    const BE1::Str secondKey("Textures/Characters/CharacterA/Body_Normal.texture");
+    const BE1::Str thirdKey("Textures/Characters/CharacterA/Body_Roughness.texture");
+    const BE1::Str copiedValue("copied value");
+    auto *entry = map.Set(firstKey, copiedValue);
+    CHECK(map.Count() == 1);
+    CHECK(entry->first == firstKey && entry->second == copiedValue);
+
+    const BE1::Str firstQuery(caseSensitive ? firstKey.c_str() : "textures/characters/charactera/body_diffuse.texture");
+    const BE1::Str updatedValue("updated copy");
+    entry = map.Set(firstQuery, updatedValue);
+    CHECK(map.Count() == 1);
+    CHECK(entry->first == firstKey && entry->second == updatedValue);
+
+    BE1::Str movedValue("moved value");
+    entry = map.Set(secondKey, std::move(movedValue));
+    CHECK(map.Count() == 2);
+    CHECK(entry->first == secondKey && entry->second == "moved value");
+
+    entry = map.Set(secondKey, BE1::Str("updated move"));
+    CHECK(map.Count() == 2);
+    CHECK(entry->second == "updated move");
+
+    BE1::Str &inserted = map[thirdKey];
+    CHECK(map.Count() == 3);
+    CHECK(inserted.IsEmpty());
+    inserted = "indexed value";
+    BE1::Str &existing = map[thirdKey];
+    CHECK(map.Count() == 3);
+    CHECK(&existing == &inserted && existing == "indexed value");
+
+    // A shared key/value argument must preserve both stored strings after the move.
+    BE1::Str keyAndValue("Textures/Characters/CharacterA/Body_Emissive.texture");
+    const BE1::Str expectedKey(keyAndValue);
+    entry = map.Set(keyAndValue, std::move(keyAndValue));
+    CHECK(map.Count() == 4);
+    CHECK(entry->first == expectedKey && entry->second == expectedKey);
+    CHECK(map.Get(expectedKey) == entry);
+    CHECK(map.Get(firstQuery)->second == updatedValue);
+    CHECK(map.Get(secondKey)->second == "updated move");
+    CHECK(map.Get(thirdKey)->second == "indexed value");
+}
+
+static void TestHashMapInsertion() {
+    for (int hashSize : { 1, 32 }) {
+        TestHashMapInsertionAndUpdate<BE1::StrHashMap<BE1::Str>>(hashSize, true);
+        TestHashMapInsertionAndUpdate<BE1::StrIHashMap<BE1::Str>>(hashSize, false);
+    }
+
+    BE1::HashMap<int, std::unique_ptr<int>> moveOnly;
+    auto value = std::make_unique<int>(10);
+    int *expected = value.get();
+    auto *entry = moveOnly.Set(1, std::move(value));
+    CHECK(moveOnly.Count() == 1);
+    CHECK(!value && entry->second.get() == expected);
+
+    value = std::make_unique<int>(20);
+    expected = value.get();
+    entry = moveOnly.Set(1, std::move(value));
+    CHECK(moveOnly.Count() == 1);
+    CHECK(!value && entry->second.get() == expected);
+
+    auto &inserted = moveOnly[2];
+    CHECK(moveOnly.Count() == 2 && !inserted);
+    inserted = std::make_unique<int>(30);
+    CHECK(moveOnly[2].get() == inserted.get());
+    CHECK(moveOnly.Count() == 2);
+    std::puts("HashMap insertion tests passed");
+}
 
 static void TestWrapAndGrowth() {
     BE1::RingBuffer<int> queue;
@@ -556,8 +708,12 @@ static void TestStaticConstructionFailures() {
         } catch (const std::runtime_error &) {
             failed = true;
         }
-        CHECK(failed && ThrowingMove::live == 3 && source.Count() == 3);
-        CHECK(source[0].value == -1 && source[1].value == 2 && source[2].value == 3);
+        CHECK(failed && ThrowingMove::live == source.Count());
+        source.Reset();
+        CHECK(ThrowingMove::live == 0);
+        source.EmplaceBack(1);
+        source.EmplaceBack(2);
+        source.EmplaceBack(3);
 
         Queue assigned;
         assigned.EmplaceBack(9);
@@ -568,8 +724,8 @@ static void TestStaticConstructionFailures() {
         } catch (const std::runtime_error &) {
             failed = true;
         }
-        CHECK(failed && assigned.Count() == 1 && source.Count() == 3);
-        CHECK(ThrowingMove::live == 4);
+        CHECK(failed);
+        CHECK(ThrowingMove::live == assigned.Count() + source.Count());
         assigned.Reset();
         source.Reset();
         CHECK(ThrowingMove::live == 0);
@@ -593,7 +749,9 @@ static void TestStaticRingBuffer() {
 #undef CHECK
 
 void Test::TestContainer() {
-    TestHashLinkMap();
+    TestLinkList();
+    TestHashMapStringLookup();
+    TestHashMapInsertion();
     TestRingBuffer();
     TestStaticRingBuffer();
 }
