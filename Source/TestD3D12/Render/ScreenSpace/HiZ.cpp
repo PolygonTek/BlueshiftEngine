@@ -348,13 +348,14 @@ bool HiZ::DispatchDebugPreview(RHI::CommandList *commandList, RHI::FrameThreadDa
     return true;
 }
 
-bool HiZ::DispatchCullInstances(RHI::CommandList *commandList, const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const RHI::ProjectionPolicy &projectionPolicy, const FrameHiZ &data, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) const {
+bool HiZ::DispatchCullInstances(RHI::CommandList *commandList, const RHI::ConstantBuffer *frameConstantBuffer, const RHI::ConstantBuffer *cameraConstantBuffer, const RHI::ProjectionPolicy &projectionPolicy, const FrameHiZ &data, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t inputInstanceBaseOffset, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) const {
     if (instanceCount == 0 || instanceCount > RenderHiZCullMaxInstanceCount) {
         return false;
     }
 
     HiZCullInstancesParams hiZCullParams;
     hiZCullParams.inputInstanceCount = instanceCount;
+    hiZCullParams.inputInstanceBaseOffset = inputInstanceBaseOffset;
     hiZCullParams.hiZWidth = data.mipWidths[0];
     hiZCullParams.hiZHeight = data.mipHeights[0];
     hiZCullParams.hiZMipCount = data.mipCount;
@@ -372,7 +373,7 @@ bool HiZ::DispatchCullInstances(RHI::CommandList *commandList, const RHI::Consta
     RHI::renderer->SetBuffer(commandList, 1, true, indirectArgsBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 0, frameConstantBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
-    // 배치별 상수 버퍼 할당 없이 7개의 컬링 파라미터를 root constants 로 전달한다.
+    // 배치별 상수 버퍼 할당 없이 8개의 컬링 파라미터를 root constants 로 전달한다.
     RHI::renderer->SetConstants(commandList, 2, &hiZCullParams, sizeof(hiZCullParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(instanceCount, HiZCullThreadCount);

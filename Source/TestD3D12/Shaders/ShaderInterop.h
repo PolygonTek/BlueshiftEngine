@@ -611,6 +611,7 @@ static_assert(sizeof(HiZDebugPreviewParams) == 32, "HiZDebugPreviewParams must m
 
 struct HiZCullInstancesParams {
     uint inputInstanceCount;
+    uint inputInstanceBaseOffset;
     uint hiZWidth;
     uint hiZHeight;
     uint hiZMipCount;
@@ -620,7 +621,7 @@ struct HiZCullInstancesParams {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(HiZCullInstancesParams) == 28, "Hi-Z culling parameters must match the seven HLSL root constants");
+static_assert(sizeof(HiZCullInstancesParams) == 32, "Hi-Z culling parameters must match the eight HLSL root constants");
 #endif
 
 struct MultiplySpectrum2DParams {

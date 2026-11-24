@@ -92,6 +92,7 @@ void RenderBackend::DrawSkySurfaces(const DrawSurf2 **drawSurfs, uint32_t numDra
     uint64_t drawTriangleCount = 0;
     uint32_t instanceTableAllocCount = 0;
     uint32_t instanceTableUploadBytes = 0;
+    RHI::Buffer *instanceToShaderSurfaceTable = nullptr;
 
     for (uint32_t drawSurfIndex = 0; drawSurfIndex < numDrawSurfs; ++drawSurfIndex) {
         const DrawSurf2 *drawSurf = drawSurfs[drawSurfIndex];
@@ -120,7 +121,7 @@ void RenderBackend::DrawSkySurfaces(const DrawSurf2 **drawSurfs, uint32_t numDra
         }
 
         SurfaceInstanceBatch batch;
-        if (PrepareSurfaceInstanceBatch(frame->GetThreadData(0), &drawSurfs[drawSurfIndex], drawSurfIndex, 1, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
+        if (PrepareSurfaceInstanceBatch(frame->GetThreadData(0), drawSurfs, numDrawSurfs, drawSurfIndex, 1, instanceToShaderSurfaceTable, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
             DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[drawSurfIndex], batch, drawCount, drawTriangleCount);
         }
     }

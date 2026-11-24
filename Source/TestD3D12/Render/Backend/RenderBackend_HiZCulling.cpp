@@ -159,7 +159,7 @@ bool RenderBackend::PrepareHiZCulling() {
     };
     RHI::renderer->Barrier(mainCommandList, dispatchStartBarriers, COUNT_OF(dispatchStartBarriers));
 
-    // 각 배치 마다 인스턴스별 ShaderSurface 테이블을 GPU 에 업로드하고, DispatchHiZCullInstances 를 호출하여 Hi-Z Culling 을 수행한다.
+    // 패스별로 입력 테이블을 공유하고, 배치별 구간을 업로드하여 Hi-Z Culling 을 수행한다.
     for (uint32_t passIndex = 0; passIndex < currentFrameCamera->numRenderPasses; ++passIndex) {
         const RenderPass *renderPass = &currentFrameCamera->renderPasses[passIndex];
         if (!IsHiZCullRenderPass(renderPass->type)) {
@@ -167,18 +167,25 @@ bool RenderBackend::PrepareHiZCulling() {
         }
 
         const HiZCullPassRange &passRange = hiZCullPassRanges[passIndex];
+        if (passRange.numBatches == 0) {
+            continue;
+        }
+
+        RHI::Buffer *inputInstanceToShaderSurfaceTable = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), renderPass->numDrawSurfs, nullptr);
+        if (!inputInstanceToShaderSurfaceTable) {
+            continue;
+        }
+
+        uint32_t instanceTableUploadBytes = 0;
         for (uint32_t i = 0; i < passRange.numBatches; ++i) {
             SurfaceInstanceBatch &batch = hiZCullDrawBatches[passRange.firstBatchIndex + i];
-            RHI::Buffer *inputInstanceToShaderSurfaceTable = AllocInstanceToShaderSurfaceTable(frameThreadData, &renderPass->drawSurfs[batch.drawSurfIndex], batch.instanceCount);
-            if (!inputInstanceToShaderSurfaceTable) {
-                continue;
-            }
+            WriteInstanceToShaderSurfaceTable(inputInstanceToShaderSurfaceTable, batch.drawSurfIndex, &renderPass->drawSurfs[batch.drawSurfIndex], batch.instanceCount);
+            instanceTableUploadBytes += sizeof(uint32_t) * batch.instanceCount;
 
-            // Hi-Z culling input table upload 도 instance table 통계에 포함한다.
-            RecordDrawStats(0, 0, 1, sizeof(uint32_t) * batch.instanceCount);
-
-            batch.valid = DispatchHiZCullInstances(mainCommandList, batch.instanceCount, inputInstanceToShaderSurfaceTable, batch.instanceBaseOffset, batch.indirectArgsOffset);
+            batch.valid = DispatchHiZCullInstances(mainCommandList, batch.instanceCount, inputInstanceToShaderSurfaceTable, batch.drawSurfIndex, batch.instanceBaseOffset, batch.indirectArgsOffset);
         }
+
+        RecordDrawStats(0, 0, 1, instanceTableUploadBytes);
     }
 
     RHI::GPUBarrier drawStartBarriers[] = {
@@ -191,11 +198,11 @@ bool RenderBackend::PrepareHiZCulling() {
     return true;
 }
 
-bool RenderBackend::DispatchHiZCullInstances(RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) {
+bool RenderBackend::DispatchHiZCullInstances(RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t inputInstanceBaseOffset, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset) {
     return renderSystem->GetHiZ().DispatchCullInstances(
         commandList, frameConstantBuffer, cameraConstantBuffer,
         currentFrameCamera->projectionPolicy, currentFrameCamera->hiZ,
-        instanceCount, inputInstanceToShaderSurfaceTable, instanceBaseOffset, indirectArgsOffset);
+        instanceCount, inputInstanceToShaderSurfaceTable, inputInstanceBaseOffset, instanceBaseOffset, indirectArgsOffset);
 }
 
 void RenderBackend::FinishHiZCulling() {

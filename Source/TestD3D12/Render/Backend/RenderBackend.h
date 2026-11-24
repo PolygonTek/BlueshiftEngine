@@ -145,7 +145,7 @@ private:
     static void                     DrawGenericSurfacesByTaskFunction(void *data);
 
     bool                            PrepareHiZCulling();
-    bool                            DispatchHiZCullInstances(RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset);
+    bool                            DispatchHiZCullInstances(RHI::CommandList *commandList, uint32_t instanceCount, RHI::Buffer *inputInstanceToShaderSurfaceTable, uint32_t inputInstanceBaseOffset, uint32_t instanceBaseOffset, uint32_t indirectArgsOffset);
     void                            FinishHiZCulling();
     bool                            DispatchGenHiZ();
     bool                            DispatchHiZDebugPreview();
@@ -173,8 +173,8 @@ private:
     bool                            DispatchLightCulling();
 
     uint32_t                        FindSurfaceInstanceBatchEnd(const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, uint32_t startIndex) const;
-    RHI::Buffer *                   AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t instanceCount) const;
-    bool                            PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const;
+    void                            WriteInstanceToShaderSurfaceTable(RHI::Buffer *buffer, uint32_t instanceBaseOffset, const DrawSurf2 **drawSurfs, uint32_t instanceCount) const;
+    bool                            PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, RHI::Buffer *&instanceToShaderSurfaceTable, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const;
     void                            DrawSurfaceInstanceBatch(RHI::CommandList *commandList, const DrawSurf2 **drawSurfs, const SurfaceInstanceBatch &batch, uint32_t &drawCount, uint64_t &drawTriangleCount);
 
     void                            RecordDrawStats(uint32_t drawCount, uint64_t drawTriangleCount, uint32_t instanceTableAllocCount, uint32_t instanceTableUploadBytes);

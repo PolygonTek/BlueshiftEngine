@@ -49,6 +49,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const DrawSurf2 **drawSurfs, 
     uint64_t drawTriangleCount = 0;
     uint32_t instanceTableAllocCount = 0;
     uint32_t instanceTableUploadBytes = 0;
+    RHI::Buffer *instanceToShaderSurfaceTable = nullptr;
 
     uint32_t drawSurfIndex = 0;
     uint32_t hiZCullBatchIndex = 0;
@@ -100,7 +101,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const DrawSurf2 **drawSurfs, 
             DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[instanceStartIndex], *preparedBatch, drawCount, drawTriangleCount);
         } else {
             SurfaceInstanceBatch batch;
-            if (PrepareSurfaceInstanceBatch(frame->GetThreadData(0), &drawSurfs[instanceStartIndex], instanceStartIndex, instanceCount, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
+            if (PrepareSurfaceInstanceBatch(frame->GetThreadData(0), drawSurfs, numDrawSurfs, instanceStartIndex, instanceCount, instanceToShaderSurfaceTable, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
                 DrawSurfaceInstanceBatch(mainCommandList, &drawSurfs[instanceStartIndex], batch, drawCount, drawTriangleCount);
             }
         }
@@ -116,6 +117,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
     // 세컨더리 커맨드 리스트를 시작한다.
     RHI::FrameThreadData *frameThreadData = frame->GetThreadData(taskDesc->threadIndex);
     RHI::CommandList *commandList = frameThreadData->BeginSecondaryCommandList();
+    RHI::Buffer *instanceToShaderSurfaceTable = nullptr;
 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
@@ -171,8 +173,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
             DrawSurfaceInstanceBatch(commandList, &taskDesc->drawSurfs[instanceStartIndex], *preparedBatch, taskDesc->drawCount, taskDesc->drawTriangleCount);
         } else {
             SurfaceInstanceBatch batch;
-            const uint32_t globalInstanceStartIndex = taskDesc->firstDrawSurfIndex + instanceStartIndex;
-            if (PrepareSurfaceInstanceBatch(frameThreadData, &taskDesc->drawSurfs[instanceStartIndex], globalInstanceStartIndex, instanceCount, batch, taskDesc->instanceTableAllocCount, taskDesc->instanceTableUploadBytes)) {
+            if (PrepareSurfaceInstanceBatch(frameThreadData, taskDesc->drawSurfs, taskDesc->numDrawSurfs, instanceStartIndex, instanceCount, instanceToShaderSurfaceTable, batch, taskDesc->instanceTableAllocCount, taskDesc->instanceTableUploadBytes)) {
                 DrawSurfaceInstanceBatch(commandList, &taskDesc->drawSurfs[instanceStartIndex], batch, taskDesc->drawCount, taskDesc->drawTriangleCount);
             }
         }

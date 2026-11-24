@@ -13,7 +13,7 @@
     "DescriptorTable(SRV(t1), UAV(u0), UAV(u1)), " \
     "CBV(b0), " \
     "CBV(b1), " \
-    "RootConstants(num32BitConstants=7, b2)"
+    "RootConstants(num32BitConstants=8, b2)"
 
 cbuffer FrameCB : register(b0) {
     FrameConstants frameConstants;
@@ -118,7 +118,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
         return;
     }
 
-    const uint shaderSurfaceIndex = candidateInstanceBuffer[instanceIndex];
+    const uint shaderSurfaceIndex = candidateInstanceBuffer[hiZCullParams.inputInstanceBaseOffset + instanceIndex];
     const ShaderSurface shaderSurface = GetShaderSurfaceTable(frameConstants.shaderSurfaceTableIndex)[shaderSurfaceIndex];
 
     bool visible = true;

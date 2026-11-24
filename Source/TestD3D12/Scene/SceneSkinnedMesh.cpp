@@ -110,6 +110,7 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     }
 
     HeightFog::Desc fogDesc;
+    fogDesc.enabled = false;
     fogDesc.baseHeight = 0.0f;
     fogDesc.heightFalloff = 0.2f;
     fogDesc.medium.baseExtinction = 0.02f;

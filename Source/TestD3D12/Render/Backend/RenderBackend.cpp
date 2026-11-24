@@ -1173,6 +1173,7 @@ bool RenderBackend::DrawLocalShadowPass(const RenderPass *renderPass, const RHI:
     // 공용 draw 경로가 생략할 수 있는 PSO/instance 할당을 먼저 확인하여 불완전한 atlas 의 활성화를 방지한다.
     // 준비한 instance table 은 그대로 전달하므로 공용 draw 경로에서 다시 할당/업로드하지 않는다.
     localShadowDrawBatches.SetCount(0, false);
+    RHI::Buffer *instanceToShaderSurfaceTable = nullptr;
     uint32_t instanceTableAllocCount = 0;
     uint32_t instanceTableUploadBytes = 0;
     bool drawsReady = true;
@@ -1185,7 +1186,7 @@ bool RenderBackend::DrawLocalShadowPass(const RenderPass *renderPass, const RHI:
 
         const uint32_t batchEnd = FindSurfaceInstanceBatchEnd(renderPass->drawSurfs, numDrawSurfs, drawSurfIndex);
         SurfaceInstanceBatch &batch = localShadowDrawBatches.Alloc();
-        if (!PrepareSurfaceInstanceBatch(frame->GetThreadData(0), &renderPass->drawSurfs[drawSurfIndex], drawSurfIndex, batchEnd - drawSurfIndex, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
+        if (!PrepareSurfaceInstanceBatch(frame->GetThreadData(0), renderPass->drawSurfs, numDrawSurfs, drawSurfIndex, batchEnd - drawSurfIndex, instanceToShaderSurfaceTable, batch, instanceTableAllocCount, instanceTableUploadBytes)) {
             drawsReady = false;
             break;
         }
@@ -2050,40 +2051,43 @@ uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const DrawSurf2 **drawSurfs,
     return endIndex;
 }
 
-RHI::Buffer *RenderBackend::AllocInstanceToShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t instanceCount) const {
-    RHI::Buffer *buffer = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), instanceCount, nullptr);
-    if (!buffer) {
-        return nullptr;
-    }
+void RenderBackend::WriteInstanceToShaderSurfaceTable(RHI::Buffer *buffer, uint32_t instanceBaseOffset, const DrawSurf2 **drawSurfs, uint32_t instanceCount) const {
+    assert(instanceBaseOffset <= buffer->size / sizeof(uint32_t));
+    assert(instanceCount <= buffer->size / sizeof(uint32_t) - instanceBaseOffset);
 
-    uint32_t *shaderSurfaceIndices = reinterpret_cast<uint32_t *>(buffer->mappedPtr);
+    uint32_t *shaderSurfaceIndices = reinterpret_cast<uint32_t *>(buffer->mappedPtr) + instanceBaseOffset;
     // 일반 draw, shadow, Hi-Z 입력 모두 프레임 공용 surface 테이블의 절대 인덱스를 사용한다.
     const uint32_t firstFrameSurface = currentFrameCamera->firstFrameSurface;
     for (uint32_t instanceIndex = 0; instanceIndex < instanceCount; ++instanceIndex) {
         shaderSurfaceIndices[instanceIndex] = firstFrameSurface + drawSurfs[instanceIndex]->frameSurf->index;
     }
-
-    return buffer;
 }
 
-bool RenderBackend::PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const {
+bool RenderBackend::PrepareSurfaceInstanceBatch(RHI::FrameThreadData *frameThreadData, const DrawSurf2 **drawSurfs, uint32_t numDrawSurfs, uint32_t drawSurfIndex, uint32_t instanceCount, RHI::Buffer *&instanceToShaderSurfaceTable, SurfaceInstanceBatch &batch, uint32_t &instanceTableAllocCount, uint32_t &instanceTableUploadBytes) const {
     assert(instanceCount > 0);
+    assert(drawSurfIndex < numDrawSurfs && instanceCount <= numDrawSurfs - drawSurfIndex);
 
-    RHI::Buffer *instanceToShaderSurfaceTable = AllocInstanceToShaderSurfaceTable(frameThreadData, drawSurfs, instanceCount);
+    // 패스 또는 태스크의 첫 일반 draw 에서만 할당한다. 준비된 배치만 사용하면 할당하지 않는다.
     if (!instanceToShaderSurfaceTable) {
-        batch = {};
-        return false;
+        instanceToShaderSurfaceTable = frameThreadData->AllocStructuredBuffer(sizeof(uint32_t), numDrawSurfs, nullptr);
+        if (!instanceToShaderSurfaceTable) {
+            batch = {};
+            return false;
+        }
+        instanceTableAllocCount++;
     }
+
+    // 생략되거나 이미 준비된 배치의 인덱스는 다시 기록하지 않는다.
+    WriteInstanceToShaderSurfaceTable(instanceToShaderSurfaceTable, drawSurfIndex, &drawSurfs[drawSurfIndex], instanceCount);
 
     batch.drawSurfIndex = drawSurfIndex;
     batch.instanceCount = instanceCount;
     batch.instanceToShaderSurfaceTable = instanceToShaderSurfaceTable;
-    batch.instanceBaseOffset = 0;
+    batch.instanceBaseOffset = drawSurfIndex;
     batch.indirectArgsBuffer = nullptr;
     batch.indirectArgsOffset = 0;
     batch.valid = true;
 
-    instanceTableAllocCount++;
     instanceTableUploadBytes += sizeof(uint32_t) * instanceCount;
 
     return true;
