@@ -77,6 +77,7 @@ void D3D12Buffer::Release() {
 
     srvEntries.Clear();
     uavEntries.Clear();
+    gpuAddress = 0;
 
 #ifdef USE_D3D12_MEMALLOC
     SAFE_RELEASE(bufferAllocation);
@@ -283,6 +284,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
 #endif
 
     D3D12Buffer *buffer = new D3D12Buffer;
+    buffer->gpuAddress = bufferResource->GetGPUVirtualAddress();
     buffer->flags = flags;
     buffer->size = alignedSize;
 
@@ -451,7 +453,6 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     newSrvEntry.viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
     uint32_t byteStride = 0;
-    bool rootSrvCompatible = true;
 
     if (format != RHI::Format::Unknown) {
         // Typed buffer
@@ -460,9 +461,6 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
         byteStride = BE1::Image::BytesPerPixel(imageFormat);
 
         newSrvEntry.viewDesc.Format = RHIFormatToDXGIFormat(format);
-
-        // Root SRV 는 Typed buffer 를 허용하지 않음.
-        rootSrvCompatible = false;
     } else {
         // format == Image::Format::Unknown 이고 structureByteStride == 0 이면, raw buffer 다.
         // format == Image::Format::Unknown 이고 structureByteStride > 0 이면, structured buffer 다.
@@ -502,11 +500,6 @@ RHI::ViewID D3D12Renderer::CreateSRV(D3D12Buffer *buffer, RHI::Format format, ui
     // 디스크립터 슬롯에 SRV 를 기록
     device->CreateShaderResourceView(buffer->GetResource(), &newSrvEntry.viewDesc, newSrvEntry.cpuDescriptorHandle);
 
-    // Root SRV 를 위해 GPU 주소 저장
-    if (rootSrvCompatible) {
-        newSrvEntry.gpuAddress = buffer->GetResource()->GetGPUVirtualAddress() + offset;
-    }
-
     // bindless index 할당
     newSrvEntry.bindlessIndex = AllocBindlessResourceDescriptor();
     if (newSrvEntry.bindlessIndex == D3D12BindlessDescriptorAllocator::NullIndex) {
@@ -540,7 +533,6 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
     newUavEntry.viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 
     uint32_t byteStride = 0;
-    bool rootUavCompatible = true;
 
     if (format != RHI::Format::Unknown) {
         // Typed buffer
@@ -549,9 +541,6 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
         byteStride = BE1::Image::BytesPerPixel(imageFormat);
 
         newUavEntry.viewDesc.Format = RHIFormatToDXGIFormat(format);
-
-        // Root UAV 는 Typed buffer 를 허용하지 않음.
-        rootUavCompatible = false;
     } else {
         // format == Image::Format::Unknown 이고 structureByteStride == 0 이면, raw buffer 다.
         // format == Image::Format::Unknown 이고 structureByteStride > 0 이면, structured buffer 다.
@@ -590,11 +579,6 @@ RHI::ViewID D3D12Renderer::CreateUAV(D3D12Buffer *buffer, RHI::Format format, ui
 
     // 디스크립터 슬롯에 UAV 를 기록
     device->CreateUnorderedAccessView(buffer->GetResource(), nullptr, &newUavEntry.viewDesc, newUavEntry.cpuDescriptorHandle);
-
-    // Root UAV 를 위해 GPU 주소 저장
-    if (rootUavCompatible) {
-        newUavEntry.gpuAddress = buffer->GetResource()->GetGPUVirtualAddress() + offset;
-    }
 
     // bindless index 할당
     newUavEntry.bindlessIndex = AllocBindlessResourceDescriptor();
@@ -702,83 +686,127 @@ bool D3D12Renderer::ExecuteUploadBufferSubData(D3D12ResourceCommandContext &comm
     return true;
 }
 
-void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID) {
-    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
-    D3D12RootBindingData *rootBindingData = _commandList->GetRootBindingData();
-
-    const D3D12Buffer *_buffer = static_cast<const D3D12Buffer *>(buffer);
+BE_FORCE_INLINE uint8_t D3D12Renderer::SetBufferUAV(D3D12CommandList *commandList, uint32_t shaderRegister, const D3D12Buffer *buffer, RHI::ViewID viewID) {
+    D3D12RootBindingData *rootBindingData = commandList->GetRootBindingData();
 
     // 현재 세팅된 PSO 의 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
-    const D3D12PipelineState::RegisterBinder &binder = _commandList->currentPSO->binder;
-    uint8_t rootParameterIndex = 0xFF;
-    uint8_t indexInTable = 0xFF;
+    const D3D12PipelineState::RegisterBinder &binder = commandList->currentPSO->binder;
+    assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.uav));
+    const uint8_t rootParameterIndex = binder.rootParameterIndexLUT.uav[shaderRegister];
+    if (rootParameterIndex >= 64) {
+        BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid root parameter index\n");
+        return 0xFF;
+    }
 
-    if (shaderWritable) {
-        // UAV
-        assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.uav));
-        rootParameterIndex = binder.rootParameterIndexLUT.uav[shaderRegister];
-        if (rootParameterIndex >= 64) {
-            BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid root parameter index\n");
-            return;
-        }
-
-        if (!_buffer->HasValidView(RHI::ViewType::UAV, viewID)) {
+    const D3D12UAVEntry *uavEntry = nullptr;
+    if (viewID.IsValid()) {
+        if (!buffer->HasValidView(RHI::ViewType::UAV, viewID)) {
             BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid UAV view ID (%i)\n", viewID.value);
-            return;
+            return 0xFF;
+        }
+        uavEntry = &buffer->uavEntries[viewID.value];
+    }
+
+    // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
+    const uint8_t indexInTable = binder.descriptorIndexInTableLUT.uav[shaderRegister];
+    if (indexInTable != 0xFF) {
+        if (!uavEntry || uavEntry->cpuDescriptorHandle.ptr == 0) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid UAV descriptor handle\n");
+            return 0xFF;
         }
 
         // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
-        const D3D12UAVEntry &uavEntry = _buffer->uavEntries[viewID.value];
-
-        // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
-        indexInTable = binder.descriptorIndexInTableLUT.uav[shaderRegister];
-        if (indexInTable != 0xFF) {
-            rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = uavEntry.cpuDescriptorHandle;
-            if (rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable].ptr == 0) {
-                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid UAV descriptor handle\n");
-                return;
-            }
-        } else {
-            if (uavEntry.gpuAddress == 0) {
-                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer UAV cannot be bound as root UAV\n");
-                return;
-            }
-
-            rootBindingData->uavGpuAddresses[shaderRegister] = uavEntry.gpuAddress;
-        }
+        rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = uavEntry->cpuDescriptorHandle;
     } else {
-        // SRV
-        assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.srv));
-        rootParameterIndex = binder.rootParameterIndexLUT.srv[shaderRegister];
-        if (rootParameterIndex >= 64) {
-            BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid root parameter index\n");
-            return;
+        if (buffer->gpuAddress == 0 || !BE1::HasFlag(buffer->flags, RHI::BufferFlag::UnorderedAccess)) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer UAV cannot be bound as root UAV\n");
+            return 0xFF;
         }
 
-        if (!_buffer->HasValidView(RHI::ViewType::SRV, viewID)) {
+        uint64_t byteOffset = buffer->resourceOffset;
+        if (uavEntry) {
+            const D3D12_UNORDERED_ACCESS_VIEW_DESC &viewDesc = uavEntry->viewDesc;
+            const bool raw = viewDesc.Buffer.Flags == D3D12_BUFFER_UAV_FLAG_RAW;
+            // Root UAV 는 Typed buffer 를 허용하지 않음.
+            if (viewDesc.ViewDimension != D3D12_UAV_DIMENSION_BUFFER ||
+                (!raw && (viewDesc.Format != DXGI_FORMAT_UNKNOWN || viewDesc.Buffer.StructureByteStride == 0))) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer UAV cannot be bound as root UAV\n");
+                return 0xFF;
+            }
+            // FirstElement 는 네이티브 리소스 기준이므로 resourceOffset 을 다시 더하지 않는다.
+            byteOffset = viewDesc.Buffer.FirstElement * (raw ? 4u : viewDesc.Buffer.StructureByteStride);
+        }
+        rootBindingData->uavGpuAddresses[shaderRegister] = buffer->gpuAddress + byteOffset;
+    }
+
+    return rootParameterIndex;
+}
+
+BE_FORCE_INLINE uint8_t D3D12Renderer::SetBufferSRV(D3D12CommandList *commandList, uint32_t shaderRegister, const D3D12Buffer *buffer, RHI::ViewID viewID) {
+    D3D12RootBindingData *rootBindingData = commandList->GetRootBindingData();
+
+    // 현재 세팅된 PSO 의 셰이더 레지스터에 대한 루트 파라미터 인덱스를 얻는다.
+    const D3D12PipelineState::RegisterBinder &binder = commandList->currentPSO->binder;
+    assert(shaderRegister < COUNT_OF(binder.rootParameterIndexLUT.srv));
+    const uint8_t rootParameterIndex = binder.rootParameterIndexLUT.srv[shaderRegister];
+    if (rootParameterIndex >= 64) {
+        BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid root parameter index\n");
+        return 0xFF;
+    }
+
+    const D3D12SRVEntry *srvEntry = nullptr;
+    if (viewID.IsValid()) {
+        if (!buffer->HasValidView(RHI::ViewType::SRV, viewID)) {
             BE_ERRLOG("D3D12Renderer::SetBuffer: Invalid SRV view ID (%i)\n", viewID.value);
-            return;
+            return 0xFF;
+        }
+        srvEntry = &buffer->srvEntries[viewID.value];
+    }
+
+    // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
+    const uint8_t indexInTable = binder.descriptorIndexInTableLUT.srv[shaderRegister];
+    if (indexInTable != 0xFF) {
+        if (!srvEntry || srvEntry->cpuDescriptorHandle.ptr == 0) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid SRV descriptor handle\n");
+            return 0xFF;
         }
 
         // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
-        const D3D12SRVEntry &srvEntry = _buffer->srvEntries[viewID.value];
-
-        // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
-        indexInTable = binder.descriptorIndexInTableLUT.srv[shaderRegister];
-        if (indexInTable != 0xFF) {
-            rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = srvEntry.cpuDescriptorHandle;
-            if (rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable].ptr == 0) {
-                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer has no valid SRV descriptor handle\n");
-                return;
-            }
-        } else {
-            if (srvEntry.gpuAddress == 0) {
-                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer SRV cannot be bound as root SRV\n");
-                return;
-            }
-
-            rootBindingData->srvGpuAddresses[shaderRegister] = srvEntry.gpuAddress;
+        rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = srvEntry->cpuDescriptorHandle;
+    } else {
+        if (buffer->gpuAddress == 0 || (!srvEntry && !BE1::HasFlag(buffer->flags, RHI::BufferFlag::ShaderResource))) {
+            BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer SRV cannot be bound as root SRV\n");
+            return 0xFF;
         }
+
+        uint64_t byteOffset = buffer->resourceOffset;
+        if (srvEntry) {
+            const D3D12_SHADER_RESOURCE_VIEW_DESC &viewDesc = srvEntry->viewDesc;
+            const bool raw = viewDesc.Buffer.Flags == D3D12_BUFFER_SRV_FLAG_RAW;
+            // Root SRV 는 Typed buffer 를 허용하지 않음.
+            if (viewDesc.ViewDimension != D3D12_SRV_DIMENSION_BUFFER ||
+                (!raw && (viewDesc.Format != DXGI_FORMAT_UNKNOWN || viewDesc.Buffer.StructureByteStride == 0))) {
+                BE_ERRLOG("D3D12Renderer::SetBuffer: Buffer SRV cannot be bound as root SRV\n");
+                return 0xFF;
+            }
+            // FirstElement 는 네이티브 리소스 기준이므로 resourceOffset 을 다시 더하지 않는다.
+            byteOffset = viewDesc.Buffer.FirstElement * (raw ? 4u : viewDesc.Buffer.StructureByteStride);
+        }
+        rootBindingData->srvGpuAddresses[shaderRegister] = buffer->gpuAddress + byteOffset;
+    }
+
+    return rootParameterIndex;
+}
+
+void D3D12Renderer::SetBuffer(RHI::CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID) {
+    D3D12CommandList *_commandList = static_cast<D3D12CommandList *>(commandList);
+    const D3D12Buffer *_buffer = static_cast<const D3D12Buffer *>(buffer);
+
+    const uint8_t rootParameterIndex = shaderWritable
+        ? SetBufferUAV(_commandList, shaderRegister, _buffer, viewID)
+        : SetBufferSRV(_commandList, shaderRegister, _buffer, viewID);
+    if (rootParameterIndex == 0xFF) {
+        return;
     }
 
     // 변경할 루트 파라미터 인덱스에 대한 dirty mask 를 설정한다.

@@ -366,7 +366,7 @@ bool HiZ::DispatchCullInstances(RHI::CommandList *commandList, const RHI::Consta
     RHI::Buffer *indirectArgsBuffer = data.indirectArgsBuffer;
 
     RHI::renderer->SetPSO(commandList, frameCullInstancesPSO);
-    RHI::renderer->SetBuffer(commandList, 0, false, inputInstanceToShaderSurfaceTable);
+    RHI::renderer->SetBuffer(commandList, 0, false, inputInstanceToShaderSurfaceTable, RHI::ViewID::InvalidID);
     RHI::renderer->SetTexture(commandList, 1, false, data.texture, RHI::ViewID::PrimaryID);
     RHI::renderer->SetBuffer(commandList, 0, true, visibleInstanceBuffer);
     RHI::renderer->SetBuffer(commandList, 1, true, indirectArgsBuffer);

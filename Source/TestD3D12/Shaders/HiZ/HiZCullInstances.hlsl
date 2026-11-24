@@ -9,7 +9,8 @@
 
 #define COMMON_ROOT_SIGNATURE ROOT_SIGNATURE_HIZ_CULL_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
-    "DescriptorTable(SRV(t0), SRV(t1), UAV(u0), UAV(u1)), " \
+    "SRV(t0), " \
+    "DescriptorTable(SRV(t1), UAV(u0), UAV(u1)), " \
     "CBV(b0), " \
     "CBV(b1), " \
     "RootConstants(num32BitConstants=7, b2)"

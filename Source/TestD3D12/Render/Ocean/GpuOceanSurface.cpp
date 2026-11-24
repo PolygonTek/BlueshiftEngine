@@ -141,7 +141,7 @@ GpuOceanSurface::QueryReadbackFrame *GpuOceanSurface::DispatchQueries(RHI::Comma
 
     RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetTexture(commandList, 0, false, fieldTextureArray);
-    RHI::renderer->SetBuffer(commandList, 1, false, queryInputBuffer);
+    RHI::renderer->SetBuffer(commandList, 1, false, queryInputBuffer, RHI::ViewID::InvalidID);
     RHI::renderer->SetBuffer(commandList, 0, true, queryOutputBuffer, queryOutputUAV);
     RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
     RHI::renderer->Dispatch(commandList, BE1::DivCeil(queryCount, OceanSurfaceQueryBlockSize), 1, 1);
@@ -409,7 +409,7 @@ bool GpuOceanSurface::DrawPrepared(RHI::CommandList *commandList, const RHI::Pip
     RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
     RHI::renderer->SetConstantBuffer(commandList, 2, preparedDraw.surfaceConstantBuffer);
 
-    RHI::renderer->SetBuffer(commandList, 0, false, preparedDraw.patchInstanceBuffer);
+    RHI::renderer->SetBuffer(commandList, 0, false, preparedDraw.patchInstanceBuffer, RHI::ViewID::InvalidID);
     RHI::renderer->SetTexture(commandList, 1, false, preparedDraw.fieldTextureArray);
     RHI::renderer->SetTexture(commandList, 2, false, preparedDraw.foamHistoryTextureArray);
     RHI::renderer->SetTexture(commandList, 3, false, preparedDraw.foamDetailMap);

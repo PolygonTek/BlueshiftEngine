@@ -16,9 +16,11 @@
 
 #include "D3D12Common.h"
 #include "D3D12Buffer.h"
+#include <atomic>
 
 class D3D12Renderer;
 class D3D12FrameThreadData;
+class D3D12DescriptorPool;
 
 class D3D12ConstantBuffer : public RHI::ConstantBuffer {
     friend class D3D12Renderer;
@@ -35,8 +37,10 @@ public:
     ID3D12Resource *                GetResource() const { return buffer->GetResource(); }
 
 private:
-    D3D12Buffer *                   buffer = nullptr;
+    D3D12Buffer *                   buffer = nullptr; // static 상수 버퍼가 소유하는 버퍼. dynamic 상수 버퍼라면 nullptr.
     D3D12_GPU_VIRTUAL_ADDRESS       gpuAddress = 0;
-    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {};
+    D3D12DescriptorPool *           descriptorPool = nullptr;
+    mutable std::atomic<D3D12_CPU_DESCRIPTOR_HANDLE> descriptorHandle{};
+    uint32_t                        size = 0;
     int32_t                         dynamicBlockIndex = -1;
 };

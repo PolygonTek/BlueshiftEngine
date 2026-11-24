@@ -68,7 +68,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const DrawSurf2 **drawSurfs, 
             RHI::renderer->SetConstantBuffer(mainCommandList, 1, viewConstantBuffer);
 
             if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
-                RHI::renderer->SetBuffer(mainCommandList, 1, false, currentFrameCamera->skinningJointBuffer);
+                RHI::renderer->SetBuffer(mainCommandList, 1, false, currentFrameCamera->skinningJointBuffer, RHI::ViewID::InvalidID);
             }
         }
 
@@ -139,7 +139,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
             RHI::renderer->SetConstantBuffer(commandList, 1, taskDesc->viewConstantBuffer);
 
             if (VertexInputLayoutFactory::IsSkinning(drawSurf->inputLayoutId)) {
-                RHI::renderer->SetBuffer(commandList, 1, false, currentFrameCamera->skinningJointBuffer);
+                RHI::renderer->SetBuffer(commandList, 1, false, currentFrameCamera->skinningJointBuffer, RHI::ViewID::InvalidID);
             }
         }
 

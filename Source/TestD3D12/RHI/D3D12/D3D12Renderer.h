@@ -187,6 +187,8 @@ public:
     virtual void                        SetConstants(RHI::CommandList *commandList, uint32_t shaderRegister, const void *data, uint32_t size, uint32_t offset = 0) override;
     virtual void                        SetTexture(RHI::CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const RHI::Texture *texture, RHI::ViewID viewID = RHI::ViewID::PrimaryID) override;
     virtual void                        SetBuffer(RHI::CommandList *commandList, uint32_t shaderRegister, bool shaderWritable, const RHI::Buffer *buffer, RHI::ViewID viewID = RHI::ViewID::PrimaryID) override;
+    uint8_t                             SetBufferUAV(D3D12CommandList *commandList, uint32_t shaderRegister, const D3D12Buffer *buffer, RHI::ViewID viewID);
+    uint8_t                             SetBufferSRV(D3D12CommandList *commandList, uint32_t shaderRegister, const D3D12Buffer *buffer, RHI::ViewID viewID);
     virtual void                        SetSampler(RHI::CommandList *commandList, uint32_t shaderRegister, RHI::Sampler *sampler) override;
     virtual void                        SetPSO(RHI::CommandList *commandList, const RHI::PipelineState *pipelineState) override;
     virtual void                        SetBlendFactor(RHI::CommandList *commandList, const BE1::Color4 &rgba) override;

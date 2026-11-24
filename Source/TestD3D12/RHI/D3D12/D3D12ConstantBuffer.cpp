@@ -20,9 +20,10 @@
 
 void D3D12ConstantBuffer::Release() {
     if (dynamicBlockIndex == -1) {
-        if (descriptorHandle.ptr != 0) {
-            D3D12Renderer::GetRenderer()->resourceStagingDescriptorPool->Free(descriptorHandle);
-            descriptorHandle = {};
+        const D3D12_CPU_DESCRIPTOR_HANDLE handle = descriptorHandle.load(std::memory_order_relaxed);
+        if (handle.ptr != 0) {
+            descriptorPool->Free(handle);
+            descriptorHandle.store({}, std::memory_order_relaxed);
         }
     }
 
@@ -45,24 +46,11 @@ RHI::ConstantBuffer* D3D12Renderer::CreateConstantBuffer(RHI::BufferUsage usage,
         return nullptr;
     }
 
-    // 디스크립터 핸들 생성
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {};
-    if (!resourceStagingDescriptorPool->Alloc(&descriptorHandle, nullptr)) {
-        DestroyBuffer(buffer);
-        return nullptr;
-    }
-
-    // 디스크립터 슬롯에 CBV 를 기록
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-    cbvDesc.BufferLocation = buffer->GetResource()->GetGPUVirtualAddress();
-    cbvDesc.SizeInBytes = buffer->size;
-    device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
-
-    // 상수 버퍼 객체 생성
     D3D12ConstantBuffer* constantBuffer = new D3D12ConstantBuffer;
     constantBuffer->buffer = buffer;
-    constantBuffer->gpuAddress = cbvDesc.BufferLocation;
-    constantBuffer->descriptorHandle = descriptorHandle;
+    constantBuffer->gpuAddress = buffer->gpuAddress;
+    constantBuffer->descriptorPool = resourceStagingDescriptorPool;
+    constantBuffer->size = static_cast<uint32_t>(buffer->size);
 
     return constantBuffer;
 }
@@ -93,11 +81,45 @@ void D3D12Renderer::SetConstantBuffer(RHI::CommandList *commandList, uint32_t sh
     // 루트 파라미터가 디스크립터 테이블일 경우 테이블 내의 인덱스 LUT 에는 유효한 값이 들어있다.
     uint8_t indexInTable = binder.descriptorIndexInTableLUT.cbv[shaderRegister];
     if (indexInTable != 0xFF) {
+        D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = _constantBuffer->descriptorHandle.load(std::memory_order_acquire);
+        if (descriptorHandle.ptr == 0) {
+            D3D12DescriptorPool *descriptorPool = _constantBuffer->descriptorPool;
+            if (!descriptorPool || _constantBuffer->gpuAddress == 0 || _constantBuffer->size == 0) {
+                BE_ERRLOG("D3D12Renderer::SetConstantBuffer: Buffer has no valid CBV descriptor handle\n");
+                return;
+            }
+
+            D3D12_CPU_DESCRIPTOR_HANDLE newHandle = {};
+            if (!descriptorPool->Alloc(&newHandle, nullptr)) {
+                BE_ERRLOG("D3D12Renderer::SetConstantBuffer: Failed to allocate CBV descriptor\n");
+                return;
+            }
+
+            // 디스크립터 슬롯에 CBV 를 기록한 뒤 다른 기록 스레드에 공개한다.
+            D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+            cbvDesc.BufferLocation = _constantBuffer->gpuAddress;
+            cbvDesc.SizeInBytes = _constantBuffer->size;
+            device->CreateConstantBufferView(&cbvDesc, newHandle);
+
+            if (_constantBuffer->descriptorHandle.compare_exchange_strong(descriptorHandle, newHandle, std::memory_order_acq_rel, std::memory_order_acquire)) {
+                descriptorHandle = newHandle;
+            } else {
+                // 다른 스레드가 먼저 생성한 CBV 를 재사용하고, 방금 생성한 슬롯은 반환한다.
+                descriptorPool->Free(newHandle);
+            }
+        }
+
         // 사용할 디스크립터 테이블 변수에 디스크립터 핸들을 채워 넣는다.
-        rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = _constantBuffer->descriptorHandle;
+        rootBindingData->tableDescriptorHandles[rootParameterIndex][indexInTable] = descriptorHandle;
+    } else {
+        if (_constantBuffer->gpuAddress == 0) {
+            BE_ERRLOG("D3D12Renderer::SetConstantBuffer: Buffer cannot be bound as root CBV\n");
+            return;
+        }
+
+        // Root CBV 에 사용할 상수 버퍼 GPU 주소를 저장한다.
+        rootBindingData->cbvGpuAddresses[shaderRegister] = _constantBuffer->gpuAddress;
     }
-    // 셰이더 레지스터에 대한 상수 버퍼 GPU 주소도 저장한다.
-    rootBindingData->cbvGpuAddresses[shaderRegister] = _constantBuffer->gpuAddress;
 
     // 변경할 루트 파라미터 인덱스에 대한 dirty mask 를 설정한다.
     if (_commandList->currentPSO->isGraphics) {

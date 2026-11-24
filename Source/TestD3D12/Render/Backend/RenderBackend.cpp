@@ -2100,7 +2100,7 @@ void RenderBackend::DrawSurfaceInstanceBatch(RHI::CommandList *commandList, cons
     const FrameSurf *firstFrameSurf = drawSurfs[0]->frameSurf;
 
     RHI::renderer->SetConstants(commandList, 2, &surfaceDrawParams, sizeof(surfaceDrawParams), 0);
-    RHI::renderer->SetBuffer(commandList, 0, false, batch.instanceToShaderSurfaceTable);
+    RHI::renderer->SetBuffer(commandList, 0, false, batch.instanceToShaderSurfaceTable, RHI::ViewID::InvalidID);
 
     if (batch.indirectArgsBuffer) {
         RHI::renderer->DrawIndexedInstancedIndirect(commandList, batch.indirectArgsBuffer, batch.indirectArgsOffset);

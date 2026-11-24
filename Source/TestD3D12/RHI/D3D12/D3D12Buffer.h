@@ -83,13 +83,14 @@ private:
 #else
     ID3D12Resource *                bufferResource = nullptr;
 #endif
+    D3D12_GPU_VIRTUAL_ADDRESS       gpuAddress = 0;
     uint64_t                        size = 0;
     uint64_t                        resourceOffset = 0;
     RHI::BufferFlag                 flags = RHI::BufferFlag::None;
     int32_t                         dynamicBlockIndex = -1;
 
-    BE1::Array<D3D12SRVEntry>       srvEntries = (16);
-    BE1::Array<D3D12UAVEntry>       uavEntries = (16);
+    BE1::Array<D3D12SRVEntry>       srvEntries = (4);
+    BE1::Array<D3D12UAVEntry>       uavEntries = (4);
 };
 
 BE_INLINE ID3D12Resource *D3D12Buffer::GetResource() const {

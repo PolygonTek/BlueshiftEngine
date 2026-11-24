@@ -4,7 +4,8 @@
 
 #define OCEAN_SURFACE_QUERY_ROOT_SIGNATURE \
     "RootFlags(0), " \
-    "DescriptorTable(SRV(t0, numDescriptors = 2), UAV(u0)), " \
+    "SRV(t1), " \
+    "DescriptorTable(SRV(t0), UAV(u0)), " \
     "CBV(b0), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 

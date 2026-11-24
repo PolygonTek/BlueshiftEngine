@@ -16,7 +16,8 @@
     "CBV(b1), " \
     "CBV(b2), " \
     "RootConstants(num32BitConstants=1, b3), " \
-    "DescriptorTable(SRV(t0, numDescriptors = 6)), " \
+    "SRV(t0), " \
+    "DescriptorTable(SRV(t1, numDescriptors = 5)), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 
 DECLARE_COMMON_STATIC_SAMPLERS

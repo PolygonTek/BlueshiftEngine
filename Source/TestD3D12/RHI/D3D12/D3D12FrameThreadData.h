@@ -64,9 +64,11 @@ public:
     virtual RHI::ConstantBuffer *   AllocConstant(uint32_t size, const void *data = nullptr) override;
 
                                     // 다이나믹 (raw) 버퍼를 할당한다. 리턴된 버퍼는 다음 Reset 호출전까지만 유효하다.
+                                    // 뷰를 생성하지 않는다. InvalidID 를 전달해 root SRV 로 바인딩하거나 복사 원본으로 사용한다.
     virtual RHI::Buffer *           AllocRawBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr) override;
 
                                     // 다이나믹 (structured) 버퍼를 할당한다. 리턴된 버퍼는 다음 Reset 호출전까지만 유효하다.
+                                    // 뷰를 생성하지 않는다. InvalidID 를 전달해 root SRV 로 바인딩하거나 복사 원본으로 사용한다.
     virtual RHI::Buffer *           AllocStructuredBuffer(uint32_t stride, uint32_t count, const void *data = nullptr) override;
 
                                     // 다이나믹 버텍스 버퍼에 데이터를 추가한다.
@@ -96,7 +98,7 @@ private:
         int                         blockIndex = -1;
     };
 
-    RHI::Buffer *                   AllocShaderResourceBuffer(uint32_t size, uint32_t alignSize, uint32_t structuredStride, const void *data = nullptr);
+    RHI::Buffer *                   AllocShaderResourceBuffer(uint32_t size, uint32_t alignSize, const void *data = nullptr);
     DynamicBufferBlock *            FindFreeDynamicBufferBlock(uint32_t size, uint32_t alignSize, uint32_t *outAlignedOffset) const;
 
     BE1::Array<DynamicBufferBlock *> dynamicBufferBlocks;

@@ -248,11 +248,6 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
     }
     const uint32_t alignedSize = static_cast<uint32_t>(requestedSize);
 
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = {};
-    if (!dynamicResDescriptorPool->Alloc(&cpuDescriptorHandle, nullptr)) {
-        return nullptr;
-    }
-
     uint32_t offset;
     // 상수 버퍼의 오프셋은 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256) 로 정렬되어야 한다.
     DynamicBufferBlock *currentBlock = FindFreeDynamicBufferBlock(alignedSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, &offset);
@@ -265,17 +260,13 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
 
     currentBlock->usedBytes = offset + alignedSize;
 
-    // 현재 블럭의 버퍼 리소스를 쪼개서 CBV 를 만든다.
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-    cbvDesc.BufferLocation = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
-    cbvDesc.SizeInBytes = alignedSize;
-
-    D3D12Renderer::GetRenderer()->GetDevice()->CreateConstantBufferView(&cbvDesc, cpuDescriptorHandle);
-
+    // 현재 블럭에서 상수 버퍼 영역을 할당한다.
     D3D12ConstantBuffer &dynamicConstantBuffer = dynamicConstantBuffers.Alloc();
     dynamicConstantBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
-    dynamicConstantBuffer.gpuAddress = cbvDesc.BufferLocation;
-    dynamicConstantBuffer.descriptorHandle = cpuDescriptorHandle;
+    dynamicConstantBuffer.gpuAddress = currentBlock->buffer->gpuAddress + offset;
+    dynamicConstantBuffer.descriptorPool = dynamicResDescriptorPool;
+    dynamicConstantBuffer.descriptorHandle.store({}, std::memory_order_relaxed);
+    dynamicConstantBuffer.size = alignedSize;
     dynamicConstantBuffer.dynamicBlockIndex = currentBlock->blockIndex;
     
     if (data) {
@@ -285,13 +276,8 @@ RHI::ConstantBuffer *D3D12FrameThreadData::AllocConstant(uint32_t size, const vo
     return &dynamicConstantBuffer;
 }
 
-RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint32_t alignSize, uint32_t structuredStride, const void *data) {
+RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint32_t alignSize, const void *data) {
     assert(size <= DynamicBufferBlockMaxSize);
-
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle = {};
-    if (!dynamicResDescriptorPool->Alloc(&cpuDescriptorHandle, nullptr)) {
-        return nullptr;
-    }
 
     uint32_t offset;
     DynamicBufferBlock *currentBlock = FindFreeDynamicBufferBlock(size, alignSize, &offset);
@@ -304,29 +290,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint
 
     currentBlock->usedBytes = offset + size;
 
-    const uint32_t elementStride = structuredStride ? structuredStride : 4;
-
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.Buffer.FirstElement = offset / elementStride;
-    srvDesc.Buffer.NumElements = size / elementStride;
-
-    if (structuredStride) {
-        srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-        srvDesc.Buffer.StructureByteStride = structuredStride;
-    } else {
-        srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-        srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
-    }
-
-    D3D12Renderer::GetRenderer()->GetDevice()->CreateShaderResourceView(currentBlock->buffer->GetResource(), &srvDesc, cpuDescriptorHandle);
-
-    D3D12SRVEntry srvEntry = {};
-    srvEntry.viewDesc = srvDesc;
-    srvEntry.cpuDescriptorHandle = cpuDescriptorHandle;
-    srvEntry.gpuAddress = currentBlock->buffer->GetResource()->GetGPUVirtualAddress() + offset;
-
+    // 뷰 없이 할당한다. root SRV 는 버퍼의 GPU 주소와 resourceOffset 을 사용한다.
     D3D12Buffer &dynamicBuffer = dynamicBuffers.Alloc();
 #ifdef USE_D3D12_MEMALLOC
     dynamicBuffer.bufferAllocation = currentBlock->buffer->bufferAllocation;
@@ -336,11 +300,11 @@ RHI::Buffer *D3D12FrameThreadData::AllocShaderResourceBuffer(uint32_t size, uint
     dynamicBuffer.bufferResource->AddRef();
 #endif
     dynamicBuffer.srvEntries.SetCount(0, false);
-    dynamicBuffer.srvEntries.Append(srvEntry);
     dynamicBuffer.uavEntries.SetCount(0, false);
     dynamicBuffer.mappedPtr = reinterpret_cast<byte *>(currentBlock->buffer->mappedPtr) + offset;
     dynamicBuffer.dynamicBlockIndex = currentBlock->blockIndex;
     dynamicBuffer.size = size;
+    dynamicBuffer.gpuAddress = currentBlock->buffer->gpuAddress;
     dynamicBuffer.resourceOffset = offset;
     dynamicBuffer.flags = RHI::BufferFlag::ShaderResource;
 
@@ -365,7 +329,7 @@ RHI::Buffer *D3D12FrameThreadData::AllocStructuredBuffer(uint32_t stride, uint32
         return nullptr;
     }
 
-    return AllocShaderResourceBuffer(static_cast<uint32_t>(requestedSize), stride, stride, data);
+    return AllocShaderResourceBuffer(static_cast<uint32_t>(requestedSize), stride, data);
 }
 
 RHI::Buffer *D3D12FrameThreadData::AllocRawBuffer(uint32_t size, uint32_t alignSize, const void *data) {
@@ -377,7 +341,9 @@ RHI::Buffer *D3D12FrameThreadData::AllocRawBuffer(uint32_t size, uint32_t alignS
     }
 
     // RAW SRV 의 시작 오프셋은 D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT (16) 로 정렬되어야 한다.
-    return AllocShaderResourceBuffer(size, BE1::Max(alignSize, static_cast<uint32_t>(D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT)), 0, data);
+    alignSize = BE1::Max(alignSize, static_cast<uint32_t>(D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT));
+
+    return AllocShaderResourceBuffer(size, alignSize, data);
 }
 
 void *D3D12FrameThreadData::AppendVertex(RHI::VertexBuffer *vertexBuffer, uint32_t vertexSize, uint32_t count, const void *data) {
