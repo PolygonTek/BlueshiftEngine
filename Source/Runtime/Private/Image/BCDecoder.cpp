@@ -26,39 +26,14 @@ BE_NAMESPACE_BEGIN
 void BCDecoder::DecodeColorBlock(const BCCodec::ColorBlock565 *block, byte *out, bool writeAlpha) {
     byte colors[4][4];
 
-    RGB888From565(block->color0, colors[0]);
-    RGB888From565(block->color1, colors[1]);
+    // BC2/BC3 always use four-color mode regardless of endpoint ordering.
+    const bool fourColorMode = !writeAlpha || block->color0 > block->color1;
+    BuildColorPalette565(block->color0, block->color1, fourColorMode, colors);
 
     colors[0][3] = 255;
     colors[1][3] = 255;
-
-    // BC2/BC3 always use four-color mode regardless of endpoint ordering.
-    if (!writeAlpha || block->color0 > block->color1) {
-        // Four-color block: derive the other two colors
-        // 00 = color_0, 01 = color_1, 10 = color_2, 11 = color_3
-        colors[2][0] = (2 * colors[0][0] + 1 * colors[1][0]) / 3;
-        colors[2][1] = (2 * colors[0][1] + 1 * colors[1][1]) / 3;
-        colors[2][2] = (2 * colors[0][2] + 1 * colors[1][2]) / 3;
-        colors[2][3] = 255;
-
-        colors[3][0] = (1 * colors[0][0] + 2 * colors[1][0]) / 3;
-        colors[3][1] = (1 * colors[0][1] + 2 * colors[1][1]) / 3;
-        colors[3][2] = (1 * colors[0][2] + 2 * colors[1][2]) / 3;
-        colors[3][3] = 255;
-    } else {
-        // Three-color block: derive the other colors
-        // 00 = color_0, 01 = color_1, 10 = color_2, 11 = transparent
-        colors[2][0] = (colors[0][0] + colors[1][0]) / 2;
-        colors[2][1] = (colors[0][1] + colors[1][1]) / 2;
-        colors[2][2] = (colors[0][2] + colors[1][2]) / 2;
-        colors[2][3] = 255;
-
-        // Transparent black.
-        colors[3][0] = 0x00;
-        colors[3][1] = 0x00;
-        colors[3][2] = 0x00;
-        colors[3][3] = 0x00;
-    }
+    colors[2][3] = 255;
+    colors[3][3] = fourColorMode ? 255 : 0;
 
     uint32_t indexes = block->indexes;
 
@@ -76,30 +51,7 @@ void BCDecoder::DecodeColorBlock(const BCCodec::ColorBlock565 *block, byte *out,
 // Decode 64 bits alpha block to 8-bit alphas
 void BCDecoder::DecodeAlphaBlock(const BCCodec::AlphaBlock3Bit *block, byte *out) {
     byte alphas[8];
-
-    alphas[0] = block->alpha0;
-    alphas[1] = block->alpha1;
-
-    // 8-alpha or 6-alpha block?
-    if (block->alpha0 > block->alpha1) {
-        // 8-alpha block: derive the other 6 alphas.
-        // 000 = alpha_0, 001 = alpha_1, others are interpolated
-        alphas[2] = (6 * alphas[0] + 1 * alphas[1]) / 7;    // 010
-        alphas[3] = (5 * alphas[0] + 2 * alphas[1]) / 7;    // 011
-        alphas[4] = (4 * alphas[0] + 3 * alphas[1]) / 7;    // 100
-        alphas[5] = (3 * alphas[0] + 4 * alphas[1]) / 7;    // 101
-        alphas[6] = (2 * alphas[0] + 5 * alphas[1]) / 7;    // 110
-        alphas[7] = (1 * alphas[0] + 6 * alphas[1]) / 7;    // 111
-    } else {
-        // 6-alpha block: derive the other alphas.
-        // 000 = alpha_0, 001 = alpha_1, others are interpolated
-        alphas[2] = (4 * alphas[0] + 1 * alphas[1]) / 5;    // 010
-        alphas[3] = (3 * alphas[0] + 2 * alphas[1]) / 5;    // 011
-        alphas[4] = (2 * alphas[0] + 3 * alphas[1]) / 5;    // 100
-        alphas[5] = (1 * alphas[0] + 4 * alphas[1]) / 5;    // 101
-        alphas[6] = 0;                                      // 110
-        alphas[7] = 255;                                    // 111
-    }
+    BuildAlphaPalette(block->alpha0, block->alpha1, alphas);
 
     unsigned int idx01 = (int)block->indexes[0] | ((int)block->indexes[1] << 8) | ((int)block->indexes[2] << 16);
     unsigned int idx23 = (int)block->indexes[3] | ((int)block->indexes[4] << 8) | ((int)block->indexes[5] << 16);

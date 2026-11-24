@@ -309,24 +309,7 @@ void BCEncoder::ComputeAlphaIndicesFast(const byte *colorBlock, const int alphaO
 
 int BCEncoder::ComputeAlphaIndices(const byte *colorBlock, const int alphaOffset, const byte alpha0, const byte alpha1, byte *rindexes) {
     byte alphas[8];
-    alphas[0] = alpha0;
-    alphas[1] = alpha1;
-
-    if (alpha0 > alpha1) {
-        alphas[2] = (6 * alpha0 + 1 * alpha1) / 7;
-        alphas[3] = (5 * alpha0 + 2 * alpha1) / 7;
-        alphas[4] = (4 * alpha0 + 3 * alpha1) / 7;
-        alphas[5] = (3 * alpha0 + 4 * alpha1) / 7;
-        alphas[6] = (2 * alpha0 + 5 * alpha1) / 7;
-        alphas[7] = (1 * alpha0 + 6 * alpha1) / 7;
-    } else {
-        alphas[2] = (4 * alpha0 + 1 * alpha1) / 5;
-        alphas[3] = (3 * alpha0 + 2 * alpha1) / 5;
-        alphas[4] = (2 * alpha0 + 3 * alpha1) / 5;
-        alphas[5] = (1 * alpha0 + 4 * alpha1) / 5;
-        alphas[6] = 0;
-        alphas[7] = 255;
-    }
+    BuildAlphaPalette(alpha0, alpha1, alphas);
 
     ALIGN_AS32 uint32_t indexes[16];
     int error = 0;
@@ -508,24 +491,7 @@ int BCEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color0
     ALIGN_AS32 byte colors[4][4];
     ALIGN_AS32 uint32_t indexes[16];
 
-    RGB888From565(color0, colors[0]);
-    RGB888From565(color1, colors[1]);
-
-    if (color0 > color1) {
-        colors[2][0] = (2 * colors[0][0] + 1 * colors[1][0]) / 3;
-        colors[2][1] = (2 * colors[0][1] + 1 * colors[1][1]) / 3;
-        colors[2][2] = (2 * colors[0][2] + 1 * colors[1][2]) / 3;
-        colors[3][0] = (1 * colors[0][0] + 2 * colors[1][0]) / 3;
-        colors[3][1] = (1 * colors[0][1] + 2 * colors[1][1]) / 3;
-        colors[3][2] = (1 * colors[0][2] + 2 * colors[1][2]) / 3;
-    } else {
-        colors[2][0] = (1 * colors[0][0] + 1 * colors[1][0]) / 2;
-        colors[2][1] = (1 * colors[0][1] + 1 * colors[1][1]) / 2;
-        colors[2][2] = (1 * colors[0][2] + 1 * colors[1][2]) / 2;
-        colors[3][0] = 0;
-        colors[3][1] = 0;
-        colors[3][2] = 0;
-    }
+    BuildColorPalette565(color0, color1, color0 > color1, colors);
 
     assert(!usePunchThroughAlpha || color0 <= color1);
 
