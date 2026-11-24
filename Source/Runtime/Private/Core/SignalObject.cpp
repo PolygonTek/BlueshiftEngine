@@ -94,57 +94,45 @@ bool SignalObject::Disconnect(const SignalDef *sigdef, SignalObject *receiver, S
 }
 
 bool SignalObject::Disconnect(const SignalDef *sigdef, SignalObject *receiver) {
-    int *removeIndexes = (int *)_alloca(sizeof(removeIndexes[0]) * publications.Count());
-    int count = 0;
+    bool disconnected = false;
 
-    for (int i = 0; i < publications.Count(); i++) {
+    // Remove backwards so swapped entries have already been checked.
+    for (int i = publications.Count() - 1; i >= 0; i--) {
         const Connection *con = publications[i];
         if (con->signalDef == sigdef && con->receiver == receiver) {
             // remove receiver's subscription
             int index = con->receiver->subscriptions.FindIndex(con);
             con->receiver->subscriptions.RemoveIndexFast(index);
 
-            // stack sender's publication for remove
-            removeIndexes[count++] = i;	
+            // remove sender's publication
+            delete con;
+            publications.RemoveIndexFast(i);
+            disconnected = true;
         }
     }
 
-    if (count > 0) {
-        for (int i = 0; i < count; i++) {
-            delete publications[removeIndexes[i]];
-            publications.RemoveIndexFast(removeIndexes[i]);
-        }
-        return true;
-    }
-
-    return false;
+    return disconnected;
 }
 
 bool SignalObject::Disconnect(const SignalDef *sigdef) {
-    int *removeIndexes = (int *)_alloca(sizeof(removeIndexes[0]) * publications.Count());
-    int count = 0;
+    bool disconnected = false;
 
-    for (int i = 0; i < publications.Count(); i++) {
+    // Remove backwards so swapped entries have already been checked.
+    for (int i = publications.Count() - 1; i >= 0; i--) {
         const Connection *con = publications[i];
         if (con->signalDef == sigdef) {
             // remove receiver's subscription
             int index = con->receiver->subscriptions.FindIndex(con);
             con->receiver->subscriptions.RemoveIndexFast(index);
-            
-            // stack sender's publication for remove
-            removeIndexes[count++] = i;
+
+            // remove sender's publication
+            delete con;
+            publications.RemoveIndexFast(i);
+            disconnected = true;
         }
     }
 
-    if (count > 0) {
-        for (int i = 0; i < count; i++) {
-            delete publications[removeIndexes[i]];
-            publications.RemoveIndexFast(removeIndexes[i]);
-        }
-        return true;
-    }
-
-    return false;
+    return disconnected;
 }
 
 bool SignalObject::EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...) {

@@ -917,12 +917,18 @@ BE_INLINE void Str::Append(const Str &text) {
 
 BE_INLINE void Str::Append(const char *text) {
     if (text) {
-        int newLen = len + (int)strlen(text);
-        EnsureAlloced(newLen + 1);
-        for (int i = 0; text[i]; i++) {
-            data[len + i] = text[i];
+        const int textLen = (int)strlen(text);
+        const int newLen = len + textLen;
+        if (newLen + 1 > alloced) {
+            // Preserve an aliased source across buffer growth.
+            const uintptr_t offset = (uintptr_t)text - (uintptr_t)data;
+            ReAllocate(newLen + 1, true);
+            if (offset <= (uintptr_t)len) {
+                text = data + offset;
+            }
         }
-    
+
+        memcpy(data + len, text, textLen);
         len = newLen;
         data[len] = '\0';
     }
