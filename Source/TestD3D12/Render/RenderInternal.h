@@ -22,6 +22,7 @@
 #include "Math/OBB.h"
 #include "Math/Plane.h"
 #include "Shaders/ShaderInterop.h"
+#include "Shaders/Ocean/OceanInterop.h"
 #include "Shaders/Fog/FogInterop.h"
 #include "ShaderPipeline/GraphicsPipelineDesc.h"
 #include "ShaderPipeline/ShaderFeatureSet.h"

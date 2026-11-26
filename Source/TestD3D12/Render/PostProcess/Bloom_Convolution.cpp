@@ -20,7 +20,7 @@
 #include "Render/RenderInternal.h"
 #include "Render/GpuTiming.h"
 #include "Render/GpuFFT.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/Bloom/BloomInterop.h"
 
 bool Bloom::DispatchConvolutionBloom(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloom");

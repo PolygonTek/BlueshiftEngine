@@ -21,6 +21,7 @@
 #include "Render/Mesh/GeometryClipmap.h"
 #include "Math/Color3.h"
 #include "Math/Vector3.h"
+#include "Shaders/Ocean/OceanInterop.h"
 
 namespace BE1 {
     class Frustum;

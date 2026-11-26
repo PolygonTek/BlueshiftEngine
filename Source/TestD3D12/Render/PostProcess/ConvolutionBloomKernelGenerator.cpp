@@ -21,7 +21,7 @@
 #include "Render/ShaderPipeline/ShaderPipeline.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/Bloom/BloomInterop.h"
 
 void ConvolutionBloomKernelGenerator::Init() {
     // 커널 사이즈로 유효한 FFT size enum 얻기

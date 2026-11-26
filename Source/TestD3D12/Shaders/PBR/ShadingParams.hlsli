@@ -1,7 +1,7 @@
 #ifndef __SHADING_PARAMS_HLSLI__
 #define __SHADING_PARAMS_HLSLI__
 
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 #include "BRDFLibrary.hlsli"
 #include "SpecularAA.hlsli"
 

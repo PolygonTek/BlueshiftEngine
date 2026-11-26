@@ -16,6 +16,7 @@
 #include "Profiler.h"
 #include "ShaderMaterialTable.h"
 #include "Shaders/ShaderInterop.h"
+#include "Shaders/TextureStreamingInterop.h"
 #include "Render/RenderInternal.h"
 #include "ShaderPacking.h"
 #include "Render/Material/Material.h"

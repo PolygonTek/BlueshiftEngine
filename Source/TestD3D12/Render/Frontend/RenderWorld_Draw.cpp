@@ -31,6 +31,8 @@
 #include "Render/ShaderPipeline/VertexInputLayoutFactory.h"
 #include "Render/Texture/Texture.h"
 #include "Shaders/ShaderInterop.h"
+#include "Shaders/Ocean/OceanInterop.h"
+#include "Shaders/SSR/SSRInterop.h"
 #include "Math/Sphere.h"
 
 static_assert(static_cast<uint32_t>(RenderLight::Type::Point) == ShaderLightTypePoint);

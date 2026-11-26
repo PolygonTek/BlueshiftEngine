@@ -17,6 +17,7 @@
 #include "Render/RenderCvars.h"
 #include "Render/RenderSystem.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
+#include "Shaders/TextureStreamingInterop.h"
 
 MaterialManager     materialManager;
 

@@ -1,4 +1,4 @@
-#include "../ShaderInterop.h"
+#include "SSRInterop.h"
 #include "SSRHiZCommon.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \

@@ -2,7 +2,7 @@
 #include "HeightFogCommon.hlsli"
 #include "LocalFogCommon.hlsli"
 #include "FogEnvironment.hlsli"
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 #include "../STBN.hlsli"
 
 #define VFOG_INJECT_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \

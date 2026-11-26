@@ -1,4 +1,5 @@
-#include "../ShaderInterop.h"
+#include "MipGenInterop.h"
+#include "../Common.hlsli"
 #include "../Colors.hlsli"
 #include "../Cubemap.hlsli"
 

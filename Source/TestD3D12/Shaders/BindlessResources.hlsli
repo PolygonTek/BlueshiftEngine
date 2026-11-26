@@ -1,5 +1,5 @@
-#ifndef __COMMON_BINDLESS_HLSLI__
-#define __COMMON_BINDLESS_HLSLI__
+#ifndef __BINDLESS_RESOURCES_HLSLI__
+#define __BINDLESS_RESOURCES_HLSLI__
 
 #include "ShaderInterop.h"
 
@@ -244,4 +244,4 @@ SamplerState GetSampler(uint index) { return bindlessSamplerTable[index]; }
 
 #endif
 
-#endif // __COMMON_BINDLESS_HLSLI__
+#endif // __BINDLESS_RESOURCES_HLSLI__

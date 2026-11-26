@@ -28,6 +28,8 @@
 
 #ifdef ENABLE_IMGUI
 #include "imgui/imgui.h"
+#include "Shaders/SSR/SSRInterop.h"
+#include "Shaders/ToneMapping/ToneMappingInterop.h"
 #endif
 
 extern BE1::CVar       app_showFps;

@@ -18,7 +18,7 @@
 #include "Render/Backend/RenderBackend.h"
 #include "Render/RenderInternal.h"
 #include "Render/GpuTiming.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/Bloom/BloomInterop.h"
 
 bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchPyramidBloom");

@@ -1,4 +1,5 @@
-#include "../ShaderInterop.h"
+#include "OceanInterop.h"
+#include "../Common.hlsli"
 #include "../Random.hlsli"
 #include "OceanSpectrum.hlsli"
 

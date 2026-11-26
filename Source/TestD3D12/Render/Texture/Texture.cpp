@@ -16,6 +16,7 @@
 #include "Texture.h"
 #include "TextureManager.h"
 #include "LoadingSystem.h"
+#include "Shaders/TextureStreamingInterop.h"
 
 Texture::InternalData &Texture::InternalData::operator=(InternalData &&rhs) noexcept {
     if (this != &rhs) {

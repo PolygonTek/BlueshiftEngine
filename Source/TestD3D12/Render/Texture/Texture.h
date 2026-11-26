@@ -17,7 +17,7 @@
 #include <utility>
 
 #include "RHI/RHI.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/TextureStreamingInterop.h"
 
 class TextureManager;
 class LoadingSystem;

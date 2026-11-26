@@ -1,4 +1,3 @@
-#include "../ShaderInterop.h"
 #include "FFTCommon.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \

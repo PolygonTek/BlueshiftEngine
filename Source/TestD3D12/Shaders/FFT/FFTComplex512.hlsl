@@ -1,4 +1,4 @@
-#include "../ShaderInterop.h"
+#include "FFTInterop.h"
 #include "FFTCommon.hlsli"
 
 #ifndef FFT_INVERSE

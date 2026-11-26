@@ -1,4 +1,4 @@
-#include "../ShaderInterop.h"
+#include "OceanInterop.h"
 #include "OceanFieldCommon.hlsli"
 
 #define COMMON_ROOT_SIGNATURE \

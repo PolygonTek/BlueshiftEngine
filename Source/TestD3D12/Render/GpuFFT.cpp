@@ -19,7 +19,8 @@
 #include "ShaderPipeline/ShaderPipeline.h"
 #include "ShaderPipeline/ShaderTemplateManager.h"
 #include "ShaderPipeline/ShaderPipelineCache.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/FFT/FFTInterop.h"
+#include "Shaders/Transpose/TransposeInterop.h"
 
 struct FFTDispatchEntry {
     uint32_t                fftSize = 0;

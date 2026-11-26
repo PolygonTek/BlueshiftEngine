@@ -1,6 +1,8 @@
 #ifndef __SCREEN_SPACE_RAY_MARCHING_HLSLI__
 #define __SCREEN_SPACE_RAY_MARCHING_HLSLI__
 
+#include "SSRInterop.h"
+
 struct ScreenSpaceRayTraceResult {
     float2 hitUV;
     float hitDepth;

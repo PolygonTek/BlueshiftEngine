@@ -1,7 +1,7 @@
 #ifndef __FOG_ENVIRONMENT_HLSLI__
 #define __FOG_ENVIRONMENT_HLSLI__
 
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 
 #define SH_BAND_COUNT 3
 #include "../SphericalHarmonics/SphericalHarmonics.hlsli"

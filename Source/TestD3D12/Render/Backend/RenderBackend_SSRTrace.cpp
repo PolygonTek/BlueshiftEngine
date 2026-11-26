@@ -19,7 +19,7 @@
 #include "Render/RenderInternal.h"
 #include "Render/RenderSystem.h"
 #include "Render/Texture/Texture.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/SSR/SSRInterop.h"
 
 bool RenderBackend::DispatchSSRTrace(bool transparent) {
     PROFILER_CPU_SCOPED_EVENT("RenderBackend::DispatchSSRTrace");

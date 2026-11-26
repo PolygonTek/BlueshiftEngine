@@ -17,7 +17,7 @@
 #include "D3D12Texture.h"
 #include "D3D12CommandList.h"
 #include "D3D12DescriptorPool.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/GenMip/MipGenInterop.h"
 
 void D3D12Texture::Release() {
     for (const D3D12SRVEntry &srvEntry : srvEntries) {

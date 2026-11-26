@@ -18,7 +18,7 @@
 #include "Render/RenderInternal.h"
 #include "Render/RenderSystem.h"
 #include "Render/RenderFrame.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/HiZ/HiZInterop.h"
 
 static bool IsHiZCullRenderPass(RenderPassType passType) {
     return passType == RenderPassType::Prepass || passType == RenderPassType::Opaque;

@@ -1,4 +1,5 @@
 #include "../ShaderInterop.h"
+#include "AOInterop.h"
 #include "../Common.hlsli"
 
 // Full-resolution depth becomes writable again for opaque rendering after AO.

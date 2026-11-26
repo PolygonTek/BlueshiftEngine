@@ -15,7 +15,7 @@
 #pragma once
 
 #include "Render/ShaderPipeline/ShaderTemplate.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/TextureStreamingInterop.h"
 
 class MaterialManager;
 class Sampler;

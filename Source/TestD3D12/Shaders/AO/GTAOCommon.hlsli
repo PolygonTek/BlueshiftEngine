@@ -8,6 +8,7 @@
 #define __GTAO_COMMON_HLSLI__
 
 #include "../ShaderInterop.h"
+#include "AOInterop.h"
 #include "../Common.hlsli"
 
 static const float GTAOWorkingVisibilityScale = 1.5f;

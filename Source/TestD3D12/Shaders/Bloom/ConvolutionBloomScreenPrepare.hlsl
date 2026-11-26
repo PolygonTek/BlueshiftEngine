@@ -1,4 +1,5 @@
-#include "../ShaderInterop.h"
+#include "BloomInterop.h"
+#include "../Common.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \

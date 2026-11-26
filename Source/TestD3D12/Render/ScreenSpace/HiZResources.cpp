@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "HiZResources.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/HiZ/HiZInterop.h"
 
 HiZResources::~HiZResources() {
     Destroy();

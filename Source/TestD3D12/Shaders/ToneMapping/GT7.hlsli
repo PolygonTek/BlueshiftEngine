@@ -27,7 +27,8 @@
 #ifndef __GT7_HLSLI__
 #define __GT7_HLSLI__
 
-#include "../ShaderInterop.h"
+#include "ToneMappingInterop.h"
+#include "../Common.hlsli"
 #include "../Colors.hlsli"
 
 // The reference curve uses 100-nit units, with a 0.538 midpoint and 1.280 toe.

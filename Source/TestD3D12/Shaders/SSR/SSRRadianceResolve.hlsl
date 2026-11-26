@@ -1,5 +1,6 @@
-#include "../ShaderInterop.h"
+#include "SSRInterop.h"
 #include "../Common.hlsli"
+#include "../ShaderPacking.hlsli"
 #include "SSRRadiance.hlsli"
 
 #define COMMON_ROOT_SIGNATURE \

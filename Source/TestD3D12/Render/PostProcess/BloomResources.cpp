@@ -19,7 +19,6 @@
 #include "Render/RenderFrameSettings.h"
 #include "Render/RenderInternal.h"
 #include "Render/Texture/TextureManager.h"
-#include "Shaders/ShaderInterop.h"
 
 BloomResources::~BloomResources() {
     Destroy();

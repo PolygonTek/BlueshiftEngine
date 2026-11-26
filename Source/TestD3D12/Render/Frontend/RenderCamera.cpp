@@ -19,6 +19,7 @@
 #include "Math/Halton.h"
 #include "RHI/RHI.h"
 #include "Shaders/ShaderInterop.h"
+#include "Shaders/ToneMapping/LuminanceInterop.h"
 
 RenderCamera::~RenderCamera() {
     DestroyPostProcessResources();

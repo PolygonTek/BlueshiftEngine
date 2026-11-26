@@ -1,4 +1,4 @@
-#include "../ShaderInterop.h"
+#include "../FullscreenOutputInterop.h"
 #include "../Common.hlsli"
 #include "../Colors.hlsli"
 #include "../FullscreenTriangle.hlsli"

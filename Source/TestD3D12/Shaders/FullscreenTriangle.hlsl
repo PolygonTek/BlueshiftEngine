@@ -1,4 +1,4 @@
-#include "ShaderInterop.h"
+#include "FullscreenOutputInterop.h"
 #include "FullscreenTriangle.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "DescriptorTable(SRV(t0)), " \

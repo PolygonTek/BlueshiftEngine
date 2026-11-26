@@ -2,7 +2,7 @@
 #define __SURFACE_DRAW_COMMON_HLSLI__
 
 #include "Common.hlsli"
-#include "CommonBindless.hlsli"
+#include "BindlessResources.hlsli"
 #include "Skinning.hlsli"
 #include "SurfaceOutput.hlsli"
 #include "PackedTangentFrame.hlsli"

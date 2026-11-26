@@ -16,6 +16,7 @@
 #include "Render/RenderCvars.h"
 #include "TextureManager.h"
 #include "LoadingSystem.h"
+#include "Shaders/TextureStreamingInterop.h"
 
 TextureManager      textureManager;
 

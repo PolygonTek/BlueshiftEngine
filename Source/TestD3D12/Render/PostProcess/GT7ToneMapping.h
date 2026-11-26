@@ -28,7 +28,7 @@
 
 #include <cassert>
 #include <cmath>
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/ToneMapping/ToneMappingInterop.h"
 
 inline void InitializeGT7ToneMappingParams(float referenceWhiteNits, float targetNits, GT7ToneMappingParams &params) {
     // The published curve parameters assume a target of at least 250 nits.

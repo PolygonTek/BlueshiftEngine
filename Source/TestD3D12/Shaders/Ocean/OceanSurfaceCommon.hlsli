@@ -2,10 +2,11 @@
 #define __OCEAN_SURFACE_COMMON_HLSLI__
 
 #include "../ShaderInterop.h"
+#include "OceanInterop.h"
 #include "../Common.hlsli"
 #include "OceanFieldCommon.hlsli"
 #include "../GeometryClipmap.hlsli"
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 #include "../SurfaceOutput.hlsli"
 #include "../PBR/BRDFLibrary.hlsli"
 #include "../PBR/SpecularAA.hlsli"

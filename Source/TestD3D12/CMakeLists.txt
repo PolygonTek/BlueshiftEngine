@@ -289,6 +289,21 @@ set(SRC_FILES
     Render/Frontend/SkinningJointBufferBuilder.h
     Render/Frontend/SkinningJointBufferBuilder.cpp
     Shaders/ShaderTypes.h
+    Shaders/Ocean/OceanInterop.h
+    Shaders/FFT/FFTInterop.h
+    Shaders/Bloom/BloomInterop.h
+    Shaders/AO/AOInterop.h
+    Shaders/SSR/SSRInterop.h
+    Shaders/HiZ/HiZInterop.h
+    Shaders/Transpose/TransposeInterop.h
+    Shaders/ToneMapping/ToneMappingInterop.h
+    Shaders/ToneMapping/LuminanceInterop.h
+    Shaders/FinalPostProcessInterop.h
+    Shaders/ColorGradingInterop.h
+    Shaders/TextureStreamingInterop.h
+    Shaders/GenMip/MipGenInterop.h
+    Shaders/MSAA/MSAAInterop.h
+    Shaders/FullscreenOutputInterop.h
     Shaders/ShaderInterop.h)
 
 file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

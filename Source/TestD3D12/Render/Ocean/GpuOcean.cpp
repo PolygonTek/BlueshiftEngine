@@ -21,7 +21,7 @@
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/Texture/Texture.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/Ocean/OceanInterop.h"
 
 void GpuOcean::Init() {
     simulationTime = 0.0f;

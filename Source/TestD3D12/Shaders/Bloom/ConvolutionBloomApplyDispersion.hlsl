@@ -1,4 +1,4 @@
-#include "../ShaderInterop.h"
+#include "BloomInterop.h"
 #include "../Colors.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \

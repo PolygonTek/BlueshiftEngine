@@ -24,6 +24,8 @@
 #include "Render/Texture/Texture.h"
 #include "Render/Texture/TextureManager.h"
 #include "Shaders/ShaderInterop.h"
+#include "Shaders/FullscreenOutputInterop.h"
+#include "Shaders/SSR/SSRInterop.h"
 
 RHI::FrameThreadData *RenderBackend::GetFrameThreadData() const {
     assert(frame);

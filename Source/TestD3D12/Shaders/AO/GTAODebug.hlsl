@@ -1,4 +1,4 @@
-#include "../ShaderInterop.h"
+#include "AOInterop.h"
 #include "GTAOCommon.hlsli"
 
 #define GTAO_DEBUG_ROOT_SIGNATURE \

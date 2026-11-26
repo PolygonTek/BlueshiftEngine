@@ -1,6 +1,7 @@
 #include "../ShaderInterop.h"
+#include "SSRInterop.h"
 #include "../Common.hlsli"
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 #include "../Octahedral.hlsli"
 #include "../STBN.hlsli"
 #include "../PBR/ImportanceSampling.hlsli"

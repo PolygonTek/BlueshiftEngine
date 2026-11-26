@@ -1,4 +1,4 @@
-#include "../ShaderInterop.h"
+#include "SSRInterop.h"
 #include "SSRRadiance.hlsli"
 
 #if SSR_CAPTURE_FULL_RESOLUTION_DEPTH

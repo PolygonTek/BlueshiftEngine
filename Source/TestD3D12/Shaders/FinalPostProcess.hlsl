@@ -1,4 +1,8 @@
 #include "Common.hlsli"
+#include "FinalPostProcessInterop.h"
+#include "ColorGradingInterop.h"
+#include "ToneMapping/ToneMappingInterop.h"
+#include "ToneMapping/LuminanceInterop.h"
 #include "ToneMapping/ToneMapOperators.hlsli"
 #include "ToneMapping/GT7.hlsli"
 

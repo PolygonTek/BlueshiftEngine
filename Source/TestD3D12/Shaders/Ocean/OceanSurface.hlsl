@@ -1,3 +1,4 @@
+#include "OceanInterop.h"
 #include "OceanSurfaceCommon.hlsli"
 #include "../Fog/FogSurface.hlsli"
 #include "../Lighting/ShadowLibrary.hlsli"

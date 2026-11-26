@@ -2,7 +2,7 @@
 #define __LOCAL_FOG_COMMON_HLSLI__
 
 #include "FogInterop.h"
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 
 float3 LocalFogWorldOffsetToLocal(float3 worldOffset, ShaderLocalFogVolume volume) {
     return float3(dot(worldOffset, volume.axisX), dot(worldOffset, volume.axisY), dot(worldOffset, volume.axisZ));

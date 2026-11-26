@@ -16,6 +16,7 @@
 #include "RenderWorld.h"
 #include "Render/RenderSystem.h"
 #include "Render/Mesh/MeshInstance.h"
+#include "Shaders/Ocean/OceanInterop.h"
 
 RenderWorld::RenderWorld() {
     renderObjects.Reserve(65536);

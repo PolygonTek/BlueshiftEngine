@@ -1,7 +1,7 @@
 #ifndef _TRANSPOSE_COMPLEX_HLSLI_
 #define _TRANSPOSE_COMPLEX_HLSLI_
 
-#include "../ShaderInterop.h"
+#include "TransposeInterop.h"
 
 #if defined(TRANSPOSE_COMPLEX_SIZE)
 #define TRANSPOSE_COMPLEX_INPUT_WIDTH  TRANSPOSE_COMPLEX_SIZE

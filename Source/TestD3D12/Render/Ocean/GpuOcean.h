@@ -16,7 +16,7 @@
 
 #include "Render/GpuFFT.h"
 #include "Math/Vector2.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/Ocean/OceanInterop.h"
 
 class ShaderPipeline;
 class ShaderTemplate;

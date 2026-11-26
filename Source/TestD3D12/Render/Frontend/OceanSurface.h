@@ -16,6 +16,7 @@
 
 #include "Render/Ocean/GpuOcean.h"
 #include "Render/Ocean/GpuOceanSurface.h"
+#include "Shaders/Ocean/OceanInterop.h"
 
 class RenderWorld;
 

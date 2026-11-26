@@ -1,5 +1,6 @@
+#include "HiZInterop.h"
 #include "../Common.hlsli"
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 
 #ifdef USE_DIRECT_DESCRIPTOR_HEAP
 #define ROOT_SIGNATURE_HIZ_CULL_ROOT_FLAGS "RootFlags(CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | SAMPLER_HEAP_DIRECTLY_INDEXED), "

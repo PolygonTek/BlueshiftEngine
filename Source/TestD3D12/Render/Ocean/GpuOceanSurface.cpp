@@ -21,7 +21,7 @@
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/Texture/Texture.h"
 #include "Render/Texture/TextureManager.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/Ocean/OceanInterop.h"
 
 static constexpr float MinOceanSurfaceShaderDivisor = 1.0e-4f;
 

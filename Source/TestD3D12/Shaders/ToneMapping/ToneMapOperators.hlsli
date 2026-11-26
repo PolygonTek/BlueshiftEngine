@@ -1,7 +1,8 @@
 #ifndef __TONE_MAP_OPERATORS_HLSLI__
 #define __TONE_MAP_OPERATORS_HLSLI__
 
-#include "../ShaderInterop.h"
+#include "ToneMappingInterop.h"
+#include "../Common.hlsli"
 #include "../Colors.hlsli"
 #include "AgX.hlsli"
 

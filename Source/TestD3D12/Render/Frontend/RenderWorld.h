@@ -27,6 +27,7 @@
 #include "Render/DebugDrawPipeline.h"
 #include "Render/DebugDrawVertex.h"
 #include "Render/RenderFrame.h"
+#include "Shaders/Ocean/OceanInterop.h"
 
 struct FrameCamera;
 struct FrameLight;

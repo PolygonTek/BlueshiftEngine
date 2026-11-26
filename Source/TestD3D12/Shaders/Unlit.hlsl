@@ -1,6 +1,7 @@
 #include "UnlitSurfaceCommon.hlsli"
 #include "Fog/FogSurface.hlsli"
 #if _BASECOLOR != 0
+#include "TextureStreamingInterop.h"
 #include "TextureStreamingFeedback.hlsli"
 #endif
 

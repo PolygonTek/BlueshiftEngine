@@ -1,5 +1,6 @@
 #include "LitSurfaceCommon.hlsli"
 #include "Fog/FogSurface.hlsli"
+#include "TextureStreamingInterop.h"
 #include "TextureStreamingFeedback.hlsli"
 #include "Lighting/LightCullingCommon.hlsli"
 #include "Lighting/LightCullingDebug.hlsli"

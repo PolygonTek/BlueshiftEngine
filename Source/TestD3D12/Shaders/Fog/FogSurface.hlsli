@@ -1,7 +1,7 @@
 #ifndef __FOG_SURFACE_HLSLI__
 #define __FOG_SURFACE_HLSLI__
 
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 #include "HeightFogCommon.hlsli"
 #include "VFogCommon.hlsli"
 

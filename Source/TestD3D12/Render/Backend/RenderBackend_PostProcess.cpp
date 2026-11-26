@@ -21,6 +21,9 @@
 #include "Render/RenderFrame.h"
 #include "Render/PostProcess/GT7ToneMapping.h"
 #include "Shaders/ShaderInterop.h"
+#include "Shaders/MSAA/MSAAInterop.h"
+#include "Shaders/FinalPostProcessInterop.h"
+#include "Shaders/ToneMapping/ToneMappingInterop.h"
 
 bool RenderBackend::DispatchLuminance() {
     return renderSystem->GetPostLuminance().Dispatch(*this);

@@ -22,7 +22,7 @@
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineBootstrap.h"
-#include "Shaders/ShaderInterop.h"
+#include "Shaders/ToneMapping/LuminanceInterop.h"
 
 void PostLuminance::Init() {
     const char *baseDir = "Source/TestD3D12/Shaders";

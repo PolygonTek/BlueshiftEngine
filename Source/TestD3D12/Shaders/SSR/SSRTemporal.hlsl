@@ -1,4 +1,5 @@
 #include "../ShaderInterop.h"
+#include "SSRInterop.h"
 #include "../Common.hlsli"
 #include "../Colors.hlsli"
 #include "SSRDepth.hlsli"

@@ -1,4 +1,5 @@
 #include "../ShaderInterop.h"
+#include "AOInterop.h"
 #include "../Common.hlsli"
 #include "../Octahedral.hlsli"
 #include "GTAOCommon.hlsli"

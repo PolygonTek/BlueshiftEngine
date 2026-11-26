@@ -1,4 +1,4 @@
-#include "../CommonBindless.hlsli"
+#include "../BindlessResources.hlsli"
 #include "../Common.hlsli"
 #include "../FullscreenTriangle.hlsli"
 
