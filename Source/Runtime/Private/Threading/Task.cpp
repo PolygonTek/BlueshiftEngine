@@ -125,6 +125,47 @@ bool TaskManager::AddTask(TaskFunc taskFunction, void *data, int32_t groupId, bo
     return true;
 }
 
+int TaskManager::AddTasks(TaskFunc taskFunction, void *data, int numTasks, size_t dataStride, int32_t groupId, bool withWake) {
+    assert(numTasks >= 0);
+    if (numTasks <= 0) {
+        return 0;
+    }
+    assert(taskFunction);
+
+    ScopedLock lock(taskMutex);
+
+    if (stopping || threads.IsEmpty()) {
+        BE_ERRLOG("TaskManager::AddTasks: Task manager is not running, tasks rejected\n");
+        return 0;
+    }
+
+    int submittedCount = 0;
+    for (; submittedCount < numTasks; ++submittedCount) {
+        void *taskData = data ? static_cast<uint8_t *>(data) + static_cast<size_t>(submittedCount) * dataStride : nullptr;
+        if (!taskRingBuffer.TryPushBack(Task{ taskFunction, taskData, groupId })) {
+            break;
+        }
+    }
+
+    if (submittedCount > 0) {
+        // Publish the accepted count before workers can take any task in this batch.
+        activeTaskCount += submittedCount;
+        if (groupId >= 0) {
+            groupActiveTaskCount[groupId] += submittedCount;
+        }
+
+        if (withWake) {
+            if (submittedCount == 1) {
+                taskCondition.Signal();
+            } else {
+                taskCondition.Broadcast();
+            }
+        }
+    }
+
+    return submittedCount;
+}
+
 bool TaskManager::AddTask(TaskWorker *taskWorker, int32_t groupId, bool withWake) {
     // Lock to add the task.
     ScopedLock lock(taskMutex);

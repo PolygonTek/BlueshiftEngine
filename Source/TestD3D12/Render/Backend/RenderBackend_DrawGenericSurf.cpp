@@ -210,7 +210,7 @@ void RenderBackend::DrawGenericSurfacesWithTask(const DrawSurf2 **drawSurfs, uin
     drawSurfsTaskDescs.Reserve(maxTasks);
     drawSurfsTaskDescs.SetCount(0, false);
 
-    // maxTasks 개수 이하로 태스크를 추가한다.
+    // maxTasks 개수 이하로 태스크 정보를 구성한다.
     while (startIndex < numDrawSurfs) {
         // 인스턴싱 batch 경계를 유지하므로 실제 생성되는 task 수는 maxTasks 보다 적을 수 있다.
         const uint32_t targetEndIndex = BE1::Min(startIndex + targetDrawSurfsPerTask, numDrawSurfs);
@@ -247,17 +247,17 @@ void RenderBackend::DrawGenericSurfacesWithTask(const DrawSurf2 **drawSurfs, uin
         currentThreadDesc.instanceTableAllocCount = 0;
         currentThreadDesc.instanceTableUploadBytes = 0;
 
-        if (!BE1::Engine::taskManager->AddTask(RenderBackend::DrawGenericSurfacesByTaskFunction, &currentThreadDesc, drawGroupId, false)) {
-            DrawGenericSurfacesByTask(&currentThreadDesc);
-        }
-
         startIndex = endIndex;
     }
 
     assert(hiZCullBatchCursor == hiZCullBatchCount);
 
-    // 모든 태스크가 끝날 때까지 기다린다.
-    BE1::Engine::taskManager->WaitFinish(drawGroupId, true);
+    const int32_t submittedCount = BE1::Engine::taskManager->AddTasks(RenderBackend::DrawGenericSurfacesByTaskFunction, drawSurfsTaskDescs.Ptr(), drawSurfsTaskDescs.Count(), sizeof(DrawSurfsTaskDesc), drawGroupId, true);
+    for (int32_t taskIndex = submittedCount; taskIndex < drawSurfsTaskDescs.Count(); ++taskIndex) {
+        DrawGenericSurfacesByTask(&drawSurfsTaskDescs[taskIndex]);
+    }
+
+    BE1::Engine::taskManager->WaitFinish(drawGroupId, false);
 
     // 메인 커맨드 리스트에 모든 태스크의 세컨더리 커맨드 리스트들을 기록한다.
     const int32_t threadCount = drawSurfsTaskDescs.Count();

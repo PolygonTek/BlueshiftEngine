@@ -65,6 +65,11 @@ public:
                                 /// Returns true on success, or false if the task was rejected.
     [[nodiscard]] bool          AddTask(TaskFunc function, void *data, int32_t groupId = -1, bool withWake = true);
 
+                                /// Adds a prefix of a strided data array under one queue lock, without growing the queue.
+                                /// Returns the number accepted; remaining tasks stay with the caller. Never waits for queue space.
+                                /// Data must remain valid until completion. A zero stride passes the same pointer to every task.
+    [[nodiscard]] int           AddTasks(TaskFunc function, void *data, int numTasks, size_t dataStride, int32_t groupId = -1, bool withWake = true);
+
                                 /// Adds a task with a lambda function.
                                 /// Returns true on success, or false if the task was rejected.
     template <typename Lambda>

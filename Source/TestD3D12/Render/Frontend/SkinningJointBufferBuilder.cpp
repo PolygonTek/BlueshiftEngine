@@ -90,14 +90,12 @@ void SkinningJointBufferBuilder::UpdateJointCachesWithTask(SkinningPose *const *
         firstIndex = endIndex;
     }
 
-    for (int taskIndex = 0; taskIndex < updateTaskDescs.Count(); ++taskIndex) {
-        UpdateTaskDesc &taskDesc = updateTaskDescs[taskIndex];
-        if (!BE1::Engine::taskManager->AddTask(SkinningJointBufferBuilder::UpdateJointCachesTask, &taskDesc, taskGroupId, false)) {
-            UpdateJointCachesTask(&taskDesc);
-        }
+    const int submittedCount = BE1::Engine::taskManager->AddTasks(SkinningJointBufferBuilder::UpdateJointCachesTask, updateTaskDescs.Ptr(), updateTaskDescs.Count(), sizeof(UpdateTaskDesc), taskGroupId, true);
+    for (int taskIndex = submittedCount; taskIndex < updateTaskDescs.Count(); ++taskIndex) {
+        UpdateJointCachesTask(&updateTaskDescs[taskIndex]);
     }
 
-    BE1::Engine::taskManager->WaitFinish(taskGroupId, true);
+    BE1::Engine::taskManager->WaitFinish(taskGroupId, false);
 }
 
 int SkinningJointBufferBuilder::PrepareSkinningUploads(uint64_t currentFrameSerial) {
