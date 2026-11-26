@@ -326,7 +326,9 @@ public:
     ID3D12CommandSignature *            dispatchMeshIndirectCommandSignature = nullptr;
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocator *                allocator = nullptr;
+    D3D12MA::Pool *                     initialDataBufferPool = nullptr;
 #endif
+    D3D12_HEAP_PROPERTIES               initialDataBufferHeapProperties = {};
 
     uint32_t                            vendorId = 0;
     uint32_t                            deviceId = 0;
@@ -337,6 +339,9 @@ public:
     RHI::RendererInfo                   rendererInfo;
 
     D3D12_RESOURCE_HEAP_TIER            resourceHeapTier = {};
+    bool                                isUMA = false;
+    bool                                isCacheCoherentUMA = false;
+    bool                                supportsGPUUploadHeap = false;
     bool                                supportsTearing = false;
     bool                                supportsConservativeRasterization = false;
     bool                                supportsVRS = false;

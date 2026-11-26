@@ -29,21 +29,21 @@ class D3D12FrameThreadData;
     D3D12 Buffer
 
     Texture 를 제외한 모든 Buffer 류는 이 클래스를 기반으로 만들어진다.
-    ex. VertexBuffer, IndexBuffer, ConstantBuffer, StructuredBuffer, ByteAddressBuffer 등
+    ex. VertexBuffer, IndexBuffer, ConstantBuffer, StructuredBuffer, ByteAddressBuffer 등.
 
-    * 버퍼 리소스의 정렬에 대한 규칙
+    * 버퍼 리소스의 정렬에 대한 규칙.
 
-    1. 리소스 힙에 배치 단계 (Placed Resource or Committed Resource) 에서의 오프셋 정렬.
-       대부분 D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT (64KB) 로 정렬해야 한다.
-       만약 리소스 크기 <= 64KB 이고, UAV/RTV/DSV 가 아니라면 D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT (4KB) 로 정렬 가능하다.
+    1. 리소스 힙에 배치 단계 (Placed Resource) 에서의 오프셋 정렬.
+       장치가 지원하고 적용 조건을 만족하면, 버퍼 크기와 무관하게 tight alignment 를 사용한다 (D3D12MA 기본 최소 정렬: 256B).
+       그렇지 않으면 D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT (64KB) 로 정렬해야 한다.
 
-    2. 뷰 생성 단계에서의 오프셋/사이즈 정렬
+    2. 뷰 생성 단계에서의 오프셋/사이즈 정렬.
        * CBV 는 오프셋/사이즈 D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT (256B) 정렬을 요구한다.
        * Byte Address Buffer SRV/UAV 는 4 바이트 정렬을 요구한다.
        * Structured Buffer SRV/UAV 는 구조체의 크기가 4 의 배수여야 한다. (최대 2048B)
        * VBV/IBV 는 특별한 정렬을 요구하지 않는다.
 
-    3. cbuffer/struct 의 멤버 변수 pack 정렬
+    3. cbuffer/struct 의 멤버 변수 pack 정렬.
        멤버 변수는 16 바이트 정렬된다.
 
 ---------------------------------------------------------------------------------------------------

@@ -25,7 +25,7 @@
 #include "D3D12ImGuiRenderer.h"
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
-extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 619; }
 extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
 #if defined(_DEBUG)
@@ -219,6 +219,39 @@ void D3D12Renderer::Init(const void *mainWindowHandle) {
 
     CheckFeatures();
 
+    // 초기 데이터가 있는 버퍼는 캐시 일관성이 있는 UMA 에서 CPU 직접 기록이 가능한 힙을 사용하도록 준비한다.
+    initialDataBufferHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    if (isCacheCoherentUMA) {
+        bool useGPUUploadHeap = supportsGPUUploadHeap;
+#ifdef USE_D3D12_MEMALLOC
+        // D3D12MA 의 빌드 설정에 따라 GPU_UPLOAD 할당이 지원되지 않을 수 있다.
+        useGPUUploadHeap = useGPUUploadHeap && allocator->IsGPUUploadHeapSupported();
+#endif
+        if (useGPUUploadHeap) {
+            initialDataBufferHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_GPU_UPLOAD);
+        } else {
+            initialDataBufferHeapProperties = device->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_UPLOAD);
+
+#ifdef USE_D3D12_MEMALLOC
+            // CUSTOM 힙은 버퍼 전용 풀로 관리하며, 실제 힙 메모리는 버퍼 할당 시 확보한다.
+            D3D12MA::POOL_DESC poolDesc = {};
+            poolDesc.HeapProperties = initialDataBufferHeapProperties;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+
+            // 기본 풀과 동일하게, 지원되는 런타임에서는 힙의 0 초기화 생략을 허용한다.
+            D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7 = {};
+            if (SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7)))) {
+                poolDesc.HeapFlags |= D3D12_HEAP_FLAG_CREATE_NOT_ZEROED;
+            }
+
+            hr = allocator->CreatePool(&poolDesc, &initialDataBufferPool);
+            if (FAILED(hr)) {
+                BE_FATALERROR("D3D12MA::CreatePool for initial data buffers failed, ERROR: 0x%x", hr);
+            }
+#endif
+        }
+    }
+
     // Graphics 커맨드 큐용 Fence
     D3D12QueueFence &graphicsQueueFence = queueFences[to_int(RHI::CommandQueueType::Graphics)];
 
@@ -370,6 +403,15 @@ void D3D12Renderer::CheckFeatures() {
     BE_LOG("MaxSamplerDescriptorHeapSizeWithStaticSamplers: %u\n", features.MaxSamplerDescriptorHeapSizeWithStaticSamplers());
 
     resourceHeapTier = features.ResourceHeapTier();
+
+    // 장치의 메모리 구조와 GPU 업로드 힙 지원 여부를 확인한다.
+    isUMA = features.UMA() != FALSE;
+    isCacheCoherentUMA = features.CacheCoherentUMA() != FALSE;
+    supportsGPUUploadHeap = features.GPUUploadHeapSupported() != FALSE;
+
+    BE_LOG("UMA: %s\n", isUMA ? "true" : "false");
+    BE_LOG("CacheCoherentUMA: %s\n", isCacheCoherentUMA ? "true" : "false");
+    BE_LOG("GPUUploadHeapSupported: %s\n", supportsGPUUploadHeap ? "true" : "false");
 
     //features.ResourceBindingTier();
 
@@ -700,6 +742,7 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(dxgiFactory);
 
 #ifdef USE_D3D12_MEMALLOC
+    SAFE_RELEASE(initialDataBufferPool);
     SAFE_RELEASE(allocator);
 #endif
 

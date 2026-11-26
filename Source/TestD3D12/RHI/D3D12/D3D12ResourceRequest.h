@@ -27,7 +27,7 @@ class D3D12CommandList;
 struct D3D12DeleteGPUObjectRequest {};
 
 struct D3D12UploadBufferRequest {
-    ID3D12Resource *                    uploadBuffer = nullptr;
+    ID3D12Resource *                    uploadBuffer = nullptr; // nullptr 이면 CPU 에서 최종 버퍼에 기록을 마쳤으므로 상태 전이와 완료 처리만 수행한다.
     uint64_t                            dataSize = 0;
 };
 

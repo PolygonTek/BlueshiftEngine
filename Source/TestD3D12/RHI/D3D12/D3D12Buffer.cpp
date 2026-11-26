@@ -193,13 +193,14 @@ uint32_t D3D12Buffer::GetBindlessIndex(RHI::ViewType viewType, RHI::ViewID viewI
 }
 
 RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag flags, uint64_t size, const void *data) {
+    const bool directUpload = usage == RHI::BufferUsage::Default && data && isCacheCoherentUMA;
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
     D3D12_RESOURCE_FLAGS resourceFlags;
 
     switch (usage) {
     case RHI::BufferUsage::Default:
-        heapType = D3D12_HEAP_TYPE_DEFAULT;
+        heapType = directUpload ? initialDataBufferHeapProperties.Type : D3D12_HEAP_TYPE_DEFAULT;
         // NOTE: 텍스처와 달리 D3D12_RESOURCE_DIMENSION_BUFFER 리소스의 initialState 는 항상 D3D12_RESOURCE_STATE_COMMON 로 설정된다.
         initialState = D3D12_RESOURCE_STATE_COMMON;
         resourceFlags = D3D12_RESOURCE_FLAG_NONE;
@@ -249,10 +250,12 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
     //allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
     allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
-    allocationDesc.HeapType = heapType;
+    if (heapType == D3D12_HEAP_TYPE_CUSTOM) {
+        allocationDesc.CustomPool = initialDataBufferPool;
+    } else {
+        allocationDesc.HeapType = heapType;
+    }
 
-    // NOTE: 내부적으로 Placed Resource 를 생성할 때, UAV/RTV/DSV 이거나 크기가 64KB 를 넘어간다면,
-    // 오프셋을 64KB 에 정렬하고, 그게 아니면 4KB 에 정렬한다.
     D3D12MA::Allocation *bufferAllocation;
     if (FAILED(allocator->CreateResource(
         &allocationDesc,
@@ -265,12 +268,7 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
     }
     ID3D12Resource *bufferResource = bufferAllocation->GetResource();
 #else
-    D3D12_HEAP_PROPERTIES heapProperties;
-    heapProperties.Type = heapType;
-    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapProperties.CreationNodeMask = 1;
-    heapProperties.VisibleNodeMask = 1;
+    const D3D12_HEAP_PROPERTIES heapProperties = directUpload ? initialDataBufferHeapProperties : CD3DX12_HEAP_PROPERTIES(heapType);
 
     ID3D12Resource *bufferResource = nullptr;
     if (FAILED(device->CreateCommittedResource(
@@ -294,42 +292,46 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
     buffer->bufferResource = bufferResource;
 #endif
 
-    if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+    if (usage == RHI::BufferUsage::Default) {
         if (data) {
-            D3D12_RESOURCE_DESC uploadBufferDesc;
-            uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-            uploadBufferDesc.Alignment = 0;
-            uploadBufferDesc.Width = bufferDesc.Width;
-            uploadBufferDesc.Height = 1;
-            uploadBufferDesc.DepthOrArraySize = 1;
-            uploadBufferDesc.MipLevels = 1;
-            uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-            uploadBufferDesc.SampleDesc.Count = 1;
-            uploadBufferDesc.SampleDesc.Quality = 0;
-            uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-            uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-            D3D12_HEAP_PROPERTIES uploadHeapProperties;
-            uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-            uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-            uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-            uploadHeapProperties.CreationNodeMask = 1;
-            uploadHeapProperties.VisibleNodeMask = 1;
-
-            // CPU 데이터를 upload heap 에 미리 복사해 두어, 지연 업로드 시점까지 호출자 data 수명에 의존하지 않는다.
             ID3D12Resource *uploadBuffer = nullptr;
-            if (FAILED(device->CreateCommittedResource(
-                &uploadHeapProperties,
-                D3D12_HEAP_FLAG_NONE,
-                &uploadBufferDesc,
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
-                delete buffer;
-                return nullptr;
+            if (!directUpload) {
+                D3D12_RESOURCE_DESC uploadBufferDesc;
+                uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+                uploadBufferDesc.Alignment = 0;
+                uploadBufferDesc.Width = bufferDesc.Width;
+                uploadBufferDesc.Height = 1;
+                uploadBufferDesc.DepthOrArraySize = 1;
+                uploadBufferDesc.MipLevels = 1;
+                uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+                uploadBufferDesc.SampleDesc.Count = 1;
+                uploadBufferDesc.SampleDesc.Quality = 0;
+                uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+                uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+                D3D12_HEAP_PROPERTIES uploadHeapProperties;
+                uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+                uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+                uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+                uploadHeapProperties.CreationNodeMask = 1;
+                uploadHeapProperties.VisibleNodeMask = 1;
+
+                if (FAILED(device->CreateCommittedResource(
+                    &uploadHeapProperties,
+                    D3D12_HEAP_FLAG_NONE,
+                    &uploadBufferDesc,
+                    D3D12_RESOURCE_STATE_GENERIC_READ,
+                    nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
+                    delete buffer;
+                    return nullptr;
+                }
             }
 
+            // 캐시 일관성이 있는 UMA 에서는 최종 버퍼에 직접 기록하고, 그 외에는 업로드 버퍼에 기록한다.
+            ID3D12Resource *writeBuffer = directUpload ? bufferResource : uploadBuffer;
+            D3D12_RANGE readRange = { 0, 0 };
             UINT8 *mappedPtr = nullptr;
-            if (FAILED(uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr)))) {
+            if (FAILED(writeBuffer->Map(0, &readRange, reinterpret_cast<void **>(&mappedPtr)))) {
                 SAFE_RELEASE(uploadBuffer);
                 delete buffer;
                 return nullptr;
@@ -338,20 +340,20 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
             BE1::simdProcessor->Memcpy(mappedPtr, data, size);
 
             D3D12_RANGE writtenRange = { 0, size };
-            uploadBuffer->Unmap(0, &writtenRange);
+            writeBuffer->Unmap(0, &writtenRange);
 
             buffer->SetStatus(RHI::GPUResourceStatus::Pending);
 
-            // 업로드 요청을 등록한다.
+            // 직접 기록한 경우에도 용도에 맞는 상태 전이와 완료 처리를 요청한다.
             EnqueueResourceRequest(D3D12ResourceRequest(buffer, D3D12UploadBufferRequest{ uploadBuffer, size }));
         }
-    } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
+    } else if (usage == RHI::BufferUsage::Upload) {
         bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&buffer->mappedPtr));
 
         if (data) {
             BE1::simdProcessor->Memcpy(buffer->mappedPtr, data, size);
         }
-    } else if (heapType == D3D12_HEAP_TYPE_READBACK) {
+    } else if (usage == RHI::BufferUsage::Readback) {
         bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&buffer->mappedPtr));
 
         // 리드백 버퍼는 CPU 에서 GPU 로 데이터를 업로드할 수 없으므로, 업로드 요청이 등록되어 있다면 경고 로그를 출력한다.
@@ -364,10 +366,6 @@ RHI::Buffer *D3D12Renderer::CreateBuffer(RHI::BufferUsage usage, RHI::BufferFlag
 }
 
 bool D3D12Renderer::ExecuteUploadBuffer(D3D12ResourceCommandContext &commandContext, D3D12Buffer *buffer, const D3D12UploadBufferRequest &request) {
-    if (!request.uploadBuffer) {
-        return false;
-    }
-
 #ifdef USE_D3D12_MEMALLOC
     ID3D12Resource *bufferResource = buffer->bufferAllocation->GetResource();
 #else
@@ -378,7 +376,7 @@ bool D3D12Renderer::ExecuteUploadBuffer(D3D12ResourceCommandContext &commandCont
     if (BE1::HasAnyFlag(buffer->flags, RHI::BufferFlag::ConstantBuffer | RHI::BufferFlag::VertexBuffer)) {
         afterResourceState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
         if (BE1::HasFlag(buffer->flags, RHI::BufferFlag::ShaderResource)) {
-            // 업로드 후 vertex/constant buffer 바인딩과 CS 읽기에 공통으로 사용할 읽기 상태를 유지한다.
+            // 초기화 후 vertex/constant buffer 바인딩과 CS 읽기에 공통으로 사용할 읽기 상태를 유지한다.
             afterResourceState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
         }
     } else if (BE1::HasFlag(buffer->flags, RHI::BufferFlag::IndexBuffer)) {
@@ -387,13 +385,21 @@ bool D3D12Renderer::ExecuteUploadBuffer(D3D12ResourceCommandContext &commandCont
         afterResourceState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
     }
 
-    // 업로드 버퍼에서 디바이스 버퍼 (VRAM) 로 GPU 에 복사 요청
-    D3D12CommandList *commandList = commandContext.GetGraphicsCommandList();
-    commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-    commandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, request.uploadBuffer, 0, request.dataSize);
-    commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, afterResourceState);
+    if (request.uploadBuffer) {
+        // 업로드 버퍼에서 최종 버퍼로 GPU 복사를 요청한다.
+        D3D12CommandList *commandList = commandContext.GetGraphicsCommandList();
+        commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+        commandList->GetGraphicsCommandList()->CopyBufferRegion(bufferResource, 0, request.uploadBuffer, 0, request.dataSize);
+        commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, afterResourceState);
 
-    RequestRelease(request.uploadBuffer);
+        RequestRelease(request.uploadBuffer);
+    } else {
+        if (afterResourceState != D3D12_RESOURCE_STATE_COMMON) {
+            // CPU 에서 직접 기록한 버퍼는 복사 없이 용도에 맞는 상태로 전이한다.
+            D3D12CommandList *commandList = commandContext.GetGraphicsCommandList();
+            commandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COMMON, afterResourceState);
+        }
+    }
 
     return true;
 }
