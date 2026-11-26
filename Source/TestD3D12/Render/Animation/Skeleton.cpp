@@ -168,11 +168,6 @@ bool Skeleton::LoadAsync(const char *filename) {
 }
 
 bool Skeleton::Reload() {
-    if (!IsReady()) {
-        BE_WARNLOG("Skeleton::Reload: skeleton '%s' is not ready\n", GetHashName());
-        return false;
-    }
-
     if (!ReloadAsync()) {
         return false;
     }

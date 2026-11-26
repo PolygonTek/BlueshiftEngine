@@ -200,15 +200,10 @@ void TextureManager::UnregisterStreamingTexture(Texture *texture) {
         return;
     }
 
-    Texture::Streaming &streaming = texture->streaming;
-
-    // 교체 예정이었던 텍스쳐 파괴
-    if (streaming.pendingReplacementTexture) {
-        RHI::renderer->DestroyTexture(streaming.pendingReplacementTexture);
-        streaming.pendingReplacementTexture = nullptr;
-    }
+    texture->CancelStreamingRequest();
 
     // 스트리밍 텍스쳐 목록에서 제거
+    Texture::Streaming &streaming = texture->streaming;
     if (streamingTextures.IsValidIndex(streaming.streamingListIndex)) {
         streamingTextures[streaming.streamingListIndex].reset();
     }
@@ -240,7 +235,9 @@ void TextureManager::UpdateStreamingTextures() {
     const int numStreamingTextures = streamingTextures.Count();
     for (int streamingTextureIndex = 0; streamingTextureIndex < numStreamingTextures; ++streamingTextureIndex) {
         SharedPtr<Texture> texture = streamingTextures[streamingTextureIndex].lock();
-        if (!texture) {
+        // 최초 로딩에 성공한 텍스쳐만 스트리밍으로 등록되므로, 정상적으로는 Ready 또는 Reloading 상태이다.
+        // 리로드 중에는 기존 텍스쳐를 유지하고, 교체 처리와 추가 스트리밍 요청을 미룬다.
+        if (!texture || texture->GetState() != Texture::State::Ready) {
             continue;
         }
 

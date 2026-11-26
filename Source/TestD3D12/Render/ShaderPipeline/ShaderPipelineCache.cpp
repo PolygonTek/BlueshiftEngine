@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "ShaderPipelineCache.h"
 #include "ShaderTemplate.h"
-#include "LoadingSystem.h"
+#include "ShaderPipelineBuildSystem.h"
 
 ShaderPipelineCache       shaderPipelineCache;
 
@@ -76,12 +76,12 @@ void ShaderPipelineCache::RebuildAllPipelines() {
 
         if (cachedGraphicsPipeline.shaderPipeline) {
             if (cachedGraphicsPipeline.shaderPipeline->GetPSO()) {
-                if (LoadingSystem::IsAsyncAllowed()) {
+                if (ShaderPipelineBuildSystem::IsAsyncAllowed()) {
                     cachedGraphicsPipeline.shaderPipeline->RebuildAsync(shaderTemplate);
                 } else {
                     cachedGraphicsPipeline.shaderPipeline->Rebuild(shaderTemplate);
                 }
-            } else if (LoadingSystem::IsAsyncAllowed()) {
+            } else if (ShaderPipelineBuildSystem::IsAsyncAllowed()) {
                 cachedGraphicsPipeline.shaderPipeline->BuildAsync(shaderTemplate);
             } else {
                 cachedGraphicsPipeline.shaderPipeline->Build(shaderTemplate);
@@ -102,12 +102,12 @@ void ShaderPipelineCache::RebuildAllPipelines() {
 
         if (cachedComputePipeline.shaderPipeline) {
             if (cachedComputePipeline.shaderPipeline->GetPSO()) {
-                if (LoadingSystem::IsAsyncAllowed()) {
+                if (ShaderPipelineBuildSystem::IsAsyncAllowed()) {
                     cachedComputePipeline.shaderPipeline->RebuildAsync(shaderTemplate);
                 } else {
                     cachedComputePipeline.shaderPipeline->Rebuild(shaderTemplate);
                 }
-            } else if (LoadingSystem::IsAsyncAllowed()) {
+            } else if (ShaderPipelineBuildSystem::IsAsyncAllowed()) {
                 cachedComputePipeline.shaderPipeline->BuildAsync(shaderTemplate);
             } else {
                 cachedComputePipeline.shaderPipeline->Build(shaderTemplate);
@@ -124,12 +124,12 @@ void ShaderPipelineCache::RebuildPipelines(const SharedPtr<ShaderTemplate> &shad
     for (CachedGraphicsPipeline &cachedGraphicsPipeline : cachedGraphicsPipelines) {
         if (cachedGraphicsPipeline.shaderTemplatePtr == shaderTemplate.get() && cachedGraphicsPipeline.shaderPipeline) {
             if (cachedGraphicsPipeline.shaderPipeline->GetPSO()) {
-                if (LoadingSystem::IsAsyncAllowed()) {
+                if (ShaderPipelineBuildSystem::IsAsyncAllowed()) {
                     cachedGraphicsPipeline.shaderPipeline->RebuildAsync(shaderTemplate);
                 } else {
                     cachedGraphicsPipeline.shaderPipeline->Rebuild(shaderTemplate);
                 }
-            } else if (LoadingSystem::IsAsyncAllowed()) {
+            } else if (ShaderPipelineBuildSystem::IsAsyncAllowed()) {
                 cachedGraphicsPipeline.shaderPipeline->BuildAsync(shaderTemplate);
             } else {
                 cachedGraphicsPipeline.shaderPipeline->Build(shaderTemplate);
@@ -140,12 +140,12 @@ void ShaderPipelineCache::RebuildPipelines(const SharedPtr<ShaderTemplate> &shad
     for (CachedComputePipeline &cachedComputePipeline : cachedComputePipelines) {
         if (cachedComputePipeline.shaderTemplatePtr == shaderTemplate.get() && cachedComputePipeline.shaderPipeline) {
             if (cachedComputePipeline.shaderPipeline->GetPSO()) {
-                if (LoadingSystem::IsAsyncAllowed()) {
+                if (ShaderPipelineBuildSystem::IsAsyncAllowed()) {
                     cachedComputePipeline.shaderPipeline->RebuildAsync(shaderTemplate);
                 } else {
                     cachedComputePipeline.shaderPipeline->Rebuild(shaderTemplate);
                 }
-            } else if (LoadingSystem::IsAsyncAllowed()) {
+            } else if (ShaderPipelineBuildSystem::IsAsyncAllowed()) {
                 cachedComputePipeline.shaderPipeline->BuildAsync(shaderTemplate);
             } else {
                 cachedComputePipeline.shaderPipeline->Build(shaderTemplate);
@@ -176,7 +176,7 @@ const ShaderPipelineCache::CachedGraphicsPipeline *ShaderPipelineCache::GetOrCre
         entry = &cachedGraphicsPipeline;
     }
 
-    const bool useAsyncBuild = async && LoadingSystem::IsAsyncAllowed();
+    const bool useAsyncBuild = async && ShaderPipelineBuildSystem::IsAsyncAllowed();
     ShaderPipeline *graphicsPipeline = entry->shaderPipeline.get();
     if (graphicsPipeline->GetState() == ShaderPipeline::State::Empty) {
         if (useAsyncBuild) {
@@ -243,7 +243,7 @@ const ShaderPipelineCache::CachedComputePipeline *ShaderPipelineCache::GetOrCrea
         entry = &cachedComputePipeline;
     }
 
-    const bool useAsyncBuild = async && LoadingSystem::IsAsyncAllowed();
+    const bool useAsyncBuild = async && ShaderPipelineBuildSystem::IsAsyncAllowed();
     ShaderPipeline *computePipeline = entry->shaderPipeline.get();
     if (computePipeline->GetState() == ShaderPipeline::State::Empty) {
         if (useAsyncBuild) {

@@ -20,10 +20,6 @@
 #include "Render/Mesh/Mesh.h"
 #include "Render/Animation/Skeleton.h"
 #include "Render/Animation/Anim.h"
-#include "Render/Material/Material.h"
-#include "Render/ShaderPipeline/ShaderCompileData.h"
-
-class ShaderPipeline;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -34,6 +30,8 @@ class ShaderPipeline;
 */
 
 class LoadingSystem {
+    friend class RenderSystem;
+
 public:
     enum class LoadPriority : int8_t {
         Background                  = 0,
@@ -42,35 +40,31 @@ public:
         Critical                    = 30
     };
 
+    LoadingSystem() = default;
+    LoadingSystem(const LoadingSystem &) = delete;
+    LoadingSystem &operator=(const LoadingSystem &) = delete;
+
     void                            Init();
     void                            Shutdown();
 
-    void                            Start();
-    void                            Stop();
+    static bool                     IsAsyncAllowed();
 
     bool                            EnqueueTextureLoad(SharedPtr<Texture> texture, const char *filename, Texture::Flag flags, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueTextureStreamingReplacement(SharedPtr<Texture> texture, const char *filename, int32_t firstMip, LoadPriority priority = LoadPriority::Background);
     bool                            EnqueueMeshLoad(SharedPtr<Mesh> mesh, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueSkeletonLoad(SharedPtr<Skeleton> skeleton, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
     bool                            EnqueueAnimLoad(SharedPtr<Anim> anim, const char *filename, bool isReload, uint32_t serial, LoadPriority priority = LoadPriority::Normal);
-    bool                            EnqueueShaderPipelineBuild(SharedPtr<ShaderPipeline> shaderPipeline, ShaderCompileData &&compileData, uint32_t serial, LoadPriority priority = LoadPriority::High);
-
-    void                            QueueMaterialReload(SharedPtr<Material> material, Material::InternalData &newInternalData);
-    void                            QueueShaderTemplateReload(SharedPtr<ShaderTemplate> shaderTemplate, ShaderTemplate::InternalData &newInternalData);
 
     bool                            BoostTextureLoad(const Texture *texture, uint32_t serial, LoadPriority priority);
     bool                            BoostMeshLoad(const Mesh *mesh, uint32_t serial, LoadPriority priority);
     bool                            BoostSkeletonLoad(const Skeleton *skeleton, uint32_t serial, LoadPriority priority);
     bool                            BoostAnimLoad(const Anim *anim, uint32_t serial, LoadPriority priority);
-    bool                            BoostShaderPipelineBuild(const ShaderPipeline *shaderPipeline, uint32_t serial, LoadPriority priority);
 
-                                    /// Applies completed load requests on the main thread.
+                                    /// 완료된 로딩 요청의 결과를 메인 스레드에서 적용한다.
     void                            ProcessLoadCompletions();
 
-                                    /// Processes pending reload completions after all rendering has completed.
+                                    /// 동기 리로드 대기를 위해 렌더 완료 대기와 결과 적용을 함께 수행한다.
     void                            ProcessPendingReloads();
-
-    static bool                     IsAsyncAllowed();
 
 private:
     struct LoadRequest {
@@ -78,8 +72,6 @@ private:
         SharedPtr<Mesh>             mesh;
         SharedPtr<Skeleton>         skeleton;
         SharedPtr<Anim>             anim;
-        SharedPtr<ShaderPipeline>   shaderPipeline;
-        ShaderCompileData           shaderCompileData;
         BE1::Str                    filename;
         Texture::Flag               textureFlags = Texture::Flag::None;
         uint32_t                    streamingMinResidentMaxDimension = 1;
@@ -97,12 +89,10 @@ private:
         SharedPtr<Mesh>             mesh;
         SharedPtr<Skeleton>         skeleton;
         SharedPtr<Anim>             anim;
-        SharedPtr<ShaderPipeline>   shaderPipeline;
         Texture::InternalData       textureData;
         Mesh::InternalData          meshData;
         Skeleton::InternalData      skeletonData;
         Anim::InternalData          animData;
-        RHI::PipelineState *        pso = nullptr;
         BE1::Image::MipRange        mipRange;
         uint32_t                    serial = 0;
         bool                        isReload = false;
@@ -110,43 +100,28 @@ private:
         bool                        success = false;
     };
 
-    struct PendingMaterialReload {
-        SharedPtr<Material>         material;
-        Material::InternalData      internalData;
-    };
-
-    struct PendingShaderTemplateReload {
-        SharedPtr<ShaderTemplate>   shaderTemplate;
-        ShaderTemplate::InternalData internalData;
-        BE1::Array<ShaderPropertyDesc> oldProperties;
-    };
-
-    void                            UpdateWorkerSettings();
-
-    void                            Run();
     bool                            PopNextRequest(LoadRequest &outRequest);
-    bool                            ProcessTextureLoadRequest(LoadRequest &&request);
-    bool                            ProcessTextureStreamingReplacementRequest(LoadRequest &&request);
-    bool                            ProcessMeshLoadRequest(LoadRequest &&request);
-    bool                            ProcessSkeletonLoadRequest(LoadRequest &&request);
-    bool                            ProcessAnimLoadRequest(LoadRequest &&request);
-    bool                            ProcessShaderPipelineBuildRequest(LoadRequest &&request);
-
+    void                            Run();
+    void                            ProcessTextureLoadRequest(LoadRequest &&request);
+    void                            ProcessTextureStreamingReplacementRequest(LoadRequest &&request);
+    void                            ProcessMeshLoadRequest(LoadRequest &&request);
+    void                            ProcessSkeletonLoadRequest(LoadRequest &&request);
+    void                            ProcessAnimLoadRequest(LoadRequest &&request);
     void                            PushCompletion(LoadCompletion &&completion);
-    void                            DiscardCompletion(LoadCompletion &completion);
-    bool                            ProcessTextureLoadCompletion(LoadCompletion &completion);
-    bool                            ProcessMeshLoadCompletion(LoadCompletion &completion);
-    bool                            ProcessSkeletonLoadCompletion(LoadCompletion &completion);
-    bool                            ProcessAnimLoadCompletion(LoadCompletion &completion);
-    bool                            ProcessShaderPipelineBuildCompletion(LoadCompletion &completion);
+
+    bool                            CollectPendingReloads(BE1::Array<LoadCompletion> &batch);
+    void                            ApplyPendingReloads(BE1::Array<LoadCompletion> &batch);
+
+    bool                            TryDiscardInvalidCompletion(LoadCompletion &completion);
     void                            ProcessLoadCompletion(LoadCompletion &completion);
+    void                            ProcessTextureLoadCompletion(LoadCompletion &completion);
+    void                            ProcessMeshLoadCompletion(LoadCompletion &completion);
+    void                            ProcessSkeletonLoadCompletion(LoadCompletion &completion);
+    void                            ProcessAnimLoadCompletion(LoadCompletion &completion);
 
-    void                            ProcessMaterialReloads(BE1::Array<PendingMaterialReload> &pendingReloads);
-    void                            ProcessShaderTemplateReloads(BE1::Array<PendingShaderTemplateReload> &pendingReloads);
+    template <typename PendingLoad>
+    static void                     CancelLoad(const PendingLoad &load);
 
-    bool                            TryDiscardInvalidReloadCompletion(LoadCompletion &completion);
-
-    static bool                     IsLiveResourceReplacement(const LoadCompletion &completion);
     static bool                     IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs);
     static unsigned int             ThreadProc(void *param);
 
@@ -157,13 +132,19 @@ private:
 
     BE1::Array<LoadRequest>         requests;
     BE1::Array<LoadCompletion>      completions;
+    BE1::Array<LoadCompletion>      processingCompletions;
     BE1::Array<LoadCompletion>      reloadCompletions;
-    BE1::Array<PendingMaterialReload> pendingMaterialReloads;
-    BE1::Array<PendingShaderTemplateReload> pendingShaderTemplateReloads;
     uint64_t                        nextRequestSequence = 0;
     std::atomic<int>                workerDelayMsec { 0 };
 
     bool                            stopping = false;
 };
+
+BE_INLINE bool LoadingSystem::IsHigherPriority(const LoadRequest &lhs, const LoadRequest &rhs) {
+    if (lhs.priority != rhs.priority) {
+        return lhs.priority > rhs.priority;
+    }
+    return lhs.sequence < rhs.sequence;
+}
 
 extern LoadingSystem                loadingSystem;

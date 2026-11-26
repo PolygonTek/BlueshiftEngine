@@ -23,7 +23,6 @@
 #include "ShaderProgram.h"
 
 class ShaderTemplateManager;
-class LoadingSystem;
 
 /*
 ---------------------------------------------------------------------------------------------------
@@ -93,7 +92,6 @@ struct ShaderPropertyDesc : public BE1::PropertyDesc {
 
 class ShaderTemplate : public std::enable_shared_from_this<ShaderTemplate> {
     friend class ShaderTemplateManager;
-    friend class LoadingSystem;
 
 public:
     using ReloadedDelegate = BE1::MulticastDelegate<void(const ShaderTemplate *, const BE1::Array<ShaderPropertyDesc> &)>;

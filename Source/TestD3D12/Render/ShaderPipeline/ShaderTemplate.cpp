@@ -16,7 +16,8 @@
 #include "ShaderTemplate.h"
 #include "ShaderTemplateManager.h"
 #include "ShaderPipelineCache.h"
-#include "LoadingSystem.h"
+#include "Render/RenderContext.h"
+#include "Render/RenderSystem.h"
 #include "Asset/GuidMapper.h"
 #include "IO/FileSystem.h"
 
@@ -1348,6 +1349,9 @@ bool ShaderTemplate::Load(const char *filename) {
 }
 
 bool ShaderTemplate::Reload() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(RenderContext::activeContext == nullptr);
+
     if (!BE1::HasFlag(internalData.flags, Flag::LoadedFromFile)) {
         BE_WARNLOG("ShaderTemplate::Reload: cannot reload shader template '%s' because it was not loaded from a file\n", GetHashName());
         return false;
@@ -1358,8 +1362,22 @@ bool ShaderTemplate::Reload() {
         return true;
     }
 
-    loadingSystem.QueueShaderTemplateReload(shared_from_this(), newInternalData);
-    loadingSystem.ProcessPendingReloads();
+    // 알림 콜백이 외부 참조를 해제하더라도 알림이 끝날 때까지 템플릿을 유지한다.
+    const SharedPtr<ShaderTemplate> shaderTemplate = shared_from_this();
+
+    // 렌더 스레드가 기존 템플릿과 파이프라인 사용을 마친 뒤 교체한다.
+    renderSystem->WaitAllRenderCompleted();
+
+    // 머티리얼 프로퍼티 재매핑에 필요한 기존 정의를 복사 없이 보관한다.
+    BE1::Array<ShaderPropertyDesc> oldProperties;
+    oldProperties.Swap(internalData.properties);
+
+    // 부모 ShaderTemplate 이 리로드되어도 이를 상속한 자식 ShaderTemplate 은 자동으로 리로드하지 않는다.
+    ApplyPrepared(newInternalData);
+
+    // 외부 material shader template reload 대응용 알림이다.
+    // Reload 중 Purge 로 pipeline cache 는 이미 비워졌으므로 material 은 필요할 때 GetGraphicsPipeline 를 통해 새 pipeline 을 다시 얻는다.
+    reloaded(shaderTemplate.get(), oldProperties);
     return true;
 }
 

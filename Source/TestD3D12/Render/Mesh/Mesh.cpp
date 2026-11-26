@@ -83,11 +83,6 @@ bool Mesh::LoadAsync(const char *filename) {
 }
 
 bool Mesh::Reload() {
-    if (!IsReady()) {
-        BE_WARNLOG("Mesh::Reload: mesh '%s' is not ready\n", GetHashName());
-        return false;
-    }
-
     if (!ReloadAsync()) {
         return false;
     }

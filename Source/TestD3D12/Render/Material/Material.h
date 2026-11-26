@@ -18,7 +18,6 @@
 #include "Shaders/ShaderInterop.h"
 
 class MaterialManager;
-class LoadingSystem;
 class Sampler;
 class Texture;
 class ShaderPipeline;
@@ -34,7 +33,6 @@ struct GraphicsPipelineDesc;
 
 class Material : public std::enable_shared_from_this<Material> {
     friend class MaterialManager;
-    friend class LoadingSystem;
 
 public:
     ~Material() { Purge(); }

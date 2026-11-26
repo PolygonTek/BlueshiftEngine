@@ -248,14 +248,6 @@ bool Anim::LoadAsync(const char *filename) {
 }
 
 bool Anim::Reload() {
-    if (internalData.isDefaultAnim || internalData.isAdditiveAnim) {
-        return false;
-    }
-    if (!IsReady()) {
-        BE_WARNLOG("Anim::Reload: anim '%s' is not ready\n", GetHashName());
-        return false;
-    }
-
     if (!ReloadAsync()) {
         return false;
     }

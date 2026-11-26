@@ -16,9 +16,28 @@
 #include "ShaderPipeline.h"
 #include "ShaderCompileData.h"
 #include "ShaderTemplate.h"
-#include "LoadingSystem.h"
+#include "ShaderPipelineBuildSystem.h"
 #include "Render/RenderContext.h"
-#include "Render/RenderSystem.h"
+
+ShaderPipeline::InternalData &ShaderPipeline::InternalData::operator=(InternalData &&rhs) noexcept {
+    if (this != &rhs) {
+        Purge();
+        Swap(rhs);
+    }
+    return *this;
+}
+
+void ShaderPipeline::InternalData::Purge() {
+    if (pso) {
+        // 캐시에서 공유되는 PSO 참조를 반환하고, 마지막 참조도 지연 해제한다.
+        RHI::renderer->DestroyPSO(pso);
+        pso = nullptr;
+    }
+}
+
+void ShaderPipeline::InternalData::Swap(InternalData &rhs) {
+    BE1::Swap(pso, rhs.pso);
+}
 
 bool ShaderPipeline::CreateStageShader(const ShaderCompileData &compileData, RHI::ShaderStage shaderStage, RHI::Shader *&outShader) {
     assert(shaderStage < RHI::ShaderStage::Count);
@@ -141,10 +160,7 @@ RHI::PipelineState *ShaderPipeline::CreateComputePSO(const ShaderCompileData &co
 }
 
 void ShaderPipeline::Purge() {
-    if (pso) {
-        RHI::renderer->DestroyPSO(pso);
-        pso = nullptr;
-    }
+    internalData.Purge();
 }
 
 void ShaderPipeline::Reset() {
@@ -154,24 +170,19 @@ void ShaderPipeline::Reset() {
     Purge();
 }
 
-void ShaderPipeline::ReplacePSO(RHI::PipelineState *newPso) {
-    if (pso) {
-        RHI::renderer->DestroyPSO(pso);
-    }
-    pso = newPso;
-}
+bool ShaderPipeline::Prepare(const ShaderCompileData &compileData, InternalData &outInternalData) const {
+    assert(&outInternalData != &internalData);
 
-RHI::PipelineState *ShaderPipeline::CreatePSO(const ShaderCompileData &compileData) const {
-    RHI::PipelineState *pso = nullptr;
+    outInternalData.Purge();
 
     RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)] = {};
 
     switch (GetType()) {
     case Type::Graphics:
-        pso = CreateGraphicsPSO(compileData, graphicsPipelineDesc, stageShaders);
+        outInternalData.pso = CreateGraphicsPSO(compileData, graphicsPipelineDesc, stageShaders);
         break;
     case Type::Compute:
-        pso = CreateComputePSO(compileData, stageShaders);
+        outInternalData.pso = CreateComputePSO(compileData, stageShaders);
         break;
     default:
         assert(0);
@@ -184,118 +195,91 @@ RHI::PipelineState *ShaderPipeline::CreatePSO(const ShaderCompileData &compileDa
             stageShaders[stageIndex] = nullptr;
         }
     }
-    return pso;
+    return outInternalData.pso != nullptr;
+}
+
+void ShaderPipeline::ApplyPrepared(InternalData &newInternalData) {
+    assert(newInternalData.pso);
+    assert(&newInternalData != &internalData);
+
+    // 캐시가 같은 PSO 를 반환해도 두 데이터는 각각 참조를 소유하므로, 기존 참조를 반환한 뒤 교체한다.
+    Purge();
+
+    internalData.Swap(newInternalData);
 }
 
 bool ShaderPipeline::Build(const SharedPtr<ShaderTemplate> &shaderTemplate) {
-    assert(!pso);
-
-    BumpBuildSerial(); // 진행 중인 async completion 무효화
-
-    if (!shaderTemplate) {
-        state = State::Failed;
+    if (!BuildAsync(shaderTemplate)) {
         return false;
     }
 
-    ShaderCompileData compileData;
-    if (!shaderTemplate->PrepareShaderCompileData(shaderPermutationKey, compileData)) {
-        state = State::Failed;
-        return false;
-    }
-
-    RHI::PipelineState *preparedPSO = CreatePSO(compileData);
-    if (!preparedPSO) {
-        state = State::Failed;
-        return false;
-    }
-
-    ReplacePSO(preparedPSO);
-    state = State::Ready;
-    return true;
+    return WaitReady();
 }
 
-void ShaderPipeline::BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate) {
-    assert(!pso);
-
-    if (!shaderTemplate) {
-        return;
-    }
+bool ShaderPipeline::BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    assert(!internalData.pso);
 
     state = State::Building;
 
-    if (!EnqueueBuild(shaderTemplate)) {
-        state = State::Failed;
-    }
-}
+    // 템플릿이 유효하지 않아도 이전 비동기 빌드 결과는 무효화한다.
+    uint32_t newSerial = BumpBuildSerial();
 
-bool ShaderPipeline::Rebuild(const SharedPtr<ShaderTemplate> &shaderTemplate) {
     if (!shaderTemplate) {
+        state = State::Failed;
         return false;
     }
-
-    if (!IsReady()) {
-        BE_WARNLOG("ShaderPipeline::Rebuild: shader pipeline for shader template '%s' permutation 0x%llx is not ready\n", shaderTemplate->GetHashName(), shaderPermutationKey.hash);
-        return false;
-    }
-
-    assert(pso);
-    assert(BE1::Engine::IsInMainThread());
-    assert(RenderContext::activeContext == nullptr);
 
     ShaderCompileData compileData;
     if (!shaderTemplate->PrepareShaderCompileData(shaderPermutationKey, compileData)) {
+        state = State::Failed;
         return false;
     }
 
-    RHI::PipelineState *preparedPSO = CreatePSO(compileData);
-    if (!preparedPSO) {
+    if (!shaderPipelineBuildSystem.EnqueueBuild(shared_from_this(), std::move(compileData), false, newSerial, ShaderPipelineBuildSystem::BuildPriority::High)) {
+        state = State::Failed;
         return false;
     }
 
-    BumpBuildSerial(); // 진행 중인 async completion 무효화
-    state = State::Rebuilding;
-
-    renderSystem->WaitAllRenderCompleted();
-
-    ReplacePSO(preparedPSO);
-    state = State::Ready;
     return true;
 }
 
-void ShaderPipeline::RebuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+bool ShaderPipeline::Rebuild(const SharedPtr<ShaderTemplate> &shaderTemplate) {
+    assert(BE1::Engine::IsInMainThread());
+    assert(RenderContext::activeContext == nullptr);
+
+    if (!RebuildAsync(shaderTemplate)) {
+        return false;
+    }
+
+    return WaitBuildComplete();
+}
+
+bool ShaderPipeline::RebuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate) {
     if (!shaderTemplate) {
-        return;
+        return false;
     }
 
     if (!IsReady()) {
         BE_WARNLOG("ShaderPipeline::RebuildAsync: shader pipeline for shader template '%s' permutation 0x%llx is not ready\n", shaderTemplate->GetHashName(), shaderPermutationKey.hash);
-        return;
-    }
-
-    assert(pso);
-
-    state = State::Rebuilding;
-
-    if (!EnqueueBuild(shaderTemplate)) {
-        state = State::Ready;
-    }
-}
-
-bool ShaderPipeline::EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplate) {
-    if (!shaderTemplate) {
         return false;
     }
 
+    assert(internalData.pso);
+
     uint32_t newSerial = BumpBuildSerial();
+    state = State::Rebuilding;
 
     ShaderCompileData compileData;
     if (!shaderTemplate->PrepareShaderCompileData(shaderPermutationKey, compileData)) {
+        state = State::Ready;
         return false;
     }
 
-    if (!loadingSystem.EnqueueShaderPipelineBuild(shared_from_this(), std::move(compileData), newSerial, LoadingSystem::LoadPriority::High)) {
+    if (!shaderPipelineBuildSystem.EnqueueBuild(shared_from_this(), std::move(compileData), true, newSerial, ShaderPipelineBuildSystem::BuildPriority::High)) {
+        state = State::Ready;
         return false;
     }
+
     return true;
 }
 
@@ -304,11 +288,11 @@ bool ShaderPipeline::WaitReady() {
 
     State currentState = GetState();
     if (currentState == State::Building) {
-        loadingSystem.BoostShaderPipelineBuild(this, GetBuildSerial(), LoadingSystem::LoadPriority::Critical);
+        shaderPipelineBuildSystem.BoostBuild(this, GetBuildSerial(), ShaderPipelineBuildSystem::BuildPriority::Critical);
     }
 
     while (currentState == State::Building) {
-        loadingSystem.ProcessLoadCompletions();
+        shaderPipelineBuildSystem.ProcessBuildCompletions();
         currentState = GetState();
 
         if (currentState == State::Building) {
@@ -324,12 +308,12 @@ bool ShaderPipeline::WaitBuildComplete() {
 
     State currentState = GetState();
     if (currentState == State::Building || currentState == State::Rebuilding) {
-        loadingSystem.BoostShaderPipelineBuild(this, GetBuildSerial(), LoadingSystem::LoadPriority::Critical);
+        shaderPipelineBuildSystem.BoostBuild(this, GetBuildSerial(), ShaderPipelineBuildSystem::BuildPriority::Critical);
     }
 
     while (currentState == State::Building || currentState == State::Rebuilding) {
-        loadingSystem.ProcessLoadCompletions();
-        loadingSystem.ProcessPendingReloads();
+        shaderPipelineBuildSystem.ProcessBuildCompletions();
+        shaderPipelineBuildSystem.ProcessPendingRebuilds();
         currentState = GetState();
 
         if (currentState == State::Building || currentState == State::Rebuilding) {

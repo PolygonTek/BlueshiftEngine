@@ -179,6 +179,7 @@ private:
     };
 
     void                            Purge();
+    void                            CancelStreamingRequest();
 
     bool                            Create(RHI::TextureType textureType, SharedPtr<const BE1::Image> srcImage, Flag flags, bool preserveSourceData);
 

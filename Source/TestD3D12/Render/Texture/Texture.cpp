@@ -88,12 +88,21 @@ uint64_t Texture::MemRequiredStreaming(int firstMip) const {
 void Texture::Purge() {
     if (streaming.streamingListIndex != TextureStreamingInvalidIndex) {
         textureManager.UnregisterStreamingTexture(this);
-    } else if (streaming.pendingReplacementTexture) {
+    } else {
+        CancelStreamingRequest();
+    }
+
+    internalData.Purge();
+}
+
+void Texture::CancelStreamingRequest() {
+    // 교체 예정이었던 텍스쳐 파괴
+    if (streaming.pendingReplacementTexture) {
         RHI::renderer->DestroyTexture(streaming.pendingReplacementTexture);
         streaming.pendingReplacementTexture = nullptr;
     }
 
-    internalData.Purge();
+    streaming.requestedFirstMip = -1;
 }
 
 void Texture::Reset() {
@@ -444,22 +453,6 @@ bool Texture::LoadAsync(const char *filename, Flag flags) {
 }
 
 bool Texture::Reload() {
-    if (!BE1::HasFlag(internalData.flags, Flag::LoadedFromFile)) {
-        BE_WARNLOG("Texture::Reload: cannot reload texture '%s' because it was not loaded from a file\n", GetHashName());
-        return false;
-    }
-
-    if (!IsReady()) {
-        BE_WARNLOG("Texture::Reload: texture '%s' is not ready\n", GetHashName());
-        return false;
-    }
-
-    // 스트리밍 텍스쳐인 경우, 동기 로딩으로 리로드하는 것은 지원하지 않는다.
-    if (textureManager.IsRegisteredStreamingTexture(this)) {
-        BE_WARNLOG("Texture::Reload: cannot reload streaming texture '%s'\n", GetHashName());
-        return false;
-    }
-
     if (!ReloadAsync()) {
         return false;
     }
@@ -481,13 +474,13 @@ bool Texture::ReloadAsync() {
     uint32_t newSerial = BumpLoadSerial();
     state = State::Reloading;
 
+    // 등록과 현재 mip 정보는 유지하고, 시리얼 변경으로 무효화된 교체 요청만 정리한다.
+    CancelStreamingRequest();
+
     if (!loadingSystem.EnqueueTextureLoad(shared_from_this(), hashName, internalData.flags, true, newSerial)) {
         state = State::Ready;
         return false;
     }
-
-    // 스트리밍 텍스쳐인 경우, 스트리밍 시스템에서 제거한다.
-    textureManager.UnregisterStreamingTexture(this);
 
     return true;
 }

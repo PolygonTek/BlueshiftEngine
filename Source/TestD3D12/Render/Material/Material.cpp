@@ -15,10 +15,10 @@
 #include "Precompiled.h"
 #include "Material.h"
 #include "MaterialManager.h"
-#include "LoadingSystem.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
 #include "Render/ShaderPipeline/ShaderPipelineCache.h"
 #include "Render/RenderCvars.h"
+#include "Render/RenderContext.h"
 #include "Render/RenderSystem.h"
 #include "Render/Texture/SamplerManager.h"
 #include "Asset/GuidMapper.h"
@@ -828,6 +828,9 @@ bool Material::Load(const char *filename) {
 }
 
 bool Material::Reload() {
+    assert(BE1::Engine::IsInMainThread());
+    assert(RenderContext::activeContext == nullptr);
+
     if (!BE1::HasFlag(internalData.flags, Flag::LoadedFromFile)) {
         BE_WARNLOG("Material::Reload: cannot reload material '%s' because it was not loaded from a file\n", GetHashName());
         return false;
@@ -838,7 +841,8 @@ bool Material::Reload() {
         return true;
     }
 
-    loadingSystem.QueueMaterialReload(shared_from_this(), newInternalData);
-    loadingSystem.ProcessPendingReloads();
+    // 렌더 스레드가 기존 머티리얼 사용을 마친 뒤 준비한 데이터로 교체한다.
+    renderSystem->WaitAllRenderCompleted();
+    ApplyPrepared(newInternalData);
     return true;
 }

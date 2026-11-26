@@ -96,6 +96,9 @@ public:
                                     // 렌더 스레드에서 모든 렌더 컨텍스트들의 모든 프레임의 렌더링이 완료될 때까지 기다린다.
     void                            WaitAllRenderCompleted();
 
+                                    // 렌더 완료를 한 번 기다린 뒤 준비한 리소스 리로드와 PSO 리빌드 결과를 적용한다.
+    void                            ProcessPendingResourceUpdates();
+
     RenderBackend *                 GetBackend() const { return backEnd; }
 
     const SharedPtr<Texture> &      GetColorGradingLUTTexture() const { return colorGradingLUTTexture; }

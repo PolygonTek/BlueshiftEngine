@@ -180,6 +180,8 @@ set(SRC_FILES
     Render/ShaderData/ShaderShadowTable.cpp
     Render/ShaderPipeline/ShaderPipelineBootstrap.h
     Render/ShaderPipeline/ShaderPipelineBootstrap.cpp
+    Render/ShaderPipeline/ShaderPipelineBuildSystem.h
+    Render/ShaderPipeline/ShaderPipelineBuildSystem.cpp
     Render/ShaderPipeline/ShaderPipelineCache.h
     Render/ShaderPipeline/ShaderPipelineCache.cpp
     Render/ShaderPipeline/ShaderFeatureSet.h

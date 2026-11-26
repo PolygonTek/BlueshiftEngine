@@ -23,6 +23,7 @@
 #include "Render/Frontend/RenderCamera.h"
 #include "Render/Material/MaterialManager.h"
 #include "Render/ShaderPipeline/ShaderTemplateManager.h"
+#include "Render/ShaderPipeline/ShaderPipelineBuildSystem.h"
 #include "Render/Texture/TextureManager.h"
 #include "Render/Font/FontManager.h"
 #include "Physics/Physics.h"
@@ -123,7 +124,10 @@ void App::Update(uint64_t frameUsec) {
     });
 
     loadingSystem.ProcessLoadCompletions();
-    loadingSystem.ProcessPendingReloads();
+
+    shaderPipelineBuildSystem.ProcessBuildCompletions();
+
+    renderSystem->ProcessPendingResourceUpdates();
 
     shaderTemplateManager.ProcessPendingGlobalDefineChanges();
 

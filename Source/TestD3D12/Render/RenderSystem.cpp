@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Profiler.h"
+#include "LoadingSystem.h"
 #include "RHI/RHI.h"
 #include "RenderSystem.h"
 #include "RenderContext.h"
@@ -25,6 +26,7 @@
 #include "Texture/SamplerManager.h"
 #include "ShaderPipeline/ShaderTemplateManager.h"
 #include "ShaderPipeline/ShaderPipelineCache.h"
+#include "ShaderPipeline/ShaderPipelineBuildSystem.h"
 #include "ShaderPipeline/VertexInputLayoutFactory.h"
 #include "Material/MaterialManager.h"
 #include "Font/FontManager.h"
@@ -44,6 +46,8 @@ void RenderSystem::Init(void *mainWindowHandle) {
     }
 
     RHI::renderer->Init(mainWindowHandle);
+
+    shaderPipelineBuildSystem.Init();
 
     VertexInputLayoutFactory::Init();
 
@@ -139,6 +143,8 @@ void RenderSystem::Shutdown() {
     }
 
     BE1::cmdSystem.RemoveCommand("screenshot");
+
+    shaderPipelineBuildSystem.Shutdown();
 
     shaderPipelineBootstrap.Reset();
 
@@ -380,6 +386,33 @@ void RenderSystem::WaitAllRenderCompleted() {
 
     for (RenderContext *renderContext : renderContexts) {
         WaitContextRenderCompleted(renderContext);
+    }
+}
+
+void RenderSystem::ProcessPendingResourceUpdates() {
+    PROFILER_CPU_SCOPED_EVENT("RenderSystem::ProcessPendingResourceUpdates");
+
+    assert(BE1::Engine::IsInMainThread());
+
+    BE1::Array<LoadingSystem::LoadCompletion> reloadBatch;
+    BE1::Array<ShaderPipelineBuildSystem::BuildCompletion> rebuildBatch;
+
+    // 리로드/리빌드 목록을 가져온다.
+    const bool hasReloads = loadingSystem.CollectPendingReloads(reloadBatch);
+    const bool hasRebuilds = shaderPipelineBuildSystem.CollectPendingRebuilds(rebuildBatch);
+    if (!hasReloads && !hasRebuilds) {
+        return;
+    }
+
+    assert(RenderContext::activeContext == nullptr);
+
+    WaitAllRenderCompleted();
+
+    if (hasRebuilds) {
+        shaderPipelineBuildSystem.ApplyPendingRebuilds(rebuildBatch);
+    }
+    if (hasReloads) {
+        loadingSystem.ApplyPendingReloads(reloadBatch);
     }
 }
 

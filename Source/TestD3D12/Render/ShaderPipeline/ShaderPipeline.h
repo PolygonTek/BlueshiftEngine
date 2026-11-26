@@ -19,7 +19,7 @@
 #include "ShaderPermutationKey.h"
 
 class ShaderTemplate;
-class LoadingSystem;
+class ShaderPipelineBuildSystem;
 struct ShaderCompileData;
 
 /*
@@ -29,7 +29,7 @@ struct ShaderCompileData;
 
     - PSO (RHI::PipelineState) 를 담고 있는 파이프라인 객체.
     - ShaderPipelineCache 에 의해 캐싱되고 재사용된다.
-    - 빌드 용 정보 Type/ShaderPermutationKey/GraphicsPipelineDesc 를 유지한다.
+    - 빌드용 정보 Type/ShaderPermutationKey/GraphicsPipelineDesc 를 유지한다.
     - ShaderTemplate 의 수명을 책임지지 않기 위해 ShaderTemplate 은 유지하지 않고 빌드할 때 외부에서 받아온다.
 
 ---------------------------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ struct ShaderCompileData;
 
 class ShaderPipeline : public std::enable_shared_from_this<ShaderPipeline> {
     friend class ShaderPipelineCache;
-    friend class LoadingSystem;
+    friend class ShaderPipelineBuildSystem;
 
 public:
     enum class Type : uint8_t {
@@ -60,7 +60,7 @@ public:
     ShaderPipeline(Type type, ShaderPermutationKey permutationKey);
 
     // dtor
-    ~ShaderPipeline() { Purge(); }
+    ~ShaderPipeline() = default;
 
     Type                            GetType() const { return type; }
 
@@ -77,7 +77,7 @@ public:
 
     ShaderPermutationKey            GetShaderPermutationKey() const { return shaderPermutationKey; }
     const GraphicsPipelineDesc &    GetGraphicsPipelineDesc() const { assert(type == Type::Graphics); return graphicsPipelineDesc; }
-    RHI::PipelineState *            GetPSO() const { return pso; }
+    RHI::PipelineState *            GetPSO() const { return internalData.pso; }
 
     static RHI::PipelineState *     GetReadyPSO(const ShaderPipeline *shaderPipeline);
     static RHI::PipelineState *     GetReadyPSO(const SharedPtr<ShaderPipeline> &shaderPipeline);
@@ -91,6 +91,20 @@ public:
     bool                            WaitBuildComplete();
 
 private:
+    struct InternalData {
+        InternalData() = default;
+        InternalData(const InternalData &rhs) = delete;
+        InternalData &operator=(const InternalData &rhs) = delete;
+        InternalData(InternalData &&rhs) noexcept { Swap(rhs); }
+        InternalData &operator=(InternalData &&rhs) noexcept;
+        ~InternalData() { Purge(); }
+
+        void                        Purge();
+        void                        Swap(InternalData &rhs);
+
+        RHI::PipelineState *        pso = nullptr;
+    };
+
     void                            Purge();
 
     static bool                     CreateStageShader(const ShaderCompileData &compileData, RHI::ShaderStage shaderStage, RHI::Shader *&outShader);
@@ -99,14 +113,20 @@ private:
     static RHI::PipelineState *     CreateGraphicsPSO(const ShaderCompileData &compileData, const GraphicsPipelineDesc &pipelineDesc, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
     static RHI::PipelineState *     CreateComputePSO(const ShaderCompileData &compileData, RHI::Shader *stageShaders[to_int(RHI::ShaderStage::Count)]);
 
-    RHI::PipelineState *            CreatePSO(const ShaderCompileData &compileData) const;
-    void                            ReplacePSO(RHI::PipelineState *newPso);
+    bool                            Prepare(const ShaderCompileData &compileData, InternalData &outInternalData) const;
+    void                            ApplyPrepared(InternalData &newInternalData);
 
+                                    // 최초 빌드 완료까지 기다리고, 파이프라인을 사용할 수 있으면 true 를 반환한다.
     bool                            Build(const SharedPtr<ShaderTemplate> &shaderTemplate);
-    void                            BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
+
+                                    // 비동기 최초 빌드 요청 등록에 성공하면 true 를 반환하며, 완료 전까지 파이프라인을 사용할 수 없다.
+    bool                            BuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
+
+                                    // 리빌드 완료 후 파이프라인을 사용할 수 있으면 true 를 반환한다. 새 PSO 빌드 성공 여부와는 무관하다.
     bool                            Rebuild(const SharedPtr<ShaderTemplate> &shaderTemplate);
-    void                            RebuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
-    bool                            EnqueueBuild(const SharedPtr<ShaderTemplate> &shaderTemplate);
+
+                                    // 비동기 리빌드 요청 등록에 성공하면 true 를 반환하며, 완료 전까지 기존 PSO 를 계속 사용할 수 있다.
+    bool                            RebuildAsync(const SharedPtr<ShaderTemplate> &shaderTemplate);
 
     const Type                      type = Type::Graphics;  // PSO 빌드에 필요한 정보 (생성자에서 한번 정해지면 변하지 않는다)
     const ShaderPermutationKey      shaderPermutationKey;   // PSO 빌드에 필요한 정보 (생성자에서 한번 정해지면 변하지 않는다)
@@ -114,7 +134,7 @@ private:
     RHI::InputLayout                inputLayout;            // PSO 빌드에 필요한 정보 (생성자에서 한번 정해지면 변하지 않는다)
     std::atomic<State>              state = State::Empty;
     std::atomic<uint32_t>           buildSerial = 0;
-    RHI::PipelineState *            pso = nullptr;
+    InternalData                    internalData;
 };
 
 BE_INLINE ShaderPipeline::ShaderPipeline(Type type, ShaderPermutationKey permutationKey, const GraphicsPipelineDesc &desc) :
