@@ -4,7 +4,7 @@
 #include "../FullscreenTriangle.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "DescriptorTable(SRV(t0)), " \
-    "RootConstants(num32BitConstants=6, b0), " \
+    "RootConstants(num32BitConstants=5, b0), " \
     "StaticSampler(s0, FILTER = FILTER_MIN_MAG_MIP_POINT, ADDRESSU = TEXTURE_ADDRESS_CLAMP, ADDRESSV = TEXTURE_ADDRESS_CLAMP, ADDRESSW = TEXTURE_ADDRESS_CLAMP)"
 
 struct PSInput {

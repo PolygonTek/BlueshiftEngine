@@ -63,7 +63,6 @@ bool PostLuminance::Dispatch(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("PostLuminance::Dispatch");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    const RHI::ConstantBuffer *frameConstantBuffer = backend.GetFrameConstantBuffer();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     RHI::Texture *inputTexture = backend.GetPostProcessInputTexture();
     RHI::Buffer *luminanceBuffer = backend.GetFrameCamera()->luminanceBuffer;
@@ -103,6 +102,7 @@ bool PostLuminance::Dispatch(RenderBackend &backend) const {
     pass2Params.exposureCompensation = settings.toneMapExposureCompensation;
     pass2Params.minExposure = BE1::Math::Pow(2.0f, settings.toneMapMinExposureEV);
     pass2Params.maxExposure = BE1::Math::Pow(2.0f, settings.toneMapMaxExposureEV);
+    pass2Params.frameTime = backend.GetFrameTime();
 
     // Pass 1 : Log Luminance 히스토그램 계산
     {
@@ -128,7 +128,6 @@ bool PostLuminance::Dispatch(RenderBackend &backend) const {
 
         RHI::renderer->SetPSO(commandList, frameLuminancePass2PSO);
         RHI::renderer->SetBuffer(commandList, 0, true, luminanceBuffer);
-        RHI::renderer->SetConstantBuffer(commandList, 0, frameConstantBuffer);
         RHI::renderer->SetConstants(commandList, 1, &pass2Params, sizeof(pass2Params), 0);
 
         RHI::renderer->Dispatch(commandList, 1, 1, 1);

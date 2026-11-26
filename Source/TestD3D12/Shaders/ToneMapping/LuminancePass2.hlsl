@@ -3,12 +3,7 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(UAV(u0)), " \
-    "CBV(b0), " \
-    "RootConstants(num32BitConstants=8, b1)"
-
-cbuffer FrameCB : register(b0) {
-    FrameConstants frameConstants;
-};
+    "RootConstants(num32BitConstants=9, b1)"
 
 cbuffer LuminancePass2CB : register(b1) {
     LuminancePass2Params luminancePass2Params;
@@ -48,7 +43,7 @@ void CSMain(uint binIndex : SV_GroupIndex) {
         // 이전 프레임의 luminance 값과 현재의 평균값을 exp smoothing 으로 보간한다.
         // luminance buffer 가 초기화된 첫 프레임에는 현재 평균값을 바로 사용하여 과도한 노출을 방지한다.
         float luminanceLastFrame = luminanceHistogram.Load<float>(LuminanceBufferOffsetLuminance);
-        float adaptationFrameTime = max(frameConstants.frameTime, 0.0);
+        float adaptationFrameTime = max(luminancePass2Params.frameTime, 0.0);
         float adaptedLuminance = weightedAverageLuminance;
         if (luminanceLastFrame > 0.0) {
             adaptedLuminance = luminanceLastFrame + (weightedAverageLuminance - luminanceLastFrame) * (1 - exp(-adaptationFrameTime * luminancePass2Params.luminanceAdaptationRate));

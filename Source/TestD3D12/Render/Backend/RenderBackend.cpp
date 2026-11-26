@@ -40,6 +40,11 @@ uint32_t RenderBackend::GetFrameIndex() const {
     return frame->GetFrameCount();
 }
 
+float RenderBackend::GetFrameTime() const {
+    assert(frame);
+    return frame->GetFrameTime();
+}
+
 void RenderBackend::Init() {
 #ifdef USE_RENDER_TASK
     drawGroupId = BE1::Engine::taskManager->CreateGroupId();
@@ -708,11 +713,11 @@ void RenderBackend::DrawCamera2D(RHI::ClearFlag clearFlags, const BE1::Color4 &c
 }
 
 bool RenderBackend::DispatchGenHiZ() {
-    return renderSystem->GetHiZ().DispatchGenerate(mainCommandList, frame->GetThreadData(0), gpuTiming, currentFrameCamera->depthTexture, currentFrameCamera->projectionPolicy, currentFrameCamera->hiZ);
+    return renderSystem->GetHiZ().DispatchGenerate(mainCommandList, gpuTiming, currentFrameCamera->depthTexture, currentFrameCamera->projectionPolicy, currentFrameCamera->hiZ);
 }
 
 bool RenderBackend::DispatchHiZDebugPreview() {
-    return renderSystem->GetHiZ().DispatchDebugPreview(mainCommandList, frame->GetThreadData(0), cameraConstantBuffer, gpuTiming, frame->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentFrameCamera->hiZ);
+    return renderSystem->GetHiZ().DispatchDebugPreview(mainCommandList, cameraConstantBuffer, gpuTiming, frame->GetRenderFrameSettings().hiZDebugPreviewMipLevel, currentFrameCamera->hiZ);
 }
 
 bool RenderBackend::DispatchGenSSRHiZ() {
@@ -1000,7 +1005,7 @@ const ShaderCSMData *RenderBackend::DrawCSMPass() {
     RHI::renderer->Barrier(mainCommandList, RHI::Renderer::MakeTextureBarrier(cascadedShadow->depthTexture, RHI::GPUResourceState::DepthWrite, RHI::GPUResourceState::ShaderResource));
 
     // Depth 기록 후 CPU 측 데이터를 활성화하고, 카메라 CB 업로드에서 한 번만 복사한다.
-    cascadedShadow->shaderData.enabled = 1;
+    cascadedShadow->shaderData.cascadeCount = cascadedShadow->cascadeCount;
     return &cascadedShadow->shaderData;
 }
 
@@ -2028,7 +2033,7 @@ void RenderBackend::DrawGuiPass(const RenderPass *renderPass) {
 bool RenderBackend::DispatchLightCulling() {
     GpuTiming::ScopedTimer gpuScope(gpuTiming, mainCommandList, GpuTiming::Tag::LightCulling);
 
-    return frame->DispatchLightCulling(frame->GetThreadData(0), mainCommandList, frameLightCullingPSO);
+    return frame->DispatchLightCulling(mainCommandList, frameLightCullingPSO);
 }
 
 static bool CanBatchSurfaceInstances(const DrawSurf2 *baseDrawSurf, const DrawSurf2 *drawSurf) {

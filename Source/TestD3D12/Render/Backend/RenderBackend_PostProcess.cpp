@@ -41,11 +41,6 @@ bool RenderBackend::DispatchMSAAResolveVelocity() {
     resolveParams.outputSize = uint2(currentFrameCamera->renderWidth, currentFrameCamera->renderHeight);
     resolveParams.reverseZ = currentFrameCamera->projectionPolicy.reverseZ ? 1u : 0u;
 
-    RHI::ConstantBuffer *resolveConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(MSAAResolveVelocityParams), &resolveParams);
-    if (!resolveConstantBuffer) {
-        return false;
-    }
-
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(currentFrameCamera->depthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(currentFrameCamera->velocityTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
@@ -56,7 +51,7 @@ bool RenderBackend::DispatchMSAAResolveVelocity() {
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, resolveVelocityPSO);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, resolveConstantBuffer);
+    RHI::renderer->SetConstants(mainCommandList, 0, &resolveParams, sizeof(resolveParams), 0);
 
     RHI::renderer->SetTexture(mainCommandList, 0, false, currentFrameCamera->depthTexture);
     RHI::renderer->SetTexture(mainCommandList, 1, false, currentFrameCamera->velocityTexture);
@@ -110,11 +105,6 @@ bool RenderBackend::DispatchMSAAResolveDepth(RHI::Texture *outputDepthTexture) {
     resolveParams.outputSize = uint2(outputW, outputH);
     resolveParams.reverseZ = currentFrameCamera->projectionPolicy.reverseZ ? 1u : 0u;
 
-    RHI::ConstantBuffer *resolveConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(MSAAResolveDepthParams), &resolveParams);
-    if (!resolveConstantBuffer) {
-        return false;
-    }
-
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(inputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeTextureBarrier(outputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
@@ -124,7 +114,7 @@ bool RenderBackend::DispatchMSAAResolveDepth(RHI::Texture *outputDepthTexture) {
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, resolveDepthPSO);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, resolveConstantBuffer);
+    RHI::renderer->SetConstants(mainCommandList, 0, &resolveParams, sizeof(resolveParams), 0);
 
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputDepthTexture);
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputDepthTexture);
@@ -175,11 +165,6 @@ bool RenderBackend::DispatchMSAAResolveDepthNormal(RHI::Texture *outputDepthText
     resolveParams.outputSize = uint2(outputW, outputH);
     resolveParams.reverseZ = currentFrameCamera->projectionPolicy.reverseZ ? 1u : 0u;
 
-    RHI::ConstantBuffer *msaaResolveDepthConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(MSAAResolveDepthParams), &resolveParams);
-    if (!msaaResolveDepthConstantBuffer) {
-        return false;
-    }
-
     // The prepass leaves its MSAA normal attachment readable; AO consumes the resolved pair.
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(inputDepthTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
@@ -192,7 +177,7 @@ bool RenderBackend::DispatchMSAAResolveDepthNormal(RHI::Texture *outputDepthText
     RHI::renderer->Barrier(mainCommandList, startBarriers, COUNT_OF(startBarriers));
 
     RHI::renderer->SetPSO(mainCommandList, resolveDepthNormalPSO);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, msaaResolveDepthConstantBuffer);
+    RHI::renderer->SetConstants(mainCommandList, 0, &resolveParams, sizeof(resolveParams), 0);
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputDepthTexture);
     RHI::renderer->SetTexture(mainCommandList, 1, false, inputNormalRoughnessTexture);
     RHI::renderer->SetTexture(mainCommandList, 0, true, outputDepthTexture);
@@ -251,11 +236,6 @@ bool RenderBackend::DispatchTAAResolve() {
     taaResolveParams.luminanceWeight = frameSettings.taaLuminanceWeight;
     taaResolveParams.colorBoxSigma = frameSettings.taaColorBoxSigma;
 
-    RHI::ConstantBuffer *taaResolveConstantBuffer = frame->GetThreadData(0)->AllocConstant(sizeof(TAAResolveParams), &taaResolveParams);
-    if (!taaResolveConstantBuffer) {
-        return false;
-    }
-
     RHI::GPUBarrier startBarriers[7];
     uint32_t startBarrierCount = 0;
     startBarriers[startBarrierCount++] = RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute);
@@ -272,7 +252,7 @@ bool RenderBackend::DispatchTAAResolve() {
     RHI::renderer->Barrier(mainCommandList, startBarriers, startBarrierCount);
 
     RHI::renderer->SetPSO(mainCommandList, frameTAAResolvePSO);
-    RHI::renderer->SetConstantBuffer(mainCommandList, 0, taaResolveConstantBuffer);
+    RHI::renderer->SetConstants(mainCommandList, 0, &taaResolveParams, sizeof(taaResolveParams), 0);
     RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
     RHI::renderer->SetTexture(mainCommandList, 0, false, inputTexture);
     RHI::renderer->SetTexture(mainCommandList, 1, false, velocityTexture);

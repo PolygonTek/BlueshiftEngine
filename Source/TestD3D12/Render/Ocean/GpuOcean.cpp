@@ -189,7 +189,7 @@ bool GpuOcean::Update(RHI::CommandList *commandList, RHI::FrameThreadData *frame
         resolveParams.foamOptions |= OceanFoamOptionBitResetHistory;
     }
 
-    if (!UpdateCascades(commandList, frameThreadData, params, resolveParams)) {
+    if (!UpdateCascades(commandList, params, resolveParams)) {
         return false;
     }
 
@@ -516,7 +516,7 @@ bool GpuOcean::GenerateInitialSpectraTMA(RHI::CommandList *commandList, RHI::Fra
     return true;
 }
 
-bool GpuOcean::GenerateTimeSpectrum(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &params) {
+bool GpuOcean::GenerateTimeSpectrum(RHI::CommandList *commandList, const OceanTimeSpectrumParams &params) {
     PROFILER_CPU_SCOPED_EVENT("GpuOcean::GenerateTimeSpectrum");
 
     if (!initialSpectrumTextureArray || initialSpectrumTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready ||
@@ -541,17 +541,12 @@ bool GpuOcean::GenerateTimeSpectrum(RHI::CommandList *commandList, RHI::FrameThr
         return false;
     }
 
-    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
-    if (!constantBuffer) {
-        return false;
-    }
-
     RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(timeSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess));
 
     RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetTexture(commandList, 0, false, initialSpectrumTextureArray);
     RHI::renderer->SetBuffer(commandList, 0, true, timeSpectrumBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(spectrumWidth >> 1u, OceanTimeSpectrumBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(spectrumHeight, OceanTimeSpectrumBlockSizeY);
@@ -561,11 +556,10 @@ bool GpuOcean::GenerateTimeSpectrum(RHI::CommandList *commandList, RHI::FrameThr
     return true;
 }
 
-bool GpuOcean::ResolveOceanFields(RHI::CommandList *commandList, const RHI::ConstantBuffer *resolveConstantBuffer) {
+bool GpuOcean::ResolveOceanFields(RHI::CommandList *commandList, const OceanResolveFieldsParams &params) {
     PROFILER_CPU_SCOPED_EVENT("GpuOcean::ResolveOceanFields");
 
-    if (!resolveConstantBuffer ||
-        !spatialFieldsBuffer || spatialFieldsBuffer->GetStatus() != RHI::GPUResourceStatus::Ready ||
+    if (!spatialFieldsBuffer || spatialFieldsBuffer->GetStatus() != RHI::GPUResourceStatus::Ready ||
         !fieldTextureArray || fieldTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready ||
         !foamHistoryTextureArray || foamHistoryTextureArray->GetStatus() != RHI::GPUResourceStatus::Ready) {
         return false;
@@ -605,7 +599,7 @@ bool GpuOcean::ResolveOceanFields(RHI::CommandList *commandList, const RHI::Cons
     RHI::renderer->SetBuffer(commandList, 0, false, spatialFieldsBuffer);
     RHI::renderer->SetTexture(commandList, 0, true, fieldTextureArray);
     RHI::renderer->SetTexture(commandList, 1, true, foamHistoryTextureArray);
-    RHI::renderer->SetConstantBuffer(commandList, 0, resolveConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(fieldWidth, OceanResolveFieldsBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(fieldHeight, OceanResolveFieldsBlockSizeY);
@@ -639,7 +633,7 @@ static void GenerateOceanCascadeMipRanges(RHI::CommandList *commandList, RHI::Te
     }
 }
 
-bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &baseParams, const OceanResolveFieldsParams &resolveParams) {
+bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, const OceanTimeSpectrumParams &baseParams, const OceanResolveFieldsParams &resolveParams) {
     PROFILER_CPU_SCOPED_EVENT("GpuOcean::UpdateCascades");
 
     if (!initialSpectraReady || !EnsureResources()) {
@@ -688,7 +682,7 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
         params.cascadeIndex = cascadeIndex;
 
         // 초기 스펙트럼을 시간에 따라 진화시키고 IFFT 입력 spectrum 을 생성한다.
-        if (!GenerateTimeSpectrum(commandList, frameThreadData, params)) {
+        if (!GenerateTimeSpectrum(commandList, params)) {
             return false;
         }
 
@@ -707,13 +701,9 @@ bool GpuOcean::UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadDat
             cascadeResolveParams.foamOptions &= ~OceanFoamOptionBitEnabled;
         }
         cascadeResolveParams.cascadeIndex = cascadeIndex;
-        RHI::ConstantBuffer *resolveConstantBuffer = frameThreadData->AllocConstant(sizeof(cascadeResolveParams), &cascadeResolveParams);
-        if (!resolveConstantBuffer) {
-            return false;
-        }
 
         // 공간 영역 field 를 texture array 의 현재 cascade slice 로 변환한다.
-        if (!ResolveOceanFields(commandList, resolveConstantBuffer)) {
+        if (!ResolveOceanFields(commandList, cascadeResolveParams)) {
             return false;
         }
 

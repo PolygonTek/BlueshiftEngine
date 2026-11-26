@@ -2,10 +2,10 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), UAV(u0)), " \
-    "CBV(b0)"
+    "RootConstants(num32BitConstants=4, b0)"
 
 cbuffer BloomCB : register(b0) {
-    BloomParams bloomParams;
+    ConvolutionBloomResolveDiffractionPSFParams bloomParams;
 }
 
 // grayscale aperture 이미지의 2D FFT 결과인 입력 버퍼

@@ -897,7 +897,7 @@ bool GpuFFT::DispatchIFFTDualReal2D(RHI::CommandList *commandList, RHI::Buffer *
     return DispatchIFFTDualRealFused(commandList, dualRealPso, transposeOutput, outputBuffer, verticalOutput, FFTBlockCount, RHI::GPUResourceState::UnorderedAccess, RHI::GPUResourceState::ShaderResourceCompute);
 }
 
-bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyComplexSpectrum2D");
 
     assert(outputSpectrumBuffer != lhsSpectrumBuffer);
@@ -925,11 +925,6 @@ bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RH
     multiplyParams.planeCount = planeCount;
     multiplyParams.scale = scale;
 
-    RHI::ConstantBuffer *multiplyConstantBuffer = frameThreadData->AllocConstant(sizeof(MultiplySpectrum2DParams), &multiplyParams);
-    if (!multiplyConstantBuffer) {
-        return false;
-    }
-
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(lhsSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(rhsSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
@@ -941,7 +936,7 @@ bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RH
     RHI::renderer->SetBuffer(commandList, 0, false, lhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 1, false, rhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, multiplyConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &multiplyParams, sizeof(multiplyParams), 0);
 
     const uint32_t threadGroupCount = BE1::DivCeil(elementCount, MultiplySpectrum2DBlockSize);
     RHI::renderer->Dispatch(commandList, threadGroupCount, 1, 1);
@@ -956,7 +951,7 @@ bool GpuFFT::DispatchMultiplyComplexSpectrum2D(RHI::CommandList *commandList, RH
     return true;
 }
 
-bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyPackedRealSpectrum2D");
 
     assert(outputSpectrumBuffer != lhsSpectrumBuffer);
@@ -985,11 +980,6 @@ bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList,
     multiplyParams.planeCount = planeCount;
     multiplyParams.scale = scale;
 
-    RHI::ConstantBuffer *multiplyConstantBuffer = frameThreadData->AllocConstant(sizeof(MultiplySpectrum2DParams), &multiplyParams);
-    if (!multiplyConstantBuffer) {
-        return false;
-    }
-
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(lhsSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(rhsSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
@@ -1001,7 +991,7 @@ bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList,
     RHI::renderer->SetBuffer(commandList, 0, false, lhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 1, false, rhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, multiplyConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &multiplyParams, sizeof(multiplyParams), 0);
 
     const uint32_t threadGroupCount = BE1::DivCeil(elementCount, MultiplySpectrum2DBlockSize);
     RHI::renderer->Dispatch(commandList, threadGroupCount, 1, 1);
@@ -1016,7 +1006,7 @@ bool GpuFFT::DispatchMultiplyPackedRealSpectrum2D(RHI::CommandList *commandList,
     return true;
 }
 
-bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
+bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandList, RHI::Buffer *lhsSpectrumBuffer, RHI::Buffer *rhsSpectrumBuffer, RHI::Buffer *outputSpectrumBuffer, uint32_t fftSize, uint32_t planeCount, float scale) {
     PROFILER_CPU_SCOPED_EVENT("GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D");
 
     assert(outputSpectrumBuffer != lhsSpectrumBuffer);
@@ -1044,11 +1034,6 @@ bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandL
     multiplyParams.planeCount = planeCount;
     multiplyParams.scale = scale;
 
-    RHI::ConstantBuffer *multiplyConstantBuffer = frameThreadData->AllocConstant(sizeof(MultiplySpectrum2DParams), &multiplyParams);
-    if (!multiplyConstantBuffer) {
-        return false;
-    }
-
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(lhsSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
         RHI::Renderer::MakeBufferBarrier(rhsSpectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
@@ -1060,7 +1045,7 @@ bool GpuFFT::DispatchMultiplyPackedDualRealSpectrum2D(RHI::CommandList *commandL
     RHI::renderer->SetBuffer(commandList, 0, false, lhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 1, false, rhsSpectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 0, true, outputSpectrumBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, multiplyConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &multiplyParams, sizeof(multiplyParams), 0);
 
     const uint32_t threadGroupCount = BE1::DivCeil(elementCount, MultiplySpectrum2DBlockSize);
     RHI::renderer->Dispatch(commandList, threadGroupCount, 1, 1);

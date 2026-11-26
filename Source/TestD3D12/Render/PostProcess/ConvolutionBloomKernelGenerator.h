@@ -48,7 +48,7 @@ public:
     void                            SetDispersionAmount(float amount);
     float                           GetDispersionAmount() const { return dispersionAmount; }
 
-    bool                            GenerateKernel(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData);
+    bool                            GenerateKernel(RHI::CommandList *commandList);
     bool                            ReadKernelImage(BE1::Image &outImage) const;
 
     bool                            EnsureResources();
@@ -68,11 +68,11 @@ public:
     RHI::Texture *                  GetKernelTexture() const { return kernelTexture; }
 
 private:
-    bool                            DispatchAperturePrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData);
-    bool                            DispatchReduceApertureEnergy(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer **outEnergyBuffer);
-    bool                            DispatchReduceApertureEnergyPass(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState);
-    bool                            DispatchResolveDiffractionPSF(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *apertureEnergyBuffer);
-    bool                            DispatchApplyDispersion(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData);
+    bool                            DispatchAperturePrepare(RHI::CommandList *commandList);
+    bool                            DispatchReduceApertureEnergy(RHI::CommandList *commandList, RHI::Buffer **outEnergyBuffer);
+    bool                            DispatchReduceApertureEnergyPass(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState);
+    bool                            DispatchResolveDiffractionPSF(RHI::CommandList *commandList, RHI::Buffer *apertureEnergyBuffer);
+    bool                            DispatchApplyDispersion(RHI::CommandList *commandList);
 
     SharedPtr<Texture>              apertureSourceTexture;
     bool                            kernelDirty = true;

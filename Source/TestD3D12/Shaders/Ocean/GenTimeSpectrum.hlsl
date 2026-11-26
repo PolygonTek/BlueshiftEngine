@@ -4,7 +4,7 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0)"
+    "RootConstants(num32BitConstants=7, b0)"
 
 cbuffer OceanTimeSpectrumCB : register(b0) {
     OceanTimeSpectrumParams spectrumParams;

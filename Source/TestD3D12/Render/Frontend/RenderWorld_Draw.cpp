@@ -1269,8 +1269,6 @@ void RenderWorld::SetupFrameCascadedShadow(RenderFrame *frame, const RenderCamer
     frameCascadedShadow->depthTexture = depthTexture;
 
     frameCascadedShadow->shaderData.textureIndex = depthTexture->GetBindlessIndex(RHI::ViewType::SRV, renderContext->GetCSMDepthSRV());
-    frameCascadedShadow->shaderData.cascadeCount = frameCascadedShadow->cascadeCount;
-    frameCascadedShadow->shaderData.maxDistance = csmMaxDistance;
     frameCascadedShadow->shaderData.cascadeFilterRadii = float4(cascadeFilterRadii);
 
     const float texelSize = 1.0f / shadowMapResolution;

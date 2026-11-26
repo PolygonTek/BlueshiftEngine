@@ -2,10 +2,10 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0)"
+    "RootConstants(num32BitConstants=2, b0)"
 
 cbuffer BloomCB : register(b0) {
-    BloomParams bloomParams;
+    ConvolutionBloomReduceApertureEnergyParams bloomParams;
 }
 
 StructuredBuffer<float2> inputBuffer : register(t0);
@@ -16,8 +16,8 @@ groupshared float sharedEnergy[ConvolutionBloomApertureEnergyReduceBlockSize];
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 [numthreads(ConvolutionBloomApertureEnergyReduceBlockSize, 1, 1)]
 void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID, uint3 groupId : SV_GroupID) {
-    const uint inputElementCount = bloomParams.inputSize.x;
-    const bool inputIsPartialEnergy = bloomParams.inputSize.y != 0;
+    const uint inputElementCount = bloomParams.inputElementCount;
+    const bool inputIsPartialEnergy = bloomParams.inputIsPartialEnergy != 0;
     const uint inputIndex = groupId.x * ConvolutionBloomApertureEnergyReduceBlockSize + groupThreadId.x;
 
     float energy = 0.0;

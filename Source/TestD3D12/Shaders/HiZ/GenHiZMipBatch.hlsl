@@ -3,7 +3,7 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0), UAV(u1), UAV(u2), UAV(u3)), " \
-    "CBV(b0), " \
+    "RootConstants(num32BitConstants=8, b0), " \
     "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)"
 
 cbuffer HiZMipGenCB : register(b0) {

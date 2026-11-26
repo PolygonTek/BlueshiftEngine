@@ -53,6 +53,7 @@ public:
     RHI::Texture *                  GetPostProcessInputTexture() const { return currentPostProcessInputTexture; }
     const RenderFrameSettings &     GetFrameSettings() const;
     uint32_t                        GetFrameIndex() const;
+    float                           GetFrameTime() const;
     GpuTiming &                     GetGpuTiming() { return gpuTiming; }
 
 private:

@@ -6,7 +6,7 @@
     "RootFlags(0), " \
     "SRV(t1), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0), " \
+    "RootConstants(num32BitConstants=9, b0), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 
 DECLARE_COMMON_STATIC_SAMPLERS

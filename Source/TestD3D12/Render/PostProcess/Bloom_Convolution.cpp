@@ -85,7 +85,6 @@ bool Bloom::DispatchConvolutionBloomKernelPrepare(RenderBackend &backend) const 
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomKernelPrepare");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
@@ -120,18 +119,13 @@ bool Bloom::DispatchConvolutionBloomKernelPrepare(RenderBackend &backend) const 
     const float sourceFootprintY = BE1::Math::Sqrt(sourceFootprintYX * sourceFootprintYX + sourceFootprintYY * sourceFootprintYY);
     const float kernelMipLevel = BE1::Max(BE1::Math::Log2(BE1::Max(sourceFootprintX, sourceFootprintY)), 0.0f);
 
-    BloomParams bloomParams = {};
-    bloomParams.inputSize = uint2(inputW, inputH);
+    ConvolutionBloomKernelPrepareParams bloomParams = {};
     bloomParams.outputSize = uint2(outputW, outputH);
-    bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params0 = float4(rotationCos, rotationSin, data.fftBloomMappedKernelScale.x, data.fftBloomMappedKernelScale.y);
-    bloomParams.params1.x = kernelMipLevel;
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
+    bloomParams.rotationCos = rotationCos;
+    bloomParams.rotationSin = rotationSin;
+    bloomParams.mappedKernelScale = float2(data.fftBloomMappedKernelScale.x, data.fftBloomMappedKernelScale.y);
+    bloomParams.kernelMipLevel = kernelMipLevel;
 
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(spatialBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::UnorderedAccess)
@@ -143,7 +137,7 @@ bool Bloom::DispatchConvolutionBloomKernelPrepare(RenderBackend &backend) const 
     RHI::renderer->SetPSO(commandList, frameConvolutionBloomKernelPreparePSO);
     RHI::renderer->SetTexture(commandList, 0, false, sourceTexture);
     RHI::renderer->SetBuffer(commandList, 0, true, spatialBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
@@ -161,7 +155,6 @@ bool Bloom::DispatchConvolutionBloomScreenPrefilter(RenderBackend &backend) cons
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomScreenPrefilter");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     RHI::Texture *inputColorTexture = backend.GetPostProcessInputTexture();
     const FrameBloom &data = backend.GetFrameCamera()->bloom;
@@ -182,19 +175,16 @@ bool Bloom::DispatchConvolutionBloomScreenPrefilter(RenderBackend &backend) cons
     const float bloomSoftThreshold = renderFrameSettings.bloomSoftThreshold;
     const float convolutionBloomPrefilterRadius = renderFrameSettings.convolutionBloomPrefilterRadius;
 
-    BloomParams bloomParams = {};
-    bloomParams.inputSize = uint2(inputW, inputH);
+    BloomPrefilterParams bloomParams = {};
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
+    bloomParams.threshold = bloomThreshold;
+    bloomParams.softThreshold = bloomSoftThreshold;
 
     // RotatedGrid5Tap 경로를 사용하여 작은 화면 영역의 고립된 고휘도 샘플을 Karis weight 로 억제한다.
-    bloomParams.params0 = float4(bloomThreshold, bloomSoftThreshold, 0.0f, convolutionBloomPrefilterRadius);
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
+    bloomParams.prefilterQuality = 0.0f;
+    bloomParams.radius = convolutionBloomPrefilterRadius;
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, commandList, GpuTiming::Tag::ConvolutionBloomScreenPrefilter);
 
@@ -207,7 +197,7 @@ bool Bloom::DispatchConvolutionBloomScreenPrefilter(RenderBackend &backend) cons
     RHI::renderer->SetPSO(commandList, frameBloomPrefilterPSO);
     RHI::renderer->SetTexture(commandList, 0, false, inputTexture);
     RHI::renderer->SetTexture(commandList, 0, true, outputTexture, data.fftBloomConvolutionOutputMipUAVs[0]);
-    RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
@@ -230,7 +220,6 @@ bool Bloom::DispatchConvolutionBloomScreenPrepare(RenderBackend &backend) const 
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomScreenPrepare");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
@@ -252,18 +241,11 @@ bool Bloom::DispatchConvolutionBloomScreenPrepare(RenderBackend &backend) const 
     const float sourceTexelsPerOutputTexel = BE1::Max(static_cast<float>(inputW) / contentW, static_cast<float>(inputH) / contentH);
     const float screenMipLevel = BE1::Min(BE1::Max(BE1::Math::Log2(sourceTexelsPerOutputTexel), 0.0f), static_cast<float>(mipLevelCount - 1));
 
-    BloomParams bloomParams = {};
-    bloomParams.inputSize = uint2(inputW, inputH);
+    ConvolutionBloomScreenPrepareParams bloomParams = {};
     bloomParams.outputSize = uint2(outputW, outputH);
-    bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
-    bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params0.z = screenMipLevel;
-    bloomParams.params1 = float4(data.fftBloomMappedContentRect);
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
+    bloomParams.contentOffset = float2(data.fftBloomMappedContentRect.x, data.fftBloomMappedContentRect.y);
+    bloomParams.contentSize = float2(data.fftBloomMappedContentRect.w, data.fftBloomMappedContentRect.h);
+    bloomParams.screenMipLevel = screenMipLevel;
 
     RHI::Texture *inputTexture = data.fftBloomConvolutionOutputTexture;
     RHI::Buffer *outputBuffer = data.fftBloomScreenSpatialBuffer;
@@ -279,7 +261,7 @@ bool Bloom::DispatchConvolutionBloomScreenPrepare(RenderBackend &backend) const 
     RHI::renderer->SetPSO(commandList, frameConvolutionBloomScreenPreparePSO);
     RHI::renderer->SetTexture(commandList, 0, false, inputTexture);
     RHI::renderer->SetBuffer(commandList, 0, true, outputBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
@@ -298,7 +280,6 @@ bool Bloom::DispatchConvolutionBloomMultiplySpectrum(RenderBackend &backend) con
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomMultiplySpectrum");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuFFT &gpuFFT = renderSystem->GetGpuFFT();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     const FrameBloom &data = backend.GetFrameCamera()->bloom;
@@ -320,7 +301,7 @@ bool Bloom::DispatchConvolutionBloomMultiplySpectrum(RenderBackend &backend) con
 
     GpuTiming::ScopedTimer gpuScope(gpuTiming, commandList, GpuTiming::Tag::ConvolutionBloomMultiplySpectrum);
 
-    return gpuFFT.DispatchMultiplyPackedDualRealSpectrum2D(commandList, frameThreadData,
+    return gpuFFT.DispatchMultiplyPackedDualRealSpectrum2D(commandList,
         data.fftBloomKernelSpectrumBuffer,
         data.fftBloomScreenSpectrumBuffer,
         data.fftBloomWorkBuffer,
@@ -333,7 +314,6 @@ bool Bloom::DispatchConvolutionBloomResolve(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchConvolutionBloomResolve");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     const FrameBloom &data = backend.GetFrameCamera()->bloom;
 
@@ -350,16 +330,12 @@ bool Bloom::DispatchConvolutionBloomResolve(RenderBackend &backend) const {
         return false;
     }
 
-    BloomParams bloomParams = {};
+    ConvolutionBloomResolveParams bloomParams = {};
     bloomParams.inputSize = uint2(fftSize, fftSize);
     bloomParams.outputSize = uint2(outputW, outputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params1 = float4(data.fftBloomMappedContentRect);
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
+    bloomParams.contentOffset = float2(data.fftBloomMappedContentRect.x, data.fftBloomMappedContentRect.y);
+    bloomParams.contentSize = float2(data.fftBloomMappedContentRect.w, data.fftBloomMappedContentRect.h);
 
     RHI::Buffer *spatialBuffer = data.fftBloomScreenSpatialBuffer;
     RHI::Texture *outputTexture = data.fftBloomConvolutionOutputTexture;
@@ -375,7 +351,7 @@ bool Bloom::DispatchConvolutionBloomResolve(RenderBackend &backend) const {
     RHI::renderer->SetPSO(commandList, frameConvolutionBloomResolvePSO);
     RHI::renderer->SetBuffer(commandList, 0, false, spatialBuffer);
     RHI::renderer->SetTexture(commandList, 0, true, outputTexture);
-    RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);

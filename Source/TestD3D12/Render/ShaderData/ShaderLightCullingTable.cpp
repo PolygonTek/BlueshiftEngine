@@ -171,7 +171,7 @@ bool ShaderLightCullingTable::Upload(RHI::FrameThreadData *frameThreadData, RHI:
     return true;
 }
 
-bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState, const RenderFrame *frame) {
+bool ShaderLightCullingTable::DispatchLightCulling(RHI::CommandList *commandList, RHI::PipelineState *pipelineState, const RenderFrame *frame) {
     PROFILER_CPU_SCOPED_EVENT("ShaderLightCullingTable::DispatchLightCulling");
 
     const uint32_t numLightCullingWords = frame->NumLightCullingWords();
@@ -220,22 +220,15 @@ bool ShaderLightCullingTable::DispatchLightCulling(RHI::FrameThreadData *frameTh
             continue;
         }
 
-        RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(ShaderLightCullingParams));
-        if (!constantBuffer || !constantBuffer->mappedPtr) {
-            return false;
-        }
+        ShaderLightCullingParams params;
+        params.numLocalLights = frameCamera.numFrameLocalLights;
+        params.lightRefTableOffset = frameCamera.lightCulling.lightRefTableOffset;
+        params.tileWordTableOffset = frameCamera.lightCulling.tileWordTableOffset;
+        params.tileCountX = frameCamera.lightCulling.tileCountX;
+        params.tileCountY = frameCamera.lightCulling.tileCountY;
+        params.wordsPerTile = frameCamera.lightCulling.wordsPerTile;
 
-        ShaderLightCullingParams *params = reinterpret_cast<ShaderLightCullingParams *>(constantBuffer->mappedPtr);
-        params->numLocalLights = frameCamera.numFrameLocalLights;
-        params->lightRefTableOffset = frameCamera.lightCulling.lightRefTableOffset;
-        params->tileWordTableOffset = frameCamera.lightCulling.tileWordTableOffset;
-        params->tileCountX = frameCamera.lightCulling.tileCountX;
-        params->tileCountY = frameCamera.lightCulling.tileCountY;
-        params->wordsPerTile = frameCamera.lightCulling.wordsPerTile;
-        params->padding0 = 0;
-        params->padding1 = 0;
-
-        RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+        RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
 
         // XY 축은 한 스레드 그룹이 몇개의 타일을 계산할 것인지를 기준으로 스레드 그룹 개수를 계산.
         // Z 축은 한 스레드 그룹이 하나의 mask word 를 처리하는 것을 기준으로 스레드 그룹 개수를 계산.

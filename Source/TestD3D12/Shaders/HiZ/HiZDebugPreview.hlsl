@@ -3,7 +3,7 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0), " \
+    "RootConstants(num32BitConstants=5, b0), " \
     "CBV(b1)"
 
 cbuffer HiZDebugPreviewCB : register(b0) {

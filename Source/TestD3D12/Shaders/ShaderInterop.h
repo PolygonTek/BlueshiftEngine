@@ -319,7 +319,13 @@ struct LuminancePass2Params {
     float exposureCompensation;
     float minExposure;
     float maxExposure;
+    float frameTime;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(LuminancePass2Params) == 36, "LuminancePass2Params must match the nine HLSL root constants");
+static_assert(offsetof(LuminancePass2Params, frameTime) == 32, "Frame time must occupy the ninth root constant");
+#endif
 
 struct GT7ToneMappingParams {
     float3 shoulder;               // Precomputed kA, kB, kC for the highlight curve.
@@ -364,24 +370,29 @@ struct TAAResolveParams {
     float maxSubpixelCurrentWeight;
     float luminanceWeight;
     float colorBoxSigma;
-    uint padding0;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(TAAResolveParams) == 48, "TAAResolveParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(TAAResolveParams) == 44, "TAAResolveParams must match the HLSL root constants");
 #endif
 
 struct MSAAResolveDepthParams {
     uint2 outputSize;
     uint reverseZ;
-    uint padding0;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(MSAAResolveDepthParams) == 12, "MSAAResolveDepthParams must match the three HLSL root constants");
+#endif
 
 struct MSAAResolveVelocityParams {
     uint2 outputSize;
     uint reverseZ;
-    uint padding0;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(MSAAResolveVelocityParams) == 12, "MSAAResolveVelocityParams must match the three HLSL root constants");
+#endif
 
 struct FullscreenImageParams {
     float2 texCoordScale;
@@ -399,44 +410,102 @@ struct DisplayP3EDROutputParams {
     float2 texCoordScale;
     float2 texCoordOffset;
     float maxDisplayLinearValue;
-    float padding0;
 };
 
 #ifdef __cplusplus
 static_assert(sizeof(HDR10OutputParams) == 24, "HDR10OutputParams must match the HLSL root constants");
-static_assert(sizeof(DisplayP3EDROutputParams) == 24, "DisplayP3EDROutputParams must match the HLSL root constants");
+static_assert(sizeof(DisplayP3EDROutputParams) == 20, "DisplayP3EDROutputParams must match the HLSL root constants");
 #endif
 
-struct BloomParams {
-    uint2 inputSize;
+struct BloomPrefilterParams {
     uint2 outputSize;
     float2 inputTexelSize;
     float2 outputTexelSize;
-    float4 params0;
-    float4 params1;
+    float threshold;
+    float softThreshold;
+    float prefilterQuality;
+    float radius;
 };
 
-#define BP_BLOOM_THRESHOLD bloomParams.params0.x
-#define BP_BLOOM_SOFT_THRESHOLD bloomParams.params0.y
-#define BP_BLOOM_PREFILTER_QUALITY bloomParams.params0.z
-#define BP_BLOOM_WEIGHT bloomParams.params0.z
-#define BP_BLOOM_RADIUS bloomParams.params0.w
-#define BP_BLOOM_CONTENT_OFFSET bloomParams.params1.xy
-#define BP_BLOOM_CONTENT_SIZE bloomParams.params1.zw
-#define BP_BLOOM_SCREEN_MIP_LEVEL bloomParams.params0.z
-#define BP_BLOOM_KERNEL_SCALE bloomParams.params0.x
-#define BP_BLOOM_KERNEL_ROTATION_COS bloomParams.params0.x
-#define BP_BLOOM_KERNEL_ROTATION_SIN bloomParams.params0.y
-#define BP_BLOOM_MAPPED_KERNEL_SCALE bloomParams.params0.zw
-#define BP_BLOOM_KERNEL_MIP_LEVEL bloomParams.params1.x
-#define BP_BLOOM_APERTURE_SCALE bloomParams.params0.x
-#define BP_BLOOM_APERTURE_MIP_LEVEL bloomParams.params0.y
-#define BP_BLOOM_DISPERSION_AMOUNT bloomParams.params0.x
-#define BP_BLOOM_DISPERSION_MIN_WAVELENGTH_NM bloomParams.params0.y
-#define BP_BLOOM_DISPERSION_MAX_WAVELENGTH_NM bloomParams.params0.z
-#define BP_BLOOM_DISPERSION_REFERENCE_WAVELENGTH_NM bloomParams.params0.w
-#define BP_BLOOM_DISPERSION_SAMPLE_COUNT bloomParams.params1.x
-#define BP_BLOOM_DISPERSION_INTENSITY_SCALE bloomParams.params1.y
+struct BloomDownsampleParams {
+    uint2 outputSize;
+    float2 inputTexelSize;
+    float2 outputTexelSize;
+    float radius;
+};
+
+struct BloomUpsampleParams {
+    uint2 outputSize;
+    float2 inputTexelSize;
+    float2 outputTexelSize;
+    float weight;
+    float radius;
+};
+
+struct ConvolutionBloomKernelPrepareParams {
+    uint2 outputSize;
+    float2 outputTexelSize;
+    float rotationCos;
+    float rotationSin;
+    float2 mappedKernelScale;
+    float kernelMipLevel;
+};
+
+struct ConvolutionBloomScreenPrepareParams {
+    uint2 outputSize;
+    float2 contentOffset;
+    float2 contentSize;
+    float screenMipLevel;
+};
+
+struct ConvolutionBloomResolveParams {
+    uint2 inputSize;
+    uint2 outputSize;
+    float2 outputTexelSize;
+    float2 contentOffset;
+    float2 contentSize;
+};
+
+struct ConvolutionBloomAperturePrepareParams {
+    uint2 outputSize;
+    float2 outputTexelSize;
+    float apertureScale;
+    float apertureMipLevel;
+};
+
+struct ConvolutionBloomReduceApertureEnergyParams {
+    uint inputElementCount;
+    uint inputIsPartialEnergy;
+};
+
+struct ConvolutionBloomResolveDiffractionPSFParams {
+    uint2 inputSize;
+    uint2 outputSize;
+};
+
+struct ConvolutionBloomApplyDispersionParams {
+    uint2 outputSize;
+    float2 outputTexelSize;
+    float dispersionAmount;
+    float minWavelengthNm;
+    float maxWavelengthNm;
+    float referenceWavelengthNm;
+    float sampleCount;
+    float intensityScale;
+};
+
+#ifdef __cplusplus
+static_assert(sizeof(BloomPrefilterParams) == 40, "BloomPrefilterParams must match the HLSL root constants");
+static_assert(sizeof(BloomDownsampleParams) == 28, "BloomDownsampleParams must match the HLSL root constants");
+static_assert(sizeof(BloomUpsampleParams) == 32, "BloomUpsampleParams must match the HLSL root constants");
+static_assert(sizeof(ConvolutionBloomKernelPrepareParams) == 36, "ConvolutionBloomKernelPrepareParams must match the HLSL root constants");
+static_assert(sizeof(ConvolutionBloomScreenPrepareParams) == 28, "ConvolutionBloomScreenPrepareParams must match the HLSL root constants");
+static_assert(sizeof(ConvolutionBloomResolveParams) == 40, "ConvolutionBloomResolveParams must match the HLSL root constants");
+static_assert(sizeof(ConvolutionBloomAperturePrepareParams) == 24, "ConvolutionBloomAperturePrepareParams must match the HLSL root constants");
+static_assert(sizeof(ConvolutionBloomReduceApertureEnergyParams) == 8, "ConvolutionBloomReduceApertureEnergyParams must match the HLSL root constants");
+static_assert(sizeof(ConvolutionBloomResolveDiffractionPSFParams) == 16, "ConvolutionBloomResolveDiffractionPSFParams must match the HLSL root constants");
+static_assert(sizeof(ConvolutionBloomApplyDispersionParams) == 40, "ConvolutionBloomApplyDispersionParams must match the HLSL root constants");
+#endif
 
 struct HiZMipGenParams {
     uint2 inputSize;
@@ -446,13 +515,16 @@ struct HiZMipGenParams {
     uint reverseZ;
 };
 
+#ifdef __cplusplus
+static_assert(sizeof(HiZMipGenParams) == 32, "HiZMipGenParams must match the eight HLSL root constants");
+#endif
+
 struct GTAOPrefilterParams {
     uint2 inputSize;
     uint2 outputSize;
     uint resolutionScale;
     uint reverseZ;
     uint depthMipCount;
-    uint padding0;
     float radius;
     float falloffRange;
     float radiusMultiplier;
@@ -460,7 +532,7 @@ struct GTAOPrefilterParams {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(GTAOPrefilterParams) == 48, "GTAOPrefilterParams must match the HLSL root constants");
+static_assert(sizeof(GTAOPrefilterParams) == 44, "GTAOPrefilterParams must match the HLSL root constants");
 #endif
 
 struct GTAOMainParams {
@@ -478,11 +550,10 @@ struct GTAOMainParams {
     float depthMipSamplingOffset;
     float power;
     float clearDepth;
-    float padding0;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(GTAOMainParams) == 72, "GTAOMainParams must match the HLSL root constants");
+static_assert(sizeof(GTAOMainParams) == 68, "GTAOMainParams must match the HLSL root constants");
 #endif
 
 struct GTAODenoiseParams {
@@ -490,11 +561,10 @@ struct GTAODenoiseParams {
     float2 outputSizeRcp;
     float blurBeta;
     uint finalPass;
-    float2 padding0;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(GTAODenoiseParams) == 32, "GTAODenoiseParams must match the HLSL root constants");
+static_assert(sizeof(GTAODenoiseParams) == 24, "GTAODenoiseParams must match the HLSL root constants");
 #endif
 
 struct GTAODebugParams {
@@ -503,11 +573,10 @@ struct GTAODebugParams {
     uint sourceType;
     uint mipLevel;
     float linearDepthScale;
-    float padding0;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(GTAODebugParams) == 32, "GTAODebugParams must match the HLSL root constants");
+static_assert(sizeof(GTAODebugParams) == 28, "GTAODebugParams must match the HLSL root constants");
 #endif
 
 struct AOUpsampleParams {
@@ -515,11 +584,10 @@ struct AOUpsampleParams {
     uint2 outputSize;
     float depthSigmaRcp;
     float clearDepth;
-    float2 padding0;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(AOUpsampleParams) == 32, "AOUpsampleParams must match the HLSL root constants");
+static_assert(sizeof(AOUpsampleParams) == 24, "AOUpsampleParams must match the HLSL root constants");
 #endif
 
 struct SSRHiZMipParams {
@@ -612,11 +680,10 @@ struct HiZDebugPreviewParams {
     uint2 inputSize;
     uint2 outputSize;
     float linearDepthScale;
-    uint3 padding0;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(HiZDebugPreviewParams) == 32, "HiZDebugPreviewParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(HiZDebugPreviewParams) == 20, "HiZDebugPreviewParams must match the HLSL root constants");
 #endif
 
 struct HiZCullInstancesParams {
@@ -638,14 +705,15 @@ struct MultiplySpectrum2DParams {
     uint fftSize;
     uint planeCount;
     float scale;
-    uint padding0;
 };
+
+#ifdef __cplusplus
+static_assert(sizeof(MultiplySpectrum2DParams) == 12, "MultiplySpectrum2DParams must match the three HLSL root constants");
+#endif
 
 struct FFTStageParams {
     float sign;
     float scale;
-    uint padding0;
-    uint padding1;
 };
 
 struct OceanInitialSpectrumCascadeParams {
@@ -703,11 +771,10 @@ struct OceanTimeSpectrumParams {
     float patchSize;
     uint cascadeIndex;
     uint options;
-    float padding0;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanTimeSpectrumParams) == 32, "OceanTimeSpectrumParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanTimeSpectrumParams) == 28, "OceanTimeSpectrumParams must match the seven HLSL root constants");
 #endif
 
 struct OceanResolveFieldsParams {
@@ -718,11 +785,10 @@ struct OceanResolveFieldsParams {
     float foamDecayRate;
     uint foamOptions;
     uint cascadeIndex;
-    float padding0;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanResolveFieldsParams) == 32, "OceanResolveFieldsParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanResolveFieldsParams) == 28, "OceanResolveFieldsParams must match the seven HLSL root constants");
 #endif
 
 struct OceanSurfaceQueryInput {
@@ -753,11 +819,10 @@ struct OceanSurfaceQueryParams {
     float sampleTime;
     uint queryCount;
     uint cascadeCount;
-    float3 padding;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanSurfaceQueryParams) == 48, "OceanSurfaceQueryParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanSurfaceQueryParams) == 36, "OceanSurfaceQueryParams must match the HLSL root constants");
 #endif
 
 struct OceanSurfaceParams {
@@ -779,16 +844,16 @@ struct OceanSurfaceParams {
     float absorptionDistance;
     float airToWaterEta;
     float waterToAirEta;
-    float2 sceneSize;
     float2 sceneSizeRcp;
     float2 sceneSnapshotSize;
     float2 sceneSnapshotSizeRcp;
     uint cascadeCount;
-    float padding;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(OceanSurfaceParams) == 160, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(OceanSurfaceParams) == 148, "OceanSurfaceParams must match the HLSL constant-buffer layout");
+static_assert(offsetof(OceanSurfaceParams, sceneSizeRcp) == 120, "Scene size reciprocal must match the HLSL offset");
+static_assert(offsetof(OceanSurfaceParams, cascadeCount) == 144, "Cascade count must follow the scene size parameters");
 #endif
 
 struct ShaderLightCullingParams {
@@ -798,12 +863,11 @@ struct ShaderLightCullingParams {
     uint tileCountX;
     uint tileCountY;
     uint wordsPerTile;
-    uint padding0;
-    uint padding1;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderLightCullingParams) == 32, "ShaderLightCullingParams must match the HLSL constant-buffer layout");
+static_assert(sizeof(ShaderLightCullingParams) == 24, "ShaderLightCullingParams must match the HLSL root constants");
+static_assert(offsetof(ShaderLightCullingParams, wordsPerTile) == 20, "Light culling parameters must occupy six consecutive root constants");
 #endif
 
 struct ShaderDirectionalLight {
@@ -930,21 +994,24 @@ struct ShaderCSMData {
     // orthogonal projection 이므로 perspective divide 없이 float3x4 로 표현할 수 있다.
     row_major float3x4 worldToShadowCoordMatrices[ShaderCSMCascadeMaxCount];
 
-    uint textureIndex;          // Texture2DArray<float> 의 bindless SRV index.
-    uint cascadeCount;
-    uint enabled;               // 0 이면 shadow texture 에 접근하지 않는다.
-    float maxDistance;          // 최대 shadow 적용 거리.
     float4 cascadeFilterRadii;  // 현재 해상도와 cascade 크기에 맞춘 texel 반경.
+
+    uint textureIndex;          // Texture2DArray<float> 의 bindless SRV index.
+    uint cascadeCount;          // 0 이면 shadow texture 에 접근하지 않는다. Depth 기록 후에만 활성화한다.
     float2 texelSize;
+
     float normalizedBorder;     // normalized border width in [0, 1] range.
     float invBlendWidth;        // normalized inverse blend width.
     float farFadeStart;
     float invFarFadeRange;
-    uint2 padding;
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(ShaderCSMData) == 256, "CSM data must match the HLSL constant-buffer layout");
+static_assert(sizeof(ShaderCSMData) == 240, "CSM data must match the HLSL constant-buffer layout");
+static_assert(offsetof(ShaderCSMData, cascadeFilterRadii) == 192, "CSM filter radii must remain register-aligned");
+static_assert(offsetof(ShaderCSMData, textureIndex) == 208, "CSM texture index must match the HLSL offset");
+static_assert(offsetof(ShaderCSMData, texelSize) == 216, "CSM texel size must share a register with the texture index and cascade count");
+static_assert(offsetof(ShaderCSMData, normalizedBorder) == 224, "CSM blend and fade parameters must occupy one register");
 #endif
 
 struct CameraConstants {
@@ -1046,7 +1113,7 @@ struct CameraConstants {
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(CameraConstants) == 1200, "CameraConstants must match the HLSL constant-buffer layout");
+static_assert(sizeof(CameraConstants) == 1184, "CameraConstants must match the HLSL constant-buffer layout");
 static_assert(offsetof(CameraConstants, fogAnisotropy) == 556, "Shared fog anisotropy must match HLSL");
 #endif
 

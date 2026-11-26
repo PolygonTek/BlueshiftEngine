@@ -114,15 +114,13 @@ uint32_t VolumetricFog::DispatchInject(RenderBackend &backend, uint32_t groupsX,
         temporal.noiseFrameIndex = 0;
     }
 
-    const RHI::ConstantBuffer *temporalConstantBuffer = backend.GetFrameThreadData()->AllocConstant(sizeof(temporal), &temporal);
-
     RHI::renderer->Barrier(cmd, RHI::Renderer::MakeTextureBarrier(data.sourceTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess));
     RHI::renderer->SetPSO(cmd, frameInjectPSO);
     RHI::renderer->SetTexture(cmd, 0, true, data.sourceTexture);
     RHI::renderer->SetConstantBuffer(cmd, 0, backend.GetFrameConstantBuffer());
     RHI::renderer->SetConstantBuffer(cmd, 1, backend.GetCameraConstantBuffer());
     RHI::renderer->SetConstants(cmd, 3, &lighting, sizeof(lighting), 0);
-    RHI::renderer->SetConstantBuffer(cmd, 4, temporalConstantBuffer);
+    RHI::renderer->SetConstants(cmd, 2, &temporal, sizeof(temporal), 0);
     RHI::renderer->Dispatch(cmd, groupsX, groupsY, data.vfogParams.sliceCount);
 
     return temporal.noiseFrameIndex;

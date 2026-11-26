@@ -11,7 +11,7 @@
 #define GTAO_PREFILTER_ROOT_SIGNATURE \
     "RootFlags(0), " \
     "DescriptorTable(SRV(t0, flags = DATA_VOLATILE), UAV(u0, numDescriptors = 6)), " \
-    "RootConstants(num32BitConstants=12, b0), " \
+    "RootConstants(num32BitConstants=11, b0), " \
     "CBV(b1)"
 
 cbuffer GTAOPrefilterCB : register(b0) {

@@ -167,7 +167,7 @@ private:
     void                            ResetCascadeUpdateSchedule();
 
                                     /// 각 cascade 별로 displacement, derivative, foam history texture 를 업데이트한다.
-    bool                            UpdateCascades(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &baseParams, const OceanResolveFieldsParams &resolveParams);
+    bool                            UpdateCascades(RHI::CommandList *commandList, const OceanTimeSpectrumParams &baseParams, const OceanResolveFieldsParams &resolveParams);
 
                                     /// Phillips spectrum 으로 모든 cascade 의 초기 스펙트럼을 하나의 Z-axis dispatch 로 생성한다.
     bool                            GenerateInitialSpectraPhillips(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanPhillipsInitialSpectrumParams &commonParams);
@@ -180,13 +180,13 @@ private:
                                     /// 멤버 timeSpectrumBuffer 는 N * N * OceanSpectrumComplexPlaneCount 개의 float2 를 저장하는 structured buffer 여야 한다.
                                     /// 각 complex plane 은 두 real field spectrum 을 Z = A + iB 로 패킹하며 일반 row-major 순서로 저장한다.
                                     /// 두 리소스의 primary view 를 사용하며 호출 전후 각각 ShaderResource, Undefined(Common) 상태이다.
-    bool                            GenerateTimeSpectrum(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, const OceanTimeSpectrumParams &params);
+    bool                            GenerateTimeSpectrum(RHI::CommandList *commandList, const OceanTimeSpectrumParams &params);
 
                                     /// transposed complex IFFT 결과를 displacement/derivative map 으로 변환하고 foam history 를 갱신한다.
                                     /// 멤버 spatialFieldsBuffer 는 N * N * OceanSpectrumComplexPlaneCount 개의 float2 를 저장하는 structured buffer 여야 한다.
                                     /// fieldTextureArray 는 RGBA16F/RGBA32F 의 2 * cascadeCount slice, foamHistoryTextureArray 는 R16F/R32F 의 cascadeCount slice 여야 한다.
                                     /// 세 리소스의 primary view 를 사용하며 호출 전후 spatialFieldsBuffer 는 Undefined(Common), texture 들은 ShaderResource 상태이다.
-    bool                            ResolveOceanFields(RHI::CommandList *commandList, const RHI::ConstantBuffer *resolveConstantBuffer);
+    bool                            ResolveOceanFields(RHI::CommandList *commandList, const OceanResolveFieldsParams &params);
 
     SharedPtr<ShaderTemplate>       generatePhillipsInitialSpectrumShaderTemplate;
     SharedPtr<ShaderTemplate>       generateTMAPositiveCosineSquaredInitialSpectrumShaderTemplate;

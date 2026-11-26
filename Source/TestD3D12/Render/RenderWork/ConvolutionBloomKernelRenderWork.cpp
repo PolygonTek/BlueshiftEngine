@@ -40,7 +40,7 @@ bool ConvolutionBloomKernelRenderWork::RecordCommands(RHI::FrameThreadData *fram
     kernelGenerator.SetApertureTexture(apertureTexture);
     kernelGenerator.SetApertureScale(apertureScale);
     kernelGenerator.SetDispersionAmount(dispersionAmount);
-    return kernelGenerator.GenerateKernel(commandList, frameThreadData);
+    return kernelGenerator.GenerateKernel(commandList);
 }
 
 void ConvolutionBloomKernelRenderWork::OnCompleted(bool commandListSubmitted) {

@@ -105,7 +105,7 @@ static uint32_t CountFastHiZReductions(const FrameHiZ &data, uint32_t inputMipLe
 }
 
 // (연속된) input mip dimension 이 짝수인 경우 inputMipLevel 부터 시작해서 outputMipCount 만큼의 mip level 을 fast reduce 한다.
-static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t reverseZ, uint32_t inputMipLevel, uint32_t outputMipCount) {
+static bool DispatchFastHiZReductionBatch(RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t reverseZ, uint32_t inputMipLevel, uint32_t outputMipCount) {
     const uint32_t startOutputMipLevel = inputMipLevel + 1;
     const RHI::ViewID inputViewID = data.mipSRVs[inputMipLevel];
 
@@ -120,11 +120,6 @@ static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData,
     hiZMipGenParams.outputSize = uint2(outputWidth, outputHeight);
     hiZMipGenParams.outputMipCount = outputMipCount;
     hiZMipGenParams.reverseZ = reverseZ;
-
-    RHI::ConstantBuffer *hiZMipGenConstantBuffer = frameThreadData->AllocConstant(sizeof(HiZMipGenParams), &hiZMipGenParams);
-    if (!hiZMipGenConstantBuffer) {
-        return false;
-    }
 
     RHI::GPUBarrier startBarriers[5];
     uint32_t startBarrierCount = 0;
@@ -143,7 +138,7 @@ static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData,
         RHI::renderer->SetTexture(commandList, outputIndex, true, hiZTexture, data.mipUAVs[mipLevel]);
     }
 
-    RHI::renderer->SetConstantBuffer(commandList, 0, hiZMipGenConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &hiZMipGenParams, sizeof(hiZMipGenParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, GenHiZMipBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, GenHiZMipBlockSizeY);
@@ -162,7 +157,7 @@ static bool DispatchFastHiZReductionBatch(RHI::FrameThreadData *frameThreadData,
 }
 
 // input mip dimension 이 홀수인 경우, 2x3/3x2/3x3 까지 커버 가능하도록 inputMipLevel 을 reduce 한다.
-static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t reverseZ, uint32_t inputMipLevel) {
+static bool DispatchOddDimHiZReduction(RHI::CommandList *commandList, const FrameHiZ &data, RHI::Texture *hiZTexture, RHI::PipelineState *pipelineState, uint32_t reverseZ, uint32_t inputMipLevel) {
     const uint32_t outputMipLevel = inputMipLevel + 1;
     const RHI::ViewID inputViewID = data.mipSRVs[inputMipLevel];
 
@@ -178,11 +173,6 @@ static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RH
     hiZMipGenParams.outputMipCount = 1;
     hiZMipGenParams.reverseZ = reverseZ;
 
-    RHI::ConstantBuffer *hiZMipGenConstantBuffer = frameThreadData->AllocConstant(sizeof(HiZMipGenParams), &hiZMipGenParams);
-    if (!hiZMipGenConstantBuffer) {
-        return false;
-    }
-
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(hiZTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute, 0, inputMipLevel),
         RHI::Renderer::MakeTextureBarrier(hiZTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess, 0, outputMipLevel)
@@ -192,7 +182,7 @@ static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RH
     RHI::renderer->SetPSO(commandList, pipelineState);
     RHI::renderer->SetTexture(commandList, 0, false, hiZTexture, inputViewID);
     RHI::renderer->SetTexture(commandList, 0, true, hiZTexture, data.mipUAVs[outputMipLevel]);
-    RHI::renderer->SetConstantBuffer(commandList, 0, hiZMipGenConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &hiZMipGenParams, sizeof(hiZMipGenParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, GenHiZMipBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, GenHiZMipBlockSizeY);
@@ -207,7 +197,7 @@ static bool DispatchOddDimHiZReduction(RHI::FrameThreadData *frameThreadData, RH
     return true;
 }
 
-bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, GpuTiming &gpuTiming, RHI::Texture *depthTexture, const RHI::ProjectionPolicy &projectionPolicy, const FrameHiZ &data) const {
+bool HiZ::DispatchGenerate(RHI::CommandList *commandList, GpuTiming &gpuTiming, RHI::Texture *depthTexture, const RHI::ProjectionPolicy &projectionPolicy, const FrameHiZ &data) const {
     PROFILER_CPU_SCOPED_EVENT("HiZ::DispatchGenerate");
 
     RHI::Texture *hiZTexture = data.texture;
@@ -233,11 +223,6 @@ bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *
     hiZMipGenParams.outputMipCount = firstBatchMipCount;
     hiZMipGenParams.reverseZ = reverseZ;
 
-    RHI::ConstantBuffer *hiZMipGenConstantBuffer = frameThreadData->AllocConstant(sizeof(HiZMipGenParams), &hiZMipGenParams);
-    if (!hiZMipGenConstantBuffer) {
-        return false;
-    }
-
     GpuTiming::ScopedTimer gpuScope(gpuTiming, commandList, GpuTiming::Tag::GenHiZ);
 
     // First batch: copy depth to mip 0, then generate consecutive fast 2x2 reductions while mip dimensions stay even.
@@ -257,7 +242,7 @@ bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *
         RHI::renderer->SetTexture(commandList, outputIndex, true, hiZTexture, data.mipUAVs[mipLevel]);
     }
 
-    RHI::renderer->SetConstantBuffer(commandList, 0, hiZMipGenConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &hiZMipGenParams, sizeof(hiZMipGenParams), 0);
 
     uint32_t threadGroupCountX = BE1::DivCeil(data.mipWidths[0], GenHiZMipBlockSizeX);
     uint32_t threadGroupCountY = BE1::DivCeil(data.mipHeights[0], GenHiZMipBlockSizeY);
@@ -276,13 +261,13 @@ bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *
     while (generatedMipLevel + 1 < hiZMipCount) {
         const uint32_t fastReductionCount = CountFastHiZReductions(data, generatedMipLevel, BE1::Min(hiZMipCount - generatedMipLevel - 1, 4u));
         if (fastReductionCount > 0) {
-            if (!DispatchFastHiZReductionBatch(frameThreadData, commandList, data, hiZTexture, frameMipBatchPSO, reverseZ, generatedMipLevel, fastReductionCount)) {
+            if (!DispatchFastHiZReductionBatch(commandList, data, hiZTexture, frameMipBatchPSO, reverseZ, generatedMipLevel, fastReductionCount)) {
                 return false;
             }
 
             generatedMipLevel += fastReductionCount;
         } else {
-            if (!DispatchOddDimHiZReduction(frameThreadData, commandList, data, hiZTexture, frameOddDimPSO, reverseZ, generatedMipLevel)) {
+            if (!DispatchOddDimHiZReduction(commandList, data, hiZTexture, frameOddDimPSO, reverseZ, generatedMipLevel)) {
                 return false;
             }
 
@@ -293,7 +278,7 @@ bool HiZ::DispatchGenerate(RHI::CommandList *commandList, RHI::FrameThreadData *
     return true;
 }
 
-bool HiZ::DispatchDebugPreview(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t requestedMipLevel, const FrameHiZ &data) const {
+bool HiZ::DispatchDebugPreview(RHI::CommandList *commandList, RHI::ConstantBuffer *cameraConstantBuffer, GpuTiming &gpuTiming, uint32_t requestedMipLevel, const FrameHiZ &data) const {
     PROFILER_CPU_SCOPED_EVENT("HiZ::DispatchDebugPreview");
 
     if (!cameraConstantBuffer) {
@@ -316,11 +301,6 @@ bool HiZ::DispatchDebugPreview(RHI::CommandList *commandList, RHI::FrameThreadDa
     hiZDebugPreviewParams.outputSize = uint2(outputWidth, outputHeight);
     hiZDebugPreviewParams.linearDepthScale = data.debugLinearDepthScale;
 
-    RHI::ConstantBuffer *hiZDebugPreviewConstantBuffer = frameThreadData->AllocConstant(sizeof(HiZDebugPreviewParams), &hiZDebugPreviewParams);
-    if (!hiZDebugPreviewConstantBuffer) {
-        return false;
-    }
-
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(data.texture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute, 0, mipLevel),
         RHI::Renderer::MakeTextureBarrier(data.debugPreviewTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::UnorderedAccess)
@@ -332,7 +312,7 @@ bool HiZ::DispatchDebugPreview(RHI::CommandList *commandList, RHI::FrameThreadDa
     RHI::renderer->SetPSO(commandList, frameDebugPreviewPSO);
     RHI::renderer->SetTexture(commandList, 0, false, data.texture, data.mipSRVs[mipLevel]);
     RHI::renderer->SetTexture(commandList, 0, true, data.debugPreviewTexture);
-    RHI::renderer->SetConstantBuffer(commandList, 0, hiZDebugPreviewConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &hiZDebugPreviewParams, sizeof(hiZDebugPreviewParams), 0);
     RHI::renderer->SetConstantBuffer(commandList, 1, cameraConstantBuffer);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, HiZDebugPreviewBlockSizeX);

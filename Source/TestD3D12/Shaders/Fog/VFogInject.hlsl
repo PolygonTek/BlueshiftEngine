@@ -11,7 +11,7 @@
     "CBV(b0), " \
     "CBV(b1), " \
     "RootConstants(num32BitConstants=4, b3), " \
-    "CBV(b4), " \
+    "RootConstants(num32BitConstants=4, b2), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 
 DECLARE_COMMON_STATIC_SAMPLERS
@@ -27,7 +27,7 @@ cbuffer VFogLightingCB : register(b3) {
     VFogLightingParams vfogLightingParams;
 }
 
-cbuffer VFogTemporalCB : register(b4) {
+cbuffer VFogTemporalCB : register(b2) {
     VFogTemporalParams vfogTemporalParams;
 }
 

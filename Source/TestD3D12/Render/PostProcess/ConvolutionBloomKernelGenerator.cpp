@@ -99,7 +99,7 @@ void ConvolutionBloomKernelGenerator::SetDispersionAmount(float amount) {
     kernelDirty = true;
 }
 
-bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData) {
+bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandList) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::GenerateKernel");
 
     if (!kernelDirty && HasResources()) {
@@ -117,13 +117,13 @@ bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandLi
     // aperture 버퍼 준비 (apertureSpatialBuffer 에 출력)
     // aperture 텍스쳐를 가운데 축소 스케일해서 배치한다. 작은 조리개일 수록 빛이 많이 퍼지는 광학적 특성 때문에
     // 축소할 수록 푸리에 변환 결과인 회절 패턴이 넓어진다.
-    if (!DispatchAperturePrepare(commandList, frameThreadData)) {
+    if (!DispatchAperturePrepare(commandList)) {
         return false;
     }
 
     // Aperture spatial buffer 의 complex sample 들의 크기의 제곱을 모두 더해 aperture energy 를 계산한다.
     RHI::Buffer *apertureEnergyBuffer = nullptr;
-    if (!DispatchReduceApertureEnergy(commandList, frameThreadData, &apertureEnergyBuffer)) {
+    if (!DispatchReduceApertureEnergy(commandList, &apertureEnergyBuffer)) {
         return false;
     }
 
@@ -133,12 +133,12 @@ bool ConvolutionBloomKernelGenerator::GenerateKernel(RHI::CommandList *commandLi
     }
 
     // circular shift 와 abs(FFT)^2 을 적용해서 intensity 를 표현한다.
-    if (!DispatchResolveDiffractionPSF(commandList, frameThreadData, apertureEnergyBuffer)) {
+    if (!DispatchResolveDiffractionPSF(commandList, apertureEnergyBuffer)) {
         return false;
     }
 
     // 분산 (dispersion) 적용
-    if (!DispatchApplyDispersion(commandList, frameThreadData)) {
+    if (!DispatchApplyDispersion(commandList)) {
         return false;
     }
 
@@ -316,7 +316,7 @@ bool ConvolutionBloomKernelGenerator::HasResources() const {
         diffractionPSFTexture && kernelTexture;
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData) {
+bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *commandList) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchAperturePrepare");
 
     RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(aperturePreparePipeline);
@@ -344,17 +344,11 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     const float sourceTexelsPerOutputTexel = BE1::Max(sourceTexelsPerOutputTexelX, sourceTexelsPerOutputTexelY);
     const float apertureMipLevel = BE1::Max(BE1::Math::Log2(sourceTexelsPerOutputTexel), 0.0f);
 
-    BloomParams bloomParams = {};
-    bloomParams.inputSize = uint2(inputW, inputH);
+    ConvolutionBloomAperturePrepareParams bloomParams = {};
     bloomParams.outputSize = uint2(outputW, outputH);
-    bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params0 = float4(clampedApertureScale, apertureMipLevel, 0.0f, 0.0f);
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
+    bloomParams.apertureScale = clampedApertureScale;
+    bloomParams.apertureMipLevel = apertureMipLevel;
 
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(sourceTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
@@ -365,7 +359,7 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetTexture(commandList, 0, false, sourceTexture);
     RHI::renderer->SetBuffer(commandList, 0, true, outputBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
@@ -380,7 +374,7 @@ bool ConvolutionBloomKernelGenerator::DispatchAperturePrepare(RHI::CommandList *
     return true;
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer **outEnergyBuffer) {
+bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandList *commandList, RHI::Buffer **outEnergyBuffer) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy");
 
     if (!outEnergyBuffer) {
@@ -405,7 +399,7 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandL
 
     for (;;) {
         RHI::Buffer *outputBuffer = energyBuffers[outputBufferIndex];
-        if (!DispatchReduceApertureEnergyPass(commandList, frameThreadData, inputBuffer, outputBuffer, inputElementCount, inputIsPartialEnergy, inputState)) {
+        if (!DispatchReduceApertureEnergyPass(commandList, inputBuffer, outputBuffer, inputElementCount, inputIsPartialEnergy, inputState)) {
             return false;
         }
 
@@ -423,7 +417,7 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergy(RHI::CommandL
     }
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState) {
+bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::CommandList *commandList, RHI::Buffer *inputBuffer, RHI::Buffer *outputBuffer, uint32_t inputElementCount, bool inputIsPartialEnergy, RHI::GPUResourceState inputState) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass");
 
     RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(reduceApertureEnergyPipeline);
@@ -432,14 +426,9 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::Comm
     }
 
     const uint32_t outputElementCount = BE1::DivCeil(inputElementCount, ConvolutionBloomApertureEnergyReduceBlockSize);
-    BloomParams bloomParams = {};
-    bloomParams.inputSize = uint2(inputElementCount, inputIsPartialEnergy ? 1u : 0u);
-    bloomParams.outputSize = uint2(outputElementCount, 1);
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
+    ConvolutionBloomReduceApertureEnergyParams bloomParams = {};
+    bloomParams.inputElementCount = inputElementCount;
+    bloomParams.inputIsPartialEnergy = inputIsPartialEnergy ? 1u : 0u;
 
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(inputBuffer, inputState, RHI::GPUResourceState::ShaderResourceCompute),
@@ -450,7 +439,7 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::Comm
     RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetBuffer(commandList, 0, false, inputBuffer);
     RHI::renderer->SetBuffer(commandList, 0, true, outputBuffer);
-    RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
     RHI::renderer->Dispatch(commandList, outputElementCount, 1, 1);
 
     RHI::renderer->Barrier(commandList, RHI::Renderer::MakeBufferBarrier(inputBuffer, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::Undefined));
@@ -458,7 +447,7 @@ bool ConvolutionBloomKernelGenerator::DispatchReduceApertureEnergyPass(RHI::Comm
     return true;
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData, RHI::Buffer *apertureEnergyBuffer) {
+bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::CommandList *commandList, RHI::Buffer *apertureEnergyBuffer) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF");
 
     RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(resolveDiffractionPSFPipeline);
@@ -480,16 +469,9 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
         return false;
     }
 
-    BloomParams bloomParams = {};
+    ConvolutionBloomResolveDiffractionPSFParams bloomParams = {};
     bloomParams.inputSize = uint2(inputW, inputH);
     bloomParams.outputSize = uint2(outputW, outputH);
-    bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
-    bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
 
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeBufferBarrier(spectrumBuffer, RHI::GPUResourceState::Undefined, RHI::GPUResourceState::ShaderResourceCompute),
@@ -502,7 +484,7 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
     RHI::renderer->SetBuffer(commandList, 0, false, spectrumBuffer);
     RHI::renderer->SetBuffer(commandList, 1, false, apertureEnergyBuffer);
     RHI::renderer->SetTexture(commandList, 0, true, outputTexture);
-    RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);
@@ -518,7 +500,7 @@ bool ConvolutionBloomKernelGenerator::DispatchResolveDiffractionPSF(RHI::Command
     return true;
 }
 
-bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *commandList, RHI::FrameThreadData *frameThreadData) {
+bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *commandList) {
     PROFILER_CPU_SCOPED_EVENT("ConvolutionBloomKernelGenerator::DispatchApplyDispersion");
 
     RHI::PipelineState *pso = ShaderPipeline::GetReadyPSO(applyDispersionPipeline);
@@ -546,18 +528,15 @@ bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *
     static constexpr float DispersionSampleCount = 81.0f;
     static constexpr float IntensityScale = 1.0f;
 
-    BloomParams bloomParams = {};
-    bloomParams.inputSize = uint2(inputW, inputH);
+    ConvolutionBloomApplyDispersionParams bloomParams = {};
     bloomParams.outputSize = uint2(outputW, outputH);
-    bloomParams.inputTexelSize = float2(1.0f / inputW, 1.0f / inputH);
     bloomParams.outputTexelSize = float2(1.0f / outputW, 1.0f / outputH);
-    bloomParams.params0 = float4(BE1::Max(dispersionAmount, 0.0f), MinWavelengthNm, MaxWavelengthNm, ReferenceWavelengthNm);
-    bloomParams.params1 = float4(DispersionSampleCount, IntensityScale, 0.0f, 0.0f);
-
-    RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-    if (!bloomConstantBuffer) {
-        return false;
-    }
+    bloomParams.dispersionAmount = BE1::Max(dispersionAmount, 0.0f);
+    bloomParams.minWavelengthNm = MinWavelengthNm;
+    bloomParams.maxWavelengthNm = MaxWavelengthNm;
+    bloomParams.referenceWavelengthNm = ReferenceWavelengthNm;
+    bloomParams.sampleCount = DispersionSampleCount;
+    bloomParams.intensityScale = IntensityScale;
 
     RHI::GPUBarrier startBarriers[] = {
         RHI::Renderer::MakeTextureBarrier(inputTexture, RHI::GPUResourceState::ShaderResource, RHI::GPUResourceState::ShaderResourceCompute),
@@ -568,7 +547,7 @@ bool ConvolutionBloomKernelGenerator::DispatchApplyDispersion(RHI::CommandList *
     RHI::renderer->SetPSO(commandList, pso);
     RHI::renderer->SetTexture(commandList, 0, false, inputTexture);
     RHI::renderer->SetTexture(commandList, 0, true, outputTexture);
-    RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
     const uint32_t threadGroupCountX = BE1::DivCeil(outputW, BloomBlockSizeX);
     const uint32_t threadGroupCountY = BE1::DivCeil(outputH, BloomBlockSizeY);

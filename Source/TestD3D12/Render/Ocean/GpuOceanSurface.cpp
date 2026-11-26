@@ -127,11 +127,6 @@ GpuOceanSurface::QueryReadbackFrame *GpuOceanSurface::DispatchQueries(RHI::Comma
     params.queryCount = queryCount;
     params.cascadeCount = gpuOcean->GetCascadeCount();
 
-    RHI::ConstantBuffer *constantBuffer = frameThreadData->AllocConstant(sizeof(params), &params);
-    if (!constantBuffer) {
-        return nullptr;
-    }
-
     readbackFrame->queryCount = queryCount;
 
     // fence 값이 등록되기 전까지 다른 dispatch 가 이 readback frame 을 재사용하지 못하게 한다.
@@ -143,7 +138,7 @@ GpuOceanSurface::QueryReadbackFrame *GpuOceanSurface::DispatchQueries(RHI::Comma
     RHI::renderer->SetTexture(commandList, 0, false, fieldTextureArray);
     RHI::renderer->SetBuffer(commandList, 1, false, queryInputBuffer, RHI::ViewID::InvalidID);
     RHI::renderer->SetBuffer(commandList, 0, true, queryOutputBuffer, queryOutputUAV);
-    RHI::renderer->SetConstantBuffer(commandList, 0, constantBuffer);
+    RHI::renderer->SetConstants(commandList, 0, &params, sizeof(params), 0);
     RHI::renderer->Dispatch(commandList, BE1::DivCeil(queryCount, OceanSurfaceQueryBlockSize), 1, 1);
 
     // compute shader 가 생성한 결과를 CPU readback buffer 로 복사한다.
@@ -358,8 +353,7 @@ bool GpuOceanSurface::PrepareDraw(RHI::FrameThreadData *frameThreadData, const S
     params.airToWaterEta = (1.0f - sqrtF0) / (1.0f + sqrtF0);
     params.waterToAirEta = (1.0f + sqrtF0) / (1.0f - sqrtF0);
     // Raster pixel 좌표를 normalized UV 로 바꾸는 render 크기와 snapshot texel 크기를 분리한다.
-    params.sceneSize = float2(static_cast<float>(view.renderWidth), static_cast<float>(view.renderHeight));
-    params.sceneSizeRcp = float2(1.0f / params.sceneSize.x, 1.0f / params.sceneSize.y);
+    params.sceneSizeRcp = float2(1.0f / view.renderWidth, 1.0f / view.renderHeight);
     params.sceneSnapshotSize = float2(static_cast<float>(boundSceneDepthTexture->GetWidth()), static_cast<float>(boundSceneDepthTexture->GetHeight()));
     params.sceneSnapshotSizeRcp = float2(1.0f / params.sceneSnapshotSize.x, 1.0f / params.sceneSnapshotSize.y);
     params.displacementScale = gpuOcean->GetDisplacementScale();

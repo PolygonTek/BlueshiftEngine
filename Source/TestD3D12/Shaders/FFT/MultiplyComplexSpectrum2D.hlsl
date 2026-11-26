@@ -3,7 +3,7 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), UAV(u0)), " \
-    "CBV(b0)"
+    "RootConstants(num32BitConstants=3, b0)"
 
 cbuffer MultiplySpectrum2DCB : register(b0) {
     MultiplySpectrum2DParams multiplyParams;

@@ -2,10 +2,10 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0)"
+    "RootConstants(num32BitConstants=10, b0)"
 
 cbuffer BloomCB : register(b0) {
-    BloomParams bloomParams;
+    ConvolutionBloomResolveParams bloomParams;
 }
 
 // IFFT 결과 버퍼는 RG plane, B0 plane 이 연속으로 배치되어 있다.
@@ -45,7 +45,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     float2 screenUv = (float2(pixelCoord) + 0.5) * bloomParams.outputTexelSize;
-    float2 spatialCoord = BP_BLOOM_CONTENT_OFFSET + screenUv * BP_BLOOM_CONTENT_SIZE - 0.5;
+    float2 spatialCoord = bloomParams.contentOffset + screenUv * bloomParams.contentSize - 0.5;
     float3 color = max(SampleBloomSpatial(spatialCoord), 0.0);
 
     outputTexture[pixelCoord] = float4(color, 1.0);

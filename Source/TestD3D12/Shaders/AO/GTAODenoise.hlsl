@@ -5,7 +5,7 @@
 #define GTAO_DENOISE_ROOT_SIGNATURE \
     "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), UAV(u0)), " \
-    "RootConstants(num32BitConstants=8, b0), " \
+    "RootConstants(num32BitConstants=6, b0), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 
 DECLARE_COMMON_STATIC_SAMPLERS

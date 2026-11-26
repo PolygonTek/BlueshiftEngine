@@ -3,13 +3,13 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0), " \
+    "RootConstants(num32BitConstants=10, b0), " \
     "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)"
 
 SamplerState linearClampSampler : register(s100);
 
 cbuffer BloomCB : register(b0) {
-    BloomParams bloomParams;
+    BloomPrefilterParams bloomParams;
 }
 
 Texture2D<float4> inputTexture : register(t0);
@@ -17,14 +17,14 @@ RWTexture2D<float4> outputTexture : register(u0);
 
 // Keep HDR thresholding and Karis weights in full precision.
 float3 ApplyBloomThreshold(float3 color) {
-    float threshold = float(BP_BLOOM_THRESHOLD);
+    float threshold = float(bloomParams.threshold);
     if (threshold <= float(0.0)) {
         return color;
     }
 
     float luminance = GetLuma(color);
     float contribution = max(luminance - threshold, float(0.0));
-    float softThreshold = float(BP_BLOOM_SOFT_THRESHOLD);
+    float softThreshold = float(bloomParams.softThreshold);
     if (softThreshold > float(0.0)) {
         float soft = clamp(luminance - threshold + softThreshold, float(0.0), float(2.0) * softThreshold);
         contribution = max(contribution, soft * soft / max(float(4.0) * softThreshold, float(0.0001)));
@@ -112,9 +112,9 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     float2 uv = (float2(pixelCoord) + 0.5) * bloomParams.outputTexelSize;
-    float2 offset = bloomParams.inputTexelSize * max(BP_BLOOM_RADIUS, 0.0);
+    float2 offset = bloomParams.inputTexelSize * max(bloomParams.radius, 0.0);
     float3 color;
-    if (BP_BLOOM_PREFILTER_QUALITY > 0.5) {
+    if (bloomParams.prefilterQuality > 0.5) {
         color = SampleBloomPrefilterJimenez13Tap(uv, offset);
     } else {
         color = SampleBloomPrefilterRotatedGrid5Tap(uv, offset);

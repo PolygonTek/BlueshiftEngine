@@ -302,7 +302,7 @@ public:
     bool                            UploadShaderLightTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightTable.Upload(frameThreadData, commandList, this, true); }
     bool                            UploadShaderLocalFogVolumeTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLocalFogVolumeTable.Upload(frameThreadData, commandList, this); }
     bool                            UploadShaderLightCullingTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderLightCullingTable.Upload(frameThreadData, commandList, this, true); }
-    bool                            DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState) { return shaderLightCullingTable.DispatchLightCulling(frameThreadData, commandList, pipelineState, this); }
+    bool                            DispatchLightCulling(RHI::CommandList *commandList, RHI::PipelineState *pipelineState) { return shaderLightCullingTable.DispatchLightCulling(commandList, pipelineState, this); }
     bool                            UploadShaderSurfaceTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderSurfaceTable.Upload(frameThreadData, commandList, this); }
     bool                            UploadShaderShadowTable(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList) { return shaderShadowTable.Upload(frameThreadData, commandList, this); }
 

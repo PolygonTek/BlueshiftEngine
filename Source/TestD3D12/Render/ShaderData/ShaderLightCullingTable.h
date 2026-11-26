@@ -42,7 +42,7 @@ public:
     bool                            Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame, bool allowResize);
 
                                     // 타일 마스크 워드 테이블을 계산한다.
-    bool                            DispatchLightCulling(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, RHI::PipelineState *pipelineState, const RenderFrame *frame);
+    bool                            DispatchLightCulling(RHI::CommandList *commandList, RHI::PipelineState *pipelineState, const RenderFrame *frame);
 
     uint32_t                        GetLightRefBindlessIndex() const { return lightRefBuffer.bindlessIndex; }
     uint32_t                        GetLightZBinBindlessIndex() const { return lightZBinBuffer.bindlessIndex; }

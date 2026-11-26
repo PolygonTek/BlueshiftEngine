@@ -6,7 +6,7 @@
 #define GTAO_MAIN_ROOT_SIGNATURE \
     "RootFlags(0), " \
     "DescriptorTable(SRV(t0, flags = DATA_VOLATILE), SRV(t1, flags = DATA_VOLATILE), SRV(t2), UAV(u0), UAV(u1)), " \
-    "RootConstants(num32BitConstants=18, b0), " \
+    "RootConstants(num32BitConstants=17, b0), " \
     "CBV(b1), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 

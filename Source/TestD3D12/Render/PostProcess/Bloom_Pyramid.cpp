@@ -24,7 +24,6 @@ bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
     PROFILER_CPU_SCOPED_EVENT("Bloom::DispatchPyramidBloom");
 
     RHI::CommandList *commandList = backend.GetCommandList();
-    RHI::FrameThreadData *frameThreadData = backend.GetFrameThreadData();
     GpuTiming &gpuTiming = backend.GetGpuTiming();
     RHI::Texture *inputColorTexture = backend.GetPostProcessInputTexture();
     const FrameBloom &data = backend.GetFrameCamera()->bloom;
@@ -47,24 +46,16 @@ bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
     const float pyramidBloomDownsampleRadius = renderFrameSettings.pyramidBloomDownsampleRadius;
     const float pyramidBloomUpsampleRadius = renderFrameSettings.pyramidBloomUpsampleRadius;
 
-    auto dispatchDownsamplePass = [this, commandList, frameThreadData, &gpuTiming, &data](GpuTiming::Tag timingTag, RHI::Texture *inputTexture, RHI::ViewID inputViewID, uint32_t inputWidth, uint32_t inputHeight, uint32_t outputMipLevel, float threshold, float softThreshold, float prefilterQuality, float radius) -> bool {
+    auto dispatchDownsamplePass = [commandList, &gpuTiming, &data](GpuTiming::Tag timingTag, RHI::Texture *inputTexture, RHI::ViewID inputViewID, uint32_t inputWidth, uint32_t inputHeight, uint32_t outputMipLevel, auto &bloomParams) -> bool {
         const uint32_t outputWidth = data.bloomMipWidths[outputMipLevel];
         const uint32_t outputHeight = data.bloomMipHeights[outputMipLevel];
         if (inputWidth == 0 || inputHeight == 0 || outputWidth == 0 || outputHeight == 0) {
             return false;
         }
 
-        BloomParams bloomParams = {};
-        bloomParams.inputSize = uint2(inputWidth, inputHeight);
         bloomParams.outputSize = uint2(outputWidth, outputHeight);
         bloomParams.inputTexelSize = float2(1.0f / inputWidth, 1.0f / inputHeight);
         bloomParams.outputTexelSize = float2(1.0f / outputWidth, 1.0f / outputHeight);
-        bloomParams.params0 = float4(threshold, softThreshold, prefilterQuality, radius);
-
-        RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-        if (!bloomConstantBuffer) {
-            return false;
-        }
 
         GpuTiming::ScopedTimer gpuScope(gpuTiming, commandList, timingTag);
 
@@ -72,7 +63,7 @@ bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
 
         RHI::renderer->SetTexture(commandList, 0, false, inputTexture, inputViewID);
         RHI::renderer->SetTexture(commandList, 0, true, data.bloomDownTexture, data.bloomDownMipUAVs[outputMipLevel]);
-        RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+        RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
         const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, BloomBlockSizeX);
         const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, BloomBlockSizeY);
@@ -84,17 +75,24 @@ bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
     };
 
     // threshold 를 적용해 밝은 영역만 필터링하여 mip-0 에 blur downsample 한다.
+    BloomPrefilterParams prefilterParams = {};
+    prefilterParams.threshold = bloomThreshold;
+    prefilterParams.softThreshold = bloomSoftThreshold;
+    prefilterParams.prefilterQuality = pyramidBloomPrefilterQuality;
+    prefilterParams.radius = pyramidBloomPrefilterRadius;
     RHI::renderer->SetPSO(commandList, frameBloomPrefilterPSO);
-    if (!dispatchDownsamplePass(GpuTiming::Tag::BloomPrefilter, inputColorTexture, RHI::ViewID::PrimaryID, data.renderWidth, data.renderHeight, 0, bloomThreshold, bloomSoftThreshold, pyramidBloomPrefilterQuality, pyramidBloomPrefilterRadius)) {
+    if (!dispatchDownsamplePass(GpuTiming::Tag::BloomPrefilter, inputColorTexture, RHI::ViewID::PrimaryID, data.renderWidth, data.renderHeight, 0, prefilterParams)) {
         RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
         return false;
     }
 
     // 이후 mip 은 blur downsample 을 반복한다.
+    BloomDownsampleParams downsampleParams = {};
+    downsampleParams.radius = pyramidBloomDownsampleRadius;
     RHI::renderer->SetPSO(commandList, frameBloomDownsamplePSO);
     for (uint32_t mipLevel = 1; mipLevel < data.bloomMipCount; ++mipLevel) {
         const uint32_t inputMipLevel = mipLevel - 1;
-        if (!dispatchDownsamplePass(GpuTiming::Tag::BloomDownsample, bloomDownTexture, data.bloomDownMipSRVs[inputMipLevel], data.bloomMipWidths[inputMipLevel], data.bloomMipHeights[inputMipLevel], mipLevel, 0.0f, 0.0f, 0.0f, pyramidBloomDownsampleRadius)) {
+        if (!dispatchDownsamplePass(GpuTiming::Tag::BloomDownsample, bloomDownTexture, data.bloomDownMipSRVs[inputMipLevel], data.bloomMipWidths[inputMipLevel], data.bloomMipHeights[inputMipLevel], mipLevel, downsampleParams)) {
             RHI::renderer->Barrier(commandList, RHI::Renderer::MakeTextureBarrier(inputColorTexture, RHI::GPUResourceState::ShaderResourceCompute, RHI::GPUResourceState::ShaderResource));
             return false;
         }
@@ -102,24 +100,19 @@ bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
 
     RHI::renderer->SetPSO(commandList, frameBloomUpsamplePSO);
 
-    auto dispatchUpsamplePass = [this, commandList, frameThreadData, &gpuTiming, &data](uint32_t outputMipLevel, RHI::Texture *lowerTexture, RHI::ViewID lowerViewID, uint32_t lowerWidth, uint32_t lowerHeight, float weight, float radius) -> bool {
+    auto dispatchUpsamplePass = [commandList, &gpuTiming, &data](uint32_t outputMipLevel, RHI::Texture *lowerTexture, RHI::ViewID lowerViewID, uint32_t lowerWidth, uint32_t lowerHeight, float weight, float radius) -> bool {
         const uint32_t outputWidth = data.bloomMipWidths[outputMipLevel];
         const uint32_t outputHeight = data.bloomMipHeights[outputMipLevel];
         if (lowerWidth == 0 || lowerHeight == 0 || outputWidth == 0 || outputHeight == 0) {
             return false;
         }
 
-        BloomParams bloomParams = {};
-        bloomParams.inputSize = uint2(lowerWidth, lowerHeight);
+        BloomUpsampleParams bloomParams = {};
         bloomParams.outputSize = uint2(outputWidth, outputHeight);
         bloomParams.inputTexelSize = float2(1.0f / lowerWidth, 1.0f / lowerHeight);
         bloomParams.outputTexelSize = float2(1.0f / outputWidth, 1.0f / outputHeight);
-        bloomParams.params0 = float4(0.0f, 0.0f, weight, radius);
-
-        RHI::ConstantBuffer *bloomConstantBuffer = frameThreadData->AllocConstant(sizeof(BloomParams), &bloomParams);
-        if (!bloomConstantBuffer) {
-            return false;
-        }
+        bloomParams.weight = weight;
+        bloomParams.radius = radius;
 
         GpuTiming::ScopedTimer gpuScope(gpuTiming, commandList, GpuTiming::Tag::BloomUpsample);
 
@@ -128,7 +121,7 @@ bool Bloom::DispatchPyramidBloom(RenderBackend &backend) const {
         RHI::renderer->SetTexture(commandList, 0, false, data.bloomDownTexture, data.bloomDownMipSRVs[outputMipLevel]);
         RHI::renderer->SetTexture(commandList, 1, false, lowerTexture, lowerViewID);
         RHI::renderer->SetTexture(commandList, 0, true, data.bloomUpTexture, data.bloomUpMipUAVs[outputMipLevel]);
-        RHI::renderer->SetConstantBuffer(commandList, 0, bloomConstantBuffer);
+        RHI::renderer->SetConstants(commandList, 0, &bloomParams, sizeof(bloomParams), 0);
 
         const uint32_t threadGroupCountX = BE1::DivCeil(outputWidth, BloomBlockSizeX);
         const uint32_t threadGroupCountY = BE1::DivCeil(outputHeight, BloomBlockSizeY);

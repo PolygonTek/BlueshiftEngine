@@ -2,7 +2,7 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), UAV(u0), UAV(u1)), " \
-    "CBV(b0)"
+    "RootConstants(num32BitConstants=3, b0)"
 
 cbuffer MSAAResolveDepthNormalCB : register(b0) {
     MSAAResolveDepthParams msaaResolveDepthParams;

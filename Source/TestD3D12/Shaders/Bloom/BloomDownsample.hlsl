@@ -2,7 +2,7 @@
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), UAV(u0)), " \
-    "CBV(b0), " \
+    "RootConstants(num32BitConstants=7, b0), " \
     "StaticSampler(s100, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, addressW = TEXTURE_ADDRESS_CLAMP, filter = FILTER_MIN_MAG_MIP_LINEAR)"
 
 SamplerState linearClampSampler : register(s100);
@@ -10,7 +10,7 @@ SamplerState linearClampSampler : register(s100);
 #include "../Sampling.hlsli"
 
 cbuffer BloomCB : register(b0) {
-    BloomParams bloomParams;
+    BloomDownsampleParams bloomParams;
 }
 
 Texture2D<float4> inputTexture : register(t0);
@@ -25,7 +25,7 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID) {
     }
 
     float2 uv = (float2(pixelCoord) + 0.5) * bloomParams.outputTexelSize;
-    float2 offset = bloomParams.inputTexelSize * max(BP_BLOOM_RADIUS, 0.0);
+    float2 offset = bloomParams.inputTexelSize * max(bloomParams.radius, 0.0);
     float3 color = SampleKawase4Tap(inputTexture, uv, offset);
 
     outputTexture[pixelCoord] = float4(float3(max(color, float3(0.0, 0.0, 0.0))), 1.0);

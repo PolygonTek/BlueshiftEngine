@@ -423,7 +423,7 @@ ShadowVisibility SampleCascadedShadowMap(ShaderCSMData csm, inout ShadowSampling
 
 ShadowVisibility SampleDirectionalShadowVisibility(inout ShadowSamplingContext shadowSampling, float3 worldPosition) {
     const ShaderCSMData csm = cameraConstants.csm;
-    if (csm.enabled == 0) {
+    if (csm.cascadeCount == 0) {
 #if DEBUG_CASCADED_SHADOW_MAP == 2
         return float3(0.25f, 0.25f, 0.25f);
 #else

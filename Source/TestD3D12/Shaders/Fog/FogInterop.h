@@ -95,7 +95,7 @@ static_assert(offsetof(ShaderLocalFogVolume, maskTexelsPerMeter) == 140, "Mask t
 static_assert(sizeof(HeightFogParams) == 64, "Height fog constants must match HLSL");
 static_assert(sizeof(VFogLightingParams) == 16, "VFog lighting root constants must match HLSL");
 static_assert(offsetof(VFogLightingParams, localVolumeBoundsBufferIndex) == 12, "Local fog bounds index must use the fourth root constant");
-static_assert(sizeof(VFogTemporalParams) == 16, "VFog temporal constant buffer must match HLSL");
+static_assert(sizeof(VFogTemporalParams) == 16, "VFog temporal root constants must match HLSL");
 static_assert(sizeof(VFogParams) == 48, "VFog constants must match HLSL");
 #endif
 

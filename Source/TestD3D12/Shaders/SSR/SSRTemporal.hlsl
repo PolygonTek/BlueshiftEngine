@@ -8,7 +8,7 @@
 #define COMMON_ROOT_SIGNATURE \
     "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5, flags = DATA_VOLATILE), SRV(t6), UAV(u0)), " \
-    "RootConstants(num32BitConstants=10, b0), " \
+    "RootConstants(num32BitConstants=9, b0), " \
     "CBV(b1), " \
     ROOT_SIGNATURE_COMMON_STATIC_SAMPLERS
 
