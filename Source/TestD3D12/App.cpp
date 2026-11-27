@@ -566,8 +566,21 @@ void App::SetCameraDistance(float distance) {
     targetCameraDistance = distance;
 }
 
+BE1::Vec3 App::GetCameraOrigin() const {
+    if (cameraControlMode == CameraControlMode::Fly) {
+        return cameraOrigin;
+    }
+
+    return cameraCenter - BE1::Angles(0.0f, cameraPitch, cameraYaw).ToXAxis() * cameraDistance;
+}
+
+BE1::Mat3 App::GetCameraAxis() const {
+    return BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
+}
+
 void App::GetCameraOriginAxis(BE1::Vec3 &outOrigin, BE1::Mat3 &outAxis) const {
-    outAxis = BE1::Angles(0.0f, cameraPitch, cameraYaw).ToMat3();
+    outAxis = GetCameraAxis();
+
     if (cameraControlMode == CameraControlMode::Fly) {
         outOrigin = cameraOrigin;
     } else {

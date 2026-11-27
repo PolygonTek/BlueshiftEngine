@@ -96,6 +96,8 @@ public:
     void                            SetCameraPitchYaw(float pitch, float yaw);
     void                            SetCameraDistance(float distance);
 
+    BE1::Vec3                       GetCameraOrigin() const;
+    BE1::Mat3                       GetCameraAxis() const;
     void                            GetCameraOriginAxis(BE1::Vec3 &origin, BE1::Mat3 &axis) const;
 
     void                            TakeScreenshot();

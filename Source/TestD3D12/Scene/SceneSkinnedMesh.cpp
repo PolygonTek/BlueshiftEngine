@@ -54,6 +54,15 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     directionalLightEnabled = directionalLight.SetEnabled(renderWorld, directionalLightEnabled);
 
     previousUpdateUsec = 0;
+    animationUpdateFrameIndex = 0;
+    animationUpdateMode = AnimationUpdateMode::DistanceBased;
+    animationUpdateFixedInterval = 2;
+    animationUpdateDistanceThresholds[0] = 20.0f;
+    animationUpdateDistanceThresholds[1] = 50.0f;
+    animationUpdateDistanceThresholds[2] = 100.0f;
+    animationUpdateStats = {};
+    pendingAnimationPoseUpdate = false;
+    pendingAnimationUpdateRateChange = false;
     playbackSpeed = 1.0f;
     playing = true;
     showBounds = false;
@@ -70,7 +79,7 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
 
     characterOffset = -characterAABB.Center();
 
-    // Keep the ground fixed at the lowest sampled foot height across all animation clips.
+    // 모든 애니메이션 클립에서 샘플링한 발 높이의 최솟값에 지면을 고정한다.
     float minCharacterZ = characterAABB[0].z;
     for (const AnimState &animState : animStates) {
         for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
@@ -81,7 +90,6 @@ void SceneSkinnedMesh::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physics
     }
     groundHeight = characterOffset.z + minCharacterZ;
 
-    // Retain the shared two-triangle quad instance across object-count changes.
     groundMeshInstance = meshManager.defaultQuadMesh->GetStaticInstance();
     if (!groundMeshInstance) {
         BE_WARNLOG("SceneSkinnedMesh::Init: failed to instantiate the ground plane");
@@ -149,8 +157,12 @@ void SceneSkinnedMesh::Shutdown() {
     jointMatrices.Clear();
 
     previousUpdateUsec = 0;
+    animationUpdateFrameIndex = 0;
+    animationUpdateStats = {};
     pendingAnimationPoseUpdate = false;
+    pendingAnimationUpdateRateChange = false;
 #ifdef ENABLE_IMGUI
+    animationUpdateUsec = 0;
     imguiTrianglesPerObject = 0;
     pendingObjectCountChange = false;
 #endif
@@ -196,7 +208,7 @@ bool SceneSkinnedMesh::LoadCharacter() {
     }
 
 #ifdef ENABLE_IMGUI
-    // Cache both mesh parts once; object-count changes only affect the displayed totals.
+    // 두 메시 파트의 정보를 한 번만 캐시하고, 객체 수가 바뀌면 표시할 합계만 갱신한다.
     imguiTrianglesPerObject = 0;
     for (const SharedPtr<Mesh> &mesh : meshes) {
         const int numSurfaces = mesh->NumSurfaces();
@@ -219,7 +231,7 @@ bool SceneSkinnedMesh::LoadCharacter() {
         jointIndexes[jointIndex] = jointIndex;
     }
 
-    // Animated bounds are computed once at scene initialization and sampled without per-frame allocation.
+    // 애니메이션 바운드는 씬 초기화 시 한 번 계산하고, 매 프레임 추가 할당 없이 샘플링한다.
     for (int animIndex = 0; animIndex < AnimCount; ++animIndex) {
         AnimState &animState = animStates[animIndex];
         for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
@@ -227,7 +239,7 @@ bool SceneSkinnedMesh::LoadCharacter() {
         }
     }
 
-    // Scene placement only needs the initial bounds; joint matrices are evaluated in Update.
+    // 씬 배치에는 초기 바운드만 필요하며, 조인트 행렬은 Update에서 계산한다.
     for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
         anims[0]->GetAABB(animStates[0].aabbs[meshIndex], animStates[0].frameAABBs[meshIndex], 0);
     }
@@ -248,6 +260,9 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
 #endif
 
     gameObjects.SetCount(objectCountX * objectCountY);
+    animationUpdateFrameIndex = 0;
+    animationUpdateStats = {};
+    animationUpdateStats.intervalCounts[0] = gameObjects.Count();
 
     const float startX = -ObjectSpacing * (objectCountX - 1) * 0.5f;
     const float startY = -ObjectSpacing * (objectCountY - 1) * 0.5f;
@@ -263,12 +278,14 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
         for (int x = 0; x < objectCountX; ++x) {
             SkinnedMeshObject &object = gameObjects[y * objectCountX + x];
 
-            // Choose the clip and speed once per character so both mesh parts always share a pose.
+            // 두 메시 파트가 항상 같은 포즈를 공유하도록 캐릭터별 클립과 재생 속도를 한 번만 선택한다.
             object.animIndex = BE1::RNG::GetRandom(0, AnimCount - 1);
             object.animationSpeed = BE1::RNG::GetRandom(0.5f, 1.5f);
             object.animationTimeMsec = 0.0;
+            object.updateInterval = 1;
+            object.poseUpdatePending = true;
 
-            // Share one final pose between this character's mesh parts; other characters own separate poses.
+            // 이 캐릭터의 메시 파트끼리 최종 포즈 하나를 공유하며, 다른 캐릭터는 별도의 포즈를 소유한다.
             object.skinningPose = MakeShared<SkinningPose>(skeleton);
 
             const BE1::Vec3 position = characterOffset + BE1::Vec3(startX + ObjectSpacing * x, startY + ObjectSpacing * y, 0.0f);
@@ -283,7 +300,7 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
                     return false;
                 }
 
-                // The first Update replaces these source bounds with animated bounds before rendering.
+                // 첫 Update에서 렌더링 전에 원본 바운드를 애니메이션 바운드로 교체한다.
                 desc.aabb = meshes[meshIndex]->GetAABB();
                 desc.meshInstance = object.meshInstances[meshIndex];
                 object.renderObjectHandles[meshIndex] = renderWorld->AddRenderObject(desc);
@@ -292,7 +309,8 @@ bool SceneSkinnedMesh::InitGameObjects(int countX, int countY) {
     }
 
     InitGround();
-    // Characters are created together; evaluate them once even while playback is paused.
+
+    // 캐릭터를 한꺼번에 생성하므로 재생이 정지된 상태에서도 최초 포즈는 한 번 평가한다.
     pendingAnimationPoseUpdate = true;
     return true;
 }
@@ -303,7 +321,7 @@ void SceneSkinnedMesh::InitGround() {
     const BE1::AABB &quadAABB = groundMeshInstance->GetAABB();
     const BE1::Vec3 quadSize = quadAABB[1] - quadAABB[0];
 
-    // Keep the ground texture density fixed when the character grid changes the plane dimensions.
+    // 캐릭터 격자 크기에 따라 지면 크기가 바뀌어도 지면 텍스처 밀도는 일정하게 유지한다.
     if (groundMaterial != materialManager.whiteLitMaterial &&
         !groundMaterial->SetPropertyValue("tcScale", BE1::Vec2(sizeY / GroundTextureTileSize, sizeX / GroundTextureTileSize))) {
         BE_WARNLOG("SceneSkinnedMesh::InitGround: failed to update the ground texture coordinate scale");
@@ -323,6 +341,7 @@ void SceneSkinnedMesh::ClearGameObjects() {
     renderWorld->ClearScene(RenderWorld::ClearFlag::RenderObjects);
     gameObjects.Clear();
     pendingAnimationPoseUpdate = false;
+    animationUpdateStats = {};
 }
 
 void SceneSkinnedMesh::ChangeGameObjectCount(int countX, int countY) {
@@ -357,29 +376,97 @@ bool SceneSkinnedMesh::EvaluateAnimationPose(int animIndex, int animationTimeMse
 }
 
 bool SceneSkinnedMesh::UpdateAnimationPoses(double deltaMsec) {
+    PROFILER_CPU_SCOPED_EVENT("SceneSkinnedMesh::UpdateAnimationPoses");
+
+#ifdef ENABLE_IMGUI
+    BE1::ScopedCpuTimer animationTimer(animationUpdateUsec);
+#endif
+
     double animationLengths[AnimCount];
     for (int animIndex = 0; animIndex < AnimCount; ++animIndex) {
         const SharedPtr<Anim> &anim = anims[animIndex];
-        if (!anim || !anim->IsReady()) {
-            return false;
-        }
-        animationLengths[animIndex] = static_cast<double>(anim->Length());
+        animationLengths[animIndex] = anim && anim->IsReady() ? static_cast<double>(anim->Length()) : -1.0;
     }
 
-    // Each character has its own playback time. Copy the evaluated pose once for both parts before reusing the scene's buffer.
-    for (SkinnedMeshObject &object : gameObjects) {
+    const bool distanceBased = animationUpdateMode == AnimationUpdateMode::DistanceBased;
+    const bool updateDistanceRates = distanceBased && (deltaMsec != 0.0 || pendingAnimationUpdateRateChange);
+    const uint8_t fixedInterval = animationUpdateMode == AnimationUpdateMode::Disabled ? 1 : animationUpdateFixedInterval;
+
+    BE1::Vec3 cameraOrigin = BE1::Vec3::zero;
+    float enterDistanceSqr[AnimationUpdateDistanceThresholdCount];
+    float exitDistanceSqr[AnimationUpdateDistanceThresholdCount];
+
+    if (updateDistanceRates) {
+        cameraOrigin = app.GetCameraOrigin();
+
+        // 경계 부근에서 갱신 주기가 반복 전환되지 않도록 진입·이탈 거리에 각각 10% 의 여유를 둔다.
+        for (int thresholdIndex = 0; thresholdIndex < AnimationUpdateDistanceThresholdCount; ++thresholdIndex) {
+            const float distance = BE1::MeterToUnit(animationUpdateDistanceThresholds[thresholdIndex]);
+            const float distanceSqr = distance * distance;
+            enterDistanceSqr[thresholdIndex] = distanceSqr * (0.9f * 0.9f);
+            exitDistanceSqr[thresholdIndex] = distanceSqr * (1.1f * 1.1f);
+        }
+    }
+
+    const bool forceAllPoses = pendingAnimationUpdateRateChange && animationUpdateMode == AnimationUpdateMode::Disabled;
+    pendingAnimationUpdateRateChange = false;
+    animationUpdateStats = {};
+    bool allPosesUpdated = true;
+
+    for (int objectIndex = 0; objectIndex < gameObjects.Count(); ++objectIndex) {
+        SkinnedMeshObject &object = gameObjects[objectIndex];
+
+        // 포즈 평가를 생략해도 캐릭터별 재생 시간은 계속 진행한다.
         const double animationLength = animationLengths[object.animIndex];
-        object.animationTimeMsec = animationLength > 0.0 ? BE1::Mod(object.animationTimeMsec + deltaMsec * static_cast<double>(object.animationSpeed), animationLength) : 0.0;
-
-        if (!EvaluateAnimationPose(object.animIndex, static_cast<int>(object.animationTimeMsec))) {
-            return false;
+        object.animationTimeMsec += deltaMsec * static_cast<double>(object.animationSpeed);
+        if (animationLength > 0.0) {
+            object.animationTimeMsec = BE1::Mod(object.animationTimeMsec, animationLength);
+        } else {
+            object.animationTimeMsec = 0.0;
         }
 
+        const uint8_t previousInterval = object.updateInterval;
+        uint8_t interval = distanceBased ? previousInterval : fixedInterval;
+
+        if (updateDistanceRates) {
+            const float distanceSqr = (object.gameObject.worldMatrix.ToTranslationVec3() - cameraOrigin).LengthSqr();
+            interval = 1;
+            for (int thresholdIndex = 0; thresholdIndex < AnimationUpdateDistanceThresholdCount; ++thresholdIndex) {
+                // 현재 간격이 경계의 가까운 쪽이면 이탈 거리, 먼 쪽이면 진입 거리를 사용한다.
+                const float thresholdSqr = previousInterval <= interval ? exitDistanceSqr[thresholdIndex] : enterDistanceSqr[thresholdIndex];
+                if (distanceSqr < thresholdSqr) {
+                    break;
+                }
+                interval = static_cast<uint8_t>(interval << 1);
+            }
+        }
+        object.updateInterval = interval;
+
+        ++animationUpdateStats.intervalCounts[CountTrailingZeros(static_cast<uint32_t>(interval))];
+
+        // 고정된 객체 인덱스로 평가 시점을 분산하므로 큐나 캐릭터별 평가 시점 저장 공간이 필요하지 않다.
+        const bool scheduled = deltaMsec != 0.0 && ((animationUpdateFrameIndex + static_cast<uint64_t>(objectIndex)) & (interval - 1u)) == 0;
+        const bool forced = object.poseUpdatePending || forceAllPoses || interval < previousInterval;
+        if (!forced && !scheduled) {
+            ++animationUpdateStats.skipped;
+            continue;
+        }
+
+        // 씬의 임시 버퍼를 재사용하기 전에 두 파트가 공유할 평가 결과를 한 번 복사한다.
+        // 실패한 캐릭터만 재시도 대상으로 남기고, 성공한 캐릭터의 재평가는 강제하지 않는다.
+        if (animationLength < 0.0 || !EvaluateAnimationPose(object.animIndex, static_cast<int>(object.animationTimeMsec)) || !object.skinningPose->SetJointMats(jointMatrices.Ptr(), jointMatrices.Count())) {
+            object.poseUpdatePending = true;
+            allPosesUpdated = false;
+            ++animationUpdateStats.failed;
+            continue;
+        }
+
+        object.poseUpdatePending = false;
+        ++animationUpdateStats.evaluated;
+        animationUpdateStats.forced += forced ? 1 : 0;
+
+        // 포즈를 유지하는 동안에는 해당 바운드도 유지하고, 새 포즈를 적용할 때만 두 메시 파트를 갱신한다.
         const AnimState &animState = animStates[object.animIndex];
-        if (!object.skinningPose->SetJointMats(jointMatrices.Ptr(), jointMatrices.Count())) {
-            return false;
-        }
-
         for (int meshIndex = 0; meshIndex < MeshCount; ++meshIndex) {
             if (renderWorld && object.renderObjectHandles[meshIndex] >= 0) {
                 renderWorld->UpdateRenderObjectBounds(object.renderObjectHandles[meshIndex], animState.aabbs[meshIndex]);
@@ -387,7 +474,7 @@ bool SceneSkinnedMesh::UpdateAnimationPoses(double deltaMsec) {
         }
     }
 
-    return true;
+    return allPosesUpdated;
 }
 
 void SceneSkinnedMesh::Update(uint64_t elapsedUsec) {
@@ -403,14 +490,23 @@ void SceneSkinnedMesh::Update(uint64_t elapsedUsec) {
     const uint64_t deltaUsec = previousUpdateUsec > 0 && elapsedUsec >= previousUpdateUsec ? elapsedUsec - previousUpdateUsec : 0;
     previousUpdateUsec = elapsedUsec;
 
+    animationUpdateStats.evaluated = 0;
+    animationUpdateStats.skipped = gameObjects.Count();
+    animationUpdateStats.forced = 0;
+    animationUpdateStats.failed = 0;
+#ifdef ENABLE_IMGUI
+    animationUpdateUsec = 0;
+#endif
+
     if (gameObjects.IsEmpty()) {
         return;
     }
 
     const double deltaMsec = playing ? static_cast<double>(deltaUsec) * 0.001 * static_cast<double>(playbackSpeed) : 0.0;
-    if (pendingAnimationPoseUpdate || deltaMsec != 0.0) {
+    if (pendingAnimationPoseUpdate || pendingAnimationUpdateRateChange || deltaMsec != 0.0) {
         pendingAnimationPoseUpdate = !UpdateAnimationPoses(deltaMsec);
     }
+    ++animationUpdateFrameIndex;
 
     if (showBounds) {
         DrawBounds();
@@ -420,7 +516,7 @@ void SceneSkinnedMesh::Update(uint64_t elapsedUsec) {
 void SceneSkinnedMesh::DrawBounds() const {
     renderWorld->SetDebugColor(BE1::Color4::lime, BE1::Color4::zero);
 
-    // Reuse the current culling bounds so visualization also works while animation is paused.
+    // 애니메이션이 정지된 상태에서도 표시할 수 있도록 현재 컬링 바운드를 재사용한다.
     for (const SkinnedMeshObject &object : gameObjects) {
         for (int renderObjectHandle : object.renderObjectHandles) {
             if (renderObjectHandle < 0) {
@@ -438,7 +534,7 @@ void SceneSkinnedMesh::DrawBounds() const {
 }
 
 void SceneSkinnedMesh::UpdateDirectionalLightDirection() {
-    // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
+    // UI는 태양이나 달을 향하는 방향을 표시하고, axis[0]은 빛이 진행하는 방향을 나타낸다.
     directionalLight.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
 }
 
@@ -491,6 +587,47 @@ void SceneSkinnedMesh::BuildImGui() {
     ImGui::SliderFloat("Playback Speed", &playbackSpeed, 0.0f, 2.0f, "%.2fx");
 
     ImGui::Checkbox("Show Bounds", &showBounds);
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Animation Update Rate");
+
+    int updateMode = static_cast<int>(animationUpdateMode);
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::Combo("Mode##AnimationUpdate", &updateMode, "Disabled\0Fixed interval\0Distance based\0")) {
+        animationUpdateMode = static_cast<AnimationUpdateMode>(updateMode);
+        pendingAnimationUpdateRateChange = true;
+    }
+
+    if (animationUpdateMode == AnimationUpdateMode::FixedInterval) {
+        int intervalIndex = CountTrailingZeros(static_cast<uint32_t>(animationUpdateFixedInterval));
+        ImGui::SetNextItemWidth(itemWidth);
+        if (ImGui::Combo("Interval##AnimationUpdate", &intervalIndex, "Every frame\0Every 2 frames\0Every 4 frames\0Every 8 frames\0")) {
+            animationUpdateFixedInterval = static_cast<uint8_t>(1u << intervalIndex);
+            pendingAnimationUpdateRateChange = true;
+        }
+    } else if (animationUpdateMode == AnimationUpdateMode::DistanceBased) {
+        static constexpr const char *distanceLabels[AnimationUpdateDistanceThresholdCount] = {
+            "1 -> 2 distance##AnimationUpdate",
+            "2 -> 4 distance##AnimationUpdate",
+            "4 -> 8 distance##AnimationUpdate"
+        };
+        for (int thresholdIndex = 0; thresholdIndex < AnimationUpdateDistanceThresholdCount; ++thresholdIndex) {
+            // 인접한 경계와 최소 0.1m 간격을 두어 거리 설정을 오름차순으로 유지한다.
+            const float minDistance = thresholdIndex > 0 ? animationUpdateDistanceThresholds[thresholdIndex - 1] + 0.1f : 0.1f;
+            const float maxDistance = thresholdIndex + 1 < AnimationUpdateDistanceThresholdCount ? animationUpdateDistanceThresholds[thresholdIndex + 1] - 0.1f : 2000.0f;
+            ImGui::SetNextItemWidth(itemWidth);
+            if (ImGui::DragFloat(distanceLabels[thresholdIndex], &animationUpdateDistanceThresholds[thresholdIndex], 0.5f, minDistance, maxDistance, "%.1f m", ImGuiSliderFlags_AlwaysClamp)) {
+                pendingAnimationUpdateRateChange = true;
+            }
+        }
+        ImGui::TextDisabled("Distance tiers: every 1 / 2 / 4 / 8 frames");
+        ImGui::TextDisabled("Distance hysteresis: +/-10%%");
+    }
+
+    ImGui::Text("Evaluated: %i  Skipped: %i", animationUpdateStats.evaluated, animationUpdateStats.skipped);
+    ImGui::Text("Forced: %i  Failed: %i", animationUpdateStats.forced, animationUpdateStats.failed);
+    ImGui::Text("Every 1 / 2 / 4 / 8: %i / %i / %i / %i", animationUpdateStats.intervalCounts[0], animationUpdateStats.intervalCounts[1], animationUpdateStats.intervalCounts[2], animationUpdateStats.intervalCounts[3]);
+    ImGui::Text("Animation update CPU: %.3f ms", static_cast<double>(animationUpdateUsec) * 0.001);
 
     ImGui::Separator();
     ImGui::Text("Directional Light");
