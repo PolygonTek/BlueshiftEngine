@@ -32,8 +32,10 @@ enum class ShaderFeature : uint8_t {
     Count
 };
 
+static_assert(to_int(ShaderFeature::Count) <= 16, "ShaderFeatureSet flags must represent every shader feature");
+
 struct ShaderFeatureSet {
-    enum Flag : uint32_t {
+    enum Flag : uint16_t {
         Perforated                  = 1u << to_int(ShaderFeature::Perforated),
         Dithered                    = 1u << to_int(ShaderFeature::Dithered),
         DitherFade                  = 1u << to_int(ShaderFeature::DitherFade),
@@ -57,7 +59,7 @@ struct ShaderFeatureSet {
     bool                            operator==(const ShaderFeatureSet &rhs) const { return flags == rhs.flags; }
     bool                            operator!=(const ShaderFeatureSet &rhs) const { return flags != rhs.flags; }
 
-    uint32_t                        flags = 0;
+    uint16_t                        flags = 0;
 };
 
 BE_INLINE ShaderFeatureSet operator|(const ShaderFeatureSet &lhs, const ShaderFeatureSet &rhs) {

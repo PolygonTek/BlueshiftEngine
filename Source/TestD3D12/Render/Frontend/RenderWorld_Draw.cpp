@@ -81,7 +81,7 @@ const FrameSurf *RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *fram
     assert(subMesh);
     assert(lodLevel >= 0 && lodLevel < subMesh->NumLODs());
 
-    const RHI::IndexBuffer *indexBuffer = lodLevel == 0 ? subMesh->indexBuffer : (subMesh->lodIndexBuffers ? subMesh->lodIndexBuffers[lodLevel - 1] : nullptr);
+    const RHI::IndexBuffer *indexBuffer = subMesh->GetIndexBuffer(lodLevel);
     if (!subMesh->vertexBuffer || !indexBuffer || (subMesh->vertWeights && !subMesh->vertexWeightBuffer)) {
         indexBuffer = subMesh->UploadStaticDataToGPU(lodLevel);
     }
@@ -104,14 +104,13 @@ const FrameSurf *RenderWorld::AddFrameSurf(RenderFrame *frame, FrameCamera *fram
 
     const FrameSkinnedMesh *frameSkinnedMesh = frameObject->skinnedMesh;
 
-    FrameSurf *drawSurf = (FrameSurf *)frame->MemAlloc(sizeof(FrameSurf));
+    FrameSurf *drawSurf = frame->AllocFrameSurf();
     if (!drawSurf) {
         return nullptr;
     }
     drawSurf->index = frameCamera->numFrameSurfs;
     drawSurf->space = frameObject;
     drawSurf->subMesh = subMesh;
-    drawSurf->indexBuffer = indexBuffer;
     drawSurf->numIndexes = subMesh->NumIndexes(lodLevel);
     drawSurf->lodLevel = static_cast<uint8_t>(lodLevel);
     drawSurf->viewZ = viewZ;

@@ -30,16 +30,20 @@ uint64_t                    RenderFrame::globalFrameSerial = 0;
 static constexpr uint32_t   MaxRenderTaskThreads = 32;
 static constexpr size_t     FrameMemoryBlockSize = 0x4000000;
 static constexpr int        FrameMemoryAlignment = 32;
+
 static constexpr uint32_t   MaxFrameCamera = 1u << 3;
 static constexpr uint32_t   MaxFrameObjects = 1u << 20;
 static constexpr uint32_t   MaxFrameTexts = MaxFrameObjects;
 static constexpr uint32_t   MaxFrameLights = static_cast<uint32_t>(UINT16_MAX) + 1u; // All cameras combined; indices are uint16_t.
+
+static constexpr uint32_t   FrameSurfChunkCapacity = 256;
 static constexpr uint32_t   FrameObjectChunkCapacity = 8192;
 static constexpr uint32_t   FrameSkinnedMeshChunkCapacity = 256;
 static constexpr uint32_t   FrameTextChunkCapacity = 256;
 static constexpr uint32_t   FrameLightChunkCapacity = 1024;
 static constexpr uint32_t   FrameLocalFogVolumeChunkCapacity = 64;
 
+static_assert(FrameMemoryAlignment % alignof(FrameSurf) == 0, "Frame arena must satisfy FrameSurf alignment");
 static_assert(std::is_trivially_destructible<FrameOceanSurface>::value, "FrameOceanSurface must not require destruction before the frame arena is reset");
 
 void RenderFrame::Init(int32_t contextIndex, int32_t numContexts, int32_t frameIndex, int32_t numFrames) {
@@ -103,6 +107,8 @@ void RenderFrame::Shutdown() {
     FreeFrameObjects();
 
     FreeFrameCameras();
+
+    FreeFrameSurfs();
 
     ClearRetainedMaterials();
 
@@ -182,7 +188,8 @@ void RenderFrame::EndFrame() {
 
 void RenderFrame::ResetFrameData() {
     FreeFrameCameras();
-    numFrameSurfaces = 0;
+    FreeFrameSurfs();
+    numFrameSurfs = 0;
     numFrameLocalShadows = 0;
     numFrameLocalShadowViews = 0;
 
@@ -245,6 +252,11 @@ void RenderFrame::FreeFrameCameras() {
 
     frameCameras = nullptr;
     numFrameCameras = 0;
+}
+
+void RenderFrame::FreeFrameSurfs() {
+    static_assert(std::is_trivially_destructible<FrameSurf>::value, "FrameSurf must not require destruction");
+    lastFrameSurfChunk = nullptr;
 }
 
 void RenderFrame::FreeFrameObjects() {
@@ -447,6 +459,16 @@ FrameCamera *RenderFrame::AllocFrameCamera() {
     newFrameCamera->index = numFrameCameras++;
 
     return newFrameCamera;
+}
+
+FrameSurf *RenderFrame::AllocFrameSurf() {
+    // surface 참조는 카메라별 배열에 보관하므로, 여러 카메라가 이어 쓸 현재 청크만 유지한다.
+    if (!lastFrameSurfChunk || lastFrameSurfChunk->count >= FrameSurfChunkCapacity) {
+        lastFrameSurfChunk = AllocChunk(sizeof(FrameSurf), FrameSurfChunkCapacity);
+    }
+
+    FrameSurf *frameSurfs = static_cast<FrameSurf *>(lastFrameSurfChunk->elements);
+    return new (&frameSurfs[lastFrameSurfChunk->count++]) FrameSurf;
 }
 
 RenderFrame::ChunkRange<FrameObject> RenderFrame::GetFrameObjects(uint32_t firstIndex) const {
@@ -820,7 +842,7 @@ void RenderFrame::CmdDrawCamera(FrameCamera *camera) {
 
     const bool reserveSurfaces = camera->firstFrameSurface == UINT32_MAX;
     if (reserveSurfaces) {
-        if (camera->numFrameSurfs > UINT32_MAX / sizeof(ShaderSurface) - numFrameSurfaces) {
+        if (camera->numFrameSurfs > UINT32_MAX / sizeof(ShaderSurface) - numFrameSurfs) {
             BE_WARNLOG("RenderFrame::CmdDrawCamera: too many frame surfaces\n");
             return;
         }
@@ -842,8 +864,8 @@ void RenderFrame::CmdDrawCamera(FrameCamera *camera) {
 
     // 3D/GUI 카메라 모두 수집을 마친 surface/shadow 구간을 한 번만 예약한다.
     if (reserveSurfaces) {
-        camera->firstFrameSurface = numFrameSurfaces;
-        numFrameSurfaces += camera->numFrameSurfs;
+        camera->firstFrameSurface = numFrameSurfs;
+        numFrameSurfs += camera->numFrameSurfs;
     }
 
     if (reserveShadows) {

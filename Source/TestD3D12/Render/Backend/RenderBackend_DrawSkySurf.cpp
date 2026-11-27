@@ -86,6 +86,8 @@ void RenderBackend::DrawSkySurfaces(const DrawSurf2 **drawSurfs, uint32_t numDra
 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
+    const RHI::IndexBuffer *currentIndexBuffer = nullptr;
+    int currentLODLevel = -1;
     VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
     uint32_t drawCount = 0;
@@ -108,12 +110,23 @@ void RenderBackend::DrawSkySurfaces(const DrawSurf2 **drawSurfs, uint32_t numDra
             RHI::renderer->SetConstantBuffer(mainCommandList, 1, cameraConstantBuffer);
         }
 
-        if (currentSubMesh != drawSurf->frameSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
-            currentSubMesh = drawSurf->frameSurf->subMesh;
+        const FrameSurf *frameSurf = drawSurf->frameSurf;
+        const bool subMeshChanged = currentSubMesh != frameSurf->subMesh;
+        if (subMeshChanged || currentInputLayoutId != drawSurf->inputLayoutId) {
+            currentSubMesh = frameSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
 
             RHI::renderer->SetVertexBuffer(mainCommandList, 0, currentSubMesh->vertexBuffer);
-            RHI::renderer->SetIndexBuffer(mainCommandList, drawSurf->frameSurf->indexBuffer);
+        }
+
+        if (subMeshChanged || currentLODLevel != frameSurf->lodLevel) {
+            currentLODLevel = frameSurf->lodLevel;
+            const RHI::IndexBuffer *indexBuffer = currentSubMesh->GetIndexBuffer(currentLODLevel);
+            assert(indexBuffer);
+            if (currentIndexBuffer != indexBuffer) {
+                currentIndexBuffer = indexBuffer;
+                RHI::renderer->SetIndexBuffer(mainCommandList, currentIndexBuffer);
+            }
         }
 
         if (!BindSkyboxTextures(mainCommandList, drawSurf->frameSurf->material)) {

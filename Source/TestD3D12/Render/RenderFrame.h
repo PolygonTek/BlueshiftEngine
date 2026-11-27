@@ -36,6 +36,7 @@ class Skeleton;
 class Font;
 class ShadowAtlas;
 struct FrameCamera;
+struct FrameSurf;
 struct FrameObject;
 struct FrameSkinnedMesh;
 struct FrameText;
@@ -196,7 +197,8 @@ public:
     FrameCamera *                   GetFrameCameras() const { return frameCameras; }
     FrameCamera *                   AllocFrameCamera();
 
-    uint32_t                        NumFrameSurfaces() const { return numFrameSurfaces; }
+    uint32_t                        NumFrameSurfs() const { return numFrameSurfs; }
+    FrameSurf *                     AllocFrameSurf();
 
     uint32_t                        NumFrameObjects() const { return numFrameObjects; }
     ChunkRange<FrameObject>         GetFrameObjects() const { return ChunkRange<FrameObject>(firstFrameObjectChunk); }
@@ -321,6 +323,7 @@ private:
 
     void                            InitFrameCameras(uint32_t maxFrameCameras);
     void                            FreeFrameCameras();
+    void                            FreeFrameSurfs();
     void                            FreeFrameObjects();
     void                            FreeFrameSkinnedMeshes();
     void                            FreeFrameTexts();
@@ -342,7 +345,8 @@ private:
     uint32_t                        maxFrameCameras = 0;
     uint32_t                        numFrameCameras = 0;
     FrameCamera *                   frameCameras = nullptr;
-    uint32_t                        numFrameSurfaces = 0;
+    Chunk *                         lastFrameSurfChunk = nullptr;
+    uint32_t                        numFrameSurfs = 0;
     uint32_t                        numFrameLocalShadows = 0;
     uint32_t                        numFrameLocalShadowViews = 0;
 

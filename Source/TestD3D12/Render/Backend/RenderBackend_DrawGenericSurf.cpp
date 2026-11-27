@@ -43,6 +43,7 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const DrawSurf2 **drawSurfs, 
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
     const RHI::IndexBuffer *currentIndexBuffer = nullptr;
+    int currentLODLevel = -1;
     VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
     uint32_t drawCount = 0;
@@ -73,16 +74,23 @@ void RenderBackend::DrawGenericSurfacesWithoutTask(const DrawSurf2 **drawSurfs, 
             }
         }
 
-        if (currentSubMesh != drawSurf->frameSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
-            currentSubMesh = drawSurf->frameSurf->subMesh;
+        const FrameSurf *frameSurf = drawSurf->frameSurf;
+        const bool subMeshChanged = currentSubMesh != frameSurf->subMesh;
+        if (subMeshChanged || currentInputLayoutId != drawSurf->inputLayoutId) {
+            currentSubMesh = frameSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
 
             SetPassVertexBuffers(mainCommandList, drawSurf);
         }
 
-        if (currentIndexBuffer != drawSurf->frameSurf->indexBuffer) {
-            currentIndexBuffer = drawSurf->frameSurf->indexBuffer;
-            RHI::renderer->SetIndexBuffer(mainCommandList, currentIndexBuffer);
+        if (subMeshChanged || currentLODLevel != frameSurf->lodLevel) {
+            currentLODLevel = frameSurf->lodLevel;
+            const RHI::IndexBuffer *indexBuffer = currentSubMesh->GetIndexBuffer(currentLODLevel);
+            assert(indexBuffer);
+            if (currentIndexBuffer != indexBuffer) {
+                currentIndexBuffer = indexBuffer;
+                RHI::renderer->SetIndexBuffer(mainCommandList, currentIndexBuffer);
+            }
         }
 
         const uint32_t instanceStartIndex = drawSurfIndex;
@@ -122,6 +130,7 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
     RHI::PipelineState *currentPSO = nullptr;
     const SubMesh *currentSubMesh = nullptr;
     const RHI::IndexBuffer *currentIndexBuffer = nullptr;
+    int currentLODLevel = -1;
     VertexInputLayoutId currentInputLayoutId = VertexInputLayoutId::Count;
 
     uint32_t drawSurfIndex = 0;
@@ -145,16 +154,23 @@ void RenderBackend::DrawGenericSurfacesByTask(RenderBackend::DrawSurfsTaskDesc *
             }
         }
 
-        if (currentSubMesh != drawSurf->frameSurf->subMesh || currentInputLayoutId != drawSurf->inputLayoutId) {
-            currentSubMesh = drawSurf->frameSurf->subMesh;
+        const FrameSurf *frameSurf = drawSurf->frameSurf;
+        const bool subMeshChanged = currentSubMesh != frameSurf->subMesh;
+        if (subMeshChanged || currentInputLayoutId != drawSurf->inputLayoutId) {
+            currentSubMesh = frameSurf->subMesh;
             currentInputLayoutId = drawSurf->inputLayoutId;
 
             SetPassVertexBuffers(commandList, drawSurf);
         }
 
-        if (currentIndexBuffer != drawSurf->frameSurf->indexBuffer) {
-            currentIndexBuffer = drawSurf->frameSurf->indexBuffer;
-            RHI::renderer->SetIndexBuffer(commandList, currentIndexBuffer);
+        if (subMeshChanged || currentLODLevel != frameSurf->lodLevel) {
+            currentLODLevel = frameSurf->lodLevel;
+            const RHI::IndexBuffer *indexBuffer = currentSubMesh->GetIndexBuffer(currentLODLevel);
+            assert(indexBuffer);
+            if (currentIndexBuffer != indexBuffer) {
+                currentIndexBuffer = indexBuffer;
+                RHI::renderer->SetIndexBuffer(commandList, currentIndexBuffer);
+            }
         }
 
         const uint32_t instanceStartIndex = drawSurfIndex;

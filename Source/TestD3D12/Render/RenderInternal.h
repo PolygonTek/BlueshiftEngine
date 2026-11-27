@@ -76,7 +76,6 @@ struct FrameSurf {
     ShaderFeatureSet                baseFeatureSet;
 
     const SubMesh *                 subMesh;
-    const RHI::IndexBuffer *        indexBuffer;            ///< 선택된 LOD 의 index buffer.
     uint32_t                        numIndexes;
     uint8_t                         lodLevel;
 
@@ -568,26 +567,26 @@ struct FrameObject {
     friend constexpr std::true_type EnableBitmaskEnum(Flag) noexcept { return {}; }
 
     ALIGN_AS32 BE1::Mat3x4          worldMatrix;                    ///< World transform matrix
-    MeshInstance *                  meshInstance = nullptr;         ///< Mesh instance
     FrameSkinnedMesh *              skinnedMesh = nullptr;          ///< Per-view skinning data, if present.
-    ALIGN_AS32 BE1::Mat3x4          prevWorldMatrix;                ///< Previous world transform matrix
-
-    union {
-        const Material *            baseMaterials[2] = {};          ///< Base materials for the object, used when numMaterials are less than or equal to 2.
-        const Material **           materials;                      ///< External material array, used when numMaterials are greater than 2.
-    };
-
-    uint16_t                        numMaterials = 0;               ///< Material 개수
-    int8_t                          meshLOD = -1;                   ///< 요청 LOD. -1 은 자동 선택, 0~127 은 지정 LOD.
+    float                           fadeOpacity = 1.0f;             ///< Snapshot of object visibility, separate from material alpha.
     Flag                            flags = Flag::None;
     uint8_t                         shadowCascadeMask = 0;          ///< 이 object 가 투영되는 directional shadow cascade bit mask.
     uint8_t                         ditherPatternSeed = 0;          ///< Stable object pattern offset, independent of per-frame surface indices.
+    int8_t                          meshLOD = -1;                   ///< 요청 LOD. -1 은 자동 선택, 0~127 은 지정 LOD.
+    ALIGN_AS32 BE1::Mat3x4          prevWorldMatrix;                ///< Previous world transform matrix
+
+    MeshInstance *                  meshInstance = nullptr;         ///< Mesh instance
+
+    union {
+        const Material *            baseMaterials[3] = {};          ///< Base materials for the object, used when numMaterials are less than or equal to 3.
+        const Material **           materials;                      ///< External material array, used when numMaterials are greater than 3.
+    };
 
     float                           squaredLODErrorLimit = 0.0f;    ///< 현재 view 에서 공유 LOD 를 선택하는 로컬 공간 허용 오차 제곱.
-    float                           fadeOpacity = 1.0f;             ///< Snapshot of object visibility, separate from material alpha.
 
     uint32_t                        firstLocalShadowCasterRef = 0;  ///< 현재 카메라의 surface 를 구성하는 동안만 사용하는 RenderWorld::localShadowCasterRefs 범위.
     uint32_t                        numLocalShadowCasterRefs = 0;   ///< 백엔드는 이 임시 범위 대신 FrameLocalShadowView::shadowSurfs 를 사용한다.
+    uint16_t                        numMaterials = 0;               ///< Material 개수
 
                                     // 현재 카메라의 가시성 플래그를 확인한다.
     bool                            IsVisible() const { return BE1::HasFlag(flags, Flag::CameraVisible); }

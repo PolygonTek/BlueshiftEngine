@@ -131,6 +131,9 @@ public:
                             /// 이미 생성된 버퍼는 재사용하며, 생성에 실패하면 nullptr 을 반환한다.
     RHI::IndexBuffer *      UploadStaticDataToGPU(int lodLevel = 0) const;
 
+                            /// 선택된 LOD 의 index buffer 를 반환한다. 아직 생성되지 않았다면 nullptr.
+    const RHI::IndexBuffer *GetIndexBuffer(int lodLevel = 0) const;
+
 private:
     struct LOD {
         BE1::Array<BE1::VertIndex> indexes;
@@ -181,6 +184,11 @@ private:
 
     Flag                    flags = Flag::None;
 };
+
+BE_INLINE const RHI::IndexBuffer *SubMesh::GetIndexBuffer(int lodLevel) const {
+    assert(lodLevel >= 0 && lodLevel < NumLODs());
+    return lodLevel == 0 ? indexBuffer : (lodIndexBuffers ? lodIndexBuffers[lodLevel - 1] : nullptr);
+}
 
 BE_INLINE uint32_t SubMesh::NumIndexes(int lodLevel) const {
     assert(lodLevel >= 0 && lodLevel < NumLODs());

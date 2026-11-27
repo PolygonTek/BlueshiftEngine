@@ -73,7 +73,7 @@ bool ShaderSurfaceTable::EnsureBufferCapacity(uint32_t count) {
 bool ShaderSurfaceTable::Upload(RHI::FrameThreadData *frameThreadData, RHI::CommandList *commandList, const RenderFrame *frame) {
     PROFILER_CPU_SCOPED_EVENT("ShaderSurfaceTable::Upload");
 
-    const uint32_t surfaceCount = frame->NumFrameSurfaces();
+    const uint32_t surfaceCount = frame->NumFrameSurfs();
     if (surfaceCount == 0) {
         Clear();
         return true;
