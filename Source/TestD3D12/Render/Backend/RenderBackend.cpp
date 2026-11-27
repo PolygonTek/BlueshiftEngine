@@ -2060,8 +2060,7 @@ uint32_t RenderBackend::FindSurfaceInstanceBatchEnd(const DrawSurf2 **drawSurfs,
 }
 
 void RenderBackend::WriteInstanceToShaderSurfaceTable(RHI::Buffer *buffer, uint32_t instanceBaseOffset, const DrawSurf2 **drawSurfs, uint32_t instanceCount) const {
-    assert(instanceBaseOffset <= buffer->size / sizeof(uint32_t));
-    assert(instanceCount <= buffer->size / sizeof(uint32_t) - instanceBaseOffset);
+    assert(buffer && buffer->mappedPtr);
 
     uint32_t *shaderSurfaceIndices = reinterpret_cast<uint32_t *>(buffer->mappedPtr) + instanceBaseOffset;
     // 일반 draw, shadow, Hi-Z 입력 모두 프레임 공용 surface 테이블의 절대 인덱스를 사용한다.

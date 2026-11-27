@@ -179,6 +179,8 @@ bool RenderBackend::PrepareHiZCulling() {
         uint32_t instanceTableUploadBytes = 0;
         for (uint32_t i = 0; i < passRange.numBatches; ++i) {
             SurfaceInstanceBatch &batch = hiZCullDrawBatches[passRange.firstBatchIndex + i];
+            assert(batch.drawSurfIndex < renderPass->numDrawSurfs);
+            assert(batch.instanceCount <= renderPass->numDrawSurfs - batch.drawSurfIndex);
             WriteInstanceToShaderSurfaceTable(inputInstanceToShaderSurfaceTable, batch.drawSurfIndex, &renderPass->drawSurfs[batch.drawSurfIndex], batch.instanceCount);
             instanceTableUploadBytes += sizeof(uint32_t) * batch.instanceCount;
 
