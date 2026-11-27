@@ -1,5 +1,5 @@
 material materialBall {
-    shaderTemplate "Source/TestD3D12/Shaders/Lit"
+    shaderTemplate "Source/TestD3D12/Shaders/Lit/Lit"
 
     properties {
         baseColorMap "Data/Test/export3dcoat_lambert3SG_color.dds"

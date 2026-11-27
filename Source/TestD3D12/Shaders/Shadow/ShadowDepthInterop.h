@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef __COLOR_GRADING_INTEROP_H__
-#define __COLOR_GRADING_INTEROP_H__
+#ifndef __SHADOW_DEPTH_INTEROP_H__
+#define __SHADOW_DEPTH_INTEROP_H__
 
-#include "ShaderTypes.h"
+#include "../ShaderTypes.h"
 
-static const uint ColorGradingLUTSize = 32;
+// Shadow depth 기록에 필요한 광원 행렬. Surface table 은 프레임 상수를 참조하고, 샘플링용 데이터는 별도로 전달한다.
+struct ShadowViewConstants {
+    row_major float4x4 viewProjMatrix;
+};
 
-#endif // __COLOR_GRADING_INTEROP_H__
+#ifdef __cplusplus
+static_assert(sizeof(ShadowViewConstants) == 64, "ShadowViewConstants must match the HLSL constant-buffer layout");
+#endif
+
+#endif // __SHADOW_DEPTH_INTEROP_H__

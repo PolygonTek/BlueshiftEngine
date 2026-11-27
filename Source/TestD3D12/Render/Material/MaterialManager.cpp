@@ -187,7 +187,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
     switch (hint) {
     case Material::TextureHint::None:
         text = BE1::va("{\n"
-            "shaderTemplate \"Source/TestD3D12/Shaders/Lit\"\n"
+            "shaderTemplate \"Source/TestD3D12/Shaders/Lit/Lit\"\n"
             "properties {\n"
             "   baseColorMap \"%s\"\n"
             "}\n"
@@ -198,7 +198,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
             "noShadow\n"
             "renderingMode blend\n"
             "blendType alphaBlend\n"
-            "shaderTemplate \"Source/TestD3D12/Shaders/Unlit\"\n"
+            "shaderTemplate \"Source/TestD3D12/Shaders/Unlit/Unlit\"\n"
             "properties {\n"
             "   baseColorMap \"%s\"\n"
             "}\n"
@@ -210,7 +210,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
             "cull twoSided\n"
             "renderingMode blend\n"
             "blendType alphaBlend\n"
-            "shaderTemplate \"Source/TestD3D12/Shaders/Unlit\"\n"
+            "shaderTemplate \"Source/TestD3D12/Shaders/Unlit/Unlit\"\n"
             "properties {\n"
             "   baseColorMap \"%s\"\n"
             "}\n"
@@ -315,7 +315,7 @@ void MaterialManager::CreateDefaultMaterials() {
 
     static constexpr const char *defaultLitMaterialText = DEFAULT_MATERIAL(
     {
-        shaderTemplate "Source/TestD3D12/Shaders/Lit"
+        shaderTemplate "Source/TestD3D12/Shaders/Lit/Lit"
 
         properties {
             baseColorMap "_missingTexture"
@@ -326,7 +326,7 @@ void MaterialManager::CreateDefaultMaterials() {
 
     static constexpr const char *defaultUnlitMaterialText = DEFAULT_MATERIAL(
     {
-        shaderTemplate "Source/TestD3D12/Shaders/Unlit"
+        shaderTemplate "Source/TestD3D12/Shaders/Unlit/Unlit"
 
         properties {
             baseColorMap "_missingTexture"
@@ -336,7 +336,7 @@ void MaterialManager::CreateDefaultMaterials() {
 
     static constexpr const char *whiteLitMaterialText = DEFAULT_MATERIAL(
     {
-        shaderTemplate "Source/TestD3D12/Shaders/Lit"
+        shaderTemplate "Source/TestD3D12/Shaders/Lit/Lit"
 
         properties {
             baseColorMap "_whiteTexture"
@@ -347,7 +347,7 @@ void MaterialManager::CreateDefaultMaterials() {
 
     static constexpr const char *whiteUnlitMaterialText = DEFAULT_MATERIAL(
     {
-        shaderTemplate "Source/TestD3D12/Shaders/Unlit"
+        shaderTemplate "Source/TestD3D12/Shaders/Unlit/Unlit"
 
         properties {
             baseColorMap "_whiteTexture"
@@ -357,7 +357,7 @@ void MaterialManager::CreateDefaultMaterials() {
 
     static constexpr const char *blendUnlitMaterialText = DEFAULT_MATERIAL(
     {
-        shaderTemplate "Source/TestD3D12/Shaders/Unlit"
+        shaderTemplate "Source/TestD3D12/Shaders/Unlit/Unlit"
         renderingMode "Blend"
         blendType "AlphaBlend"
 
@@ -369,7 +369,7 @@ void MaterialManager::CreateDefaultMaterials() {
 
     static constexpr const char *blendLitMaterialText = DEFAULT_MATERIAL(
     {
-        shaderTemplate "Source/TestD3D12/Shaders/Lit"
+        shaderTemplate "Source/TestD3D12/Shaders/Lit/Lit"
         renderingMode "Blend"
         blendType "AlphaBlend"
 

@@ -99,8 +99,8 @@ shader "Lit" {
         }
 
         stages {
-            vertex SM_6_6 "ShadowDepth.hlsl" "VSMain"
-            fragment SM_6_6 "ShadowDepth.hlsl" "PSMain" (features perforated dithered ditherFade)
+            vertex SM_6_6 "../Shadow/ShadowDepth.hlsl" "VSMain"
+            fragment SM_6_6 "../Shadow/ShadowDepth.hlsl" "PSMain" (features perforated dithered ditherFade)
         }
 
         features {

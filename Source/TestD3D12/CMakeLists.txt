@@ -294,16 +294,18 @@ set(SRC_FILES
     Shaders/Bloom/BloomInterop.h
     Shaders/AO/AOInterop.h
     Shaders/SSR/SSRInterop.h
+    Shaders/TAA/TAAInterop.h
+    Shaders/Shadow/ShadowDepthInterop.h
     Shaders/HiZ/HiZInterop.h
     Shaders/Transpose/TransposeInterop.h
     Shaders/ToneMapping/ToneMappingInterop.h
     Shaders/ToneMapping/LuminanceInterop.h
-    Shaders/FinalPostProcessInterop.h
-    Shaders/ColorGradingInterop.h
+    Shaders/FinalPostProcess/FinalPostProcessInterop.h
+    Shaders/FinalPostProcess/ColorGradingInterop.h
     Shaders/TextureStreamingInterop.h
     Shaders/GenMip/MipGenInterop.h
     Shaders/MSAA/MSAAInterop.h
-    Shaders/FullscreenOutputInterop.h
+    Shaders/Fullscreen/FullscreenOutputInterop.h
     Shaders/ShaderInterop.h)
 
 file(GLOB_RECURSE SHADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

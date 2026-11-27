@@ -1,7 +1,7 @@
-#include "../FullscreenOutputInterop.h"
+#include "../Fullscreen/FullscreenOutputInterop.h"
 #include "../Common.hlsli"
 #include "../Colors.hlsli"
-#include "../FullscreenTriangle.hlsli"
+#include "../Fullscreen/FullscreenTriangle.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "DescriptorTable(SRV(t0)), " \
     "RootConstants(num32BitConstants=6, b0), " \

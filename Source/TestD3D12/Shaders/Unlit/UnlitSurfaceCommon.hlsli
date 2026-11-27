@@ -1,8 +1,8 @@
 #ifndef __UNLIT_SURFACE_COMMON_HLSLI__
 #define __UNLIT_SURFACE_COMMON_HLSLI__
 
-#include "SurfaceDrawCommon.hlsli"
-#include "AlphaTest.hlsli"
+#include "../SurfaceDrawCommon.hlsli"
+#include "../AlphaTest.hlsli"
 
 cbuffer CameraCB : register(b1) {
     CameraConstants cameraConstants;

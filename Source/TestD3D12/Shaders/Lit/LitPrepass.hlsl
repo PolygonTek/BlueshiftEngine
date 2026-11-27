@@ -1,6 +1,6 @@
 #define LIT_PREPASS 1
 #include "LitSurfaceCommon.hlsli"
-#include "PBR/ShadingParams.hlsli"
+#include "../PBR/ShadingParams.hlsli"
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]
 PrepassPSOutput PSMain(PSInput input) {

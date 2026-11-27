@@ -1,4 +1,4 @@
-#include "ShaderInterop.h"
+#include "../ShaderInterop.h"
 
 #define DEBUG_DRAW_ROOT_SIGNATURE \
     "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), " \

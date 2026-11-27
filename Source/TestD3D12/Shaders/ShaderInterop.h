@@ -20,9 +20,6 @@
 #include <cstddef>
 #include "Shaders/ShaderTypes.h"
 
-#define column_major
-#define row_major
-
 #else
 
 #include "Common.hlsli"
@@ -34,9 +31,6 @@
 
 static const uint IBLIntegrationBlockSizeX = 8;
 static const uint IBLIntegrationBlockSizeY = 8;
-
-static const uint TAAResolveBlockSizeX = 16;
-static const uint TAAResolveBlockSizeY = 16;
 
 static const uint ShaderSurfaceFlagNonUniformScale = 1u << 0;
 // Pack object fading into unused flag bits to preserve the 128-byte surface stride.
@@ -138,22 +132,6 @@ struct ReconstructCubemapSHParams {
 static_assert(sizeof(ReconstructCubemapSHParams) == 12, "ReconstructCubemapSHParams must match the HLSL root constants");
 #endif
 
-struct TAAResolveParams {
-    uint2 outputSize;
-    float2 outputTexelSize;
-    float historyWeight;
-    uint historyValid;
-    uint reverseZ;
-    float depthFallbackThreshold;
-    float maxSubpixelCurrentWeight;
-    float luminanceWeight;
-    float colorBoxSigma;
-};
-
-#ifdef __cplusplus
-static_assert(sizeof(TAAResolveParams) == 44, "TAAResolveParams must match the HLSL root constants");
-#endif
-
 struct ShaderLightCullingParams {
     uint numLocalLights;
     uint lightRefTableOffset;
@@ -235,15 +213,6 @@ static_assert(sizeof(FrameConstants) == 112, "FrameConstants must match the HLSL
 static_assert(offsetof(FrameConstants, shaderLocalShadowTableIndex) == 72, "Shadow table indices must occupy the former frame padding");
 static_assert(offsetof(FrameConstants, shaderLocalShadowViewTableIndex) == 76, "Shadow view table index must match the HLSL offset");
 static_assert(offsetof(FrameConstants, directionalLight) == 80, "Directional light constants must remain register-aligned");
-#endif
-
-// Shadow depth 기록에 필요한 광원 행렬. Surface table 은 프레임 상수를 참조하고, 샘플링용 데이터는 별도로 전달한다.
-struct ShadowViewConstants {
-    row_major float4x4 viewProjMatrix;
-};
-
-#ifdef __cplusplus
-static_assert(sizeof(ShadowViewConstants) == 64, "ShadowViewConstants must match the HLSL constant-buffer layout");
 #endif
 
 // 광원 하나의 샘플링 정보. 광원 타입은 ShaderPointLight/ShaderSpotLight 에서 이미 결정된다.

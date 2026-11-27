@@ -1,14 +1,14 @@
 #ifndef __LIT_SURFACE_COMMON_HLSLI__
 #define __LIT_SURFACE_COMMON_HLSLI__
 
-#include "SurfaceDrawCommon.hlsli"
-#include "AlphaTest.hlsli"
+#include "../SurfaceDrawCommon.hlsli"
+#include "../AlphaTest.hlsli"
 
 cbuffer CameraCB : register(b1) {
     CameraConstants cameraConstants;
 };
 
-#include "PBR/ParallaxMapping.hlsli"
+#include "../PBR/ParallaxMapping.hlsli"
 
 #ifdef LIT_PREPASS
     #if defined(PERFORATED) || defined(DITHERED) || defined(TRANSPARENT_SSR_PREPASS)

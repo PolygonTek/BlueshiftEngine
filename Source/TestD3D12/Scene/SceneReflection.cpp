@@ -38,7 +38,7 @@ static SharedPtr<Material> CreateReflectionMaterial(const char *name, const BE1:
 
     char text[512];
     BE1::Str::snPrintf(text, sizeof(text),
-        "{ %s shaderTemplate \"Source/TestD3D12/Shaders/Lit\" properties { "
+        "{ %s shaderTemplate \"Source/TestD3D12/Shaders/Lit/Lit\" properties { "
         "_BASECOLOR \"0\" baseColorFactor \"%f %f %f 1\" "
         "_ROUGHNESS \"0\" roughnessFactor \"%f\" "
         "_METALLIC \"0\" metallicFactor \"%f\" _NORMAL \"0\" } }",

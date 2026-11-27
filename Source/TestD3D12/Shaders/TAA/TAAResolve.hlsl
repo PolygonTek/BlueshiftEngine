@@ -1,6 +1,7 @@
-#include "ShaderInterop.h"
-#include "Common.hlsli"
-#include "Colors.hlsli"
+#include "../ShaderInterop.h"
+#include "TAAInterop.h"
+#include "../Common.hlsli"
+#include "../Colors.hlsli"
 
 #ifndef USE_NEIGHBORHOOD_COLOR_BOUNDS
 #define USE_NEIGHBORHOOD_COLOR_BOUNDS 1

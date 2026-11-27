@@ -15,7 +15,7 @@
 #ifndef __FULLSCREEN_OUTPUT_INTEROP_H__
 #define __FULLSCREEN_OUTPUT_INTEROP_H__
 
-#include "ShaderTypes.h"
+#include "../ShaderTypes.h"
 
 struct FullscreenImageParams {
     float2 texCoordScale;

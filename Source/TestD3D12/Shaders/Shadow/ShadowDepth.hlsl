@@ -1,5 +1,6 @@
-#include "SurfaceDrawCommon.hlsli"
-#include "AlphaTest.hlsli"
+#include "ShadowDepthInterop.h"
+#include "../SurfaceDrawCommon.hlsli"
+#include "../AlphaTest.hlsli"
 
 cbuffer ShadowViewCB : register(b1) {
     ShadowViewConstants shadowViewConstants;

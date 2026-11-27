@@ -1,18 +1,18 @@
 #include "LitSurfaceCommon.hlsli"
-#include "Fog/FogSurface.hlsli"
-#include "TextureStreamingInterop.h"
-#include "TextureStreamingFeedback.hlsli"
-#include "Lighting/LightCullingCommon.hlsli"
-#include "Lighting/LightCullingDebug.hlsli"
-#include "Lighting/ForwardLighting.hlsli"
-#include "PBR/ShadingParams.hlsli"
+#include "../Fog/FogSurface.hlsli"
+#include "../TextureStreamingInterop.h"
+#include "../TextureStreamingFeedback.hlsli"
+#include "../Lighting/LightCullingCommon.hlsli"
+#include "../Lighting/LightCullingDebug.hlsli"
+#include "../Lighting/ForwardLighting.hlsli"
+#include "../PBR/ShadingParams.hlsli"
 
 #if defined(INDIRECT_LIGHTING) || (defined(DIRECT_LIGHTING) && USE_MULTIPLE_SCATTERING_COMPENSATION)
-    #include "PBR/ImageBasedLighting.hlsli"
+    #include "../PBR/ImageBasedLighting.hlsli"
 #endif
 
 #if defined(INDIRECT_LIGHTING) && USE_SSR
-    #include "SSR/SSRComposite.hlsli"
+    #include "../SSR/SSRComposite.hlsli"
 #endif
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]

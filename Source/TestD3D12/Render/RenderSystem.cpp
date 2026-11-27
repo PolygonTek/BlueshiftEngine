@@ -551,8 +551,8 @@ void RenderSystem::InitComputePipelines() {
         ssrUpsampleShaderTemplates[resolutionMode] = shaderTemplateManager.CreateComputeShaderTemplate(BE1::va("_ssrUpsampleShader%u", resolutionMode), computeShaderModel, "SSR/SSRUpsample.hlsl", baseDir, "CSMain", defines.c_str());
     }
     ssrRadianceResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_ssrRadianceResolveShader", computeShaderModel, "SSR/SSRRadianceResolve.hlsl", baseDir);
-    taaResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAAResolve.hlsl", baseDir);
-    finalPostProcessShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_finalPostProcessShader", computeShaderModel, "FinalPostProcess.hlsl", baseDir);
+    taaResolveShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_taaResolveShader", computeShaderModel, "TAA/TAAResolve.hlsl", baseDir);
+    finalPostProcessShaderTemplate = shaderTemplateManager.CreateComputeShaderTemplate("_finalPostProcessShader", computeShaderModel, "FinalPostProcess/FinalPostProcess.hlsl", baseDir);
 
     EnsureComputePipelines();
 }

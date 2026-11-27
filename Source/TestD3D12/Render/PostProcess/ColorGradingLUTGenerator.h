@@ -16,7 +16,7 @@
 
 #include "Image/Image.h"
 #include "Math/Color3.h"
-#include "Shaders/ColorGradingInterop.h"
+#include "Shaders/FinalPostProcess/ColorGradingInterop.h"
 
 /*
 ---------------------------------------------------------------------------------------------------

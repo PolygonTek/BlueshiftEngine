@@ -1,8 +1,8 @@
 #include "UnlitSurfaceCommon.hlsli"
-#include "Fog/FogSurface.hlsli"
+#include "../Fog/FogSurface.hlsli"
 #if _BASECOLOR != 0
-#include "TextureStreamingInterop.h"
-#include "TextureStreamingFeedback.hlsli"
+#include "../TextureStreamingInterop.h"
+#include "../TextureStreamingFeedback.hlsli"
 #endif
 
 [RootSignature(COMMON_ROOT_SIGNATURE)]

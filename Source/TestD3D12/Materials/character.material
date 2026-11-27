@@ -1,5 +1,5 @@
 material character {
-    shaderTemplate "Source/TestD3D12/Shaders/Lit"
+    shaderTemplate "Source/TestD3D12/Shaders/Lit/Lit"
 
     properties {
         _BASECOLOR "0"

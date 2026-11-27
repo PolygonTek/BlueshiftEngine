@@ -1,6 +1,6 @@
 material ground {
     textureAddressMode repeat
-    shaderTemplate "Source/TestD3D12/Shaders/Lit"
+    shaderTemplate "Source/TestD3D12/Shaders/Lit/Lit"
 
     properties {
         baseColorMap "Data/EngineTextures/Ground/ground_basecolor.dds"

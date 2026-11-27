@@ -365,12 +365,12 @@ void ShaderTemplateManager::CleanExpiredShaderTemplates() {
 }
 
 void ShaderTemplateManager::CreateDefaultShaderTemplates() {
-    fullscreenImageShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/FullscreenImage");
+    fullscreenImageShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Fullscreen/FullscreenImage");
     if (!fullscreenImageShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load fullscreen image shader template");
     }
 
-    fullscreenImageLinearShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/FullscreenImageLinear");
+    fullscreenImageLinearShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Fullscreen/FullscreenImageLinear");
     if (!fullscreenImageLinearShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load fullscreen linear image shader template");
     }
@@ -390,17 +390,17 @@ void ShaderTemplateManager::CreateDefaultShaderTemplates() {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load Display P3 EDR output shader template");
     }
 
-    debugDrawShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DebugDraw");
+    debugDrawShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/DebugDraw/DebugDraw");
     if (!debugDrawShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load debug draw shader template");
     }
 
-    unlitShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Unlit");
+    unlitShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Unlit/Unlit");
     if (!unlitShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load unlit shader template");
     }
 
-    litShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Lit");
+    litShaderTemplate = GetShaderTemplate("Source/TestD3D12/Shaders/Lit/Lit");
     if (!litShaderTemplate) {
         BE_FATALERROR("ShaderTemplateManager::CreateDefaultShaderTemplates: failed to load lit shader template");
     }

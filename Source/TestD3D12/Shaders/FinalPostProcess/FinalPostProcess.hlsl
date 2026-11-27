@@ -1,10 +1,10 @@
-#include "Common.hlsli"
+#include "../Common.hlsli"
 #include "FinalPostProcessInterop.h"
 #include "ColorGradingInterop.h"
-#include "ToneMapping/ToneMappingInterop.h"
-#include "ToneMapping/LuminanceInterop.h"
-#include "ToneMapping/ToneMapOperators.hlsli"
-#include "ToneMapping/GT7.hlsli"
+#include "../ToneMapping/ToneMappingInterop.h"
+#include "../ToneMapping/LuminanceInterop.h"
+#include "../ToneMapping/ToneMapOperators.hlsli"
+#include "../ToneMapping/GT7.hlsli"
 
 #define COMMON_ROOT_SIGNATURE "RootFlags(0), " \
     "DescriptorTable(SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), UAV(u0)), " \

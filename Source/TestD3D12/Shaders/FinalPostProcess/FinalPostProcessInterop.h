@@ -15,8 +15,8 @@
 #ifndef __FINAL_POST_PROCESS_INTEROP_H__
 #define __FINAL_POST_PROCESS_INTEROP_H__
 
-#include "ShaderTypes.h"
-#include "ToneMapping/ToneMappingInterop.h"
+#include "../ShaderTypes.h"
+#include "../ToneMapping/ToneMappingInterop.h"
 
 static const uint FinalPostProcessBlockSizeX = 16;
 static const uint FinalPostProcessBlockSizeY = 16;

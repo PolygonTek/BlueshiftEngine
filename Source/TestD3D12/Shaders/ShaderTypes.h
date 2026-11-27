@@ -20,6 +20,9 @@
 #include <cstdint>
 #include <DirectXMath.h>
 
+#define column_major
+#define row_major
+
 using float2 = DirectX::XMFLOAT2;
 using float3 = DirectX::XMFLOAT3;
 using float4 = DirectX::XMFLOAT4;

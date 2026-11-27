@@ -22,7 +22,8 @@
 #include "Render/PostProcess/GT7ToneMapping.h"
 #include "Shaders/ShaderInterop.h"
 #include "Shaders/MSAA/MSAAInterop.h"
-#include "Shaders/FinalPostProcessInterop.h"
+#include "Shaders/TAA/TAAInterop.h"
+#include "Shaders/FinalPostProcess/FinalPostProcessInterop.h"
 #include "Shaders/ToneMapping/ToneMappingInterop.h"
 
 bool RenderBackend::DispatchLuminance() {

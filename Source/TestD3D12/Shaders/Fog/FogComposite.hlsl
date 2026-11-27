@@ -1,6 +1,6 @@
 #include "../BindlessResources.hlsli"
 #include "../Common.hlsli"
-#include "../FullscreenTriangle.hlsli"
+#include "../Fullscreen/FullscreenTriangle.hlsli"
 
 #define FOG_COMPOSITE_ROOT_SIGNATURE ROOT_SIGNATURE_GRAPHICS_ROOT_FLAGS \
     ROOT_SIGNATURE_BINDLESS_DESCRIPTOR_TABLES \
