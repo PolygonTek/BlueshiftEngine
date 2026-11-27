@@ -25,8 +25,61 @@
 #include "imgui/imgui.h"
 #endif
 
-static constexpr float lightSpacing = 6.0f;
-static constexpr float lightOriginZOffset = 2.0f;
+static float CalcLightMarkerEmissiveFactor(float intensity, float markerRadius) {
+    // 균일하게 발광하는 구체는 I = L * PI * r^2 관계를 이용해 광도 (cd) 를 표면 휘도 (cd/m^2) 로 변환한다.
+    // 광도가 한 번만 적용되도록 계산한 표면 휘도를 emissiveFactor에 저장한다.
+    const float radiusMeters = BE1::UnitToMeter(markerRadius);
+    const float invProjectedArea = BE1::Math::InvPi / (radiusMeters * radiusMeters);
+    intensity = BE1::Math::IsFinite(intensity) ? BE1::Max(intensity, 0.0f) : 0.0f;
+    return intensity * invProjectedArea;
+}
+
+static void CalcLightMarkerEmissive(const GameLight &gameLight, float markerRadius, BE1::Color3 &emissiveColor, float &emissiveFactor) {
+    // RenderLight::UpdateLighting 과 동일하게, 매우 어두운 색상도 안정적으로 휘도 정규화한다.
+    const BE1::Color3 &linearColor = gameLight.linearColor;
+    const double luminance = 0.212655 * linearColor.r + 0.715158 * linearColor.g + 0.072187 * linearColor.b;
+    emissiveColor = BE1::Color3::black;
+    if (luminance > 0.0) {
+        const double invLuminance = 1.0 / luminance;
+        emissiveColor = BE1::Color3(static_cast<float>(linearColor.r * invLuminance), static_cast<float>(linearColor.g * invLuminance), static_cast<float>(linearColor.b * invLuminance));
+    }
+
+    emissiveFactor = CalcLightMarkerEmissiveFactor(gameLight.intensity, markerRadius);
+}
+
+static SharedPtr<Material> CreateLightMarkerMaterial(int lightIndex, const GameLight &gameLight, float markerRadius, float brightnessScale) {
+    char name[64];
+    BE1::Str::snPrintf(name, sizeof(name), "_sceneMatrixLightMarker_%i", lightIndex);
+
+    BE1::Color3 emissiveColor;
+    float emissiveFactor;
+    CalcLightMarkerEmissive(gameLight, markerRadius, emissiveColor, emissiveFactor);
+    // 실제 광도는 유지하고 마커 표시에만 밝기 배율을 적용한다.
+    emissiveFactor *= brightnessScale;
+
+    // 이전 프레임에서 이 재질을 보관하고 있을 수 있으므로 재사용할 때 발광 값을 갱신한다.
+    SharedPtr<Material> material = materialManager.FindMaterial(name);
+    if (material) {
+        material->SetPropertyValue("emissiveColor", emissiveColor);
+        material->SetPropertyValue("emissiveFactor", emissiveFactor);
+        return material;
+    }
+
+    BE1::Str text = BE1::va("{\n"
+        "shaderTemplate \"Source/TestD3D12/Shaders/Unlit/Unlit\"\n"
+        "properties {\n"
+        "   _EMISSIVE \"0\"\n"
+        "   emissiveColor \"%.9g %.9g %.9g\"\n"
+        "   emissiveFactor \"%.9g\"\n"
+        "}\n"
+        "}", emissiveColor.r, emissiveColor.g, emissiveColor.b, emissiveFactor);
+    material = materialManager.AllocMaterial(name);
+    if (!material->Create(text, nullptr)) {
+        BE_WARNLOG("SceneMatrix::InitGameLights: failed to create material '%s'\n", name);
+        return materialManager.defaultUnlitMaterial;
+    }
+    return material;
+}
 
 void SceneMatrix::Init(RenderWorld *renderWorld, BE1::PhysicsWorld *physicsWorld) {
     this->renderWorld = renderWorld;
@@ -61,6 +114,7 @@ void SceneMatrix::Shutdown() {
 
     ClearGameObjects();
     ClearGameLights();
+    lightMarkerMesh.reset();
     directionalLightEnabled = directionalLight.SetEnabled(renderWorld, false);
     renderWorld->ClearScene(RenderWorld::ClearFlag::EnvironmentLight);
 
@@ -152,7 +206,7 @@ void SceneMatrix::InitGameObjects(uint32_t countX, uint32_t countY, uint32_t cou
         }
     }
 
-    // Text 오브젝트
+    // 텍스트 오브젝트
     /*GameObject *gameObject = new GameObject;
     gameObjects.Append(gameObject);
 
@@ -182,12 +236,23 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
 
     const uint32_t lightCount = lightCountX * lightCountY * lightCountZ;
     gameLights.Reserve(lightCount);
+    lightMarkerHandles.Reserve(lightCount);
+    lightMarkerMaterials.Reserve(lightCount);
 
-    constexpr float radius = 8.0f;
+    if (!lightMarkerMesh) {
+        lightMarkerMesh = meshManager.AllocTransientMesh("SceneMatrixLightMarker");
+        lightMarkerMesh->CreateGeosphere(BE1::Vec3::origin, pointLightMarkerRadius, 2);
+    }
 
-    const float startX = -lightSpacing * (lightCountX - 1) * 0.5f;
-    const float startY = -lightSpacing * (lightCountY - 1) * 0.5f;
-    const float startZ = -lightSpacing * (lightCountZ - 1) * 0.5f;
+    RenderObject::Desc markerDesc;
+    markerDesc.flags = RenderObject::Flag::None;
+    markerDesc.meshInstance = lightMarkerMesh->GetStaticInstance();
+    markerDesc.aabb = lightMarkerMesh->GetAABB();
+    markerDesc.materials.SetCount(1);
+
+    const float startX = -pointLightSpacing * (lightCountX - 1) * 0.5f;
+    const float startY = -pointLightSpacing * (lightCountY - 1) * 0.5f;
+    const float startZ = -pointLightSpacing * (lightCountZ - 1) * 0.5f;
 
     BE1::RNG rng(1);
     for (uint32_t z = 0; z < lightCountZ; ++z) {
@@ -197,29 +262,44 @@ void SceneMatrix::InitGameLights(uint32_t countX, uint32_t countY, uint32_t coun
                 gameLight.type = RenderLight::Type::Point;
                 gameLight.flags = pointLightShadows ? (RenderLight::Flag::CastShadows | RenderLight::Flag::CastVolumetricShadows) : RenderLight::Flag::None;
                 gameLight.origin.Set(
-                    startX + lightSpacing * x,
-                    startY + lightSpacing * y,
-                    startZ + lightSpacing * z + lightOriginZOffset);
-                gameLight.range = radius;
+                    startX + pointLightSpacing * x,
+                    startY + pointLightSpacing * y,
+                    startZ + pointLightSpacing * z + pointLightOriginZOffset);
+                gameLight.range = pointLightRadius;
 
-                gameLight.intensity = 8.0f;
+                gameLight.intensity = pointLightIntensity;
                 const float hue = rng.GetNextFloat();
-                gameLight.linearColor = BE1::Color3::FromHSL(hue, 1.0f, 0.5f).SRGBToLinear();
+                const float saturation = rng.GetNextFloat();
+                gameLight.linearColor = BE1::Color3::FromHSL(hue, saturation, 0.5f).SRGBToLinear();
 
                 gameLight.SetEnabled(renderWorld, true);
+
+                markerDesc.worldMatrix.SetTranslation(gameLight.origin);
+                markerDesc.materials[0] = CreateLightMarkerMaterial(gameLights.Count() - 1, gameLight, pointLightMarkerRadius, pointLightMarkerBrightnessScale);
+                lightMarkerHandles.Append(renderWorld->AddRenderObject(markerDesc));
+                lightMarkerMaterials.Append(markerDesc.materials[0]);
             }
         }
     }
 }
 
 void SceneMatrix::ClearGameObjects() {
-    renderWorld->ClearScene(RenderWorld::ClearFlag::RenderObjects);
+    // 라이트 마커는 렌더 월드를 공유하지만 수명은 별도로 관리한다.
+    for (const GameObject *gameObject : gameObjects) {
+        renderWorld->RemoveRenderObject(gameObject->renderObjectHandle);
+    }
 
     gameObjects.DeleteContents(true);
     testMesh.reset();
 }
 
 void SceneMatrix::ClearGameLights() {
+    for (int handle : lightMarkerHandles) {
+        renderWorld->RemoveRenderObject(handle);
+    }
+    lightMarkerHandles.Clear();
+    lightMarkerMaterials.Clear();
+
     for (GameLight &gameLight : gameLights) {
         gameLight.SetEnabled(renderWorld, false);
     }
@@ -261,15 +341,16 @@ void SceneMatrix::AnimateGameObjects(uint64_t elapsedUsec) {
 void SceneMatrix::AnimateGameLights(uint64_t elapsedUsec) {
     const float elapsedSeconds = (float)MICRO2SEC((double)elapsedUsec);
 
-    const float movementAmplitude = 4.0f;
-    constexpr float movementSpeed = 1.0f;
+    const float movementAmplitude = objectCountZ * 2.0f;
+    constexpr float movementSpeed = 0.5f;
     constexpr float phaseStep = 0.37f;
     const uint32_t lightsPerLayer = lightCountX * lightCountY;
-    const float startZ = -lightSpacing * (lightCountZ - 1) * 0.5f;
+    const float startZ = -pointLightSpacing * (lightCountZ - 1) * 0.5f;
 
+    BE1::Mat3x4 markerWorldMatrix = BE1::Mat3x4::identity;
     int index = 0;
     for (uint32_t z = 0; z < lightCountZ; ++z) {
-        const float baseOriginZ = startZ + lightSpacing * z + lightOriginZOffset;
+        const float baseOriginZ = startZ + pointLightSpacing * z + pointLightOriginZOffset;
 
         for (uint32_t i = 0; i < lightsPerLayer; ++i, ++index) {
             const float phase = index * phaseStep;
@@ -278,12 +359,36 @@ void SceneMatrix::AnimateGameLights(uint64_t elapsedUsec) {
             gameLight.origin.z = baseOriginZ + BE1::Math::SinFast(elapsedSeconds * movementSpeed + phase) * movementAmplitude;
 
             renderWorld->UpdateRenderLightTransform(gameLight.renderLightHandle, gameLight.origin, gameLight.axis);
+            markerWorldMatrix.SetTranslation(gameLight.origin);
+            renderWorld->UpdateRenderObjectTransform(lightMarkerHandles[index], markerWorldMatrix);
+        }
+    }
+}
+
+void SceneMatrix::UpdatePointLightIntensity() {
+    for (GameLight &gameLight : gameLights) {
+        gameLight.intensity = pointLightIntensity;
+        if (gameLight.renderLightHandle >= 0) {
+            renderWorld->UpdateRenderLightLighting(gameLight.renderLightHandle, gameLight.linearColor, gameLight.intensity);
+        }
+    }
+
+    UpdateLightMarkerBrightness();
+}
+
+void SceneMatrix::UpdateLightMarkerBrightness() {
+    // 반지름과 광도가 모두 같으므로 표면 휘도는 한 번만 계산하고 기존 재질의 밝기만 갱신한다.
+    const float emissiveFactor = CalcLightMarkerEmissiveFactor(pointLightIntensity, pointLightMarkerRadius) * pointLightMarkerBrightnessScale;
+    for (const SharedPtr<Material> &material : lightMarkerMaterials) {
+        if (material && material != materialManager.defaultUnlitMaterial) {
+            const int propertyIndex = material->FindPropertyIndex(ShaderTemplate::StandardProperty::EmissiveFactor);
+            material->SetPropertyValue(propertyIndex, emissiveFactor);
         }
     }
 }
 
 void SceneMatrix::UpdateDirectionalLightDirection() {
-    // The UI describes the direction toward the sun or moon, while axis[0] is the direction in which light rays travel.
+    // 사용자 인터페이스는 태양이나 달을 향하는 방향을 표시하고, axis[0]은 빛이 진행하는 방향을 나타낸다.
     directionalLight.axis = BE1::Angles(0.0f, directionalLightElevation, directionalLightAzimuth + 180.0f).ToMat3();
 }
 
@@ -314,6 +419,12 @@ void SceneMatrix::BuildImGui() {
     ImGui::Spacing();
     ImGui::Text("Point Lights (%i)", gameLights.Count());
     ImGui::Checkbox("Animate Lights", &animateLights);
+
+    ImGui::SetNextItemWidth(itemWidth);
+    if (ImGui::DragFloat("Intensity##PointLights", &pointLightIntensity, BE1::Max(pointLightIntensity * 0.01f, 0.01f), 0.0f, 100000.0f, "%.3f cd", ImGuiSliderFlags_AlwaysClamp)) {
+        UpdatePointLightIntensity();
+    }
+
     if (ImGui::Checkbox("Cast Shadows##PointLights", &pointLightShadows)) {
         for (GameLight &gameLight : gameLights) {
             if (pointLightShadows) {

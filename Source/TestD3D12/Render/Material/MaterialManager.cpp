@@ -200,7 +200,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
             "blendType alphaBlend\n"
             "shaderTemplate \"Source/TestD3D12/Shaders/Unlit/Unlit\"\n"
             "properties {\n"
-            "   baseColorMap \"%s\"\n"
+            "   emissiveMap \"%s\"\n"
             "}\n"
             "}", textureFilename);
         break;
@@ -212,7 +212,7 @@ SharedPtr<Material> MaterialManager::GetSingleTextureMaterial(const char *textur
             "blendType alphaBlend\n"
             "shaderTemplate \"Source/TestD3D12/Shaders/Unlit/Unlit\"\n"
             "properties {\n"
-            "   baseColorMap \"%s\"\n"
+            "   emissiveMap \"%s\"\n"
             "}\n"
             "}", textureFilename);
         break;
@@ -329,7 +329,7 @@ void MaterialManager::CreateDefaultMaterials() {
         shaderTemplate "Source/TestD3D12/Shaders/Unlit/Unlit"
 
         properties {
-            baseColorMap "_missingTexture"
+            emissiveMap "_missingTexture"
         }
     }
     );
@@ -350,7 +350,7 @@ void MaterialManager::CreateDefaultMaterials() {
         shaderTemplate "Source/TestD3D12/Shaders/Unlit/Unlit"
 
         properties {
-            baseColorMap "_whiteTexture"
+            emissiveMap "_whiteTexture"
         }
     }
     );
@@ -362,7 +362,7 @@ void MaterialManager::CreateDefaultMaterials() {
         blendType "AlphaBlend"
 
         properties {
-            baseColorMap "_whiteTexture"
+            emissiveMap "_whiteTexture"
         }
     }
     );

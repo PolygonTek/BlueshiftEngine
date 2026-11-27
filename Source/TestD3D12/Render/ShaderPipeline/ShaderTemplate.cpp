@@ -29,8 +29,8 @@ static constexpr const char *standardPropertyNames[] = {
     "baseColorFactor",
     "normalMap",
     "emissiveMap",
-    "emissionColor",
-    "emissionFactor",
+    "emissiveColor",
+    "emissiveFactor",
     "aoMap",
     "aoStrength",
     "metallicMap",
@@ -53,7 +53,8 @@ static constexpr const char *standardPropertyNames[] = {
     "skyTopMap",
     "skyDownMap",
     "tcScale",
-    "tcTranslation"
+    "tcTranslation",
+    "opacity"
 };
 static_assert(COUNT_OF(standardPropertyNames) == static_cast<int>(ShaderTemplate::StandardProperty::Count));
 

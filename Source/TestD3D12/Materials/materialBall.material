@@ -19,6 +19,6 @@ material materialBall {
         aoMap "Data/Test/materialball_ao.dds"
         _AO "1"
         aoStrength "1.0000"
-        _EMISSION "0"
+        _EMISSIVE "0"
     }
 }

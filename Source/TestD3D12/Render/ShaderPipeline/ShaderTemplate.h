@@ -111,8 +111,8 @@ public:
         BaseColorFactor,
         NormalMap,
         EmissiveMap,
-        EmissionColor,
-        EmissionFactor,
+        EmissiveColor,
+        EmissiveFactor,
         AoMap,
         AoStrength,
         MetallicMap,
@@ -136,6 +136,7 @@ public:
         SkyDownMap,
         TcScale,
         TcTranslation,
+        Opacity,
         Count
     };
 

@@ -126,13 +126,13 @@ PrepassParams PreparePrepassParams(ShaderMaterial shaderMaterial, float2 texCoor
 #ifndef LIT_PREPASS
 // Emission is independent of lighting inputs and remains visible when all lighting is disabled.
 float3 EvaluateMaterialEmission(ShaderMaterial shaderMaterial, float2 texCoord, SamplerState materialSampler) {
-#if _EMISSION == 0
+#if _EMISSIVE == 0
     return 0.0f;
 #else
-    const float4 emissionColorFactor = shaderMaterial.GetEmissionColorFactor();
-    float3 emission = emissionColorFactor.rgb * emissionColorFactor.a;
+    const float4 emissiveColorFactor = shaderMaterial.GetEmissiveColorFactor();
+    float3 emission = emissiveColorFactor.rgb * emissiveColorFactor.a;
 
-    #if _EMISSION == 2
+    #if _EMISSIVE == 2
         emission *= GetTexture2D(shaderMaterial.emissiveTextureIndex).Sample(materialSampler, texCoord).rgb;
     #endif
     return emission;

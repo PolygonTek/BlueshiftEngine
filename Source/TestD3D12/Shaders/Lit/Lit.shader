@@ -28,10 +28,10 @@ shader "Lit" {
         _AO("AO") : enum "None;Texture (R);From Metallic Map (R);From Metallic Map (G);From Metallic Map (B);From Metallic Map (A)" = "0" [shaderDefine]
         aoMap("AO Map") : texture "2D" = "_whiteTexture" (condition _AO 1) [linear]
         aoStrength("AO Strength") : float range 0 1 0.001 = "1.0" (condition _AO 1 2 3 4 5)
-        _EMISSION("Emission") : enum "None;Color;Texture" = "0" [shaderDefine]
-        emissionColor("Emission Color") : color3 = "1 1 1" (condition _EMISSION 1 2)
-        emissiveMap("Emissive Map") : texture "2D" = "_blackTexture" (condition _EMISSION 2)
-        emissionFactor("Emission Factor") : float range 0 16 0.001 = "1.0" (condition _EMISSION 1 2)
+        _EMISSIVE("Emissive") : enum "None;Color;Texture" = "0" [shaderDefine]
+        emissiveColor("Emissive Color") : color3 = "1 1 1" (condition _EMISSIVE 1 2)
+        emissiveMap("Emissive Map") : texture "2D" = "_blackTexture" (condition _EMISSIVE 2)
+        emissiveFactor("Emissive Factor") : float = "1.0" (condition _EMISSIVE 1 2)
     }
 
     program prepass {

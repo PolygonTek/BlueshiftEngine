@@ -16,7 +16,7 @@ cbuffer CameraCB : register(b1) {
 struct VSInput {
     float4 position : POSITION;
 #if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED)
-#if _BASECOLOR != 0
+#if _EMISSIVE != 0
     float2 texCoord : TEXCOORD0;
 #endif
     float4 color : COLOR;
@@ -41,7 +41,7 @@ struct PSInput {
 #endif
 #if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED)
     float4 color : COLOR;
-#if _BASECOLOR != 0
+#if _EMISSIVE != 0
     float2 texCoord : TEXCOORD0;
 #endif
     nointerpolation uint shaderMaterialIndex : TEXCOORD1;
@@ -75,7 +75,7 @@ PSInput VSMain(VSInput input) {
 
 #if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED)
     result.color = input.color;
-#if _BASECOLOR != 0
+#if _EMISSIVE != 0
     result.texCoord = input.texCoord;
 #endif
     result.shaderMaterialIndex = shaderSurface.shaderMaterialIndex;
@@ -107,14 +107,16 @@ PSInput VSMain(VSInput input) {
 }
 
 #if !defined(UNLIT_PREPASS) || defined(PERFORATED) || defined(DITHERED)
-float4 EvaluateUnlitBaseColor(PSInput input, ShaderMaterial shaderMaterial, float2 texCoord) {
-    float4 baseColor = shaderMaterial.GetBaseColorFactor();
-#if _BASECOLOR != 0
+float4 EvaluateUnlitEmissiveColor(PSInput input, ShaderMaterial shaderMaterial, float2 texCoord) {
+    const float4 emissiveColorFactor = shaderMaterial.GetEmissiveColorFactor();
+    // Opacity uses the existing base-color alpha slot and is independent of HDR emission strength.
+    float4 emissiveColor = float4(emissiveColorFactor.rgb * emissiveColorFactor.a, shaderMaterial.GetBaseColorFactor().a);
+#if _EMISSIVE != 0
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
-    const float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, texCoord);
-    baseColor = textureColor * baseColor;
+    const float4 textureColor = GetTexture2D(shaderMaterial.emissiveTextureIndex).Sample(materialSampler, texCoord);
+    emissiveColor *= textureColor;
 #endif
-    baseColor *= input.color;
+    emissiveColor *= input.color;
 
     // Depth 전용 경로에서 수행하던 alpha coverage 를 재질 Prepass 와 Main 에서 공유한다.
 #if defined(PERFORATED) || defined(DITHERED)
@@ -123,15 +125,15 @@ float4 EvaluateUnlitBaseColor(PSInput input, ShaderMaterial shaderMaterial, floa
     #else
         const uint patternSeed = GetSurfaceDitherPatternSeed(input.surfaceFlags);
     #endif
-    ApplyAlphaTest(baseColor.a, shaderMaterial.alphaCutoff, GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, patternSeed);
+    ApplyAlphaTest(emissiveColor.a, shaderMaterial.alphaCutoff, GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, patternSeed);
 #elif defined(DITHER_FADE)
     ApplyDitherFade(GetSurfaceFadeOpacity(input.surfaceFlags), (uint2)input.position.xy, GetSurfaceDitherPatternSeed(input.surfaceFlags));
 #endif
 
     if ((shaderMaterial.flags & ShaderMaterialFlagTransparent) != 0u) {
-        baseColor.a *= GetSurfaceFadeOpacity(input.surfaceFlags);
+        emissiveColor.a *= GetSurfaceFadeOpacity(input.surfaceFlags);
     }
-    return baseColor;
+    return emissiveColor;
 }
 #endif
 

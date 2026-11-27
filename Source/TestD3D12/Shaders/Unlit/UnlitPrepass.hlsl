@@ -9,12 +9,12 @@ PrepassPSOutput PSMain(PSInput input) {
 
 #if defined(PERFORATED) || defined(DITHERED)
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
-#if _BASECOLOR != 0
+#if _EMISSIVE != 0
     const float2 texCoord = shaderMaterial.TransformTexCoord(input.texCoord);
 #else
     const float2 texCoord = 0.0f;
 #endif
-    EvaluateUnlitBaseColor(input, shaderMaterial, texCoord);
+    EvaluateUnlitEmissiveColor(input, shaderMaterial, texCoord);
 #endif
 
     PrepassPSOutput result;

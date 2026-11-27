@@ -33,7 +33,7 @@ MainPSOutput PSMain(PSInput input) {
         WriteMipmapFeedback(GetRWBufferUInt(frameConstants.feedbackBufferIndex), shaderMaterial.streamingMaterialIndex, texCoordDx, texCoordDy);
     }
 
-    // Alpha coverage and emission need parallax UVs even when this surface has no lighting.
+    // Alpha coverage and emission share the parallax UVs used for surface shading.
     const LitSurfaceInput surfaceInput = PrepareLitSurfaceInput(input, shaderMaterial, materialSampler, texCoord, texCoordDx, texCoordDy, hasTexCoordGradients);
     const float2 materialTexCoord = surfaceInput.texCoord;
     const float4 baseColor = EvaluateLitBaseColor(input, shaderMaterial, materialSampler, materialTexCoord);

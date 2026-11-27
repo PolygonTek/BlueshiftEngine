@@ -19,6 +19,7 @@
 #include "Scene/GameLight.h"
 
 class Mesh;
+class Material;
 
 class SceneMatrix : public Scene {
 public:
@@ -40,14 +41,19 @@ private:
     void                        ChangeGameLightCount(uint32_t countX, uint32_t countY, uint32_t countZ);
     void                        AnimateGameObjects(uint64_t elapsedUsec);
     void                        AnimateGameLights(uint64_t elapsedUsec);
+    void                        UpdatePointLightIntensity();
+    void                        UpdateLightMarkerBrightness();
     void                        UpdateDirectionalLightDirection();
 
     RenderWorld *               renderWorld = nullptr;
     BE1::PhysicsWorld *         physicsWorld = nullptr;
     SharedPtr<Mesh>             testMesh;
+    SharedPtr<Mesh>             lightMarkerMesh;
     BE1::Array<GameObject *>    gameObjects;
     GameLight                   directionalLight;
     BE1::Array<GameLight>       gameLights;
+    BE1::Array<int>             lightMarkerHandles;
+    BE1::Array<SharedPtr<Material>> lightMarkerMaterials;
 
     float                       directionalLightAzimuth = 190.0f;
     float                       directionalLightElevation = 48.0f;
@@ -64,6 +70,12 @@ private:
     bool                        animateObjects = true;
     bool                        animateLights = true;
     bool                        pointLightShadows = false;
+    float                       pointLightIntensity = 4.0f;
+    float                       pointLightRadius = 10.0f;
+    float                       pointLightSpacing = 6.0f;
+    float                       pointLightOriginZOffset = 0.0f;
+    float                       pointLightMarkerRadius = 0.1f;
+    float                       pointLightMarkerBrightnessScale = 0.25f;
 
 #ifdef ENABLE_IMGUI
     float                       envLightRotation = 0.0f;

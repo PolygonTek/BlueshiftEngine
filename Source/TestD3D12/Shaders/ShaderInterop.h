@@ -424,7 +424,7 @@ struct ShaderMaterial {
 
     uint packedBaseColorFactor;
     float alphaCutoff;
-    uint2 packedEmissionColorFactor;
+    uint2 packedEmissiveColorFactor;
     uint packedMetallicRoughnessFactors;
     float aoStrength;
     uint packedClearCoatFactors;
@@ -434,7 +434,7 @@ struct ShaderMaterial {
 
 #ifndef __cplusplus
     inline float4 GetBaseColorFactor() { return UnpackRGBA8UNormToFloat4(packedBaseColorFactor); }
-    inline float4 GetEmissionColorFactor() { return UnpackRGBA16FToFloat4(packedEmissionColorFactor); }
+    inline float4 GetEmissiveColorFactor() { return UnpackRGBA16FToFloat4(packedEmissiveColorFactor); }
     inline float2 GetMetallicRoughnessFactors() { return UnpackRG16UNormToFloat2(packedMetallicRoughnessFactors); }
     inline float2 GetClearCoatFactors() { return UnpackRG16UNormToFloat2(packedClearCoatFactors); }
     inline float2 TransformTexCoord(float2 texCoord) {

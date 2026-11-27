@@ -116,6 +116,14 @@ public:
 
     static Surface *                AllocSurface(int numVerts, int numIndexes);
 
+    void                            CreateMissingMesh();
+    void                            CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float size, int numSegments);
+    void                            CreateBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::Vec3 &extents);
+    void                            CreateSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, int numSegments);
+    void                            CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivisions);
+    void                            CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, float height, int numSegments);
+    void                            CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, float height, int numSegments);
+
     void                            Reset();
 
                                     // 리로드 완료 후 리소스를 사용할 수 있으면 true 를 반환한다. 새 데이터 로딩 성공 여부와는 무관하다.
@@ -200,14 +208,6 @@ private:
 
     bool                            Load(const char *filename);
     bool                            LoadAsync(const char *filename);
-
-    void                            CreateMissingMesh();
-    void                            CreatePlane(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float size, int numSegments);
-    void                            CreateBox(const BE1::Vec3 &origin, const BE1::Mat3 &axis, const BE1::Vec3 &extents);
-    void                            CreateSphere(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, int numSegments);
-    void                            CreateGeosphere(const BE1::Vec3 &origin, float radius, int numSubdivisions);
-    void                            CreateCylinder(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, float height, int numSegments);
-    void                            CreateCapsule(const BE1::Vec3 &origin, const BE1::Mat3 &axis, float radius, float height, int numSegments);
 
     BE1::Str                        hashName;
     BE1::Str                        name;

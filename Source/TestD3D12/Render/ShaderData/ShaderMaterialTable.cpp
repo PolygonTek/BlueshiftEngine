@@ -179,12 +179,13 @@ static float4 GetMaterialBaseColorFactor(const Material *material) {
             return float4(color);
         }
     }
-    return float4(1.0f, 1.0f, 1.0f, 1.0f);
+    // Unlit stores its independent opacity in the existing base-color alpha slot.
+    return float4(1.0f, 1.0f, 1.0f, GetMaterialFactor(material, ShaderTemplate::StandardProperty::Opacity));
 }
 
-static float3 GetMaterialEmissionColor(const Material *material) {
+static float3 GetMaterialEmissiveColor(const Material *material) {
     if (material) {
-        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::EmissionColor);
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::EmissiveColor);
         if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Color3) {
             const BE1::Color3 color = propertyValue->As<BE1::Color3>();
             return float3(color);
@@ -193,16 +194,16 @@ static float3 GetMaterialEmissionColor(const Material *material) {
     return float3(1.0f, 1.0f, 1.0f);
 }
 
-static float GetMaterialEmissionFactor(const Material *material) {
-    static constexpr float DefaultEmissionFactor = 1.0f;
+static float GetMaterialEmissiveFactor(const Material *material) {
+    static constexpr float DefaultEmissiveFactor = 1.0f;
 
     if (material) {
-        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::EmissionFactor);
+        const ShaderTemplate::PropertyValue *propertyValue = material->GetPropertyValue(ShaderTemplate::StandardProperty::EmissiveFactor);
         if (propertyValue && propertyValue->GetType() == BE1::Variant::Type::Float) {
-            return BE1::Clamp(propertyValue->As<float>(), 0.0f, 16.0f);
+            return propertyValue->As<float>();
         }
     }
-    return DefaultEmissionFactor;
+    return DefaultEmissiveFactor;
 }
 
 static float GetMaterialAlphaCutoff(const Material *material) {
@@ -239,6 +240,11 @@ static BE1::Vec2 GetMaterialTexCoordProperty(const Material *material, ShaderTem
     return defaultValue;
 }
 
+static float ClampEmissiveToHalfRange(float value) {
+    // The ordered comparison maps NaN and negative values to zero; +Inf saturates to the largest finite FP16 value.
+    return value > 0.0f ? BE1::Min(value, static_cast<float>(HALF_MAX)) : 0.0f;
+}
+
 void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outShaderMaterial) const {
     outShaderMaterial.baseColorTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::BaseColorMap, textureManager.missingTexture.get());
     outShaderMaterial.normalTextureIndex = GetMaterialTextureIndex(material, ShaderTemplate::StandardProperty::NormalMap, textureManager.flatNormalTexture.get());
@@ -261,8 +267,12 @@ void ShaderMaterialTable::Build(const Material *material, ShaderMaterial &outSha
     outShaderMaterial.packedBaseColorFactor = ShaderPacking::PackFloat4ToRGBA8UNorm(GetMaterialBaseColorFactor(material));
     outShaderMaterial.alphaCutoff = GetMaterialAlphaCutoff(material);
 
-    const float3 emissionColor = GetMaterialEmissionColor(material);
-    outShaderMaterial.packedEmissionColorFactor = ShaderPacking::PackFloat4ToRGBA16F(float4(emissionColor.x, emissionColor.y, emissionColor.z, GetMaterialEmissionFactor(material)));
+    const float3 emissiveColor = GetMaterialEmissiveColor(material);
+    outShaderMaterial.packedEmissiveColorFactor = ShaderPacking::PackFloat4ToRGBA16F(float4(
+        ClampEmissiveToHalfRange(emissiveColor.x),
+        ClampEmissiveToHalfRange(emissiveColor.y),
+        ClampEmissiveToHalfRange(emissiveColor.z),
+        ClampEmissiveToHalfRange(GetMaterialEmissiveFactor(material))));
 
     outShaderMaterial.packedMetallicRoughnessFactors = ShaderPacking::PackFloat2ToRG16UNorm(float2(
         GetMaterialFactor(material, ShaderTemplate::StandardProperty::MetallicFactor),

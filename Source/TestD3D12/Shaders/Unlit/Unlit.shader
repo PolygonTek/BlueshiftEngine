@@ -2,15 +2,17 @@ shader "Unlit" {
     properties {
         tcScale("Texture Coordinate Scale") : vec2 = "1 1"
         tcTranslation("Texture Coordinate Translation") : vec2 = "0 0"
-        _BASECOLOR("Base Color") : enum "Color;Texture" = "1" [shaderDefine]
-        baseColorMap("Base Color Map") : texture "2D" = "_whiteTexture" (condition _BASECOLOR 1)
-        baseColorFactor("Base Color Factor") : color4 = "1 1 1 1"
+        _EMISSIVE("Emissive") : enum "Color;Texture" = "1" [shaderDefine]
+        emissiveColor("Emissive Color") : color3 = "1 1 1"
+        emissiveMap("Emissive Map") : texture "2D" = "_whiteTexture" (condition _EMISSIVE 1)
+        emissiveFactor("Emissive Factor") : float = "1.0"
+        opacity("Opacity") : float range 0 1 0.001 = "1.0"
         alphaCutoff("Alpha Cutoff") : float range 0 1 0.001 = "0.5"
     }
 
     program prepass {
         propertyDependencies {
-            _BASECOLOR
+            _EMISSIVE
         }
 
         stages {
@@ -61,8 +63,10 @@ shader "Unlit" {
     }
 
     program shadow {
+        baseDefines { SHADOW_ALPHA_FROM_EMISSIVE = 1 }
+
         propertyDependencies {
-            _BASECOLOR
+            _EMISSIVE
         }
 
         stages {

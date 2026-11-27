@@ -2,6 +2,13 @@
 #include "../SurfaceDrawCommon.hlsli"
 #include "../AlphaTest.hlsli"
 
+// Unlit coverage comes from the emissive map; Lit coverage comes from the base-color map.
+#if SHADOW_ALPHA_FROM_EMISSIVE
+#define SHADOW_USE_TEXCOORD (_EMISSIVE != 0)
+#else
+#define SHADOW_USE_TEXCOORD (_BASECOLOR != 0)
+#endif
+
 cbuffer ShadowViewCB : register(b1) {
     ShadowViewConstants shadowViewConstants;
 };
@@ -14,7 +21,7 @@ cbuffer ShadowViewCB : register(b1) {
 struct VSInput {
     float4 position : POSITION;
 #if defined(PERFORATED) || defined(DITHERED)
-#if _BASECOLOR != 0
+#if SHADOW_USE_TEXCOORD
     float2 texCoord : TEXCOORD0;
 #endif
     float4 color : COLOR;
@@ -31,7 +38,7 @@ struct PSInput {
     nointerpolation uint surfaceFlags : TEXCOORD2;
 #endif
 #if defined(PERFORATED) || defined(DITHERED)
-#if _BASECOLOR != 0
+#if SHADOW_USE_TEXCOORD
     float2 texCoord : TEXCOORD0;
 #endif
     float4 color : COLOR;
@@ -58,7 +65,7 @@ PSInput VSMain(VSInput input) {
 #endif
 
 #if defined(PERFORATED) || defined(DITHERED)
-#if _BASECOLOR != 0
+#if SHADOW_USE_TEXCOORD
     result.texCoord = input.texCoord;
 #endif
     result.color = input.color;
@@ -80,11 +87,15 @@ void PSMain(PSInput input) {
     ShaderMaterial shaderMaterial = GetShaderMaterial(input.shaderMaterialIndex);
     float baseColorAlpha = shaderMaterial.GetBaseColorFactor().a;
 
-#if _BASECOLOR != 0
+#if SHADOW_USE_TEXCOORD
     SamplerState materialSampler = GetSampler(shaderMaterial.samplerIndex);
 
     const float2 texCoord = shaderMaterial.TransformTexCoord(input.texCoord);
+#if SHADOW_ALPHA_FROM_EMISSIVE
+    float4 textureColor = GetTexture2D(shaderMaterial.emissiveTextureIndex).Sample(materialSampler, texCoord);
+#else
     float4 textureColor = GetTexture2D(shaderMaterial.baseColorTextureIndex).Sample(materialSampler, texCoord);
+#endif
     baseColorAlpha = textureColor.a * baseColorAlpha;
 #endif
 #ifdef DITHERED
